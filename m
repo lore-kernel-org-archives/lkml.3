@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551AbaAGO0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:26:37 -0500
-Received: from 8bytes.org ([85.214.48.195]:36182 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751354AbaAGO03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:26:29 -0500
-Date: Tue, 7 Jan 2014 15:26:25 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: akpm@linux-foundation.org, alexander.h.duyck@intel.com,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH v2] dma-debug: enhance dma_debug_device_change() to check
- for mapping errors
-Message-ID: <20140107142625.GC2742@8bytes.org>
-References: <1384376168-2148-1-git-send-email-shuah.kh@samsung.com>
- <20131230141511.GC2799@8bytes.org>
- <52C700BC.1010200@samsung.com>
+	id S1751662AbaAGO07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:26:59 -0500
+Received: from mail.windriver.com ([147.11.1.11]:52155 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaAGO0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 09:26:49 -0500
+Message-ID: <52CC0EAB.4040501@windriver.com>
+Date: Tue, 7 Jan 2014 09:26:51 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52C700BC.1010200@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Jan  7 15:26:27 2014
-X-DSPAM-Confidence: 0.9988
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 52cc0e9320861528115512
+To: "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: delete non-required instances of include <linux/init.h>
+References: <1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com> <52CB8F16.8000009@zytor.com>
+In-Reply-To: <52CB8F16.8000009@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 11:26:04AM -0700, Shuah Khan wrote:
-> On 12/30/2013 07:15 AM, Joerg Roedel wrote:
-> >I think it is better to check for this in a seperate function and use
-> >err_printk instead of dev_warn in the end to print the errors.
-> >The new function can then be called in the dma_debug_device_change
-> >callback like device_dma_allocations is.
-> >
+On 14-01-07 12:22 AM, H. Peter Anvin wrote:
+> On 01/06/2014 04:20 PM, Paul Gortmaker wrote:
+>> None of these files are actually using any __init type directives
+>> and hence don't need to include <linux/init.h>.  Most are just a
+>> left over from __devinit and __cpuinit removal, or simply due to
+>> code getting copied from one driver to the next.
+>>
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> ---
+>>
+>> [build tested allyes/modconfig on x86/build from today's tip tree]
+>>
 > 
-> I did explore separate function option and backed off from it since
-> the new routine will have to duplicate what device_dma_allocations()
-> does except that it checks for entry->map_err_type.
+> Did you remember to test both 32 and 64 bits?  I'm assuming not, since
+> head_32.S no longer builds:
+
+Ah crap, knew I was forgetting something.  Will retest and resend; sorry
+for the wasted cycles.
+
+P.
+--
+
 > 
-> I still have the patch that does that saved away. If you still
-> prefer that approach, I can rework the patch and send it.
-
-You can get rid of the code duplication by defining for_each macros for
-the list traversals. So I would still prefer to have this check in a
-seperate function.
-
-
-	Joerg
-
-
+> /home/hpa/kernel/tip.x86-cleanups/arch/x86/kernel/head_32.S: Assembler
+> messages:
+> /home/hpa/kernel/tip.x86-cleanups/arch/x86/kernel/head_32.S:86: Error:
+> no such instruction: `__head'
+> /home/hpa/kernel/tip.x86-cleanups/arch/x86/kernel/head_32.S:476: Error:
+> no such instruction: `__init'
+> /home/hpa/kernel/tip.x86-cleanups/arch/x86/kernel/head_32.S:635: Error:
+> no such instruction: `__initdata'
+> /home/hpa/kernel/tip.x86-cleanups/arch/x86/kernel/head_32.S:640: Error:
+> no such instruction: `__refdata'
+> /home/hpa/kernel/tip.x86-cleanups/arch/x86/kernel/head_32.S:698: Error:
+> no such instruction: `__initrodata'
+> make[4]: *** [arch/x86/kernel/head_32.o] Error 1
+> 
+> 	-hpa
+> 
