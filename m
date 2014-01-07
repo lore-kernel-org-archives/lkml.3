@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaAGOTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:19:34 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48288 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaAGOTY (ORCPT
+	id S1751455AbaAGOUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:20:06 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54066 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaAGOUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:19:24 -0500
-Date: Tue, 7 Jan 2014 14:19:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Message-ID: <20140107141916.GG31886@sirena.org.uk>
-References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
- <1387468508-12286-2-git-send-email-lee.jones@linaro.org>
- <CACRpkda5bQ37OCtO17hj_tVrkAdTXA4-DzgBTaFmuswvb0h9fA@mail.gmail.com>
- <20140107141154.GI3182@lee--X1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DeaqLsaJcuYlI8Od"
-Content-Disposition: inline
-In-Reply-To: <20140107141154.GI3182@lee--X1>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 01/11] ARM: ux500: Don't use enums for MSP IDs - for easy
- DT conversion
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 7 Jan 2014 09:20:02 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v8 0/7] Optimize jump label implementation for ARM64
+Date: Tue,  7 Jan 2014 22:17:07 +0800
+Message-Id: <1389104234-15239-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset tries to optimize arch specfic jump label implementation
+for ARM64 by dynamic kernel text patching.
 
---DeaqLsaJcuYlI8Od
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To enable this feature, your toolchain must support "asm goto" extension
+and "%c" constraint extesion.
 
-On Tue, Jan 07, 2014 at 02:11:54PM +0000, Lee Jones wrote:
+It has been tested on ARM Fast mode and a real hardware platform.
 
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+V7->V8:
+1) Minor syntax fix
+2) include <asm/insn.h> into <asm/jump_label.h> to avoid duplicated definitions
 
-> I'm happy with that, although I haven't heard from Mark for ages.
+V6->V7:
+1) Minor format clean up
+2) Remove smp_mb() pair
 
-> Mark, are you still tracking this?
+V5->V6:
+1) optimize stop_machine() related code
+2) simplify aarch64_insn_patch_text_nosync() interface
+3) refine comments
 
-Yes, I've been waiting for both Linus and your testing of Takashi's fix.
+V4->V5:
+1) rework the stop_machine() related code
+2) rework aarch64_insn_gen_nop()
 
---DeaqLsaJcuYlI8Od
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+V3->V4:
+1) resolve a race condition in kernel text patching
+2) address other review comments
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+V2->V3:
+1) fix a bug in comparing signed and unsigned values
+2) detect big endian by checking __AARCH64EB__
 
-iQIcBAEBAgAGBQJSzAzgAAoJELSic+t+oim9Y50P/iSvBGJfJxBowlIRAECsFnZy
-CcOPtBFy6/H6G20Byfu34AsdrhNRKkjxe12bKLPND0avKYjTOj3u+fQp11ajNKSQ
-0EMKicSk/8Dwb8hG7gY9ZPUk8zLqMs9QyggWBO1yghFVxIwwYHKOjw8lSSaCJv9E
-9uaUinhqyVE22POjnUeoewP5ZWTgTYsK7eECl9N2dItldDF4aBRLJuvO3qNYbaCL
-3r8beUMzqCD/fOpxX7evFgTg1rbWdB5UAo9lVFfvxXRIQVvKZ+wxqRiLhk5A3jpJ
-g9qt6aSJJqacS17BF0te7Ub3Zt61ol2TRgiJL40cnizozBdVAl8rMamPRBjuvgIk
-ZjFn0+jGNsBEk4n1zozHvcZsGfhGqeVQN3WAsXj/ljqnQV9BtZki8KJP0OvFHSrx
-AdvzhT6VFgbAKw1tcAK77co5UnVO9kfbQ32stz7vhl2ft9SaNJDT78Twl3fl4vwv
-NaWJy9RSZhzzZ+J51247/gB3blX91nmNzmAvaBaU2Sp7dQBHEKoZ8Jepz7hJ0GLM
-20wJu97nythTlqXDgYwp+fa5Ue8SVwczckSNb25R4V9YX/4ERrZJdu6oO2JD0Fhz
-xvmKpV5vBRiebq31NmREP1UbWEROmJfVGx875bwoVtkGek4ngBoPKEN6aaQTZmte
-Hdme1BMwWmOIXqntk4T8
-=wguB
------END PGP SIGNATURE-----
+V1->V2: address review comments of V1
+1) refine comments
+2) add a new interface to always synchronize with stop_machine()
+   when patching code
+3) handle endian issue when patching code
 
---DeaqLsaJcuYlI8Od--
+Jiang Liu (7):
+  arm64: introduce basic aarch64 instruction decoding helpers
+  arm64: introduce interfaces to hotpatch kernel and module code
+  arm64: move encode_insn_immediate() from module.c to insn.c
+  arm64: introduce aarch64_insn_gen_{nop|branch_imm}() helper functions
+  arm64, jump label: detect %c support for ARM64
+  arm64, jump label: optimize jump label implementation
+  jump_label: use defined macros instead of hard-coding for better
+    readability
+
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/include/asm/insn.h       | 108 +++++++++++++
+ arch/arm64/include/asm/jump_label.h |  52 ++++++
+ arch/arm64/kernel/Makefile          |   3 +-
+ arch/arm64/kernel/insn.c            | 304 ++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/jump_label.c      |  58 +++++++
+ arch/arm64/kernel/module.c          | 157 ++++++-------------
+ include/linux/jump_label.h          |  19 ++-
+ scripts/gcc-goto.sh                 |   2 +-
+ 9 files changed, 585 insertions(+), 119 deletions(-)
+ create mode 100644 arch/arm64/include/asm/insn.h
+ create mode 100644 arch/arm64/include/asm/jump_label.h
+ create mode 100644 arch/arm64/kernel/insn.c
+ create mode 100644 arch/arm64/kernel/jump_label.c
+
+-- 
+1.8.1.2
+
