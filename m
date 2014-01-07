@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729AbaAGCvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 21:51:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27052 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756167AbaAGCvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 21:51:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,616,1384329600"; 
-   d="scan'208";a="462656051"
-Message-ID: <1389063069.3040.90.camel@empanada>
-Subject: Re: [PATCH 0/2] tracing/triggers: A couple minor variable name
- changes
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 20:51:09 -0600
-In-Reply-To: <20140106205034.53c219cc@gandalf.local.home>
-References: <cover.1389036657.git.tom.zanussi@linux.intel.com>
-	 <20140106161347.4cc82a4b@gandalf.local.home>
-	 <1389055673.3040.83.camel@empanada>
-	 <20140106205034.53c219cc@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932160AbaAGCwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 21:52:19 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:55758 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756646AbaAGCwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 21:52:16 -0500
+Date: Mon, 6 Jan 2014 18:52:10 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Muthu Kumar <muthu.lkml@gmail.com>
+Cc: Chris Mason <clm@fb.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Message-ID: <20140107025210.GJ9037@kmo>
+References: <20140102053101.GA29352@localhost>
+ <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
+ <20140106221036.GE9037@kmo>
+ <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 06, 2014 at 04:47:38PM -0800, Muthu Kumar wrote:
+> OK, after a bit more staring I believe the correct fix is the following.
+
+This code still confuses me but I think you're correct, the fix certainly
+matches the evidence we have.
+
+> Fengguang, Please try this one?
 > 
-> > > +	enum event_trigger_type tt = ETT_NONE;
-> > > +
-> > > +	if (__event_trigger_test_discard(file, buffer, event, entry, &tt))
-> > > +		trace_buffer_unlock_commit(buffer, event, irq_flags, pc);
-> > 
-> > The logic is correct overall, but the way it reads is the opposite of
-> > what it used to i.e. it should read 'if you don't discard the event,
-> > then do the trace_buffer_unlock_commit' - it works as written because it
-> > returns 1 if it didn't discard, which is confusing.
+> Regards,
+> Muthu
 > 
-> Hmm, OK, I think you may have convinced me. I'll swap the return values.
+> ------------
+> In btrfs_end_bio(), we increment bi_remaining if is_orig_bio. If not,
+> we restore the orig_bio but failed to increment bi_remaining for
+> orig_bio, which triggers a BUG_ON later when bio_endio is called. Fix
+> is to increment bi_remaining when we restore the orig bio as well.
 > 
-
-Sounds great, thanks!
-
-> I need to write up some trigger tests to make sure they work the same
-> before and after this patch.
+> Reported-by: fengguang.wu@intel.com
+> CC: Kent Overstreet <kmo@daterainc.com>
+> CC: Jens Axboe <axboe@kernel.dk>
+> CC: Chris Mason <clm@fv
+> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+> ----------------
+>  fs/btrfs/volumes.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-
-I'll run the next version through my 'testsuite', which unfortunately is
-still manual (one of the many things on my todo list is automate it)..
-
-Tom
-
-
-
+> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+> index 37972d5..2011cc0 100644
+> --- a/fs/btrfs/volumes.c
+> +++ b/fs/btrfs/volumes.c
+> @@ -5297,9 +5297,9 @@ static void btrfs_end_bio(struct bio *bio, int err)
+>                 if (!is_orig_bio) {
+>                         bio_put(bio);
+>                         bio = bbio->orig_bio;
+> -               } else {
+> -                       atomic_inc(&bio->bi_remaining);
+>                 }
+> +               atomic_inc(&bio->bi_remaining);
+> +
+>                 bio->bi_private = bbio->private;
+>                 bio->bi_end_io = bbio->end_io;
+>                 btrfs_io_bio(bio)->mirror_num = bbio->mirror_num;
+> 
+> --------------------------
+> 
+> 
+> 
+> On Mon, Jan 6, 2014 at 2:10 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> > Chris, the patch below seems to be incorrect - with it we get hangs, so
+> > bi_remaining (probably) isn't getting decremented when it should be. You sent
+> > Jens fixes for btrfs which I somehow lost when I rebased, do you remember how
+> > this is supposed to work? Looking at the code I'm not quite sure what's going on
+> > here.
+> >
+> > On Fri, Jan 03, 2014 at 11:51:31AM -0800, Muthu Kumar wrote:
+> >> Looks like Kent missed the btrfs endio in the original commit. How
+> >> about this patch:
+> >>
+> >> ---------
+> >>
+> >> In btrfs_end_bio, call bio_endio_nodec on the restored bio so the
+> >> bi_remaining is accounted for correctly.
+> >>
+> >> Reported-by: fengguang.wu@intel.com
+> >> Cc: Kent Overstreet <kmo@daterainc.com>
+> >> CC: Jens Axboe <axboe@kernel.dk>
+> >> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+> >> --------
+> >>
+> >>  fs/btrfs/volumes.c |    6 +++++-
+> >>  1 files changed, 5 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+> >> index f2130de..edfed52 100644
+> >> --- a/fs/btrfs/volumes.c
+> >> +++ b/fs/btrfs/volumes.c
+> >> @@ -5316,7 +5316,11 @@ static void btrfs_end_bio(struct bio *bio, int err)
+> >>                 }
+> >>                 kfree(bbio);
+> >>
+> >> -               bio_endio(bio, err);
+> >> +                /*
+> >> +                 * Call endio_nodec on the restored bio so the bi_remaining is
+> >> +                 * accounted for correctly
+> >> +                 */
+> >> +               bio_endio_nodec(bio, err);
+> >>         } else if (!is_orig_bio) {
+> >>                 bio_put(bio);
+> >>         }
