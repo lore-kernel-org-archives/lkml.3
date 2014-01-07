@@ -1,293 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAGP2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:28:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:38393 "EHLO mga11.intel.com"
+	id S1752531AbaAGPaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:30:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751057AbaAGP2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:28:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,619,1384329600"; 
-   d="scan'208";a="461414334"
-From: ville.syrjala@linux.intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/6] x86: Add Intel graphics stolen memory quirk for gen2 platforms
-Date: Tue,  7 Jan 2014 17:28:32 +0200
-Message-Id: <1389108512-20039-1-git-send-email-ville.syrjala@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1386085793-317-3-git-send-email-ville.syrjala@linux.intel.com>
-References: <1386085793-317-3-git-send-email-ville.syrjala@linux.intel.com>
+	id S1751632AbaAGPai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 10:30:38 -0500
+Date: Tue, 7 Jan 2014 16:30:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sergio Durigan Junior <sergiodj@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Pedro Alves <palves@redhat.com>,
+        Tom Tromey <tromey@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC/PATCH] Implement new PTRACE_EVENT_SYSCALL_{ENTER,EXIT}
+Message-ID: <20140107153036.GA4749@redhat.com>
+References: <m3wqic205t.fsf@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m3wqic205t.fsf@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+On 01/06, Sergio Durigan Junior wrote:
+>
+> This patch implements the new PTRACE_EVENT_SYSCALL_{ENTER,EXIT} events
+> for ptrace.  The goal is kind of obvious: it lets the tracer to request
+> for notifications when a syscall is called or has returned in the
+> tracee.  This is very useful because currently there is no easy/direct
+> way to inspect whether we are dealing with a call or a return of a
+> syscall.  GDB itself has an open bug about this, because it can get
+> confused when the program being debugged is restarted in the middle of a
+> syscall that has been caught by "catch syscall".
 
-There isn't an explicit stolen memory base register on gen2.
-Some old comment in the i915 code suggests we should get it via
-max_low_pfn_mapped, but that's clearly a bad idea on my MGM.
+Yes, this was suggested many times, probably makes sense.
 
-The e820 map in said machine looks like this:
-[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009f7ff] usable
-[    0.000000] BIOS-e820: [mem 0x000000000009f800-0x000000000009ffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000000ce000-0x00000000000cffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000000dc000-0x00000000000fffff] reserved
-[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000001f6effff] usable
-[    0.000000] BIOS-e820: [mem 0x000000001f6f0000-0x000000001f6f7fff] ACPI data
-[    0.000000] BIOS-e820: [mem 0x000000001f6f8000-0x000000001f6fffff] ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000001f700000-0x000000001fffffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec1ffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000ffb00000-0x00000000ffbfffff] reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
+But I am not sure about semantics, let me add more cc's.
 
-That makes max_low_pfn_mapped = 1f6f0000, so assuming our stolen memory
-would start there would place it on top of some ACPI memory regions.
-So not a good idea as already stated.
+> The other nice thing that I have implemented is the ability to obtain
+> the syscall number related to the event by using PTRACE_GET_EVENTMSG.
+> This way, we don't need to inspect registers anymore when we want to
+> know which syscall is responsible for this or that event.
 
-The 9MB region after the ACPI regions at 0x1f700000 however looks
-promising given that the macine reports the stolen memory size to be
-8MB. Looking at the PGTBL_CTL register, the GTT entries are at offset
-0x1fee00000, and given that the GTT entries occupy 128KB, it looks like
-the stolen memory could start at 0x1f700000 and the GTT entries would
-occupy the last 128KB of the stolen memory.
+I won't argue, but it is not clear to me if this is really useful,
+given that the debugger can read the regs.
 
-After some more digging through chipset documentation, I've determined
-the BIOS first allocates space for something called TSEG (something to
-do with SMM) from the top of memory, and then it allocates the graphics
-stolen memory below that. Accordind to the chipset documentation TSEG
-has a fixed size of 1MB on 855. So that explains the top 1MB in the
-e820 region. And it also confirms that the GTT entries are in fact at
-the end of the the stolen memory region.
+And even if we do this, I disagree with this implementation, please
+see below.
 
-Derive the stolen memory base address on gen2 the same as the BIOS does
-(TOM-TSEG_SIZE-stolen_size). There are a few differences between the
-registers on various gen2 chipsets, so a few different codepaths are
-required.
+> --- a/arch/alpha/kernel/ptrace.c
+> +++ b/arch/alpha/kernel/ptrace.c
+> @@ -317,7 +317,8 @@ asmlinkage unsigned long syscall_trace_enter(void)
+>  {
+>  	unsigned long ret = 0;
+>  	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+> -	    tracehook_report_syscall_entry(current_pt_regs()))
+> +	    tracehook_report_syscall_entry(current_pt_regs(),
+> +					current_pt_regs()->r0))
+>  		ret = -1UL;
+>  	return ret ?: current_pt_regs()->r0;
+>  }
+> @@ -326,5 +327,6 @@ asmlinkage void
+>  syscall_trace_leave(void)
+>  {
+>  	if (test_thread_flag(TIF_SYSCALL_TRACE))
+> -		tracehook_report_syscall_exit(current_pt_regs(), 0);
+> +		tracehook_report_syscall_exit(current_pt_regs(), 0,
+> +						current_pt_regs()->r0);
+>  }
 
-865G is again bit more special since it seems to support enough memory
-to hit 4GB address space issues. This means the PCI allocations will
-also affect the location of the stolen memory. Fortunately there
-appears to be the TOUD register which may give us the correct answer
-directly. But the chipset docs are a bit unclear, so I'm not 100%
-sure that the graphics stolen memory is always the last thing the
-BIOS steals. Someone would need to verify it on a real system.
+And every arch/ is changed the same way. I do not think this is needed.
+We already have syscall_get_nr(), this is what ptrace_report_syscall()
+needs. So afaics this patch do not need to touch arch/ at all.
 
-I tested this on the my 830 and 855 machines, and so far everything
-looks peachy.
 
-v2: Rewrite to use the TOM-TSEG_SIZE-stolen_size and TOUD methods
-v3: Fix TSEG size for 830
+> +static inline int ptrace_report_syscall(struct pt_regs *regs, int entry,
+> +	unsigned int sysno)
+>  {
+>  	int ptrace = current->ptrace;
+> +	int is_sysenter = ptrace & PT_TRACE_SYSCALL_ENTER;
+> +	int is_sysexit = ptrace & PT_TRACE_SYSCALL_EXIT;
+> +	int is_ptsysgood = ptrace & PT_TRACESYSGOOD;
+>
+>  	if (!(ptrace & PT_PTRACED))
+>  		return 0;
+>
+> -	ptrace_notify(SIGTRAP | ((ptrace & PT_TRACESYSGOOD) ? 0x80 : 0));
+> +	if (is_sysenter || is_sysexit) {
+> +		if (entry && is_sysenter)
+> +			ptrace_event(PTRACE_EVENT_SYSCALL_ENTER, sysno);
+> +		else if (!entry && is_sysexit)
+> +			ptrace_event(PTRACE_EVENT_SYSCALL_EXIT, sysno);
+> +		else
+> +			return 0;
+> +	} else
+> +		ptrace_notify(SIGTRAP | (is_ptsysgood ? 0x80 : 0));
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
----
- arch/x86/kernel/early-quirks.c | 132 +++++++++++++++++++++++++++++++++++++++++
- include/drm/i915_drm.h         |  20 +++++++
- 2 files changed, 152 insertions(+)
+OK. So PTRACE_O_SYSCALL_ENTER acts like PTRACE_O_TRACESYSGOOD, you still
+need ptrace(PTRACE_SYSCALL) if you want PTRACE_EVENT_SYSCALL_ENTER.
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index fddd4d0..5218dd2 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -247,6 +247,114 @@ static u32 __init intel_stolen_base(int num, int slot, int func, size_t stolen_s
- #define MB(x)	(KB (KB (x)))
- #define GB(x)	(MB (KB (x)))
- 
-+static size_t __init i830_tseg_size(void)
-+{
-+	u8 tmp = read_pci_config_byte(0, 0, 0, I830_ESMRAMC);
-+
-+	if (!(tmp & TSEG_ENABLE))
-+		return 0;
-+
-+	if (tmp & I830_TSEG_SIZE_1M)
-+		return MB(1);
-+	else
-+		return KB(512);
-+}
-+
-+static size_t __init i845_tseg_size(void)
-+{
-+	u8 tmp = read_pci_config_byte(0, 0, 0, I845_ESMRAMC);
-+
-+	if (!(tmp & TSEG_ENABLE))
-+		return 0;
-+
-+	switch (tmp & I845_TSEG_SIZE_MASK) {
-+	case I845_TSEG_SIZE_512K:
-+		return KB(512);
-+	case I845_TSEG_SIZE_1M:
-+		return MB(1);
-+	default:
-+		WARN_ON(1);
-+		return 0;
-+	}
-+}
-+
-+static size_t __init i85x_tseg_size(void)
-+{
-+	u8 tmp = read_pci_config_byte(0, 0, 0, I85X_ESMRAMC);
-+
-+	if (!(tmp & TSEG_ENABLE))
-+		return 0;
-+
-+	return MB(1);
-+}
-+
-+static size_t __init i830_mem_size(void)
-+{
-+	return read_pci_config_byte(0, 0, 0, I830_DRB3) * MB(32);
-+}
-+
-+static size_t __init i85x_mem_size(void)
-+{
-+	return read_pci_config_byte(0, 0, 1, I85X_DRB3) * MB(32);
-+}
-+
-+/*
-+ * On 830/845/85x the stolen memory base isn't available in any
-+ * register. We need to calculate it as TOM-TSEG_SIZE-stolen_size.
-+ */
-+static u32 __init i830_stolen_base(int num, int slot, int func, size_t stolen_size)
-+{
-+	return i830_mem_size() - i830_tseg_size() - stolen_size;
-+}
-+
-+static u32 __init i845_stolen_base(int num, int slot, int func, size_t stolen_size)
-+{
-+	return i830_mem_size() - i845_tseg_size() - stolen_size;
-+}
-+
-+static u32 __init i85x_stolen_base(int num, int slot, int func, size_t stolen_size)
-+{
-+	return i85x_mem_size() - i85x_tseg_size() - stolen_size;
-+}
-+
-+static u32 __init i865_stolen_base(int num, int slot, int func, size_t stolen_size)
-+{
-+	/*
-+	 * FIXME is the graphics stolen memory region
-+	 * always at TOUD? Ie. is it always the last
-+	 * one to be allocated by the BIOS?
-+	 */
-+	return read_pci_config_16(0, 0, 0, I865_TOUD) << 16;
-+}
-+
-+static size_t __init i830_stolen_size(int num, int slot, int func)
-+{
-+	size_t stolen_size;
-+	u16 gmch_ctrl;
-+
-+	gmch_ctrl = read_pci_config_16(0, 0, 0, I830_GMCH_CTRL);
-+
-+	switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
-+	case I830_GMCH_GMS_STOLEN_512:
-+		stolen_size = KB(512);
-+		break;
-+	case I830_GMCH_GMS_STOLEN_1024:
-+		stolen_size = MB(1);
-+		break;
-+	case I830_GMCH_GMS_STOLEN_8192:
-+		stolen_size = MB(8);
-+		break;
-+	case I830_GMCH_GMS_LOCAL:
-+		/* local memory isn't part of the normal address space */
-+		stolen_size = 0;
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return stolen_size;
-+}
-+
- static size_t __init gen3_stolen_size(int num, int slot, int func)
- {
- 	size_t stolen_size;
-@@ -329,6 +437,26 @@ struct intel_stolen_funcs {
- 	u32 (*base)(int num, int slot, int func, size_t size);
- };
- 
-+static const struct intel_stolen_funcs i830_stolen_funcs = {
-+	.base = i830_stolen_base,
-+	.size = i830_stolen_size,
-+};
-+
-+static const struct intel_stolen_funcs i845_stolen_funcs = {
-+	.base = i845_stolen_base,
-+	.size = i830_stolen_size,
-+};
-+
-+static const struct intel_stolen_funcs i85x_stolen_funcs = {
-+	.base = i85x_stolen_base,
-+	.size = gen3_stolen_size,
-+};
-+
-+static const struct intel_stolen_funcs i865_stolen_funcs = {
-+	.base = i865_stolen_base,
-+	.size = gen3_stolen_size,
-+};
-+
- static const struct intel_stolen_funcs gen3_stolen_funcs = {
- 	.base = intel_stolen_base,
- 	.size = gen3_stolen_size,
-@@ -345,6 +473,10 @@ static const struct intel_stolen_funcs gen8_stolen_funcs = {
- };
- 
- static struct pci_device_id intel_stolen_ids[] __initdata = {
-+	INTEL_I830_IDS(&i830_stolen_funcs),
-+	INTEL_I845G_IDS(&i845_stolen_funcs),
-+	INTEL_I85X_IDS(&i85x_stolen_funcs),
-+	INTEL_I865G_IDS(&i865_stolen_funcs),
- 	INTEL_I915G_IDS(&gen3_stolen_funcs),
- 	INTEL_I915GM_IDS(&gen3_stolen_funcs),
- 	INTEL_I945G_IDS(&gen3_stolen_funcs),
-diff --git a/include/drm/i915_drm.h b/include/drm/i915_drm.h
-index 97d5497..595f85c 100644
---- a/include/drm/i915_drm.h
-+++ b/include/drm/i915_drm.h
-@@ -56,6 +56,12 @@ extern bool i915_gpu_turbo_disable(void);
- 
- #define I830_GMCH_CTRL			0x52
- 
-+#define I830_GMCH_GMS_MASK		0x70
-+#define I830_GMCH_GMS_LOCAL		0x10
-+#define I830_GMCH_GMS_STOLEN_512	0x20
-+#define I830_GMCH_GMS_STOLEN_1024	0x30
-+#define I830_GMCH_GMS_STOLEN_8192	0x40
-+
- #define I855_GMCH_GMS_MASK		0xF0
- #define I855_GMCH_GMS_STOLEN_0M		0x0
- #define I855_GMCH_GMS_STOLEN_1M		(0x1 << 4)
-@@ -72,4 +78,18 @@ extern bool i915_gpu_turbo_disable(void);
- #define INTEL_GMCH_GMS_STOLEN_224M	(0xc << 4)
- #define INTEL_GMCH_GMS_STOLEN_352M	(0xd << 4)
- 
-+#define I830_DRB3		0x63
-+#define I85X_DRB3		0x43
-+#define I865_TOUD		0xc4
-+
-+#define I830_ESMRAMC		0x91
-+#define I845_ESMRAMC		0x9e
-+#define I85X_ESMRAMC		0x61
-+#define    TSEG_ENABLE		(1 << 0)
-+#define    I830_TSEG_SIZE_512K	(0 << 1)
-+#define    I830_TSEG_SIZE_1M	(1 << 1)
-+#define    I845_TSEG_SIZE_MASK	(3 << 1)
-+#define    I845_TSEG_SIZE_512K	(2 << 1)
-+#define    I845_TSEG_SIZE_1M	(3 << 1)
-+
- #endif				/* _I915_DRM_H_ */
--- 
-1.8.3.2
+If we add the new API, perhaps we should change ptrace_resume ?
+I mean,
+
+	--- x/kernel/ptrace.c
+	+++ x/kernel/ptrace.c
+	@@ -723,7 +723,9 @@ static int ptrace_resume(struct task_str
+		if (!valid_signal(data))
+			return -EIO;
+	 
+	-	if (request == PTRACE_SYSCALL)
+	+	if (request == PTRACE_SYSCALL ||
+	+	    ptrace_event_enabled(PTRACE_EVENT_SYSCALL_ENTER) ||
+	+	    ptrace_event_enabled(PTRACE_EVENT_SYSCALL_EXIT))
+			set_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
+		else
+			clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
+
+
+This way PTRACE_O_SYSCALL_* will work like other ptrace options which
+ask to report an event.
+
+Or. Instead, perhaps we can add a single option PTRACE_O_TRACESYSREALLYGOOD
+which doesn't report the new event and simply does something like
+
+	current->ptrace_message = syscall_get_nr() | (entry << 31);
+	ptrace_notify(SIGTRAP | 0x80);
+
+Finally. If we add this feature, we should probably also report
+is_compat_task() somehow. Currently the debugger can't know if, say,
+a 64bit tracee does int80.
+
+OTOH, perhaps it would be better to report this via regs->flags as
+(iirc) Linus suggested.
+
+Once again, personally I am fine either way. Just I think we should
+discuss every possible option.
+
+Oleg.
 
