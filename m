@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655AbaAGJ5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 04:57:34 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38938 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849AbaAGJ5b (ORCPT
+	id S1755954AbaAGJ5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 04:57:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53477 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096AbaAGJ5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 04:57:31 -0500
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: hans.verkuil@cisco.com, m.chehab@samsung.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Ethan Zhao <ethan.kernel@gmail.com>
-Subject: [PATCH] media: gspaca: check pointer against NULL before using it in create_urbs()
-Date: Tue,  7 Jan 2014 17:56:02 +0800
-Message-Id: <1389088562-463-1-git-send-email-ethan.kernel@gmail.com>
-X-Mailer: git-send-email 1.8.3.4 (Apple Git-47)
+	Tue, 7 Jan 2014 04:57:45 -0500
+Date: Tue, 7 Jan 2014 10:57:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140107095723.GB2480@laptop.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com>
+ <20140106162813.GM31570@twins.programming.kicks-ass.net>
+ <20140106171530.GC2936@e103034-lin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106171530.GC2936@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-function alt_xfer() may return NULL, should check its return value passed into
-create_urbs() as parameter.
+On Mon, Jan 06, 2014 at 05:15:30PM +0000, Morten Rasmussen wrote:
+> Is there any examples of frequency domains not matching the span of a
+> sched_domain?
 
-gspca_init_transfer()
-{
-... ...
-ret = create_urbs(gspca_dev,alt_xfer(&intf->altsetting[alt], xfer));
-... ...
-}
+nafaik, but I don't really know much about this anyway.
 
-Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
----
- drivers/media/usb/gspca/gspca.c | 2 ++
- 1 file changed, 2 insertions(+)
+> I would have thought that we would have a matching sched_domain to hang
+> the P and C state information from for most systems. If not, we could
+> just add it.
 
-diff --git a/drivers/media/usb/gspca/gspca.c b/drivers/media/usb/gspca/gspca.c
-index 048507b..eb45bc0 100644
---- a/drivers/media/usb/gspca/gspca.c
-+++ b/drivers/media/usb/gspca/gspca.c
-@@ -761,6 +761,8 @@ static int create_urbs(struct gspca_dev *gspca_dev,
- 	struct urb *urb;
- 	int n, nurbs, i, psize, npkt, bsize;
- 
-+	if (!ep)
-+		return -EINVAL;
- 	/* calculate the packet size and the number of packets */
- 	psize = le16_to_cpu(ep->desc.wMaxPacketSize);
- 
--- 
-1.8.3.4 (Apple Git-47)
-
+This was my thought too.
