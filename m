@@ -1,91 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaAGX5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 18:57:42 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63153 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754667AbaAGX5e (ORCPT
+	id S1754760AbaAGX6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 18:58:12 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:58560 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136AbaAGX57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 18:57:34 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, mjg59@srcf.ucam.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v6][RESEND] platform: x86: New BayTrail IOSF-SB MBI driver
-Date: Wed, 08 Jan 2014 01:11:22 +0100
-Message-ID: <3119193.jBSlNlK309@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140107214300.GA30423@linux.intel.com>
-References: <1388427149-25456-1-git-send-email-david.e.box@linux.intel.com> <4364833.i22acYTaeM@vostro.rjw.lan> <20140107214300.GA30423@linux.intel.com>
+	Tue, 7 Jan 2014 18:57:59 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140107204233.GA22413@amd.pavel.ucw.cz>
+References: <20140107204233.GA22413@amd.pavel.ucw.cz>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 7 Jan 2014 15:57:37 -0800
+Message-ID: <CAK5ve-Ju70iOXQXG1B1wVpyDRKjAw_cvmBR5YDM=frppA3iu4A@mail.gmail.com>
+Subject: Re: Broken locking in leds-lp5523.c
+To: Pavel Machek <pavel@ucw.cz>, milo kim <milo.kim@ti.com>
+Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 07, 2014 01:43:00 PM David E. Box wrote:
-> On Tue, Jan 07, 2014 at 09:46:57PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, January 07, 2014 10:48:05 AM David E. Box wrote:
-> > > On Tue, Jan 07, 2014 at 10:15:03AM -0800, Randy Dunlap wrote:
-> > > > On 01/07/14 10:03, David E. Box wrote:
-> > > > > From: "David E. Box" <david.e.box@linux.intel.com>
-> > > > > 
-> > > > > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> > > > > index b51a746..6e199a5 100644
-> > > > > --- a/drivers/platform/x86/Kconfig
-> > > > > +++ b/drivers/platform/x86/Kconfig
-> > > > > @@ -819,4 +819,14 @@ config PVPANIC
-> > > > >  	  a paravirtualized device provided by QEMU; it lets a virtual machine
-> > > > >  	  (guest) communicate panic events to the host.
-> > > > >  
-> > > > > +config INTEL_BAYTRAIL_MBI
-> > > > > +	tristate
-> > > > 
-> > > > Is this kconfig option displayed when you run menuconfig/nconfig/xconfig/gconfig etc.?
-> > > > Doesn't it need a prompt string?
-> > > > How did you enable it and test it?
-> > > > 
-> > > 
-> > > It is not displayed on purpose. The driver isn't exposed to user space.
-> > > It was tested by adding the option to .config, both as module and built-in.
-> > > 
-> > > > > +	depends on PCI
-> > > > > +	---help---
-> > > > > +	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
-> > > > > +	  Interface. This is a requirement for systems that need to configure
-> > > > > +	  the PUNIT for power management features such as RAPL. Register
-> > > > > +	  addresses and r/w opcodes are defined in
-> > > > 
-> > > > Think of users reading this.  At least change "r/w" to read/write.
-> > > > What is IOSF?  does it matter here?
-> > > > PUNIT?  RAPL?
-> > > > 
-> > > 
-> > > If you don't know what the IOSF Sideband is you probably shouldn't be enabling
-> > > this feature.
-> > 
-> > What about generic x86 distro kernels?  They won't know in advance whether or
-> > not they will need this feature.
-> 
-> Ok, I spoke with other developers and I apparently misunderstood the context
-> here. Distro's enable these features and this is too detailed for them to know
-> what to do with it. How about simply "Required to enable platform specific power
-> managemnet features on Baytrail"?
-> 
-> KISS is easier said than done.
+On Tue, Jan 7, 2014 at 12:42 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+> There's some locking weirdness, and few missing comments in lp5523
+> driver.
+>
+> Now, this is untested patch from my reverse-engineering. I hope I
+> understood things right...
+>
+> In particular, there's unbalanced unlock in
+> lp5523_update_program_memory, and lp5523_update_program_memory needs
+> to be protected by the lock.
+>
+> Comments? Does someone maintain this?
+>
 
-Well, I personally think that this code should go into arch/x86/ as library code
-needed to access IOSF Sideband on some platforms.  I probably would make modules
-depending on it select it, so for example if the RAPL driver is going to be
-built, your driver should be build either and rather unconditionally in that
-case.
+I think Milo Kim is maintaining this driver for the LP55xx chip family.
 
-So the rule should be "if something *may* need it, build it" in my opinion.
+Thanks,
+-Bryan
 
-Thanks!
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Thanks,
+>                                                                 Pavel
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>
+>
+> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+> index c00f55e4..e8b83e9 100644
+> --- a/drivers/leds/leds-lp5523.c
+> +++ b/drivers/leds/leds-lp5523.c
+> @@ -34,7 +34,15 @@
+>
+>  #include "leds-lp55xx-common.h"
+>
+> -#define LP5523_PROGRAM_LENGTH          32
+> +#define LP5523_PROGRAM_LENGTH          32      /* bytes */
+> +/* Memory is used like this:
+> +   0x00 engine 1 program
+> +   0x10 engine 2 program
+> +   0x20 engine 3 program
+> +   0x30 engine 1 muxing info
+> +   0x40 engine 2 muxing info
+> +   0x50 engine 3 muxing info
+> +   ...and offsets are hard-coded all around :-( */
+>  #define LP5523_MAX_LEDS                        9
+>
+>  /* Registers */
+> @@ -265,20 +273,25 @@ static int lp5523_init_program_engine(struct lp55xx_chip *chip)
+>         /* one pattern per engine setting LED MUX start and stop addresses */
+>         static const u8 pattern[][LP5523_PROGRAM_LENGTH] =  {
+>                 { 0x9c, 0x30, 0x9c, 0xb0, 0x9d, 0x80, 0xd8, 0x00, 0},
+> +               /* 9c30 -- mux_map_start(0x30)
+> +                  9cb0 -- mux_ld_end(0x50)
+> +                  9d80 -- mux_sel???(0x00)
+> +                  d800 -- invalid?? */
+>                 { 0x9c, 0x40, 0x9c, 0xc0, 0x9d, 0x80, 0xd8, 0x00, 0},
+>                 { 0x9c, 0x50, 0x9c, 0xd0, 0x9d, 0x80, 0xd8, 0x00, 0},
+>         };
+>
+> -       /* hardcode 32 bytes of memory for each engine from program memory */
+> +       /* hardcode LP5523_PROGRAM_LENGTH bytes of memory for each
+> +          engine from program memory */
+>         ret = lp55xx_write(chip, LP5523_REG_CH1_PROG_START, 0x00);
+>         if (ret)
+>                 return ret;
+>
+> -       ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, 0x10);
+> +       ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, LP5523_PROGRAM_LENGTH / 2);
+>         if (ret)
+>                 return ret;
+>
+> -       ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, 0x20);
+> +       ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, LP5523_PROGRAM_LENGTH);
+>         if (ret)
+>                 return ret;
+>
+> @@ -346,10 +359,8 @@ static int lp5523_update_program_memory(struct lp55xx_chip *chip,
+>
+>         for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
+>                 ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, pattern[i]);
+> -               if (ret) {
+> -                       mutex_unlock(&chip->lock);
+> +               if (ret)
+>                         return -EINVAL;
+> -               }
+>         }
+>
+>         return size;
+> @@ -551,15 +562,17 @@ static ssize_t store_engine_load(struct device *dev,
+>  {
+>         struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
+>         struct lp55xx_chip *chip = led->chip;
+> +       ssize_t res;
+>
+>         mutex_lock(&chip->lock);
+>
+>         chip->engine_idx = nr;
+>         lp5523_load_engine_and_select_page(chip);
+>
+> +       res = lp5523_update_program_memory(chip, buf, len);
+>         mutex_unlock(&chip->lock);
+>
+> -       return lp5523_update_program_memory(chip, buf, len);
+> +       return res;
+>  }
+>  store_load(1)
+>  store_load(2)
+> diff --git a/drivers/leds/leds-lp8501.c b/drivers/leds/leds-lp8501.c
+> index 8d55a780..ae5c6fe 100644
+> --- a/drivers/leds/leds-lp8501.c
+> +++ b/drivers/leds/leds-lp8501.c
+> @@ -262,7 +262,7 @@ static void lp8501_firmware_loaded(struct lp55xx_chip *chip)
+>         }
+>
+>         /*
+> -        * Program momery sequence
+> +        * Program memory sequence
+>          *  1) set engine mode to "LOAD"
+>          *  2) write firmware data into program memory
+>          */
+>
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
