@@ -1,142 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282AbaAGUmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:42:40 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:35588 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbaAGUmf (ORCPT
+	id S1753861AbaAGUq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:46:29 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:51435 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaAGUqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:42:35 -0500
-Date: Tue, 7 Jan 2014 21:42:33 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, milo.kim@ti.com
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Broken locking in leds-lp5523.c
-Message-ID: <20140107204233.GA22413@amd.pavel.ucw.cz>
+	Tue, 7 Jan 2014 15:46:19 -0500
+X-IronPort-AV: E=Sophos;i="4.95,620,1384329600"; 
+   d="scan'208";a="8255593"
+Message-ID: <52CC6782.4060309@broadcom.com>
+Date: Tue, 7 Jan 2014 12:45:54 -0800
+From: Sherman Yin <syin@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/4] pinctrl: Add pinctrl binding for Broadcom Capri
+ SoCs
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>	<1387592016-13740-1-git-send-email-syin@broadcom.com>	<1387592016-13740-3-git-send-email-syin@broadcom.com> <CACRpkdaAq15wKD900SqN1sQFLBATiuA3vNoua+KJGHU+gdCgqg@mail.gmail.com>
+In-Reply-To: <CACRpkdaAq15wKD900SqN1sQFLBATiuA3vNoua+KJGHU+gdCgqg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 14-01-07 09:15 AM, Linus Walleij wrote:
+> On Sat, Dec 21, 2013 at 3:13 AM, Sherman Yin <syin@broadcom.com> wrote:
+>> +Optional Properties (for standard pins):
+>> +
+>> +- function:                    String. Specifies the pin mux selection. Values
+>> +                               must be one of: "alt1", "alt2", "alt3", "alt4"
+>> +- input-schmitt-enable:                No arguments. Enable schmitt-trigger mode.
+>> +- input-schmitt-disable:       No arguments. Disable schmitt-trigger mode.
+>> +- bias-pull-up:                        No arguments. Pull up on pin.
+>> +- bias-pull-down:              No arguments. Pull down on pin.
+>> +- bias-disable:                        No arguments. Disable pin bias.
+>> +- slew-rate:                   Integer. Meaning depends on configured pin mux:
+>> +                               *_SCL or *_SDA:
+>> +                                       0: Standard(100kbps)& Fast(400kbps) mode
+>> +                                       1: Highspeed (3.4Mbps) mode
+>> +                               IC_DM or IC_DP:
+>> +                                       0: normal slew rate
+>> +                                       1: fast slew rate
+>> +                               Otherwise:
+>> +                                       0: fast slew rate
+>> +                                       1: normal slew rate
+>> +- input-enable:                        No arguements. Enable input (does not affect
+>> +                               output.)
+>> +- input-disable:               No arguements. Disable input (does not affect
+>> +                               output.)
+>> +- drive-strength:              Integer. Drive strength in mA.  Valid values are
+>> +                               2, 4, 6, 8, 10, 12, 14, 16 mA.
+>
+> Also patch
+> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+> Since you're adding generic properties.
 
-There's some locking weirdness, and few missing comments in lp5523
-driver.
+Please note that I removed from this patchset the patch that you've 
+merged to your for-next branch already:
 
-Now, this is untested patch from my reverse-engineering. I hope I
-understood things right...
+https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-pinctrl.git/commit/?h=for-next&id=8ba3f4d00078e7a49c60c0bd6298f29402c3a0a0
 
-In particular, there's unbalanced unlock in
-lp5523_update_program_memory, and lp5523_update_program_memory needs
-to be protected by the lock.
-
-Comments? Does someone maintain this?
-
-Thanks,
-								Pavel
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Is that what you wanted to see in pinctrl-bindings.txt, or is there 
+something else you want to see added to that txt file?  I didn't want to 
+add the description of slew-rate arguments there because this is 
+capri-specific.  I'm not quite sure what else to add.
 
 
-diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
-index c00f55e4..e8b83e9 100644
---- a/drivers/leds/leds-lp5523.c
-+++ b/drivers/leds/leds-lp5523.c
-@@ -34,7 +34,15 @@
- 
- #include "leds-lp55xx-common.h"
- 
--#define LP5523_PROGRAM_LENGTH		32
-+#define LP5523_PROGRAM_LENGTH		32	/* bytes */
-+/* Memory is used like this:
-+   0x00 engine 1 program
-+   0x10 engine 2 program
-+   0x20 engine 3 program
-+   0x30 engine 1 muxing info
-+   0x40 engine 2 muxing info
-+   0x50 engine 3 muxing info
-+   ...and offsets are hard-coded all around :-( */
- #define LP5523_MAX_LEDS			9
- 
- /* Registers */
-@@ -265,20 +273,25 @@ static int lp5523_init_program_engine(struct lp55xx_chip *chip)
- 	/* one pattern per engine setting LED MUX start and stop addresses */
- 	static const u8 pattern[][LP5523_PROGRAM_LENGTH] =  {
- 		{ 0x9c, 0x30, 0x9c, 0xb0, 0x9d, 0x80, 0xd8, 0x00, 0},
-+		/* 9c30 -- mux_map_start(0x30)
-+		   9cb0 -- mux_ld_end(0x50)
-+		   9d80 -- mux_sel???(0x00)
-+		   d800 -- invalid?? */
- 		{ 0x9c, 0x40, 0x9c, 0xc0, 0x9d, 0x80, 0xd8, 0x00, 0},
- 		{ 0x9c, 0x50, 0x9c, 0xd0, 0x9d, 0x80, 0xd8, 0x00, 0},
- 	};
- 
--	/* hardcode 32 bytes of memory for each engine from program memory */
-+	/* hardcode LP5523_PROGRAM_LENGTH bytes of memory for each
-+	   engine from program memory */
- 	ret = lp55xx_write(chip, LP5523_REG_CH1_PROG_START, 0x00);
- 	if (ret)
- 		return ret;
- 
--	ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, 0x10);
-+	ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, LP5523_PROGRAM_LENGTH / 2);
- 	if (ret)
- 		return ret;
- 
--	ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, 0x20);
-+	ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, LP5523_PROGRAM_LENGTH);
- 	if (ret)
- 		return ret;
- 
-@@ -346,10 +359,8 @@ static int lp5523_update_program_memory(struct lp55xx_chip *chip,
- 
- 	for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
- 		ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, pattern[i]);
--		if (ret) {
--			mutex_unlock(&chip->lock);
-+		if (ret)
- 			return -EINVAL;
--		}
- 	}
- 
- 	return size;
-@@ -551,15 +562,17 @@ static ssize_t store_engine_load(struct device *dev,
- {
- 	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
- 	struct lp55xx_chip *chip = led->chip;
-+	ssize_t res;
- 
- 	mutex_lock(&chip->lock);
- 
- 	chip->engine_idx = nr;
- 	lp5523_load_engine_and_select_page(chip);
- 
-+	res = lp5523_update_program_memory(chip, buf, len);
- 	mutex_unlock(&chip->lock);
- 
--	return lp5523_update_program_memory(chip, buf, len);
-+	return res;
- }
- store_load(1)
- store_load(2)
-diff --git a/drivers/leds/leds-lp8501.c b/drivers/leds/leds-lp8501.c
-index 8d55a780..ae5c6fe 100644
---- a/drivers/leds/leds-lp8501.c
-+++ b/drivers/leds/leds-lp8501.c
-@@ -262,7 +262,7 @@ static void lp8501_firmware_loaded(struct lp55xx_chip *chip)
- 	}
- 
- 	/*
--	 * Program momery sequence
-+	 * Program memory sequence
- 	 *  1) set engine mode to "LOAD"
- 	 *  2) write firmware data into program memory
- 	 */
+>> +Optional Properties (for I2C pins):
+>> +
+>> +- function:                    String. Specifies the pin mux selection. Values
+>> +                               must be one of: "alt1", "alt2", "alt3", "alt4"
+>> +- bias-pull-up:                        Integer. Pull up strength in Ohm. There are 3
+>> +                               pull-up resisitors (1.2k, 1.8k, 2.7k) available
+>> +                               in parallel for I2C pins, so the valid values
+>> +                               are: 568, 720, 831, 1080, 1200, 1800, 2700 Ohm.
+>
+> Also patch
+> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+That doc already says bias-pull-up is specified in Ohm, and the specific 
+values are chip-specific, so I don't think they should be mentioned there.
+
+>> +- bias-disable:                        No arguments. Disable pin bias.
+>> +- slew-rate:                   Integer. Meaning depends on configured pin mux:
+>> +                               *_SCL or *_SDA:
+>> +                                       0: Standard(100kbps)& Fast(400kbps) mode
+>> +                                       1: Highspeed (3.4Mbps) mode
+>> +                               IC_DM or IC_DP:
+>> +                                       0: normal slew rate
+>> +                                       1: fast slew rate
+>> +                               Otherwise:
+>> +                                       0: fast slew rate
+>> +                                       1: normal slew rate
+>
+> Hm that does not seem generic though, so let's not add this to the
+> generic bindings.
+>
+>> +- input-enable:                        No arguements. Enable input (does not affect
+>> +                               output.)
+>> +- input-disable:               No arguements. Disable input (does not affect
+>> +                               output.)
+>> +
+>> +Optional Properties (for HDMI pins):
+>> +
+>> +- function:                    String. Specifies the pin mux selection. Values
+>> +                               must be one of: "alt1", "alt2", "alt3", "alt4"
+>> +- slew-rate:                   Integer. Controls slew rate.
+>> +                                       0: Standard(100kbps)& Fast(400kbps) mode
+>> +                                       1: Highspeed (3.4Mbps) mode
+>
+> Hmmmm slew rate is not specifiec in "bps" but rather in
+> something like volts per second. But maybe it's best to keep
+> this value driver-specific.
+
+Right, I think the slew-rates values are capri specific.
+
+Thanks for the review.
+
+Regards,
+Sherman
