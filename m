@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790AbaAGIzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:55:46 -0500
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:40202 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540AbaAGIzp (ORCPT
+	id S1756083AbaAGI4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:56:38 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:61712 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaAGI4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:55:45 -0500
+	Tue, 7 Jan 2014 03:56:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140107084734.GP30183@twins.programming.kicks-ass.net>
-References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
-	<20131211132212.GA7862@localhost.localdomain>
-	<CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
-	<87wqj34eqs.fsf@linaro.org>
-	<CAKohpo=Btb8ChRJ4Be9gbDE-nOxSaCVkQ_Qg5g7AVRxOMbXEQQ@mail.gmail.com>
-	<87r49al12j.fsf@linaro.org>
-	<CAKohpokDBga18BhZm=r+EOoY40=+E7Ndtfooq9rXbqc=wUg2Ng@mail.gmail.com>
-	<CAKohpo=bzfnb6aBDRX6AfjVoRquTaboO5wmiHfjb=bD0bAgBcA@mail.gmail.com>
-	<20140107084734.GP30183@twins.programming.kicks-ass.net>
-Date: Tue, 7 Jan 2014 14:25:44 +0530
-Message-ID: <CAKohpon7Vf=zHt5OBpf=LCaj9GVW8F34Tx3ypEbP6DDOHD+ugA@mail.gmail.com>
-Subject: Re: [LNG] Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kevin Hilman <khilman@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 7 Jan 2014 16:56:35 +0800
+Message-ID: <CAPgLHd9DJxmadJQb_0-J_2DZ1aVpOZ65J4iVCid-tJ=OLmKBNA@mail.gmail.com>
+Subject: [PATCH -next] misc: genwqe: fix return value check in genwqe_device_create()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: haver@linux.vnet.ibm.com, gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 January 2014 14:17, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Dec 23, 2013 at 01:48:02PM +0530, Viresh Kumar wrote:
->> *But wouldn't it make sense if we can tell scheduler that don't queue
->> these works on a CPU that is running in NO_HZ_FULL mode?*
->
-> No,.. that's the wrong way around.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Hmm.. Just to make it clear I didn't meant that any input from workqueue
-code should go to scheduler but something like this:
+In case of error, the function device_create_with_groups()
+returns ERR_PTR() and never returns NULL. The NULL test in
+the return value check should be replaced with IS_ERR().
 
-Scheduler will check following before pushing a task on any CPU:
-- If that CPU is part of NO_HZ_FULL cpu list?
-- If yes, is that CPU running only one task for now? i.e. running task for
-best performance case?
-- If yes, then don't queue new task to that CPU, whether task belongs to
-workqueue or not doesn't matter.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/misc/genwqe/card_dev.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> That looks to be a normal unpinned timer, it should migrate to a 'busy'
-> cpu once the one its running on it going idle.
->
-> ISTR people trying to make that active and also migrating on nohz full
-> or somesuch, just like the workqueues. Forgot what happened with that;
-> if it got dropped it should probably be ressurected.
+diff --git a/drivers/misc/genwqe/card_dev.c b/drivers/misc/genwqe/card_dev.c
+index 9b231bb..46fa2ca 100644
+--- a/drivers/misc/genwqe/card_dev.c
++++ b/drivers/misc/genwqe/card_dev.c
+@@ -1378,8 +1378,8 @@ int genwqe_device_create(struct genwqe_dev *cd)
+ 					    genwqe_attribute_groups,
+ 					    GENWQE_DEVNAME "%u_card",
+ 					    cd->card_idx);
+-	if (cd->dev == NULL) {
+-		rc = -ENODEV;
++	if (IS_ERR(cd->dev)) {
++		rc = PTR_ERR(cd->dev);
+ 		goto err_cdev;
+ 	}
+ 
 
-I will search for that in archives..
