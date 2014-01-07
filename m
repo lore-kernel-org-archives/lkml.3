@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaAGBB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 20:01:26 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:33988 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaAGBBY (ORCPT
+	id S1756309AbaAGBEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 20:04:04 -0500
+Received: from smtprelay0047.hostedemail.com ([216.40.44.47]:41972 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751373AbaAGBEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 20:01:24 -0500
-Date: Tue, 7 Jan 2014 02:01:23 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140107010123.GA20765@two.firstfloor.org>
-References: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
- <20140106220509.GI30183@twins.programming.kicks-ass.net>
- <20140107005231.GZ20765@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107005231.GZ20765@two.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 6 Jan 2014 20:04:02 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2110:2393:2559:2562:2691:2730:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4321:4605:5007:6119:7652:7903:8603:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12663:12740:13069:13071:13161:13229:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: straw53_5ceb21d5a5320
+X-Filterd-Recvd-Size: 2611
+Message-ID: <1389056635.2433.22.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, keescook@chromium.org,
+        akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 17:03:55 -0800
+In-Reply-To: <20140107001604.GD24243@amd.pavel.ucw.cz>
+References: <201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
+	 <201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
+	 <1388945392.5808.19.camel@joe-AO722>
+	 <201401062300.GFE12908.FOQLFFJOSOMVHt@I-love.SAKURA.ne.jp>
+	 <1389029698.2433.3.camel@joe-AO722>
+	 <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
+	 <1389047143.2433.14.camel@joe-AO722>
+	 <20140107001604.GD24243@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 01:52:31AM +0100, Andi Kleen wrote:
-> > > Also of course it requires disabling/enabling PT explicitly for 
-> > > every perf message, which is slow. So you add at least 2*WRMSR cost
-> > > (thousands of cycles).
+On Tue, 2014-01-07 at 01:16 +0100, Pavel Machek wrote:
+> > > > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> > > > []
+> > > > > @@ -1232,7 +1248,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+> > > > >  {
+> > > > >  	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+> > > > >  
+> > > > > -	if (!ptr && *fmt != 'K') {
+> > > > > +	if (!ptr && *fmt != 'K' && *fmt != 'T') {
+> > > > 
+> > > > I think this new 'T' comparison isn't necessary.
+> > > 
+> > > This is needed for allowing comm_name() to accept NULL instead of current.
 > > 
-> > That's just dumb, no flush the entire PT buffer into a few large
-> > records.
+> > Yeah, that's what I think isn't necessary.
+> > 
+> > current is current_thread_info()->task.
+> > 
+> > I think it's pretty lightweight in all arches and
+> > it'd be simpler/more intelligible to not use NULL.
+> > 
+> > Andrew?  Any opinion?  Anyone else?
 > 
-> How would that work?
-> 
-> You mean a separate buffer and then copy or map?
-> 
-> ------
-> 
-> Also here are some more problems with interleaving: 
-> 
-> A common PT config is to just run it as a ring buffer in the background
-> and only take the data out when something happens (sample, crash etc.)
-> 
-> But the side band still needs to be logged and at arbitary times.
-> 
-> So the PT wrapping will happen much more often than the perf wrapping.
-> 
-> If you interleave you may actually end up with lots of small rings 
-> in a single buffer, unless you stop every time the buffer fills up
-> (which would add a lot more overhead)
-> 
-> I suppose it could be somehow parsed, but it would very different 
-> from what perf does today.
+> Andrew was worried about all the "current" duplication, IIRC. It is in
+> the mail thread somewhere. And one condition in printk is price worth paying.
+>     	 		       	   	     	       	  	      Pavel
 
-Thinking about it more it's likely very hard to parse. Dropping instructions is
-fine, dropping perf metadata is not (or only as last resort). 
+Hi Pavel.
 
-If we miss a MMAP we may never be able to parse that code region.
-If we miss a context switch we may be also completely lost until the
-next switch.
+I'm not nacking this, just stating my view.
 
-That means PT couldn't overwrite perf metadata normally.
+I believe I showed how many uses of vsprintf w/ current
+there are.  Passing NULL vs passing current as the %pT
+argument is I think a negligible overall size delta too.
 
-So you could easily get into situations where the interleaved PT buffer
-is between two perf metadata statements and ends up really small, while
-large other parts of the buffer are unused.
+cheers, Joe
 
-The only way around it would be likely to move entries around -- to 
-garbage collect so to say -- but doing that non-blocking from a NMI will be
-challenging.
-
-With the separate buffers we don't have any of these problems.
-
--Andi
