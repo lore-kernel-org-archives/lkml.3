@@ -1,124 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaAGPhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:37:19 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39226 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751358AbaAGPhP (ORCPT
+	id S1752691AbaAGPhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:37:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48351 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaAGPhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:37:15 -0500
-Date: Tue, 7 Jan 2014 15:37:15 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140107153715.GG2936@e103034-lin>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52B87149.4010801@arm.com>
- <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
- <20140106163123.GN31570@twins.programming.kicks-ass.net>
- <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
- <20140107132220.GZ31570@twins.programming.kicks-ass.net>
- <CAKfTPtCE3gy_656EfcrfjZ-15CTxAqk91O6qR1Jz3BCABvDNCg@mail.gmail.com>
+	Tue, 7 Jan 2014 10:37:38 -0500
+Date: Tue, 7 Jan 2014 15:37:34 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, alsa-devel@alsa-project.org
+Message-ID: <20140107153734.GL31886@sirena.org.uk>
+References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
+ <1387468508-12286-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xZdiZ9E8vSzGEnb8"
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtCE3gy_656EfcrfjZ-15CTxAqk91O6qR1Jz3BCABvDNCg@mail.gmail.com>
+In-Reply-To: <1387468508-12286-4-git-send-email-lee.jones@linaro.org>
+X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 03/11] ASoC: ux500: Provide better checking for Device
+ Tree and/or Platform Data
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 02:11:22PM +0000, Vincent Guittot wrote:
-> On 7 January 2014 14:22, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, Jan 07, 2014 at 09:32:04AM +0100, Vincent Guittot wrote:
-> >> On 6 January 2014 17:31, Peter Zijlstra <peterz@infradead.org> wrote:
-> >> > On Mon, Jan 06, 2014 at 02:41:31PM +0100, Vincent Guittot wrote:
-> >> >> IMHO, these settings will disappear sooner or later, as an example the
-> >> >> idle/busy _idx are going to be removed by Alex's patch.
-> >> >
-> >> > Well I'm still entirely unconvinced by them..
-> >> >
-> >> > removing the cpu_load array makes sense, but I'm starting to doubt the
-> >> > removal of the _idx things.. I think we want to retain them in some
-> >> > form, it simply makes sense to look at longer term averages when looking
-> >> > at larger CPU groups.
-> >> >
-> >> > So maybe we can express the things in log_2(group-span) or so, but we
-> >> > need a working replacement for the cpu_load array. Ideally some
-> >> > expression involving the blocked load.
-> >>
-> >> Using the blocked load can surely give benefit in the load balance
-> >> because it gives a view of potential load on a core but it still decay
-> >> with the same speed than runnable load average so it doesn't solve the
-> >> issue for longer term average. One way is to have a runnable average
-> >> load with longer time window
 
-The blocked load discussion comes up again :)
+--xZdiZ9E8vSzGEnb8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I totally agree that blocked load would be useful, but only if we get
-the priority problem sorted out. Blocked load is the sum of load_contrib
-of blocked tasks, which means that a tiny high priority task can have a
-massive contribution to the blocked load.
+On Thu, Dec 19, 2013 at 03:55:00PM +0000, Lee Jones wrote:
+> These drivers will not work without platform specific data, which is
+> passed in via Device Tree or Platform Data. To avoid the chance of
+> NULL pointer dereferencing and alike, let's ensure we have at least
+> one of the methods in play before continuing.
 
-> >
-> > Ah, another way of looking at it is that the avg without blocked
-> > component is a 'now' picture. It is the load we are concerned with right
-> > now.
-> >
-> > The more blocked we add the further out we look; with the obvious limit
-> > of the entire averaging period.
-> >
-> > So the avg that is runnable is right now, t_0; the avg that is runnable +
-> > blocked is t_0 + p, where p is the avg period over which we expect the
-> > blocked contribution to appear.
-> >
-> > So something like:
-> >
-> >   avg = runnable + p(i) * blocked; where p(i) \e [0,1]
-> >
-> > could maybe be used to replace the cpu_load array and still represent
-> > the concept of looking at a bigger picture for larger sets. Leaving open
-> > the details of the map p.
+Applied, thanks.
 
-Figuring out p is the difficult bit. AFAIK, with blocked load in its
-current form we don't have any clue when a task will reappear.
+--xZdiZ9E8vSzGEnb8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 
-> That needs to be studied more deeply but that could be a way to have a
-> larger picture
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Agree.
+iQIcBAEBAgAGBQJSzB87AAoJELSic+t+oim9OVEQAIl1mJgu3QSNNwmZ4DwxyTsx
+ZKQejHjL8mzi/CxqiWl8/WsA+Yoh0rt+xLCt59SG6TgAHiRyhbvf2HWm9B+WA0Y8
+JTZ0Rl0G0Mkfo2uPeNBPw+O/cT9sPuXAlgYekapC0R7unV3HPmxVAg5j0TZOdQ9U
+KZSamey0429+cAH3UTkoHd4lRm36qy9KVjHpc0zR1wxiLvcMjRrULJ8lv8aIt9Qu
+WMLSXbmTMMOhwui5s0I5c8T+730J+OMkXnknccofvBzyVRp5dzaK6LItn5pXDiu8
+Il3sO12OmUnQ2HMgPfG7cOJd3OXUv91gNa9Fv+EWQFK21ZtNjFAn0VWIMuGK4v1l
++hfgiTltY6Vwr/eCSdlIK5J3bV74fxKNuxxY7+xBA5z2ZWHYQQGJEpW1AIefJqAS
+yCrRvWFn+ea1AxYBEUJtdQZcZsBQTc69/U3Za7NL0D93UAFIRHPz2K41fXTu1lxP
+X9ZAl+u7gE4LwkbR/ARBsMiw7HmByeutxK0maIvj8GIKTHHtHHVqY2uHTHae0BJY
+n2KG4SMaYz9qjhiIF1EkLouqB+RIk9nJyutVWImlSAqx+SG9jrH2IX/R1u6YNoGG
+ywmaeh2ABumyYvIRA4gjf2CfrFd9+2SHOY7pt37ts4D8gvnBYKwKS1PxBaxrKl8W
+7FiNKy3eRi9jyu8b5syF
+=7XIr
+-----END PGP SIGNATURE-----
 
-> 
-> Another point is that we are using runnable and blocked load average
-> which are the sum of load_avg_contrib of tasks but we are not using
-> the runnable_avg_sum of the cpus which is not the now picture but a
-> average of the past running time (without taking into account task
-> weight)
-
-Yes. The rq runnable_avg_sum is an excellent longer term load indicator.
-It can't be compared with the runnable and blocked load though. The
-other alternative that I can think of is to introduce an unweighted
-alternative to blocked load. That is, sum of load_contrib/priority.
-
-Morten
+--xZdiZ9E8vSzGEnb8--
