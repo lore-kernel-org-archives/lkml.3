@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaAGBad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 20:30:33 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:44457 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790AbaAGBac (ORCPT
+	id S1756200AbaAGBbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 20:31:51 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:31505 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554AbaAGBbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 20:30:32 -0500
-X-AuditID: cbfee690-b7f266d00000287c-5d-52cb58b6679b
+	Mon, 6 Jan 2014 20:31:50 -0500
+X-AuditID: cbfee68f-b7f156d00000276c-f6-52cb5903bee9
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/3] backlight: kb3886_bl: fix incorrect placement of
- __initdata marker
-Date: Tue, 07 Jan 2014 10:30:30 +0900
-Message-id: <002101cf0b48$0d38a280$27a9e780$%han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Milo Kim'" <milo.kim@ti.com>
+References: <002101cf0b48$0d38a280$27a9e780$%han@samsung.com>
+In-reply-to: <002101cf0b48$0d38a280$27a9e780$%han@samsung.com>
+Subject: [PATCH 2/3] backlight: lp855x: remove unnecessary parentheses
+Date: Tue, 07 Jan 2014 10:31:47 +0900
+Message-id: <002201cf0b48$3b4e93f0$b1ebbbd0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8LSA0gEKLTvq6wRRuOH6kV6zbuQQ==
+Thread-index: Ac8LSA0gEKLTvq6wRRuOH6kV6zbuQQAAASBw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t8zI91tEaeDDC6t1rCYs34Nm8XlhZdY
-	LS7vmsPmwOxxYsZvFo++LasYPT5vkgtgjuKySUnNySxLLdK3S+DKODj9EUtBG0fFvJmnWRoY
-	77B1MXJySAiYSHz+NpcJwhaTuHBvPVCci0NIYBmjxNNpu+CKrr6cwwqRmM4o0bf0MDOE84tR
-	4vDLNrB2NgE1iS9fDrN3MXJwiAjoS7S1aICYzAIuEkeniYBUCAtESqz6s5wVxGYRUJW4+fIu
-	C4jNK2Ar8WHVJ0YIW1Dix+R7YHFmAS2JzduaWCFseYnNa94yg4yUEFCXePRXFyQsIqAnMX/b
-	HagSEYl9L94xglwmIbCKXeLo5Z/MELsEJL5NPsQC0SsrsekAM8RbkhIHV9xgmcAoNgvJ5llI
-	Ns9CsnkWkhULGFlWMYqmFiQXFCelF5noFSfmFpfmpesl5+duYoTE04QdjPcOWB9iTAZaP5FZ
-	SjQ5HxiPeSXxhsZmRhamJqbGRuaWZqQJK4nzqj1KChISSE8sSc1OTS1ILYovKs1JLT7EyMTB
-	KdXAKLI8pSBo0VvptIBPnQbmezQvpP1du2Cu+u2bJziecPOYMNz5EXAv7/7dh0n2U5Z+MCqv
-	KXgx+cAcxvls98852pc9Zv54W989bNfhELaXie7cO+d+U/jdITlNPsXqfdsB3iVM164eM/b0
-	fZdZyrX2ieDZN0umGtr7zb2ywMuovO38jagmrf0yF5RYijMSDbWYi4oTAQRM8Yq9AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xoO62iNNBBjv2q1jMWb+GzeLywkus
-	Fpd3zWFzYPY4MeM3i0ffllWMHp83yQUwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
-	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
-	ZIAGEtYxZhyc/oiloI2jYt7M0ywNjHfYuhg5OSQETCSuvpzDCmGLSVy4tx4ozsUhJDCdUaJv
-	6WFmCOcXo8Thl21MIFVsAmoSX74cZu9i5OAQEdCXaGvRADGZBVwkjk4TAakQFoiUWPVnOdhM
-	FgFViZsv77KA2LwCthIfVn1ihLAFJX5MvgcWZxbQkti8rYkVwpaX2LzmLTPISAkBdYlHf3VB
-	wiICehLzt92BKhGR2PfiHeMERoFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtc
-	mpeul5yfu4kRHK3PpHcwrmqwOMQowMGoxMP7Yu+pICHWxLLiytxDjBIczEoivCJKp4OEeFMS
-	K6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YSPJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Yah0oJJCe
-	WJKanZpakFoEs4WJg1OqgVHijtD0m9ebrmx1Yv4xy9PvUXDy4gqGmycPeYoUbG83kXkhz7Bu
-	e+4Xo+t3o3jPd1rqzLpxXt8nXeNXrsAm9TX225dJsS8oj+N6szO4aE37pIyafNWNc2c3fd7q
-	fm71tpozh7i+fLL4uLrFq70j0P7mxNVTf6Zd+rBT49KeUtbVj0NEXGJZvjEqsRRnJBpqMRcV
-	JwIAobYF9BoDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zI13myNNBBvcOWVvMWb+GzeLywkus
+	Fpd3zWGzWP5rHYsDi8eJGb9ZPPq2rGL0OH5jO5PH501yASxRXDYpqTmZZalF+nYJXBknH/5n
+	L2hlq1ixTb+B8RdLFyMnh4SAicSFLS3sELaYxIV769lAbCGBZYwSZ44rdDFygNUsfm7XxcgF
+	FJ7OKLH0+yFGCOcXo8TOCzfAGtgE1CS+fDnMDtIgIqAv0daiARJmFkiROHNtNdRMW4mXzQeY
+	QWxOATuJLb8+g90gLOAmMe3sSrA4i4CqRMOid2BxXqD6eT/7mCFsQYkfk++xQMzUkti8rYkV
+	wpaX2LzmLTPEneoSj/7qgoRFBIwkJiy/xAxRIiKx78U7sJMlBE6xSxxZO5kJYpeAxLfJh1gg
+	emUlNkGcJiEgKXFwxQ2WCYwSs5BsnoVk8ywkm2chWbGAkWUVo2hqQXJBcVJ6kbFecWJucWle
+	ul5yfu4mRkg89u9gvHvA+hBjMtD6icxSosn5wHjOK4k3NDYzsjA1MTU2Mrc0I01YSZz3/sOk
+	ICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M5gfvxp9VeXPgUpJsH2u18IWUY6bH3lzo/G8+
+	L32z1QWOJ7sS9youOjndPLtjx2NRp5sLbyq5a12OUF/3e8H+VAenrU6iy8Labttb3nP9/Gza
+	SZa5+QlpWkEPHk1UNZp40k++293C04fprE4sQ2TUUdF3beaxZ7qX3OjoZLH8em5VvsaqX9UP
+	lFiKMxINtZiLihMBfKTrF90CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQV3myNNBBouaLCzmrF/DZnF54SVW
+	i8u75rBZLP+1jsWBxePEjN8sHn1bVjF6HL+xncnj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
+	LWAaI3R9Q4LgeowM0EDCOsaMkw//sxe0slWs2KbfwPiLpYuRg0NCwERi8XO7LkZOIFNM4sK9
+	9WxdjFwcQgLTGSWWfj/ECOH8YpTYeeEGG0gVm4CaxJcvh9lBmkUE9CXaWjRAwswCKRJnrq0G
+	KxESsJV42XyAGcTmFLCT2PLrMwuILSzgJjHt7EqwOIuAqkTDondgcV6g+nk/+5ghbEGJH5Pv
+	sUDM1JLYvK2JFcKWl9i85i0zxM3qEo/+6oKERQSMJCYsv8QMUSIise/FO8YJjEKzkEyahWTS
+	LCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjON6fSe9gXNVgcYhRgINRiYf3
+	xd5TQUKsiWXFlbmHGCU4mJVEeEWUTgcJ8aYkVlalFuXHF5XmpBYfYkwGenQis5Rocj4wFeWV
+	xBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2NXCe+eYJ93tV2/
+	mNYUeubLyO++NM/H3d7c7oOJqtqeL0w9J9q2z5qZyVtwJ9874Y5928329L4I06u+pnMX23X8
+	Y346N8f7a2L7tWdW0UFdmpqPbbb1XN/OESj4u2LK9L9X5+Qd2cfXHTnnPndV1cNA4flO/xhq
+	wv+wbkn58to8+r5tv2zwQiWW4oxEQy3mouJEAL9ucig7AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,31 +55,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __initdata marker can be virtually anywhere on the line,
-EXCEPT right after "struct". The preferred location is before
-the "=" sign if there is one, or before the trailing ";" otherwise.
-It also fixes the following chechpatch warning.
+Remove unnecessary parentheses in order to fix the following
+checkpatch error.
 
-  WARNING: __initdata should be placed after kb3886bl_device_table[]
+  ERROR: return is not a function, parentheses are not required
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/kb3886_bl.c |    2 +-
+ drivers/video/backlight/lp855x_bl.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/backlight/kb3886_bl.c b/drivers/video/backlight/kb3886_bl.c
-index 7592cc2..84a110a 100644
---- a/drivers/video/backlight/kb3886_bl.c
-+++ b/drivers/video/backlight/kb3886_bl.c
-@@ -78,7 +78,7 @@ static struct kb3886bl_machinfo *bl_machinfo;
- static unsigned long kb3886bl_flags;
- #define KB3886BL_SUSPENDED     0x01
+diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+index cae80d5..2ca3a04 100644
+--- a/drivers/video/backlight/lp855x_bl.c
++++ b/drivers/video/backlight/lp855x_bl.c
+@@ -125,7 +125,7 @@ static bool lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
+ 		return false;
+ 	}
  
--static struct dmi_system_id __initdata kb3886bl_device_table[] = {
-+static struct dmi_system_id kb3886bl_device_table[] __initdata = {
- 	{
- 		.ident = "Sahara Touch-iT",
- 		.matches = {
+-	return (addr >= start && addr <= end);
++	return addr >= start && addr <= end;
+ }
+ 
+ static int lp8557_bl_off(struct lp855x *lp)
 -- 
 1.7.10.4
 
