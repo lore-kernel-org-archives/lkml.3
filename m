@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaAGTbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:31:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39677 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaAGTbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:31:00 -0500
-Message-ID: <52CC55EF.90006@infradead.org>
-Date: Tue, 07 Jan 2014 11:30:55 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1752691AbaAGTeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:34:18 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:37135 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750851AbaAGTeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 14:34:05 -0500
+Date: Tue, 7 Jan 2014 13:34:00 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Jeff Liu <jeff.liu@oracle.com>, Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: dchinner@fromorbit.com, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 2/3] xfs: Calling destroy_work_on_stack() to pair with
+ INIT_WORK_ONSTACK()
+Message-ID: <20140107193400.GC1935@sgi.com>
+References: <1389084605.3650.66.camel@cliu38-desktop-build>
+ <1389084814.3650.70.camel@cliu38-desktop-build>
+ <52CBE321.4050906@oracle.com>
 MIME-Version: 1.0
-To: "David E. Box" <david.e.box@linux.intel.com>
-CC: mjg59@srcf.ucam.org, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH v6][RESEND] platform: x86: New BayTrail IOSF-SB MBI driver
-References: <1388427149-25456-1-git-send-email-david.e.box@linux.intel.com> <1389117812-28061-1-git-send-email-david.e.box@linux.intel.com> <52CC4427.20405@infradead.org> <20140107184805.GA28135@linux.intel.com>
-In-Reply-To: <20140107184805.GA28135@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CBE321.4050906@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/14 10:48, David E. Box wrote:
-> On Tue, Jan 07, 2014 at 10:15:03AM -0800, Randy Dunlap wrote:
->> On 01/07/14 10:03, David E. Box wrote:
->>> From: "David E. Box" <david.e.box@linux.intel.com>
->>>
->>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
->>> index b51a746..6e199a5 100644
->>> --- a/drivers/platform/x86/Kconfig
->>> +++ b/drivers/platform/x86/Kconfig
->>> @@ -819,4 +819,14 @@ config PVPANIC
->>>  	  a paravirtualized device provided by QEMU; it lets a virtual machine
->>>  	  (guest) communicate panic events to the host.
->>>  
->>> +config INTEL_BAYTRAIL_MBI
->>> +	tristate
->>
->> Is this kconfig option displayed when you run menuconfig/nconfig/xconfig/gconfig etc.?
->> Doesn't it need a prompt string?
->> How did you enable it and test it?
->>
+On Tue, Jan 07, 2014 at 07:21:05PM +0800, Jeff Liu wrote:
+> Hi Chuansheng,
 > 
-> It is not displayed on purpose. The driver isn't exposed to user space.
-> It was tested by adding the option to .config, both as module and built-in.
+> On 01/07 2014 16:53 PM, Chuansheng Liu wrote:
+> > 
+> > In case CONFIG_DEBUG_OBJECTS_WORK is defined, it is needed to
+> > call destroy_work_on_stack() which frees the debug object to pair
+> > with INIT_WORK_ONSTACK().
+> > 
+> > Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+> > ---
+> >  fs/xfs/xfs_bmap_util.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
+> > index 1394106..82e0dab 100644
+> > --- a/fs/xfs/xfs_bmap_util.c
+> > +++ b/fs/xfs/xfs_bmap_util.c
+> > @@ -287,6 +287,7 @@ xfs_bmapi_allocate(
+> >  	INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
+> >  	queue_work(xfs_alloc_wq, &args->work);
+> >  	wait_for_completion(&done);
+> > +	destroy_work_on_stack(&args->work);
+> >  	return args->result;
+> >  }
 > 
->>> +	depends on PCI
->>> +	---help---
->>> +	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
->>> +	  Interface. This is a requirement for systems that need to configure
->>> +	  the PUNIT for power management features such as RAPL. Register
->>> +	  addresses and r/w opcodes are defined in
->>
->> Think of users reading this.  At least change "r/w" to read/write.
->> What is IOSF?  does it matter here?
->> PUNIT?  RAPL?
->>
-> 
-> If you don't know what the IOSF Sideband is you probably shouldn't be enabling
-> this feature. Users of this driver (of which for now there are few) will be
-> kernel space drivers that should have ample knowledge of the registers this
-> interface provides access to.
+> Thanks for your patch and it work fine for my testing.  I missed this in an
+> old commit: [ 3b876c8f2a xfs: fix debug_object WARN at xfs_alloc_vextent() ] 
 
-I see.  Thanks.
-
-
--- 
-~Randy
+Looks good to me too.
+Reviewed-by: Ben Myers <bpm@sgi.com>
