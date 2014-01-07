@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaAGUdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 15:33:15 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53061 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753365AbaAGUdJ (ORCPT
+	id S1753961AbaAGUin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 15:38:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41083 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382AbaAGUih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 15:33:09 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, mjg59@srcf.ucam.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH v6][RESEND] platform: x86: New BayTrail IOSF-SB MBI driver
-Date: Tue, 07 Jan 2014 21:46:57 +0100
-Message-ID: <4364833.i22acYTaeM@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140107184805.GA28135@linux.intel.com>
-References: <1388427149-25456-1-git-send-email-david.e.box@linux.intel.com> <52CC4427.20405@infradead.org> <20140107184805.GA28135@linux.intel.com>
+	Tue, 7 Jan 2014 15:38:37 -0500
+Date: Tue, 7 Jan 2014 21:37:52 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Alex Shi <alex.shi@linaro.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "jason.low2@hp.com" <jason.low2@hp.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
+Message-ID: <20140107203752.GC2480@laptop.programming.kicks-ass.net>
+References: <20131217153809.GP21999@twins.programming.kicks-ass.net>
+ <52B2F5D0.2050707@linaro.org>
+ <20131220111926.GA11605@e103034-lin>
+ <52BAF292.1070404@linaro.org>
+ <20140102160404.GA3000@e103034-lin>
+ <52CAB12B.4090701@linaro.org>
+ <20140107125518.GE2936@e103034-lin>
+ <20140107125930.GW31570@twins.programming.kicks-ass.net>
+ <20140107131523.GX3694@twins.programming.kicks-ass.net>
+ <20140107151632.GF2936@e103034-lin>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107151632.GF2936@e103034-lin>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 07, 2014 10:48:05 AM David E. Box wrote:
-> On Tue, Jan 07, 2014 at 10:15:03AM -0800, Randy Dunlap wrote:
-> > On 01/07/14 10:03, David E. Box wrote:
-> > > From: "David E. Box" <david.e.box@linux.intel.com>
-> > > 
-> > > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> > > index b51a746..6e199a5 100644
-> > > --- a/drivers/platform/x86/Kconfig
-> > > +++ b/drivers/platform/x86/Kconfig
-> > > @@ -819,4 +819,14 @@ config PVPANIC
-> > >  	  a paravirtualized device provided by QEMU; it lets a virtual machine
-> > >  	  (guest) communicate panic events to the host.
-> > >  
-> > > +config INTEL_BAYTRAIL_MBI
-> > > +	tristate
-> > 
-> > Is this kconfig option displayed when you run menuconfig/nconfig/xconfig/gconfig etc.?
-> > Doesn't it need a prompt string?
-> > How did you enable it and test it?
-> > 
-> 
-> It is not displayed on purpose. The driver isn't exposed to user space.
-> It was tested by adding the option to .config, both as module and built-in.
-> 
-> > > +	depends on PCI
-> > > +	---help---
-> > > +	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
-> > > +	  Interface. This is a requirement for systems that need to configure
-> > > +	  the PUNIT for power management features such as RAPL. Register
-> > > +	  addresses and r/w opcodes are defined in
-> > 
-> > Think of users reading this.  At least change "r/w" to read/write.
-> > What is IOSF?  does it matter here?
-> > PUNIT?  RAPL?
-> > 
-> 
-> If you don't know what the IOSF Sideband is you probably shouldn't be enabling
-> this feature.
+On Tue, Jan 07, 2014 at 03:16:32PM +0000, Morten Rasmussen wrote:
+> From a load perspective wouldn't it be better to pick the least loaded
+> cpu in the group? It is not cheap to implement, but in theory it should
+> give less balancing within the group later an less unfairness until it
+> happens.
 
-What about generic x86 distro kernels?  They won't know in advance whether or
-not they will need this feature.
+I tried that; see 04f733b4afac5dc93ae9b0a8703c60b87def491e for why it
+doesn't work.
 
-Thanks!
+> Rotating the cpu is probably good enough for most cases and certainly
+> easier to implement.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Indeed.
+
+> The bias continues after they first round of load balance by the other
+> cpus?
+
+The cost, yes. Even when perfectly balanced, we still get to iterate the
+entire machine computing s[gd]_lb_stats to find out we're good and don't
+need to move tasks about.
+
+> Pulling everything to one cpu is not ideal from a performance point of
+> view. You loose some available cpu cycles until the balance settles.
+> However, it is not easy to do better and maintain scalability at the
+> same time.
+
+Right, its part of the cost we pay for scaling better. And rotating this
+cost around a bit would alleviate the obvious bias.
+
+
