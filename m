@@ -1,110 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaAGNkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:40:35 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:18881 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaAGNk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:40:26 -0500
-X-AuditID: cbfec372-b7fa96d000006a7b-8b-52cc03c88382
-Date: Tue, 07 Jan 2014 11:40:19 -0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Ding Tianhong <dingtianhong@huawei.com>
-Cc: linux-media@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/21] media: dvb_core: slight optimization of addr compare
-Message-id: <20140107114019.2f8eb534@samsung.com>
-In-reply-to: <52B7C5CB.5000709@huawei.com>
-References: <52B7C5CB.5000709@huawei.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t/hEN0TzGeCDG4/NLJ4c3QHm8XlXXPY
-	LHo2bGV1YPZoOfKW1ePzJrkApigum5TUnMyy1CJ9uwSujO9futgLZolXPGi4zd7AOEGoi5GT
-	Q0LARKLj3hw2CFtM4sK99UA2F4eQwBJGiWt7pkI5PUwSf0/9YAapYhFQlTi3dgMriM0mYCTx
-	qrEFzBYR0JZ4d2UaC4jNLJAgcXPubHYQW1jAX6KtbSojiM0rYCjxe9dJsG2cAloSB+YtA6rn
-	AFqgKdH2iAPElBBwkth9QAqiWlDix+R7UBO1JDZva2KFsOUlNq95yzyBUWAWkrJZSMpmISlb
-	wMi8ilG0tDi5oDgpPddQrzgxt7g0L10vOT93EyMkOIt2MD7bYHWIUYCDUYmHd8LuU0FCrIll
-	xZW5hxglOJiVRHiZb5wOEuJNSaysSi3Kjy8qzUktPsTIxMEp1cB4cumKu++W/veLiH3uamOY
-	qjE76r+Fbn3h3k+rNHt1y49v9Hy7SjnebUF5Z6FC/OUwvb5Ghc93Ehb2b24/arpUQEV2rT7b
-	oV3yqcd5g6/N1eaq7b65gv/Br6yJRT+59mydElK/Orzy2NKlrZ1qOx/k8WaciVvj65jsFntU
-	UWRTZm19g4/9jTNKLMUZiYZazEXFiQCzIBCmLAIAAA==
+	id S1752139AbaAGNlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:41:08 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60733 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264AbaAGNlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 08:41:03 -0500
+Message-ID: <52CC03D4.50603@ti.com>
+Date: Tue, 7 Jan 2014 19:10:36 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 2/5] phy: add support for indexed lookup
+References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com> <1386601737-8735-3-git-send-email-heikki.krogerus@linux.intel.com> <52AEDDE2.8060406@ti.com> <20131216143227.GA22944@xps8300>
+In-Reply-To: <20131216143227.GA22944@xps8300>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 23 Dec 2013 13:10:35 +0800
-Ding Tianhong <dingtianhong@huawei.com> escreveu:
+Hi,
 
-> Use the recently added and possibly more efficient
-> ether_addr_equal_unaligned to instead of memcmp.
-
-I'm ok with this change, but I prefer if you could merge it together with the
-other patches, as I don't have the patch that added 
-ether_addr_equal_unaligned() on my tree yet.
+On Monday 16 December 2013 08:02 PM, Heikki Krogerus wrote:
+> Hi Kishon,
 > 
-> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
-Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-
-> Cc: linux-media@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
-> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> ---
->  drivers/media/dvb-core/dvb_net.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+> On Mon, Dec 16, 2013 at 04:32:58PM +0530, Kishon Vijay Abraham I wrote:
+>> On Monday 09 December 2013 08:38 PM, Heikki Krogerus wrote:
+>>> Removes the need for the consumer drivers requesting the
+>>> phys to provide name for the phy. This should ease the use
+>>> of the framework considerable when using only one phy, which
+>>> is usually the case when except with USB, but it can also
+>>> be useful with multiple phys.
+>>
+>> If index has to be used with multiple PHYs, the controller should be aware of
+>> the order in which it is populated in dt data. That's not good.
 > 
-> diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
-> index f91c80c..ff00f97 100644
-> --- a/drivers/media/dvb-core/dvb_net.c
-> +++ b/drivers/media/dvb-core/dvb_net.c
-> @@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
->  	eth = eth_hdr(skb);
->  
->  	if (*eth->h_dest & 1) {
-> -		if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
-> +		if(ether_addr_equal_unaligned(eth->h_dest, dev->broadcast))
->  			skb->pkt_type=PACKET_BROADCAST;
->  		else
->  			skb->pkt_type=PACKET_MULTICAST;
-> @@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
->  					if (priv->rx_mode != RX_MODE_PROMISC) {
->  						if (priv->ule_skb->data[0] & 0x01) {
->  							/* multicast or broadcast */
-> -							if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
-> +							if (!ether_addr_equal_unaligned(priv->ule_skb->data, bc_addr)) {
->  								/* multicast */
->  								if (priv->rx_mode == RX_MODE_MULTI) {
->  									int i;
-> -									for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
-> +									for(i = 0; i < priv->multi_num && !ether_addr_equal_unaligned(priv->ule_skb->data, priv->multi_macs[i]); i++)
->  										;
->  									if (i == priv->multi_num)
->  										drop = 1;
-> @@ -688,7 +688,7 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
->  							}
->  							/* else: broadcast */
->  						}
-> -						else if (memcmp(priv->ule_skb->data, dev->dev_addr, ETH_ALEN))
-> +						else if (!ether_addr_equal_unaligned(priv->ule_skb->data, dev->dev_addr))
->  							drop = 1;
->  						/* else: destination address matches the MAC address of our receiver device */
->  					}
-> @@ -837,7 +837,7 @@ static void dvb_net_sec(struct net_device *dev,
->  	}
->  	if (pkt[5] & 0x02) {
->  		/* handle LLC/SNAP, see rfc-1042 */
-> -		if (pkt_len < 24 || memcmp(&pkt[12], "\xaa\xaa\x03\0\0\0", 6)) {
-> +		if (pkt_len < 24 || !ether_addr_equal_unaligned(&pkt[12], "\xaa\xaa\x03\0\0\0")) {
->  			stats->rx_dropped++;
->  			return;
->  		}
+> The Idea is not to replace the name based lookup. Just to provide
+> possibility for index based lookup.
+> 
+> With ACPI, if we get the device entries for PHYs, the order will be
+> fixed and we will not have any other reference to the phys. In case
+> of USB, the first one should always be USB2 PHY and the second the
+> USB3 PHY.
+> 
+>>> This will also reduce noise from the framework when there is
+>>> no phy by changing warnings to debug messages.
+>>>
+>>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>>> ---
+>>>  drivers/phy/phy-core.c  | 106 ++++++++++++++++++++++++++++++++++--------------
+>>>  include/linux/phy/phy.h |  14 +++++++
+>>>  2 files changed, 89 insertions(+), 31 deletions(-)
+>>>
+>>> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+>>> index 1102aef..99dc046 100644
+>>> --- a/drivers/phy/phy-core.c
+>>> +++ b/drivers/phy/phy-core.c
+>>> @@ -53,7 +53,8 @@ static int devm_phy_match(struct device *dev, void *res, void *match_data)
+>>>  	return res == match_data;
+>>>  }
+>>>  
+>>> -static struct phy *phy_lookup(struct device *device, const char *con_id)
+>>> +static struct phy *phy_lookup(struct device *device, const char *con_id,
+>>> +			      unsigned int idx)
+>>>  {
+>>>  	unsigned int count;
+>>>  	struct phy *phy;
+>>> @@ -67,6 +68,10 @@ static struct phy *phy_lookup(struct device *device, const char *con_id)
+>>>  		count = phy->init_data->num_consumers;
+>>>  		consumers = phy->init_data->consumers;
+>>>  		while (count--) {
+>>> +			/* index must always match exactly */
+>>> +			if (!con_id)
+>>> +				if (idx != count)
+>>> +					continue;
+>>>  			if (!strcmp(consumers->dev_name, dev_name(device)) &&
+>>>  					!strcmp(consumers->port, con_id)) {
+>>>  				class_dev_iter_exit(&iter);
+>>> @@ -242,7 +247,8 @@ EXPORT_SYMBOL_GPL(phy_power_off);
+>>>  /**
+>>>   * of_phy_get() - lookup and obtain a reference to a phy by phandle
+>>>   * @dev: device that requests this phy
+>>> - * @index: the index of the phy
+>>> + * @con_id: name of the phy from device's point of view
+>>> + * @idx: the index of the phy if name is not used
+>>>   *
+>>>   * Returns the phy associated with the given phandle value,
+>>>   * after getting a refcount to it or -ENODEV if there is no such phy or
+>>> @@ -250,12 +256,20 @@ EXPORT_SYMBOL_GPL(phy_power_off);
+>>>   * not yet loaded. This function uses of_xlate call back function provided
+>>>   * while registering the phy_provider to find the phy instance.
+>>>   */
+>>> -static struct phy *of_phy_get(struct device *dev, int index)
+>>> +static struct phy *of_phy_get(struct device *dev, const char *con_id,
+>>> +			      unsigned int idx)
+>>>  {
+>>>  	int ret;
+>>>  	struct phy_provider *phy_provider;
+>>>  	struct phy *phy = NULL;
+>>>  	struct of_phandle_args args;
+>>> +	int index;
+>>> +
+>>> +	if (!con_id)
+>>> +		index = idx;
+>>> +	else
+>>> +		index = of_property_match_string(dev->of_node, "phy-names",
+>>> +						 con_id);
+>>>  
+>>>  	ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+>>>  		index, &args);
+>>> @@ -348,38 +362,36 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
+>>>  EXPORT_SYMBOL_GPL(of_phy_simple_xlate);
+>>>  
+>>>  /**
+>>> - * phy_get() - lookup and obtain a reference to a phy.
+>>> + * phy_get_index() - obtain a phy based on index
+>>
+>> NAK. It still takes a 'char' argument and the name is misleading.
+>> Btw are you replacing phy_get() or adding a new API in addition to phy_get()?
+> 
+> Additional API. The phy_get() would in practice act as a wrapper after
 
+In this patch it looks like you've replaced phy_get().
+> this. It could actually be just a #define macro in the include file.
+> The function naming I just copied straight from gpiolib.c. I did not
+> have the imagination for anything fancier.
+> 
+> I would like to be able to use some function like phy_get_index() and
+> be able to deliver it both the name and the index. With DT you guys
+> will always be able to use the name (and the string will always
+> supersede the index if we do it like this), but with ACPI, and possibly
+> the platform lookup tables, the index can be used...
 
--- 
+I think in that case, we should drop the 'string' from phy_get_index since we
+have the other API to handle that? I don't know about ACPI, but is it not
+possible to use strings with ACPI?
 
-Cheers,
-Mauro
+Thanks
+Kishon
