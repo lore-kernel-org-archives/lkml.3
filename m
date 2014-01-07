@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaAGQUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 11:20:49 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:45709 "EHLO
+	id S1752894AbaAGQVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 11:21:24 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:45460 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383AbaAGQT4 (ORCPT
+	with ESMTP id S1752220AbaAGQTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 11:19:56 -0500
+	Tue, 7 Jan 2014 11:19:53 -0500
 From: Morten Rasmussen <morten.rasmussen@arm.com>
 To: peterz@infradead.org, mingo@kernel.org
 Cc: rjw@rjwysocki.net, markgross@thegnar.org, vincent.guittot@linaro.org,
         catalin.marinas@arm.com, morten.rasmussen@arm.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [10/11] use-case 4: Game on Android
-Date: Tue,  7 Jan 2014 16:19:46 +0000
-Message-Id: <1389111587-5923-11-git-send-email-morten.rasmussen@arm.com>
+Subject: [7/11] use-case 1: Webbrowsing on Android
+Date: Tue,  7 Jan 2014 16:19:43 +0000
+Message-Id: <1389111587-5923-8-git-send-email-morten.rasmussen@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
 References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 07 Jan 2014 16:19:52.0111 (UTC) FILETIME=[4B4173F0:01CF0BC4]
-X-MC-Unique: 114010716195504101
+X-OriginalArrivalTime: 07 Jan 2014 16:19:50.0408 (UTC) FILETIME=[4A3D9880:01CF0BC4]
+X-MC-Unique: 114010716195110601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s07GKtBW019872
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s07GLRE5019876
 
-Games generally have periodic load pattern synchronized to the
-frame-rate (30 or 60 Hz). Games workloads typically involve both
-graphics rendering (game engine) and audio mixing.
+Common webbrowsing use-cases (no embedded videos, but dynamic contents
+is ok) typically exhibit three distinct modes of operation depending on
+what it is doing in relation to the user:
 
-Performance Criteria
+1)
+Mode: Page load and rendering.
 
-Keep the frame-rate as close to the target as possible. Variations are
-acceptable. Audio must be handled before the audio buffers runs empty.
+Behaviour: The duration is highly depends on the website but is
+relatively short. Typically a few seconds. Page loading time impacts
+user experience directly.  Minor performance drops may be acceptable if
+it comes with good overall energy savings.
+
+Performance criteria: Complete as fast as possible.
+ 
+
+2)
+Mode: Display website (user reading, no user interaction)
+
+Behaviour: Low load. Only minor updates of dynamic contents.
+
+Performance criteria: Minimize energy.
+
+
+3)
+Mode: Page scrolling.
+
+Behaviour: Relatively short in duration. Rendering of contents which was
+previously off screen.
+
+Performance criteria: Ensure smooth UI interaction. Without UI
+experience feedback (lag, etc.), optimizing for best performance might
+the only way to get necessary performance.
+
 
 Task behaviour
 
-This description is based on one particular Android game, but similar
-patterns have been observed for a number of games. Overall, 10+ threads
-are active and context switches happen very often. Key game engine tasks
-and graphics driver tasks are scheduled ~200-700 times per second. The
-top 10 tasks (by cpu time) consists of: One game task, one main game
-engine task, three graphics related tasks, three audio tasks, one event
-handling task, and one kworker task.
+The task descriptions are based on traces from a modern ARM platform
+with a fairly recent version of Android. It may be different other
+platforms and software stacks. This serves just as an example.
 
-Game engine task: By far the most cpu intensive task. Accounts for about
-50% of all cpu load. It is scheduled ~375 times per second (average).
-The scheduling pattern repeats every ~16 ms (~60 Hz), where the task
-runs for ~12 ms, followed by three shorter periods of activity where the
-longest is ~2 ms (unless it is preempted by other tasks). In addition,
-the game engine has a worker thread for each cpu. Each of the worker
-threads account for ~0.4% of the load, is scheduled ~115 times per
-second (average), and only runs for ~56 us (average).
+There are three main tasks involved on the browser side, and one or more
+tasks related to the graphics driver. Each of them behaves differently
+in each of the three modes of operation.
 
-Rendering task: Accounts for ~6% of the load. Scheduled ~200 times per
-second (average) and runs for ~420 us (average).
+Render task: Mainly active in mode 1, but also active in mode 3.
+Accounts for about a third of the total cpu time. May run for a more or
+less continuous burst of 1-2s in 1.
 
-Graphics driver task: Accounts for ~6% of the load. Scheduled ~700 times
-per second (average) and runs for 11 us (average).
+Texture task: Active in all modes, but mainly in modes 1 and 3. Active
+after the render task burst in mode 1. Somewhat periodic behaviour
+during modes 1 and 3 indicating dependencies on other tasks.  Account
+for about a sixth of the cpu time.
 
-Game main task: Accounts for ~4% of the load. Scheduled ~170 times per
-second (average) and runs for ~37 us (average).
+Browser task: Active in all modes. Blocks often. Only running about half
+the time when it is active. Short occasional periods of activity in mode
+2 along with the texture task. Accounts for about a third of the cpu
+time.
 
-Audio system task: Accounts for ~3% of the load. Scheduled ~120 times
-per second (average) and runs for ~42 us (average).
-
-kworker task: Accounts for ~3% of the load. Scheduled ~320 times per
-second (average) and runs for ~13 us (average).
+Graphics driver task: Mainly active in mode 1 and 3, very little
+activity in mode 2 and only when browser and texture tasks are
+active. Runs for a short amount of time but frequently when active.
+Accounts for about a sixth of the cpu time.
 
