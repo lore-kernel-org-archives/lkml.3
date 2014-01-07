@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277AbaAGMag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:30:36 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:50806 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaAGMaZ (ORCPT
+	id S1751370AbaAGMcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:32:01 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:50566 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaAGMby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 07:30:25 -0500
-Subject: Re: [PATCH 1/2] GenWQE: Fix endian issues detected by sparse
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: fengguang.wu@intel.com, jim.epost@gmail.com, sfr@canb.auug.org.au,
-        gregkh@linuxfoundation.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kbuild-all@01.org
-In-Reply-To: <20140107064130.GA5494@mwanda>
-References: <CA+r1Zhimt7Xusnc4kkkVqfoRhfZRnreMmZqaN7WP7rSpZ3XTvw@mail.gmail.com>
-	 <1387553171-31469-1-git-send-email-haver@linux.vnet.ibm.com>
-	 <20140107064130.GA5494@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 07 Jan 2014 13:30:16 +0100
-Message-ID: <1389097816.15325.7.camel@oc7383187364.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010712-2966-0000-0000-000009DDDCB0
+	Tue, 7 Jan 2014 07:31:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <52CBD96B.4050103@linux.vnet.ibm.com>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52CBCB85.8050607@linux.vnet.ibm.com> <20140107095039.GA2480@laptop.programming.kicks-ass.net>
+ <52CBD96B.4050103@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 7 Jan 2014 13:31:33 +0100
+Message-ID: <CAKfTPtAVTW6w5QPQW5c3Gcf6VSU07E5PA+MrFdp-aP1m9twNLA@mail.gmail.com>
+Subject: Re: [RFC] sched: CPU topology try
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        Alex Shi <alex.shi@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jon Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <len.brown@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, james.hogan@imgtec.com,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On 7 January 2014 11:39, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
+>> On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
+>>> What if we want to add arch specific flags to the NUMA domain? Currently
+>>> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
+>>> the arch can modify the sd flags of the topology levels till just before
+>>> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
+>>> initialized. We need to perhaps call into arch here to probe for
+>>> additional flags?
+>>
+>> What are you thinking of? I was hoping all NUMA details were captured in
+>> the distance table.
+>>
+>> Its far easier to talk of specifics in this case.
+>>
+> If the processor can be core gated, then there is very little power
+> savings that we could yield from consolidating all the load onto a
+> single node in a NUMA domain. 6 cores on one node or 3 cores each on two
+> nodes, the power is drawn by 6 cores in all. So I was thinking under
+> this circumstance we might want to set the SD_SHARE_POWERDOMAIN flag at
+> the NUMA domain and spread the load if it favours the workload.
 
-Am Dienstag, den 07.01.2014, 09:41 +0300 schrieb Dan Carpenter:
-> Could you also fix this Smatch warning?
-> drivers/misc/genwqe/card_dev.c:658 do_flash_update() warn: maybe return -EFAULT instead of the bytes remaining?
+The policy of keeping the tasks running on cores that are close (same
+node) to the memory, is the more power efficient, isn't it ? so it's
+probably more about where to place the memory than about where to
+place the tasks ?
 
-I thought i fixed this already in my posting:
-   [PATCH] GenWQE: Rework return code for flash-update ioctl
-from 22.12.2013 14:16:36:
+Vincent
 
-Here the spot:
-
-@@ -565,14 +552,13 @@ static int do_flash_update(struct genwqe
-
-                rc = copy_from_user(xbuf, buf, tocopy);
-                if (rc) {
--                       dev_err(&pci_dev->dev,
--                               "err: could not copy all data rc=%d\n",
-rc);
-+                       rc = -EFAULT;
-                        goto free_buffer;
-                }
-                crc = genwqe_crc32(xbuf, tocopy, 0xffffffff);
-
--               dev_info(&pci_dev->dev,
--                        "[%s] DMA: 0x%llx CRC: %08x SZ: %ld %d\n",
-+               dev_dbg(&pci_dev->dev,
-+                       "[%s] DMA: 0x%llx CRC: %08x SZ: %ld %d\n",
-                        __func__, dma_addr, crc, tocopy,
-blocks_to_flash);
-
-> 
-> Also we shouldn't be doing dev_err() on copy_to/from_user() problems.
-> The user can trigger those and flood dmesg.  It is a DoS (annoying).
-> 
-> regards,
-> dan carpenter
-> 
-
-In this patch I also removed most of the dev_err() messages. Fixing the
-possibility to overflow the logs with error messages from user-side.
-Greg did not pick up this patch yet, as far as I can see.
-
-Regards
-
-Frank
-
+>
+> Regards
+> Preeti U Murthy
+>
