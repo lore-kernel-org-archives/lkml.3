@@ -1,71 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaAGOUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:20:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55270 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaAGOUd (ORCPT
+	id S1751877AbaAGOVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:21:15 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:65496 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaAGOUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:20:33 -0500
-Date: Tue, 7 Jan 2014 06:20:50 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: jslaby@suse.cz, linux-kernel@vger.kernel.org, xiaojin <jin.xiao@intel.com>,
-        Ken Mills <ken.k.mills@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Dirkjan Bussink <d.bussink@gmail.com>
-Subject: Re: [RFC DO NOT MERGE] tty: n_gsm: support buggy modem
-Message-ID: <20140107142050.GB32491@kroah.com>
-References: <4386658.RncifLMAGy@lem-wkst-02>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4386658.RncifLMAGy@lem-wkst-02>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 7 Jan 2014 09:20:52 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH v8 2/7] arm64: introduce interfaces to hotpatch kernel and module code
+Date: Tue,  7 Jan 2014 22:17:09 +0800
+Message-Id: <1389104234-15239-3-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1389104234-15239-1-git-send-email-liuj97@gmail.com>
+References: <1389104234-15239-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 02:05:26PM +0100, Lars Poeschel wrote:
-> From: Lars Poeschel <poeschel@lemonage.de>
-> 
-> This is obiviously a bad patch. Do not merge it!
-> I have a GSM Modem (Quectel M95 Revision: M95AR01A11) that I have a problem
-> with when using the n_gsm mux line discipline. After attaching the line
-> discipline and opening a muxed channel, the open never returns. The
-> problem is that the tty code waits for the TIOCM_CD flag to be set. According
-> to the 3GPP TS 07.10 specification the modem can set this virtual flag by
-> setting the DV bit in it's modem status control message. My modem sends the
-> modem status command, but this DV bit is not set. With this patch the modem
-> and the whole mux is working fine. Another way makeing all this work is
-> setting the carrier_raised function to NULL. The tty code assumes that
-> everything is alright then.
-> My question is: What could be the best way to support this modem in mailine
-> kernel ? I do not see a way to detect this buggy modem inside the line
-> discipline and use this patch's method as a work around then. But the
-> detection would only be possible using AT command before the line discipline
-> is attached or using the muxed channel after the mux is set up.
+Introduce three interfaces to patch kernel and module code:
+aarch64_insn_patch_text_nosync():
+	patch code without synchronization, it's caller's responsibility
+	to synchronize all CPUs if needed.
+aarch64_insn_patch_text_sync():
+	patch code and always synchronize with stop_machine()
+aarch64_insn_patch_text():
+	patch code and synchronize with stop_machine() if needed
 
-Adding some n_gsm.c authors to the cc:
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+---
+ arch/arm64/include/asm/insn.h |  10 +++-
+ arch/arm64/kernel/insn.c      | 119 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 128 insertions(+), 1 deletion(-)
 
-Also, what kernel version are you using?
+diff --git a/arch/arm64/include/asm/insn.h b/arch/arm64/include/asm/insn.h
+index 1bdc44c..bf8085f 100644
+--- a/arch/arm64/include/asm/insn.h
++++ b/arch/arm64/include/asm/insn.h
+@@ -18,6 +18,9 @@
+ #define	__ASM_INSN_H
+ #include <linux/types.h>
+ 
++/* A64 instructions are always 32 bits. */
++#define	AARCH64_INSN_SIZE		4
++
+ /*
+  * ARM Architecture Reference Manual for ARMv8 Profile-A, Issue A.a
+  * Section C3.1 "A64 instruction index by encoding":
+@@ -70,8 +73,13 @@ __AARCH64_INSN_FUNCS(hint,	0xFFFFF01F, 0xD503201F)
+ 
+ bool aarch64_insn_is_nop(u32 insn);
+ 
++int aarch64_insn_read(void *addr, u32 *insnp);
++int aarch64_insn_write(void *addr, u32 insn);
+ enum aarch64_insn_encoding_class aarch64_get_insn_class(u32 insn);
+-
+ bool aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn);
+ 
++int aarch64_insn_patch_text_nosync(void *addr, u32 insn);
++int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
++int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
++
+ #endif	/* __ASM_INSN_H */
+diff --git a/arch/arm64/kernel/insn.c b/arch/arm64/kernel/insn.c
+index 56a2498..b9dac57 100644
+--- a/arch/arm64/kernel/insn.c
++++ b/arch/arm64/kernel/insn.c
+@@ -16,6 +16,10 @@
+  */
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
++#include <linux/smp.h>
++#include <linux/stop_machine.h>
++#include <linux/uaccess.h>
++#include <asm/cacheflush.h>
+ #include <asm/insn.h>
+ 
+ static int aarch64_insn_encoding_class[] = {
+@@ -60,6 +64,28 @@ bool __kprobes aarch64_insn_is_nop(u32 insn)
+ 	}
+ }
+ 
++/*
++ * In ARMv8-A, A64 instructions have a fixed length of 32 bits and are always
++ * little-endian.
++ */
++int __kprobes aarch64_insn_read(void *addr, u32 *insnp)
++{
++	int ret;
++	u32 val;
++
++	ret = probe_kernel_read(&val, addr, AARCH64_INSN_SIZE);
++	if (!ret)
++		*insnp = le32_to_cpu(val);
++
++	return ret;
++}
++
++int __kprobes aarch64_insn_write(void *addr, u32 insn)
++{
++	insn = cpu_to_le32(insn);
++	return probe_kernel_write(addr, &insn, AARCH64_INSN_SIZE);
++}
++
+ static bool __kprobes __aarch64_insn_hotpatch_safe(u32 insn)
+ {
+ 	if (aarch64_get_insn_class(insn) != AARCH64_INSN_CLS_BR_SYS)
+@@ -89,3 +115,96 @@ bool __kprobes aarch64_insn_hotpatch_safe(u32 old_insn, u32 new_insn)
+ 	return __aarch64_insn_hotpatch_safe(old_insn) &&
+ 	       __aarch64_insn_hotpatch_safe(new_insn);
+ }
++
++int __kprobes aarch64_insn_patch_text_nosync(void *addr, u32 insn)
++{
++	u32 *tp = addr;
++	int ret;
++
++	/* A64 instructions must be word aligned */
++	if ((uintptr_t)tp & 0x3)
++		return -EINVAL;
++
++	ret = aarch64_insn_write(tp, insn);
++	if (ret == 0)
++		flush_icache_range((uintptr_t)tp,
++				   (uintptr_t)tp + AARCH64_INSN_SIZE);
++
++	return ret;
++}
++
++struct aarch64_insn_patch {
++	void		**text_addrs;
++	u32		*new_insns;
++	int		insn_cnt;
++	atomic_t	cpu_count;
++};
++
++static int __kprobes aarch64_insn_patch_text_cb(void *arg)
++{
++	int i, ret = 0;
++	struct aarch64_insn_patch *pp = arg;
++
++	/* The first CPU becomes master */
++	if (atomic_inc_return(&pp->cpu_count) == 1) {
++		for (i = 0; ret == 0 && i < pp->insn_cnt; i++)
++			ret = aarch64_insn_patch_text_nosync(pp->text_addrs[i],
++							     pp->new_insns[i]);
++		/*
++		 * aarch64_insn_patch_text_nosync() calls flush_icache_range(),
++		 * which ends with "dsb; isb" pair guaranteeing global
++		 * visibility.
++		 */
++		atomic_set(&pp->cpu_count, -1);
++	} else {
++		while (atomic_read(&pp->cpu_count) != -1)
++			cpu_relax();
++		isb();
++	}
++
++	return ret;
++}
++
++int __kprobes aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt)
++{
++	struct aarch64_insn_patch patch = {
++		.text_addrs = addrs,
++		.new_insns = insns,
++		.insn_cnt = cnt,
++		.cpu_count = ATOMIC_INIT(0),
++	};
++
++	if (cnt <= 0)
++		return -EINVAL;
++
++	return stop_machine(aarch64_insn_patch_text_cb, &patch,
++			    cpu_online_mask);
++}
++
++int __kprobes aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt)
++{
++	int ret;
++	u32 insn;
++
++	/* Unsafe to patch multiple instructions without synchronizaiton */
++	if (cnt == 1) {
++		ret = aarch64_insn_read(addrs[0], &insn);
++		if (ret)
++			return ret;
++
++		if (aarch64_insn_hotpatch_safe(insn, insns[0])) {
++			/*
++			 * ARMv8 architecture doesn't guarantee all CPUs see
++			 * the new instruction after returning from function
++			 * aarch64_insn_patch_text_nosync(). So send IPIs to
++			 * all other CPUs to achieve instruction
++			 * synchronization.
++			 */
++			ret = aarch64_insn_patch_text_nosync(addrs[0], insns[0]);
++			kick_all_cpus_sync();
++			return ret;
++		}
++	}
++
++	return aarch64_insn_patch_text_sync(addrs, insns, cnt);
++}
+-- 
+1.8.1.2
 
-thanks,
-
-greg k-h
-
-> 
-> Thanks,
-> Lars
-> ---
-> diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-> index c0f76da..a1a6f57 100644
-> --- a/drivers/tty/n_gsm.c
-> +++ b/drivers/tty/n_gsm.c
-> @@ -1061,6 +1061,7 @@ static void gsm_process_modem(struct tty_struct *tty, struct gsm_dlci *dlci,
->  		mlines |= TIOCM_RI;
->  	if (modem & MDM_DV)
->  		mlines |= TIOCM_CD;
-> +	mlines |= TIOCM_CD;
->  
->  	/* Carrier drop -> hangup */
->  	if (tty) {
