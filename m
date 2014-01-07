@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaAGLVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 06:21:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24189 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaAGLVQ (ORCPT
+	id S1750912AbaAGL2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 06:28:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36250 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaAGL2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 06:21:16 -0500
-Message-ID: <52CBE321.4050906@oracle.com>
-Date: Tue, 07 Jan 2014 19:21:05 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Chuansheng Liu <chuansheng.liu@intel.com>, dchinner@fromorbit.com,
-        bpm@sgi.com
-CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 2/3] xfs: Calling destroy_work_on_stack() to pair with
- INIT_WORK_ONSTACK()
-References: <1389084605.3650.66.camel@cliu38-desktop-build> <1389084814.3650.70.camel@cliu38-desktop-build>
-In-Reply-To: <1389084814.3650.70.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Jan 2014 06:28:15 -0500
+Message-ID: <1389094089.4815.22.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v2 2/2] reset: Add GPIO support to reset controller
+ framework
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Roger Quadros <rogerq@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 07 Jan 2014 12:28:09 +0100
+In-Reply-To: <20140107111954.GA2849@lukather>
+References: <1389030903-27684-1-git-send-email-p.zabel@pengutronix.de>
+	 <1389030903-27684-2-git-send-email-p.zabel@pengutronix.de>
+	 <20140106181422.GS3144@lukather>
+	 <1389088341.4815.9.camel@pizza.hi.pengutronix.de>
+	 <20140107111954.GA2849@lukather>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chuansheng,
-
-On 01/07 2014 16:53 PM, Chuansheng Liu wrote:
+Am Dienstag, den 07.01.2014, 12:19 +0100 schrieb Maxime Ripard:
+> Hi Philipp,
 > 
-> In case CONFIG_DEBUG_OBJECTS_WORK is defined, it is needed to
-> call destroy_work_on_stack() which frees the debug object to pair
-> with INIT_WORK_ONSTACK().
+> On Tue, Jan 07, 2014 at 10:52:21AM +0100, Philipp Zabel wrote:
+> > > > +	const char *gpio_con_id = "reset";
+> > > > +	struct reset_controller_dev *rcdev;
+> > > > +	struct reset_control *rstc;
+> > > > +	struct gpio_desc *gpiod;
+> > > > +	bool asserted = false;
+> > > > +	char scratch[48];
+> > > > +	int ret;
+> > > > +
+> > > > +	if (id) {
+> > > > +		snprintf(scratch, 48, "%s-reset-boot-asserted", id);
+> > > > +		assert_prop = scratch;
+> > > > +	}
+> > > > +
+> > > > +	asserted = of_property_read_bool(dev->of_node, assert_prop);
+> > > > +
+> > > > +	if (id) {
+> > > > +		snprintf(scratch, 48, "%s-reset", id);
+> > > > +		gpio_con_id = scratch;
+> > > > +	}
+> > > > +
+> > > > +	gpiod = gpiod_get(dev, gpio_con_id);
+> > > > +	if (IS_ERR(gpiod)) {
+> > > > +		dev_err(dev, "Failed to get GPIO reset: %ld\n", PTR_ERR(gpiod));
+> > > > +		return ERR_CAST(gpiod);
+> > > > +	}
+> > > > +
+> > > > +	ret = gpiod_direction_output(gpiod, asserted);
+> > > > +	if (ret < 0)
+> > > > +		goto err_put;
+> > > 
+> > > What happens if the GPIO is active low? I see no way in your binding
+> > > and driver to give that information, and that would change the
+> > > behaviour quite a bit.
+> > 
+> > I was under the (wrong) impression that gpiod_direction_output takes a
+> > logical value as gpiod_set_value does. Will fix that.
 > 
-> Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
-> ---
->  fs/xfs/xfs_bmap_util.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
-> index 1394106..82e0dab 100644
-> --- a/fs/xfs/xfs_bmap_util.c
-> +++ b/fs/xfs/xfs_bmap_util.c
-> @@ -287,6 +287,7 @@ xfs_bmapi_allocate(
->  	INIT_WORK_ONSTACK(&args->work, xfs_bmapi_allocate_worker);
->  	queue_work(xfs_alloc_wq, &args->work);
->  	wait_for_completion(&done);
-> +	destroy_work_on_stack(&args->work);
->  	return args->result;
->  }
+> I don't think gpiod_set_value does either unfortunately.
 
-Thanks for your patch and it work fine for my testing.  I missed this in an
-old commit: [ 3b876c8f2a xfs: fix debug_object WARN at xfs_alloc_vextent() ] 
+It does, and Alexandre (added to Cc:) suggested that
+gpiod_direction_output probably should, too.
+I'll send a patch.
 
-Just out of curious, do you notice memory leaks or other hints which help you
-finding out this problem?   
+regards
+Philipp
 
-Thanks,
--Jeff
