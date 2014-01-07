@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaAGC3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 21:29:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36919 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373AbaAGC3o (ORCPT
+	id S932102AbaAGCdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 21:33:17 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58084 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131AbaAGCdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 21:29:44 -0500
-Date: Mon, 06 Jan 2014 21:29:40 -0500 (EST)
-Message-Id: <20140106.212940.42449270782533770.davem@davemloft.net>
-To: ethan.kernel@gmail.com
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH] sparc: replace __GFP_NOFAIL with GFP_ATOMIC in
- mdesc_kmalloc()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CABawtvPt9V_2=KxOGetUCVeatJVcD-uJqs9c6cUzOc2uZCqpYg@mail.gmail.com>
-References: <1386773661-921-1-git-send-email-ethan.kernel@gmail.com>
-	<CABawtvPt9V_2=KxOGetUCVeatJVcD-uJqs9c6cUzOc2uZCqpYg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 06 Jan 2014 18:29:44 -0800 (PST)
+	Mon, 6 Jan 2014 21:33:15 -0500
+MIME-Version: 1.0
+Date: Tue, 7 Jan 2014 10:33:14 +0800
+Message-ID: <CANthSfZij7=q1azM1wrRNDWjFY972zFpe4njBKr3bzUVsm5m-Q@mail.gmail.com>
+Subject: [PATCH] usb:hub set hub->change_bits when over-current happens
+From: =?GB2312?B?yfK54g==?= <shenguang10@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ethan Zhao <ethan.kernel@gmail.com>
-Date: Tue, 7 Jan 2014 10:21:51 +0800
+set hub->change_bits when we plug in a device which causes
+over-current condition, so that hub_events() will check it.
 
-> cc sparclinux@vger.kernel.org
+Signed-off-by: Shen Guang <shenguang10@gmail.com>
+---
+ drivers/usb/core/hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Please make a fresh patch posting with sparclinux included so that
-your patch gets properly queued up and tracked in patchwork:
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index bd9dc35..98b5679 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1154,7 +1154,8 @@ static void hub_activate(struct usb_hub *hub,
+enum hub_activation_type type)
+                        /* Tell khubd to disconnect the device or
+                         * check for a new connection
+                         */
+-                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
++                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION) ||
++                               (portstatus & USB_PORT_STAT_OVERCURRENT))
+                                set_bit(port1, hub->change_bits);
 
-http://patchwork.ozlabs.org/project/sparclinux/list/
-
-Thanks.
+                } else if (portstatus & USB_PORT_STAT_ENABLE) {
+--
+1.7.9.5
