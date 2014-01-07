@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaAGOyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:54:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41397 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaAGOyA (ORCPT
+	id S1752085AbaAGOyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:54:33 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53700 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaAGOyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:54:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140107075600.GC20074@core.coreip.homeip.net>
-References: <1370520110-32293-1-git-send-email-ming.lei@canonical.com>
-	<1370520110-32293-3-git-send-email-ming.lei@canonical.com>
-	<20140107075600.GC20074@core.coreip.homeip.net>
-Date: Tue, 7 Jan 2014 22:53:57 +0800
-Message-ID: <CACVXFVNMofvYpsiFFxFaCtN7XHAEtBmJEHCW2mJRS4x+O0+utg@mail.gmail.com>
-Subject: Re: [PATCH v1 2/4] firmware loader: simplify holding module for request_firmware
-From: Ming Lei <ming.lei@canonical.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Jan 2014 09:54:25 -0500
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [INCOMPLETE PATCH v2 0/4] Get EDID late for VGA switcheroo
+Date: Tue,  7 Jan 2014 20:24:28 +0530
+Message-Id: <1389106472-11389-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.5.2.229.g4448466
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi Chris et al,
 
-On Tue, Jan 7, 2014 at 3:56 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Ming,
->
-> On Thu, Jun 06, 2013 at 08:01:48PM +0800, Ming Lei wrote:
->> module reference doesn't cover direct loading path, so this patch
->> simply holds the module in the whole life time of request_firmware()
->> to fix the problem.
->
-> This does not make sense to me. If request_firmware() is executing that
-> means some other module references it and module refcount already
-> reflects that.
+I got this far with creating a generic interface for various
+get_edid() functions, but I'm stuck now. Where do I get the specific
+i2c_adapter from?
 
-Yes, you are right, holding this module references in both
-request_firmware() and request_firmware_direct() shouldn't
-be necessary.
+I hope the series is okay otherwise.
 
->
-> We needed to pin module before Tejun's work ensuring that currently open
-> sysfs entries won't keep related kobjects pinned after kernel marked
-> them inactive. We can probably delete __module_get()/module_put() from
-> firmware_class.c now.
+Thanks.
 
-But holding the reference for request_firmware_nowait() is needed.
+Ramkumar Ramachandra (4):
+  drm/i915: add support for vga_switcheroo reprobe
+  drm/i915: factor out intel_lvds_get_edid()
+  drm/i915: change intel_sdvo_get_edid() prototype
+  drm/i915: introduce intel_connector->reprobe
 
+ drivers/gpu/drm/i915/i915_dma.c   |   8 ++-
+ drivers/gpu/drm/i915/intel_crt.c  |   1 +
+ drivers/gpu/drm/i915/intel_dp.c   |   1 +
+ drivers/gpu/drm/i915/intel_drv.h  |   6 +++
+ drivers/gpu/drm/i915/intel_lvds.c | 101 ++++++++++++++++++++++----------------
+ drivers/gpu/drm/i915/intel_sdvo.c |  17 ++++---
+ 6 files changed, 84 insertions(+), 50 deletions(-)
 
-Thanks,
---
-Ming Lei
+-- 
+1.8.5.2.229.g4448466
+
