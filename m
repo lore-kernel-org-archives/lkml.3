@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaAGIlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:41:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51566 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaAGIlk (ORCPT
+	id S1756266AbaAGImD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:42:03 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:17609 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755988AbaAGImB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:41:40 -0500
-Date: Tue, 7 Jan 2014 09:41:13 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140107084113.GN30183@twins.programming.kicks-ass.net>
-References: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
- <20140106221528.GK30183@twins.programming.kicks-ass.net>
- <8761pw6717.fsf@tassilo.jf.intel.com>
+	Tue, 7 Jan 2014 03:42:01 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 07 Jan 2014 00:42:10 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>
+CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        Mallikarjun Kasoju <mkasoju@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] pinctrl: as3722: Set pin to output mode for some function
+Date: Tue, 7 Jan 2014 14:10:56 +0530
+Message-ID: <1389084056-17076-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761pw6717.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 03:10:28PM -0800, Andi Kleen wrote:
-> > To me it seems very weird that PT is hooked to the same PMI as the
-> > normal PMU, it really should have been a different interrupt.
-> 
-> It's in the same STATUS register, so it's cheap to check both.
-> 
-> It shouldn't add any new spurious problems (or at least nothing
-> worse than what we already have)
-> 
-> I understand that it would be nice to separate other NMI users
-> from all of PMI, but that would be an orthogonal problem.
-> 
-> Any other issues?
+From: Mallikarjun Kasoju <mkasoju@nvidia.com>
 
-Aside from the fact that PT and the PMU are otherwise unrelated, so it
-being in the global status register is weird too.
+If pins are used for function output like pwm, clk32k,
+power good etc then set it as output mode default.
 
-Also, the PT interrupt doesn't actually need to be an NMI; when the
-proposed S/G implementation would actually work as stated there can be
-plenty room left when we trigger the interrupt.
+Signed-off-by: Mallikarjun Kasoju <mkasoju@nvidia.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/pinctrl/pinctrl-as3722.c |   20 ++++++++++++++++++++
+ include/linux/mfd/as3722.h       |    1 +
+ 2 files changed, 21 insertions(+)
 
-But again, see the other email I referenced; the PMU triggering a PMI
-while we're in one PT triggered is my biggest concern; esp. since both
-have different FREEZE semantics.
+diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
+index b80f1e1..92ed4b2 100644
+--- a/drivers/pinctrl/pinctrl-as3722.c
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -250,6 +250,26 @@ static int as3722_pinctrl_enable(struct pinctrl_dev *pctldev, unsigned function,
+ 		return ret;
+ 	}
+ 	as_pci->gpio_control[group].io_function = function;
++
++	switch (val) {
++	case AS3722_GPIO_IOSF_SD0_OUT:
++	case AS3722_GPIO_IOSF_PWR_GOOD_OUT:
++	case AS3722_GPIO_IOSF_Q32K_OUT:
++	case AS3722_GPIO_IOSF_PWM_OUT:
++	case AS3722_GPIO_IOSF_SD6_LOW_VOLT_LOW:
++		ret = as3722_update_bits(as_pci->as3722, gpio_cntr_reg,
++			AS3722_GPIO_MODE_MASK, AS3722_GPIO_MODE_OUTPUT_VDDH);
++		if (ret < 0) {
++			dev_err(as_pci->dev, "GPIO%d_CTRL update failed %d\n",
++				group, ret);
++			return ret;
++		}
++		as_pci->gpio_control[group].mode_prop =
++				AS3722_GPIO_MODE_OUTPUT_VDDH;
++		break;
++	default:
++		break;
++	}
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/mfd/as3722.h b/include/linux/mfd/as3722.h
+index bb9616d..8d43e9f 100644
+--- a/include/linux/mfd/as3722.h
++++ b/include/linux/mfd/as3722.h
+@@ -316,6 +316,7 @@
+ #define AS3722_GPIO_IOSF_GPIO_INTERRUPT_IN		AS3722_GPIO_IOSF_VAL(3)
+ #define AS3722_GPIO_IOSF_ISINK_PWM_IN			AS3722_GPIO_IOSF_VAL(4)
+ #define AS3722_GPIO_IOSF_VOLTAGE_STBY			AS3722_GPIO_IOSF_VAL(5)
++#define AS3722_GPIO_IOSF_SD0_OUT			AS3722_GPIO_IOSF_VAL(6)
+ #define AS3722_GPIO_IOSF_PWR_GOOD_OUT			AS3722_GPIO_IOSF_VAL(7)
+ #define AS3722_GPIO_IOSF_Q32K_OUT			AS3722_GPIO_IOSF_VAL(8)
+ #define AS3722_GPIO_IOSF_WATCHDOG_IN			AS3722_GPIO_IOSF_VAL(9)
+-- 
+1.7.9.5
 
