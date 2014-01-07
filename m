@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAGMR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:17:28 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37476 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848AbaAGMQ7 (ORCPT
+	id S1751206AbaAGMYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:24:16 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:32927 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaAGMYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 07:16:59 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v3 4/4] ARM: OMAP2+: Remove legacy_init_ehci_clk()
-Date: Tue, 7 Jan 2014 17:44:49 +0530
-Message-ID: <1389096889-22179-5-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389096889-22179-1-git-send-email-rogerq@ti.com>
-References: <1389096889-22179-1-git-send-email-rogerq@ti.com>
+	Tue, 7 Jan 2014 07:24:09 -0500
+Date: Tue, 7 Jan 2014 13:24:07 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] Power consumption on a 2013 MBP
+Message-ID: <20140107122407.GC10358@amd.pavel.ucw.cz>
+References: <CALkWK0n0q+a9EmMbJXsgo6eO1B+0Lq6tqsN3moLbXz+Y0GGu0g@mail.gmail.com>
+ <20140106211115.GA23421@amd.pavel.ucw.cz>
+ <CALkWK0nLg9D+4=_eNe3cgmnuzzZgk+E5U_OK9vh6_3XTZSX12w@mail.gmail.com>
+ <20140106213630.GC14927@amd.pavel.ucw.cz>
+ <CALkWK0kFRS2ZhsNdmBLms-XzpJ-5mc+--NFhx-tM==H2qrfXmQ@mail.gmail.com>
+ <CALkWK0=uTF_SakQ1oR-wv3T26wJbGWwPkkXKmCpF1O_X59T55A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALkWK0=uTF_SakQ1oR-wv3T26wJbGWwPkkXKmCpF1O_X59T55A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The necessary clock phandle for the EHCI clock is now provided
-via device tree so we no longer need this legacy method.
+On Tue 2014-01-07 16:03:00, Ramkumar Ramachandra wrote:
+> Ramkumar Ramachandra wrote:
+> > My system freezes if I remove modules like usbhci, ahci, ehci_hcd.
+> 
+> Correction: my input devices (keyboard, trackpad) depend on usbhci,
+> ehci_hcd, while libata and my hard disk drivers depend on ahci;
+> there's no way I can do without them. 
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/pdata-quirks.c | 16 ----------------
- 1 file changed, 16 deletions(-)
+Ramdisk, scripts.
 
-diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
-index 39f020c..6a4e2d1 100644
---- a/arch/arm/mach-omap2/pdata-quirks.c
-+++ b/arch/arm/mach-omap2/pdata-quirks.c
-@@ -26,20 +26,6 @@ struct pdata_init {
- 	void (*fn)(void);
- };
- 
--/*
-- * Create alias for USB host PHY clock.
-- * Remove this when clock phandle can be provided via DT
-- */
--static void __init __used legacy_init_ehci_clk(char *clkname)
--{
--	int ret;
--
--	ret = clk_add_alias("main_clk", NULL, clkname, NULL);
--	if (ret)
--		pr_err("%s:Failed to add main_clk alias to %s :%d\n",
--		       __func__, clkname, ret);
--}
--
- #if IS_ENABLED(CONFIG_WL12XX)
- 
- static struct wl12xx_platform_data wl12xx __initdata;
-@@ -105,7 +91,6 @@ static void __init omap4_sdp_legacy_init(void)
- static void __init omap4_panda_legacy_init(void)
- {
- 	omap4_panda_display_init_of();
--	legacy_init_ehci_clk("auxclk3_ck");
- 	legacy_init_wl12xx(WL12XX_REFCLOCK_38, 0, 53);
- }
- #endif
-@@ -113,7 +98,6 @@ static void __init omap4_panda_legacy_init(void)
- #ifdef CONFIG_SOC_OMAP5
- static void __init omap5_uevm_legacy_init(void)
- {
--	legacy_init_ehci_clk("auxclk1_ck");
- }
- #endif
- 
+>I'm trying to get VGA switcheroo
+> to work so I can switch to the onboard i915 graphics card in the hope
+> of saving power.
+
+That should indeed do the trick.x
+									Pavel
+
 -- 
-1.8.3.2
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
