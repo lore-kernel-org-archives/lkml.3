@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaAGIzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:55:05 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:53010 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaAGIzB (ORCPT
+	id S1755790AbaAGIzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:55:46 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:40202 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540AbaAGIzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:55:01 -0500
-Date: Tue, 7 Jan 2014 08:54:56 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: am335x: IIO/ADC fixes if used together with TSC, v2
-Message-ID: <20140107085456.GD3182@lee--X1>
-References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+	Tue, 7 Jan 2014 03:55:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140107084734.GP30183@twins.programming.kicks-ass.net>
+References: <CAKohponch=o3nBKTmakA87OiN=HbgnEwJUL23mGkjQiNoJWjWw@mail.gmail.com>
+	<20131211132212.GA7862@localhost.localdomain>
+	<CAKohponKxw8F6djaXaw0MEzGRWGTSQ=peiYuTGBCOHE0VaJR5Q@mail.gmail.com>
+	<87wqj34eqs.fsf@linaro.org>
+	<CAKohpo=Btb8ChRJ4Be9gbDE-nOxSaCVkQ_Qg5g7AVRxOMbXEQQ@mail.gmail.com>
+	<87r49al12j.fsf@linaro.org>
+	<CAKohpokDBga18BhZm=r+EOoY40=+E7Ndtfooq9rXbqc=wUg2Ng@mail.gmail.com>
+	<CAKohpo=bzfnb6aBDRX6AfjVoRquTaboO5wmiHfjb=bD0bAgBcA@mail.gmail.com>
+	<20140107084734.GP30183@twins.programming.kicks-ass.net>
+Date: Tue, 7 Jan 2014 14:25:44 +0530
+Message-ID: <CAKohpon7Vf=zHt5OBpf=LCaj9GVW8F34Tx3ypEbP6DDOHD+ugA@mail.gmail.com>
+Subject: Re: [LNG] Re: [Query] Ticks happen in pair for NO_HZ_FULL cores ?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kevin Hilman <khilman@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry, Jonathan,
+On 7 January 2014 14:17, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Dec 23, 2013 at 01:48:02PM +0530, Viresh Kumar wrote:
+>> *But wouldn't it make sense if we can tell scheduler that don't queue
+>> these works on a CPU that is running in NO_HZ_FULL mode?*
+>
+> No,.. that's the wrong way around.
 
-This is for you.
+Hmm.. Just to make it clear I didn't meant that any input from workqueue
+code should go to scheduler but something like this:
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+Scheduler will check following before pushing a task on any CPU:
+- If that CPU is part of NO_HZ_FULL cpu list?
+- If yes, is that CPU running only one task for now? i.e. running task for
+best performance case?
+- If yes, then don't queue new task to that CPU, whether task belongs to
+workqueue or not doesn't matter.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+> That looks to be a normal unpinned timer, it should migrate to a 'busy'
+> cpu once the one its running on it going idle.
+>
+> ISTR people trying to make that active and also migrating on nohz full
+> or somesuch, just like the workqueues. Forgot what happened with that;
+> if it got dropped it should probably be ressurected.
 
-are available in the git repository at:
-
-  git://git.linaro.org/people/ljones/mfd.git tags/ib-iio-input-3.13-1
-
-for you to fetch changes up to 7ca6740cd1cd410828a01151a044b51910d06eff:
-
-  mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization (2014-01-07 08:45:00 +0000)
-
-----------------------------------------------------------------
-Immutable branch for IIO and Input
-
-----------------------------------------------------------------
-Sebastian Andrzej Siewior (5):
-      iio: ti_am335x_adc: Adjust the closing bracket in tiadc_read_raw()
-      mfd: ti_am335x_tscadc: Make am335x_tsc_se_update() local
-      mfd: ti_am335x_tscadc: Don't read back REG_SE
-      mfd: ti_am335x: Drop am335x_tsc_se_update() from resume path
-      mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization
-
- drivers/iio/adc/ti_am335x_adc.c           | 68 +++++++++++++++++++++++++++++++++++++++++++++++++-------------------
- drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
- drivers/mfd/ti_am335x_tscadc.c            | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------
- include/linux/mfd/ti_am335x_tscadc.h      |  8 ++++++--
- 4 files changed, 117 insertions(+), 34 deletions(-)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I will search for that in archives..
