@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691AbaAGWDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 17:03:18 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:35990 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaAGWDK (ORCPT
+	id S1754415AbaAGWD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 17:03:29 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36832 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914AbaAGWDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jan 2014 17:03:10 -0500
+Date: Tue, 7 Jan 2014 14:02:13 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Chris Mason <clm@fb.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "miklos@szeredi.hu" <miklos@szeredi.hu>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "rlb@defaultvalue.org" <rlb@defaultvalue.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "aurelien@aurel32.net" <aurelien@aurel32.net>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "david@fromorbit.com" <david@fromorbit.com>,
+        "jack@suse.cz" <jack@suse.cz>
+Subject: Re: [RFC PATCH] fs: xattr-based FS_IOC_[GS]ETFLAGS interface
+Message-ID: <20140107220213.GD9229@birch.djwong.org>
+References: <20140107025855.GA9229@birch.djwong.org>
+ <20140107124831.GD16640@quack.suse.cz>
+ <20140107154935.GA17609@infradead.org>
+ <20140107170430.GA2822@thunk.org>
+ <20140107194356.GC9229@birch.djwong.org>
+ <1389124784.23310.15.camel@ret.masoncoding.com>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVmWAVwLtEbK0AZGBmcqUEkM_Zhz1WGSY5wSpLsaHiOkA@mail.gmail.com>
-References: <CALCETrVmWAVwLtEbK0AZGBmcqUEkM_Zhz1WGSY5wSpLsaHiOkA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 Jan 2014 14:02:49 -0800
-Message-ID: <CALCETrX41X6ZbB-C1Y0V4Au9o6=p17aGo6NLMjxtEkRJQJHGgA@mail.gmail.com>
-Subject: Re: Possible SNB throttling erratum in need of workaround?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: cpufreq@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389124784.23310.15.camel@ret.masoncoding.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc: some more people]
+On Tue, Jan 07, 2014 at 07:59:15PM +0000, Chris Mason wrote:
+> On Tue, 2014-01-07 at 11:43 -0800, Darrick J. Wong wrote:
+> > On Tue, Jan 07, 2014 at 12:04:30PM -0500, Theodore Ts'o wrote:
+> > > On Tue, Jan 07, 2014 at 07:49:35AM -0800, Christoph Hellwig wrote:
+> > > > On Tue, Jan 07, 2014 at 01:48:31PM +0100, Jan Kara wrote:
+> > > > >   I have to say I'm not thrilled by the idea of juggling strings in
+> > > > > userspace and in kernel to set a flag for an inode...
+> > > > 
+> > > > Nevermind the massive amounts of code that sit in the filesystem.
+> > > 
+> > > The reason for this patch was to address what Dave Chinner has called
+> > > "a shitty interface"[1].  Using bitfields that need to be coordinated
+> > > across file systems, when sometimes a bit assignment is validly a fs
+> > > specific thing, and then later becomes something that gets shared
+> > > across file systems.
+> > > 
+> > > [1] http://thread.gmane.org/gmane.linux.file-systems/80164/focus=80396
+> > > 
+> > > If we don't go about it this way, there are alternatives: we could
+> > > create new ioctls (or a new syscall) as we start running out of bits
+> > > used by FS_IOC_[GS]ETFLAGS.  We can create new ioctls for bits which
+> > > are intended for fs-specific flags, which then later get promoted to
+> > > the new syscall when some functionality starts to get shared accross
+> > > other file systems (probably with a different bit assignment).  This
+> > > is certainly less code, but it does mean more complexity outside of
+> > > the code when we try to coordinate new functionality across file
+> > > systems.
+> > 
+> > I had thought of indexed inode flags as an alternative to the xattr/string
+> > parsing thing.  Feature flags make their first appearance as part of a per-FS
+> > flag-space and are migrated to the common flag-space when there is demand.
+> > It would also avoid the need for each fs to create its own flag ioctl.
+> > 
+> > On the other hand, someone suggested I try remaking IOC_[GS]ETFLAG as an xattr,
+> > so off I went. :)
+> > 
+> 
+> At least in btrfs xattrs are more expensive than something right in the
+> inode.  We can cache it when we load the inode (it'll be right next to
+> the inode most of the time) but for performance critical things I do
+> like the good old fashioned flags.
 
-On Wed, Dec 18, 2013 at 6:02 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> I have a box running 3.9.4.  For a few hundred ms, all packages and
-> cores* exceeded their power limits, and then they all came back to
-> normal.
->
-> Since then, turbo boost went away.
->
-> The first thing I tried was writing 0 to msr 0x19C to clear the
-> throttling "log" bit.  The bit was clear, but still no turbo.  (I only
-> did this on one package to avoid destroying information.)
->
-> I have the performance governor set, so there are never any
-> software-initiated performance transitions.  As an experiment, I
-> switched core 0 to powersave (aka very low frequency) and then back to
-> performance.  The entire package's turbo came back.  I did the same
-> thing to the cores on package 1 (all of them, sorry), and that
-> package's turbo boost came back.
->
-> Does the kernel need to reprogram CPU frequencies after thermal/power
-> throttling conditions clear?
->
-> My CPUs are:
->
-> processor       : 31
-> vendor_id       : GenuineIntel
-> cpu family      : 6
-> model           : 45
-> model name      : Intel(R) Xeon(R) CPU E5-2690 0 @ 2.90GHz
-> stepping        : 7
-> microcode       : 0x710
->
->
-> * Slight lie here.  CPU18 exceeded core limit but not power limit.
+Just to clarify -- I wasn't proposing any on-disk changes for any filesystems,
+merely creating virtual xattrs that wrap the inode flags.
 
-I got another power-limit-exceeded warning, but this one didn't kill Turbo.
+> It's also possible to turn xattrs off, so we have to deal with
+> filesystems that are mounted with them off and then back on again.  I
+> can't think of huge problems from that right now, just something to be
+> aware of.
 
-This problem might be more widespread than people would notice,
-because the log line was removed by:
+Just to satisfy my curiosity: are xattrs always separate objects in btrfs?
 
-commit c81147483e525e4a471d581877d7d634591246e1
-Author: Fenghua Yu <fenghua.yu@intel.com>
-Date:   Tue May 21 15:35:16 2013 -0400
-
-    x86 thermal: Delete power-limit-notification console messages
-
-and if the only symptom is that, under certain workloads, turbo goes
-away until the system is rebooted or cpufreq is manually twiddled,
-people might not notice.
-
---Andy
+--D
+> 
+> -chris
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
