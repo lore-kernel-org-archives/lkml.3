@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaAGSBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:01:46 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:55172 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbaAGSAW (ORCPT
+	id S1754080AbaAGSCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:02:11 -0500
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:38112 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466AbaAGSAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:00:22 -0500
+	Tue, 7 Jan 2014 13:00:16 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
-        Tejun Heo <tj@kernel.org>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH 11/12] s390: use device_remove_file_self() instead of device_schedule_callback()
-Date: Tue,  7 Jan 2014 12:59:49 -0500
-Message-Id: <1389117590-25705-12-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 08/12] kernfs, sysfs, driver-core: implement kernfs_remove_self() and its wrappers
+Date: Tue,  7 Jan 2014 12:59:46 -0500
+Message-Id: <1389117590-25705-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389117590-25705-1-git-send-email-tj@kernel.org>
 References: <1389117590-25705-1-git-send-email-tj@kernel.org>
@@ -24,197 +23,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-driver-core now supports synchrnous self-deletion of attributes and
-the asynchrnous removal mechanism is scheduled for removal.  Use it
-instead of device_schedule_callback().
+Sometimes it's necessary to implement a node which wants to delete
+nodes including itself.  This isn't straightforward because of kernfs
+active reference.  While a file operation is in progress, an active
+reference is held and kernfs_remove() waits for all such references to
+drain before completing.  For a self-deleting node, this is a deadlock
+as kernfs_remove() ends up waiting for an active reference that itself
+is sitting on top of.
 
-* Conversions in arch/s390/pci/pci_sysfs.c and
-  drivers/s390/block/dcssblk.c are straightforward.
+This currently is worked around in the sysfs layer using
+sysfs_schedule_callback() which makes such removals asynchronous.
+While it works, it's rather cumbersome and inherently breaks
+synchronicity of the operation - the file operation which triggered
+the operation may complete before the removal is finished (or even
+started) and the removal may fail asynchronously.  If a removal
+operation is immmediately followed by another operation which expects
+the specific name to be available (e.g. removal followed by rename
+onto the same name), there's no way to make the latter operation
+reliable.
 
-* drivers/s390/cio/ccwgroup.c is a bit more tricky because
-  ccwgroup_notifier() was (ab)using device_schedule_callback() to
-  purely obtain a process context to kick off ungroup operation which
-  may block from a notifier callback.
+The thing is there's no inherent reason for this to be asynchrnous.
+All that's necessary to do this synchronous is a dedicated operation
+which drops its own active ref and deactivates self.  This patch
+implements kernfs_remove_self() and its wrappers in sysfs and driver
+core.  kernfs_remove_self() is to be called from one of the file
+operations, drops the active ref the task is holding, removes the self
+node, and restores active ref to the dead node so that the ref is
+balanced afterwards.  __kernfs_remove() is updated so that it takes an
+early exit if the target node is already fully removed so that the
+active ref restored by kernfs_remove_self() after removal doesn't
+confuse the deactivation path.
 
-  Rename ccwgroup_ungroup_callback() to ccwgroup_ungroup() and make it
-  take ccwgroup_device * instead.  The new function is now called
-  directly from ccwgroup_ungroup_store().
+This makes implementing self-deleting nodes very easy.  The normal
+removal path doesn't even need to be changed to use
+kernfs_remove_self() for the self-deleting node.  The method can
+invoke kernfs_remove_self() on itself before proceeding the normal
+removal path.  kernfs_remove() invoked on the node by the normal
+deletion path will simply be ignored.
 
-  ccwgroup_notifier() chain is updated to explicitly bounce through
-  ccwgroup_device->ungroup_work.  This also removes possible failure
-  from memory pressure.
-
-Only compile-tested.
+This will replace sysfs_schedule_callback().  A subtle feature of
+sysfs_schedule_callback() is that it collapses multiple invocations -
+even if multiple removals are triggered, the removal callback is run
+only once.  An equivalent effect can be achieved by testing the return
+value of kernfs_remove_self() - only the one which gets %true return
+value should proceed with actual deletion.  All other instances of
+kernfs_remove_self() will wait till the enclosing kernfs operation
+which invoked the winning instance of kernfs_remove_self() finishes
+and then return %false.  This trivially makes all users of
+kernfs_remove_self() automatically show correct synchronous behavior
+even when there are multiple concurrent operations - all "echo 1 >
+delete" instances will finish only after the whole operation is
+completed by one of the instances.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>
 ---
- arch/s390/include/asm/ccwgroup.h |  1 +
- arch/s390/pci/pci_sysfs.c        | 18 ++++++++----------
- drivers/s390/block/dcssblk.c     | 14 +++++++-------
- drivers/s390/cio/ccwgroup.c      | 26 ++++++++++++++++----------
- 4 files changed, 32 insertions(+), 27 deletions(-)
+ drivers/base/core.c    | 17 +++++++++
+ fs/kernfs/dir.c        | 93 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/sysfs/file.c        | 23 +++++++++++++
+ include/linux/device.h |  2 ++
+ include/linux/kernfs.h |  3 ++
+ include/linux/sysfs.h  |  6 ++++
+ 6 files changed, 143 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/include/asm/ccwgroup.h b/arch/s390/include/asm/ccwgroup.h
-index 23723ce..6e670f8 100644
---- a/arch/s390/include/asm/ccwgroup.h
-+++ b/arch/s390/include/asm/ccwgroup.h
-@@ -23,6 +23,7 @@ struct ccwgroup_device {
- 	unsigned int count;
- 	struct device	dev;
- 	struct ccw_device *cdev[0];
-+	struct work_struct ungroup_work;
- };
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 2b56717..9db57af 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -571,6 +571,23 @@ void device_remove_file(struct device *dev,
+ EXPORT_SYMBOL_GPL(device_remove_file);
  
  /**
-diff --git a/arch/s390/pci/pci_sysfs.c b/arch/s390/pci/pci_sysfs.c
-index cf8a12f..ab4a913 100644
---- a/arch/s390/pci/pci_sysfs.c
-+++ b/arch/s390/pci/pci_sysfs.c
-@@ -48,29 +48,27 @@ static ssize_t show_pfgid(struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR(pfgid, S_IRUGO, show_pfgid, NULL);
- 
--static void recover_callback(struct device *dev)
-+static ssize_t store_recover(struct device *dev, struct device_attribute *attr,
-+			     const char *buf, size_t count)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct zpci_dev *zdev = get_zdev(pdev);
- 	int ret;
- 
-+	if (!device_remove_file_self(dev, attr))
-+		return count;
-+
- 	pci_stop_and_remove_bus_device(pdev);
- 	ret = zpci_disable_device(zdev);
- 	if (ret)
--		return;
-+		return ret;
- 
- 	ret = zpci_enable_device(zdev);
- 	if (ret)
--		return;
-+		return ret;
- 
- 	pci_rescan_bus(zdev->bus);
--}
--
--static ssize_t store_recover(struct device *dev, struct device_attribute *attr,
--			     const char *buf, size_t count)
--{
--	int rc = device_schedule_callback(dev, recover_callback);
--	return rc ? rc : count;
-+	return count;
- }
- static DEVICE_ATTR(recover, S_IWUSR, NULL, store_recover);
- 
-diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
-index 6eca019..2e2f454 100644
---- a/drivers/s390/block/dcssblk.c
-+++ b/drivers/s390/block/dcssblk.c
-@@ -304,12 +304,6 @@ dcssblk_load_segment(char *name, struct segment_info **seg_info)
- 	return rc;
- }
- 
--static void dcssblk_unregister_callback(struct device *dev)
--{
--	device_unregister(dev);
--	put_device(dev);
--}
--
- /*
-  * device attribute for switching shared/nonshared (exclusive)
-  * operation (show + store)
-@@ -397,7 +391,13 @@ removeseg:
- 	blk_cleanup_queue(dev_info->dcssblk_queue);
- 	dev_info->gd->queue = NULL;
- 	put_disk(dev_info->gd);
--	rc = device_schedule_callback(dev, dcssblk_unregister_callback);
-+	up_write(&dcssblk_devices_sem);
-+
-+	if (device_remove_file_self(dev, attr)) {
-+		device_unregister(dev);
-+		put_device(dev);
-+	}
-+	return rc;
- out:
- 	up_write(&dcssblk_devices_sem);
- 	return rc;
-diff --git a/drivers/s390/cio/ccwgroup.c b/drivers/s390/cio/ccwgroup.c
-index 959135a..67b9dc9 100644
---- a/drivers/s390/cio/ccwgroup.c
-+++ b/drivers/s390/cio/ccwgroup.c
-@@ -168,14 +168,12 @@ static ssize_t ccwgroup_online_show(struct device *dev,
-  * Provide an 'ungroup' attribute so the user can remove group devices no
-  * longer needed or accidentially created. Saves memory :)
-  */
--static void ccwgroup_ungroup_callback(struct device *dev)
-+static void ccwgroup_ungroup(struct ccwgroup_device *gdev)
- {
--	struct ccwgroup_device *gdev = to_ccwgroupdev(dev);
--
- 	mutex_lock(&gdev->reg_mutex);
- 	if (device_is_registered(&gdev->dev)) {
- 		__ccwgroup_remove_symlinks(gdev);
--		device_unregister(dev);
-+		device_unregister(&gdev->dev);
- 		__ccwgroup_remove_cdev_refs(gdev);
- 	}
- 	mutex_unlock(&gdev->reg_mutex);
-@@ -195,10 +193,9 @@ static ssize_t ccwgroup_ungroup_store(struct device *dev,
- 		rc = -EINVAL;
- 		goto out;
- 	}
--	/* Note that we cannot unregister the device from one of its
--	 * attribute methods, so we have to use this roundabout approach.
--	 */
--	rc = device_schedule_callback(dev, ccwgroup_ungroup_callback);
-+
-+	if (device_remove_file_self(dev, attr))
-+		ccwgroup_ungroup(gdev);
- out:
- 	if (rc) {
- 		if (rc != -EAGAIN)
-@@ -224,6 +221,14 @@ static const struct attribute_group *ccwgroup_attr_groups[] = {
- 	NULL,
- };
- 
-+static void ccwgroup_ungroup_workfn(struct work_struct *work)
++ * device_remove_file_self - remove sysfs attribute file from its own method.
++ * @dev: device.
++ * @attr: device attribute descriptor.
++ *
++ * See kernfs_remove_self() for details.
++ */
++bool device_remove_file_self(struct device *dev,
++			     const struct device_attribute *attr)
 +{
-+	struct ccwgroup_device *gdev =
-+		container_of(work, struct ccwgroup_device, ungroup_work);
++	if (dev)
++		return sysfs_remove_file_self(&dev->kobj, &attr->attr);
++	else
++		return false;
++}
++EXPORT_SYMBOL_GPL(device_remove_file_self);
 +
-+	ccwgroup_ungroup(gdev);
++/**
+  * device_create_bin_file - create sysfs binary attribute file for device.
+  * @dev: device.
+  * @attr: device binary attribute descriptor.
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index 71faef9..df630b3 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -745,7 +745,11 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 
+ 	lockdep_assert_held(&kernfs_mutex);
+ 
+-	if (!kn)
++	/*
++	 * Short-circuit if @kn has already finished removal.  This is for
++	 * kernfs_remove_self() which plays with active ref after removal.
++	 */
++	if (!kn || RB_EMPTY_NODE(&kn->rb))
+ 		return;
+ 
+ 	pr_debug("kernfs %s: removing\n", kn->name);
+@@ -807,6 +811,93 @@ void kernfs_remove(struct kernfs_node *kn)
+ }
+ 
+ /**
++ * kernfs_remove_self - remove a kernfs_node from its own method
++ * @kn: the self kernfs_node to remove
++ *
++ * The caller must be running off of a kernfs operation which is invoked
++ * with an active reference - e.g. one of kernfs_ops.  This can be used to
++ * implement a file operation which deletes itself.
++ *
++ * For example, the "delete" file for a sysfs device directory can be
++ * implemented by invoking kernfs_remove_self() on the "delete" file
++ * itself.  This function breaks the circular dependency of trying to
++ * deactivate self while holding an active ref itself.  It isn't necessary
++ * to modify the usual removal path to use kernfs_remove_self().  The
++ * "delete" implementation can simply invoke kernfs_remove_self() on self
++ * before proceeding with the usual removal path.  kernfs will ignore later
++ * kernfs_remove() on self.
++ *
++ * kernfs_remove_self() can be called multiple times concurrently on the
++ * same kernfs_node.  Only the first one actually performs removal and
++ * returns %true.  All others will wait until the kernfs operation which
++ * won self-removal finishes and return %false.  Note that the losers wait
++ * for the completion of not only the winning kernfs_remove_self() but also
++ * the whole kernfs_ops which won the arbitration.  This can be used to
++ * guarantee, for example, all concurrent writes to a "delete" file to
++ * finish only after the whole operation is complete.
++ */
++bool kernfs_remove_self(struct kernfs_node *kn)
++{
++	bool ret;
++
++	mutex_lock(&kernfs_mutex);
++
++	/*
++	 * Take out ourself out of the active ref dependency chain.  If
++	 * we're called without an active ref, lockdep will complain.
++	 */
++	kernfs_put_active(kn);
++
++	/*
++	 * SUICIDAL is used to arbitrate among competing invocations.  Only
++	 * the first one will actually perform removal.  When the removal
++	 * is complete, SUICIDED is set and the active ref is restored
++	 * while holding kernfs_mutex.  The ones which lost arbitration
++	 * waits for SUICDED && drained which can happen only after the
++	 * enclosing kernfs operation which executed the winning instance
++	 * of kernfs_remove_self() finished.
++	 */
++	if (!(kn->flags & KERNFS_SUICIDAL)) {
++		kn->flags |= KERNFS_SUICIDAL;
++		__kernfs_remove(kn);
++		kn->flags |= KERNFS_SUICIDED;
++		ret = true;
++	} else {
++		wait_queue_head_t *waitq = &kernfs_root(kn)->deactivate_waitq;
++		DEFINE_WAIT(wait);
++
++		while (true) {
++			prepare_to_wait(waitq, &wait, TASK_UNINTERRUPTIBLE);
++
++			if ((kn->flags & KERNFS_SUICIDED) &&
++			    atomic_read(&kn->active) == KN_DEACTIVATED_BIAS)
++				break;
++
++			mutex_unlock(&kernfs_mutex);
++			schedule();
++			mutex_lock(&kernfs_mutex);
++		}
++		finish_wait(waitq, &wait);
++		WARN_ON_ONCE(!RB_EMPTY_NODE(&kn->rb));
++		ret = false;
++	}
++
++	/*
++	 * @kn is fully removed now and future kernfs_remove() invocations
++	 * on it will be treated as noop and we can safely bump the active
++	 * ref back up so that it's balanced when the enclosing kernfs
++	 * operation finshes.
++	 */
++	atomic_inc(&kn->active);
++	if (kernfs_lockdep(kn))
++		rwsem_acquire(&kn->dep_map, 0, 1, _RET_IP_);
++
++	mutex_unlock(&kernfs_mutex);
++
++	return ret;
 +}
 +
- static void ccwgroup_release(struct device *dev)
- {
- 	kfree(to_ccwgroupdev(dev));
-@@ -323,6 +328,7 @@ int ccwgroup_create_dev(struct device *parent, struct ccwgroup_driver *gdrv,
- 	atomic_set(&gdev->onoff, 0);
- 	mutex_init(&gdev->reg_mutex);
- 	mutex_lock(&gdev->reg_mutex);
-+	INIT_WORK(&gdev->ungroup_work, ccwgroup_ungroup_workfn);
- 	gdev->count = num_devices;
- 	gdev->dev.bus = &ccwgroup_bus_type;
- 	gdev->dev.parent = parent;
-@@ -404,10 +410,10 @@ EXPORT_SYMBOL(ccwgroup_create_dev);
- static int ccwgroup_notifier(struct notifier_block *nb, unsigned long action,
- 			     void *data)
- {
--	struct device *dev = data;
-+	struct ccwgroup_device *gdev = to_ccwgroupdev(data);
- 
- 	if (action == BUS_NOTIFY_UNBIND_DRIVER)
--		device_schedule_callback(dev, ccwgroup_ungroup_callback);
-+		schedule_work(&gdev->ungroup_work);
- 
- 	return NOTIFY_OK;
++/**
+  * kernfs_remove_by_name_ns - find a kernfs_node by name and remove it
+  * @parent: parent of the target
+  * @name: name of the kernfs_node to remove
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 810cf6e..1b8b91b 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -372,6 +372,29 @@ void sysfs_remove_file_ns(struct kobject *kobj, const struct attribute *attr,
  }
+ EXPORT_SYMBOL_GPL(sysfs_remove_file_ns);
+ 
++/**
++ * sysfs_remove_file_self - remove an object attribute from its own method
++ * @kobj: object we're acting for
++ * @attr: attribute descriptor
++ *
++ * See kernfs_remove_self() for details.
++ */
++bool sysfs_remove_file_self(struct kobject *kobj, const struct attribute *attr)
++{
++	struct kernfs_node *parent = kobj->sd;
++	struct kernfs_node *kn;
++	bool ret;
++
++	kn = kernfs_find_and_get(parent, attr->name);
++	if (WARN_ON_ONCE(!kn))
++		return false;
++
++	ret = kernfs_remove_self(kn);
++
++	kernfs_put(kn);
++	return ret;
++}
++
+ void sysfs_remove_files(struct kobject *kobj, const struct attribute **ptr)
+ {
+ 	int i;
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 952b010..1ff3f16 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -560,6 +560,8 @@ extern int device_create_file(struct device *device,
+ 			      const struct device_attribute *entry);
+ extern void device_remove_file(struct device *dev,
+ 			       const struct device_attribute *attr);
++extern bool device_remove_file_self(struct device *dev,
++				    const struct device_attribute *attr);
+ extern int __must_check device_create_bin_file(struct device *dev,
+ 					const struct bin_attribute *attr);
+ extern void device_remove_bin_file(struct device *dev,
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 1238a66..7ef1b85 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -42,6 +42,8 @@ enum kernfs_node_flag {
+ 	KERNFS_HAS_MMAP		= 0x0080,
+ 	KERNFS_LOCKDEP		= 0x0100,
+ 	KERNFS_STATIC_NAME	= 0x0200,
++	KERNFS_SUICIDAL		= 0x0400,
++	KERNFS_SUICIDED		= 0x0800,
+ };
+ 
+ /* type-specific structures for kernfs_node union members */
+@@ -233,6 +235,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       const char *name,
+ 				       struct kernfs_node *target);
+ void kernfs_remove(struct kernfs_node *kn);
++bool kernfs_remove_self(struct kernfs_node *kn);
+ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 			     const void *ns);
+ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 30b2ebe..5278eb4 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -198,6 +198,7 @@ int __must_check sysfs_chmod_file(struct kobject *kobj,
+ 				  const struct attribute *attr, umode_t mode);
+ void sysfs_remove_file_ns(struct kobject *kobj, const struct attribute *attr,
+ 			  const void *ns);
++bool sysfs_remove_file_self(struct kobject *kobj, const struct attribute *attr);
+ void sysfs_remove_files(struct kobject *kobj, const struct attribute **attr);
+ 
+ int __must_check sysfs_create_bin_file(struct kobject *kobj,
+@@ -301,6 +302,11 @@ static inline void sysfs_remove_file_ns(struct kobject *kobj,
+ {
+ }
+ 
++static inline void sysfs_remove_file_self(struct kobject *kobj,
++					  const struct attribute *attr)
++{
++}
++
+ static inline void sysfs_remove_files(struct kobject *kobj,
+ 				     const struct attribute **attr)
+ {
 -- 
 1.8.4.2
 
