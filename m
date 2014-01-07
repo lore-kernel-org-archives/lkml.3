@@ -1,203 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaAGKKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:10:06 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50484 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755851AbaAGKKB (ORCPT
+	id S1756277AbaAGKLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:11:49 -0500
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:46443 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaAGKLr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:10:01 -0500
-Date: Tue, 7 Jan 2014 10:09:50 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Brown <broonie@kernel.org>, John Garry <john.garry@broadcom.com>
-Subject: Re: [PATCH 3.10 126/129] clocksource: arch_timer: use virtual
- counters
-Message-ID: <20140107100950.GA2930@e106331-lin.cambridge.arm.com>
-References: <20140106223859.589799655@linuxfoundation.org>
- <20140106223903.201063932@linuxfoundation.org>
+	Tue, 7 Jan 2014 05:11:47 -0500
+X-PGP-Universal: processed;
+	by shaapppus01.asia.root.pri on Tue, 07 Jan 2014 17:02:21 +0800
+From: Rongjun Ying <Rongjun.Ying@csr.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>, RongJun Ying <rjying@gmail.com>
+CC: MyungJoo Ham <myungjoo.ham@samsung.com>, Barry Song <Barry.Song@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <DL-SHA-WorkGroupLinux@internal.csr.com>
+Subject: RE: [PATCH v3] extcon: gpio: Add power resume support
+Thread-Topic: [PATCH v3] extcon: gpio: Add power resume support
+Thread-Index: AQHPC2TkU7ruPkVVDUCHKYgL3zVs/pp4QSIAgAC1bHA=
+Date: Tue, 7 Jan 2014 09:02:19 +0000
+Message-ID: <86130EF012BDF348AA0D464A4F449478012AC858E6@SHAASIEXM01.ASIA.ROOT.PRI>
+References: <1389070590-3139-1-git-send-email-rongjun.ying@csr.com>
+ <52CB9A16.9010305@samsung.com>
+In-Reply-To: <52CB9A16.9010305@samsung.com>
+Accept-Language: zh-CN, en-GB, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.125.5.123]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140106223903.201063932@linuxfoundation.org>
-Thread-Topic: [PATCH 3.10 126/129] clocksource: arch_timer: use virtual
- counters
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Language: zh-CN
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-On Mon, Jan 06, 2014 at 10:39:15PM +0000, Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
 
-This patch alone may break ARM systems booted at hyp mode or when KVM is
-in use, causing CPUs to have different views of time or for a given
-CPU's view of time to jump backwards.
+> -----Original Message-----
+> From: Chanwoo Choi [mailto:cw00.choi@samsung.com]
+> Sent: Tuesday, January 07, 2014 2:09 PM
+> To: RongJun Ying
+> Cc: MyungJoo Ham; Barry Song; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; DL-SHA-WorkGroupLinux; Rongjun Ying
+> Subject: Re: [PATCH v3] extcon: gpio: Add power resume support
+> 
+> Hi RongJun,
+> 
+> On 01/07/2014 01:56 PM, RongJun Ying wrote:
+> > From: Rongjun Ying <rongjun.ying@csr.com>
+> >
+> > When system on the suspend state, Some SoC can't get gpio interrupt.
+> > After system resume, need send extcon uevent to userspace.
+> >
+> > Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+> > Reviewed-by: Barry Song <Baohua.Song@csr.com>
+> > ---
+> >  -v3:
+> >  'check_on_resume' instead of 'load_sleep_irq' as Chanwoo Choi's
+> proposal.
+> >
+> >  drivers/extcon/extcon-gpio.c       |   20 ++++++++++++++++++++
+> >  include/linux/extcon/extcon-gpio.h |    1 +
+> >  2 files changed, 21 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/extcon/extcon-gpio.c
+> > b/drivers/extcon/extcon-gpio.c index 7e0dff5..fde52c1 100644
+> > --- a/drivers/extcon/extcon-gpio.c
+> > +++ b/drivers/extcon/extcon-gpio.c
+> > @@ -40,6 +40,7 @@ struct gpio_extcon_data {
+> >  	int irq;
+> >  	struct delayed_work work;
+> >  	unsigned long debounce_jiffies;
+> > +	bool check_on_resume;
+> >  };
+> >
+> >  static void gpio_extcon_work(struct work_struct *work) @@ -103,6
+> > +104,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+> >  	extcon_data->gpio_active_low = pdata->gpio_active_low;
+> >  	extcon_data->state_on = pdata->state_on;
+> >  	extcon_data->state_off = pdata->state_off;
+> > +	extcon_data->check_on_resume = pdata->check_on_resume;
+> >  	if (pdata->state_on && pdata->state_off)
+> >  		extcon_data->edev.print_state = extcon_gpio_print_state;
+> >  	if (pdata->debounce) {
+> > @@ -159,12 +161,30 @@ static int gpio_extcon_remove(struct
+> platform_device *pdev)
+> >  	return 0;
+> >  }
+> >
+> > +#ifdef CONFIG_PM_SLEEP
+> > +static int gpio_extcon_resume(struct device *dev) {
+> > +	struct gpio_extcon_data *extcon_data;
+> > +
+> > +	extcon_data = dev_get_drvdata(dev);
+> > +	if (extcon_data->check_on_resume)
+> > +		queue_delayed_work(system_power_efficient_wq,
+> > +			&extcon_data->work, extcon_data->debounce_jiffies);
+> > +	return 0;
+> > +}
+> > +#endif
+> > +
+> > +static const struct dev_pm_ops gpio_extcon_pm_ops = {
+> > +	SET_SYSTEM_SLEEP_PM_OPS(NULL, gpio_extcon_resume)
+> 
+> If CONFIG_PM_SLEEP is undefined, gpio_extcon_pm_ops cannot find
+> gpio_extcon_resume function.
+> You should define dummy function for gpio_extcon_resume function.
+> 
+> 
+In the include/Linux/pm.h
+If CONFIG_PM_SLEEP is undefined, the SET_SYSTEM_SLEEP_PM_OPS macro is bypassed.
 
-The following two commits in mainline fix those two problems by ensuring
-all CPUs have the same virtual timer offset (zero), and maintaining it
-across KVM world switches. On arm64 the requisite CNTVOFF zeroing is
-already present in linux-3.10.y.
+#ifdef CONFIG_PM_SLEEP
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+        .suspend = suspend_fn, \
+        .resume = resume_fn, \
+        .freeze = suspend_fn, \
+        .thaw = resume_fn, \
+        .poweroff = suspend_fn, \
+        .restore = resume_fn,
+#else
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
+#endif
+> 
+> 
+>  To report this email as spam click
+> https://www.mailcontrol.com/sr/MZbqvYs5QwJvpeaetUwhCQ==
+> UfkIuR0P8QH1DW7C+lVo3569nqreWejYcysfmF8UmgH1OQ== .
 
-0af0b189abf7 (ARM: hyp: initialize CNTVOFF to zero)
-f793c23ebbe5 (ARM: KVM: arch_timers: zero CNTVOFF upon return to host)
 
-Thanks,
-Mark.
-
-> 
-> ------------------
-> 
-> From: Mark Rutland <mark.rutland@arm.com>
-> 
-> commit 0d651e4e65e96989f72236bf83bd4c6e55eb6ce4 upstream.
-> 
-> Switching between reading the virtual or physical counters is
-> problematic, as some core code wants a view of time before we're fully
-> set up. Using a function pointer and switching the source after the
-> first read can make time appear to go backwards, and having a check in
-> the read function is an unfortunate block on what we want to be a fast
-> path.
-> 
-> Instead, this patch makes us always use the virtual counters. If we're a
-> guest, or don't have hyp mode, we'll use the virtual timers, and as such
-> don't care about CNTVOFF as long as it doesn't change in such a way as
-> to make time appear to travel backwards. As the guest will use the
-> virtual timers, a (potential) KVM host must use the physical timers
-> (which can wake up the host even if they fire while a guest is
-> executing), and hence a host must have CNTVOFF set to zero so as to have
-> a consistent view of time between the physical timers and virtual
-> counters.
-> 
-> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  arch/arm/include/asm/arch_timer.h    |    9 ---------
->  arch/arm64/include/asm/arch_timer.h  |   10 ----------
->  drivers/clocksource/arm_arch_timer.c |   23 +++++------------------
->  include/clocksource/arm_arch_timer.h |    2 +-
->  4 files changed, 6 insertions(+), 38 deletions(-)
-> 
-> --- a/arch/arm/include/asm/arch_timer.h
-> +++ b/arch/arm/include/asm/arch_timer.h
-> @@ -80,15 +80,6 @@ static inline u32 arch_timer_get_cntfrq(
->  	return val;
->  }
->  
-> -static inline u64 arch_counter_get_cntpct(void)
-> -{
-> -	u64 cval;
-> -
-> -	isb();
-> -	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
-> -	return cval;
-> -}
-> -
->  static inline u64 arch_counter_get_cntvct(void)
->  {
->  	u64 cval;
-> --- a/arch/arm64/include/asm/arch_timer.h
-> +++ b/arch/arm64/include/asm/arch_timer.h
-> @@ -110,16 +110,6 @@ static inline void __cpuinit arch_counte
->  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
->  }
->  
-> -static inline u64 arch_counter_get_cntpct(void)
-> -{
-> -	u64 cval;
-> -
-> -	isb();
-> -	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
-> -
-> -	return cval;
-> -}
-> -
->  static inline u64 arch_counter_get_cntvct(void)
->  {
->  	u64 cval;
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -186,27 +186,19 @@ u32 arch_timer_get_rate(void)
->  	return arch_timer_rate;
->  }
->  
-> -/*
-> - * Some external users of arch_timer_read_counter (e.g. sched_clock) may try to
-> - * call it before it has been initialised. Rather than incur a performance
-> - * penalty checking for initialisation, provide a default implementation that
-> - * won't lead to time appearing to jump backwards.
-> - */
-> -static u64 arch_timer_read_zero(void)
-> +u64 arch_timer_read_counter(void)
->  {
-> -	return 0;
-> +	return arch_counter_get_cntvct();
->  }
->  
-> -u64 (*arch_timer_read_counter)(void) = arch_timer_read_zero;
-> -
->  static cycle_t arch_counter_read(struct clocksource *cs)
->  {
-> -	return arch_timer_read_counter();
-> +	return arch_counter_get_cntvct();
->  }
->  
->  static cycle_t arch_counter_read_cc(const struct cyclecounter *cc)
->  {
-> -	return arch_timer_read_counter();
-> +	return arch_counter_get_cntvct();
->  }
->  
->  static struct clocksource clocksource_counter = {
-> @@ -287,7 +279,7 @@ static int __init arch_timer_register(vo
->  	cyclecounter.mult = clocksource_counter.mult;
->  	cyclecounter.shift = clocksource_counter.shift;
->  	timecounter_init(&timecounter, &cyclecounter,
-> -			 arch_counter_get_cntpct());
-> +			 arch_counter_get_cntvct());
->  
->  	if (arch_timer_use_virtual) {
->  		ppi = arch_timer_ppi[VIRT_PPI];
-> @@ -376,11 +368,6 @@ static void __init arch_timer_init(struc
->  		}
->  	}
->  
-> -	if (arch_timer_use_virtual)
-> -		arch_timer_read_counter = arch_counter_get_cntvct;
-> -	else
-> -		arch_timer_read_counter = arch_counter_get_cntpct;
-> -
->  	arch_timer_register();
->  	arch_timer_arch_init();
->  }
-> --- a/include/clocksource/arm_arch_timer.h
-> +++ b/include/clocksource/arm_arch_timer.h
-> @@ -32,7 +32,7 @@
->  #ifdef CONFIG_ARM_ARCH_TIMER
->  
->  extern u32 arch_timer_get_rate(void);
-> -extern u64 (*arch_timer_read_counter)(void);
-> +extern u64 arch_timer_read_counter(void);
->  extern struct timecounter *arch_timer_get_timecounter(void);
->  
->  #else
-> 
-> 
-> 
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Keep up to date with CSR on our technical blog, www.csr.com/blog, CSR people blog, www.csr.com/people, YouTube, www.youtube.com/user/CSRplc, Facebook, www.facebook.com/pages/CSR/191038434253534, or follow us on Twitter at www.twitter.com/CSR_plc.
+New for 2014, you can now access the wide range of products powered by aptX at www.aptx.com.
