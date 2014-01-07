@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633AbaAGVlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 16:41:00 -0500
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:50128 "EHLO
-	dhcp-26-207.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753774AbaAGVjN (ORCPT
+	id S1754672AbaAGVl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 16:41:28 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:45385 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896AbaAGVlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 16:39:13 -0500
-X-Greylist: delayed 624 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 16:39:13 EST
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 5/7] vfio: Use new interfaces for MSI/MSI-X enablement
-Date: Tue,  7 Jan 2014 19:05:40 +0100
-Message-Id: <1c2ab7cdd9f18f98ee86c73b182f4ee0697f7495.1389103215.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <cover.1389103215.git.agordeev@redhat.com>
-References: <cover.1389103215.git.agordeev@redhat.com>
+	Tue, 7 Jan 2014 16:41:23 -0500
+Date: Tue, 7 Jan 2014 16:41:19 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
+        JBottomley@parallels.com, bhelgaas@google.com
+Subject: Re: [PATCHSET driver-core-next] kernfs, sysfs, driver-core:
+ implement synchronous self-removal
+Message-ID: <20140107214119.GG3231@htj.dyndns.org>
+References: <1389117590-25705-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389117590-25705-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This update also fixes a bug when deprecated pci_enable_msix()
-and pci_enable_msi_block() functions return a positive return
-value which indicats the number of interrupts that could have
-been allocated rather than a successful allocation. The driver
-misinterpreted this value and assumed MSI-X/MSIs are enabled,
-although in fact it were not.
+On Tue, Jan 07, 2014 at 12:59:38PM -0500, Tejun Heo wrote:
+> This patchset improves kernfs removal path and implements
+> kernfs_remove_self() which is to be called from an on-going kernfs
+> operation and removes the self node.  The function can be called
+> concurrently and only one will return %true and all others will wait
+> until the winner's file operation is complete (not the
+> kernfs_remove_self() call itself but the enclosing file operation
+> which invoked the function).  This ensures that if there are multiple
+> concurrent "echo 1 > asdf/delete", all of them would finish only after
+> the whole store_delete() method is complete.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/vfio/pci/vfio_pci_intrs.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Heh, dang it.  Please ignore this posting.  I thought I could get away
+with this but apparently cgroup would need something a bit more
+flexible. :(
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index 641bc87..66d1746 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -482,15 +482,15 @@ static int vfio_msi_enable(struct vfio_pci_device *vdev, int nvec, bool msix)
- 		for (i = 0; i < nvec; i++)
- 			vdev->msix[i].entry = i;
- 
--		ret = pci_enable_msix(pdev, vdev->msix, nvec);
--		if (ret) {
-+		ret = pci_enable_msix_range(pdev, vdev->msix, nvec, nvec);
-+		if (ret < 0) {
- 			kfree(vdev->msix);
- 			kfree(vdev->ctx);
- 			return ret;
- 		}
- 	} else {
--		ret = pci_enable_msi_block(pdev, nvec);
--		if (ret) {
-+		ret = pci_enable_msi_range(pdev, nvec, nvec);
-+		if (ret < 0) {
- 			kfree(vdev->ctx);
- 			return ret;
- 		}
+I'll post an updated version later.
+
+Thanks.
+
 -- 
-1.7.7.6
-
+tejun
