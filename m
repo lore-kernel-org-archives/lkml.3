@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaAGRmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:42:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:5084 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234AbaAGRmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:42:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,620,1384329600"; 
-   d="scan'208";a="463015768"
-Subject: [PATCH v2] checkpatch: Only flag FSF address, not gnu.org URL
-To: joe@perches.com, gregkh@linuxfoundation.org, josh@joshtriplett.org
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 07 Jan 2014 09:41:50 -0800
-Message-ID: <20140107173926.8923.98340.stgit@ahduyck-cp2.jf.intel.com>
-User-Agent: StGit/0.16
+	id S1753056AbaAGRnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:43:33 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:59432 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753045AbaAGRnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 12:43:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1387833287.4412.6.camel@jlt4.sipsolutions.net>
+References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1385460350-17543-3-git-send-email-mika.westerberg@linux.intel.com>
+	<CACRpkdb03X_Z7amX-vAVX8KboeCo3ia6oqv8KW79WY=nZXV7wQ@mail.gmail.com>
+	<20131223105420.GP8621@intel.com>
+	<1387833287.4412.6.camel@jlt4.sipsolutions.net>
+Date: Tue, 7 Jan 2014 18:43:22 +0100
+Message-ID: <CACRpkdYmSQD8u3ZutYVC=3hAch_ikkPXAcKa6d0o6T+N+QFqGw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] net: rfkill: gpio: convert to descriptor-based
+ GPIO interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-netdev@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Rob Landley <rob@landley.net>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change restricts the check for the for the FSF address in the GPL
-copyright statement so that it only flags the address, not the references to
-the gnu.org/licenses URL which appears to be used in numerous drivers.  The
-idea is to still allow some reference to an external copy of the GPL in the
-event that files are copied out of the kernel tree without the COPYING file.
+On Mon, Dec 23, 2013 at 10:14 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Mon, 2013-12-23 at 12:54 +0200, Mika Westerberg wrote:
+>> On Wed, Dec 11, 2013 at 01:00:18PM +0100, Linus Walleij wrote:
+>> > On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
+>> > <mika.westerberg@linux.intel.com> wrote:
+>> >
+>> > > From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> > >
+>> > > Convert to the safer gpiod_* family of API functions.
+>> > >
+>> > > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> > > Tested-by: Stephen Warren <swarren@nvidia.com>
+>>
+>> Johannes B, David M,
+>>
+>> Are you fine with this patch? If yes, could you ack it so that we could get
+>> it merged for 3.14.
+>
+> I have no objection to this particular patch. I can't really comment on
+> it, but I never really delved too deeply into the rfkill-gpio thing - I
+> guess it works for whoever needed it :)
 
-So for example this statement will still return an error:
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+I take that as an ACK ;-)
 
-However, this statement will not return an error after this patch:
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Patch applied.
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
-
-v2: Rebased patch off of linux-next tree.
-    Updated patch description to include motivation behind change.
-
- scripts/checkpatch.pl |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 07331d6..e7f2c65 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1970,14 +1970,12 @@ sub process {
- 		}
- 
- # Check for FSF mailing addresses.
--		if ($rawline =~ /\bYou should have received a copy/i ||
--		    $rawline =~ /\bwrite to the Free/i ||
-+		if ($rawline =~ /\bwrite to the Free/i ||
- 		    $rawline =~ /\b59\s+Temple\s+Pl/i ||
- 		    $rawline =~ /\b51\s+Franklin\s+St/i) {
- 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
- 			my $msg_type = \&ERROR;
- 			$msg_type = \&CHK if ($file);
--			$msg_type = \&CHK if ($rawline =~ /\bYou should have received a copy/i);
- 			&{$msg_type}("FSF_MAILING_ADDRESS",
- 				     "Do not include the paragraph about writing to the Free Software Foundation's mailing address from the sample GPL notice. The FSF has changed addresses in the past, and may do so again. Linux already includes a copy of the GPL.\n" . $herevet)
- 		}
-
+Yours,
+Linus Walleij
