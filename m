@@ -1,107 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813AbaAGAyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:54:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27253 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979AbaAGAyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 19:54:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,615,1384329600"; 
-   d="scan'208";a="434794667"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        iommu <iommu@lists.linux-foundation.org>
-Subject: RE: [PATCH] iommu/intel: SNP bit is not dependent on iommu domain
- coherency
-Thread-Topic: [PATCH] iommu/intel: SNP bit is not dependent on iommu domain
- coherency
-Thread-Index: AQHPAAgPvhMDfmuDwEKcJmWuy3ksQ5p4g63A
-Date: Tue, 7 Jan 2014 00:54:03 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0A9A31C2@SHSMSX104.ccr.corp.intel.com>
-References: <20131029162126.23362.58786.stgit@bling.home>
- <1387821199.30327.107.camel@bling.home>
-In-Reply-To: <1387821199.30327.107.camel@bling.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1757029AbaAGAzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:55:18 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:41853 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628AbaAGAzP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Jan 2014 19:55:15 -0500
+Subject: [PATCH v7 00/15] PCI: Allocate 64-bit BARs above 4G when possible
+To: linux-pci@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: David Airlie <airlied@linux.ie>, Yinghai Lu <yinghai@kernel.org>,
+        Guo Chao <yan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Date: Mon, 06 Jan 2014 17:55:12 -0700
+Message-ID: <20140107005003.10786.85164.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s070sQLw013945
 
-Alex Williamson wrote on 2013-12-24:
-> David,
-> 
-> Any comments on this patch?  Thanks,
-> 
+This is basically v7 of Yinghai's patch series:
+http://lkml.kernel.org/r/1387485843-17403-1-git-send-email-yinghai@kernel.org
 
-Hi Alex,
+The goal is to try to put 64-bit BARs above 4G so we can preserve the
+32-bit bus address space for 32-bit BARs.
 
-There do have some IOMMUs will treat SNP bit in the PTE as reserved (0) and will cause a reserved field violation fault if it is set but hardware not support snoop-control(bit 7 in ECAP_REG is 0). So your patch seems wrong to me.
+There are a whole bunch of AGP updates at the beginning because some AGP
+devices have 64-bit BARs, but most of the AGP drivers read the aperture
+bus address directly from the BAR, and they only handle 32-bit BARs.
+Putting BARs above 4G would break those drivers, so we tried to fix them
+up first.  Yinghai fixed intel-gtt.c, and I made similar fixes to all
+the other AGP drivers I could find.
 
-> Alex
-> 
-> On Tue, 2013-10-29 at 10:21 -0600, Alex Williamson wrote:
->> The setting of the SNP bit in the intel-iommu page tables should not
->> be dependent on the current capability of the iommu domain.  The
->> current VT-d spec (2.2) indicates the SNP bit is "treated as
->> reserved[0] by hardware implementations not supporting Snoop Control".
->> Furthermore, section 3.7.3 indicates:
->> 
->>   If the Snoop Control (SC) field in extended capability Register is
->>   reported as 0, snoop behavior for access to the page mapped through
->>   second-level translation is determined by the no-snoop attribute in
->>   the request.
->> This all seems to indicate that hardware incapable of Snoop Control
->> will handle the SNP bit as zero regardless of the value stored in
->> the PTE.
->> 
->> The trouble with the current implementation is that mapping flags
->> depend on the state of the iommu domain at the time of the mapping,
->> yet no attempt is made to update existing mappings when the iommu
->> domain composition changes.  This leaves the iommu domain in a state
->> where some mappings may enforce coherency, others do not, and the
->> user of the IOMMU API has no ability to later enable the desired
->> flags atomically with respect to DMA.
->> 
->> If we always honor the IOMMU_CACHE flag then an IOMMU API user who
->> specifies IOMMU_CACHE for all mappings can assume that the coherency
->> of the mappings within a domain follow the coherency capability of
->> the domain itself.
->> 
->> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->> ---
->>  drivers/iommu/intel-iommu.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> diff --git a/drivers/iommu/intel-iommu.c
->> b/drivers/iommu/intel-iommu.c index 15e9b57..c46c6a6 100644
->> --- a/drivers/iommu/intel-iommu.c
->> +++ b/drivers/iommu/intel-iommu.c
->> @@ -4084,7 +4084,7 @@ static int intel_iommu_map(struct iommu_domain
-> *domain,
->>  		prot |= DMA_PTE_READ;
->>  	if (iommu_prot & IOMMU_WRITE)
->>  		prot |= DMA_PTE_WRITE;
->> -	if ((iommu_prot & IOMMU_CACHE) && dmar_domain->iommu_snooping)
->> +	if (iommu_prot & IOMMU_CACHE)
->>  		prot |= DMA_PTE_SNP;
->>  
->>  	max_addr = iova + size;
-> 
->
+Some of the AGP updates are related to the fact that most of the drivers
+assume the PCI bus address is the same as the CPU physical address.  For
+example, they read the bus address from the BAR, then call ioremap() on
+it.  This is wrong, because ioremap() expects a CPU physical address,
+not a bus address.  In most cases, I think AGP devices are in simple
+systems where (bus_address == CPU_physical_address), so these updates
+probably don't fix any broken systems.  I'm pretty sure there are more
+things like this that should be fixed.
 
+The important PCI changes are the last two:
 
-Best regards,
-Yang
+      PCI: Enforce bus address limits in resource allocation
+      PCI: Allocate 64-bit BARs above 4G when possible
+
+The first fixes a long-standing bug: we would never assign space to a
+32-bit BAR if the *CPU* address didn't fit in 32 bits.  But the important
+thing is the *bus* address, and that may fit in 32 bits even if the CPU
+address doesn't.
+
+The second is the one that tries to allocate space above 4G for 64-bit
+BARs.  If that fails, we fall back to allocating space anywhere.  It's
+possible this will expose other broken drivers that can't deal with
+64-bit BARs being above 4G.
+
+I kept Yinghai as the author of the patches that originated with him,
+but I reworked them substantially to try to simplify the series, so any
+bugs here are most likely my fault.  If my rework made things worse, or
+if it makes your life difficult, I will consider doing something
+different; just let me know.
+
+---
+
+Bjorn Helgaas (11):
+      PCI: Change pci_bus_region addresses to dma_addr_t
+      PCI: Add pci_bus_address() to get bus address of a BAR
+      agp: Support 64-bit APBASE
+      agp: Use pci_resource_start() to get CPU physical address for BAR
+      drm/i915: Rename gtt_bus_addr to gtt_phys_addr
+      agp/intel: Rename gtt_bus_addr to gtt_phys_addr
+      agp/intel: Use pci_bus_address() to get MMADR bus address
+      agp/intel: Use pci_bus_address() to get GTTADR bus address
+      agp/intel: Use CPU physical address, not bus address, for ioremap()
+      agp/ati: Use PCI_COMMAND instead of hard-coded 4
+      PCI: Split out bridge window override of minimum allocation address
+
+Yinghai Lu (4):
+      PCI: Convert pcibios_resource_to_bus() to take a pci_bus, not a pci_dev
+      agp/intel: Support 64-bit GMADR
+      PCI: Enforce bus address limits in resource allocation
+      PCI: Allocate 64-bit BARs above 4G when possible
 
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+ arch/alpha/kernel/pci-sysfs.c       |    4 +
+ arch/powerpc/kernel/pci-common.c    |    4 +
+ arch/powerpc/kernel/pci_of_scan.c   |    4 +
+ arch/sparc/kernel/pci.c             |    6 +-
+ arch/x86/include/asm/pci.h          |    1 
+ drivers/char/agp/agp.h              |    1 
+ drivers/char/agp/ali-agp.c          |    4 +
+ drivers/char/agp/amd-k7-agp.c       |   14 ++--
+ drivers/char/agp/amd64-agp.c        |    5 -
+ drivers/char/agp/ati-agp.c          |   21 +++---
+ drivers/char/agp/efficeon-agp.c     |    5 +
+ drivers/char/agp/generic.c          |    4 +
+ drivers/char/agp/intel-agp.c        |   48 +++++--------
+ drivers/char/agp/intel-agp.h        |   10 +--
+ drivers/char/agp/intel-gtt.c        |   47 +++++--------
+ drivers/char/agp/nvidia-agp.c       |    9 +-
+ drivers/char/agp/sis-agp.c          |    5 +
+ drivers/char/agp/via-agp.c          |   13 ++--
+ drivers/gpu/drm/i915/i915_gem_gtt.c |    6 +-
+ drivers/pci/bus.c                   |  128 +++++++++++++++++++++++++++--------
+ drivers/pci/host-bridge.c           |   19 ++---
+ drivers/pci/probe.c                 |   18 ++---
+ drivers/pci/quirks.c                |    2 -
+ drivers/pci/rom.c                   |    2 -
+ drivers/pci/setup-bus.c             |   16 ++--
+ drivers/pci/setup-res.c             |    2 -
+ drivers/pcmcia/i82092.c             |    2 -
+ drivers/pcmcia/yenta_socket.c       |    6 +-
+ drivers/scsi/sym53c8xx_2/sym_glue.c |    5 +
+ drivers/video/arkfb.c               |    2 -
+ drivers/video/s3fb.c                |    2 -
+ drivers/video/vt8623fb.c            |    2 -
+ include/linux/pci.h                 |   20 +++--
+ 33 files changed, 241 insertions(+), 196 deletions(-)
