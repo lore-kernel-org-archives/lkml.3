@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaAGOLU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:11:20 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:49406 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388AbaAGOLM (ORCPT
+	id S1752546AbaAGOLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:11:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59219 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526AbaAGOL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:11:12 -0500
+	Tue, 7 Jan 2014 09:11:26 -0500
+Date: Tue, 7 Jan 2014 15:10:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140107141059.GY3694@twins.programming.kicks-ass.net>
+References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
+ <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com>
+ <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
+ <20140106163123.GN31570@twins.programming.kicks-ass.net>
+ <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
+ <20140107132220.GZ31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1387814889-16670-2-git-send-email-lpapp@kde.org>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-2-git-send-email-lpapp@kde.org>
-Date: Tue, 7 Jan 2014 15:11:11 +0100
-Message-ID: <CACRpkdZVDYgLSW9vbauptb0p_nnhUfrgtVkSx_wMRbpP1XPybQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>, Mark Brown <broonie@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107132220.GZ31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 5:08 PM, Laszlo Papp <lpapp@kde.org> wrote:
+On Tue, Jan 07, 2014 at 02:22:20PM +0100, Peter Zijlstra wrote:
 
-> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
-> chip includes fan-speed regulators and monitors, GPIO, and alarm.
->
-> This patch is an initial release of a MAX6650/6651 MFD driver that
-> supports to enable the chip with its primary I2C bus that will connect
-> the hwmon, and then the gpio devices for now.
->
-> Signed-off-by: Laszlo Papp <lpapp@kde.org>
-(...)
-> +++ b/include/linux/mfd/max6651-private.h
-> +struct max6651_dev {
-> +    struct device *dev;
-> +    struct mutex iolock;
-> +
-> +    struct i2c_client *i2c;
-> +
-> +       int type;
-> +};
-> +
-> +enum max6651_types {
-> +       TYPE_MAX6650,
-> +       TYPE_MAX6651,
-> +};
-> +
-> +extern int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
-> +extern int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
+I just realized there's two different p's in there.
 
-It looks like you're reinventing regmap.
+> Ah, another way of looking at it is that the avg without blocked
+> component is a 'now' picture. It is the load we are concerned with right
+> now.
+> 
+> The more blocked we add the further out we look; with the obvious limit
+> of the entire averaging period.
+> 
+> So the avg that is runnable is right now, t_0; the avg that is runnable +
+> blocked is t_0 + p, where p is the avg period over which we expect the
+> blocked contribution to appear.
 
-- In the Kconfig entry for the MFD device:
-  select REGMAP_I2C
+So the above p for period, is unrelated to the below p which is a
+probability function.
 
-- Look in drivers/mfd/stw481x.c for an example using
-  <linux/regmap.h>
+> So something like:
+> 
+>   avg = runnable + p(i) * blocked; where p(i) \e [0,1]
+> 
+> could maybe be used to replace the cpu_load array and still represent
+> the concept of looking at a bigger picture for larger sets. Leaving open
+> the details of the map p.
 
-- Look into
-  drivers/regulator/stw481x-vmmc.c
-  for an example regmap MFD spawned child cell.
-
-Yours,
-Linus Walleij
+We probably want to assume task wakeup is constant over time, so p (our
+probability function) should probably be an exponential distribution.
