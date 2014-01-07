@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262AbaAGR1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:27:09 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45713 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752220AbaAGR1A (ORCPT
+	id S1752117AbaAGR1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:27:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42207 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753251AbaAGR1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:27:00 -0500
-Date: Tue, 7 Jan 2014 17:26:32 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mark Salter <msalter@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 7 Jan 2014 12:27:09 -0500
+Date: Tue, 7 Jan 2014 17:26:59 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 0/5] generic early_ioremap support
-Message-ID: <20140107172632.GC6234@arm.com>
-References: <1389062120-31896-1-git-send-email-msalter@redhat.com>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.10 075/129] mm/mempolicy: correct putback method for
+ isolate pages if failed
+Message-ID: <20140107172659.GC4383@hercules>
+References: <20140106223859.589799655@linuxfoundation.org>
+ <20140106223901.757315615@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389062120-31896-1-git-send-email-msalter@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140106223901.757315615@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 02:35:15AM +0000, Mark Salter wrote:
-> This patch series takes the common bits from the x86 early ioremap
-> implementation and creates a generic implementation which may be used
-> by other architectures. The early ioremap interfaces are intended for
-> situations where boot code needs to make temporary virtual mappings
-> before the normal ioremap interfaces are available. Typically, this
-> means before paging_init() has run.
-> 
-> These patches are layered on top of generic fixmap patches which
-> were discussed here (and are in the akpm tree):
-> 
->   http://lkml.org/lkml/2013/11/25/474
-> 
-> This is version 2 of the patch series. These patches (and underlying
-> fixmap patches) may be found at:
-> 
->   git://github.com/mosalter/linux.git (early-ioremap-v2 branch)
+On Mon, Jan 06, 2014 at 02:38:24PM -0800, Greg Kroah-Hartman wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
 
-The patches look fine to me. I haven't acked the arm64 patches as I'll
-eventually merge/sign them off once the first patch in the series goes
-in.
+This commit was tagged for 3.12 stable only, so you may want to drop it.
 
-Thanks.
+Cheers,
+--
+Luis
 
--- 
-Catalin
+
+> ------------------
+> 
+> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> commit b0e5fd7359f1ce8db4ccb862b3aa80d2f2cbf4d0 upstream.
+> 
+> queue_pages_range() isolates hugetlbfs pages and putback_lru_pages()
+> can't handle these.  We should change it to putback_movable_pages().
+> 
+> Naoya said that it is worth going into stable, because it can break
+> in-use hugepage list.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Acked-by: Rafael Aquini <aquini@redhat.com>
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  mm/mempolicy.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -1271,7 +1271,7 @@ static long do_mbind(unsigned long start
+>  		if (nr_failed && (flags & MPOL_MF_STRICT))
+>  			err = -EIO;
+>  	} else
+> -		putback_lru_pages(&pagelist);
+> +		putback_movable_pages(&pagelist);
+>  
+>  	up_write(&mm->mmap_sem);
+>   mpol_out:
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
