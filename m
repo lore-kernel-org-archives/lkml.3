@@ -1,579 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaAGFQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 00:16:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49691 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaAGFQB (ORCPT
+	id S1753459AbaAGFR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 00:17:26 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:51071 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaAGFRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 00:16:01 -0500
-Date: Mon, 6 Jan 2014 21:15:38 -0800
-From: tip-bot for Paul Gortmaker <tipbot@zytor.com>
-Message-ID: <tip-0262b6690132600c6e77534a639519be3f36f8f5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, paul.gortmaker@windriver.com
-In-Reply-To: <1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: Delete non-required instances of include 
- <linux/init.h>
-Git-Commit-ID: 0262b6690132600c6e77534a639519be3f36f8f5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 7 Jan 2014 00:17:24 -0500
+Message-ID: <52CB8DC3.40605@gmail.com>
+Date: Mon, 06 Jan 2014 21:16:51 -0800
+From: John Fastabend <john.fastabend@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 06 Jan 2014 21:15:45 -0800 (PST)
+To: Jason Wang <jasowang@redhat.com>
+CC: Neil Horman <nhorman@tuxdriver.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Vlad Yasevich <vyasevic@redhat.com>
+Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <52CA5CDA.1020503@gmail.com> <52CA612D.2000902@redhat.com> <20140106122628.GA24280@hmsreliant.think-freely.org> <52CB7009.2030903@redhat.com>
+In-Reply-To: <52CB7009.2030903@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0262b6690132600c6e77534a639519be3f36f8f5
-Gitweb:     http://git.kernel.org/tip/0262b6690132600c6e77534a639519be3f36f8f5
-Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
-AuthorDate: Mon, 6 Jan 2014 19:20:26 -0500
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 6 Jan 2014 21:14:15 -0800
+On 01/06/2014 07:10 PM, Jason Wang wrote:
+> On 01/06/2014 08:26 PM, Neil Horman wrote:
+>> On Mon, Jan 06, 2014 at 03:54:21PM +0800, Jason Wang wrote:
+>>> On 01/06/2014 03:35 PM, John Fastabend wrote:
+>>>> On 01/05/2014 07:21 PM, Jason Wang wrote:
+>>>>> L2 fowarding offload will bypass the rx handler of real device. This
+>>>>> will make
+>>>>> the packet could not be forwarded to macvtap device. Another problem
+>>>>> is the
+>>>>> dev_hard_start_xmit() called for macvtap does not have any
+>>>>> synchronization.
+>>>>>
+>>>>> Fix this by forbidding L2 forwarding for macvtap.
+>>>>>
+>>>>> Cc: John Fastabend <john.r.fastabend@intel.com>
+>>>>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>>>> ---
+>>>>>    drivers/net/macvlan.c |    5 ++++-
+>>>>>    1 files changed, 4 insertions(+), 1 deletions(-)
+>>>>>
+>>>> I must be missing something.
+>>>>
+>>>> The lower layer device should set skb->dev to the correct macvtap
+>>>> device on receive so that in netif_receive_skb_core() the macvtap
+>>>> handler is hit. Skipping the macvlan receive handler should be OK
+>>>> because the switching was done by the hardware. If I read macvtap.c
+>>>> correctly macvlan_common_newlink() is called with 'dev' where 'dev'
+>>>> is the macvtap device. Any idea what I'm missing? I guess I'll need
+>>>> to setup a macvtap test case.
+>>> Unlike macvlan, macvtap depends on rx handler on the lower device to
+>>> work. In this case macvlan_handle_frame() will call macvtap_receive().
+>>> So doing netif_receive_skb_core() for macvtap device directly won't work
+>>> since we need to forward the packet to userspace instead of kernel.
+>>>
+>>> For net-next.git, it may work since commit
+>>> 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 let macvtap device register an
+>>> rx handler for itself.
+>> I agree, this seems like it should already be fixed with the above commit.  With
+>> this the macvlan rx handler should effectively be a no-op as far as the
+>> reception of frames is concerned.  As long as the driver sets the dev correctly
+>> to the macvtap device (and it appears to), macvtap will get frames to user
+>> space, regardless of weather the software or hardware did the switching.  If
+>> thats the case though, I think the solution is moving that fix to -stable
+>> (pending testing of course), rather than comming up with a new fix.
+>>
+>>>> And what synchronization are you worried about on dev_hard_start_xmit()?
+>>>> In the L2 forwarding offload case macvlan_open() clears the NETIF_F_LLTX
+>>>> flag so HARD_TX_LOCK protects the driver txq. We might hit this warning
+>>>> in dev_queue_xmit() though,
+>>>>
+>>>>    net_crit_ratelimited("Virtual device %s asks to queue packet!\n",
+>>>>
+>>>> Perhaps we can remove it.
+>>> The problem is macvtap does not call dev_queue_xmit() for macvlan
+>>> device. It calls macvlan_start_xmit() directly from macvtap_get_user().
+>>> So HARD_TX_LOCK was not done for the txq.
+>> This seems to also be fixed by 6acf54f1cf0a6747bac9fea26f34cfc5a9029523.
+>> Macvtap does, as of that commit use dev_queue_xmit for the transmission of
+>> frames to the lowerdevice.
+>
+> Unfortunately not. This commit has a side effect that it in fact
+> disables the multiqueue macvtap transmission. Since all macvtap queues
+> will contend on a single qdisc lock.
+>
 
-x86: Delete non-required instances of include <linux/init.h>
+They will only contend on a single qdisc lock if the lower device has
+1 queue. Perhaps defaulting the L2 forwarding devices to 1queue was a
+mistake. But the same issue arises when running macvtap over a
+non-multiqueue nic. Or even if you have a multiqueue device and create
+many more macvtap queues than the lower device has queues.
 
-None of these files are actually using any __init type directives
-and hence don't need to include <linux/init.h>.  Most are just a
-left over from __devinit and __cpuinit removal, or simply due to
-code getting copied from one driver to the next.
+Shouldn't the macvtap configuration take into account the lowest level
+devices queues? How does using the L2 forwarding device change the
+contention issues? Without the L2 forwarding LLTX is enabled but the
+qdisc lock, etc is still acquired on the device below the macvlan.
 
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Link: http://lkml.kernel.org/r/1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/mce.h                           | 1 -
- arch/x86/include/asm/mpspec.h                        | 1 -
- arch/x86/include/asm/processor.h                     | 1 -
- arch/x86/include/asm/ptrace.h                        | 1 -
- arch/x86/include/asm/smp.h                           | 1 -
- arch/x86/include/asm/timer.h                         | 1 -
- arch/x86/kernel/apic/apic_flat_64.c                  | 1 -
- arch/x86/kernel/apic/apic_noop.c                     | 1 -
- arch/x86/kernel/apic/ipi.c                           | 1 -
- arch/x86/kernel/apic/summit_32.c                     | 1 -
- arch/x86/kernel/apic/x2apic_cluster.c                | 1 -
- arch/x86/kernel/apic/x2apic_phys.c                   | 1 -
- arch/x86/kernel/cpu/amd.c                            | 1 -
- arch/x86/kernel/cpu/centaur.c                        | 1 -
- arch/x86/kernel/cpu/cyrix.c                          | 1 -
- arch/x86/kernel/cpu/intel.c                          | 1 -
- arch/x86/kernel/cpu/mcheck/mce_intel.c               | 1 -
- arch/x86/kernel/cpu/mcheck/p5.c                      | 1 -
- arch/x86/kernel/cpu/mcheck/winchip.c                 | 1 -
- arch/x86/kernel/cpu/transmeta.c                      | 1 -
- arch/x86/kernel/cpu/umc.c                            | 1 -
- arch/x86/kernel/crash.c                              | 1 -
- arch/x86/kernel/doublefault.c                        | 1 -
- arch/x86/kernel/head_32.S                            | 1 -
- arch/x86/kernel/hw_breakpoint.c                      | 1 -
- arch/x86/kernel/kgdb.c                               | 1 -
- arch/x86/kernel/machine_kexec_32.c                   | 1 -
- arch/x86/kernel/pci-nommu.c                          | 1 -
- arch/x86/kernel/process_32.c                         | 1 -
- arch/x86/kernel/tsc_sync.c                           | 1 -
- arch/x86/lib/delay.c                                 | 1 -
- arch/x86/mm/kmmio.c                                  | 1 -
- arch/x86/mm/pageattr-test.c                          | 1 -
- arch/x86/pci/fixup.c                                 | 1 -
- arch/x86/platform/intel-mid/early_printk_intel_mid.c | 1 -
- arch/x86/platform/iris/iris.c                        | 1 -
- arch/x86/realmode/rm/reboot.S                        | 1 -
- arch/x86/realmode/rm/trampoline_32.S                 | 1 -
- arch/x86/realmode/rm/trampoline_64.S                 | 1 -
- arch/x86/um/vdso/vdso.S                              | 1 -
- arch/x86/vdso/vdso.S                                 | 1 -
- arch/x86/vdso/vdsox32.S                              | 1 -
- 42 files changed, 42 deletions(-)
+The ixgbe driver as it is currently written can be configured for up to
+4 queues by setting numtxqueues when the device is created. I assume
+when creating macvtap queues the user needs to account for the number
+of queues supported by the lower device.
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index c696a86..6e4ce2d 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -118,7 +118,6 @@ extern void mce_register_decode_chain(struct notifier_block *nb);
- extern void mce_unregister_decode_chain(struct notifier_block *nb);
- 
- #include <linux/percpu.h>
--#include <linux/init.h>
- #include <linux/atomic.h>
- 
- extern int mce_p5_enabled;
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 3142a94..3e6b492 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -1,7 +1,6 @@
- #ifndef _ASM_X86_MPSPEC_H
- #define _ASM_X86_MPSPEC_H
- 
--#include <linux/init.h>
- 
- #include <asm/mpspec_def.h>
- #include <asm/x86_init.h>
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 7b034a4..8ade617 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -27,7 +27,6 @@ struct mm_struct;
- #include <linux/cache.h>
- #include <linux/threads.h>
- #include <linux/math64.h>
--#include <linux/init.h>
- #include <linux/err.h>
- #include <linux/irqflags.h>
- 
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 942a086..14fd6fd 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -60,7 +60,6 @@ struct pt_regs {
- 
- #endif /* !__i386__ */
- 
--#include <linux/init.h>
- #ifdef CONFIG_PARAVIRT
- #include <asm/paravirt_types.h>
- #endif
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 4137890..8cd27e0 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -2,7 +2,6 @@
- #define _ASM_X86_SMP_H
- #ifndef __ASSEMBLY__
- #include <linux/cpumask.h>
--#include <linux/init.h>
- #include <asm/percpu.h>
- 
- /*
-diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-index 34baa0e..a6f3e77 100644
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -1,6 +1,5 @@
- #ifndef _ASM_X86_TIMER_H
- #define _ASM_X86_TIMER_H
--#include <linux/init.h>
- #include <linux/pm.h>
- #include <linux/percpu.h>
- #include <linux/interrupt.h>
-diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-index 00c77cf..5d5b9eb 100644
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -14,7 +14,6 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/ctype.h>
--#include <linux/init.h>
- #include <linux/hardirq.h>
- #include <linux/module.h>
- #include <asm/smp.h>
-diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
-index e145f28..191ce75 100644
---- a/arch/x86/kernel/apic/apic_noop.c
-+++ b/arch/x86/kernel/apic/apic_noop.c
-@@ -15,7 +15,6 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/ctype.h>
--#include <linux/init.h>
- #include <linux/errno.h>
- #include <asm/fixmap.h>
- #include <asm/mpspec.h>
-diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
-index 7434d85..6207156 100644
---- a/arch/x86/kernel/apic/ipi.c
-+++ b/arch/x86/kernel/apic/ipi.c
-@@ -1,6 +1,5 @@
- #include <linux/cpumask.h>
- #include <linux/interrupt.h>
--#include <linux/init.h>
- 
- #include <linux/mm.h>
- #include <linux/delay.h>
-diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
-index 77c95c0..00146f9 100644
---- a/arch/x86/kernel/apic/summit_32.c
-+++ b/arch/x86/kernel/apic/summit_32.c
-@@ -29,7 +29,6 @@
- #define pr_fmt(fmt) "summit: %s: " fmt, __func__
- 
- #include <linux/mm.h>
--#include <linux/init.h>
- #include <asm/io.h>
- #include <asm/bios_ebda.h>
- 
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index 140e29d..cac85ee 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -3,7 +3,6 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/ctype.h>
--#include <linux/init.h>
- #include <linux/dmar.h>
- #include <linux/cpu.h>
- 
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index 562a76d..de231e3 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -3,7 +3,6 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/ctype.h>
--#include <linux/init.h>
- #include <linux/dmar.h>
- 
- #include <asm/smp.h>
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index bca023b..39bc78d 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -1,5 +1,4 @@
- #include <linux/export.h>
--#include <linux/init.h>
- #include <linux/bitops.h>
- #include <linux/elf.h>
- #include <linux/mm.h>
-diff --git a/arch/x86/kernel/cpu/centaur.c b/arch/x86/kernel/cpu/centaur.c
-index 8d5652d..8779eda 100644
---- a/arch/x86/kernel/cpu/centaur.c
-+++ b/arch/x86/kernel/cpu/centaur.c
-@@ -1,6 +1,5 @@
- #include <linux/bitops.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- 
- #include <asm/processor.h>
- #include <asm/e820.h>
-diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
-index d0969c7..aaf152e 100644
---- a/arch/x86/kernel/cpu/cyrix.c
-+++ b/arch/x86/kernel/cpu/cyrix.c
-@@ -1,4 +1,3 @@
--#include <linux/init.h>
- #include <linux/bitops.h>
- #include <linux/delay.h>
- #include <linux/pci.h>
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index dc1ec0d..53f5d3c 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -1,4 +1,3 @@
--#include <linux/init.h>
- #include <linux/kernel.h>
- 
- #include <linux/string.h>
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 4cfe045..fb6156f 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -6,7 +6,6 @@
-  */
- 
- #include <linux/gfp.h>
--#include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/percpu.h>
- #include <linux/sched.h>
-diff --git a/arch/x86/kernel/cpu/mcheck/p5.c b/arch/x86/kernel/cpu/mcheck/p5.c
-index 1c044b1..a304298 100644
---- a/arch/x86/kernel/cpu/mcheck/p5.c
-+++ b/arch/x86/kernel/cpu/mcheck/p5.c
-@@ -5,7 +5,6 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
--#include <linux/init.h>
- #include <linux/smp.h>
- 
- #include <asm/processor.h>
-diff --git a/arch/x86/kernel/cpu/mcheck/winchip.c b/arch/x86/kernel/cpu/mcheck/winchip.c
-index e9a701a..7dc5564 100644
---- a/arch/x86/kernel/cpu/mcheck/winchip.c
-+++ b/arch/x86/kernel/cpu/mcheck/winchip.c
-@@ -5,7 +5,6 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
--#include <linux/init.h>
- 
- #include <asm/processor.h>
- #include <asm/mce.h>
-diff --git a/arch/x86/kernel/cpu/transmeta.c b/arch/x86/kernel/cpu/transmeta.c
-index aa0430d..3fa0e5a 100644
---- a/arch/x86/kernel/cpu/transmeta.c
-+++ b/arch/x86/kernel/cpu/transmeta.c
-@@ -1,6 +1,5 @@
- #include <linux/kernel.h>
- #include <linux/mm.h>
--#include <linux/init.h>
- #include <asm/processor.h>
- #include <asm/msr.h>
- #include "cpu.h"
-diff --git a/arch/x86/kernel/cpu/umc.c b/arch/x86/kernel/cpu/umc.c
-index 75c5ad5..ef9c2a0 100644
---- a/arch/x86/kernel/cpu/umc.c
-+++ b/arch/x86/kernel/cpu/umc.c
-@@ -1,5 +1,4 @@
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <asm/processor.h>
- #include "cpu.h"
- 
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 18677a9..a57902e 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -7,7 +7,6 @@
-  *
-  */
- 
--#include <linux/init.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
- #include <linux/smp.h>
-diff --git a/arch/x86/kernel/doublefault.c b/arch/x86/kernel/doublefault.c
-index 5d3fe8d..f6dfd93 100644
---- a/arch/x86/kernel/doublefault.c
-+++ b/arch/x86/kernel/doublefault.c
-@@ -1,6 +1,5 @@
- #include <linux/mm.h>
- #include <linux/sched.h>
--#include <linux/init.h>
- #include <linux/init_task.h>
- #include <linux/fs.h>
- 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 81ba276..d18be9c 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -8,7 +8,6 @@
- 
- .text
- #include <linux/threads.h>
--#include <linux/init.h>
- #include <linux/linkage.h>
- #include <asm/segment.h>
- #include <asm/page_types.h>
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index f66ff16..a67b47c 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -38,7 +38,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/sched.h>
--#include <linux/init.h>
- #include <linux/smp.h>
- 
- #include <asm/hw_breakpoint.h>
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 836f832..7ec1d5f 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -39,7 +39,6 @@
- #include <linux/sched.h>
- #include <linux/delay.h>
- #include <linux/kgdb.h>
--#include <linux/init.h>
- #include <linux/smp.h>
- #include <linux/nmi.h>
- #include <linux/hw_breakpoint.h>
-diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
-index 5b19e4d..1667b1d 100644
---- a/arch/x86/kernel/machine_kexec_32.c
-+++ b/arch/x86/kernel/machine_kexec_32.c
-@@ -9,7 +9,6 @@
- #include <linux/mm.h>
- #include <linux/kexec.h>
- #include <linux/delay.h>
--#include <linux/init.h>
- #include <linux/numa.h>
- #include <linux/ftrace.h>
- #include <linux/suspend.h>
-diff --git a/arch/x86/kernel/pci-nommu.c b/arch/x86/kernel/pci-nommu.c
-index 871be4a..da15918 100644
---- a/arch/x86/kernel/pci-nommu.c
-+++ b/arch/x86/kernel/pci-nommu.c
-@@ -3,7 +3,6 @@
- #include <linux/dma-mapping.h>
- #include <linux/scatterlist.h>
- #include <linux/string.h>
--#include <linux/init.h>
- #include <linux/gfp.h>
- #include <linux/pci.h>
- #include <linux/mm.h>
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 6f1236c..0de43e9 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -24,7 +24,6 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <linux/reboot.h>
--#include <linux/init.h>
- #include <linux/mc146818rtc.h>
- #include <linux/module.h>
- #include <linux/kallsyms.h>
-diff --git a/arch/x86/kernel/tsc_sync.c b/arch/x86/kernel/tsc_sync.c
-index adfdf56..2648848 100644
---- a/arch/x86/kernel/tsc_sync.c
-+++ b/arch/x86/kernel/tsc_sync.c
-@@ -16,7 +16,6 @@
-  */
- #include <linux/spinlock.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/smp.h>
- #include <linux/nmi.h>
- #include <asm/tsc.h>
-diff --git a/arch/x86/lib/delay.c b/arch/x86/lib/delay.c
-index 7c3bee6..39d6a3d 100644
---- a/arch/x86/lib/delay.c
-+++ b/arch/x86/lib/delay.c
-@@ -16,7 +16,6 @@
- #include <linux/timex.h>
- #include <linux/preempt.h>
- #include <linux/delay.h>
--#include <linux/init.h>
- 
- #include <asm/processor.h>
- #include <asm/delay.h>
-diff --git a/arch/x86/mm/kmmio.c b/arch/x86/mm/kmmio.c
-index e5d5e2c..637ab34 100644
---- a/arch/x86/mm/kmmio.c
-+++ b/arch/x86/mm/kmmio.c
-@@ -11,7 +11,6 @@
- #include <linux/rculist.h>
- #include <linux/spinlock.h>
- #include <linux/hash.h>
--#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/uaccess.h>
-diff --git a/arch/x86/mm/pageattr-test.c b/arch/x86/mm/pageattr-test.c
-index d0b1773..461bc82 100644
---- a/arch/x86/mm/pageattr-test.c
-+++ b/arch/x86/mm/pageattr-test.c
-@@ -8,7 +8,6 @@
- #include <linux/kthread.h>
- #include <linux/random.h>
- #include <linux/kernel.h>
--#include <linux/init.h>
- #include <linux/mm.h>
- 
- #include <asm/cacheflush.h>
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index b046e07..bca9e85 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -5,7 +5,6 @@
- #include <linux/delay.h>
- #include <linux/dmi.h>
- #include <linux/pci.h>
--#include <linux/init.h>
- #include <linux/vgaarb.h>
- #include <asm/pci_x86.h>
- 
-diff --git a/arch/x86/platform/intel-mid/early_printk_intel_mid.c b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-index 4f702f5..e0bd082 100644
---- a/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-+++ b/arch/x86/platform/intel-mid/early_printk_intel_mid.c
-@@ -22,7 +22,6 @@
- #include <linux/console.h>
- #include <linux/kernel.h>
- #include <linux/delay.h>
--#include <linux/init.h>
- #include <linux/io.h>
- 
- #include <asm/fixmap.h>
-diff --git a/arch/x86/platform/iris/iris.c b/arch/x86/platform/iris/iris.c
-index e6cb80f..4d171e8 100644
---- a/arch/x86/platform/iris/iris.c
-+++ b/arch/x86/platform/iris/iris.c
-@@ -27,7 +27,6 @@
- #include <linux/kernel.h>
- #include <linux/errno.h>
- #include <linux/delay.h>
--#include <linux/init.h>
- #include <linux/pm.h>
- #include <asm/io.h>
- 
-diff --git a/arch/x86/realmode/rm/reboot.S b/arch/x86/realmode/rm/reboot.S
-index f932ea6..d66c607 100644
---- a/arch/x86/realmode/rm/reboot.S
-+++ b/arch/x86/realmode/rm/reboot.S
-@@ -1,5 +1,4 @@
- #include <linux/linkage.h>
--#include <linux/init.h>
- #include <asm/segment.h>
- #include <asm/page_types.h>
- #include <asm/processor-flags.h>
-diff --git a/arch/x86/realmode/rm/trampoline_32.S b/arch/x86/realmode/rm/trampoline_32.S
-index c1b2791..48ddd76 100644
---- a/arch/x86/realmode/rm/trampoline_32.S
-+++ b/arch/x86/realmode/rm/trampoline_32.S
-@@ -20,7 +20,6 @@
-  */
- 
- #include <linux/linkage.h>
--#include <linux/init.h>
- #include <asm/segment.h>
- #include <asm/page_types.h>
- #include "realmode.h"
-diff --git a/arch/x86/realmode/rm/trampoline_64.S b/arch/x86/realmode/rm/trampoline_64.S
-index bb360dc..dac7b20 100644
---- a/arch/x86/realmode/rm/trampoline_64.S
-+++ b/arch/x86/realmode/rm/trampoline_64.S
-@@ -25,7 +25,6 @@
-  */
- 
- #include <linux/linkage.h>
--#include <linux/init.h>
- #include <asm/pgtable_types.h>
- #include <asm/page_types.h>
- #include <asm/msr.h>
-diff --git a/arch/x86/um/vdso/vdso.S b/arch/x86/um/vdso/vdso.S
-index 1cb468a..4b4bd4c 100644
---- a/arch/x86/um/vdso/vdso.S
-+++ b/arch/x86/um/vdso/vdso.S
-@@ -1,4 +1,3 @@
--#include <linux/init.h>
- 
- __INITDATA
- 
-diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
-index 01f5e3b..1e13eb8 100644
---- a/arch/x86/vdso/vdso.S
-+++ b/arch/x86/vdso/vdso.S
-@@ -1,6 +1,5 @@
- #include <asm/page_types.h>
- #include <linux/linkage.h>
--#include <linux/init.h>
- 
- __PAGE_ALIGNED_DATA
- 
-diff --git a/arch/x86/vdso/vdsox32.S b/arch/x86/vdso/vdsox32.S
-index d6b9a7f..295f1c7 100644
---- a/arch/x86/vdso/vdsox32.S
-+++ b/arch/x86/vdso/vdsox32.S
-@@ -1,6 +1,5 @@
- #include <asm/page_types.h>
- #include <linux/linkage.h>
--#include <linux/init.h>
- 
- __PAGE_ALIGNED_DATA
- 
+> For L2 forwarding offload itself, more issues need to be addressed for
+> multiqueue macvtap:
+>
+> - ndo_dfwd_add_station() can only create queues per device at ndo_open,
+> but multiqueue macvtap allows user to create and destroy queues at their
+> will and at any time.
+
+same argument as above, isn't this the same when running macvtap without
+the l2 offloads over a real device? I expect you hit the same contention
+points when running over a real device.
+
+
+> - it looks that ixgbe has a upper limit of 4 queues per station, but
+> macvtap currently allows up to 16 queues per device.
+>
+
+The 4 limit was to simplify the code because the queue mapping in the
+driver gets complicated if it is greater than 4. We can probably
+increase this latter. But sorry reiterating how is this different than
+a macvtap on a real device that supports a max of 4 queues?
+
+> So more works need to be done and unless those above 3 issues were
+> addressed, this patch is really needed to make sure macvtap works.
+>
+
+Agreed there is a lot more work here to improve things I'm just not
+sure we need to disable this now. Also note its the l2 forwarding
+should be disabled by default so a user would have to enable the
+feature flag.
+
+Thanks,
+John
+
+-- 
+John Fastabend         Intel Corporation
