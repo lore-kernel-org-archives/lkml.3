@@ -1,58 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308AbaAGDlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 22:41:46 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:62240 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757202AbaAGDlo (ORCPT
+	id S1757369AbaAGDl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 22:41:57 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:31503
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757202AbaAGDly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 22:41:44 -0500
-Message-ID: <52CB7736.701@huawei.com>
-Date: Tue, 7 Jan 2014 11:40:38 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 6 Jan 2014 22:41:54 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(z1039mzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
+        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <Shaohui.Xie@freescale.com>, Andy Fleming <afleming@gmail.com>
+Subject: [PATCH 4/6] [v4] phylib: Add generic 10G driver
+Date: Tue, 7 Jan 2014 10:14:05 +0800
+Message-ID: <1389060845-7097-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-wireless@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3.5 10/19] mac8011: slight optimization of addr compare
-References: <52BC15C8.2080400@huawei.com> <1389021111.5891.21.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1389021111.5891.21.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/6 23:11, Johannes Berg wrote:
-> On Thu, 2013-12-26 at 19:40 +0800, Ding Tianhong wrote:
->> Use the possibly more efficient ether_addr_equal
->> to instead of memcmp.
-> 
-> This is a slow-path, I don't think that's really worth it. It kinda
-> makes sense, but relies on the struct mac_address allocation for
-> alignment and the fact that there are no other members in that struct,
-> so it seems to me that this ought to also add some alignment attributes?
-> 
-> johannes
-> 
-> 
+From: Andy Fleming <afleming@gmail.com>
 
-Yes, I had to say that it is really a slight optimization.And I am sure the address in the struct
-is alignment, otherwise I have to use the ether_addr_equal_unaligned().
+Very incomplete, but will allow for binding an ethernet controller
+to it.
 
-Regards
-Ding 
+Signed-off-by: Andy Fleming <afleming@gmail.com>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+resend for v4.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+ drivers/net/phy/phy_device.c | 80 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 80 insertions(+)
+
+diff --git a/drivers/net/phy/phy_device.c b/drivers/net/phy/phy_device.c
+index 748bf07..439b0d4 100644
+--- a/drivers/net/phy/phy_device.c
++++ b/drivers/net/phy/phy_device.c
+@@ -33,6 +33,7 @@
+ #include <linux/mii.h>
+ #include <linux/ethtool.h>
+ #include <linux/phy.h>
++#include <linux/mdio.h>
+ 
+ #include <asm/io.h>
+ #include <asm/irq.h>
+@@ -55,6 +56,7 @@ static void phy_device_release(struct device *dev)
+ 
+ enum genphy_driver {
+ 	GENPHY_DRV_1G,
++	GENPHY_DRV_10G,
+ 	GENPHY_DRV_MAX
+ };
+ 
+@@ -699,6 +701,12 @@ static int genphy_config_advert(struct phy_device *phydev)
+ 	return changed;
+ }
+ 
++int gen10g_config_advert(struct phy_device *dev)
++{
++	return 0;
++}
++EXPORT_SYMBOL(gen10g_config_advert);
++
+ /**
+  * genphy_setup_forced - configures/forces speed/duplex from @phydev
+  * @phydev: target phy_device struct
+@@ -752,6 +760,11 @@ int genphy_restart_aneg(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(genphy_restart_aneg);
+ 
++int gen10g_restart_aneg(struct phy_device *phydev)
++{
++	return 0;
++}
++EXPORT_SYMBOL(gen10g_restart_aneg);
+ 
+ /**
+  * genphy_config_aneg - restart auto-negotiation or write BMCR
+@@ -794,6 +807,12 @@ int genphy_config_aneg(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(genphy_config_aneg);
+ 
++int gen10g_config_aneg(struct phy_device *phydev)
++{
++	return 0;
++}
++EXPORT_SYMBOL(gen10g_config_aneg);
++
+ /**
+  * genphy_update_link - update link status in @phydev
+  * @phydev: target phy_device struct
+@@ -923,6 +942,34 @@ int genphy_read_status(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(genphy_read_status);
+ 
++int gen10g_read_status(struct phy_device *phydev)
++{
++	int devad, reg;
++	u32 mmd_mask = phydev->c45_ids.devices_in_package;
++
++	phydev->link = 1;
++
++	/* For now just lie and say it's 10G all the time */
++	phydev->speed = SPEED_10000;
++	phydev->duplex = DUPLEX_FULL;
++
++	for (devad = 0; mmd_mask; devad++, mmd_mask = mmd_mask >> 1) {
++		if (!(mmd_mask & 1))
++			continue;
++
++		/* Read twice because link state is latched and a
++		 * read moves the current state into the register
++		 */
++		phy_read_mmd(phydev, devad, MDIO_STAT1);
++		reg = phy_read_mmd(phydev, devad, MDIO_STAT1);
++		if (reg < 0 || !(reg & MDIO_STAT1_LSTATUS))
++			phydev->link = 0;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(gen10g_read_status);
++
+ static int genphy_config_init(struct phy_device *phydev)
+ {
+ 	int val;
+@@ -969,6 +1016,16 @@ static int genphy_config_init(struct phy_device *phydev)
+ 
+ 	return 0;
+ }
++
++static int gen10g_config_init(struct phy_device *phydev)
++{
++	/* Temporarily just say we support everything */
++	phydev->supported = SUPPORTED_10000baseT_Full;
++	phydev->advertising = SUPPORTED_10000baseT_Full;
++
++	return 0;
++}
++
+ int genphy_suspend(struct phy_device *phydev)
+ {
+ 	int value;
+@@ -984,6 +1041,12 @@ int genphy_suspend(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(genphy_suspend);
+ 
++int gen10g_suspend(struct phy_device *phydev)
++{
++	return 0;
++}
++EXPORT_SYMBOL(gen10g_suspend);
++
+ int genphy_resume(struct phy_device *phydev)
+ {
+ 	int value;
+@@ -999,6 +1062,12 @@ int genphy_resume(struct phy_device *phydev)
+ }
+ EXPORT_SYMBOL(genphy_resume);
+ 
++int gen10g_resume(struct phy_device *phydev)
++{
++	return 0;
++}
++EXPORT_SYMBOL(gen10g_resume);
++
+ /**
+  * phy_probe - probe and init a PHY device
+  * @dev: device to probe and init
+@@ -1138,6 +1207,17 @@ static struct phy_driver genphy_driver[] = {
+ 	.suspend	= genphy_suspend,
+ 	.resume		= genphy_resume,
+ 	.driver		= {.owner= THIS_MODULE, },
++}, {
++	.phy_id         = 0xffffffff,
++	.phy_id_mask    = 0xffffffff,
++	.name           = "Generic 10G PHY",
++	.config_init    = gen10g_config_init,
++	.features       = 0,
++	.config_aneg    = gen10g_config_aneg,
++	.read_status    = gen10g_read_status,
++	.suspend        = gen10g_suspend,
++	.resume         = gen10g_resume,
++	.driver         = {.owner = THIS_MODULE, },
+ } };
+ 
+ static int __init phy_init(void)
+-- 
+1.8.4.1
 
 
