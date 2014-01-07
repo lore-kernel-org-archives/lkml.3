@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836AbaAGA4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Jan 2014 19:56:18 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:38077 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757816AbaAGA4M (ORCPT
+	id S1757861AbaAGA4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Jan 2014 19:56:25 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:63781 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757838AbaAGA4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Jan 2014 19:56:12 -0500
-Subject: [PATCH v7 08/15] agp/intel: Support 64-bit GMADR
+	Mon, 6 Jan 2014 19:56:19 -0500
+Subject: [PATCH v7 09/15] agp/intel: Use pci_bus_address() to get MMADR bus
+ address
 To: linux-pci@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: David Airlie <airlied@linux.ie>, Yinghai Lu <yinghai@kernel.org>,
         Guo Chao <yan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Date: Mon, 06 Jan 2014 17:56:09 -0700
-Message-ID: <20140107005609.10786.29922.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Mon, 06 Jan 2014 17:56:17 -0700
+Message-ID: <20140107005617.10786.81226.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140107005003.10786.85164.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140107005003.10786.85164.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,77 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
-
 Per the Intel 915G/915GV/... Chipset spec (document number 301467-005),
-GMADR is a standard PCI BAR.
+MMADR is a standard PCI BAR.
 
-The PCI core reads GMADR at enumeration-time.  Use pci_bus_address()
+The PCI core reads MMADR at enumeration-time.  Use pci_bus_address()
 instead of reading it again in the driver.  This works correctly for both
-32-bit and 64-bit BARs.  The spec above only mentions 32-bit GMADR, but
-Yinghai's patch (link below) indicates some devices have a 64-bit GMADR.
+32-bit and 64-bit BARs.  The spec above only mentions 32-bit MMADR, but we
+should still use the standard interface.
 
-[bhelgaas: reworked starting from http://lkml.kernel.org/r/1385851238-21085-13-git-send-email-yinghai@kernel.org]
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Also, stop clearing the low 19 bits of the bus address because it's invalid
+to use addresses outside the region defined by the BAR.  The spec claims
+MMADR is 512KB; if that's the case, those bits will be zero anyway.
+
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
  drivers/char/agp/intel-agp.h |    4 ++--
- drivers/char/agp/intel-gtt.c |   12 ++++--------
- 2 files changed, 6 insertions(+), 10 deletions(-)
+ drivers/char/agp/intel-gtt.c |   10 +++-------
+ 2 files changed, 5 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
-index 1042c1b90376..0bf5590fd0f9 100644
+index 0bf5590fd0f9..18bbaafb8509 100644
 --- a/drivers/char/agp/intel-agp.h
 +++ b/drivers/char/agp/intel-agp.h
-@@ -55,7 +55,7 @@
- #define INTEL_I860_ERRSTS	0xc8
+@@ -56,7 +56,7 @@
  
  /* Intel i810 registers */
--#define I810_GMADDR		0x10
-+#define I810_GMADR_BAR		0
- #define I810_MMADDR		0x14
+ #define I810_GMADR_BAR		0
+-#define I810_MMADDR		0x14
++#define I810_MMADR_BAR		1
  #define I810_PTE_BASE		0x10000
  #define I810_PTE_MAIN_UNCACHED	0x00000000
-@@ -113,7 +113,7 @@
- #define INTEL_I850_ERRSTS	0xc8
+ #define I810_PTE_LOCAL		0x00000002
+@@ -114,7 +114,7 @@
  
  /* intel 915G registers */
--#define I915_GMADDR	0x18
-+#define I915_GMADR_BAR	2
- #define I915_MMADDR	0x10
+ #define I915_GMADR_BAR	2
+-#define I915_MMADDR	0x10
++#define I915_MMADR_BAR	0
  #define I915_PTEADDR	0x1C
  #define I915_GMCH_GMS_STOLEN_48M	(0x6 << 4)
+ #define I915_GMCH_GMS_STOLEN_64M	(0x7 << 4)
 diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index 54202ffcf467..560f66bffebb 100644
+index 560f66bffebb..58916f32c0f3 100644
 --- a/drivers/char/agp/intel-gtt.c
 +++ b/drivers/char/agp/intel-gtt.c
-@@ -608,9 +608,8 @@ static bool intel_gtt_can_wc(void)
+@@ -181,8 +181,7 @@ static int i810_setup(void)
+ 		return -ENOMEM;
+ 	intel_private.i81x_gtt_table = gtt_table;
  
- static int intel_gtt_init(void)
+-	pci_read_config_dword(intel_private.pcidev, I810_MMADDR, &reg_addr);
+-	reg_addr &= 0xfff80000;
++	reg_addr = pci_bus_address(intel_private.pcidev, I810_MMADR_BAR);
+ 
+ 	intel_private.registers = ioremap(reg_addr, KB(64));
+ 	if (!intel_private.registers)
+@@ -785,8 +784,7 @@ static int i830_setup(void)
  {
--	u32 gma_addr;
- 	u32 gtt_map_size;
--	int ret;
-+	int ret, bar;
+ 	u32 reg_addr;
  
- 	ret = intel_private.driver->setup();
- 	if (ret != 0)
-@@ -660,14 +659,11 @@ static int intel_gtt_init(void)
- 	}
+-	pci_read_config_dword(intel_private.pcidev, I810_MMADDR, &reg_addr);
+-	reg_addr &= 0xfff80000;
++	reg_addr = pci_bus_address(intel_private.pcidev, I810_MMADR_BAR);
  
- 	if (INTEL_GTT_GEN <= 2)
--		pci_read_config_dword(intel_private.pcidev, I810_GMADDR,
--				      &gma_addr);
-+		bar = I810_GMADR_BAR;
- 	else
--		pci_read_config_dword(intel_private.pcidev, I915_GMADDR,
--				      &gma_addr);
+ 	intel_private.registers = ioremap(reg_addr, KB(64));
+ 	if (!intel_private.registers)
+@@ -1107,9 +1105,7 @@ static int i9xx_setup(void)
+ 	u32 reg_addr, gtt_addr;
+ 	int size = KB(512);
+ 
+-	pci_read_config_dword(intel_private.pcidev, I915_MMADDR, &reg_addr);
 -
--	intel_private.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
-+		bar = I915_GMADR_BAR;
+-	reg_addr &= 0xfff80000;
++	reg_addr = pci_bus_address(intel_private.pcidev, I915_MMADR_BAR);
  
-+	intel_private.gma_bus_addr = pci_bus_address(intel_private.pcidev, bar);
- 	return 0;
- }
- 
+ 	intel_private.registers = ioremap(reg_addr, size);
+ 	if (!intel_private.registers)
 
