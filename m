@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaAGKnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 05:43:13 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:41870 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005AbaAGKnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 05:43:11 -0500
-Message-ID: <52CBD96B.4050103@linux.vnet.ibm.com>
-Date: Tue, 07 Jan 2014 16:09:39 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1751983AbaAGKnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 05:43:40 -0500
+Received: from mail.fireflyinternet.com ([87.106.93.118]:63305 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751377AbaAGKnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 05:43:39 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Tue, 7 Jan 2014 10:43:24 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH 1/4] drm/i915: add support for vga_switcheroo reprobe
+Message-ID: <20140107104324.GB8991@nuc-i3427.alporthouse.com>
+References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
+ <1389088723-30959-2-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vincent Guittot <vincent.guittot@linaro.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, pjt@google.com, Morten.Rasmussen@arm.com,
-        cmetcalf@tilera.com, tony.luck@intel.com, alex.shi@linaro.org,
-        linaro-kernel@lists.linaro.org, rjw@sisk.pl,
-        paulmck@linux.vnet.ibm.com, corbet@lwn.net, tglx@linutronix.de,
-        len.brown@intel.com, arjan@linux.intel.com, amit.kucheria@linaro.org,
-        james.hogan@imgtec.com, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, Dietmar.Eggemann@arm.com
-Subject: Re: [RFC] sched: CPU topology try
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net> <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org> <52CBCB85.8050607@linux.vnet.ibm.com> <20140107095039.GA2480@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140107095039.GA2480@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010710-7182-0000-0000-0000097D83F8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389088723-30959-2-git-send-email-artagnon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 03:20 PM, Peter Zijlstra wrote:
-> On Tue, Jan 07, 2014 at 03:10:21PM +0530, Preeti U Murthy wrote:
->> What if we want to add arch specific flags to the NUMA domain? Currently
->> with Peter's patch:https://lkml.org/lkml/2013/11/5/239 and this patch,
->> the arch can modify the sd flags of the topology levels till just before
->> the NUMA domain. In sd_init_numa(), the flags for the NUMA domain get
->> initialized. We need to perhaps call into arch here to probe for
->> additional flags?
+On Tue, Jan 07, 2014 at 03:28:40PM +0530, Ramkumar Ramachandra wrote:
+> Cc: Andreas Heider <andreas@meetr.de>
+> Cc: Seth Forshee <seth.forshee@canonical.com>
+> Original-patch-by: Andreas Heider <andreas@meetr.de>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+> ---
+>  drivers/gpu/drm/i915/i915_dma.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
 > 
-> What are you thinking of? I was hoping all NUMA details were captured in
-> the distance table.
-> 
-> Its far easier to talk of specifics in this case.
-> 
-If the processor can be core gated, then there is very little power
-savings that we could yield from consolidating all the load onto a
-single node in a NUMA domain. 6 cores on one node or 3 cores each on two
-nodes, the power is drawn by 6 cores in all. So I was thinking under
-this circumstance we might want to set the SD_SHARE_POWERDOMAIN flag at
-the NUMA domain and spread the load if it favours the workload.
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index 5c64842..336a835b 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1265,6 +1265,12 @@ static void i915_switcheroo_set_state(struct pci_dev *pdev, enum vga_switcheroo_
+>  	}
+>  }
+>  
+> +static void i915_switcheroo_reprobe(struct pci_dev *pdev)
+> +{
+> +	struct drm_device *dev = pci_get_drvdata(pdev);
+> +	intel_fbdev_output_poll_changed(dev);
+> +}
 
-Regards
-Preeti U Murthy
+switcheroo should be sending a hotplug notification, which should
+trigger both this kernel listener and userspace.
+-Chris
 
+-- 
+Chris Wilson, Intel Open Source Technology Centre
