@@ -1,415 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaAGRbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 12:31:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:62618 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752413AbaAGRbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 12:31:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,619,1384329600"; 
-   d="scan'208";a="454958782"
-Message-ID: <1389115745.3040.104.camel@empanada>
-Subject: Re: [PATCH 0/2] tracing/triggers: A couple minor variable name
- changes
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Date: Tue, 07 Jan 2014 11:29:05 -0600
-In-Reply-To: <20140106222703.5e7dbba2@gandalf.local.home>
-References: <cover.1389036657.git.tom.zanussi@linux.intel.com>
-	 <20140106161347.4cc82a4b@gandalf.local.home>
-	 <1389055673.3040.83.camel@empanada>
-	 <20140106205034.53c219cc@gandalf.local.home>
-	 <1389063069.3040.90.camel@empanada>
-	 <20140106222703.5e7dbba2@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+	id S1753284AbaAGReW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 12:34:22 -0500
+Received: from smtprelay0252.hostedemail.com ([216.40.44.252]:59642 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752212AbaAGReN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 12:34:13 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2691:2693:2730:2740:2828:2901:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:5007:6119:7652:7808:7903:7904:7974:8603:10004:10400:10848:10967:11026:11232:11658:11914:12296:12517:12519:12663:12740:13161:13229:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: talk67_73487891bb16
+X-Filterd-Recvd-Size: 3535
+Message-ID: <1389116048.32137.14.camel@joe-AO722>
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Joe Perches <joe@perches.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, keescook@chromium.org,
+        akpm@linux-foundation.org, geert@linux-m68k.org, jkosina@suse.cz,
+        viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Date: Tue, 07 Jan 2014 09:34:08 -0800
+In-Reply-To: <20140107083740.GA5683@amd.pavel.ucw.cz>
+References: <201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
+	 <201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
+	 <1388945392.5808.19.camel@joe-AO722>
+	 <201401062300.GFE12908.FOQLFFJOSOMVHt@I-love.SAKURA.ne.jp>
+	 <1389029698.2433.3.camel@joe-AO722>
+	 <201401070641.HAC18733.VOFMFOLOJQSFHt@I-love.SAKURA.ne.jp>
+	 <1389047143.2433.14.camel@joe-AO722>
+	 <20140107001604.GD24243@amd.pavel.ucw.cz>
+	 <1389056635.2433.22.camel@joe-AO722>
+	 <20140107083740.GA5683@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-06 at 22:27 -0500, Steven Rostedt wrote:
-> On Mon, 06 Jan 2014 20:51:09 -0600
-> Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
-> 
->  
-> > > Hmm, OK, I think you may have convinced me. I'll swap the return values.
+On Tue, 2014-01-07 at 09:37 +0100, Pavel Machek wrote:
+> On Mon 2014-01-06 17:03:55, Joe Perches wrote:
+> > On Tue, 2014-01-07 at 01:16 +0100, Pavel Machek wrote:
+> > > > > > > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> > > > > > []
+> > > > > > > @@ -1232,7 +1248,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+> > > > > > >  {
+> > > > > > >  	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+> > > > > > >  
+> > > > > > > -	if (!ptr && *fmt != 'K') {
+> > > > > > > +	if (!ptr && *fmt != 'K' && *fmt != 'T') {
+> > > > > > 
+> > > > > > I think this new 'T' comparison isn't necessary.
+> > > > > 
+> > > > > This is needed for allowing comm_name() to accept NULL instead of current.
+> > > > 
+> > > > Yeah, that's what I think isn't necessary.
+> > > > 
+> > > > current is current_thread_info()->task.
+> > > > 
+> > > > I think it's pretty lightweight in all arches and
+> > > > it'd be simpler/more intelligible to not use NULL.
+> > > > 
+> > > > Andrew?  Any opinion?  Anyone else?
 > > > 
+> > > Andrew was worried about all the "current" duplication, IIRC. It is in
+> > > the mail thread somewhere. And one condition in printk is price worth paying.
 > > 
-> > Sounds great, thanks!
+> > Hi Pavel.
+> > 
+> > I'm not nacking this, just stating my view.
 > 
-> New patch.
+> And I believe Andrew clearly stated his view, on the very topic you
+> asked him on.
+
+I believe Andrew's view:
+
+On Sat, 2013-12-28 at 12:08 -0800, Andrew Morton wrote:
+> On Sat, 28 Dec 2013 11:53:25 -0800 Joe Perches <joe@perches.com> wrote:
+> > Tell me again, what's wrong with using p or current?
+> > printk("%pt", current);
 > 
+> Nothing much.  It's just that all these callsites are generating the
+> code to pass an argument which the callee already has access to. 
+> Optimizing that will reduce text size a bit.
 
-Looks good to me and passes my normal testing.
+was that the argument passing was the primary issue.
 
-Acked-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-Tested-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Now that that's not done, this code actually uses a
+different concept, that "NULL" is special when using
+%pT.  If the argument isn't eliminated all together,
+I think that new concept should be avoided.
 
-Just so you know what encompasses my 'normal testing', below is what I
-normally run through - if everything checks out, I'm satisfied things
-are basically good, though of course it didn't catch your traceoff bug
-so it's not complete.
-
-As soon as I get the chance, I'll automate it and add more tests for
-completeness - as it is it's grown into something that already takes too
-long to do manually, so I need to find the time....
-
----- basic high-level check
-     - quick enable/disable_event, capture limited number of events
-     - both counted and not
-     - verify flags
-     - verify removal
-
-# echo 'enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger;cat ~/junk.txt > /dev/null;echo 'disable_event:kmem:kmalloc' > /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-
-# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-0*
-
-# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-enable_event:kmem:kmalloc:count=0
-
-# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/enable
-0*
-
-# cat /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-disable_event:kmem:kmalloc:unlimited
-
-# cat /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/enable
-0*
-
-# cat /sys/kernel/debug/tracing/trace
-
-# echo '!enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-# echo '!disable_event:kmem:kmalloc' > /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
-
-# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
-# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/enable
-0
-# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-0
-
----- basic stacktrace checks
-     - both counted and not
-     - trigger filter
-
-# echo 'stacktrace' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-
-# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-stacktrace:unlimited
-# cat /sys/kernel/debug/tracing/trace
-
-# echo '!stacktrace' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-# echo > /sys/kernel/debug/tracing/trace
-
-# echo 'stacktrace:5 if bytes_req >= 512' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-stacktrace:count=0 if bytes_req >= 512
-
-# cat /sys/kernel/debug/tracing/trace
-
-# echo '!stacktrace:5 if bytes_req >= 512' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-# echo 'stacktrace:5 if bytes_req >= 65536' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-# cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-stacktrace:count=5 if bytes_req >= 65536
-
-# echo '!stacktrace:5' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-
----- basic snapshot
-     - enable all block events, capture leadup to event
-     - snapshot with filter
-
-# echo 1 > /sys/kernel/debug/tracing/events/block/enable
-# echo 'snapshot:1 if nr_rq > 1' > /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-
-# cat /sys/kernel/debug/tracing/snapshot
-
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/enable
-1*
-# echo '!snapshot:1 if nr_rq > 1' > /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/enable
-1
-
----- basic traceon/traceoff
-     - enable all block events, capture leadup to event
-     - traceoff with filter
-
-# echo 'traceoff:1 if nr_rq > 1' > /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/enable
-
-# cat /sys/kernel/debug/tracing/trace
-
-# cat /sys/kernel/debug/tracing/tracing_on
-0
-# echo '!traceoff:1 if nr_rq > 1' > /sys/kernel/debug/tracing/events/block/block_unplug/trigger
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/enable
-1
-# echo 0 > /sys/kernel/debug/tracing/events/block/enable
-# cat /sys/kernel/debug/tracing/events/block/block_unplug/enable
-
-# echo 1 > /sys/kernel/debug/tracing/tracing_on
-
----- multi buffer non-syscall filter test
-
-echo > /sys/kernel/debug/tracing/trace
-
-echo 'bytes_alloc > 8192' > /sys/kernel/debug/tracing/events/kmem/kmalloc/filter
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/filter
-bytes_alloc > 8192
-mkdir /sys/kernel/debug/tracing/instances/test1
-echo 'bytes_alloc > 2048' > /sys/kernel/debug/tracing/instances/test1/events/kmem/kmalloc/filter
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/filter
-bytes_alloc > 8192
-cat /sys/kernel/debug/tracing/instances/test1/events/kmem/kmalloc/filter
-bytes_alloc > 2048
-
-echo 1 > /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-cat /sys/kernel/debug/tracing/trace
-
-echo 1 > /sys/kernel/debug/tracing/instances/test1/events/kmem/kmalloc/enable
-cat /sys/kernel/debug/tracing/instances/test1/trace
-
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-echo 0 > /sys/kernel/debug/tracing/instances/test1/events/kmem/kmalloc/enable
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kmalloc/filter
-echo 0 > /sys/kernel/debug/tracing/instances/test1/events/kmem/kmalloc/filter
-
-rmdir /sys/kernel/debug/tracing/instances/test1
-
---- multi buffer filter test
-
-echo > /sys/kernel/debug/tracing/trace
-
-echo 'count > 65536' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/filter
-echo 1 > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/enable
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/filter
-cat /sys/kernel/debug/tracing/trace
-
-mkdir /sys/kernel/debug/tracing/instances/test1
-
-echo 'count > 4096' > /sys/kernel/debug/tracing/instances/test1/events/syscalls/sys_enter_read/filter
-echo 1 > /sys/kernel/debug/tracing/instances/test1/events/syscalls/sys_enter_read/enable
-cat /sys/kernel/debug/tracing/instances/test1/events/syscalls/sys_enter_read/filter
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/filter
-cat /sys/kernel/debug/tracing/instances/test1/trace
-cat /sys/kernel/debug/tracing/trace
-
-echo 0 > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/filter
-echo 0 > /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/enable
-
-rmdir /sys/kernel/debug/tracing/instances/test1
-
----- multi-buffer trigger enable
-
-# mkdir /sys/kernel/debug/tracing/instances/hoge
-# echo 'enable_event:mce:mce_record' > /sys/kernel/debug/tracing/instances/hoge/events/syscalls/sys_enter_symlink/trigger
-# cat /sys/kernel/debug/tracing/instances/hoge/events/syscalls/sys_enter_symlink/enable
-0*
-# cat /sys/kernel/debug/tracing/instances/hoge/events/mce/mce_record/enable
-0*
-# cat /sys/kernel/debug/tracing/events/mce/mce_record/enable
-0
-# ln -sf /dev/null /tmp
-# cat /sys/kernel/debug/tracing/instances/hoge/events/mce/mce_record/enable
-1*
-# cat /sys/kernel/debug/tracing/events/mce/mce_record/enable
-0
-
-# rmdir /sys/kernel/debug/tracing/instances/hoge
-
----- enabled plus trigger test
-     - verify triggers work on enabled event
-
-echo > /sys/kernel/debug/tracing/trace
-
-echo 1 > /sys/kernel/debug/tracing/events/syscalls/sys_enter_fsync/enable
-echo 'stacktrace' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_fsync/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_fsync/trigger
-
-# do an emacs save to test fsync
-
-cat /sys/kernel/debug/tracing/trace
-
-echo 0 > /sys/kernel/debug/tracing/events/syscalls/sys_enter_fsync/enable
-echo '!stacktrace' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_fsync/trigger
-
----- multi-event trigger test, stack + enable
-     - verify multiple triggers on single event
-
-echo > /sys/kernel/debug/tracing/trace
-
-# registers syscall tracepoint
-echo 'stacktrace' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo 'enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-# do a perf stat to test
-
-cat /sys/kernel/debug/tracing/trace
-
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-
-echo '!stacktrace' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo '!enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
----- multi-event trigger test, two enables
-     - verify multiple enable_event triggers on single event
-
-echo > /sys/kernel/debug/tracing/trace
-
-# registers syscall tracepoint
-echo 'enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo 'enable_event:kmem:kfree:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-# do a perf stat to test
-
-cat /sys/kernel/debug/tracing/trace
-
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-cat /sys/kernel/debug/tracing/events/kmem/kfree/enable
-
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kfree/enable
-
-echo '!enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo '!enable_event:kmem:kfree:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
----- multi-event trigger test, two enables, one with filter
-     - verify multiple enable_event triggers with filters
-     - also verify when only one triggers, other filtered out
-     - also verify no multiple same-type events
-
-echo > /sys/kernel/debug/tracing/trace
-
-# registers syscall tracepoint
-echo 'enable_event:kmem:kmalloc:1 if common_preempt_count == 2' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-# just to test that same event set with different filter or same event with different count can't be set
-echo 'enable_event:kmem:kmalloc:1 if common_preempt_count == 1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo 'enable_event:kmem:kmalloc if common_preempt_count == 1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-  echo: write error: File exists
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/enable
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-echo 'enable_event:kmem:kfree:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-# do a perf stat to test
-cat /sys/kernel/debug/tracing/trace
-
-echo '!enable_event:kmem:kmalloc:1 if common_preempt_count == 2' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo 'enable_event:kmem:kmalloc:1 if common_preempt_count == 1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-# do a perf stat to test
-cat /sys/kernel/debug/tracing/trace
-
-echo '!enable_event:kmem:kmalloc:1 if common_preempt_count == 1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo 'enable_event:kmem:kmalloc:1 if common_preempt_count <= 1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-# do a perf stat to test
-cat /sys/kernel/debug/tracing/trace
-
-echo '!enable_event:kmem:kmalloc:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo '!enable_event:kmem:kfree:1' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-cat /sys/kernel/debug/tracing/events/kmem/kfree/enable
-
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kmalloc/enable
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kfree/enable
-
----- multi-event trigger test, two non-enable
-     - multiple non-enable/disable triggers
-
-echo > /sys/kernel/debug/tracing/trace
-
-# registers syscall tracepoint
-echo 'stacktrace' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo 'snapshot' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
-# do a perf stat to test
-cat /sys/kernel/debug/tracing/trace
-cat /sys/kernel/debug/tracing/snapshot
-
-echo '!stacktrace' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-echo '!snapshot' > /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_perf_event_open/trigger
-
----- multi-event trigger test, two non-enable on non-syscall, one with filter
-     - verify multiple triggers on non-syscall event
-     - one with filter
-     - general removal syntax on counted
-
-echo > /sys/kernel/debug/tracing/trace
-
-# registers syscall tracepoint
-echo 'stacktrace:5' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-echo 'snapshot:5 if bytes_req >= 4096' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-
-cat /sys/kernel/debug/tracing/trace
-cat /sys/kernel/debug/tracing/snapshot
-
-echo '!stacktrace' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-echo '!snapshot' > /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-cat /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
-
----- kprobes - basic check
-     - stacktrace triggered by kprobe
-
-echo > /sys/kernel/debug/tracing/trace
-perf probe -a in_kmalloc=__kmalloc
-echo 'stacktrace' > /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-perf record -e probe:in_kmalloc -aR sleep 10&
-perf report
-cat /sys/kernel/debug/tracing/trace
-cat /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-echo '!stacktrace' > /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-perf probe -d in_kmalloc
-
----- kprobes - enable normal event from kprobe event
-
-echo > /sys/kernel/debug/tracing/trace
-perf probe -a in_kmalloc=__kmalloc
-echo 'enable_event:kmem:kfree:1' > /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-cat /sys/kernel/debug/tracing/trace
-cat /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-echo '!enable_event:kmem:kfree:1' > /sys/kernel/debug/tracing/events/probe/in_kmalloc/trigger
-cat /sys/kernel/debug/tracing/events/kmem/kfree/enable
-echo 0 > /sys/kernel/debug/tracing/events/kmem/kfree/enable
-perf probe -d in_kmalloc
-
----- kprobes - enable kprobe event from normal event
-
-echo > /sys/kernel/debug/tracing/trace
-perf probe -a in_kmalloc=__kmalloc
-echo 'enable_event:probe:in_kmalloc:1' > /sys/kernel/debug/tracing/events/kmem/kfree/trigger
-cat /sys/kernel/debug/tracing/trace
-cat /sys/kernel/debug/tracing/events/kmem/kfree/trigger
-cat /sys/kernel/debug/tracing/events/probe/in_kmalloc/enable
-echo 0 > /sys/kernel/debug/tracing/events/probe/in_kmalloc/enable
-echo '!enable_event:probe:in_kmalloc:1' > /sys/kernel/debug/tracing/events/kmem/kfree/trigger
-perf probe -d in_kmalloc
+The additional cost of using current vs NULL is ~zero.
 
 
