@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbaAGPqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:46:39 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:36089 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaAGPqb (ORCPT
+	id S1752701AbaAGPrn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:47:43 -0500
+Received: from [217.140.96.50] ([217.140.96.50]:57173 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1750933AbaAGPrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:46:31 -0500
-Date: Tue, 7 Jan 2014 16:46:30 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140107154630.GC20765@two.firstfloor.org>
-References: <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
- <20140106221528.GK30183@twins.programming.kicks-ass.net>
- <8761pw6717.fsf@tassilo.jf.intel.com>
- <20140107084113.GN30183@twins.programming.kicks-ass.net>
+	Tue, 7 Jan 2014 10:47:36 -0500
+Date: Tue, 7 Jan 2014 15:46:23 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 6/7] arm64, jump label: optimize jump label
+ implementation
+Message-ID: <20140107154622.GA4399@mudshark.cambridge.arm.com>
+References: <1389104234-15239-1-git-send-email-liuj97@gmail.com>
+ <1389104234-15239-7-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140107084113.GN30183@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1389104234-15239-7-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Also, the PT interrupt doesn't actually need to be an NMI; when the
-> proposed S/G implementation would actually work as stated there can be
-> plenty room left when we trigger the interrupt.
+On Tue, Jan 07, 2014 at 02:17:13PM +0000, Jiang Liu wrote:
+> Optimize jump label implementation for ARM64 by dynamically patching
+> kernel text.
+> 
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  arch/arm64/Kconfig                  |  1 +
+>  arch/arm64/include/asm/jump_label.h | 52 +++++++++++++++++++++++++++++++++
+>  arch/arm64/kernel/Makefile          |  1 +
+>  arch/arm64/kernel/jump_label.c      | 58 +++++++++++++++++++++++++++++++++++++
+>  4 files changed, 112 insertions(+)
+>  create mode 100644 arch/arm64/include/asm/jump_label.h
+>  create mode 100644 arch/arm64/kernel/jump_label.c
 
-That's true.
+  Reviewed-by: Will Deacon <will.deacon@arm.com>
 
--andi
+Thanks for sticking with this! I think this series is good for merging now.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Will
