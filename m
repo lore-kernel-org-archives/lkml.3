@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaAGMN0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 07:13:26 -0500
-Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:51134 "EHLO
+	id S1751515AbaAGMNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 07:13:35 -0500
+Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:59820 "EHLO
 	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751074AbaAGMMi (ORCPT
+	by vger.kernel.org with ESMTP id S1751088AbaAGMMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Jan 2014 07:12:38 -0500
 X-RRZE-Submit-IP: 131.188.42.195
@@ -13,9 +13,9 @@ To: michael.gunselmann@studium.uni-erlangen.de
 Cc: martin.hofmann@studium.uni-erlangen.de, forest@alittletooquiet.net,
         gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, linux-kernel@i4.cs.fau.de
-Subject: [PATCHv2 5/7] vt6655: remove typedefs in wpactl.h
-Date: Tue,  7 Jan 2014 13:11:49 +0100
-Message-Id: <1389096711-8595-6-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
+Subject: [PATCHv2 6/7] vt6655: fix printk usage in wpactl.c
+Date: Tue,  7 Jan 2014 13:11:50 +0100
+Message-Id: <1389096711-8595-7-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1389096711-8595-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
 References: <1389096711-8595-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
@@ -25,74 +25,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>
 
-wpactl.h contained some typedefs for enums. These were removed in this patch.
-Also, a typedef for a type "unsigned long long" that was only instantiated in
-one place was removed and its declaration altered.
+This patch fixes the usage of printk in wpactl.c concering one missing log level
+occurence and some whitespaces before a newline.
 
 Signed-off-by: Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>
 Signed-off-by: Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>
 ---
- drivers/staging/vt6655/hostap.c |  2 +-
- drivers/staging/vt6655/iwctl.c  |  2 +-
- drivers/staging/vt6655/wpactl.h | 12 +++++-------
- 3 files changed, 7 insertions(+), 9 deletions(-)
+ drivers/staging/vt6655/wpactl.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/vt6655/hostap.c b/drivers/staging/vt6655/hostap.c
-index ca54b79..6eecd53 100644
---- a/drivers/staging/vt6655/hostap.c
-+++ b/drivers/staging/vt6655/hostap.c
-@@ -454,7 +454,7 @@ static int hostap_set_encryption(PSDevice pDevice,
- 	unsigned long dwKeyIndex = 0;
- 	unsigned char abyKey[MAX_KEY_LEN];
- 	unsigned char abySeq[MAX_KEY_LEN];
--	NDIS_802_11_KEY_RSC   KeyRSC;
-+	unsigned long long KeyRSC;
- 	unsigned char byKeyDecMode = KEY_CTL_WEP;
- 	int     ret = 0;
- 	int     iNodeIndex = -1;
-diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-index 2db4bc8..ac3fc16 100644
---- a/drivers/staging/vt6655/iwctl.c
-+++ b/drivers/staging/vt6655/iwctl.c
-@@ -1827,7 +1827,7 @@ int iwctl_siwencodeext(struct net_device *dev,
- 	struct iw_encode_ext *ext = (struct iw_encode_ext *)extra;
- 	struct viawget_wpa_param *param = NULL;
- //original member
--	wpa_alg alg_name;
-+	enum wpa_alg alg_name;
- 	u8  addr[6];
- 	int key_idx, set_tx = 0;
- 	u8  seq[IW_ENCODE_SEQ_MAX_SIZE];
-diff --git a/drivers/staging/vt6655/wpactl.h b/drivers/staging/vt6655/wpactl.h
-index b9e2ab2..f7638ba 100644
---- a/drivers/staging/vt6655/wpactl.h
-+++ b/drivers/staging/vt6655/wpactl.h
-@@ -38,11 +38,11 @@
+diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
+index ee83704..7bad67a 100644
+--- a/drivers/staging/vt6655/wpactl.c
++++ b/drivers/staging/vt6655/wpactl.c
+@@ -206,7 +206,7 @@ int wpa_set_keys(PSDevice pDevice, void *ctx, bool fcpfkernel)
+ 	    param->u.wpa_key.seq_len >= MAX_KEY_LEN)
+ 		return -EINVAL;
  
- //WPA related
+-	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "param->u.wpa_key.alg_name = %d \n", param->u.wpa_key.alg_name);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "param->u.wpa_key.alg_name = %d\n", param->u.wpa_key.alg_name);
+ 	if (param->u.wpa_key.alg_name == WPA_ALG_NONE) {
+ 		pDevice->eEncryptionStatus = Ndis802_11EncryptionDisabled;
+ 		pDevice->bEncryptionEnable = false;
+@@ -415,7 +415,7 @@ int wpa_set_keys(PSDevice pDevice, void *ctx, bool fcpfkernel)
+ 	//spin_unlock_irq(&pDevice->lock);
  
--typedef enum { WPA_ALG_NONE, WPA_ALG_WEP, WPA_ALG_TKIP, WPA_ALG_CCMP } wpa_alg;
--typedef enum { CIPHER_NONE, CIPHER_WEP40, CIPHER_TKIP, CIPHER_CCMP,
--	       CIPHER_WEP104 } wpa_cipher;
--typedef enum { KEY_MGMT_802_1X, KEY_MGMT_CCKM, KEY_MGMT_PSK, KEY_MGMT_NONE,
--	       KEY_MGMT_802_1X_NO_WPA, KEY_MGMT_WPA_NONE } wpa_key_mgmt;
-+enum wpa_alg { WPA_ALG_NONE, WPA_ALG_WEP, WPA_ALG_TKIP, WPA_ALG_CCMP };
-+enum wpa_cipher { CIPHER_NONE, CIPHER_WEP40, CIPHER_TKIP, CIPHER_CCMP,
-+		  CIPHER_WEP104 };
-+enum wpa_key_mgmt { KEY_MGMT_802_1X, KEY_MGMT_CCKM, KEY_MGMT_PSK, KEY_MGMT_NONE,
-+		    KEY_MGMT_802_1X_NO_WPA, KEY_MGMT_WPA_NONE };
+ /*
+-  DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " key=%x-%x-%x-%x-%x-xxxxx \n",
++  DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " key=%x-%x-%x-%x-%x-xxxxx\n",
+   pMgmt->sNodeDBTable[iNodeIndex].abyWepKey[byKeyIndex][0],
+   pMgmt->sNodeDBTable[iNodeIndex].abyWepKey[byKeyIndex][1],
+   pMgmt->sNodeDBTable[iNodeIndex].abyWepKey[byKeyIndex][2],
+@@ -596,7 +596,7 @@ static int wpa_get_scan(PSDevice pDevice,
+ 	ptempBSS = kmalloc(sizeof(KnownBSS), (int)GFP_ATOMIC);
  
- #define AUTH_ALG_OPEN_SYSTEM	0x01
- #define AUTH_ALG_SHARED_KEY	0x02
-@@ -51,8 +51,6 @@ typedef enum { KEY_MGMT_802_1X, KEY_MGMT_CCKM, KEY_MGMT_PSK, KEY_MGMT_NONE,
- #define GENERIC_INFO_ELEM 0xdd
- #define RSN_INFO_ELEM 0x30
+ 	if (ptempBSS == NULL) {
+-		printk("bubble sort kmalloc memory fail@@@\n");
++		printk(KERN_ERR "bubble sort kmalloc memory fail@@@\n");
  
--typedef unsigned long long   NDIS_802_11_KEY_RSC;
--
- /*---------------------  Export Classes  ----------------------------*/
+ 		ret = -ENOMEM;
  
- /*---------------------  Export Variables  --------------------------*/
+@@ -869,18 +869,18 @@ int wpa_ioctl(PSDevice pDevice, struct iw_point *p)
+ 	switch (param->cmd) {
+ 	case VIAWGET_SET_WPA:
+ 		ret = wpa_set_wpa(pDevice, param);
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_WPA \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_WPA\n");
+ 		break;
+ 
+ 	case VIAWGET_SET_KEY:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_KEY \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_KEY\n");
+ 		spin_lock_irq(&pDevice->lock);
+ 		ret = wpa_set_keys(pDevice, param, false);
+ 		spin_unlock_irq(&pDevice->lock);
+ 		break;
+ 
+ 	case VIAWGET_SET_SCAN:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_SCAN \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_SCAN\n");
+ 		ret = wpa_set_scan(pDevice, param);
+ 		break;
+ 
+@@ -891,33 +891,33 @@ int wpa_ioctl(PSDevice pDevice, struct iw_point *p)
+ 		break;
+ 
+ 	case VIAWGET_GET_SSID:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_GET_SSID \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_GET_SSID\n");
+ 		ret = wpa_get_ssid(pDevice, param);
+ 		wpa_ioctl = 1;
+ 		break;
+ 
+ 	case VIAWGET_GET_BSSID:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_GET_BSSID \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_GET_BSSID\n");
+ 		ret = wpa_get_bssid(pDevice, param);
+ 		wpa_ioctl = 1;
+ 		break;
+ 
+ 	case VIAWGET_SET_ASSOCIATE:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_ASSOCIATE \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_ASSOCIATE\n");
+ 		ret = wpa_set_associate(pDevice, param);
+ 		break;
+ 
+ 	case VIAWGET_SET_DISASSOCIATE:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_DISASSOCIATE \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_DISASSOCIATE\n");
+ 		ret = wpa_set_disassociate(pDevice, param);
+ 		break;
+ 
+ 	case VIAWGET_SET_DROP_UNENCRYPT:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_DROP_UNENCRYPT \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_DROP_UNENCRYPT\n");
+ 		break;
+ 
+ 	case VIAWGET_SET_DEAUTHENTICATE:
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_DEAUTHENTICATE \n");
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "VIAWGET_SET_DEAUTHENTICATE\n");
+ 		break;
+ 
+ 	default:
 -- 
 1.8.1.2
 
