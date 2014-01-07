@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaAGPiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 10:38:17 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48361 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaAGPiJ (ORCPT
+	id S1752765AbaAGPie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 10:38:34 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:45157 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbaAGPiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 10:38:09 -0500
-Date: Tue, 7 Jan 2014 15:38:04 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@linaro.org, alsa-devel@alsa-project.org
-Message-ID: <20140107153804.GN31886@sirena.org.uk>
-References: <1387468508-12286-1-git-send-email-lee.jones@linaro.org>
- <1387468508-12286-6-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gyrD3n6DECm5G5Ux"
-Content-Disposition: inline
-In-Reply-To: <1387468508-12286-6-git-send-email-lee.jones@linaro.org>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 05/11] ASoC: ux500_pcm: Stop pretending that we support
- varying address widths
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 7 Jan 2014 10:38:01 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-d7-52cc1f56a959
+Message-id: <52CC1F55.70503@samsung.com>
+Date: Tue, 07 Jan 2014 16:37:57 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Pawel Osciak <pawel@osciak.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "open list:VIDEOBUF2 FRAMEWORK" <linux-media@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vb2: Check if there are buffers before streamon
+References: <1389102935-4266-1-git-send-email-ricardo.ribalda@gmail.com>
+In-reply-to: <1389102935-4266-1-git-send-email-ricardo.ribalda@gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t/xy7ph8meCDCZ28lmcmvyMyeJs0xt2
+	i8u75rBZ9GzYympxcZ28xZS3P9kturrnMTmwe+ycdZfd4/Gvl2wefVtWMXp83iTncerrZ/YA
+	1igum5TUnMyy1CJ9uwSujK5ls1gKergr/v1vYWlg/MLRxcjJISFgInG4eT4jhC0mceHeerYu
+	Ri4OIYGljBJ/G7tZIZxPjBKvFn8Hq+IV0JCYd/AqE4jNIqAqcXL2MTCbTcBQouttFxuILSoQ
+	KrHn42moekGJH5PvsYAMEhE4ziTxfflHIIeDQ1jAReL3ezeQGiEBD4nTq7+xgoQ5BTwleuZy
+	g4SZBcwkHrWsY4aw5SU2r3nLPIGRfxaSqbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWle
+	ul5yfu4mRkgof93BuPSY1SFGAQ5GJR7eCbtPBQmxJpYVV+YeYpTgYFYS4d0odyZIiDclsbIq
+	tSg/vqg0J7X4ECMTB6dUA+NktidqFwNe73CauIFbUmJZebh3trufwBML7xbVXzf4TRcYyH5t
+	mr12c/Hpn/dNXbI3L/7vukbEZ7Lil7kyzSd/On55sKSJYTWHc/rRdMZ/d2IEFFjnTzMWt/ng
+	yXJR+K/KlBruF85+Wi7/tDLTrp+WE3xn8PPclUMLmCfLKTkvkb33K/bRm8tKLMUZiYZazEXF
+	iQAGmyPIQwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---gyrD3n6DECm5G5Ux
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 2014-01-07 14:55, Ricardo Ribalda Delgado wrote:
+> This patch adds a test preventing streamon() if there is no buffer
+> ready.
+>
+> Without this patch, a user could call streamon() before
+> preparing any buffer. This leads to a situation where if he calls
+> close() before calling streamoff() the device is kept streaming.
+>
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>   drivers/media/v4l2-core/videobuf2-core.c | 5 +++++
+>   1 file changed, 5 insertions(+)
+>
+> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+> index 098df28..6f20e5a 100644
+> --- a/drivers/media/v4l2-core/videobuf2-core.c
+> +++ b/drivers/media/v4l2-core/videobuf2-core.c
+> @@ -1776,6 +1776,11 @@ static int vb2_internal_streamon(struct vb2_queue *q, enum v4l2_buf_type type)
+>   		return 0;
+>   	}
+>   
+> +	if (!q->num_buffers) {
+> +		dprintk(1, "streamon: no frames have been requested\n");
 
-On Thu, Dec 19, 2013 at 03:55:02PM +0000, Lee Jones wrote:
-> The Slave Config's addr_width attribute is populated by data_width of
-> dma_cfg, which in turn is derived from dma_params' data_size attribute
-> and that comes from the slot_width which is always 16 bits (2 Bytes).
-> We're cutting out the middle man here and just setting the DMA Slave
-> Config directly.
+I think that "streamon: error - no buffers have been allocated\n" 
+message is a bit
+more descriptive and it matches the definitions used elsewhere in the 
+debug messages.
+Please don't mix buffers and frames.
 
-Applied, thanks.
+> +		return -EINVAL;
+> +	}
+> +
+>   	/*
+>   	 * If any buffers were queued before streamon,
+>   	 * we can now pass them to driver for processing.
 
---gyrD3n6DECm5G5Ux
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzB9YAAoJELSic+t+oim9wz0QAIwaSfP73x6pEoUIW1jU4ZlC
-WfirKyYB3jPelvWWOPEunimuigYHRvmlo5pYcD/9FY+PWf0T5cDIIEhLqjMnDJwh
-6qMIBv7OzVCxNLMNkVN5QdsF+GVY4vn9pS96y9ES7Gqf6KYdwvMRS2gnfQYLl9He
-+3/O3z+/dF137wyDpPN5kah72dwT1rEF7v3rhbryJnMeih8xUdb7vtvtJROk87C+
-wfPcsC7+1PdaiOj/Pj1JYproNjb/eO2o86XQHkT5VN2V5Wq3aghCw0kXyfTQKXqr
-Y5klc24WACqOtLrc8rRE9HojlO7RXegYTZEDDDhFGVS0j34kzPXsZEnCBDSyOWM0
-Xqk3uoEn/cFEX5jfLcmeK5lVZCtT7MD9q/SUakWefArqbuPgRpLVRWkg8FnP5c+e
-EnRA2FoTXjX6zsnN8i3F7KhwWldTFogxXSITTSfz3a2echS/SY+gPcjnqVrWA+5G
-Gge0pOAmdwFxrfQwAkxQsGhVojKk2L/3fzexyjBgSyfEfhLSRswPTqqdBi5FvANS
-HrMyh7+Nsz3ghcxtjey7PTdhjRZ8roVm4UjcG6rrBSmfjX8rWt4TfT/iT1mZ5Hat
-V8tlRmBiWmspUAHhxXgRWmXdHoRkCpoddPyUFQOsRV0yZlFoIw8f7cDy+jRp63ST
-8FOWJsdzZu3+qj9VYqZr
-=uo1m
------END PGP SIGNATURE-----
-
---gyrD3n6DECm5G5Ux--
