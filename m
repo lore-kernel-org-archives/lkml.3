@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaAGVQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 16:16:50 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:35832 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaAGVQm (ORCPT
+	id S1753889AbaAGVVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 16:21:03 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:44814 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaAGVUz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 16:16:42 -0500
-Message-ID: <52CC6DFE.3070205@ovekarlsen.com>
-Date: Tue, 07 Jan 2014 22:13:34 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Richard Dunn <richard.dunn.144@gmail.com>,
-        Liam Lindholm <liam.oskar.lindholm@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Richard Stallman: Why =?UTF-8?B?4oCcR05V4oCZUyBOb3QgTGludXjigJ0=?=
- =?UTF-8?B?IGFuZCBXaHkgV2UgU2hvdWxkIOKAnFNheSBMaUdOVXjigJ0gLyBTdG9wcGluZyA=?=
- =?UTF-8?B?YWJ1c2l2ZSBiZWhhdmlvdXIu?=
-References: <52B8993E.9030309@ovekarlsen.com>	<CANq1nOCf38QCob269fDn=CqSds2HhEUuSBnnwO5c-_=DwBBBGw@mail.gmail.com> <CADOd_ht0h24CB_3qizxU=wRxzkki9zyeVtjaJmOo6+0wMVZKvg@mail.gmail.com>
-In-Reply-To: <CADOd_ht0h24CB_3qizxU=wRxzkki9zyeVtjaJmOo6+0wMVZKvg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Jan 2014 16:20:55 -0500
+Date: Tue, 07 Jan 2014 16:20:53 -0500 (EST)
+Message-Id: <20140107.162053.1127386147694253061.davem@davemloft.net>
+To: bpoirier@suse.de
+Cc: edumazet@google.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        therbert@google.com
+Subject: Re: [PATCH v2] net: Do not enable tx-nocache-copy by default
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1389107470-18213-1-git-send-email-bpoirier@suse.de>
+References: <20140106.200002.1747627391067832069.davem@davemloft.net>
+	<1389107470-18213-1-git-send-email-bpoirier@suse.de>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 07 Jan 2014 13:20:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just to be clear, no idolatry. At all.
+From: Benjamin Poirier <bpoirier@suse.de>
+Date: Tue,  7 Jan 2014 10:11:10 -0500
 
-Anyways I am just going to use windows here, and maybe even get an E5 
-mac. It has logic audio, which I think is perfectly fine.
+> There are many cases where this feature does not improve performance or even
+> reduces it.
+> 
+> For example, here are the results from tests that I've run using 3.12.6 on one
+> Intel Xeon W3565 and one i7 920 connected by ixgbe adapters. The results are
+> from the Xeon, but they're similar on the i7. All numbers report the
+> mean±stddev over 10 runs of 10s.
+> 
+> 1) latency tests similar to what is described in "c6e1a0d net: Allow no-cache
+> copy from user on transmit"
+> There is no statistically significant difference between tx-nocache-copy
+> on/off.
+> nic irqs spread out (one queue per cpu)
+ ...
+> CC: Tom Herbert <therbert@google.com>
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
-I am almost nervous to contribute to this, seeing as much obscurity as 
-it is. People will have to choose a solution good for them. If it makes 
-sense. Not for some reason of idolatry, or slaving away for nothing.
-
+Looks good, applied, thanks.
