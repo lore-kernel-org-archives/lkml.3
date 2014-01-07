@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaAGNOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 08:14:18 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:55236 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751107AbaAGNOJ (ORCPT
+	id S1751387AbaAGNQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 08:16:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57773 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaAGNQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 08:14:09 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Tue, 7 Jan 2014 13:14:01 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Heider <andreas@meetr.de>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH 4/4] drm/i915: check LVDS for EDID on GPU switches
-Message-ID: <20140107131401.GF8991@nuc-i3427.alporthouse.com>
-References: <1389088723-30959-1-git-send-email-artagnon@gmail.com>
- <1389088723-30959-5-git-send-email-artagnon@gmail.com>
- <20140107104553.GC8991@nuc-i3427.alporthouse.com>
- <CALkWK0mSPvjDUaGDS9jP=PSynFFTtw5U8WX40PzzixUwvgokSg@mail.gmail.com>
- <20140107114854.GE8991@nuc-i3427.alporthouse.com>
- <CALkWK0kcEOkao9HUv_0GnBawcwaNyNfe-KWCTZ348yvp7oy90g@mail.gmail.com>
+	Tue, 7 Jan 2014 08:16:21 -0500
+Date: Tue, 7 Jan 2014 14:15:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Alex Shi <alex.shi@linaro.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "jason.low2@hp.com" <jason.low2@hp.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
+Message-ID: <20140107131523.GX3694@twins.programming.kicks-ass.net>
+References: <1386061556-28233-5-git-send-email-alex.shi@linaro.org>
+ <20131217141012.GG10134@e103034-lin>
+ <20131217153809.GP21999@twins.programming.kicks-ass.net>
+ <52B2F5D0.2050707@linaro.org>
+ <20131220111926.GA11605@e103034-lin>
+ <52BAF292.1070404@linaro.org>
+ <20140102160404.GA3000@e103034-lin>
+ <52CAB12B.4090701@linaro.org>
+ <20140107125518.GE2936@e103034-lin>
+ <20140107125930.GW31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALkWK0kcEOkao9HUv_0GnBawcwaNyNfe-KWCTZ348yvp7oy90g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140107125930.GW31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 06:35:26PM +0530, Ramkumar Ramachandra wrote:
-> Chris Wilson wrote:
-> > Rather than special casing lvds (especially when there are other panel
-> > connectors that can also be muxed), extend the connector interface to
-> > support a reprobe and walk over all connectors associated with i915
-> > after a switcheroo event.
+On Tue, Jan 07, 2014 at 01:59:30PM +0100, Peter Zijlstra wrote:
+> On Tue, Jan 07, 2014 at 12:55:18PM +0000, Morten Rasmussen wrote:
+> > My understanding is that should_we_balance() decides which cpu is
+> > eligible for doing the load balancing for a given domain (and the
+> > domains above). That is, only one cpu in a group is allowed to load
+> > balance between the local group and other groups. That cpu would
+> > therefore be reponsible for pulling enough load that the groups are
+> > balanced even if it means temporarily overloading itself. The other cpus
+> > in the group will take care of load balancing the extra load within the
+> > local group later.
 > 
-> Okay, so I can see the following get_edid functions:
-> 
->   intel_lvds_get_edid()
->   intel_crt_get_edid()
->   intel_sdvo_get_edid()
->   intel_dp_get_edid()
-> 
-> In the hdmi case, drm_get_edid() is called in two places:
-> intel_hdmi_detect() and intel_hdmi_detect_audio(); should I factor out
-> something into a corresponding intel_hdmi_get_edid() function?
-> 
-> Now, in i915_switcheroo_reprobe(), I need to call all these functions,
-> right? They all accept a a generic drm_connector and an specific
-> i2c_adapter. But how do I do that without exporting each of these
-> functions and their adapters?
+> Correct.
 
-If you look at struct intel_connector, you will see space for adding a
-callback that each of the LVDS/CRT/SDVO/DP connectors can hook into if
-they want to reprobe after a switcheroo.
+On that; one of the things I wanted to (and previously did attempt but
+failed) is trying to rotate this cpu. Currently its always the first cpu
+(of the group) and that gives a noticeable bias.
 
-  struct intel_connector *connector;
-  list_for_each_entry(connector,
-                    &dev->mode_config.connector_list,
-		    base.head) {
-	connector->reprobe(connector);
-  }
+If we could slowly rotate the cpu that does this that would alleviate
+both the load and cost bias.
 
-(or something similar) would do in the switcheroo callback.
+One thing I was thinking of is keeping a global counter maybe:
+ 'x := jiffies >> n'
+might be good enough and using the 'x % nr_cpus_in_group'-th cpu
+instead.
 
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Then again, these are micro issue and not a lot of people complain
+about this.
