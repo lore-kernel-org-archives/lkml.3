@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaAGOzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 09:55:35 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:51873 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaAGOzT (ORCPT
+	id S1751868AbaAGO5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 09:57:07 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:55193 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaAGO5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 09:55:19 -0500
-Message-ID: <52CC1499.3050508@ovekarlsen.com>
-Date: Tue, 07 Jan 2014 15:52:09 +0100
-From: Ove Karlsen <mail@ovekarlsen.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 7 Jan 2014 09:57:02 -0500
 MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Gnu - "if its not a dick, its wrong" - as any facist.
-References: <52CAFCC6.3070504@ovekarlsen.com>	 <52CAFE7A.9090106@infradead.org> <52CB0132.2050705@ovekarlsen.com>	 <52CB03BA.2070508@infradead.org> <52CB054B.6070504@ovekarlsen.com>	 <52CC0B8A.9000106@ovekarlsen.com>	 <1389105235.17808.8.camel@marge.simpson.net>	 <52CC1171.9040901@ovekarlsen.com> <1389106020.17808.11.camel@marge.simpson.net>
-In-Reply-To: <1389106020.17808.11.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389106472-11389-1-git-send-email-artagnon@gmail.com>
+References: <1389106472-11389-1-git-send-email-artagnon@gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Tue, 7 Jan 2014 20:26:21 +0530
+Message-ID: <CALkWK0m4UNmU_iBghr8jC2oYk3n2nn_U8p8UPm8jPyeBocDOLA@mail.gmail.com>
+Subject: Re: [INCOMPLETE PATCH v2 0/4] Get EDID late for VGA switcheroo
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Andreas Heider <andreas@meetr.de>,
+        Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/7/2014 3:47 PM, Mike Galbraith wrote:
-> On Tue, 2014-01-07 at 15:38 +0100, Ove Karlsen wrote:
->> On 1/7/2014 3:33 PM, Mike Galbraith wrote:
->>> http://s778.photobucket.com/user/DaveGlos/media/trollrepellent.jpg.html
->>>
->>> pssssssssst pssst.. sss <shake shake shake> pssssssst.....
->>>
-> Damn, didn't work.  Welcome to my mail filter silly child.
-Is that some kind of gay thing? "sssss". What a fucking moron. Go 
-pretend to be important somewhere else, they are fucking idiots who 
-don´t know the difference.
+[Forgot to CC]
 
-
--- 
-Peace Be With You
-Ove Karlsen,
-www.ovekarlsen.com
-
+On Tue, Jan 7, 2014 at 8:24 PM, Ramkumar Ramachandra <artagnon@gmail.com> wrote:
+> Hi Chris et al,
+>
+> I got this far with creating a generic interface for various
+> get_edid() functions, but I'm stuck now. Where do I get the specific
+> i2c_adapter from?
+>
+> I hope the series is okay otherwise.
+>
+> Thanks.
+>
+> Ramkumar Ramachandra (4):
+>   drm/i915: add support for vga_switcheroo reprobe
+>   drm/i915: factor out intel_lvds_get_edid()
+>   drm/i915: change intel_sdvo_get_edid() prototype
+>   drm/i915: introduce intel_connector->reprobe
+>
+>  drivers/gpu/drm/i915/i915_dma.c   |   8 ++-
+>  drivers/gpu/drm/i915/intel_crt.c  |   1 +
+>  drivers/gpu/drm/i915/intel_dp.c   |   1 +
+>  drivers/gpu/drm/i915/intel_drv.h  |   6 +++
+>  drivers/gpu/drm/i915/intel_lvds.c | 101 ++++++++++++++++++++++----------------
+>  drivers/gpu/drm/i915/intel_sdvo.c |  17 ++++---
+>  6 files changed, 84 insertions(+), 50 deletions(-)
+>
+> --
+> 1.8.5.2.229.g4448466
+>
