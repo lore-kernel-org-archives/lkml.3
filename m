@@ -1,96 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaAGGLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 01:11:06 -0500
-Received: from ozlabs.org ([203.10.76.45]:59456 "EHLO ozlabs.org"
+	id S1753868AbaAGGWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 01:22:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19138 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929AbaAGGLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 01:11:04 -0500
-Date: Tue, 7 Jan 2014 17:00:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lans Zhang <jia.zhang@windriver.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: linux-next: manual merge of the akpm-current tree with the tip tree
-Message-Id: <20140107170041.3a0b3ada016d250b1f9f0572@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8"
+	id S1750849AbaAGGWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 01:22:36 -0500
+Message-ID: <52CB9D1A.1050101@redhat.com>
+Date: Tue, 07 Jan 2014 14:22:18 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: John Fastabend <john.fastabend@gmail.com>
+CC: Neil Horman <nhorman@tuxdriver.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Vlad Yasevich <vyasevic@redhat.com>
+Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <52CA5CDA.1020503@gmail.com> <52CA612D.2000902@redhat.com> <20140106122628.GA24280@hmsreliant.think-freely.org> <52CB7009.2030903@redhat.com> <52CB8D54.9090506@gmail.com>
+In-Reply-To: <52CB8D54.9090506@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/07/2014 01:15 PM, John Fastabend wrote:
+> On 01/06/2014 07:10 PM, Jason Wang wrote:
+>> On 01/06/2014 08:26 PM, Neil Horman wrote:
+>>> On Mon, Jan 06, 2014 at 03:54:21PM +0800, Jason Wang wrote:
+>>>> On 01/06/2014 03:35 PM, John Fastabend wrote:
+>>>>> On 01/05/2014 07:21 PM, Jason Wang wrote:
+>>>>>> L2 fowarding offload will bypass the rx handler of real device. This
+>>>>>> will make
+>>>>>> the packet could not be forwarded to macvtap device. Another problem
+>>>>>> is the
+>>>>>> dev_hard_start_xmit() called for macvtap does not have any
+>>>>>> synchronization.
+>>>>>>
+>>>>>> Fix this by forbidding L2 forwarding for macvtap.
+>>>>>>
+>>>>>> Cc: John Fastabend <john.r.fastabend@intel.com>
+>>>>>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>>>>> ---
+>>>>>>    drivers/net/macvlan.c |    5 ++++-
+>>>>>>    1 files changed, 4 insertions(+), 1 deletions(-)
+>>>>>>
+>>>>> I must be missing something.
+>>>>>
+>>>>> The lower layer device should set skb->dev to the correct macvtap
+>>>>> device on receive so that in netif_receive_skb_core() the macvtap
+>>>>> handler is hit. Skipping the macvlan receive handler should be OK
+>>>>> because the switching was done by the hardware. If I read macvtap.c
+>>>>> correctly macvlan_common_newlink() is called with 'dev' where 'dev'
+>>>>> is the macvtap device. Any idea what I'm missing? I guess I'll need
+>>>>> to setup a macvtap test case.
+>>>> Unlike macvlan, macvtap depends on rx handler on the lower device to
+>>>> work. In this case macvlan_handle_frame() will call macvtap_receive().
+>>>> So doing netif_receive_skb_core() for macvtap device directly won't
+>>>> work
+>>>> since we need to forward the packet to userspace instead of kernel.
+>>>>
+>>>> For net-next.git, it may work since commit
+>>>> 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 let macvtap device
+>>>> register an
+>>>> rx handler for itself.
+>>> I agree, this seems like it should already be fixed with the above
+>>> commit.  With
+>>> this the macvlan rx handler should effectively be a no-op as far as the
+>>> reception of frames is concerned.  As long as the driver sets the
+>>> dev correctly
+>>> to the macvtap device (and it appears to), macvtap will get frames
+>>> to user
+>>> space, regardless of weather the software or hardware did the
+>>> switching.  If
+>>> thats the case though, I think the solution is moving that fix to
+>>> -stable
+>>> (pending testing of course), rather than comming up with a new fix.
+>>>
+>>>>> And what synchronization are you worried about on
+>>>>> dev_hard_start_xmit()?
+>>>>> In the L2 forwarding offload case macvlan_open() clears the
+>>>>> NETIF_F_LLTX
+>>>>> flag so HARD_TX_LOCK protects the driver txq. We might hit this
+>>>>> warning
+>>>>> in dev_queue_xmit() though,
+>>>>>
+>>>>>    net_crit_ratelimited("Virtual device %s asks to queue packet!\n",
+>>>>>
+>>>>> Perhaps we can remove it.
+>>>> The problem is macvtap does not call dev_queue_xmit() for macvlan
+>>>> device. It calls macvlan_start_xmit() directly from
+>>>> macvtap_get_user().
+>>>> So HARD_TX_LOCK was not done for the txq.
+>>> This seems to also be fixed by
+>>> 6acf54f1cf0a6747bac9fea26f34cfc5a9029523.
+>>> Macvtap does, as of that commit use dev_queue_xmit for the
+>>> transmission of
+>>> frames to the lowerdevice.
+>>
+>> Unfortunately not. This commit has a side effect that it in fact
+>> disables the multiqueue macvtap transmission. Since all macvtap queues
+>> will contend on a single qdisc lock.
+>>
+>
+> They will only contend on a single qdisc lock if the lower device has
+> 1 queue. 
 
-Hi Andrew,
+I think we are talking about 6acf54f1cf0a6747bac9fea26f34cfc5a9029523.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-arch/x86/mm/numa.c between commit f3d815cb854b ("x86/mm/numa: Fix 32-bit
-kernel NUMA boot") from the tip tree and commit 1459be89954e ("x86: get
-pg_data_t's memory from other node") from the akpm-current tree.
+The qdisc or txq lock were macvlan device itself since dev_queue_xmit()
+was called for macvlan device itself. So even if lower device has
+multiple txqs, if you just create a one queue macvlan device, you will
+get lock contention on macvlan device. And even if you explicitly
+specifying the txq numbers ( though I don't believe most management
+software will do this) when creating the macvlan/macvtap device, you
+must also configure the XPS for macvlan to make sure it has the
+possibility of using multiple transmit queues.
 
-These appear to be two very similar solutions, I fixed it up (see below -
-I (arbitrarily) chose to keep the actual allocation from the tip tree, but
-the messages from the akpm-current tree) and can carry the fix as
-necessary (no action is required).
+> Perhaps defaulting the L2 forwarding devices to 1queue was a
+> mistake. But the same issue arises when running macvtap over a
+> non-multiqueue nic. Or even if you have a multiqueue device and create
+> many more macvtap queues than the lower device has queues.
+>
+> Shouldn't the macvtap configuration take into account the lowest level
+> devices queues? 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+See commit 8ffab51b3dfc54876f145f15b351c41f3f703195 ("macvlan: lockless
+tx path"). It allows the management to create a device without worrying
+the underlying device.
+> How does using the L2 forwarding device change the
+> contention issues? Without the L2 forwarding LLTX is enabled but the
+> qdisc lock, etc is still acquired on the device below the macvlan.
+>
 
-diff --cc arch/x86/mm/numa.c
-index c85da7bb6b60,f26b16f0d3e0..000000000000
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@@ -211,11 -211,12 +211,12 @@@ static void __init setup_node_data(int=20
-  	 */
-  	nd_pa =3D memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-  	if (!nd_pa) {
-+ 		pr_warn("Cannot find %zu bytes in node %d, so try other nodes",
-+ 			nd_size, nid);
- -		nd_pa =3D memblock_alloc_nid(nd_size, SMP_CACHE_BYTES,
- -					   MAX_NUMNODES);
- +		nd_pa =3D __memblock_alloc_base(nd_size, SMP_CACHE_BYTES,
- +					      MEMBLOCK_ALLOC_ACCESSIBLE);
-  		if (!nd_pa) {
-- 			pr_err("Cannot find %zu bytes in node %d\n",
-- 			       nd_size, nid);
-+ 			pr_err("Cannot find %zu bytes in any node\n", nd_size);
-  			return;
-  		}
-  	}
+That's the point. We need make sure the txq selection and qdisc lock
+were done for the lower device not for the macvlan device itself. Then
+macvlan can automatically benefit from the multi-queue capable lower
+devices. But L2 forwarding needs to contend on the txq lock on macvlan
+device itself, which is unnecessary and can complex the management.
+> The ixgbe driver as it is currently written can be configured for up to
+> 4 queues by setting numtxqueues when the device is created. I assume
+> when creating macvtap queues the user needs to account for the number
+> of queues supported by the lower device.
+>
 
---Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8
-Content-Type: application/pgp-signature
+We'd better not complicate the task of management, lockless tx path work
+very well so we can just keep it. Btw, there's no way for the user to
+know the maximum number of queues that L2 forwarding supports.
+>> For L2 forwarding offload itself, more issues need to be addressed for
+>> multiqueue macvtap:
+>>
+>> - ndo_dfwd_add_station() can only create queues per device at ndo_open,
+>> but multiqueue macvtap allows user to create and destroy queues at their
+>> will and at any time.
+>
+> same argument as above, isn't this the same when running macvtap without
+> the l2 offloads over a real device? I expect you hit the same contention
+> points when running over a real device.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Not true and not only for contention.
 
-iQIcBAEBCAAGBQJSy5gNAAoJEMDTa8Ir7ZwV8ocP/j64fesEWSJLml18z8IhXY2j
-+WUApqxJYISDiH9s26NvjY0zp1CC+5BxbFHHOGg22rE+OwJmO5uQavrG1cNK7KkO
-EoXDgljoRJXnLO9svlNnNuKg+MvxHQkgWUdFE9ncyiP5e2724NvoglwCfSNsbaVF
-fKyQ73lUAMLGo6dtYeePMrjZd/ZjlH0SqP+MsupZ+EJ8qUPBGWOrH+EMckG9+4k3
-c2loLK/fhOcf0Wn4yqYE/rr1TEa0oT7P45F6sbor2QXd2Z7PBqoCwywAOQT5y0JH
-R8+V9m0IaDRJbd//srK2rk2yo8ycidr8Qlz9xmXRA2NyhaXvdCuv+uXdcGUi4I0h
-dZgXr4ppI3wVpkbL8NyskyMMH0/nROIzXmpYjB94buQFN9IJHhwTXi6UkpgDOoDk
-SRoqau/D42Pq2dZu7YTzZbMde78Axg+5Q65BGya7eEGAzeIwnYjUR9KbcFVb0+Ww
-j2nkYSkbVESO8W23Cp/x1KD/kwPRqP4UJ8TS+049O9QR8h82dAQ4MS+Gwb7jGZaN
-/h87t32Af6miaD3bSjS5TazMyGkL9QLgqBA3ZH6t2x+CGpxLjgxGKKJ2gddaTgac
-agRJoU8DUnSGnsUy2Rmtdo37fd8MrcTEj+1cbrjROzplwAaVhKR4r351O2Gt1l2f
-XfCAVeSW0Lb87kGpMiP8
-=ZjRD
------END PGP SIGNATURE-----
+Macvtap allows user to create or destroy a queue by simply open or close
+to character device /dev/tapX. But currently, we do nothing when a new
+queue was created or destroyed for L2 forwarding offload.
 
---Signature=_Tue__7_Jan_2014_17_00_41_+1100_JMhaqLsdVJWhU4p8--
+For contention, lockless tx path make the contention only happens for
+the txq or qdisc for the lower device, but L2 forwarding offload make
+contention also happen for the macvlan device itself.
+
+>
+>
+>> - it looks that ixgbe has a upper limit of 4 queues per station, but
+>> macvtap currently allows up to 16 queues per device.
+>>
+>
+> The 4 limit was to simplify the code because the queue mapping in the
+> driver gets complicated if it is greater than 4. We can probably
+> increase this latter. But sorry reiterating how is this different than
+> a macvtap on a real device that supports a max of 4 queues?
+
+Well, it maybe easy. I just point out possible issues we may meet currently.
+>
+>> So more works need to be done and unless those above 3 issues were
+>> addressed, this patch is really needed to make sure macvtap works.
+>>
+>
+> Agreed there is a lot more work here to improve things I'm just not
+> sure we need to disable this now. Also note its the l2 forwarding
+> should be disabled by default so a user would have to enable the
+> feature flag.
+
+Even if it was disabled by default. We should not surprise the user who
+want to enable it for macvtap.
+>
+> Thanks,
+> John
+>
+
+Thanks
