@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaAGTyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 14:54:24 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48506 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaAGTyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 14:54:14 -0500
-Date: Tue, 7 Jan 2014 11:54:12 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 3/7] mfd: pm8921: Migrate to irqdomains
-Message-ID: <20140107195412.GC14405@codeaurora.org>
-References: <1387831563-13535-1-git-send-email-sboyd@codeaurora.org>
- <1387831563-13535-4-git-send-email-sboyd@codeaurora.org>
- <20140106155350.GI30156@lee--X1>
- <52CB1323.6080200@codeaurora.org>
- <20140107082233.GB3182@lee--X1>
+	id S1753800AbaAGTyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 14:54:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:54296 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753612AbaAGTyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 14:54:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,620,1384329600"; 
+   d="scan'208";a="455026767"
+From: ville.syrjala@linux.intel.com
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH] x86: Drop casts from __copy_{from,to}_user_inatomic
+Date: Tue,  7 Jan 2014 21:54:21 +0200
+Message-Id: <1389124461-31650-1-git-send-email-ville.syrjala@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107082233.GB3182@lee--X1>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07, Lee Jones wrote:
-> > >> +	return of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
-> > >> +}
-> > > Can't you use the MFD core instead?
-> > >
-> > 
-> > Are you suggesting using mfd_add_devices()? At first glance it looks
-> > like that would require an array of mfd_cell structures that do nothing
-> > besides match compatible strings in the DT. Using of_platform_populate()
-> > achieves the same goal and doesn't require an array of mfd_cell
-> > structures for each different pm8xxx chip that comes along, meaning
-> > simpler code.
-> 
-> I'm inclined to agree, but playing Devil's advocate here, as a device
-> using the MFD subsystem it's often clearer to readers and other people
-> looking for examples if the MFD core functionality is used. For
-> instance, I now have no idea what devices the PM8xxx encompasses
-> without looking at the DTS file. A small cell structure is a small
-> price to pay for code clarity IMHO.
-> 
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-Why not just put that information in the binding document? And
-how is this different from adding a bunch of C files to match a
-set of compatible strings that a dts file has just so that we can
-add all the devices on a board (think board files for an SoC).
-Sure it documents the devices on a board, but we've been moving
-away from that by using of_platform_populate().
+The casts in __copy_{from,to}_user_inatomic lead to sparse warnings.
+Drop the casts to get rid of the warnings.
 
-IMHO the code is clear. I want to add all subnodes of this
-device's node as children struct devices. Using
-of_platform_populate() says that, whereas mfd_add_devices() says
-I want to add these specific subnodes of this device's node.
+Example:
+  CHECK   drivers/gpu/drm/i915/i915_gem.c
+arch/x86/include/asm/uaccess_64.h:213:40: warning: incorrect type in argument 1 (different address spaces)
+arch/x86/include/asm/uaccess_64.h:213:40:    expected void [noderef] <asn:1>*dst
+arch/x86/include/asm/uaccess_64.h:213:40:    got void *<noident>
 
-Also, as more drivers are written and more bindings are ratified
-this platform driver will need to be updated with more cells and
-more compatible strings, causing more inter-tree dependencies and
-more patches. Please, let's avoid this if we can.
+The warnings got introduced by this commit:
+ commit ff47ab4ff3cddfa7bc1b25b990e24abe2ae474ff
+ Author: Andi Kleen <ak@linux.intel.com>
+ Date:   Fri Aug 16 14:17:19 2013 -0700
 
+    x86: Add 1/2/4/8 byte optimization to 64bit __copy_{from,to}_user_inatomic
+
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+---
+ arch/x86/include/asm/uaccess_64.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
+index 190413d..12a26b9 100644
+--- a/arch/x86/include/asm/uaccess_64.h
++++ b/arch/x86/include/asm/uaccess_64.h
+@@ -204,13 +204,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
+ static __must_check __always_inline int
+ __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
+ {
+-	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
++	return __copy_from_user_nocheck(dst, src, size);
+ }
+ 
+ static __must_check __always_inline int
+ __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
+ {
+-	return __copy_to_user_nocheck((__force void *)dst, src, size);
++	return __copy_to_user_nocheck(dst, src, size);
+ }
+ 
+ extern long __copy_user_nocache(void *dst, const void __user *src,
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
+
