@@ -1,123 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaAGSqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 13:46:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750766AbaAGSqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 13:46:31 -0500
-Message-ID: <52CC4B77.9090401@redhat.com>
-Date: Tue, 07 Jan 2014 13:46:15 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753158AbaAGSqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 13:46:50 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:33280 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaAGSqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 13:46:32 -0500
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Michel Lespinasse <walken@google.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        "Gortmaker, Paul (Wind River)" <paul.gortmaker@windriver.com>,
-        "Morgan, Janet" <janet.morgan@intel.com>,
-        Ruiv Wang <ruiv.wang@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        chen gong <gong.chen@linux.intel.com>
-Subject: Re: [PATCH] x86: Add check for number of available vectors before
- CPU down [v6]
-References: <1389098827-12050-1-git-send-email-prarit@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31D96D8F@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31D96D8F@ORSMSX106.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140107104611.GI4770@phenom.ffwll.local>
+References: <20140107005003.10786.85164.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140107104611.GI4770@phenom.ffwll.local>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 7 Jan 2014 11:46:11 -0700
+Message-ID: <CAErSpo4E8T18NLtgJ3A9ge_bLEsShrxC7pvZfMH4wP5fObPoLA@mail.gmail.com>
+Subject: Re: [PATCH v7 00/15] PCI: Allocate 64-bit BARs above 4G when possible
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, Yinghai Lu <yinghai@kernel.org>,
+        Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 7, 2014 at 3:46 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Mon, Jan 06, 2014 at 05:55:12PM -0700, Bjorn Helgaas wrote:
+>> This is basically v7 of Yinghai's patch series:
+>> http://lkml.kernel.org/r/1387485843-17403-1-git-send-email-yinghai@kernel.org
+>>
+>> The goal is to try to put 64-bit BARs above 4G so we can preserve the
+>> 32-bit bus address space for 32-bit BARs.
+>>
+>> There are a whole bunch of AGP updates at the beginning because some AGP
+>> devices have 64-bit BARs, but most of the AGP drivers read the aperture
+>> bus address directly from the BAR, and they only handle 32-bit BARs.
+>> Putting BARs above 4G would break those drivers, so we tried to fix them
+>> up first.  Yinghai fixed intel-gtt.c, and I made similar fixes to all
+>> the other AGP drivers I could find.
+>>
+>> Some of the AGP updates are related to the fact that most of the drivers
+>> assume the PCI bus address is the same as the CPU physical address.  For
+>> example, they read the bus address from the BAR, then call ioremap() on
+>> it.  This is wrong, because ioremap() expects a CPU physical address,
+>> not a bus address.  In most cases, I think AGP devices are in simple
+>> systems where (bus_address == CPU_physical_address), so these updates
+>> probably don't fix any broken systems.  I'm pretty sure there are more
+>> things like this that should be fixed.
+>> ...
 
+> Patches 4-11 are Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-On 01/07/2014 12:54 PM, Luck, Tony wrote:
-> +	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-> +		irq = __this_cpu_read(vector_irq[vector]);
-> +		if (irq >= 0) {
-> +			desc = irq_to_desc(irq);
-> +			data = irq_desc_get_irq_data(desc);
-> +			cpumask_copy(&affinity_new, data->affinity);
-> +			cpu_clear(this_cpu, affinity_new);
-> +			/*
-> +			 * The check below determines if this irq requires
-> +			 * an empty vector_irq[irq] entry on an online
-> +			 * cpu.
-> +			 *
-> +			 * The code only counts active non-percpu irqs, and
-> +			 * those irqs that are not linked to on an online cpu.
-> +			 * The first test is trivial, the second is not.
-> +			 *
-> +			 * The second test takes into account the
-> +			 * account that a single irq may be mapped to multiple
-> +			 * cpu's vector_irq[] (for example IOAPIC cluster
-> +			 * mode).  In this case we have two
-> +			 * possibilities:
-> +			 *
-> +			 * 1) the resulting affinity mask is empty; that is
-> +			 * this the down'd cpu is the last cpu in the irq's
-> +			 * affinity mask, and
-> Code says "||" - so I think comment should say "or".
-> +			 *
-> +			 * 2) the resulting affinity mask is no longer
-> +			 * a subset of the online cpus but the affinity
-> +			 * mask is not zero; that is the down'd cpu is the
-> +			 * last online cpu in a user set affinity mask.
-> +			 *
-> +			 * In both possibilities, we need to remap the irq
-> +			 * to a new vector_irq[].
-> +			 *
-> +			 */
-> +			if (irq_has_action(irq) && !irqd_is_per_cpu(data) &&
-> +			    (cpumask_empty(&affinity_new) ||
-> +			     !cpumask_subset(&affinity_new, &online_new)))
-> +				this_count++;
-> +		}
-> 
-> That's an impressive 6:1 ratio of lines-of-comment to lines-of-code!
+Thanks a lot!  I added your Reviewed-by to those patches.
 
-Heh -- I couldn't decide if I should keep it all together in one comment or
-divide it up.  I guess it does look less scary if I divide it up.  So how about
-(sorry for the cut-and-paste)
-
-
-        for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
-                irq = __this_cpu_read(vector_irq[vector]);
-                if (irq >= 0) {
-                        desc = irq_to_desc(irq);
-                        data = irq_desc_get_irq_data(desc);
-                        cpumask_copy(&affinity_new, data->affinity);
-                        cpu_clear(this_cpu, affinity_new);
-
-                        /* Do not count inactive or per-cpu irqs. */
-                        if (!irq_has_action(irq) || irqd_is_per_cpu(data))
-                                continue;
-
-                        /*
-                         * A single irq may be mapped to multiple
-                         * cpu's vector_irq[] (for example IOAPIC cluster
-                         * mode).  In this case we have two
-                         * possibilities:
-                         *
-                         * 1) the resulting affinity mask is empty; that is
-                         * this the down'd cpu is the last cpu in the irq's
-                         * affinity mask, or
-                         *
-                         * 2) the resulting affinity mask is no longer
-                         * a subset of the online cpus but the affinity
-                         * mask is not zero; that is the down'd cpu is the
-                         * last online cpu in a user set affinity mask.
-                         */
-                        if (cpumask_empty(&affinity_new) ||
-                            !cpumask_subset(&affinity_new, &online_new))
-                                this_count++;
-                }
-        }
-
-
-Everyone okay with that?
-
-P.
+Bjorn
