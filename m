@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173AbaAGIib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 03:38:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51516 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554AbaAGIia (ORCPT
+	id S1755605AbaAGIlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 03:41:00 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11599 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaAGIk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 03:38:30 -0500
-Date: Tue, 7 Jan 2014 09:38:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow
- tracing units
-Message-ID: <20140107083803.GM30183@twins.programming.kicks-ass.net>
-References: <87wqj1s2d3.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219103134.GD30183@twins.programming.kicks-ass.net>
- <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219112812.GY21999@twins.programming.kicks-ass.net>
- <20131219123955.GA18186@gmail.com>
- <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com>
- <20131219151024.GI16438@laptop.programming.kicks-ass.net>
- <87iotw6bwx.fsf@tassilo.jf.intel.com>
- <20140106221528.GK30183@twins.programming.kicks-ass.net>
- <8761pw6717.fsf@tassilo.jf.intel.com>
+	Tue, 7 Jan 2014 03:40:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 07 Jan 2014 00:41:08 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <linux@arm.linux.org.uk>, <thierry.reding@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: config: enable ams AS3722 power reset driver
+Date: Tue, 7 Jan 2014 14:09:59 +0530
+Message-ID: <1389084000-17033-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761pw6717.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 06, 2014 at 03:10:28PM -0800, Andi Kleen wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
-> > Also, do clarify the other points I asked about. Esp. the non
-> > FREEZE_ON_PMI behaviour of the PT PMI is worrying me immensely.
-> 
-> The only reason for hardware freeze is when you have a few entries (like
-> with LBRs) so the interrupt entry code could overwhelm it.
-> 
-> But PT is not small, it's gigantic: even with the smallest buffer you
-> have many thousands of entries.
-> 
-> So you will get a few branches in the interrupt entry, but it's not a problem
-> because everything you really wanted to trace is still there.
-> 
-> Eventually the handler disables PT, so there's no risk of racing with
-> the update or anything like that.
-> 
-> Did I miss anything?
+ams AS3722 is used as system PMIC for Tegra124 based Venice2.
+Enable ams AS3722 power reset driver for enabling power off
+system using PMIC.
 
-Yes; go read this:
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/configs/tegra_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
- lkml.kernel.org/r/20131219125205.GT3694@twins.programming.kicks-ass.net
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index 5fdc9a0..b17d301 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -142,6 +142,7 @@ CONFIG_POWER_SUPPLY=y
+ CONFIG_BATTERY_SBS=y
+ CONFIG_CHARGER_TPS65090=y
+ CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_AS3722=y
+ CONFIG_POWER_RESET_GPIO=y
+ CONFIG_SENSORS_LM90=y
+ CONFIG_MFD_AS3722=y
+-- 
+1.7.9.5
+
