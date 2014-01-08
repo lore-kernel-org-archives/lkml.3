@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaAHHrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:47:05 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:20031 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaAHHq5 (ORCPT
+	id S1755207AbaAHHsk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:48:40 -0500
+Received: from ext190.halfdog.net ([88.116.147.190]:52607 "EHLO
+	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069AbaAHHse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:46:57 -0500
-Date: Wed, 8 Jan 2014 10:47:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        pisa@cmp.felk.cvut.cz
-Subject: Re: [PATCH] comedi: Humusoft MF634 and MF624 DAQ cards driver
-Message-ID: <20140108074701.GP5443@mwanda>
-References: <1389133497-10149-1-git-send-email-lisovy@gmail.com>
- <1389133497-10149-2-git-send-email-lisovy@gmail.com>
+	Wed, 8 Jan 2014 02:48:34 -0500
+Message-ID: <52CD022E.9040107@halfdog.net>
+Date: Wed, 08 Jan 2014 07:45:50 +0000
+From: halfdog <me@halfdog.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101 Firefox/27.0 SeaMonkey/2.24a1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389133497-10149-2-git-send-email-lisovy@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: Sanitize CPU-state when switching tasks (was sanitize CPU-state
+ when switching from virtual-8086 mode to other task)
+References: <52BF4A80.3010503@halfdog.net> <52BF8AEE.6020904@zytor.com> <52C089AC.4000401@halfdog.net> <52C0C9F4.50101@zytor.com> <52C196C3.1040300@halfdog.net> <52C31027.2030101@zytor.com> <20131231192106.GA22535@phenom.dumpdata.com> <52C347F0.8070902@zytor.com>
+In-Reply-To: <52C347F0.8070902@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 11:24:57PM +0100, Rostislav Lisovy wrote:
-> This patch adds Comedi driver for Humusoft MF634 (PCIe) and
-> MF624 (PCI) data acquisition cards. The legacy card Humusoft
-> MF614 is not supported. More info about the cards may be found
-> at http://humusoft.cz/produkty/datacq/
-> The driver was tested with both cards. Everything seems to work
-> properly. Just the basic functionality of the card (DIO, ADC, DAC)
-> is supported by this driver.
-> 
-> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
-> 
->  create mode 100644 drivers/staging/comedi/drivers/mf6x4.c
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-There should be a "---" after the Signed-off-by line and before the
-diffstat "create mode 100644 drivers/staging/comedi/drivers/mf6x4.c"
-line.  Otherwise, the diffstat gets included in the changelog.
+Update to the issue:
 
-Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
----
-create mode 100644 drivers/staging/comedi/drivers/mf6x4.c
+* Although first observed with virtual-8086 mode, the bug is not
+specific to virtual-8086 mode, it can be triggered with normal x86
+userspace code also, even with better reproducibility.
 
-It's a small thing...  I almost feel bad for pointing it out.
+* Ben Hutchings looked at the Debian bug report [1], he failed to
+reproduce on his hardware, so it might be specific to some CPU models
+(currently my AMD E-350 is only machine known to be affected).
 
-regards,
-dan carpenter
+* When deactivating mmap_min_addr, the NULL-dereferences during
+task-switch is exploitable, works both on native hardware and within
+VirtualBox. See [2] for POC to gain root privileges.
 
+* It seems, that when changing the FPU control word with "fstcw" just
+before exit of the process, then another process could suffer when
+doing __do_switch, probably related to the xsave instruction and a x86
+processor bug workaround, see "noxsave" switch [3]: [BUGS=X86]
+Disables x86 extended register state save and restore using xsave. The
+kernel will fallback to enabling legacy floating-point and sse state.
+
+hd
+
+[1] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=733551
+[2]
+http://www.halfdog.net/Security/2013/Vm86SyscallTaskSwitchKernelPanic/
+[3] https://www.kernel.org/doc/Documentation/kernel-parameters.txt
+
+- -- 
+http://www.halfdog.net/
+PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlLNAjEACgkQxFmThv7tq+44FACfeDHQHK71+7tZawm9Ftjw7Hvp
+j04AmwY04UwG9clERS3e1HisM2swbo1i
+=KoQL
+-----END PGP SIGNATURE-----
