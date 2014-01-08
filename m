@@ -1,95 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727AbaAHBE5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 20:04:57 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:49408 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032AbaAHBEt (ORCPT
+	id S1754480AbaAHBHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 20:07:46 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27498 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310AbaAHBHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 20:04:49 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-f5-52cca430aec0
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@kernel.org>
-Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>, "'Balaji T K'" <balajitk@ti.com>,
-        "'Nishanth Menon'" <nm@ti.com>
-References: <002001cf0c0d$461abfa0$d2503ee0$%han@samsung.com>
-In-reply-to: <002001cf0c0d$461abfa0$d2503ee0$%han@samsung.com>
-Subject: [PATCH 3/3] regulator: twl: Fix checkpatch issue
-Date: Wed, 08 Jan 2014 10:04:48 +0900
-Message-id: <002201cf0c0d$a0a7e6a0$e1f7b3e0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8MDUYAj2m3DqtwQ9mZHqZTKqWOEAAAClfw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t8zA12DJWeCDO6tMLWYOnk7m8XUh0/Y
-	LC4vvMRq8e1KB5PF5V1z2Cze/DjL5MDmsXPWXXaPTas62Tz6tqxi9Dh+YzuTx+dNcgGsUVw2
-	Kak5mWWpRfp2CVwZd5qKCpZzVHz6fpilgfERWxcjJ4eEgInE6ievmSFsMYkL99YDxbk4hASW
-	MUpsOfyYFabow8lD7BCJRYwSi+Y1Qjm/GCWWLZ7IBFLFJqAm8eXLYaAEB4eIgKrE/1fuIGFm
-	gbWMEnO6vUFsIQFbiW/nzzGC2JwCdhIvHjSCLRAWsJRoOHAFLM4C1Nr59AlYnBeo/tTbw8wQ
-	tqDEj8n3WCBmakms33mcCcKWl9i85i0zyFoJAXWJR391QcIiAkYSd29/ZIcoEZHY9+IdI8jJ
-	EgKP2CUa3m5lgdglIPFt8iEWiF5ZiU0HoAEhKXFwxQ2WCYwSs5BsnoVk8ywkm2chWbGAkWUV
-	o2hqQXJBcVJ6kaFecWJucWleul5yfu4mRkjE9u5gvH3A+hBjMtD6icxSosn5wIjPK4k3NDYz
-	sjA1MTU2Mrc0I01YSZw36WFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZG3/6NcgfNlTMv
-	Wz9LiazXdNvvMPXFwwyfG/mCquv9sjlyl+3sLq2RT5om78Oek+lQa5PmW3iBl0MvdOt/LctG
-	LaGZ69e1ZXx1mba8LGvlhfWbHmyuysyNq7QqKrgcYH3vVOD3v8q6Jv2/rzQYrahP1w2yzmNK
-	Zc/hm/WyUOHSnOA3OYrzFymxFGckGmoxFxUnAgCAF84a7gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t9jAV2DJWeCDLpWGVpMnbydzWLqwyds
-	FpcXXmK1+Halg8ni8q45bBZvfpxlcmDz2DnrLrvHplWdbB59W1Yxehy/sZ3J4/MmuQDWqAZG
-	m4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygE5QUyhJz
-	SoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGXeaigqWc1R8+n6YpYHxEVsXIyeH
-	hICJxIeTh9ghbDGJC/fWA8W5OIQEFjFKLJrXyA7h/GKUWLZ4IhNIFZuAmsSXL4eBEhwcIgKq
-	Ev9fuYOEmQXWMkrM6fYGsYUEbCW+nT/HCGJzCthJvHjQyApiCwtYSjQcuAIWZwFq7Xz6BCzO
-	C1R/6u1hZghbUOLH5HssEDO1JNbvPM4EYctLbF7zlhlkrYSAusSjv7ogYREBI4m7tz+yQ5SI
-	SOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4H
-	z6R3MK5qsDjEKMDBqMTDe0PtTJAQa2JZcWXuIUYJDmYlEd5j3UAh3pTEyqrUovz4otKc1OJD
-	jMlAj05klhJNzgemqrySeENjEzMjSyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi
-	4JRqYFwj3sJblJcu05Phr3xy1u2X+q0b3c+uU1CcYpA07YWvUvP8vQXHPU0ELiz1r/uQF130
-	cNLzlZcnW099WLZyPs+rQ9Ltc1Na6jRSvUwchAPsdY9P239ntkMs26VHRhMycleXRhlJTb+Y
-	fdCqc9Zjx+dbY60+qVfueT+xzkrul+6a84wsj4t63iixFGckGmoxFxUnAgCxOde5SwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 7 Jan 2014 20:07:40 -0500
+Message-ID: <52CCA4A6.7030106@oracle.com>
+Date: Wed, 08 Jan 2014 09:06:46 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Vlastimil Babka <vbabka@suse.cz>
+CC: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>, Nick Piggin <npiggin@suse.de>,
+        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
+References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>	<52B11765.8030005@oracle.com>	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>	<52B166CF.6080300@suse.cz>	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>	<20131218134316.977d5049209d9278e1dad225@linux-foundation.org>	<52C71ACC.20603@oracle.com>	<CA+55aFzDcFyyXwUUu5bLP3fsiuzxU7VPivpTPHgp8smvdTeESg@mail.gmail.com>	<52C74972.6050909@suse.cz> <CA+55aFzq1iQqddGo-m=vutwMYn5CPf65Ergov5svKR4AWC3rUQ@mail.gmail.com> <6B2BA408B38BA1478B473C31C3D2074E2BF812BC82@SV-EXCHANGE1.Corp.FC.LOCAL> <52CC16DC.9070308@suse.cz>
+In-Reply-To: <52CC16DC.9070308@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following checkpatch warnings.
 
-  WARNING: please, no space before tabs
-  WARNING: space prohibited between function name and open parenthesis '('
+On 01/07/2014 11:01 PM, Vlastimil Babka wrote:
+> On 01/06/2014 05:47 PM, Motohiro Kosaki wrote:
+>>
+>>
+>>> -----Original Message-----
+>>> From: linus971@gmail.com [mailto:linus971@gmail.com] On Behalf Of Linus
+>>> Torvalds
+>>> Sent: Friday, January 03, 2014 7:18 PM
+>>> To: Vlastimil Babka
+>>> Cc: Sasha Levin; Andrew Morton; Wanpeng Li; Michel Lespinasse; Bob Liu;
+>>> Nick Piggin; Motohiro Kosaki JP; Rik van Riel; David Rientjes; Mel Gorman;
+>>> Minchan Kim; Hugh Dickins; Johannes Weiner; linux-mm; Linux Kernel Mailing
+>>> List
+>>> Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear
+>>> VMAs
+>>>
+>>> On Fri, Jan 3, 2014 at 3:36 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+>>>>
+>>>> I'm for going with the removal of BUG_ON. The TestSetPageMlocked
+>>>> should provide enough race protection.
+>>>
+>>> Maybe. But dammit, that's subtle, and I don't think you're even right.
+>>>
+>>> It basically depends on mlock_vma_page() and munlock_vma_page() being
+>>> able to run CONCURRENTLY on the same page. In particular, you could have a
+>>> mlock_vma_page() set the bit on one CPU, and munlock_vma_page()
+>>> immediately clearing it on another, and then the rest of those functions
+>>> could run with a totally arbitrary interleaving when working with the exact
+>>> same page.
+>>>
+>>> They both do basically
+>>>
+>>>      if (!isolate_lru_page(page))
+>>>          putback_lru_page(page);
+>>>
+>>> but one or the other would randomly win the race (it's internally protected
+>>> by the lru lock), and *if* the munlock_vma_page() wins it, it would also do
+>>>
+>>>      try_to_munlock(page);
+>>>
+>>> but if mlock_vma_page() wins it, that wouldn't happen. That looks entirely
+>>> broken - you end up with the PageMlocked bit clear, but
+>>> try_to_munlock() was never called on that page, because
+>>> mlock_vma_page() got to the page isolation before the "subsequent"
+>>> munlock_vma_page().
+>>>
+>>> And this is very much what the page lock serialization would prevent.
+>>> So no, the PageMlocked in *no* way gives serialization. It's an atomic bit op,
+>>> yes, but that only "serializes" in one direction, not when you can have a mix
+>>> of bit setting and clearing.
+>>>
+>>> So quite frankly, I think you're wrong. The BUG_ON() is correct, or at least
+>>> enforces some kind of ordering. And try_to_unmap_cluster() is just broken
+>>> in calling that without the page being locked. That's my opinion. There may
+>>> be some *other* reason why it all happens to work, but no,
+>>> "TestSetPageMlocked should provide enough race protection" is simply not
+>>> true, and even if it were, it's way too subtle and odd to be a good rule.
+>>>
+>>> So I really object to just removing the BUG_ON(). Not with a *lot* more
+>>> explanation as to why these kinds of issues wouldn't matter.
+>>
+>> I don't have a perfect answer. But I can explain a bit history. Let's me try.
+>>
+>> First off, 5 years ago, Lee's original putback_lru_page() implementation required
+>> page-lock, but I removed the restriction months later. That's why we can see
+>> strange BUG_ON here.
+>>
+>> 5 years ago, both mlock(2) and munlock(2) called do_mlock() and it was protected  by
+>> mmap_sem (write mdoe). Then, mlock and munlock had no race.
+>> Now, __mm_populate() (called by mlock(2)) is only protected by mmap_sem read-mode. However it is enough to
+>> protect against munlock.
+>>
+>> Next, In case of mlock vs reclaim, the key is that mlock(2) has two step operation. 1) turn on VM_LOCKED under
+>> mmap_sem write-mode, 2) turn on Page_Mlocked under mmap_sem read-mode. If reclaim race against step (1),
+>> reclaim must lose because it uses trylock. On the other hand, if reclaim race against step (2), reclaim must detect
+>> VM_LOCKED because both VM_LOCKED modifier and observer take mmap-sem.
+>>
+>> By the way, page isolation is still necessary because we need to protect another page modification like page migration.
+> 
+> I guess you meant page locking, not (lru) isolation. Indeed, the documentation
+> at Documentation/vm/unevictable-lru.txt also discusses races with page migration.
+> 
+> I've checked and it seems really the case that mlock_migrate_page()
+> could race with mlock_vma_page() so that PG_mlocked is set on the
+> old page again after deciding that the new page will be without the flag.
+> (or after the flag was transferred to the new page)
+> That would not be fatal, but distort accounting anyway.
+> 
+> So here's a patch that if accepted should replace the removal of BUG_ON patch in
+> -mm tree: http://ozlabs.org/~akpm/mmots/broken-out/mm-remove-bug_on-from-mlock_vma_page.patch
+> 
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Nishanth Menon <nm@ti.com>
----
- drivers/regulator/twl-regulator.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Make sense to me.
 
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 8ebd785..fed28ab 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -58,7 +58,7 @@ struct twlreg_info {
- 	struct regulator_desc	desc;
- 
- 	/* chip specific features */
--	unsigned long 		features;
-+	unsigned long		features;
- 
- 	/*
- 	 * optional override functions for voltage set/get
-@@ -1128,7 +1128,7 @@ static int twlreg_probe(struct platform_device *pdev)
- 	if (!initdata)
- 		return -EINVAL;
- 
--	info = kmemdup(template, sizeof (*info), GFP_KERNEL);
-+	info = kmemdup(template, sizeof(*info), GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 
+> The idea is that try_to_unmap_cluster() will try locking the page
+> for mlock, and just leave it alone if lock cannot be obtained. Again
+> that's not fatal, as eventually something will encounter and mlock the page.
+> 
+> -----8<-----
+> 
+> From: Vlastimil Babka <vbabka@suse.cz>
+> Date: Tue, 7 Jan 2014 14:59:58 +0100
+> Subject: [PATCH] mm: try_to_unmap_cluster() should lock_page() before mlocking
+> 
+> A BUG_ON(!PageLocked) was triggered in mlock_vma_page() by Sasha Levin fuzzing
+> with trinity. The call site try_to_unmap_cluster() does not lock the pages
+> other than its check_page parameter (which is already locked).
+> 
+> The BUG_ON in mlock_vma_page() is not documented and its purpose is somewhat
+> unclear, but apparently it serializes against page migration, which could
+> otherwise fail to transfer the PG_mlocked flag. This would not be fatal, as the
+> page would be eventually encountered again, but NR_MLOCK accounting would
+> become distorted nevertheless. This patch adds a comment to the BUG_ON in
+> mlock_vma_page() and munlock_vma_page() to that effect.
+> 
+> The call site try_to_unmap_cluster() is fixed so that for page != check_page,
+> trylock_page() is attempted (to avoid possible deadlocks as we already have
+> check_page locked) and mlock_vma_page() is performed only upon success. If the
+> page lock cannot be obtained, the page is left without PG_mlocked, which is
+> again not a problem in the whole unevictable memory design.
+> 
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Bob Liu <bob.liu@oracle.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+
+> ---
+>  mm/mlock.c |  2 ++
+>  mm/rmap.c  | 14 ++++++++++++--
+>  2 files changed, 14 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/mlock.c b/mm/mlock.c
+> index 192e6ee..1b12dfa 100644
+> --- a/mm/mlock.c
+> +++ b/mm/mlock.c
+> @@ -79,6 +79,7 @@ void clear_page_mlock(struct page *page)
+>   */
+>  void mlock_vma_page(struct page *page)
+>  {
+> +	/* Serialize with page migration */
+>  	BUG_ON(!PageLocked(page));
+>  
+>  	if (!TestSetPageMlocked(page)) {
+> @@ -153,6 +154,7 @@ unsigned int munlock_vma_page(struct page *page)
+>  {
+>  	unsigned int nr_pages;
+>  
+> +	/* For try_to_munlock() and to serialize with page migration */
+>  	BUG_ON(!PageLocked(page));
+>  
+>  	if (TestClearPageMlocked(page)) {
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 068522d..b99c742 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1389,9 +1389,19 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+>  		BUG_ON(!page || PageAnon(page));
+>  
+>  		if (locked_vma) {
+> -			mlock_vma_page(page);   /* no-op if already mlocked */
+> -			if (page == check_page)
+> +			if (page == check_page) {
+> +				/* we know we have check_page locked */
+> +				mlock_vma_page(page);
+>  				ret = SWAP_MLOCK;
+> +			} else if (trylock_page(page)) {
+> +				/*
+> +				 * If we can lock the page, perform mlock.
+> +				 * Otherwise leave the page alone, it will be
+> +				 * eventually encountered again later.
+> +				 */
+> +				mlock_vma_page(page);
+> +				unlock_page(page);
+> +			}
+>  			continue;	/* don't unmap */
+>  		}
+>  
+> 
+
 -- 
-1.7.10.4
-
-
+Regards,
+-Bob
