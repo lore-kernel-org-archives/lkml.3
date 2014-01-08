@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbaAHSZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:25:34 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:52539 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751565AbaAHSZc (ORCPT
+	id S1751668AbaAHSeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:34:05 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59218 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750793AbaAHSeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:25:32 -0500
-Message-ID: <1389205531.23721.40.camel@hornet>
-Subject: Re: [RFC 10/18] regulator: vexpress: Use regmap instead of custom
- interface
-From: Pawel Moll <pawel.moll@arm.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Liam Girdwood <lgirdwood@gmail.com>
-Date: Wed, 08 Jan 2014 18:25:31 +0000
-In-Reply-To: <20131224122455.GY30815@sirena.org.uk>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
-	 <1387815830-8794-11-git-send-email-pawel.moll@arm.com>
-	 <20131224122455.GY30815@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 8 Jan 2014 13:34:03 -0500
+Date: Wed, 8 Jan 2014 13:34:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Excessive WARN()s in Intel 915 driver
+In-Reply-To: <20140108161713.GT4770@phenom.ffwll.local>
+Message-ID: <Pine.LNX.4.44L0.1401081331140.1659-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-24 at 12:24 +0000, Mark Brown wrote:
-> On Mon, Dec 23, 2013 at 04:23:42PM +0000, Pawel Moll wrote:
+On Wed, 8 Jan 2014, Daniel Vetter wrote:
+
+> On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
+> > On Tue, 7 Jan 2014, Daniel Vetter wrote:
+> > 
+> > > I really want users to report these issues, and excessive WARNs seems
+> > > to be the only way to get those reports. Please boot with
+> > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
+> > > Also, which precise kernel are you running? Testing latest -rc is
+> > > always recommended, this state checker code is fairly new and gets
+> > > constantly extended and bugs fixed ...
+> > 
+> > Here you go.  This is the dmesg output after booting with
+> > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
+> > string; this is pristine 3.13-rc7.
 > 
-> > This patch makes the Versatile Express regulator driver
-> > use regmap interface, instead of custom vexpress config
-> > one. It will request the regmap resource associated
-> > with the device, which makes it pretty much hardware
-> > agnostic.
+> That's strange, I've thought we've fixed the last struggling mismatch in
+> the lvds borber bits stuff. Can you please try latest drm-intel-nightly
+> from
 > 
-> If this change is making the operations hardware agnostic regmap based
-> ones then they should be being either replaced with standard operations
-> or standard operations being added.  It looks like you should be able to
-> use the existing linear map operations.
+> http://cgit.freedesktop.org/~danvet/drm-intel/
 
-Bad wording on my side. What I meant was: it doesn't matter what wacky
-VE-specific interface is hidden behind the regmap, not it's a generic
-regulator driver.
+I prefer not to clone 1.7 GB of git data if at all possible.  Can you
+post (or send to me directly) a patch containing the differences with
+respect to 3.13-rc7?  It should end up being fairly small.
 
-Having said that, I could create helpers for continuous (linear won't
-cut - if you remember the continuous_voltage_range was introduced for
-VE's sake) regulator, which would simply read/write value to a specified
-register. Not sure how useful would that be, though. I doubt that such
-"regulator" will appear anywhere outside VE world. And if so, this would
-probably call for a "generic continuous regulator" driver and a relevant
-DT binding, which I don't think anyone really wants. If your opinion
-differs, I'm happy to botch something up.
-
-Cheers!
-
-Paweł
-
+Alan Stern
 
