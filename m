@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaAHQ4D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:56:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38844 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756509AbaAHQz7 (ORCPT
+	id S1756903AbaAHQ4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:56:45 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:49944 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119AbaAHQ4l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:55:59 -0500
-Date: Wed, 8 Jan 2014 08:56:28 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, Peter Wu <lekensteyn@gmail.com>
-Subject: Re: Freeing of dev->p
-Message-ID: <20140108165628.GA15820@kroah.com>
-References: <20140108164058.059cf461@endymion.delvare>
+	Wed, 8 Jan 2014 11:56:41 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108164058.059cf461@endymion.delvare>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8BIT
+To: Nicolas Ferre <nicolas.ferre@atmel.com>, "Olof Johansson" <olof@lixom.net>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <52CA7AFB.9010208@atmel.com>
+Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Simon Horman" <horms@verge.net.au>, "Arnd Bergmann" <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Boris BREZILLON" <b.brezillon@overkiz.com>,
+        "Laurent Pinchart" <laurent.pinchart+renesas@ideasonboard.com>
+References: <20131216104738.6f845aabd0e3b609ed9ca170@canb.auug.org.au>
+ <52AECF56.8020508@atmel.com>
+ <CAOesGMgi3COtsr+-9B3Tt350gwBs0Qm0AjatjLWCWTeUkAP5og@mail.gmail.com>
+ <52CA7AFB.9010208@atmel.com>
+Message-ID: <20140108165634.27803.31368@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: linux-next: manual merge of the renesas tree with the arm-soc tree
+Date: Wed, 08 Jan 2014 08:56:34 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 04:40:58PM +0100, Jean Delvare wrote:
-> Hi Greg, hi all,
+Quoting Nicolas Ferre (2014-01-06 01:44:27)
+> On 04/01/2014 06:11, Olof Johansson :
+> > On Mon, Dec 16, 2013 at 2:00 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> >> On 16/12/2013 00:47, Stephen Rothwell :
+> >>> Hi Simon,
+> >>>
+> >>> Today's linux-next merge of the renesas tree got a conflict in
+> >>> drivers/clk/Makefile between commit 0ad6125b1579 ("clk: at91: add PMC
+> >>> base support") from the arm-soc tree and commit 10cdfe9f327a ("clk:
+> >>> shmobile: Add R-Car Gen2 clocks support") from the renesas tree.
+> >>>
+> >>> I fixed it up (see below) and can carry the fix as necessary (no action
+> >>> is required).
+> >>
+> >> Fine for me.
+> > 
+> > Simon, Nicolas,
+> > 
+> > <mini-rant>
+> > 
+> > While a very minor issue, this should have been altogether avoided
+> > with a little more attention when applying patches. The Makefile is
+> > sorted, and you've appended new lines to the end instead of in the
+> > place they're supposed to go. Sure, others have done the same mistake
+> > in a few places but that doesn't mean we shouldn't try to keep it
+> > sorted.
+> > 
+> > The very reason _to_ sort a Makefile is to avoid these needless
+> > add-add conflicts when two people append to the same unsorted list.
+> > 
+> > Now I can't resolve it properly and move the entries when I do the
+> > same merge (and get the same conflict), because that will cause a
+> > third conflict for Stephen, and he's about to return from vacation and
+> > is going to cuss at us if we cause too many new conflicts in one day.
+> > :)
+> > 
+> > </mini-rant>
+> > 
+> > So, best choice is to keep the unsortedness now, and have Mike resort
+> > his Makefile for us at the end of the merge window. And keep a little
+> > closer eye on Makefile and Kconfig additions in the future. :)
 > 
-> A memory leak has been reported to me:
-> http://marc.info/?l=linux-i2c&m=138779165123331&w=2
+> Totally agree in keeping a Makefile sorted, when it is already sorted.
+> What I recall having thought when I had seen this Makefile is: well this
+> one must be of the "append your changes to the end" type...
 > 
-> The leak is in i801_probe, caused by an early call to
-> i2c_set_adapdata() which in turn calls dev_set_drvdata() which
-> allocates some memory in device_private_init(). That memory is only
-> freed by the driver core when the i2c_adapter class device is removed.
-> But if the parent (PCI) device probing itself fails for whatever
-> reason, the class device never gets to be created, so it's never
-> removed, thus the memory is never freed.
+> Anyway be sure that I will pay attention to this.
+
+The file used to be sorted. I've cleaned it up locally and will apply
+the patch after I take in a few more pull requests.
+
+Regards,
+Mike
+
 > 
-> It is not possible to move the call to i2c_set_adapdata() until after
-> the class device is created, because the data pointed is needed very
-> early after (almost during) i2c adapter creation. So I could make the
-> leak less likely to happen but I can't fix it completely.
-
-I don't understand, what exactly is leaking?  You have control over your
-own structures, so can't you clean things up on the error path if you
-know something went wrong?
-
-> I am wondering how this can be solved, and this brought three questions:
-> 
-> 1* What is the rationale for allocating dev->p dynamically? It is
-> allocated as soon as the device is created (in device_add), so as far
-> as I can see every device will need the allocation. Including struct
-> device_private in struct device would not cost more memory, plus it
-> would reduce memory fragmentation. So is this a lifetime issue? Or
-> something else I can't think of?
-
-I did it to keep things that non-driver-core code should not be
-touching.  Previously, lots of people messed around with the device
-private fields that could confuse the driver core.  Ideally, I'd like to
-be able to move the kobject itself into this structure, to allow devices
-to handle static initialization better, but that never happened, unlike
-other driver core structures.
-
-> 2* What is the rationale for making void *driver_data part of struct
-> device_private and not struct device itself?
-
-To "hide" information / details that non-driver core code should not
-care about or touch.
-
-> 3* If the current implementation is considered correct, does it mean
-> that dev_set_drvdata() should never be used for class devices?
-
-No, it should be fine, I don't understand the issue with your usage that
-is causing the problem, care to explain it better, or point me at some
-code?
-
-thanks,
-
-greg k-h
+> Bye,
+> -- 
+> Nicolas Ferre
