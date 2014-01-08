@@ -1,119 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaAHFvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 00:51:11 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:46958 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910AbaAHFvD convert rfc822-to-8bit (ORCPT
+	id S1754877AbaAHFyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 00:54:21 -0500
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:24429
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750790AbaAHFyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 00:51:03 -0500
+	Wed, 8 Jan 2014 00:54:14 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah21a7h1fc6hzdchz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
+        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <Shaohui.Xie@freescale.com>, Andy Fleming <afleming@gmail.com>
+Subject: [PATCH] [v5] phylib: Add Clause 45 read/write functions
+Date: Wed, 8 Jan 2014 12:25:24 +0800
+Message-ID: <1389155124-15898-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-In-Reply-To: <8738l15pht.fsf@nemi.mork.no>
-References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
-	<5562479.pVWRuDL0y6@vostro.rjw.lan>
-	<87zjne7f75.fsf@nemi.mork.no>
-	<2302938.b8tymqrMEz@vostro.rjw.lan>
-	<878uuxquxu.fsf@nemi.mork.no>
-	<871u0po0gx.fsf@nemi.mork.no>
-	<CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
-	<87wqihmg9a.fsf@nemi.mork.no>
-	<CAKohpo=3s6=gw8OJTrUdLH8o2ouA=8a8MhrgNRXwHmOf0si5Pw@mail.gmail.com>
-	<87iotx32mx.fsf@nemi.mork.no>
-	<CAKohpo=KgHqz0KYv7h0EYP3=8h7T3ZfPpFTMS6qVoEb6dXGnSQ@mail.gmail.com>
-	<87a9f92xnn.fsf@nemi.mork.no>
-	<CAKohpon7u_1h+9rKQeC8J4Pqd_6bSajn7Ag8=COqczhbSPEgMA@mail.gmail.com>
-	<8738l15pht.fsf@nemi.mork.no>
-Date: Wed, 8 Jan 2014 11:21:00 +0530
-Message-ID: <CAKohpomEr_caoDGeUWWMeJ1_siEQguUTaPF6zgD62YqT=4F7og@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 January 2014 16:47, Bjørn Mork <bjorn@mork.no> wrote:
-> Viresh Kumar <viresh.kumar@linaro.org> writes:
->
->> On 6 January 2014 16:19, Bjørn Mork <bjorn@mork.no> wrote:
->>> I cancelled by pressing backspace while the image was being written.
->>
->> I will answer other queries on next mail, but a quick question:
->> Do you get these warnings even if you don't cancel hibernation?
->
-> Yes.
+From: Andy Fleming <afleming@gmail.com>
 
-Hmm.. I see. Now, I really don't believe that you wouldn't get these
-warnings on a suspend/resume but only on hibernation.
+Need an extra parameter to read or write Clause 45 PHYs, so
+need a different API with the extra parameter.
 
-> I believe the photo shows that you are right: This warning happens when
-> the failure path is entered, even if both the hibernation and following
-> resume is successful.  We see __cpufreq_add_dev calling
-> cpufreq_policy_put_kobj here as well.
+Signed-off-by: Andy Fleming <afleming@gmail.com>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
+---
+changes for v5:
+revised for opening parenthesis.
 
-@Rafael: I need your expert opinion here, I am not so good with these
-concepts :)
+ include/linux/phy.h | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-Here is my theory about these warnings:
-- Bjorn gets these only when CONFIG_PROVE_LOCKING=y.
-- This feature enables the kernel to report locking related deadlocks
-before they actually occur. (lib/Kconfig.debug)
-- So, no locking issue has happened here but its just an warning that
-you might end up getting into such issue later.
-- Contention is between sysfs and cpu-hotplug lock.
-- While changing stuff from sysfs we do this:
-   sysfs-lock (by kernel)
-   cpu-hotplug lock (by cpufreq)
-- And while doing hibernation if add_dev fails then we do this
-   cpu-hotplug lock (by kernel while adding CPUs)
-   sysfs-lock (by cpufreq while removing sysfs directories)
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 48a4dc3..e5eed18 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -498,6 +498,24 @@ static inline int phy_read(struct phy_device *phydev, u32 regnum)
+ }
+ 
+ /**
++ * phy_read_mmd - Convenience function for reading a register
++ * from an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ *
++ * Same rules as for phy_read();
++ */
++static inline int phy_read_mmd(struct phy_device *phydev, int devad, u32 regnum)
++{
++	if (!phydev->is_c45)
++		return -EOPNOTSUPP;
++
++	return mdiobus_read(phydev->bus, phydev->addr,
++			    MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff));
++}
++
++/**
+  * phy_write - Convenience function for writing a given PHY register
+  * @phydev: the phy_device struct
+  * @regnum: register number to write
+@@ -533,6 +551,27 @@ static inline bool phy_is_internal(struct phy_device *phydev)
+ 	return phydev->is_internal;
+ }
+ 
++/**
++ * phy_write_mmd - Convenience function for writing a register
++ * on an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ * @val: value to write to @regnum
++ *
++ * Same rules as for phy_write();
++ */
++static inline int phy_write_mmd(struct phy_device *phydev, int devad,
++				u32 regnum, u16 val)
++{
++	if (!phydev->is_c45)
++		return -EOPNOTSUPP;
++
++	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
++
++	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
++}
++
+ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+ 		bool is_c45, struct phy_c45_device_ids *c45_ids);
+ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45);
+-- 
+1.8.4.1
 
-And kernel is recording all these sequences all the time. Because
-we first tried changing values from sysfs, kernel recorded that
-sequence. And as soon as it found another one it WARNed us?
 
-While on a suspend/resume, we will get into add-dev failure only
-in resume and probably by that time these recordings are refreshed?
-And that's why Bjorn isn't facing any issue there ? Just an wild guess.
-
-And if all above "virtual" theory is correct, then I don't know if we
-can/want to fix that..
-
-> Thinking about this: This failure will always happen, regardless of
-> cancelling or not, won't it?
-
-Yeah.
-
-> But it happens *after* the freeze so it
-> doesn't matter if we resume from the frozen image.
-
-yeah..
-
-So, even tests like this should give you this warning:
-
-Documentation/power/basic-pm-debugging.txt
-core
-- test the freezing of processes, suspending of devices, platform global
-  control methods(*), the disabling of nonboot CPUs and suspending of
-  platform/system devices
-
-> So you are probably right as usual:
-
-Really? Ask Rafael, he doesn't agree :)
-
-> This warning is related to the
-> acpi-cpufreq driver failing, and you cannot reproduce it without
-> simulating such a failure (or using that driver yourself).  Which means
-> that the warning disappears with my patch in
-> http://www.spinics.net/lists/cpufreq/msg08714.html
-> which explains why I don't normally see it.  I depend on being able to
-> cancel hibernation, so I use that patch most of the time. Except when
-> I'm testing one of your branches.
-
-Correct.
