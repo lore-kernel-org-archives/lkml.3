@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaAHLtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:49:33 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50657 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960AbaAHLtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:49:32 -0500
-Message-ID: <52CD3B1D.5080203@ti.com>
-Date: Wed, 8 Jan 2014 17:18:45 +0530
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756103AbaAHLub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:50:31 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50851 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960AbaAHLu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:50:28 -0500
+Message-ID: <52CD3D36.1010706@linux.vnet.ibm.com>
+Date: Wed, 08 Jan 2014 17:27:42 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: Sebastian Reichel <sre@debian.org>, <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, <tony@atomide.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, "Kristo, Tero" <t-kristo@ti.com>,
-        <bcousson@baylibre.com>, <linux-omap@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH v4 1/5] mfd: omap-usb-host: Update DT clock binding information
-References: <1389161742-10533-1-git-send-email-rogerq@ti.com> <3761842.HRY1CDBF4z@wuerfel> <52CD324D.3020701@ti.com> <201401081235.40927.arnd@arndb.de>
-In-Reply-To: <201401081235.40927.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jan Kara <jack@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>,
+        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V3] mm readahead: Fix the readahead fail in case of
+ empty numa node
+References: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140106141300.4e1c950d45c614d6c29bdd8f@linux-foundation.org> <52CD1113.2070003@linux.vnet.ibm.com> <20140108104713.GB8256@quack.suse.cz>
+In-Reply-To: <20140108104713.GB8256@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010811-2674-0000-0000-00000C327F05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 05:05 PM, Arnd Bergmann wrote:
-> On Wednesday 08 January 2014, Roger Quadros wrote:
->> OK. I'll update the binding information to reflect all the clocks.
->>
->> But what about clk_get() vs of_clk_get_by_name() ?
-> 
-> I think the convention these days is to just use clk_get(), which calls
-> of_clk_get_by_name() internally. Not sure if that's what you are asking.
+On 01/08/2014 04:17 PM, Jan Kara wrote:
+> On Wed 08-01-14 14:19:23, Raghavendra K T wrote:
+>> On 01/07/2014 03:43 AM, Andrew Morton wrote:
+>>> On Mon,  6 Jan 2014 15:51:55 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
+[...]
+>> But having said that I am not able to get an idea of sane implementation
+>> to solve this readahead failure bug overcoming the anomaly you pointed
+>> :(.  hints/ideas.. ?? please let me know.
+>    So if we would be happy with just fixing corner cases like this, we might
+> use total node memory size to detect them, can't we? If total node memory
+> size is 0, we can use 16 MB (or global number of free pages / 2 if we would
+> be uneasy with fixed 16 MB limit) as an upperbound...
 >
 
-OK fine. I'll continue to use clk_get() then.
+Thanks Honza.
 
-cheers,
--roger
+This seems to be more sensible option, I 'll send the patch with that
+change (including 16MB limit if nobody disagrees).
+
