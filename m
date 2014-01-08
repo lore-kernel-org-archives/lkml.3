@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbaAHIoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:44:20 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13652 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291AbaAHIoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:44:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,623,1384329600"; 
-   d="scan'208";a="455306442"
-Message-ID: <52CD0FD7.7040208@linux.intel.com>
-Date: Wed, 08 Jan 2014 16:44:07 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755659AbaAHIpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:45:34 -0500
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:20293
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754477AbaAHIpX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 03:45:23 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchz1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <kernel@pengutronix.de>, <shawn.guo@linaro.org>,
+        <fabio.estevam@freescale.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 0/2] Fix SSI audio function regression when using ROM firmware
+Date: Wed, 8 Jan 2014 16:45:54 +0800
+Message-ID: <1389170756-22351-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: Re: [Patch Part1 V3 09/20] iommu/vt-d: mark internal functions as
- static
-References: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com> <1388989107-4795-10-git-send-email-jiang.liu@linux.intel.com> <20140107152523.GG2742@8bytes.org>
-In-Reply-To: <20140107152523.GG2742@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-	Thanks for fix up this issue!
-I forgot to test the changes against IA64 platform. There's another
-issue related to IA64, I will send out the patch soon. I have setup
-cross compilation environment for IA64 and verified all changes
-passing compilation tests.
+Previously we added dual-fifo script support for SSI and SDMA, meanwhile, we
+switched the default script in DT to this new script. However, there're still
+quite a few people using the old version or even ROM firmware which means they
+don't provide any firmware to SDMA driver. In these cases, the SDMA driver'd
+fail to load essential script then the audio function broken.
 
-Thanks!
-Gerry
+This series of patches mainly fix this issue by assigning a default script
+number for ROM firmware case and reverting the default script in DT so that
+all kinds of users would continue to run it with or without firmware.
 
-On 2014/1/7 23:25, Joerg Roedel wrote:
-> On Mon, Jan 06, 2014 at 02:18:16PM +0800, Jiang Liu wrote:
->> Function detect_intel_iommu()/alloc_iommu()/parse_ioapics_under_ir()
->> are only used internally, so mark them as static.
-> 
-> Doesn't seem to be true for detect_intel_iommu which is used in ia64
-> setup code, no?
-> 
-> 
-> 	Joerg
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+We might later need to figure out a better solution to ensure both SDMA driver
+and SSI driver could adaptively switch the new script to the old one when V2
+firmware isn't provided.
+
+This series of patches are based on Vinod's repository.
+
+Nicolin Chen (2):
+  Revert "ARM: dts: imx: use dual-fifo sdma script for ssi"
+  dma: imx-sdma: Assign a default script number for ROM firmware cases
+
+ arch/arm/boot/dts/imx51.dtsi   |  4 ++--
+ arch/arm/boot/dts/imx53.dtsi   |  4 ++--
+ arch/arm/boot/dts/imx6qdl.dtsi | 12 ++++++------
+ arch/arm/boot/dts/imx6sl.dtsi  | 12 ++++++------
+ drivers/dma/imx-sdma.c         |  4 ++++
+ 5 files changed, 20 insertions(+), 16 deletions(-)
+
+-- 
+1.8.4
+
+
