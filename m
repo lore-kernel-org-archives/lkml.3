@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771AbaAHXV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:21:56 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:57020 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109AbaAHXVu (ORCPT
+	id S932156AbaAHXX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:23:27 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:40870 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565AbaAHXXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 18:21:50 -0500
-Message-ID: <52CDDD8D.5090100@codeaurora.org>
-Date: Wed, 08 Jan 2014 15:21:49 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 8 Jan 2014 18:23:24 -0500
+Date: Thu, 9 Jan 2014 00:23:22 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lockdep: increase static allocations
+Message-ID: <20140108232322.GH20765@two.firstfloor.org>
+References: <1389208906-24338-1-git-send-email-sasha.levin@oracle.com>
+ <87lhyq45go.fsf@tassilo.jf.intel.com>
+ <52CDB0CF.5060904@oracle.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 1/9] devicetree: bindings: Document Krait/Scorpion
- cpus and enable-method
-References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org> <1387845593-10050-2-git-send-email-sboyd@codeaurora.org> <20140108142139.GJ6701@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20140108142139.GJ6701@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CDB0CF.5060904@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/14 06:21, Mark Rutland wrote:
-> On Tue, Dec 24, 2013 at 12:39:45AM +0000, Stephen Boyd wrote:
->> From: Rohit Vaswani <rvaswani@codeaurora.org>
->>
->> Scorpion and Krait don't use the spin-table enable-method.
->> Instead they rely on mmio register accesses to enable power and
->> clocks to bring CPUs out of reset. Document their enable-methods.
->>
->> Cc: <devicetree@vger.kernel.org>
->> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
->> [sboyd: Split off into separate patch, renamed methods to
->> match compatible nodes]
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  Documentation/devicetree/bindings/arm/cpus.txt | 25 ++++++++++++++++++++++++-
->>  1 file changed, 24 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
->> index 9130435..333f4ae 100644
->> --- a/Documentation/devicetree/bindings/arm/cpus.txt
->> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
->> @@ -180,7 +180,11 @@ nodes to be present and contain the properties described below.
->>  			  be one of:
->>  			     "spin-table"
->>  			     "psci"
->> -			# On ARM 32-bit systems this property is optional.
->> +			# On ARM 32-bit systems this property is optional and
->> +			  can be one of:
->> +			    "qcom,gcc-msm8660"
->> +			    "qcom,kpss-acc-v1"
->> +			    "qcom,kpss-acc-v2"
-> It would be nice to document "psci" here as valid for 32-bit.
->
-> Currently the PSCI code doesn't inspect the enable-method and assumes it
-> if there's a psci node, but KVM tool and others set enable-method to
-> "psci", and if we change the way the PSCI code probes it will require
-> enable-method to be set for PSCI to work.
+On Wed, Jan 08, 2014 at 03:10:55PM -0500, Sasha Levin wrote:
+> On 01/08/2014 02:51 PM, Andi Kleen wrote:
+> >Sasha Levin <sasha.levin@oracle.com> writes:
+> >
+> >>Fuzzing a recent kernel with a large configuration hits the static
+> >>allocation limits and disables lockdep.
+> >
+> >Doesn't that use a lot more memory?  I thought lockdep preallocates.
+> >
+> >Doubling may be too aggressive.
+> 
+> The patch adds about 4MB of memory usage, I didn't think it's too much for something
+> that is only enabled during debugging.
 
-Sure. I'll squash it in if I resend, or send a follow-up patch later on.
+Wasting 4MB is an issue.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Linus' first Linux system had less total memory than that.
 
+> 
+> If this is an issue, can I suggest making these values configurable in the .config
+> and just let users pick whatever they want?
+
+Better allocate it at boot time, using a boot parameter or somesuch.
+
+-Andi
