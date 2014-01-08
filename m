@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaAHSn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:43:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53188 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008AbaAHSn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:43:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,625,1384329600"; 
-   d="scan'208";a="463666529"
-Date: Wed, 8 Jan 2014 20:43:23 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] Excessive WARN()s in Intel 915 driver
-Message-ID: <20140108184323.GL4800@intel.com>
-References: <CAKMK7uFEzOKYjojVop1ouRsJWyeK-rnKH-udBxZcc9fwKCOV6w@mail.gmail.com>
- <Pine.LNX.4.44L0.1401081102040.1659-100000@iolanthe.rowland.org>
- <20140108161713.GT4770@phenom.ffwll.local>
+	id S1755394AbaAHSti (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:49:38 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:27998 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751477AbaAHStf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 13:49:35 -0500
+X-IronPort-AV: E=Sophos;i="4.95,625,1384300800"; 
+   d="scan'208";a="88846571"
+Date: Wed, 8 Jan 2014 18:48:42 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>, <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v8 0/6] xen/arm/arm64: CONFIG_PARAVIRT and stolen ticks
+ accounting
+Message-ID: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140108161713.GT4770@phenom.ffwll.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 05:17:13PM +0100, Daniel Vetter wrote:
-> On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
-> > On Tue, 7 Jan 2014, Daniel Vetter wrote:
-> > 
-> > > I really want users to report these issues, and excessive WARNs seems
-> > > to be the only way to get those reports. Please boot with
-> > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
-> > > Also, which precise kernel are you running? Testing latest -rc is
-> > > always recommended, this state checker code is fairly new and gets
-> > > constantly extended and bugs fixed ...
-> > 
-> > Here you go.  This is the dmesg output after booting with
-> > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
-> > string; this is pristine 3.13-rc7.
-> 
-> That's strange, I've thought we've fixed the last struggling mismatch in
-> the lvds borber bits stuff. Can you please try latest drm-intel-nightly
-> from
-> 
-> http://cgit.freedesktop.org/~danvet/drm-intel/
-> 
-> Thanks, Daniel
+Hi all,
+this patch series introduces stolen ticks accounting for Xen on ARM and
+ARM64.
+Stolen ticks are clocksource ticks that have been "stolen" from the cpu,
+typically because Linux is running in a virtual machine and the vcpu has
+been descheduled.
+To account for these ticks we introduce CONFIG_PARAVIRT and pv_time_ops
+so that we can make use of:
 
-The log looks fairly clear to me:
+kernel/sched/cputime.c:steal_account_process_tick
 
-1. initially panel fitter is enabled on pipe B, and pipe B is outputting
-   to LVDS and VGA. Border is enabled.
-2. pipe A gets enabled outputting to LVDS. This will overwrite the
-   LVDS border bits
-3. pipe B is still active so we do the state check, but as the LVDS
-   border bits have been clobbered earlier, the state checker gets
-   angry
 
-This actually hits another problem we still have. We've changing the
-pipe for the LVDS port w/o shutting the port down in between. That
-doesn't sound entirely safe. I wonder if we still have some real
-issues preventing this change?
+Changes in v8:
+- rebased on 3.13-rc6.
 
-         * intel_modeset_setup_hw_state does not.
-         */
-        *modeset_pipes &= 1 << intel_crtc->pipe;
--       *prepare_pipes &= 1 << intel_crtc->pipe;
- 
-        DRM_DEBUG_KMS("set mode pipe masks: modeset: %x, prepare: %x, disable: %x\n",
-                      *modeset_pipes, *prepare_pipes, *disable_pipes);
 
--- 
-Ville Syrjälä
-Intel OTC
+
+Stefano Stabellini (6):
+      xen: move xen_setup_runstate_info and get_runstate_snapshot to drivers/xen/time.c
+      kernel: missing include in cputime.c
+      arm: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+      arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+      core: remove ifdef CONFIG_PARAVIRT
+      xen/arm: account for stolen ticks
+
+ arch/arm/Kconfig           |   20 ++++++++++
+ arch/arm/kernel/Makefile   |    1 +
+ arch/arm/xen/enlighten.c   |   21 ++++++++++
+ arch/arm64/Kconfig         |   20 ++++++++++
+ arch/arm64/kernel/Makefile |    1 +
+ arch/ia64/xen/time.c       |   48 +++--------------------
+ arch/x86/xen/time.c        |   76 +-----------------------------------
+ drivers/xen/Makefile       |    2 +-
+ drivers/xen/time.c         |   91 ++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/xen-ops.h      |    5 +++
+ kernel/sched/core.c        |    2 -
+ kernel/sched/cputime.c     |    1 +
+ 12 files changed, 168 insertions(+), 120 deletions(-)
+ create mode 100644 drivers/xen/time.c
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git lost_ticks_8
+
+
+Cheers,
+
+Stefano
