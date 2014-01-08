@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518AbaAHNmI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:42:08 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:45381 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbaAHNmC (ORCPT
+	id S1756740AbaAHNmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:42:19 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:34277 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664AbaAHNmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:42:02 -0500
-Date: Wed, 8 Jan 2014 14:39:52 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
-Message-ID: <20140108133951.GD1592@ulmo.nvidia.com>
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com>
- <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
- <52CB14D3.2060904@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1sNVjLsmu1MXqwQ/"
-Content-Disposition: inline
-In-Reply-To: <52CB14D3.2060904@wwwdotorg.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 8 Jan 2014 08:42:13 -0500
+Message-ID: <1389188536.26646.84.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Wed, 08 Jan 2014 05:42:16 -0800
+In-Reply-To: <20140107152520.GF9894@breakpoint.cc>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+	 <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140107152520.GF9894@breakpoint.cc>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-01-07 at 16:25 +0100, Florian Westphal wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+> > > index 43549eb..7a34bb2 100644
+> > > --- a/net/netfilter/nf_conntrack_core.c
+> > > +++ b/net/netfilter/nf_conntrack_core.c
+> > > @@ -387,8 +387,12 @@ begin:
+> > >  			     !atomic_inc_not_zero(&ct->ct_general.use)))
+> > >  			h = NULL;
+> > >  		else {
+> > > +			/* A conntrack can be recreated with the equal tuple,
+> > > +			 * so we need to check that the conntrack is initialized
+> > > +			 */
+> > >  			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
+> > > -				     nf_ct_zone(ct) != zone)) {
+> > > +				     nf_ct_zone(ct) != zone) ||
+> > > +				     !nf_ct_is_confirmed(ct)) {
+> > >  				nf_ct_put(ct);
+> > >  				goto begin;
+> > >  			}
+> > 
+> > I do not think this is the right way to fix this problem (if said
+> > problem is confirmed)
+> > 
+> > Remember the rule about SLAB_DESTROY_BY_RCU :
+> > 
+> > When a struct is freed, then reused, its important to set the its refcnt
+> > (from 0 to 1) only when the structure is fully ready for use.
+> > 
+> > If a lookup finds a structure which is not yet setup, the
+> > atomic_inc_not_zero() will fail.
+> 
+> Indeed.  But, the structure itself might be ready (or rather,
+> can be ready since the allocation side will set the refcount to one
+> after doing the initial work, such as zapping old ->status flags and
+> setting tuple information).
+> 
+> The problem is with nat extension area stored in the ct->ext area.
+> This extension area is preallocated but the snat/dnat action
+> information is only set up after the ct (or rather, the skb that grabbed
+> a reference to the nf_conn entry) traverses nat pre/postrouting.
+> 
+> This will also set up a null-binding when no matching SNAT/DNAT/MASQERUADE
+> rule existed.
+> 
+> The manipulations of the skb->nfct->ext nat area are performed without
+> a lock.  Concurrent access is supposedly impossible as the conntrack
+> should not (yet) be in the hash table.
+> 
+> The confirmed bit is set right before we insert the conntrack into
+> the hash table (after we traversed rules, ct is ready to be
+> 'published').
+> 
+> i.e. when the confirmed bit is NOT set we should not be 'seeing' the nf_conn
+> struct when we perform the lookup, as it should still be sitting on the
+> 'unconfirmed' list, being invisible to readers.
+> 
+> Does that explanation make sense to you?
+> 
+> Thanks for looking into this.
 
---1sNVjLsmu1MXqwQ/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Still, this patch adds a loop. And maybe an infinite one if confirmed
+bit is set from an context that was interrupted by this one.
 
-On Mon, Jan 06, 2014 at 01:40:51PM -0700, Stephen Warren wrote:
-> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
-[...]
-> > diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20=
-=2Edtsi
->=20
-> > +	efuse@7000F800 {
->=20
-> "fuse" might be a better node name; "efuse" is presumably the name of
-> the instance, not the type of object.
+If you need to test the confirmed bit, then you also need to test it
+before taking the refcount.
 
-There's another occurrence I noticed recently where we haven't followed
-that rule. The PMIC node on Venice2 for instance is called as3722.
-Perhaps that should also be renamed.
 
-Thierry
 
---1sNVjLsmu1MXqwQ/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzVUnAAoJEN0jrNd/PrOh2IUP/0HmJ+zy8f/2KJjdWlr0482w
-QNMB6eOD3oYxRgXyxjAtQTqb2RHASLLvSRdLKz8mz+/0ZP9is7ufOYJtin4VnDki
-8N5mqGuRtkk/XDLWPdqWbJT42h3SrGq7yC3tvG11cnNuw/jrZGrmPyfWn3e/sUFw
-jY24rUqPg6oI1XnVNn2BGsI0URellhGxHFtKrmYkmHIpBCUa1XrU5OoAsmXAwAl0
-/OgshcxI3J6IQ2R0ClQydmlI83Lfz1D+BixyH4G3pxl5MKkg9I/josOkWZv5InRW
-9IaS6KpEpoouAuoRDoA0XGXLt/c2pE583DiTs3cFUON7b2o5ECpiyK/D+LlipsrG
-cgr6q39iZrQPP3iH1Dz35HrTBa3ZHktTGB7ZJrAoZ8G0dTbanvaeBlAgVj99YMnA
-Zuvw4iAXlxxV4T6Vl9tkeAn2UXrPT5UQhN4bnH3VMQDlgHeHO5MNENUJCj2OpVuv
-Wud7TICgJAGOICBF61jSWaUAUR4Az9kFA5Q5V0sCpwM3qrdQJQydLnoJ8/qhpWyG
-9FRpSehrRyh6Ua/8/xvdJOMXt+CItXs3GozgYCpbT27XLhL62A9CKGcNq7HJDGjv
-xCexfDB8HYGYiSAmEs3xAT99SxfpzqNHPWXbkl4lXOhJi4Y1nkycL9NFTaNPSxug
-OigsMWOU/MGKAHXHF9xT
-=l8Z3
------END PGP SIGNATURE-----
-
---1sNVjLsmu1MXqwQ/--
