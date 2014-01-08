@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989AbaAHR2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:28:05 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:36114 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557AbaAHR2D (ORCPT
+	id S1756873AbaAHRbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:31:03 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:42909 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008AbaAHRbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:28:03 -0500
+	Wed, 8 Jan 2014 12:31:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <1387815830-8794-5-git-send-email-pawel.moll@arm.com>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
-	<1387815830-8794-5-git-send-email-pawel.moll@arm.com>
-Date: Wed, 8 Jan 2014 11:28:01 -0600
-Message-ID: <CAL_JsqJGQFstgFu=tpho91C0iv4eH9XSCAVKfXXQO4Z+yD-0tw@mail.gmail.com>
-Subject: Re: [RFC 04/18] driver core & of: Mark of_nodes of added device as populated
-From: Rob Herring <robherring2@gmail.com>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140108152610.GA5863@infradead.org>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz> <20140107155830.GA28395@infradead.org>
+ <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
+ <20140108140307.GA588@infradead.org> <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
+ <20140108152610.GA5863@infradead.org>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Wed, 8 Jan 2014 19:30:38 +0200
+Message-ID: <CA+QCeVRXAXAk2Zv2gtdvT+c80hbpcvezz_dvk9aUjwPbVp7pnQ@mail.gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 23, 2013 at 10:23 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> In "Device Tree powered" systems, platform devices are usually
-> massively populated with of_platform_populate() call, executed
-> at some level of initcalls, either by generic architecture
-> or by platform-specific code.
+On 8 January 2014 17:26, Christoph Hellwig <hch@infradead.org> wrote:
 >
-> There are situations though where certain devices must be
-> created (and bound with drivers) before all the others.
-> This presents small challenge in DT-driven systems, as
-> devices explicitly created in early code would be created
-> again by of_platform_populate().
+> On my laptop SSD I get the following results (sometimes up to 200MB/s,
+> sometimes down to 100MB/s, always in the 40k to 50k IOps range):
+>
+> time elapsed (sec.):    5
+> bandwidth (MiB/s):      160.00
+> IOps:                   40960.00
 
-Isn't this already at least partially solved with the aux data
-support? I'm guessing the difference here is how the early device is
-created.
+Any direct attached storage I've tried was faster for me as well,
+indeed. I have already posted IIRC
+"06:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS
+2208 [Thunderbolt] (rev 05)"   - 1Gb BBU RAM
+sysbench seqwr aio 4k:                     326.24Mb/sec 20879.56 Requests/sec
 
-> This patch tries to solve that issue in a generic way,
-> adding a "populated" flag which is set in the device_node
-> structure when a device is being created in the core.
-> Later, of_platform_populate() skips such nodes (and
-> its children) in a similar way to the non-available ones.
+That is good that you mentioned SSD. I've tried fnic HBA zoned to EMC
+XtremIO (SSD only based storage)
+     14.43Mb/sec 3693.65 Requests/sec for sequential 4k.
 
-Couldn't you store a struct device ptr in struct device_node instead?
+So far I've seen so massive degradation only in SAN environment. I
+started my investigation with RHEL6.5 kernel so below table is from it
+but the trend is the same as for mainline it seems.
 
-In any case I'd like to see this contained within the DT code. I don't
-see why the driver core needs to be modified for a DT specific
-problem.
+Chunk size Bandwidth MiB/s
+================================
+64M                512
+32M                510
+16M                492
+8M                  451
+4M                  436
+2M                  350
+1M                  256
+512K               191
+256K               165
+128K               142
+64K                 101
+32K                 65
+16K                 39
+8K                   20
+4K                   11
 
-Rob
+
+>
+> The IOps are more than the hardware is physically capable of, but given
+> that you didn't specify O_SYNC this seems sensible given that we never
+> have to flush the disk cache.
+>
+> Could it be that your array has WCE=0?  In Linux we'll never enable the
+> cache automatically, but Solaris does at least when using ZFS.  Try
+> running:
+>
+>    sdparm --set=WCE /dev/sdX
+>
+> and try again.
+
+ZFS is not supporting direct IO so that was UFS. I tried to do sdparm
+--set=WCE /dev/sdX on the same fnic/XtremIO however this is multipath
+and for second half of 4 LUNs that failed (probably this is normal)
+Results have not changed much: 13.317Mb/sec 3409.26 Requests/sec
+
+
+[root@dca-poc-gtsxdb3 mnt]# multipath -ll
+mpathb (3514f0c5c11a0002d) dm-0 XtremIO,XtremApp
+size=50G features='0' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 0:0:4:1 sdg 8:96  active ready running
+  |- 0:0:5:1 sdh 8:112 active ready running
+  |- 1:0:4:1 sdo 8:224 active ready running
+  `- 1:0:5:1 sdp 8:240 active ready running
+
+[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdg
+    /dev/sdg: XtremIO   XtremApp          1.05
+[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdh
+    /dev/sdh: XtremIO   XtremApp          1.05
+[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdo
+    /dev/sdo: XtremIO   XtremApp          1.05
+mode sense command failed, unit attention
+change_mode_page: failed fetching page: Caching (SBC)
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdp
+    /dev/sdp: XtremIO   XtremApp          1.05
+mode sense command failed, unit attention
+change_mode_page: failed fetching page: Caching (SBC)
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[root@dca-poc-gtsxdb3 mnt]#
