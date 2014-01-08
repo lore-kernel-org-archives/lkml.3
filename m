@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717AbaAHLmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:42:39 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:35894 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaAHLmh (ORCPT
+	id S1756045AbaAHLqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:46:19 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58602 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750AbaAHLqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:42:37 -0500
-Date: Wed, 8 Jan 2014 11:42:32 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/11] ASoC/MFD: twl4030 codec local register cache
- removal
-Message-ID: <20140108114232.GI19974@lee--X1>
-References: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
+	Wed, 8 Jan 2014 06:46:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, tj@kernel.org,
+        sergei.shtylyov@cogentembedded.com, b.zolnierkie@samsung.com,
+        hdegoede@redhat.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH v3 2/3] ata: ahci_platform: Manage SATA PHY
+Date: Wed, 08 Jan 2014 12:46:09 +0100
+Message-ID: <5878159.3LjUeZKdYB@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <52CD364F.4060104@ti.com>
+References: <1389174428-31414-1-git-send-email-rogerq@ti.com> <6214646.nAF6lzWV79@wuerfel> <52CD364F.4060104@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:w9+fFI09bfTbAR64gvtaAHBYaysGm8RafswEcUYCjfH
+ hArLBdMQo+uhXEqoMQyj5+oLOu4RC/xn81Buwst4nvGCNEFC71
+ 0gHEBPGtsKwp+Bl0XuWBlajJ0Kmg4QABXd9fEpW44P/tTjaDgf
+ JRylBr0dxWxicA7rBP9QnTq9s5XbEEv3lpg4omx4wtvZ90jTqa
+ z3bpR3IArvHockzcyy+EGj6o9rZaAu1ZaAbAuLmDMG0EvPaTPQ
+ fvYpu9llRRvUcNZj/BJ2FR3B+MvnhkZrYa56Qnn93VsuHPrDVa
+ W0GLbQ86lclkK8NCDJJzlSgY+kRuvbswv/se/4lW6PbINJPtOR
+ Z6AFZ/JMCzvnMUd6DIRE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Wednesday 08 January 2014 16:58:15 Roger Quadros wrote:
+> hpriv->phy = devm_phy_get(dev, "sata-phy");
+> if (IS_ERR(hpriv->phy)) {
+>         if (PTR_ERR(hpriv->phy) == -ENODEV)
+>                 goto continue;
+> 
+>         dev_err(dev, "couldn't get sata-phy\n");
+>         rc = PTR_ERR(hpriv->phy);
+>         goto disable_unprepare_clk;
+> }
+> 
+> continue:
+> 
+> if (!IS_ERR(hpriv->phy)) {
+>         rc = phy_init(hpriv->phy);
+>         if (rc)
+>                 goto disable_unprepare_clk;
+> 
+>         rc = phy_power_on(hpriv->phy);
+>         if (rc) {
+>                 phy_exit(hpriv->phy);
+>                 goto disable_unprepare_clk;
+>         }
+> }
 
-Enjoy!
+As I said, I'd prefer to set hpriv->phy to NULL in case of -ENODEV,
+but functionally it seems right (with the fixup from your other mail).
 
-The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+One more comment: you shouldn't print an error message before
+returning -EPROBE_DEFER, so if you want to keep that message,
+you have to check for that return value after all.
 
-  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
-
-are available in the git repository at:
-
-  git://git.linaro.org/people/ljones/mfd.git tags/ib-asoc-3.14.2
-
-for you to fetch changes up to 9146070089cca0fa5c396f1a4d0b96d675004c04:
-
-  mfd: twl-core: Enable regcache for audio registers (2014-01-08 11:37:52 +0000)
-
-----------------------------------------------------------------
-Immutable branch between MFD and ASoC due for the v3.14 merge window
-
-----------------------------------------------------------------
-Peter Ujfalusi (4):
-      mfd: twl6040: reg_defaults support for regmap
-      mfd: twl-core: Simplify IO wrapper functions by moving common code out
-      mfd: twl-core: API to set the regcache bypass for a given regmap in twl
-      mfd: twl-core: Enable regcache for audio registers
-
- drivers/mfd/twl-core.c  | 190 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------
- drivers/mfd/twl6040.c   |  92 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- include/linux/i2c/twl.h |   3 ++
- 3 files changed, 255 insertions(+), 30 deletions(-)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	Arnd
