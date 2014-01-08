@@ -1,163 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053AbaAHR4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:56:32 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:31947 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaAHR43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:56:29 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-24-52cd914a9434
-From: Kamil Debski <k.debski@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, Tomasz Figa <t.figa@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, gautam.vivek@samsung.com,
-        mat.krawczuk@gmail.com, yulgon.kim@samsung.com, p.paneri@samsung.com,
-        av.tikhomirov@samsung.com, jg1.han@samsung.com, galak@codeaurora.org,
-        matt.porter@linaro.org, tjakobi@math.uni-bielefeld.de,
-        stern@rowland.harvard.edu
-References: <1387545857-9472-1-git-send-email-k.debski@samsung.com>
- <1387545857-9472-4-git-send-email-k.debski@samsung.com>
- <52CA818A.4090403@ti.com>
-In-reply-to: <52CA818A.4090403@ti.com>
-Subject: RE: [PATCH v5 3/9] phy: Add new Exynos USB 2.0 PHY driver
-Date: Wed, 08 Jan 2014 18:56:25 +0100
-Message-id: <04dc01cf0c9a$f37c24d0$da746e70$%debski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac8Kx9jaUEL2ohbBR8eDk8531M71zgB0TFIA
-Content-language: pl
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t/xq7peE88GGWw/JWWxZPcNVov5R86x
-	WvS/Wchq0XblILvF5YWXWC0uPO1hszjb9AbI3TWHzWLG+X1MFouWtTJbrD1yl93ibP9tNouJ
-	TdPYLc5v6WSyOPymndViwu8LbBbrZ7xmsWhb/YHVouPsQXYHYY/Lfb1MHjtn3WX3uHNtD5vH
-	v2PsHrPv/mD06NuyitHj+I3tTB6fN8kFcERx2aSk5mSWpRbp2yVwZfx90sFS8E+m4v7uvewN
-	jF1iXYycHBICJhLrr/1hgrDFJC7cW8/WxcjFISSwlFHi9+d/zBBOA5PE/glfgKo4ONgENCVW
-	3fMAaRAR0JFYeHo9WA2zwEwWiY+fpzJBNMxklJi16gszSBWngJrEggtvGUFsYQEniYa399lA
-	bBYBVYm9l76zgti8Ag4Ss5f9ZYSwBSV+TL7HAmIzC2hJrN95nAnClpfYvOYtM8gREgLqEo/+
-	6kIcYSRxsX0HM0SJiMTdhuesExiFZiGZNAvJpFlIJs1C0rKAkWUVo2hqaXJBcVJ6rqFecWJu
-	cWleul5yfu4mRkgMf9nBuPiY1SFGAQ5GJR5ejtqzQUKsiWXFlbmHGCU4mJVEeK8XA4V4UxIr
-	q1KL8uOLSnNSiw8xMnFwSjUwemkr58vdOZ3/essT/0thr67qMjuZSG3+cmCPmKVY5rxVp69/
-	PR/T3SzZ8VrDd+KJxDrO/c1RzkfeHPvp7Xn7daSYetmzX9dd/+5j2T5VeP/krmxjlgW3OX7V
-	Gcz+o/1/UrN5kmXImur9HodOTZw7/UtBPd/zT4V71+vwnLU7NM93W8jliTxLwpVYijMSDbWY
-	i4oTAdLPsue/AgAA
+	id S1756115AbaAHR5P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:57:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44784 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750885AbaAHR5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 12:57:08 -0500
+Message-ID: <52CD9139.2070302@zytor.com>
+Date: Wed, 08 Jan 2014 09:56:09 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: joeyli <jlee@suse.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device driver
+References: <1387439515-8926-1-git-send-email-jlee@suse.com>	 <1387439515-8926-5-git-send-email-jlee@suse.com>	 <52B30F43.1060306@zytor.com> <1387518099.3539.4453.camel@linux-s257.site>	 <52C3647B.7000708@zytor.com> <1388998707.3539.6070.camel@linux-s257.site>	 <52CB929C.6050403@zytor.com> <1389091244.3539.6095.camel@linux-s257.site>	 <52CC2CDF.3000100@zytor.com> <1389193142.3539.6123.camel@linux-s257.site>
+In-Reply-To: <1389193142.3539.6123.camel@linux-s257.site>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> From: Kishon Vijay Abraham I [mailto:kishon@ti.com]
-> Sent: Monday, January 06, 2014 11:12 AM
+On 01/08/2014 06:59 AM, joeyli wrote:
 > 
-> Hi,
+> ACPICA denied AML access RTC ports.
 > 
-> On Friday 20 December 2013 06:54 PM, Kamil Debski wrote:
-> > Add a new driver for the Exynos USB 2.0 PHY. The new driver uses the
-> > generic PHY framework. The driver includes support for the Exynos
-> 4x10
-> > and 4x12 SoC families.
-> >
-> > Signed-off-by: Kamil Debski <k.debski@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> >   .../devicetree/bindings/phy/samsung-phy.txt        |   55 ++++
-> >   drivers/phy/Kconfig                                |   29 ++
-> >   drivers/phy/Makefile                               |    3 +
-> >   drivers/phy/phy-exynos4210-usb2.c                  |  257
-> ++++++++++++++++
-> >   drivers/phy/phy-exynos4212-usb2.c                  |  306
-> ++++++++++++++++++++
-> >   drivers/phy/phy-samsung-usb2.c                     |  226
-> +++++++++++++++
-> >   drivers/phy/phy-samsung-usb2.h                     |   67 +++++
-> >   7 files changed, 943 insertions(+)
-> >   create mode 100644 drivers/phy/phy-exynos4210-usb2.c
-> >   create mode 100644 drivers/phy/phy-exynos4212-usb2.c
-> >   create mode 100644 drivers/phy/phy-samsung-usb2.c
-> >   create mode 100644 drivers/phy/phy-samsung-usb2.h
-> >
-> .
-> .
-> <snip>
-> .
-> .
+> I tried to access 0x70, 0x71 ports in ASL on a real machine, ACPICA
+> denied AML access to those ports. I got the following dmesg:
 > 
-> > diff --git a/drivers/phy/phy-samsung-usb2.h
-> > b/drivers/phy/phy-samsung-usb2.h new file mode 100644 index
-> > 0000000..ab89f91
-> > --- /dev/null
-> > +++ b/drivers/phy/phy-samsung-usb2.h
-> > @@ -0,0 +1,67 @@
-> > +/*
-> > + * Samsung SoC USB 1.1/2.0 PHY driver
-> > + *
-> > + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> > + * Author: Kamil Debski <k.debski@samsung.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > +modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#ifndef _PHY_EXYNOS_USB2_H
-> > +#define _PHY_EXYNOS_USB2_H
-> > +
-> > +#include <linux/clk.h>
-> > +#include <linux/phy/phy.h>
-> > +#include <linux/device.h>
-> > +#include <linux/regmap.h>
-> > +#include <linux/spinlock.h>
-> > +
-> > +#define KHZ 1000
-> > +#define MHZ (KHZ * KHZ)
-> > +
-> > +struct samsung_usb2_phy_driver;
-> > +struct samsung_usb2_phy_instance;
-> > +struct samsung_usb2_phy_config;
-> > +
-> > +struct samsung_usb2_phy_instance {
-> > +	const struct samsung_usb2_common_phy *cfg;
-> > +	struct clk *clk;
-> > +	struct phy *phy;
-> > +	struct samsung_usb2_phy_driver *drv;
-> > +	unsigned long rate;
-> > +	u32 clk_reg_val;
-> > +	bool enabled;
-> > +};
-> > +
-> > +struct samsung_usb2_phy_driver {
-> > +	const struct samsung_usb2_phy_config *cfg;
-> > +	struct clk *clk;
-> > +	struct device *dev;
-> > +	void __iomem *reg_phy;
-> > +	struct regmap *reg_pmu;
-> > +	struct regmap *reg_sys;
-> > +	spinlock_t lock;
-> > +	struct samsung_usb2_phy_instance instances[0];
+> hwvalid-0188 hw_validate_io_request: Denied AML access to port
+> 0x0000000000000071/1
 > 
-> I think having instances as array here would allocate more space while
-> allocating 'samsung_usb2_phy_driver' in 'samsung_usb2_phy_probe'.
+> The code in acpica denied it:
+> 
+> linux/drivers/acpi/acpica/hwvalid.c
+> 
+>  * This provides ACPICA with the desired port protections and
+>  * Microsoft compatibility.
+>  *
+>  * Description of port entries:
+> [...]
+>  *  RTC:   Real-time clock
+>  *  CMOS:  Extended CMOS
+> [...]
+>  */
+> static const struct acpi_port_info acpi_protected_ports[] = {
+> [...]
+>         {"RTC", 0x0070, 0x0071, ACPI_OSI_WIN_XP},
+>         {"CMOS", 0x0074, 0x0076, ACPI_OSI_WIN_XP},
+> 
+> 
+> Document of Windows XP:
+> http://www.freelists.org/post/windows_errors/what-error-messages-really-mean-WinXP-IO-Ports-Blocked-from-Bios-AML-on-Windows-XP
+> 
+> If just for ACPI TAD testing, we can remove the port protection check of
+> RTC ports in hwvalid.c. I have read 0x70/0x71 port success after removed
+> the checking in acpica/hwvalid.c.
+> 
+> I will try to write RTC port in AML after remove acpica check, maybe
+> have other unpredictable situation.
 > 
 
-I am not sure if I understand you correctly here. Maybe I will explain
-what I intended to write. An array with size 0 at the end of a structure
-takes no space in the structure. The benefit of using it is that after
-the structure one can allocate a number of the array elements and
-address them easily. Another option would be placing pointer in the
-samsung_usb2_phy_instance and allocate memory separately, but this would
-involve two allocations and a pointer would be always present in the 
-structure.
+Now *THERE* is a good use of the "no RTC bit".  In the case that bit is
+set we should presumably remove these ports from the block list.
 
-Best wishes,
--- 
-Kamil Debski
-Samsung R&D Institute Poland
+Otherwise we should use the CMOS address space, not the I/O port address
+space.
 
+	-hpa
 
 
