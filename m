@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518AbaAHIJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:09:09 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:42523 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919AbaAHII7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:08:59 -0500
-Date: Wed, 8 Jan 2014 08:08:54 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: am335x: IIO/ADC fixes if used together with TSC, v2
-Message-ID: <20140108080854.GB19974@lee--X1>
-References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
- <20140107085456.GD3182@lee--X1>
- <20140108080359.GA16527@core.coreip.homeip.net>
+	id S1754775AbaAHIOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:14:00 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:42280 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754539AbaAHINx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 03:13:53 -0500
+Date: Wed, 8 Jan 2014 08:13:49 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1401080812070.31762@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140108080359.GA16527@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Dmitry, Jonathan,
-> > 
-> > This is for you.
-> > 
-> > The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
-> > 
-> >   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://git.linaro.org/people/ljones/mfd.git tags/ib-iio-input-3.13-1
-> > 
-> > for you to fetch changes up to 7ca6740cd1cd410828a01151a044b51910d06eff:
-> > 
-> >   mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization (2014-01-07 08:45:00 +0000)
-> > 
-> > ----------------------------------------------------------------
-> > Immutable branch for IIO and Input
-> > 
-> > ----------------------------------------------------------------
-> > Sebastian Andrzej Siewior (5):
-> >       iio: ti_am335x_adc: Adjust the closing bracket in tiadc_read_raw()
-> >       mfd: ti_am335x_tscadc: Make am335x_tsc_se_update() local
-> >       mfd: ti_am335x_tscadc: Don't read back REG_SE
-> >       mfd: ti_am335x: Drop am335x_tsc_se_update() from resume path
-> >       mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization
-> > 
-> >  drivers/iio/adc/ti_am335x_adc.c           | 68 +++++++++++++++++++++++++++++++++++++++++++++++++-------------------
-> >  drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
-> >  drivers/mfd/ti_am335x_tscadc.c            | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------
-> >  include/linux/mfd/ti_am335x_tscadc.h      |  8 ++++++--
-> >  4 files changed, 117 insertions(+), 34 deletions(-)
-> 
-> I do not have any pending changes to ti_am335x_tsc.c so it can all go
-> through Jonathan's tree.
 
-Well the patches are going through my tree, but in case either of you
-have any changes to the above files you can merge this and Git will do
-the rest during the merge-window. If neither of you do then no need to
-pull. :)
+Hi Linus,
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+LCA fixes tree,
+
+i915 and nouveau fixes, a revert for i915 gm45 backlight, and a 
+MAINTAINERS update for the i915 driver, as it now has a co-maintainer.
+
+Dave.
+
+The following changes since commit ef350bb7c5e0748f7d17f1d70c6b0eec5f64f446:
+
+  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2014-01-07 08:22:42 +0800)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to ceb3b0212dfc843a6abe8a6f3b4e28c1f2059e64:
+
+  Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/nouveau/linux-2.6 into drm-fixes (2014-01-08 17:57:45 +1000)
+
+----------------------------------------------------------------
+
+Alexander van Heukelum (1):
+      Revert "drm/i915: assume all GM45 Acer laptops use inverted backlight PWM"
+
+Ben Skeggs (1):
+      drm/nouveau: populate master subdev pointer only when fully constructed
+
+Ben Widawsky (1):
+      drm/i915/bdw: Flush system agent on gen8 also
+
+Bob Gleitsmann (1):
+      drm/nouveau: return offset of allocated notifier
+
+Christian Engelmayer (1):
+      drm/nouveau/nouveau: fix memory leak in nouveau_crtc_page_flip()
+
+Daniel Vetter (1):
+      MAINTAINERS: Updates for drm/i915
+
+Dave Airlie (2):
+      Merge tag 'drm-intel-fixes-2014-01-08' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
+      Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/nouveau/linux-2.6 into drm-fixes
+
+Ilia Mirkin (2):
+      drm/nouveau/bios: make jump conditional
+      drm/nouveau/bios: fix offset calculation for BMPv1 bioses
+
+Kelly Doran (1):
+      drm/nvc0/gr: fix mthd data submission
+
+Sid Boyce (1):
+      drm/nvce/mc: fix msi rearm on GF114
+
+ MAINTAINERS                                       |  2 ++
+ drivers/gpu/drm/i915/i915_gem_gtt.c               |  2 --
+ drivers/gpu/drm/i915/intel_display.c              | 19 ++++++++++++++-----
+ drivers/gpu/drm/nouveau/core/core/subdev.c        |  3 ---
+ drivers/gpu/drm/nouveau/core/engine/device/base.c |  2 ++
+ drivers/gpu/drm/nouveau/core/engine/device/nvc0.c |  2 +-
+ drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c  |  2 +-
+ drivers/gpu/drm/nouveau/core/include/subdev/fb.h  |  5 +++++
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c   | 14 +++++++++-----
+ drivers/gpu/drm/nouveau/nouveau_abi16.c           |  2 ++
+ drivers/gpu/drm/nouveau/nouveau_display.c         |  2 +-
+ 11 files changed, 37 insertions(+), 18 deletions(-)
