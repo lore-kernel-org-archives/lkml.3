@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756455AbaAHIvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:51:08 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42210 "EHLO
+	id S1755808AbaAHIvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:51:18 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:48017 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903AbaAHIqu (ORCPT
+	with ESMTP id S1755192AbaAHIqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Jan 2014 03:46:50 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-2a-52cd10707c5b
+X-AuditID: 9c93017d-b7b66ae000006a2a-1f-52cd10702acb
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 19/28] perf report: Add --children option
-Date: Wed,  8 Jan 2014 17:46:24 +0900
-Message-Id: <1389170793-21926-20-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 16/28] perf ui/gtk: Add support to accumulated hist stat
+Date: Wed,  8 Jan 2014 17:46:21 +0900
+Message-Id: <1389170793-21926-17-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
 References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
@@ -26,61 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The --children option is for showing accumulated overhead (period)
-value as well as self overhead.
+Print accumulated stat of a hist entry if requested.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/builtin-report.c              | 10 ++++++++++
- 2 files changed, 15 insertions(+)
+ tools/perf/ui/gtk/hists.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 8eab8a4bdeb8..710fc8b18f6b 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -141,6 +141,11 @@ OPTIONS
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 2ca66cc1160f..70ed0d5e1b94 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -98,11 +98,25 @@ static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,
+ 	return __hpp__color_fmt(hpp, he, he_get_##_field);			\
+ }
  
- 	Default: fractal,0.5,callee,function.
- 
-+--children::
-+	Accumulate callchain of children to parent entry so that then can
-+	show up in the output.  The output will have a new "Children" column
-+	and will be sorted on the data.  It requires callchains are recorded.
++#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
++static u64 he_get_acc_##_field(struct hist_entry *he)				\
++{										\
++	return he->stat_acc->_field;						\
++}										\
++										\
++static int perf_gtk__hpp_color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
++				       struct perf_hpp *hpp,			\
++				       struct hist_entry *he)			\
++{										\
++	return __hpp__color_fmt(hpp, he, he_get_acc_##_field);			\
++}
 +
- --max-stack::
- 	Set the stack depth limit when parsing the callchain, anything
- 	beyond the specified depth will be ignored. This is a trade-off
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 5f07da10f83c..6db8d6d74ad1 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -685,6 +685,14 @@ static int report__setup_sample_type(struct report *rep)
- 			}
- 	}
+ __HPP_COLOR_PERCENT_FN(overhead, period)
+ __HPP_COLOR_PERCENT_FN(overhead_sys, period_sys)
+ __HPP_COLOR_PERCENT_FN(overhead_us, period_us)
+ __HPP_COLOR_PERCENT_FN(overhead_guest_sys, period_guest_sys)
+ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
++__HPP_COLOR_ACC_PERCENT_FN(overhead_acc, period)
  
-+	if (symbol_conf.cumulate_callchain) {
-+		/* Silently ignore if callchain is missing */
-+		if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
-+			symbol_conf.cumulate_callchain = false;
-+			perf_hpp__cancel_cumulate();
-+		}
-+	}
-+
- 	if (sort__mode == SORT_MODE__BRANCH) {
- 		if (!is_pipe &&
- 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
-@@ -1115,6 +1123,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
- 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
- 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
-+	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
-+		    "Accumulate callchains of children and show total overhead as well"),
- 	OPT_INTEGER(0, "max-stack", &report.max_stack,
- 		    "Set the maximum stack depth when parsing the callchain, "
- 		    "anything beyond the specified depth will be ignored. "
+ #undef __HPP_COLOR_PERCENT_FN
+ 
+@@ -121,6 +135,8 @@ void perf_gtk__init_hpp(void)
+ 				perf_gtk__hpp_color_overhead_guest_sys;
+ 	perf_hpp__format[PERF_HPP__OVERHEAD_GUEST_US].color =
+ 				perf_gtk__hpp_color_overhead_guest_us;
++	perf_hpp__format[PERF_HPP__OVERHEAD_ACC].color =
++				perf_gtk__hpp_color_overhead_acc;
+ }
+ 
+ static void callchain_list__sym_name(struct callchain_list *cl,
 -- 
 1.7.11.7
 
