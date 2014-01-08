@@ -1,159 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaAHFqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 00:46:31 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:49802 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaAHFqY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 00:46:24 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-3f-52cce62e957e
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/2] f2fs: improve write performance under frequent fsync calls
-Date: Wed, 08 Jan 2014 14:45:01 +0900
-Message-id: <1389159902-25491-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zA129Z2eCDOa/NLe4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK6Pv2z3mggvyFY1z
-	HrI3MF6Q7GLk5JAQMJH42vqNCcIWk7hwbz1bFyMXh5DAMkaJXf0vGWGK5iz5zASRmM4ocffl
-	XnYIp5lJYvGHZUAtHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUASwgL+Ek19q9lA
-	bBYBVYnuvevB4rwC7hK7LnawQWzTltj2fCJYs4TAfTaJaVP6WCAaBCS+TT7EArJMQkBWYtMB
-	Zoh6SYmDK26wTGAUXMDIsIpRNLUguaA4Kb3IUK84Mbe4NC9dLzk/dxMjJAh7dzDePmB9iDEZ
-	aNxEZinR5HxgEOeVxBsamxlZmJqYGhuZW5qRJqwkzpv0MClISCA9sSQ1OzW1ILUovqg0J7X4
-	ECMTB6dUA6MJj57j+xqjXqOTR3N+uD+dFCO6msv+fdazyb/67vu2LFMXqag06/Lz4Htygif2
-	9MU3Gcaf7v0tOWZekmj72vPkWeXjdusuZ2ybGqjckOzKWXsn7aLutYIp67fIrN4S6cXz7rz2
-	jeO7xXddLl41S2Dysww/mws6h7+8XM58M67125LHCRul7vAosRRnJBpqMRcVJwIAVjKfDVgC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQV29Z2eCDK5vM7a4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
-	kCC4HiMDNJCwjjGj79s95oIL8hWNcx6yNzBekOxi5OSQEDCRmLPkMxOELSZx4d56ti5GLg4h
-	gemMEndf7mWHcJqZJBZ/WAaU4eBgE9CW2LzfAKRBRIBZYsHU84wgNcwCExgl/i96zwKSEBbw
-	l2jqW80GYrMIqEp0710PFucVcJfYdbGDDWKbtsS25xMZJzByL2BkWMUomlqQXFCclJ5rqFec
-	mFtcmpeul5yfu4kRHOLPpHYwrmywOMQowMGoxMN7Q+1MkBBrYllxZe4hRgkOZiURXvcHQCHe
-	lMTKqtSi/Pii0pzU4kOMyUDbJzJLiSbnA+MvryTe0NjEzMjSyMzCyMTcnDRhJXHeA63WgUIC
-	6YklqdmpqQWpRTBbmDg4pRoYZR7v4cpff7HOXqgltKOp6bPAFwmuBaaTDlYnyL5dGROZk7eC
-	cfo5B6M12+8Fbjvkt/tGQFbJksUZLDl1Vaf/B71IXmW0g+/I6n03OK/wrd6bfcpxscNRL/e2
-	tLWzds1T12cTYTM8bh0Z/OEYV2Ppp3M3/2vUfS3dnmKTZ3LBdEP8Jq8SoSYZJZbijERDLeai
-	4kQAzZW5C7UCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	id S1754797AbaAHFsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 00:48:45 -0500
+Received: from mga03.intel.com ([143.182.124.21]:20867 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaAHFsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 00:48:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,622,1384329600"; 
+   d="scan'208";a="455246180"
+Message-ID: <52CCE6AE.1070809@linux.intel.com>
+Date: Wed, 08 Jan 2014 13:48:30 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Kai Huang <dev.kai.huang@gmail.com>
+CC: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [Patch Part2 V1 03/14] iommu/vt-d: simplify function get_domain_for_dev()
+References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>	<1389085234-22296-4-git-send-email-jiang.liu@linux.intel.com> <CAOtp4KrK8yOktru+hgLSxYNZ67Nm2WYVGi2aGaJ3JJWLrdOq_g@mail.gmail.com>
+In-Reply-To: <CAOtp4KrK8yOktru+hgLSxYNZ67Nm2WYVGi2aGaJ3JJWLrdOq_g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When considering a bunch of data writes with very frequent fsync calls, we
-are able to think the following performance regression.
 
-N: Node IO, D: Data IO, IO scheduler: cfq
 
-Issue    pending IOs
-	 D1 D2 D3 D4
- D1         D2 D3 D4 N1
- D2            D3 D4 N1 N2
- N1            D3 D4 N2 D1
- --> N1 can be selected by cfq becase of the same priority of N and D.
-     Then D3 and D4 would be delayed, resuling in performance degradation.
+On 2014/1/8 11:06, Kai Huang wrote:
+> 
+> 
+> 
+> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com
+> <mailto:jiang.liu@linux.intel.com>> wrote:
+> 
+>     Function get_domain_for_dev() is a little complex, simplify it
+>     by factoring out dmar_search_domain_by_dev_info() and
+>     dmar_insert_dev_info().
+> 
+>     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com
+>     <mailto:jiang.liu@linux.intel.com>>
+>     ---
+>      drivers/iommu/intel-iommu.c |  161
+>     ++++++++++++++++++++-----------------------
+>      1 file changed, 75 insertions(+), 86 deletions(-)
+> 
+>     diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+>     index 1704e97..da65884 100644
+>     --- a/drivers/iommu/intel-iommu.c
+>     +++ b/drivers/iommu/intel-iommu.c
+>     @@ -1957,18 +1957,70 @@ find_domain(struct pci_dev *pdev)
+>             return NULL;
+>      }
+> 
+>     +static inline struct dmar_domain *
+>     +dmar_search_domain_by_dev_info(int segment, int bus, int devfn)
+>     +{
+>     +       struct device_domain_info *info;
+>     +
+>     +       list_for_each_entry(info, &device_domain_list, global)
+>     +               if (info->segment == segment && info->bus == bus &&
+>     +                   info->devfn == devfn)
+>     +                       return info->domain;
+>     +
+>     +       return NULL;
+>     +}
+>     +
+>     +static int dmar_insert_dev_info(int segment, int bus, int devfn,
+>     +                               struct pci_dev *dev, struct
+>     dmar_domain **domp)
+>     +{
+>     +       struct dmar_domain *found, *domain = *domp;
+>     +       struct device_domain_info *info;
+>     +       unsigned long flags;
+>     +
+>     +       info = alloc_devinfo_mem();
+>     +       if (!info)
+>     +               return -ENOMEM;
+>     +
+>     +       info->segment = segment;
+>     +       info->bus = bus;
+>     +       info->devfn = devfn;
+>     +       info->dev = dev;
+>     +       info->domain = domain;
+>     +       if (!dev)
+>     +               domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
+>     +
+>     +       spin_lock_irqsave(&device_domain_lock, flags);
+>     +       if (dev)
+>     +               found = find_domain(dev);
+>     +       else
+>     +               found = dmar_search_domain_by_dev_info(segment, bus,
+>     devfn);
+>     +       if (found) {
+>     +               spin_unlock_irqrestore(&device_domain_lock, flags);
+>     +               free_devinfo_mem(info);
+>     +               if (found != domain) {
+>     +                       domain_exit(domain);
+>     +                       *domp = found;
+>     +               }
+>     +       } else {
+>     +               list_add(&info->link, &domain->devices);
+>     +               list_add(&info->global, &device_domain_list);
+>     +               if (dev)
+>     +                       dev->dev.archdata.iommu = info;
+>     +               spin_unlock_irqrestore(&device_domain_lock, flags);
+>     +       }
+>     +
+>     +       return 0;
+>     +}
+> 
+> 
+> I am a little bit confused about the "alloc before check" sequence in
+> above function. I believe the purpose of allocating the
+> device_domain_info before searching the domain with spin_lock hold is to
+> avoid the memory allocation in the spin_lock? In this case, why can't we
+> use mutex instead of spin_lock? In my understanding, if we use mutex, we
+> can first check if the domain exists or not before we really allocate
+> device_domain_info, right?
+Hi Kai,
+	Thanks for review!
+	The domain->devices list may be access in interrupt context,
+so we need to protect it with spin_lock_irqsave(). Otherwise it may
+case deadlock.
 
-So, when processing the fsync call, it'd better give higher priority to data IOs
-than node IOs by assigning WRITE and WRITE_SYNC respectively.
-This patch improves the random wirte performance with frequent fsync calls by up
-to 10%.
+> 
+> Another question is when is info->iommu field initialized? Looks it is
+> not initialized here?
+It's set in function iommu_support_dev_iotlb() for devices supporting
+device IOTLB.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/f2fs.h    | 4 ++--
- fs/f2fs/file.c    | 2 +-
- fs/f2fs/node.c    | 7 ++++++-
- fs/f2fs/segment.c | 8 ++------
- 4 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 07a7ae0..b69f190 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1118,8 +1118,8 @@ int npages_for_summary_flush(struct f2fs_sb_info *);
- void allocate_new_segments(struct f2fs_sb_info *);
- struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
- void write_meta_page(struct f2fs_sb_info *, struct page *);
--void write_node_page(struct f2fs_sb_info *, struct page *, unsigned int,
--					block_t, block_t *);
-+void write_node_page(struct f2fs_sb_info *, struct page *,
-+		struct f2fs_io_info *, unsigned int, block_t, block_t *);
- void write_data_page(struct page *, struct dnode_of_data *, block_t *,
- 					struct f2fs_io_info *);
- void rewrite_data_page(struct page *, block_t, struct f2fs_io_info *);
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index c77ad4d..14511b0 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -115,7 +115,7 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
- 	int ret = 0;
- 	bool need_cp = false;
- 	struct writeback_control wbc = {
--		.sync_mode = WB_SYNC_ALL,
-+		.sync_mode = WB_SYNC_NONE,
- 		.nr_to_write = LONG_MAX,
- 		.for_reclaim = 0,
- 	};
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 0230326..b8c9301 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1194,6 +1194,10 @@ static int f2fs_write_node_page(struct page *page,
- 	nid_t nid;
- 	block_t new_addr;
- 	struct node_info ni;
-+	struct f2fs_io_info fio = {
-+		.type = NODE,
-+		.rw = (wbc->sync_mode == WB_SYNC_ALL) ? WRITE_SYNC: WRITE,
-+	};
- 
- 	if (unlikely(sbi->por_doing))
- 		goto redirty_out;
-@@ -1218,7 +1222,7 @@ static int f2fs_write_node_page(struct page *page,
- 
- 	mutex_lock(&sbi->node_write);
- 	set_page_writeback(page);
--	write_node_page(sbi, page, nid, ni.blk_addr, &new_addr);
-+	write_node_page(sbi, page, &fio, nid, ni.blk_addr, &new_addr);
- 	set_node_addr(sbi, &ni, new_addr);
- 	dec_page_count(sbi, F2FS_DIRTY_NODES);
- 	mutex_unlock(&sbi->node_write);
-@@ -1253,6 +1257,7 @@ static int f2fs_write_node_pages(struct address_space *mapping,
- 
- 	/* if mounting is failed, skip writing node pages */
- 	wbc->nr_to_write = 3 * max_hw_blocks(sbi);
-+	wbc->sync_mode = WB_SYNC_NONE;
- 	sync_node_pages(sbi, 0, wbc);
- 	wbc->nr_to_write = nr_to_write - (3 * max_hw_blocks(sbi) -
- 						wbc->nr_to_write);
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 555ae76..5f84639 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -924,16 +924,12 @@ void write_meta_page(struct f2fs_sb_info *sbi, struct page *page)
- }
- 
- void write_node_page(struct f2fs_sb_info *sbi, struct page *page,
-+		struct f2fs_io_info *fio,
- 		unsigned int nid, block_t old_blkaddr, block_t *new_blkaddr)
- {
- 	struct f2fs_summary sum;
--	struct f2fs_io_info fio = {
--		.type = NODE,
--		.rw = WRITE_SYNC,
--	};
--
- 	set_summary(&sum, nid, 0, 0);
--	do_write_page(sbi, page, old_blkaddr, new_blkaddr, &sum, &fio);
-+	do_write_page(sbi, page, old_blkaddr, new_blkaddr, &sum, fio);
- }
- 
- void write_data_page(struct page *page, struct dnode_of_data *dn,
--- 
-1.8.4.474.g128a96c
-
+> 
+> -Kai
+> 
+>     +
+>      /* domain is initialized */
+>      static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev,
+>     int gaw)
+>      {
+>     -       struct dmar_domain *domain, *found = NULL;
+>     +       struct dmar_domain *domain;
+>             struct intel_iommu *iommu;
+>             struct dmar_drhd_unit *drhd;
+>     -       struct device_domain_info *info, *tmp;
+>     -       struct pci_dev *dev_tmp;
+>     +       struct pci_dev *bridge;
+>             unsigned long flags;
+>     -       int bus = 0, devfn = 0;
+>     -       int segment;
+>     -       int ret;
+>     +       int segment, bus, devfn;
+> 
+>             domain = find_domain(pdev);
+>             if (domain)
+>     @@ -1976,119 +2028,56 @@ static struct dmar_domain
+>     *get_domain_for_dev(struct pci_dev *pdev, int gaw)
+> 
+>             segment = pci_domain_nr(pdev->bus);
+> 
+>     -       dev_tmp = pci_find_upstream_pcie_bridge(pdev);
+>     -       if (dev_tmp) {
+>     -               if (pci_is_pcie(dev_tmp)) {
+>     -                       bus = dev_tmp->subordinate->number;
+>     +       bridge = pci_find_upstream_pcie_bridge(pdev);
+>     +       if (bridge) {
+>     +               if (pci_is_pcie(bridge)) {
+>     +                       bus = bridge->subordinate->number;
+>                             devfn = 0;
+>                     } else {
+>     -                       bus = dev_tmp->bus->number;
+>     -                       devfn = dev_tmp->devfn;
+>     +                       bus = bridge->bus->number;
+>     +                       devfn = bridge->devfn;
+>                     }
+>                     spin_lock_irqsave(&device_domain_lock, flags);
+>     -               list_for_each_entry(info, &device_domain_list, global) {
+>     -                       if (info->segment == segment &&
+>     -                           info->bus == bus && info->devfn == devfn) {
+>     -                               found = info->domain;
+>     -                               break;
+>     -                       }
+>     -               }
+>     +               domain = dmar_search_domain_by_dev_info(segment,
+>     bus, devfn);
+>                     spin_unlock_irqrestore(&device_domain_lock, flags);
+>                     /* pcie-pci bridge already has a domain, uses it */
+>     -               if (found) {
+>     -                       domain = found;
+>     +               if (domain)
+>                             goto found_domain;
+>     -               }
+>             }
+> 
+>     -       domain = alloc_domain();
+>     -       if (!domain)
+>     -               goto error;
+>     -
+>     -       /* Allocate new domain for the device */
+>             drhd = dmar_find_matched_drhd_unit(pdev);
+>             if (!drhd) {
+>                     printk(KERN_ERR "IOMMU: can't find DMAR for device
+>     %s\n",
+>                             pci_name(pdev));
+>     -               free_domain_mem(domain);
+>                     return NULL;
+>             }
+>             iommu = drhd->iommu;
+> 
+>     -       ret = iommu_attach_domain(domain, iommu);
+>     -       if (ret) {
+>     +       /* Allocate new domain for the device */
+>     +       domain = alloc_domain();
+>     +       if (!domain)
+>     +               goto error;
+>     +       if (iommu_attach_domain(domain, iommu)) {
+>                     free_domain_mem(domain);
+>                     goto error;
+>             }
+>     -
+>             if (domain_init(domain, gaw)) {
+>                     domain_exit(domain);
+>                     goto error;
+>             }
+> 
+>             /* register pcie-to-pci device */
+>     -       if (dev_tmp) {
+>     -               info = alloc_devinfo_mem();
+>     -               if (!info) {
+>     +       if (bridge) {
+>     +               if (dmar_insert_dev_info(segment, bus, devfn, NULL,
+>     &domain)) {
+>                             domain_exit(domain);
+>                             goto error;
+>                     }
+>     -               info->segment = segment;
+>     -               info->bus = bus;
+>     -               info->devfn = devfn;
+>     -               info->dev = NULL;
+>     -               info->domain = domain;
+>     -               /* This domain is shared by devices under p2p bridge */
+>     -               domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
+>     -
+>     -               /* pcie-to-pci bridge already has a domain, uses it */
+>     -               found = NULL;
+>     -               spin_lock_irqsave(&device_domain_lock, flags);
+>     -               list_for_each_entry(tmp, &device_domain_list, global) {
+>     -                       if (tmp->segment == segment &&
+>     -                           tmp->bus == bus && tmp->devfn == devfn) {
+>     -                               found = tmp->domain;
+>     -                               break;
+>     -                       }
+>     -               }
+>     -               if (found) {
+>     -                       spin_unlock_irqrestore(&device_domain_lock,
+>     flags);
+>     -                       free_devinfo_mem(info);
+>     -                       domain_exit(domain);
+>     -                       domain = found;
+>     -               } else {
+>     -                       list_add(&info->link, &domain->devices);
+>     -                       list_add(&info->global, &device_domain_list);
+>     -                       spin_unlock_irqrestore(&device_domain_lock,
+>     flags);
+>     -               }
+>             }
+> 
+>      found_domain:
+>     -       info = alloc_devinfo_mem();
+>     -       if (!info)
+>     -               goto error;
+>     -       info->segment = segment;
+>     -       info->bus = pdev->bus->number;
+>     -       info->devfn = pdev->devfn;
+>     -       info->dev = pdev;
+>     -       info->domain = domain;
+>     -       spin_lock_irqsave(&device_domain_lock, flags);
+>     -       /* somebody is fast */
+>     -       found = find_domain(pdev);
+>     -       if (found != NULL) {
+>     -               spin_unlock_irqrestore(&device_domain_lock, flags);
+>     -               if (found != domain) {
+>     -                       domain_exit(domain);
+>     -                       domain = found;
+>     -               }
+>     -               free_devinfo_mem(info);
+>     +       if (dmar_insert_dev_info(segment, pdev->bus->number,
+>     pdev->devfn,
+>     +                                pdev, &domain) == 0)
+>                     return domain;
+>     -       }
+>     -       list_add(&info->link, &domain->devices);
+>     -       list_add(&info->global, &device_domain_list);
+>     -       pdev->dev.archdata.iommu = info;
+>     -       spin_unlock_irqrestore(&device_domain_lock, flags);
+>     -       return domain;
+>      error:
+>             /* recheck it here, maybe others set it */
+>             return find_domain(pdev);
+>     --
+>     1.7.10.4
+> 
+>     _______________________________________________
+>     iommu mailing list
+>     iommu@lists.linux-foundation.org
+>     <mailto:iommu@lists.linux-foundation.org>
+>     https://lists.linuxfoundation.org/mailman/listinfo/iommu
+> 
+> 
