@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaAHN6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:58:10 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46663 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaAHNsj (ORCPT
+	id S1757332AbaAHN6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:58:23 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:57791 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849AbaAHN6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:48:39 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, angus.clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v4 10/37] mtd: st_spi_fsm: Dynamically setup flash device based on JEDEC ID
-Date: Wed,  8 Jan 2014 13:46:53 +0000
-Message-Id: <1389188840-14306-11-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
-References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+	Wed, 8 Jan 2014 08:58:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <52CC6A53.9010508@emulex.com>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Wed, 8 Jan 2014 15:57:57 +0200
+Message-ID: <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+To: James Smart <james.smart@emulex.com>
+Cc: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using previously added infrastructure we can now extract a device's JEDEC
-ID, compare it to a list of known and supported devices and make assumptions
-based on known characteristics of a given chip.
+Hi James,
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+On 7 January 2014 22:57, James Smart <james.smart@emulex.com> wrote:
+> Sergey,
+>
+> The Thor chipset is a bit old - a 4Gig adapter.  Most of our performance
+> improvements, including parallelization, have gone into the 8G and 16G
+> adapters. But you still should have seen significantly beyond what you
+> reported.
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 455deef..a70e916 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -240,6 +240,7 @@ struct stfsm {
- 	struct resource		*region;
- 	struct mtd_info		mtd;
- 	struct mutex		lock;
-+	struct flash_info       *info;
- 
- 	uint32_t                fifo_dir_delay;
- };
-@@ -508,6 +509,7 @@ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- 
- static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
- {
-+	struct flash_info	*info;
- 	u16                     ext_jedec;
- 	u32			jedec;
- 	u8			id[5];
-@@ -525,6 +527,15 @@ static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
- 	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
- 		jedec, id[0], id[1], id[2], id[3], id[4]);
- 
-+	for (info = flash_types; info->name; info++) {
-+		if (info->jedec_id == jedec) {
-+			if (info->ext_id && info->ext_id != ext_jedec)
-+				continue;
-+			return info;
-+		}
-+	}
-+	dev_err(fsm->dev, "Unrecognized JEDEC id %06x\n", jedec);
-+
- 	return NULL;
- }
- 
-@@ -619,6 +630,7 @@ static int stfsm_init(struct stfsm *fsm)
- static int stfsm_probe(struct platform_device *pdev)
- {
- 	struct device_node *np = pdev->dev.of_node;
-+	struct flash_info *info;
- 	struct resource *res;
- 	struct stfsm *fsm;
- 	int ret;
-@@ -665,7 +677,11 @@ static int stfsm_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Detect SPI FLASH device */
--	stfsm_jedec_probe(fsm);
-+	info = stfsm_jedec_probe(fsm);
-+	if (!info)
-+		return -ENODEV;
-+
-+	fsm->info = info;
- 
- 	platform_set_drvdata(pdev, fsm);
- 
-@@ -674,6 +690,15 @@ static int stfsm_probe(struct platform_device *pdev)
- 	fsm->mtd.writesize	= 4;
- 	fsm->mtd.writebufsize	= fsm->mtd.writesize;
- 	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-+	fsm->mtd.size		= info->sector_size * info->n_sectors;
-+	fsm->mtd.erasesize	= info->sector_size;
-+
-+	dev_err(&pdev->dev,
-+		"Found serial flash device: %s\n"
-+		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
-+		info->name,
-+		(long long)fsm->mtd.size, (long long)(fsm->mtd.size >> 20),
-+		fsm->mtd.erasesize, (fsm->mtd.erasesize >> 10));
- 
- 	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
- }
--- 
-1.8.3.2
+First of all - thanks a lot!
 
+I took Thor because we have exactly the same Thors in some of our
+Solaris servers. I've also tried 6 different qlogics (mostly 8G) and
+fnic (10G) as well. Surprisingly enough Thor was the fastest one for
+seqwr 4k. Though in most of the cases machines were from our different
+DCs and hence each one connected to yet another storage.
+
+>
+> We did a sanity check some hardware we already had set up with a Thor
+> adapter.  We saw 23555 iop/s and 92.1 MB/s without needing to do much, well
+> beyond what you've reported, and still not up to what we know the card can
+> do.  There are some inefficiencies from the linux kernel and some locking
+> deltas between our solaris and linux drivers - but not enough to account for
+> what you are seeing.
+>
+> I expect the Direct IO filesystem behavior is the root issue.
+
+The strangest thing to me that this is the problem with sequential
+write. For example the fnic one machine is zoned to EMC XtremIO and
+had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
+same fnic machine perfrormed rather impressive for random 4k
+451.11Mb/sec 115485.02 Requests/sec
