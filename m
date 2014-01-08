@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaAHDtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 22:49:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22394 "EHLO mga09.intel.com"
+	id S1754760AbaAHEAB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 23:00:01 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45356 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350AbaAHDtM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 22:49:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,621,1384329600"; 
-   d="scan'208";a="463270283"
-From: "Tang, Jianqiang" <jianqiang.tang@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        David Cohen <david.a.cohen@linux.intel.com>
-CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Tang, Jianqiang" <jianqiang.tang@intel.com>
-Subject: RE: [RFC/PATCH] usb/xhci: avoid kernel panic on xhci_suspend()
-Thread-Topic: [RFC/PATCH] usb/xhci: avoid kernel panic on xhci_suspend()
-Thread-Index: AQHPDBJ99T9rFpPtLkGMfdW0+qXylZp5iLCAgACgZtA=
-Date: Wed, 8 Jan 2014 03:49:07 +0000
-Message-ID: <08C00E7DCA84054D93A5BD962777345A01E2EE3E@SHSMSX102.ccr.corp.intel.com>
-References: <1389145466-8302-1-git-send-email-david.a.cohen@linux.intel.com>
- <20140108014639.GB7823@kroah.com>
-In-Reply-To: <20140108014639.GB7823@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754197AbaAHD7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 22:59:54 -0500
+Date: Wed, 8 Jan 2014 11:59:46 +0800
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-ID: <20140108035946.GI4106@localhost.localdomain>
+Mail-Followup-To: Michal Hocko <mhocko@suse.cz>,
+	linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Mel Gorman <mgorman@suse.de>,
+	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+References: <20140101002935.GA15683@localhost.localdomain>
+ <52C5AA61.8060701@intel.com>
+ <20140103033303.GB4106@localhost.localdomain>
+ <52C6FED2.7070700@intel.com>
+ <20140105003501.GC4106@localhost.localdomain>
+ <20140106164604.GC27602@dhcp22.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140106164604.GC27602@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010803-5806-0000-0000-000023D095C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
- 1) I met this issue one time just boot up our Linux Platform(Kernel3.10) with XHCI driver, then kernel panic happen.
-
-   And this issue reported once by other internal team.
-
-   Nothing special of reproduce step and do not need special Hardware I think.
-
-   Just random issue which will happen when meet the timing condition.
-
- 2) This issue is introduced by this patch:
-
-     https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=596d789a211d134dc5f94d1e5957248c204ef850
-
-   which set all hub autosuspend delay to 0.
-
-   This causes race condition during XHCI driver initialization,
-
-    After USB2 hcd and USB2 root hub finish the initialization, USB2 root hub is functional and auto suspend right now, hence trigger XHCI runtime suspend flow;
-
-    At the same time, XHCI driver continue to initialize the USB3 hcd and assign to xhci->shared_hcd after finish the initialization;
-    
-    Since xhci_suspend() use the xhci->shared_hcd, so there is race condition that when XHCI runtime suspend called, xhci->shared_hcd still NULL.
-
-    I think this patch is a fix solution since before XHCI finish the whole initialization, USB2 root hub triggered runtime suspend is mean less and do not need to handle.
-
-
-Thanks!
-
------Original Message-----
-From: Greg KH [mailto:gregkh@linuxfoundation.org] 
-Sent: Wednesday, January 08, 2014 9:47 AM
-To: David Cohen
-Cc: stern@rowland.harvard.edu; sarah.a.sharp@linux.intel.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Tang, Jianqiang
-Subject: Re: [RFC/PATCH] usb/xhci: avoid kernel panic on xhci_suspend()
-
-On Tue, Jan 07, 2014 at 05:44:26PM -0800, David Cohen wrote:
-> From: jianqian <jianqiang.tang@intel.com>
+On Mon, Jan 06, 2014 at 05:46:04PM +0100, Michal Hocko wrote:
+> On Sun 05-01-14 08:35:01, Han Pingtian wrote:
+> [...]
+> > From f4d085a880dfae7638b33c242554efb0afc0852b Mon Sep 17 00:00:00 2001
+> > From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+> > Date: Fri, 3 Jan 2014 11:10:49 +0800
+> > Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
+> > 
+> > min_free_kbytes may be raised during THP's initialization. Sometimes,
+> > this will change the value being set by user. Showing message will
+> > clarify this confusion.
 > 
-> There is a possible kernel panic faced on xhci_suspend().
-> Due to kernel modified the hub autosupend_delay to 0s, after usb1 root 
-> hub finishes initialization, it will trigger runtime_suspend and then 
-> it will trigger xhci runtime suspend. But at that time, if
-> xhci->shared_hcd is still doing initialization, it is possible to face
-> null pointer kernel panic in xhci_suspend() function.
+> I do not have anything against informing about changing value
+> set by user but this will inform also when the default value is
+> updated. Is this what you want? Don't you want to check against
+> user_min_free_kbytes? (0 if not set by user)
 > 
-> This patch checks if xhci->shared_hcd is null to avoid panic.
+But looks like the user can set min_free_kbytes to 0 by
+
+    echo 0 > /proc/sys/vm/min_free_kbytes
+
+and even set it to -1 the same way. So I think we need to restrict the
+value of min_free_kbytes > 0 first?
+
+> Btw. Do we want to restore the original value when khugepaged is
+> disabled?
 > 
-> Signed-off-by: jianqian <jianqiang.tang@intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
-> 
-> This is the kernel panic. The bug was discovered on current LTS kernel 
-> 3.10, as showed on logs. But the problem does not seem to be fixed so far.
-> Maybe we should consider apply it on kernel >= 3.10?
 
-How do you trigger this?  I've never seen anyone report this problem before, is there something different in the hardware you are using that enables this to be triggered easier?
-
-thanks,
-
-greg k-h
