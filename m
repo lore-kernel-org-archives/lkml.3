@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaAHODr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:03:47 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:60062 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932307AbaAHODp (ORCPT
+	id S932489AbaAHOEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:04:00 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:64123 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932240AbaAHOD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:03:45 -0500
-Date: Wed, 8 Jan 2014 06:03:43 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Sergey Meirovich <rathamahata@gmail.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-Message-ID: <20140108140343.GB588@infradead.org>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz>
- <20140107155830.GA28395@infradead.org>
- <20140108011713.GA5212@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108011713.GA5212@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 8 Jan 2014 09:03:58 -0500
+Date: Wed, 8 Jan 2014 09:03:52 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Cc: linux-trace-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace-cmd: Fix out-of-tree build
+Message-ID: <20140108090352.2a186287@gandalf.local.home>
+In-Reply-To: <52cd4c9a000b471b000025a100006084180007d8d2e1@amlmta302.auone-net.jp>
+References: <52cd4c9a000b471b000025a100006084180007d8d2e1@amlmta302.auone-net.jp>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 02:17:13AM +0100, Jan Kara wrote:
->   Well, I was specifically worried about i_mutex locking. In particular:
-> Before we report appending IO completion we need to update i_size.
-> To update i_size we need to grab i_mutex.
-> 
-> Now this is unpleasant because inode_dio_wait() happens under i_mutex so
-> the above would create lock inversion. And we cannot really do
-> inode_dio_done() before grabbing i_mutex as that would open interesting
-> races between truncate decreasing i_size and DIO increasing it.
+On Wed, 8 Jan 2014 22:03:22 +0900
+Kusanagi Kouichi <slash@ac.auone-net.jp> wrote:
 
-Yeah, XFS splits this between the ilock and iolock, which just makes
-life in this area a whole lot easier.
+> make O=foo fails with following error:
+> 
+> .../Makefile:221: features.mk: No such file or directory
+> make[1]: *** No rule to make target `features.mk'.  Stop.
+> make: *** [sub-make] Error 2
+> 
+> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+
+Thanks! Applied and pushed.
+
+-- Steve
+
+> ---
+>  Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index 0578546..b967019 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -218,7 +218,7 @@ KERNELSHARK_VERSION = $(KS_VERSION).$(KS_PATCHLEVEL).$(KS_EXTRAVERSION)
+>  
+>  INCLUDES = -I. $(CONFIG_INCLUDES)
+>  
+> -include features.mk
+> +include $(src)/features.mk
+>  
+>  # Set compile option CFLAGS if not set elsewhere
+>  CFLAGS ?= -g -Wall
 
