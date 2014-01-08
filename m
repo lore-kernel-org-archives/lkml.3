@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405AbaAHIuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:50:46 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:61879 "EHLO
+	id S1756455AbaAHIvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:51:08 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42210 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905AbaAHIqv (ORCPT
+	with ESMTP id S1755903AbaAHIqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:46:51 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-2b-52cd1070856f
+	Wed, 8 Jan 2014 03:46:50 -0500
+X-AuditID: 9c93017d-b7b66ae000006a2a-2a-52cd10707c5b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 20/28] perf report: Add report.children config option
-Date: Wed,  8 Jan 2014 17:46:25 +0900
-Message-Id: <1389170793-21926-21-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 19/28] perf report: Add --children option
+Date: Wed,  8 Jan 2014 17:46:24 +0900
+Message-Id: <1389170793-21926-20-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
 References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
@@ -26,43 +26,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add report.children config option for setting default value of
-callchain accumulation.  It affects the report output only if
-perf.data contains callchain info.
-
-A user can write .perfconfig file like below to enable accumulation
-by default:
-
-  $ cat ~/.perfconfig
-  [report]
-  children = true
-
-And it can be disabled through command line:
-
-  $ perf report --no-children
+The --children option is for showing accumulated overhead (period)
+value as well as self overhead.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-report.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 10 ++++++++++
+ 2 files changed, 15 insertions(+)
 
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 8eab8a4bdeb8..710fc8b18f6b 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -141,6 +141,11 @@ OPTIONS
+ 
+ 	Default: fractal,0.5,callee,function.
+ 
++--children::
++	Accumulate callchain of children to parent entry so that then can
++	show up in the output.  The output will have a new "Children" column
++	and will be sorted on the data.  It requires callchains are recorded.
++
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+ 	beyond the specified depth will be ignored. This is a trade-off
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 6db8d6d74ad1..a15fa05e4a70 100644
+index 5f07da10f83c..6db8d6d74ad1 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -71,6 +71,10 @@ static int report__config(const char *var, const char *value, void *cb)
- 		rep->min_percent = strtof(value, NULL);
- 		return 0;
+@@ -685,6 +685,14 @@ static int report__setup_sample_type(struct report *rep)
+ 			}
  	}
-+	if (!strcmp(var, "report.children")) {
-+		symbol_conf.cumulate_callchain = perf_config_bool(var, value);
-+		return 0;
-+	}
  
- 	return perf_default_config(var, value, cb);
- }
++	if (symbol_conf.cumulate_callchain) {
++		/* Silently ignore if callchain is missing */
++		if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++			symbol_conf.cumulate_callchain = false;
++			perf_hpp__cancel_cumulate();
++		}
++	}
++
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+ 		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+@@ -1115,6 +1123,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+ 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
++	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
++		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+ 		    "anything beyond the specified depth will be ignored. "
 -- 
 1.7.11.7
 
