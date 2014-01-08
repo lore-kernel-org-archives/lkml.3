@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160AbaAHGWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 01:22:42 -0500
-Received: from mail.windriver.com ([147.11.1.11]:48942 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932AbaAHGWd (ORCPT
+	id S1755262AbaAHGW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 01:22:57 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:60120 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028AbaAHGWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 01:22:33 -0500
+	Wed, 8 Jan 2014 01:22:35 -0500
 From: "wenlin.kang" <wenlin.kang@windriver.com>
 To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] usb/gadget: fix printer deadlock
-Date: Wed, 8 Jan 2014 14:22:11 +0800
-Message-ID: <1389162132-17857-1-git-send-email-wenlin.kang@windriver.com>
+Subject: [PATCH 2/2] usb/gadget: fix printer memory leak
+Date: Wed, 8 Jan 2014 14:22:12 +0800
+Message-ID: <1389162132-17857-2-git-send-email-wenlin.kang@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389162132-17857-1-git-send-email-wenlin.kang@windriver.com>
+References: <1389162132-17857-1-git-send-email-wenlin.kang@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,61 +24,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "wenlin.kang" <wenlin.kang@windriver.com>
 
-The problem occurs in follow path.
+When read data from g_printer, we see a Segmentation fault. eg:
+
+Unable to handle kernel paging request at virtual address bf048000 pgd
+= cf038000 [bf048000] *pgd=8e8cf811, *pte=00000000, *ppte=00000000
+Internal error: Oops: 7 [#1] PREEMPT ARM Modules linked in: bluetooth
+rfcomm g_printer
+CPU: 0    Not tainted  (3.4.43-WR5.0.1.9_standard #1)
+PC is at __copy_to_user_std+0x310/0x3a8 LR is at 0x4c808010
+pc : [<c036e990>]    lr : [<4c808010>]    psr: 20000013
+sp : cf883ea8  ip : 80801018  fp : cf883f24
+r10: bf04706c  r9 : 18a21205  r8 : 21953888
+r7 : 201588aa  r6 : 5109aa16  r5 : 0705aaa2  r4 : 5140aa8a
+r3 : 0000004c  r2 : 00000fdc  r1 : bf048000  r0 : bef5fc3c
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 8f038019  DAC: 00000015 Process
+g_printer_test. (pid: 661, stack limit = 0xcf8822e8)
+Stack: (0xcf883ea8 to 0xcf884000)
+3ea0:                   bf047068 00001fff bef5ecb9 cf882000 00001fff bef5ecb9
+3ec0: 00001fff 00000000 cf2e8724 bf044d3c 80000013 80000013 00000001
+bf04706c
+3ee0: cf883f24 cf883ef0 c012e5ac c0324388 c007c8ac c0046298 00008180
+cf29b900
+3f00: 00002000 bef5ecb8 cf883f68 00000003 cf882000 cf29b900 cf883f54
+cf883f28
+3f20: c012ea08 bf044b0c c000eb88 00000000 cf883f7c 00000000 00000000
+00002000
+3f40: bef5ecb8 00000003 cf883fa4 cf883f58 c012eae8 c012e960 00000001
+bef60cb8
+3f60: 000000a8 c000eb88 00000000 00000000 cf883fa4 00000000 c014329c
+00000000
+3f80: 000000d4 41af63f0 00000003 c000eb88 cf882000 00000000 00000000
+cf883fa8
+3fa0: c000e920 c012eaa4 00000000 000000d4 00000003 bef5ecb8 00002000
+bef5ecb8
+3fc0: 00000000 000000d4 41af63f0 00000003 b6f534c0 00000000 419f9000
+00000000
+3fe0: 00000000 bef5ecac 000086d9 41a986bc 60000010 00000003 0109608a
+0088828a
+Code: f5d1f07c e8b100f0 e1a03c2e e2522020 (e8b15300) ---[ end trace
+97e2618e250e3377 ]--- Segmentation fault
+
+The root cause is the dev->rx_buffers list has been broken.
+When we call printer_read(), the following call tree is triggered:
 
 printer_read()
 	|
-	+---setup_rx_reqs()
-		|
-		+---usb_ep_queue()
-			|
-			+---...
-				|
-				+---rx_complete()
+	+---setup_rx_reqs(req)
+	|	|
+	|	+---usb_ep_queue(req)
+	|	|	|
+	|	|	+---...
+	|	|		|
+	|	|		+---rx_complete(req).
+	|	|
+	|	+---add the req to dev->rx_reqs_active
+	|
+	+---while(!list_empty(&dev->rx_buffers)))
 
-Although it is clear from code, we can't get it normally.
-only when we enable some spin_lock debug config option, we can find it.
-eg:
-BUG: spinlock lockup on CPU#0, g_printer_test_/584
- lock: bf05e158, .magic: dead4ead, .owner: g_printer_test_/584, .owner_cpu: 0
-[<c0016e1c>] (unwind_backtrace+0x0/0x104) from [<c067aef8>] (dump_stack+0x20/0x24)
-[<c067aef8>] (dump_stack+0x20/0x24) from [<c0680bec>] (spin_dump+0x8c/0x94)
-[<c0680bec>] (spin_dump+0x8c/0x94) from [<c039071c>] (do_raw_spin_lock+0x128/0x154)
-[<c039071c>] (do_raw_spin_lock+0x128/0x154) from [<c0685618>] (_raw_spin_lock_irqsave+0x64/0x70)
-[<c0685618>] (_raw_spin_lock_irqsave+0x64/0x70) from [<bf05b4e8>] (rx_complete+0x54/0x10c [g_printer])
-[<bf05b4e8>] (rx_complete+0x54/0x10c [g_printer]) from [<c0480478>] (musb_g_giveback+0x78/0x88)
-[<c0480478>] (musb_g_giveback+0x78/0x88) from [<c048060c>] (rxstate+0xa0/0x10c)
-[<c048060c>] (rxstate+0xa0/0x10c) from [<c0480d50>] (musb_ep_restart+0x44/0x70)
-[<c0480d50>] (musb_ep_restart+0x44/0x70) from [<c0480fe4>] (musb_gadget_queue+0xe8/0xf8)
-[<c0480fe4>] (musb_gadget_queue+0xe8/0xf8) from [<bf05b2b0>] (setup_rx_reqs+0xa4/0x178 [g_printer])
-[<bf05b2b0>] (setup_rx_reqs+0xa4/0x178 [g_printer]) from [<bf05bb58>] (printer_read+0x9c/0x3f4 [g_printer])
-[<bf05bb58>] (printer_read+0x9c/0x3f4 [g_printer]) from [<c01387f0>] (vfs_read+0xb4/0x144)
-[<c01387f0>] (vfs_read+0xb4/0x144) from [<c01388d0>] (sys_read+0x50/0x124)
-[<c01388d0>] (sys_read+0x50/0x124) from [<c000e900>] (ret_fast_syscall+0x0/0x3c)
+The route happens when we don't use DMA or fail to start DMA in USB
+driver. We can see: in the case, in rx_complete() it will add the req
+to dev->rx_buffers. meanwhile we see that we will also add the req to
+dev->rx_reqs_active after usb_ep_queue() return, so this adding will
+break the dev->rx_buffers out.
 
-The root cause is that we use the same lock two time in a path, so to avoid
-the deadlock, we need to unlock in setup_rx_reqs(), and only unlock.
+After, when we call list_empty() to check dev->rx_buffers in while(),
+due to can't check correctly dev->rx_buffers, so the Segmentation fault 
+occurs when copy_to_user() is called.
 
 Signed-off-by: wenlin.kang <wenlin.kang@windriver.com>
 ---
- drivers/usb/gadget/printer.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/gadget/printer.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
-index 4e4dc1f..f4b4fa8 100644
+index f4b4fa8..1f15ad0 100644
 --- a/drivers/usb/gadget/printer.c
 +++ b/drivers/usb/gadget/printer.c
-@@ -526,7 +526,10 @@ setup_rx_reqs(struct printer_dev *dev)
- 		req->length = USB_BUFSIZE;
- 		req->complete = rx_complete;
- 
-+		/* here, we unlock, and only unlock, to avoid deadlock. */
-+		spin_unlock(&dev->lock);
- 		error = usb_ep_queue(dev->out_ep, req, GFP_ATOMIC);
-+		spin_lock(&dev->lock);
- 		if (error) {
+@@ -534,7 +534,9 @@ setup_rx_reqs(struct printer_dev *dev)
  			DBG(dev, "rx submit --> %d\n", error);
  			list_add(&req->list, &dev->rx_reqs);
+ 			break;
+-		} else {
++		}
++		/* if the req is empty, then add it into dev->rx_reqs_active. */
++		else if (list_empty(&req->list)) {
+ 			list_add(&req->list, &dev->rx_reqs_active);
+ 		}
+ 	}
 -- 
 1.7.9.5
 
