@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111AbaAHSkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:40:10 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:60461 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaAHShy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:37:54 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 2/7] mfd: pm8921: Update for genirq changes
-Date: Wed,  8 Jan 2014 10:37:45 -0800
-Message-Id: <1389206270-3728-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
-In-Reply-To: <1389206270-3728-1-git-send-email-sboyd@codeaurora.org>
-References: <1389206270-3728-1-git-send-email-sboyd@codeaurora.org>
+	id S1752643AbaAHSn3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:43:29 -0500
+Received: from mga09.intel.com ([134.134.136.24]:53188 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008AbaAHSn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 13:43:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,625,1384329600"; 
+   d="scan'208";a="463666529"
+Date: Wed, 8 Jan 2014 20:43:23 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] Excessive WARN()s in Intel 915 driver
+Message-ID: <20140108184323.GL4800@intel.com>
+References: <CAKMK7uFEzOKYjojVop1ouRsJWyeK-rnKH-udBxZcc9fwKCOV6w@mail.gmail.com>
+ <Pine.LNX.4.44L0.1401081102040.1659-100000@iolanthe.rowland.org>
+ <20140108161713.GT4770@phenom.ffwll.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140108161713.GT4770@phenom.ffwll.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this code has been marked broken for some time a few genirq
-tree wide changes weren't made. set_irq_wake() was renamed to
-irq_set_irq_wake() in commit a0cd9ca2b (genirq: Namespace
-cleanup, 2011-02-10) and commit 10a8c383 (irq: introduce entry
-and exit functions for chained handlers) introduced the chained
-irq functions but this driver wasn't updated to use them. Fix
-these problems and remove the BROKEN marking on this driver.
+On Wed, Jan 08, 2014 at 05:17:13PM +0100, Daniel Vetter wrote:
+> On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
+> > On Tue, 7 Jan 2014, Daniel Vetter wrote:
+> > 
+> > > I really want users to report these issues, and excessive WARNs seems
+> > > to be the only way to get those reports. Please boot with
+> > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
+> > > Also, which precise kernel are you running? Testing latest -rc is
+> > > always recommended, this state checker code is fairly new and gets
+> > > constantly extended and bugs fixed ...
+> > 
+> > Here you go.  This is the dmesg output after booting with
+> > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
+> > string; this is pristine 3.13-rc7.
+> 
+> That's strange, I've thought we've fixed the last struggling mismatch in
+> the lvds borber bits stuff. Can you please try latest drm-intel-nightly
+> from
+> 
+> http://cgit.freedesktop.org/~danvet/drm-intel/
+> 
+> Thanks, Daniel
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/mfd/Kconfig       | 1 -
- drivers/mfd/pm8921-core.c | 7 +++++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+The log looks fairly clear to me:
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index acd4e1cc2d3d..03bb43bb40b9 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -465,7 +465,6 @@ config MFD_PM8XXX
- config MFD_PM8921_CORE
- 	tristate "Qualcomm PM8921 PMIC chip"
- 	depends on (ARCH_MSM || HEXAGON)
--	depends on BROKEN
- 	select MFD_CORE
- 	select MFD_PM8XXX
- 	help
-diff --git a/drivers/mfd/pm8921-core.c b/drivers/mfd/pm8921-core.c
-index 50e0a9b69b9d..9ddc31f7a71d 100644
---- a/drivers/mfd/pm8921-core.c
-+++ b/drivers/mfd/pm8921-core.c
-@@ -15,6 +15,7 @@
+1. initially panel fitter is enabled on pipe B, and pipe B is outputting
+   to LVDS and VGA. Border is enabled.
+2. pipe A gets enabled outputting to LVDS. This will overwrite the
+   LVDS border bits
+3. pipe B is still active so we do the state check, but as the LVDS
+   border bits have been clobbered earlier, the state checker gets
+   angry
+
+This actually hits another problem we still have. We've changing the
+pipe for the LVDS port w/o shutting the port down in between. That
+doesn't sound entirely safe. I wonder if we still have some real
+issues preventing this change?
+
+         * intel_modeset_setup_hw_state does not.
+         */
+        *modeset_pipes &= 1 << intel_crtc->pipe;
+-       *prepare_pipes &= 1 << intel_crtc->pipe;
  
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
-+#include <linux/irqchip/chained_irq.h>
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-@@ -174,6 +175,8 @@ static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
- 	u8	root;
- 	int	i, ret, masters = 0;
- 
-+	chained_irq_enter(irq_chip, desc);
-+
- 	ret = pm8xxx_read_root_irq(chip, &root);
- 	if (ret) {
- 		pr_err("Can't read root status ret=%d\n", ret);
-@@ -188,7 +191,7 @@ static void pm8xxx_irq_handler(unsigned int irq, struct irq_desc *desc)
- 		if (masters & (1 << i))
- 			pm8xxx_irq_master_handler(chip, i);
- 
--	irq_chip->irq_ack(&desc->irq_data);
-+	chained_irq_exit(irq_chip, desc);
- }
- 
- static void pm8xxx_irq_mask_ack(struct irq_data *d)
-@@ -367,7 +370,7 @@ static struct pm_irq_chip *pm8xxx_irq_init(struct device *dev,
- 	irq_set_irq_type(devirq, pdata->irq_trigger_flag);
- 	irq_set_handler_data(devirq, chip);
- 	irq_set_chained_handler(devirq, pm8xxx_irq_handler);
--	set_irq_wake(devirq, 1);
-+	irq_set_irq_wake(devirq, 1);
- 
- 	return chip;
- }
+        DRM_DEBUG_KMS("set mode pipe masks: modeset: %x, prepare: %x, disable: %x\n",
+                      *modeset_pipes, *prepare_pipes, *disable_pipes);
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Ville Syrjälä
+Intel OTC
