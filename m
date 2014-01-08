@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaAHPVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:21:24 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52733 "EHLO
+	id S1756888AbaAHPW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:22:29 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52757 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756359AbaAHPVV (ORCPT
+	by vger.kernel.org with ESMTP id S1756509AbaAHPW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:21:21 -0500
-Date: Wed, 8 Jan 2014 15:20:49 +0000
+	Wed, 8 Jan 2014 10:22:26 -0500
+Date: Wed, 8 Jan 2014 15:21:54 +0000
 From: Mark Rutland <mark.rutland@arm.com>
 To: Stephen Boyd <sboyd@codeaurora.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
         David Brown <davidb@codeaurora.org>,
         Rohit Vaswani <rvaswani@codeaurora.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH v2 0/9] CPU enable method based SMP/hotplug + MSM
- conversion
-Message-ID: <20140108152049.GD11753@e106331-lin.cambridge.arm.com>
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 3/9] devicetree: bindings: Document qcom,saw2 node
+Message-ID: <20140108152154.GE11753@e106331-lin.cambridge.arm.com>
 References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
- <52CB2BDF.9040208@codeaurora.org>
+ <1387845593-10050-4-git-send-email-sboyd@codeaurora.org>
+ <20140108143626.GB11753@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52CB2BDF.9040208@codeaurora.org>
+In-Reply-To: <20140108143626.GB11753@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Mon, Jan 06, 2014 at 10:19:11PM +0000, Stephen Boyd wrote:
-> Ping? Can anyone take a look at the generic ARM and DT binding patches
-> and provide acks/reviews? I'd like to send this through arm-soc via the
-> MSM tree if possible.
-
-Apologies for the delay. It's taking a while to warm up after christmas.
-
+On Wed, Jan 08, 2014 at 02:36:26PM +0000, Mark Rutland wrote:
+> On Tue, Dec 24, 2013 at 12:39:47AM +0000, Stephen Boyd wrote:
+> > The saw2 binding describes the SPM/AVS wrapper hardware used to
+> > control the regulator supplying voltage to the Krait CPUs.
+> > 
+> > Cc: <devicetree@vger.kernel.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  .../devicetree/bindings/arm/msm/qcom,saw2.txt      | 35 ++++++++++++++++++++++
+> >  1 file changed, 35 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt b/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+> > new file mode 100644
+> > index 0000000..1505fb8
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/arm/msm/qcom,saw2.txt
+> > @@ -0,0 +1,35 @@
+> > +SPM AVS Wrapper 2 (SAW2)
+> > +
+> > +The SAW2 is a wrapper around the Subsystem Power Manager (SPM) and the
+> > +Adaptive Voltage Scaling (AVS) hardware. The SPM is a programmable
+> > +micro-controller that transitions a piece of hardware (like a processor or
+> > +subsystem) into and out of low power modes via a direct connection to
+> > +the PMIC. It can also be wired up to interact with other processors in the
+> > +system, notifying them when a low power state is entered or exited.
+> > +
+> > +PROPERTIES
+> > +
+> > +- compatible:
+> > +	Usage: required
+> > +	Value type: <string>
+> > +	Definition: shall contain "qcom,saw2". A more specific value should be
+> > +		    one of:
+> > +			 "qcom,saw2-v1"
+> > +			 "qcom,saw2-v1.1"
+> > +			 "qcom,saw2-v2"
+> > +			 "qcom,saw2-v2.1"
+> > +
+> > +- reg:
+> > +	Usage: required
+> > +	Value type: <prop-encoded-array>
+> > +	Definition: the first element specifies the base address and size of
+> > +		    the register region. An optional second element specifies
+> > +		    the base address and size of the alias register region.
+> > +
+> > +
+> > +Example:
+> > +
+> > +	regulator@2099000 {
+> > +		compatible = "qcom,saw2";
+> > +		reg = <0x02099000 0x1000>, <0x02009000 0x1000>;
+> > +	};
 > 
-> On 12/23/13 16:39, Stephen Boyd wrote:
-> > This is a rework of patches sent a months back by Rohit[1].
-> > The goal of these patches is to add support for SMP and (basic)
-> > hotplug on MSM based SoCs. To get there, we add support for a
-> > generic way to hook in SMP/hotplug support code based on DT. To
-> > show how it's used, we convert the MSM8660 SMP support code over
-> > to the new method. After that we add support for the rest of the
-> > upstream MSM SoCs (note these patches are piled high on top of
-> > Rohit's patches to add 8074 support to MSM[2] and my follow ups[3,4],
-> > but this should only matter to the MSM maintainers).
-> >
-> > This is one of the last items of code that still requires us to have
-> > a mach directory and a machine descriptor. We should be able to move
-> > the hotplug/smp code out of mach directories if this approach is
-> > accepted.
+> I have the same general worry as with the ACC regarding the implicit
+> relationship between CPUs and the registers controlling them, but I
+> assume that's fine for current implementations, and the binding's so
+> simple there's nothing preventing future extension.
 
-Thanks for doing the rework. This looks really good to me now.
+Having looked at the dts files I see each CPU has its own SAW phandle,
+so the above comments are irrelevant.
 
-I'd gotten myself confused while reading the bindings, but having now
-had a look over the dts files my concerns were invalid.
-
-Hopefully we can move more platforms to use enable-methods now :)
-
-Cheers,
+Thanks,
 Mark.
