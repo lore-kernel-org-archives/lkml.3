@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237AbaAHMDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 07:03:55 -0500
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:57526 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201AbaAHMDw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 07:03:52 -0500
+	id S1756013AbaAHMFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 07:05:37 -0500
+Received: from r00tworld.com ([212.85.137.150]:36809 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755106AbaAHMFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 07:05:35 -0500
+From: "PaX Team" <pageexec@freemail.hu>
+To: x86@kernel.org
+Date: Wed, 08 Jan 2014 13:04:51 +0100
 MIME-Version: 1.0
-In-Reply-To: <1389170756-22351-3-git-send-email-Guangyu.Chen@freescale.com>
-References: <1389170756-22351-1-git-send-email-Guangyu.Chen@freescale.com>
-	<1389170756-22351-3-git-send-email-Guangyu.Chen@freescale.com>
-Date: Wed, 8 Jan 2014 10:03:51 -0200
-Message-ID: <CAOMZO5AY1RaxFUcO0r7=Db8Hp_U6oPHSDke0Y0thhEKi5OGCdQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dma: imx-sdma: Assign a default script number for ROM
- firmware cases
-From: Fabio Estevam <festevam@gmail.com>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>, dmaengine@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [llvmlinux] [PATCH 4/4] x86, boot: Work around clang PR18415.
+Reply-to: pageexec@freemail.hu
+CC: llvmlinux@lists.linuxfoundation.org, linux-kernel@vger.kernel.org
+Message-ID: <52CD3EE3.6295.92E23548@pageexec.freemail.hu>
+In-reply-to: <1389180083-23249-4-git-send-email-David.Woodhouse@intel.com>
+References: <1389180083-23249-1-git-send-email-David.Woodhouse@intel.com>, <1389180083-23249-4-git-send-email-David.Woodhouse@intel.com>
+X-mailer: Pegasus Mail for Windows (4.63)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Wed, 08 Jan 2014 13:04:55 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 6:45 AM, Nicolin Chen <Guangyu.Chen@freescale.com> wrote:
-> i.MX series have inner firmware in its ROM code: when SDMA isn't provided
-> any firmware from Kernel or rootfs, the default inner ROM firmware will be
-> activated. However the current driver doesn't assign any script number to
-> this situation, and those platform running in this case would be broken.
->
-> Thus this patch adds a default script number when no external firmware being
-> loaded so that people would continue to be able to use basic scripts to run
-> their platform without any firmware.
->
-> Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+On 8 Jan 2014 at 11:21, David Woodhouse wrote:
 
-Thanks, Nicolin.
+> Clang's intrinsics ignore -mregparm=3 when they fall back to calling the
+> out-of-line implementations. Putting the args on the stack when memcpy()
+> expects them in registers is not a recipe for a happy kernel.
+> 
+> This bites with -m32 too, so clang is presumably catastrophically
+> broken for the i386 kernel until this is fixed, unless I'm missing
+> something.
 
-This fixes audio playback without additional SDMA firmware:
+llvmlinux already carries my old patch (and some more) here:
+ arch/i586/patches/0026-Add-own-versions-of-memcpy-and-memset-for-compilatio.patch
 
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+(see also my comment on the clang PR)
+
+cheers,
+ PaX Team
+
