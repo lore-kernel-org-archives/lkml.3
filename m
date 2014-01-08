@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820AbaAHPUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:20:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2483 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756461AbaAHPUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:20:40 -0500
-Date: Wed, 8 Jan 2014 13:20:32 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        artagnon@gmail.com
-Subject: Re: [PATCH 6/8] perf tools: Make --raw-dump work as a proper option
- for perf list.
-Message-ID: <20140108152032.GE2626@infradead.org>
-References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
- <a8eee4e15aba50c210ae64aa034bc75b8270b14e.1388416837.git.yangds.fnst@cn.fujitsu.com>
+	id S1756853AbaAHPVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:21:24 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52733 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756359AbaAHPVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 10:21:21 -0500
+Date: Wed, 8 Jan 2014 15:20:49 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v2 0/9] CPU enable method based SMP/hotplug + MSM
+ conversion
+Message-ID: <20140108152049.GD11753@e106331-lin.cambridge.arm.com>
+References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+ <52CB2BDF.9040208@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a8eee4e15aba50c210ae64aa034bc75b8270b14e.1388416837.git.yangds.fnst@cn.fujitsu.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <52CB2BDF.9040208@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 30, 2013 at 10:26:41AM -0500, Dongsheng Yang escreveu:
-> Ramkumar reported that perf list --raw-dump was broken by 44d742e.
-> Fix by making raw-dump a proper argument.
+Hi Stephen,
+
+On Mon, Jan 06, 2014 at 10:19:11PM +0000, Stephen Boyd wrote:
+> Ping? Can anyone take a look at the generic ARM and DT binding patches
+> and provide acks/reviews? I'd like to send this through arm-soc via the
+> MSM tree if possible.
+
+Apologies for the delay. It's taking a while to warm up after christmas.
+
 > 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
+> On 12/23/13 16:39, Stephen Boyd wrote:
+> > This is a rework of patches sent a months back by Rohit[1].
+> > The goal of these patches is to add support for SMP and (basic)
+> > hotplug on MSM based SoCs. To get there, we add support for a
+> > generic way to hook in SMP/hotplug support code based on DT. To
+> > show how it's used, we convert the MSM8660 SMP support code over
+> > to the new method. After that we add support for the rest of the
+> > upstream MSM SoCs (note these patches are piled high on top of
+> > Rohit's patches to add 8074 support to MSM[2] and my follow ups[3,4],
+> > but this should only matter to the MSM maintainers).
+> >
+> > This is one of the last items of code that still requires us to have
+> > a mach directory and a machine descriptor. We should be able to move
+> > the hotplug/smp code out of mach directories if this approach is
+> > accepted.
 
-Are you sure David Signed-off-by' this, isn't this just an Acked-by or
-perhaps a Reviewed-by? David?
+Thanks for doing the rework. This looks really good to me now.
 
-- Arnaldo
+I'd gotten myself confused while reading the bindings, but having now
+had a look over the dts files my concerns were invalid.
 
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/builtin-list.c | 20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-> index fed6792..ec90d0a 100644
-> --- a/tools/perf/builtin-list.c
-> +++ b/tools/perf/builtin-list.c
-> @@ -19,8 +19,10 @@
->  int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
->  {
->  	int i;
-> +	bool raw_dump = false;
->  	unsigned int count = 0;
->  	const struct option list_options[] = {
-> +		OPT_BOOLEAN(0, "raw-dump", &raw_dump, "raw dump for completion"),
->  		OPT_END()
->  	};
->  	const char * const list_usage[] = {
-> @@ -34,7 +36,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
->  	setup_pager();
->  
->  	if (argc == 0) {
-> -		print_events(NULL, false);
-> +		print_events(NULL, raw_dump);
->  		return 0;
->  	}
->  
-> @@ -42,26 +44,24 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
->  		if (i)
->  			putchar('\n');
->  		if (strncmp(argv[i], "tracepoint", 10) == 0)
-> -			count += print_tracepoint_events(NULL, NULL, false);
-> +			count += print_tracepoint_events(NULL, NULL, raw_dump);
->  		else if (strcmp(argv[i], "hw") == 0 ||
->  			 strcmp(argv[i], "hardware") == 0)
-> -			count += print_events_type(PERF_TYPE_HARDWARE);
-> +			count += print_events_type(PERF_TYPE_HARDWARE, raw_dump);
->  		else if (strcmp(argv[i], "sw") == 0 ||
->  			 strcmp(argv[i], "software") == 0)
-> -			count += print_events_type(PERF_TYPE_SOFTWARE);
-> +			count += print_events_type(PERF_TYPE_SOFTWARE, raw_dump);
->  		else if (strcmp(argv[i], "cache") == 0 ||
->  			 strcmp(argv[i], "hwcache") == 0)
-> -			count += print_hwcache_events(NULL, false);
-> +			count += print_hwcache_events(NULL, raw_dump);
->  		else if (strcmp(argv[i], "pmu") == 0)
-> -			count += print_pmu_events(NULL, false);
-> -		else if (strcmp(argv[i], "--raw-dump") == 0)
-> -			count += print_events(NULL, true);
-> +			count += print_pmu_events(NULL, raw_dump);
->  		else {
->  			char *sep = strchr(argv[i], ':'), *s;
->  			int sep_idx;
->  
->  			if (sep == NULL) {
-> -				if(!(count += print_events(argv[i], false)))
-> +				if(!(count += print_events(argv[i], raw_dump)))
->  					goto err_out;
->  				continue;
->  			}
-> @@ -71,7 +71,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
->  				return -1;
->  
->  			s[sep_idx] = '\0';
-> -			if (!(count += print_tracepoint_events(s, s + sep_idx + 1, false)))
-> +			if (!(count += print_tracepoint_events(s, s + sep_idx + 1, raw_dump)))
->  				goto err_out;
->  			free(s);
->  		}
-> -- 
-> 1.8.2.1
+Hopefully we can move more platforms to use enable-methods now :)
+
+Cheers,
+Mark.
