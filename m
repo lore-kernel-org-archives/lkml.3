@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaAHOWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:22:18 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51145 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755121AbaAHOWQ (ORCPT
+	id S1756820AbaAHOXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:23:14 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:45957 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756739AbaAHOXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:22:16 -0500
-Date: Wed, 8 Jan 2014 14:21:40 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2 1/9] devicetree: bindings: Document Krait/Scorpion
- cpus and enable-method
-Message-ID: <20140108142139.GJ6701@e106331-lin.cambridge.arm.com>
-References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
- <1387845593-10050-2-git-send-email-sboyd@codeaurora.org>
+	Wed, 8 Jan 2014 09:23:12 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: cleanup for 3.14 #2
+Date: Wed, 8 Jan 2014 15:23:09 +0100
+Message-ID: <1389190989-8261-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387845593-10050-2-git-send-email-sboyd@codeaurora.org>
-Thread-Topic: [PATCH v2 1/9] devicetree: bindings: Document Krait/Scorpion
- cpus and enable-method
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 12:39:45AM +0000, Stephen Boyd wrote:
-> From: Rohit Vaswani <rvaswani@codeaurora.org>
-> 
-> Scorpion and Krait don't use the spin-table enable-method.
-> Instead they rely on mmio register accesses to enable power and
-> clocks to bring CPUs out of reset. Document their enable-methods.
-> 
-> Cc: <devicetree@vger.kernel.org>
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> [sboyd: Split off into separate patch, renamed methods to
-> match compatible nodes]
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  Documentation/devicetree/bindings/arm/cpus.txt | 25 ++++++++++++++++++++++++-
->  1 file changed, 24 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> index 9130435..333f4ae 100644
-> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> @@ -180,7 +180,11 @@ nodes to be present and contain the properties described below.
->  			  be one of:
->  			     "spin-table"
->  			     "psci"
-> -			# On ARM 32-bit systems this property is optional.
-> +			# On ARM 32-bit systems this property is optional and
-> +			  can be one of:
-> +			    "qcom,gcc-msm8660"
-> +			    "qcom,kpss-acc-v1"
-> +			    "qcom,kpss-acc-v2"
+Arnd, Olof, Kevin,
 
-It would be nice to document "psci" here as valid for 32-bit.
+A little "cleanup" pull-request for 3.14 that goes on top of the previous
+AT91 cleanup material.
+The thing to note from this pull-request is the beginning of board file removal
+thank to the conversion to DT. We are still waiting for more feedback from
+board maintainer to intensify the effort.
 
-Currently the PSCI code doesn't inspect the enable-method and assumes it
-if there's a psci node, but KVM tool and others set enable-method to
-"psci", and if we change the way the PSCI code probes it will require
-enable-method to be set for PSCI to work.
+Thanks, best regards,
 
->  
->  	- cpu-release-addr
->  		Usage: required for systems that have an "enable-method"
-> @@ -191,6 +195,21 @@ nodes to be present and contain the properties described below.
->  			  property identifying a 64-bit zero-initialised
->  			  memory location.
->  
-> +	- qcom,saw
-> +		Usage: required for systems that have an "enable-method"
-> +		       property value of "qcom,kpss-acc-v1" or
-> +		       "qcom,kpss-acc-v2"
-> +		Value type: <phandle>
-> +		Definition: Specifies the SAW[1] node associated with this CPU.
-> +
-> +	- qcom,acc
-> +		Usage: required for systems that have an "enable-method"
-> +		       property value of "qcom,kpss-acc-v1" or
-> +		       "qcom,kpss-acc-v2"
-> +		Value type: <phandle>
-> +		Definition: Specifies the ACC[2] node associated with this CPU.
-> +
-> +
->  Example 1 (dual-cluster big.LITTLE system 32-bit):
+The following changes since commit b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
 
-If this is going to get much longer, we should probably have
-Documentation/devicetree/bindings/arm/boot/ or similar, but that can be
-done later.
+  ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
 
-Otherwise, this looks fine to me.
+are available in the git repository at:
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+  git://github.com/at91linux/linux-at91.git tags/at91-cleanup2
 
-Thanks,
-Mark.
+for you to fetch changes up to e91a5555df5883bbc204b0e1f8e0489d3f7f3f2e:
+
+  ARM: at91: switch Calao QIL-A9260 board to DT (2013-12-19 17:27:30 +0100)
+
+----------------------------------------------------------------
+Second cleanup pull-request for 3.14:
+- a tiny fix for the recent AT91 CCF implementation
+- the switch of one platform to DT with board file removal
+
+----------------------------------------------------------------
+Boris BREZILLON (1):
+      clk: at91: fix pmc_clk_ids data type attriubte
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: switch Calao QIL-A9260 board to DT
+
+ arch/arm/boot/dts/Makefile                  |   1 +
+ arch/arm/boot/dts/at91-qil_a9260.dts        | 185 +++++++++++++++++++
+ arch/arm/configs/at91sam9260_9g20_defconfig |   1 -
+ arch/arm/mach-at91/Kconfig.non_dt           |   6 -
+ arch/arm/mach-at91/Makefile                 |   1 -
+ arch/arm/mach-at91/board-qil-a9260.c        | 266 ----------------------------
+ drivers/clk/at91/pmc.c                      |   2 +-
+ 7 files changed, 187 insertions(+), 275 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91-qil_a9260.dts
+ delete mode 100644 arch/arm/mach-at91/board-qil-a9260.c
+
+-- 
+Nicolas Ferre
