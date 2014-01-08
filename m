@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444AbaAHVIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:08:45 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:17997 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaAHVIn (ORCPT
+	id S1757491AbaAHVI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:08:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41221 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210AbaAHVIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:08:43 -0500
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jan 2014 16:08:43 EST
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 08 Jan 2014 16:08:42 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        David Garbett <David.Garbett@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
-In-reply-to: <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
-Message-id: <alpine.LFD.2.10.1401081600370.1851@knanqh.ubzr>
-References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com>
- <20140108143529.GB14122@mudshark.cambridge.arm.com>
- <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
- <20140108192028.GM27432@n2100.arm.linux.org.uk>
- <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
-User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+	Wed, 8 Jan 2014 16:08:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
+References: <1389201738-31406-1-git-send-email-lpapp@kde.org>
+	<20140108180747.GT31886@sirena.org.uk>
+	<CAOMwXhN8x0xHstrwsrxqXoE+n19TP=r1HJDCFOHs2O024HaY1w@mail.gmail.com>
+	<20140108190758.GY31886@sirena.org.uk>
+	<CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
+Date: Wed, 8 Jan 2014 21:08:44 +0000
+X-Google-Sender-Auth: iamEaDN_2HwexSeANPXe0HGvZqw
+Message-ID: <CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
+Subject: Re: [PATCH] include/linux/regmap.h: fix a couple of typos
+From: Laszlo Papp <lpapp@kde.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014, Doug Anderson wrote:
+On Wed, Jan 8, 2014 at 9:02 PM, Laszlo Papp <lpapp@kde.org> wrote:
+> On Wed, Jan 8, 2014 at 7:07 PM, Mark Brown <broonie@kernel.org> wrote:
+>> On Wed, Jan 08, 2014 at 06:59:57PM +0000, Laszlo Papp wrote:
+>>> On Wed, Jan 8, 2014 at 6:07 PM, Mark Brown <broonie@kernel.org> wrote:
+>>> > On Wed, Jan 08, 2014 at 05:22:18PM +0000, Laszlo Papp wrote:
+>>
+>>> >> - *             (eg, a clear on read interrupt status register). If this
+>>> >> + *             (e.g. a clear on read interrupt status register). If this
+>>
+>>> > This is somewhat outdated orthorgraphy...
+>>
+>>> Pardon ?
+>>
+>> It's not that common to write it as an abbreviation (even though it is
+>> one) and for some random reason you've decided to drop the comma which
+>> is standard.
+>
+> Cannot agree. I see this effectively almost anywhere, and I even asked
+> this on IRC from native English speaker in #English @ freenode who
+> were in an agreement with me as far as I can tell.
+>
+> That being said, I will not have time, nor the motivation to argue
+> over such a nuance, so feel free to reject the change.
 
-> Hi,
-> 
-> On Wed, Jan 8, 2014 at 11:20 AM, Russell King - ARM Linux
-> > No, we're saying to put the work-around in the boot loader, not the kernel.
-> 
-> Unfortunately the resume path of the firmware runs from Read Only 
-> firmware code (yes, it sucks), so it's not totally trivial to fix. It 
-> would be possible for someone to unscrew their write protect switch 
-> and update their RO firmware, but that doesn't help the average user.
+Of course, this is just on top of the vim spell checker error as I
+wrote in the commit message...
 
-[...]
+Oh yes, and one more factual data in here:
 
-> I'd guess that the way forward is:
-> 
-> * Land kernel workaround locally in Chromium tree
-> 
-> * I'll try to land FW change locally in at least one Chromium branch.
-> If we were to get a new RO build ever (seems unlikely at this point)
-> it would be fixed for upstream kernels.  If we were to get a new RW
-> build (seems unlikely, but at least less unlikely) it would be fixed
-> if someone landed a kernel patch to save/restore this register across
-> suspend/resume.
-> 
-> * If Joe Upstream wants to run an upstream kernel on some type of
-> exynos5250 product (Samsung ARM Chromebook, HP Chromebook 11, Nexus 10
-> are the ones I know of) then he will deal with the small number of
-> crashes or figure out a solution.
+lpapp ~/Projects/linux-staging $ grep -rn "e\.g\." . | wc -l
+3447
 
-If Joe Upstream wants to run an upstream kernel, doesn't he have to 
-unscrew his write protect switch first, at which point the RO firmware 
-can be updated as well?
-
-
-Nicolas
+lpapp ~/Projects/linux-staging $ grep -rn " eg," | wc -l
+18
