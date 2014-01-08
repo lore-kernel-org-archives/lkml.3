@@ -1,175 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483AbaAHUdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:33:44 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:30729 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820AbaAHUdm (ORCPT
+	id S1757438AbaAHUgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:36:16 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49821 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511AbaAHUgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:33:42 -0500
-Date: Wed, 8 Jan 2014 21:33:30 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Wu <lekensteyn@gmail.com>
-Subject: Re: Freeing of dev->p
-Message-ID: <20140108213330.2efbc84c@endymion.delvare>
-In-Reply-To: <20140108165628.GA15820@kroah.com>
-References: <20140108164058.059cf461@endymion.delvare>
-	<20140108165628.GA15820@kroah.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Jan 2014 15:36:13 -0500
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 00/14] target: Initial support for DIF Type1+Type3 emulation
+Date: Wed,  8 Jan 2014 20:15:43 +0000
+Message-Id: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014 08:56:28 -0800, Greg Kroah-Hartman wrote:
-> On Wed, Jan 08, 2014 at 04:40:58PM +0100, Jean Delvare wrote:
-> > Hi Greg, hi all,
-> > 
-> > A memory leak has been reported to me:
-> > http://marc.info/?l=linux-i2c&m=138779165123331&w=2
-> > 
-> > The leak is in i801_probe, caused by an early call to
-> > i2c_set_adapdata() which in turn calls dev_set_drvdata() which
-> > allocates some memory in device_private_init(). That memory is only
-> > freed by the driver core when the i2c_adapter class device is removed.
-> > But if the parent (PCI) device probing itself fails for whatever
-> > reason, the class device never gets to be created, so it's never
-> > removed, thus the memory is never freed.
-> > 
-> > It is not possible to move the call to i2c_set_adapdata() until after
-> > the class device is created, because the data pointed is needed very
-> > early after (almost during) i2c adapter creation. So I could make the
-> > leak less likely to happen but I can't fix it completely.
-> 
-> I don't understand, what exactly is leaking?  You have control over your
-> own structures, so can't you clean things up on the error path if you
-> know something went wrong?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-I do, but I can only care for memory I allocated myself, not the memory
-allocated by the driver core.
+Hi MKP & SCSI folks,
 
-> > I am wondering how this can be solved, and this brought three questions:
-> > 
-> > 1* What is the rationale for allocating dev->p dynamically? It is
-> > allocated as soon as the device is created (in device_add), so as far
-> > as I can see every device will need the allocation. Including struct
-> > device_private in struct device would not cost more memory, plus it
-> > would reduce memory fragmentation. So is this a lifetime issue? Or
-> > something else I can't think of?
-> 
-> I did it to keep things that non-driver-core code should not be
-> touching.  Previously, lots of people messed around with the device
-> private fields that could confuse the driver core.  Ideally, I'd like to
-> be able to move the kobject itself into this structure, to allow devices
-> to handle static initialization better, but that never happened, unlike
-> other driver core structures.
-> 
-> > 2* What is the rationale for making void *driver_data part of struct
-> > device_private and not struct device itself?
-> 
-> To "hide" information / details that non-driver core code should not
-> care about or touch.
+This series contains initial support for target mode DIF Type1+Type3
+emulation within target core, RAMDISK_MCP device backend, and tcm_loop
+fabric driver.
 
-This is a respectable goal, but I'm unsure it's worth the price...
+DIF emulation is enabled via a new 'pi_prot_type' device attribute
+within configfs, which is set after initial device configuration and
+before target fabric LUN export occurs.
 
-> > 3* If the current implementation is considered correct, does it mean
-> > that dev_set_drvdata() should never be used for class devices?
-> 
-> No, it should be fine, I don't understand the issue with your usage that
-> is causing the problem, care to explain it better, or point me at some
-> code?
+The DIF read/write verify emulation has been made generic enough so
+it can be used by other backend drivers (eg: FILEIO), as well as
+DIF v2 in the near future.  Also note that the majority of the logic
+has been groked from existing scsi_debug.c code.
 
-Sorry I wasn't clear. Let me guide you step by step with the real-world
-example that caused me to look into this. It all starts in
-drivers/i2c/busses/i2c-i801.c, function i801_probe(). This is a driver
-for a PCI device implementing an SMBus controller (aka i2c_adapter.)
+The current plan is to enable basic support for emulated backends with
+tcm_loop for v3.14 code, and then move onto IBLOCK backend support
+(that requires BLOCK layer changes), and then onto other more complex
+fabric driver support + hardware offloads (iser-target that Sagi + Or
+are currently working on) and DIF support into KVM guest using
+virtio-scsi + vhost-scsi.
 
-static int i801_probe(struct pci_dev *dev, const struct pci_device_id *id)
-{
-	int err;
-	struct i801_priv *priv;
+Here is a quick snippet of the code in action with v3.13-rc3:
 
-	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-	if (!priv)
-		return -ENOMEM;
+[  846.774085] scsi8 : TCM_Loopback
+[  846.778044] scsi 8:0:1:0: Direct-Access     LIO-ORG  RAMDISK-MCP      4.0 PQ: 0 ANSI: 5
+[  846.780160] init_tag_map: adjusted depth to 256
+[  846.781309] init_tag_map: adjusted depth to 256
+[  846.782424] init_tag_map: adjusted depth to 256
+[  846.783685] sd 8:0:1:0: Attached scsi generic sg1 type 0
+[  846.783923] sd 8:0:1:0: [sda] Enabling DIF Type 1 protection
+[  846.783929] sd 8:0:1:0: [sda] 2097152 512-byte logical blocks: (1.07 GB/1.00 GiB)
+[  846.784111] sd 8:0:1:0: [sda] Write Protect is off
+[  846.784114] sd 8:0:1:0: [sda] Mode Sense: 43 00 00 08
+[  846.784157] sd 8:0:1:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[  846.785357]  sda: unknown partition table
+[  846.795464] sd 8:0:1:0: [sda] Enabling DIX T10-DIF-TYPE1-CRC protection
+[  846.797278] sd 8:0:1:0: [sda] DIF application tag size 2
+[  846.798951] sd 8:0:1:0: [sda] Attached SCSI disk
 
-	i2c_set_adapdata(&priv->adapter, priv);
+<First 4k WRITE_10 performing Host Generate + Target Verify>
 
-So we allocate private data for the i2c_adapter we're about to create.
-i2c_set_adapdata() is a wrapper around dev_set_drvdata() for class
-devices of type i2c_adapter. If everything goes well, we would end up
-doing:
+[  901.477786] Entering sd_dif_type1_generate >>>>>>>>>>>>>>>
+[  901.477809] SD TYPE1 Generate: sector: 0 guard_tag: 0x5fd1 app_tag: 0x0000 ref_tag: 0
+[  901.477823] SD TYPE1 Generate: sector: 1 guard_tag: 0x41de app_tag: 0x0000 ref_tag: 1
+[  901.477835] SD TYPE1 Generate: sector: 2 guard_tag: 0x27b1 app_tag: 0x0000 ref_tag: 2
+[  901.477848] SD TYPE1 Generate: sector: 3 guard_tag: 0xeb4c app_tag: 0x0000 ref_tag: 3
+[  901.477860] SD TYPE1 Generate: sector: 4 guard_tag: 0x5d81 app_tag: 0x0000 ref_tag: 4
+[  901.477872] SD TYPE1 Generate: sector: 5 guard_tag: 0xda61 app_tag: 0x0000 ref_tag: 5
+[  901.477884] SD TYPE1 Generate: sector: 6 guard_tag: 0x80df app_tag: 0x0000 ref_tag: 6
+[  901.477896] SD TYPE1 Generate: sector: 7 guard_tag: 0x5ede app_tag: 0x0000 ref_tag: 7
+[  901.477940] sd_prep_fn: CDB: 0x2a blk_integrity_rq(rq): 1
+[  901.481576] DIF WRITE sector: 0 guard_tag: 0x5fd1 app_tag: 0x0000 ref_tag: 0
+[  901.481591] DIF WRITE sector: 1 guard_tag: 0x41de app_tag: 0x0000 ref_tag: 1
+[  901.481615] DIF WRITE sector: 2 guard_tag: 0x27b1 app_tag: 0x0000 ref_tag: 2
+[  901.481637] DIF WRITE sector: 3 guard_tag: 0xeb4c app_tag: 0x0000 ref_tag: 3
+[  901.481649] DIF WRITE sector: 4 guard_tag: 0x5d81 app_tag: 0x0000 ref_tag: 4
+[  901.481661] DIF WRITE sector: 5 guard_tag: 0xda61 app_tag: 0x0000 ref_tag: 5
+[  901.481673] DIF WRITE sector: 6 guard_tag: 0x80df app_tag: 0x0000 ref_tag: 6
+[  901.481685] DIF WRITE sector: 7 guard_tag: 0x5ede app_tag: 0x0000 ref_tag: 7
 
-	err = i2c_add_adapter(&priv->adapter);
+<Subsequent 4k READ_10 performing Target Verify + Host Verify>
 
-and everything would be fine. However, there are a number of things
-that can go wrong in between, for example if an ACPI resource conflict
-is detected:
+[  901.522883] sd_prep_fn: CDB: 0x28 blk_integrity_rq(rq): 1
+[  901.528637] DIF READ sector: 0 guard_tag: 0x5fd1 app_tag: 0x0000 ref_tag: 0
+[  901.528655] DIF READ sector: 1 guard_tag: 0x41de app_tag: 0x0000 ref_tag: 1
+[  901.528667] DIF READ sector: 2 guard_tag: 0x27b1 app_tag: 0x0000 ref_tag: 2
+[  901.528679] DIF READ sector: 3 guard_tag: 0xeb4c app_tag: 0x0000 ref_tag: 3
+[  901.528691] DIF READ sector: 4 guard_tag: 0x5d81 app_tag: 0x0000 ref_tag: 4
+[  901.528703] DIF READ sector: 5 guard_tag: 0xda61 app_tag: 0x0000 ref_tag: 5
+[  901.528715] DIF READ sector: 6 guard_tag: 0x80df app_tag: 0x0000 ref_tag: 6
+[  901.528727] DIF READ sector: 7 guard_tag: 0x5ede app_tag: 0x0000 ref_tag: 7
+[  901.528788] Entering bio_integrity_verify sector: 0 >>>>>>>>>>>>>>>>>>>>>>>
+[  901.535807] bio_integrity_verify: bio->bi_idx: 1 bio->bi_vcnt: 1
+[  901.538222] SD TYPE1 Verify sector: 0 guard_tag: 0x5fd1 app_tag: 0x0000 ref_tag: 0
+[  901.538226] SD TYPE1 Verify sector: 1 guard_tag: 0x41de app_tag: 0x0000 ref_tag: 1
+[  901.538230] SD TYPE1 Verify sector: 2 guard_tag: 0x27b1 app_tag: 0x0000 ref_tag: 2
+[  901.538234] SD TYPE1 Verify sector: 3 guard_tag: 0xeb4c app_tag: 0x0000 ref_tag: 3
+[  901.538238] SD TYPE1 Verify sector: 4 guard_tag: 0x5d81 app_tag: 0x0000 ref_tag: 4
+[  901.538241] SD TYPE1 Verify sector: 5 guard_tag: 0xda61 app_tag: 0x0000 ref_tag: 5
+[  901.538245] SD TYPE1 Verify sector: 6 guard_tag: 0x80df app_tag: 0x0000 ref_tag: 6
+[  901.538248] SD TYPE1 Verify sector: 7 guard_tag: 0x5ede app_tag: 0x0000 ref_tag: 7
 
-	err = acpi_check_resource_conflict(&dev->resource[SMBBAR]);
-	if (err) {
-		err = -ENODEV;
-		goto exit;
-	}
+Please review as v3.14-rc1 code.
 
-	(...)
-exit:
-	kfree(priv);
-	return err;
-}
+Thank you,
 
-As you can see, we properly free the memory we allocated ourselves for
-the i2c_adapter's data on the error path. You'd think we're alright
-then, but we're not. The problem is that i2c_set_adapdata() indirectly
-allocated some memory:
+--nab
 
-static inline void i2c_set_adapdata(struct i2c_adapter *dev, void *data)
-{
-	dev_set_drvdata(&dev->dev, data);
-}
+Nicholas Bellinger (14):
+  target: Add DIF related base definitions
+  target: Add DIF CHECK_CONDITION ASC/ASCQ exception cases
+  target/sbc: Add sbc_check_prot + update sbc_parse_cdb for DIF
+  target/sbc: Add DIF TYPE1+TYPE3 read/write verify emulation
+  target/spc: Add protection bit to standard INQUIRY output
+  target/spc: Add protection related bits to INQUIRY EVPD=0x86
+  target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+  target/spc: Expose ATO bit in control mode page
+  target/configfs: Expose protection device attributes
+  target: Add protection SGLs to target_submit_cmd_map_sgls
+  target/rd: Refactor rd_build_device_space + rd_release_device_space
+  target/rd: Add support for protection SGL setup + release
+  target/rd: Add DIF protection into rd_execute_rw
+  tcm_loop: Enable DIF/DIX modes in SCSI host LLD
 
-int dev_set_drvdata(struct device *dev, void *data)
-{
-	int error;
+ drivers/target/loopback/tcm_loop.c     |   12 +-
+ drivers/target/target_core_configfs.c  |   12 ++
+ drivers/target/target_core_device.c    |   65 ++++++++
+ drivers/target/target_core_internal.h  |    2 +
+ drivers/target/target_core_rd.c        |  264 ++++++++++++++++++++++++++------
+ drivers/target/target_core_rd.h        |    4 +
+ drivers/target/target_core_sbc.c       |  224 +++++++++++++++++++++++++++
+ drivers/target/target_core_spc.c       |   27 ++++
+ drivers/target/target_core_transport.c |   46 +++++-
+ drivers/vhost/scsi.c                   |    2 +-
+ include/target/target_core_backend.h   |    6 +
+ include/target/target_core_base.h      |   62 ++++++++
+ include/target/target_core_fabric.h    |    3 +-
+ 13 files changed, 678 insertions(+), 51 deletions(-)
 
-	if (!dev->p) {
-		error = device_private_init(dev);
-		if (error)
-			return error;
-	}
-	dev->p->driver_data = data;
-	return 0;
-}
-
-int device_private_init(struct device *dev)
-{
-	dev->p = kzalloc(sizeof(*dev->p), GFP_KERNEL);
-	(...)
-}
-
-In the success case, it's fine because the memory gets freed at device
-release time in:
-
-static void device_release(struct kobject *kobj)
-{
-	struct device *dev = kobj_to_dev(kobj);
-	struct device_private *p = dev->p;
-
-	(...)
-	kfree(p);
-}
-
-However in the error case, device_release() will never get called, so
-dev->p is leaked. This is what I am worried about.
-
-I hope I was clear enough this time :) If not I'll try harder.
-
-I consider allocating memory in dev_set_drvdata() very misleading, I
-don't think we should keep doing that.
-
-Thanks,
 -- 
-Jean Delvare
+1.7.10.4
