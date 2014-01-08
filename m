@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757175AbaAHSvC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:51:02 -0500
+	id S1757219AbaAHSvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:51:08 -0500
 Received: from smtp.citrix.com ([66.165.176.89]:9052 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756880AbaAHSu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:50:57 -0500
+	id S1757167AbaAHSvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 13:51:02 -0500
 X-IronPort-AV: E=Sophos;i="4.95,625,1384300800"; 
-   d="scan'208";a="90999329"
+   d="scan'208";a="90999357"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,10 +15,11 @@ CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
         <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>,
         <arnd@arndb.de>, <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v8 6/6] xen/arm: account for stolen ticks
-Date: Wed, 8 Jan 2014 18:49:58 +0000
-Message-ID: <1389206998-27875-6-git-send-email-stefano.stabellini@eu.citrix.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <nico@linaro.org>, <cov@codeaurora.org>, <Catalin.Marinas@arm.com>
+Subject: [PATCH v8 4/6] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
+Date: Wed, 8 Jan 2014 18:49:56 +0000
+Message-ID: <1389206998-27875-4-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
@@ -29,78 +30,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the runstate_memory_area with the hypervisor.
-Use pv_time_ops.steal_clock to account for stolen ticks.
+Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
+Necessary duplication of paravirt.h and paravirt.c with ARM.
+
+The only paravirt interface supported is pv_time_ops.steal_clock, so no
+runtime pvops patching needed.
+
+This allows us to make use of steal_account_process_tick for stolen
+ticks accounting.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
+CC: will.deacon@arm.com
+CC: nico@linaro.org
+CC: marc.zyngier@arm.com
+CC: cov@codeaurora.org
+CC: arnd@arndb.de
+CC: olof@lixom.net
+CC: Catalin.Marinas@arm.com
 
 ---
 
-Changes in v4:
-- don't use paravirt_steal_rq_enabled: we do not support retrieving
-stolen ticks for vcpus other than one we are running on.
-
-Changes in v3:
-- use BUG_ON and smp_processor_id.
+Changes in v7:
+- ifdef CONFIG_PARAVIRT the content of paravirt.h.
 ---
- arch/arm/xen/enlighten.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/arm64/Kconfig         |   20 ++++++++++++++++++++
+ arch/arm64/kernel/Makefile |    1 +
+ 2 files changed, 21 insertions(+)
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 8550123..fa8bdc0 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -14,7 +14,10 @@
- #include <xen/xen-ops.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
-+#include <asm/arch_timer.h>
- #include <asm/system_misc.h>
-+#include <asm/paravirt.h>
-+#include <linux/jump_label.h>
- #include <linux/interrupt.h>
- #include <linux/irqreturn.h>
- #include <linux/module.h>
-@@ -154,6 +157,19 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 6d4dd22..d1003ba 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -212,6 +212,25 @@ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
  
-+unsigned long long xen_stolen_accounting(int cpu)
-+{
-+	struct vcpu_runstate_info state;
-+
-+	BUG_ON(cpu != smp_processor_id());
-+
-+	xen_get_runstate_snapshot(&state);
-+
-+	WARN_ON(state.state != RUNSTATE_running);
-+
-+	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
-+}
-+
- static void __init xen_percpu_init(void *unused)
- {
- 	struct vcpu_register_vcpu_info info;
-@@ -171,6 +187,8 @@ static void __init xen_percpu_init(void *unused)
- 	BUG_ON(err);
- 	per_cpu(xen_vcpu, cpu) = vcpup;
+ source "mm/Kconfig"
  
-+	xen_setup_runstate_info(cpu);
++config PARAVIRT
++	bool "Enable paravirtualization code"
++	---help---
++	  This changes the kernel so it can modify itself when it is run
++	  under a hypervisor, potentially improving performance significantly
++	  over full virtualization.
 +
- 	enable_percpu_irq(xen_events_irq, 0);
- 	put_cpu();
- }
-@@ -313,6 +331,9 @@ static int __init xen_init_events(void)
- 
- 	on_each_cpu(xen_percpu_init, NULL, 0);
- 
-+	pv_time_ops.steal_clock = xen_stolen_accounting;
-+	static_key_slow_inc(&paravirt_steal_enabled);
++config PARAVIRT_TIME_ACCOUNTING
++	bool "Paravirtual steal time accounting"
++	select PARAVIRT
++	default n
++	---help---
++	  Select this option to enable fine granularity task steal time
++	  accounting. Time spent executing other tasks in parallel with
++	  the current vCPU is discounted from the vCPU power. To account for
++	  that, there can be a small performance impact.
 +
- 	return 0;
- }
- postcore_initcall(xen_init_events);
++	  If in doubt, say N here.
++
+ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN
+@@ -220,6 +239,7 @@ config XEN
+ 	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
+ 	depends on ARM64 && OF
+ 	select SWIOTLB_XEN
++	select PARAVIRT
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
+ 
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index 5ba2fd4..1dee735 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
+ arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+ arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
+ arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
++arm64-obj-$(CONFIG_PARAVIRT)		+= paravirt.o
+ 
+ obj-y					+= $(arm64-obj-y) vdso/
+ obj-m					+= $(arm64-obj-m)
 -- 
 1.7.10.4
 
