@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaAHAjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 19:39:43 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14054 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350AbaAHAjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 19:39:33 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18KUxTQnBpN4AL3o0/s+lAR
-Date: Tue, 7 Jan 2014 16:39:28 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: Patch Tracking <patches@linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] ARM: OMAP: raw read and write endian fix
-Message-ID: <20140108003927.GJ5074@atomide.com>
-References: <1387822234-11167-1-git-send-email-taras.kondratiuk@linaro.org>
- <CAArO44vC4WKGHSqHX3+Mo5+jcNuyJLkh94+SPd4H+aZYAroYzw@mail.gmail.com>
+	id S1754216AbaAHAr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 19:47:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5123 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753876AbaAHArY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 19:47:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,621,1384329600"; 
+   d="scan'208";a="435416703"
+Date: Tue, 7 Jan 2014 16:47:24 -0800
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: walt <w41ter@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        David Laight <david.laight@aculab.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
+ USB payload burst
+Message-ID: <20140108004724.GA14082@xanatos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAArO44vC4WKGHSqHX3+Mo5+jcNuyJLkh94+SPd4H+aZYAroYzw@mail.gmail.com>
+In-Reply-To: <52CC944C.50702@gmail.com>
+ <20140107212101.GA4199@xanatos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Taras Kondratiuk <taras.kondratiuk@linaro.org> [131223 10:20]:
-> On 23 December 2013 20:10, Taras Kondratiuk <taras.kondratiuk@linaro.org> wrote:
-> > This series does trivial replacement of __raw_xxx functions with xxx_relaxed
-> > endian-neutral variants in 'mach-omap2' and 'plat-omap' directories.
-> > Some code here most probably won't be used in BE mode (like debug-leds for
-> > OMAP1 boards), but changes are made anyway to remove __raw_xxx() functions
-> > completely and simplify future grep'ing for new __raw_xxx() entries.
+On Tue, Jan 07, 2014 at 03:57:00PM -0800, walt wrote:
+> On 01/07/2014 01:21 PM, Sarah Sharp wrote:
+> 
+> > Can you please try the attached patch, on top of the previous three
+> > patches, and send me dmesg?
+> 
+> Hi Sarah, I just now finished running 0001-More-debugging.patch for the
+> first time.  The previous dmesg didn't include that patch, but this one
+> does.
+> 
+> I read through this dmesg but I nodded off somewhere around line 500.
+> I hope you can stay awake :)
 
-Sorry for the delay on these, applying into omap-for-v3.14/be.
-These are trivial, and it's actually nice that you left out the
-assembly related changes as those should be acked by the PM
-people in case there are some issues dealing with the ROM code
-etc.
+Well, it has all the info I need, but the results don't make me too
+happy.  Everything I've checked seems consistent, and I don't know why
+the host stopped.  The link TRBs are intact, the dequeue pointer for the
+endpoint was pointing to the transfer that timed out and it had the
+cycle bit set correctly, etc.  Perhaps the no-op TRBs are really the
+issue.
 
-Regards,
+I'll have to take a look at the log again tomorrow.  I posted the dmesg
+on pastebin if David wants to check it out as well:
+http://pastebin.com/a4AUpsL1
 
-Tony
+Can you send me the output of `sudo lspci -vvv -n`?  Maybe we can just
+turn off scatter-gather for your host controller until we get a proper
+fix in that uses link TRBs instead of no-op TRBs.
+
+Sarah Sharp
