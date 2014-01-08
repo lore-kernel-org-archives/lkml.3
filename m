@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526AbaAHVsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:48:46 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:37542 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531AbaAHVsn (ORCPT
+	id S1757623AbaAHVtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:49:16 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49036 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757076AbaAHVtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:48:43 -0500
-Message-ID: <52CDC7B5.6060704@gmail.com>
-Date: Wed, 08 Jan 2014 14:48:37 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 8 Jan 2014 16:49:13 -0500
+Date: Wed, 8 Jan 2014 21:49:06 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20140108214906.GB31886@sirena.org.uk>
+References: <1389201738-31406-1-git-send-email-lpapp@kde.org>
+ <20140108180747.GT31886@sirena.org.uk>
+ <CAOMwXhN8x0xHstrwsrxqXoE+n19TP=r1HJDCFOHs2O024HaY1w@mail.gmail.com>
+ <20140108190758.GY31886@sirena.org.uk>
+ <CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
+ <CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-References: <52B437AA.4090102@tu-dresden.de> <52B479E1.7020204@gmail.com> <20131223131051.GB585@localhost.localdomain> <52B84C49.70001@gmail.com> <20131226151429.GA15303@localhost.localdomain> <52BC4A13.1090508@gmail.com> <20131226153033.GC15303@localhost.localdomain> <52C46083.9070605@gmail.com> <20140103220745.GB11061@localhost.localdomain> <52C73D90.3020904@gmail.com> <20140104150539.GA17617@localhost.localdomain>
-In-Reply-To: <20140104150539.GA17617@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IIbt9kHO0VqlT224"
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] include/linux/regmap.h: fix a couple of typos
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/4/14, 8:05 AM, Frederic Weisbecker wrote:
-> On Fri, Jan 03, 2014 at 03:45:36PM -0700, David Ahern wrote:
->> On 1/3/14, 3:07 PM, Frederic Weisbecker wrote:
->>> I'm not sure I understand why we need that. Why doesn't it work by simply flushing
->>> events prior to the earliest timestamp among every CPUs last event?
->>
->> Here's one scenario. Consider N-mmaps:
->>
->>         |----- t_flush
->>         v
->> 0   -----|---x------------------------
->> 1   -----|----|------------------------
->> ...      |
->> N   -----|-------ssss-|-----------------
->>
->>       t_start t_1 ... t_N
->>
->> You start a round at some time -- t_start. By starting a round it
->> means you go to mmap 0 and check for events, then mmap 1, ..., mmap
->> N. It takes a finite amount of time to move from one mmap to
->> another.
->>
->> Assume there are no events on mmap 0, 1, ... N-1 but samples are
->> generated in mmap N. In the time it takes to move forward from 0 to
->> N, a sample can be generated for mmap 0 and written to the buffer -
->> the 'x' above. It now contains a timestamp < than samples on any
->> other mmap and out pops the flush error.
->
-> Lets reformulate as following. I'm copy-pasting the example in session.c
-> but adapting it to your scenario.
->
->   *    ============ PASS n =================
->   *       CPU 0         |   CPU 1
->   *                     |
->   *          -          |         2
->   *          -          |         3
->   *          -          |         4  <--- max recorded
->   *
->   *    ============ PASS n + 1 ==============
->   *       CPU 0         |   CPU 1
->   *                     |
->   *          1          |         5
->   *          -          |         6
->   *          -          |         7 <---- max recorded
->   *
->   *      Flush every events below timestamp 4
->   *
->
-> So in the first round, CPU 0 has no event by the time we read it. Then while
-> we read the events from CPU 1 (val 2,3,4), a new one comes in concurrently
-> in CPU 0 (val 1, which matches 's' in your example ). We missed it due to the
-> linear mmap read on all buffers so we'll get it on the second round.
->
-> We find it out in the second round, CPU 1 has also new events. At this time we know that
-> if CPU 0 had events up to timestamp 4, we should have seen all of them because
-> we read CPU 0 buffer in PASS n + 1 after we read CPU 1 buffer on PASS n.
->
-> Of course that's what happens in a perfect world with the assumption that ordering
-> is all correct, that events write/commit doesn't take too much time to complete,
-> that perf_clock() is globally monotonic (and it's not IIUC). But a little heuristical
-> correction on the timestamp barrier should prevent from issues with that.
->
-> So this is how the code behaves currently and it should handle a case like above.
 
-The existing code does not work. Your unstable tsc patch did not work. I 
-have not tried Joseph's patch. Are you proposing that one or do you have 
-something else in mind?
+--IIbt9kHO0VqlT224
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Now there is still the problem of:
->
-> 1) local timestamps not moving forward (could it happen when events happen in storm,
-> when they overflow multiple times in once for example, and clock is not granular
-> enough?)
+On Wed, Jan 08, 2014 at 09:08:44PM +0000, Laszlo Papp wrote:
+> On Wed, Jan 8, 2014 at 9:02 PM, Laszlo Papp <lpapp@kde.org> wrote:
 
-Even at 650k events/sec I am not seeing this problem.
+> > That being said, I will not have time, nor the motivation to argue
+> > over such a nuance, so feel free to reject the change.
 
-> Anyway this should be solved with the patch that takes the earliest last event on all
-> CPU buffer instead of the maximum of a round as a barrier.
->
-> 2) local timestamps not monotonic due to interrupting events. This could be fixed
-> in the kernel with moving perf_clock() snapshot in perf_output_sample().
->
+> Of course, this is just on top of the vim spell checker error as I
+> wrote in the commit message...
 
-For perf-kvm the events are all tracepoints, so there should not be a 
-problem of overlap due to interruption.
+> Oh yes, and one more factual data in here:
 
-David
+> lpapp ~/Projects/linux-staging $ grep -rn "e\.g\." . | wc -l
+> 3447
+
+> lpapp ~/Projects/linux-staging $ grep -rn " eg," | wc -l
+> 18
+
+That's not the issue - it's dropping the comma.  It's either "e.g." or
+"eg", the comma is a separate thing providing a break between clauses.
+Strictly it should have the periods since it is an abbreviation but
+their use is more vauge in fixed point text since they look ugly, the
+thing that made me complain was that you dropped the comma as well as
+substituting in the expanded version.
+
+--IIbt9kHO0VqlT224
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSzcfOAAoJELSic+t+oim9dj8P/R4bwJnWypNsMgQdCbq0umYs
+qvyt4jD4a+52+g6wY5S9eH19hteIvXIlEVJQQ6GETPoKNQNyy66klTw0O1bJo9uk
+HA8657TERC63GxafjzrCPWXdWRWX9sV8U3dvZJfT+qqVvV8CJjkfjgmVVYkU0dO9
+mgdPNyBS6z7OL/ios+3Dt8iId9kO3y0w0k0u9a2vsXJqtnoWt3JIYjvhPFS5lieJ
+cw0rD+swYNrKTlgtTZYLkzgmYhctTs0/GuKinq3rRCd+yEqvX6gJihUDFYsZMMyK
+lTL27/yafhnF9JDZG1z7hFsR3yG/J5Cz18g/DPAdiLV8M2XvwMKjvLXJuivcUWOk
+eeUrktaMrY5ckk+r+3Q7e9ChcUj3u1Am5wIRIDnrNu/MbnvvTAG2ckuMYimIUlPH
+bX7icltJn5e1T8q5lpGxgfkbMCTmyFgfQ3GNcXiqTBC7nGFoQAXtiKybXz/ZHmeA
+gbo900RoSZ2qIu6BHed+DCPLN6VV17nlvAxdFL+g5Sza3Dcrr+wS2LzcagrnlUzt
+kw9LLdHvG8G8SlntfXI15PWsVyp86GbftmnqWc+iIEQGyylZ7LVMtLnqYaOt+tiG
+KN7AqBaw58fRTdr3lmPGtOpVQ8VmPOGhgjMhKd9c3/lU7Yp36r9vn4Aa4oVbVRJA
+zN4XQN2l+Cm9R941Mt0z
+=wgZj
+-----END PGP SIGNATURE-----
+
+--IIbt9kHO0VqlT224--
