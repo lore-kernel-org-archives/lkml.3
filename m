@@ -1,162 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994AbaAHGOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 01:14:23 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:60345 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaAHGON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 01:14:13 -0500
+	id S1755058AbaAHGQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 01:16:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51244 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaAHGQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 01:16:19 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <balbi@ti.com>, <arnd@arndb.de>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v4 0/5] USB Host support for OMAP5 uEVM (for 3.14)
+Date: Wed, 8 Jan 2014 11:45:37 +0530
+Message-ID: <1389161742-10533-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-In-Reply-To: <52CCE9CD.5060404@linux.intel.com>
-References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>
-	<1389085234-22296-15-git-send-email-jiang.liu@linux.intel.com>
-	<CAOtp4Kqn5e_51hwrRMgRmam7jXaVC=md7BAuwnG3gJGETj9iQA@mail.gmail.com>
-	<52CCE9CD.5060404@linux.intel.com>
-Date: Wed, 8 Jan 2014 14:14:12 +0800
-Message-ID: <CAOtp4KqvzrJr=Z5xj-vZnnL--W6R2CjZ=m0rFgR9DzxVKjfwSQ@mail.gmail.com>
-Subject: Re: [RFC Patch Part2 V1 14/14] iommu/vt-d: update IOMMU state when
- memory hotplug happens
-From: Kai Huang <dev.kai.huang@gmail.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 2:01 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->
->
-> On 2014/1/8 13:07, Kai Huang wrote:
->> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->>> If static identity domain is created, IOMMU driver needs to update
->>> si_domain page table when memory hotplug event happens. Otherwise
->>> PCI device DMA operations can't access the hot-added memory regions.
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->>> ---
->>>  drivers/iommu/intel-iommu.c |   52 ++++++++++++++++++++++++++++++++++++++++++-
->>>  1 file changed, 51 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->>> index 83e3ed4..35a987d 100644
->>> --- a/drivers/iommu/intel-iommu.c
->>> +++ b/drivers/iommu/intel-iommu.c
->>> @@ -33,6 +33,7 @@
->>>  #include <linux/dmar.h>
->>>  #include <linux/dma-mapping.h>
->>>  #include <linux/mempool.h>
->>> +#include <linux/memory.h>
->>>  #include <linux/timer.h>
->>>  #include <linux/iova.h>
->>>  #include <linux/iommu.h>
->>> @@ -3689,6 +3690,54 @@ static struct notifier_block device_nb = {
->>>         .notifier_call = device_notifier,
->>>  };
->>>
->>> +static int intel_iommu_memory_notifier(struct notifier_block *nb,
->>> +                                      unsigned long val, void *v)
->>> +{
->>> +       struct memory_notify *mhp = v;
->>> +       unsigned long long start, end;
->>> +       struct iova *iova;
->>> +
->>> +       switch (val) {
->>> +       case MEM_GOING_ONLINE:
->>> +               start = mhp->start_pfn << PAGE_SHIFT;
->>> +               end = ((mhp->start_pfn + mhp->nr_pages) << PAGE_SHIFT) - 1;
->>> +               if (iommu_domain_identity_map(si_domain, start, end)) {
->>> +                       pr_warn("dmar: failed to build identity map for [%llx-%llx]\n",
->>> +                               start, end);
->>> +                       return NOTIFY_BAD;
->>> +               }
->>
->> Better to use iommu_prepare_identity_map? For si_domain, if
->> hw_pass_through is used, there's no page table.
-> Hi Kai,
->         Good catch!
-> Seems function iommu_prepare_identity_map() is designed to handle
-> RMRRs. So how about avoiding of registering memory hotplug notifier
-> if hw_pass_through is true?
+Hi Benoit & Tony,
 
-I think that's also fine :)
+This patchset brings up USB Host ports and Ethernet port on
+the OMAP5 uEVM board.
 
-Btw, I have a related question to memory hotplug but not related to
-intel IOMMU specifically. For the devices use DMA remapping, suppose
-the device is already using the memory that we are trying to remove,
-is this case, looks we need to change the existing iova <-> pa
-mappings for the pa that is in the memory range about to be removed,
-and reset the mapping to different pa (iova remains the same). Does
-existing code have this covered? Is there a generic IOMMU layer memory
-hotplug notifier to handle memory removal?
+It depends on the TI Clock DT conversion patches [1] and is based
+on 3.13-rc7
 
--Kai
->
-> Thanks!
-> Gerry
->
->>
->>> +               break;
->>> +       case MEM_OFFLINE:
->>> +       case MEM_CANCEL_ONLINE:
->>> +               /* TODO: enhance RB-tree and IOVA code to support of splitting iova */
->>> +               iova = find_iova(&si_domain->iovad, mhp->start_pfn);
->>> +               if (iova) {
->>> +                       unsigned long start_pfn, last_pfn;
->>> +                       struct dmar_drhd_unit *drhd;
->>> +                       struct intel_iommu *iommu;
->>> +
->>> +                       start_pfn = mm_to_dma_pfn(iova->pfn_lo);
->>> +                       last_pfn = mm_to_dma_pfn(iova->pfn_hi + 1) - 1;
->>> +                       dma_pte_clear_range(si_domain, start_pfn, last_pfn);
->>> +                       dma_pte_free_pagetable(si_domain, start_pfn, last_pfn);
->>> +                       rcu_read_lock();
->>> +                       for_each_active_iommu(iommu, drhd)
->>> +                               iommu_flush_iotlb_psi(iommu, si_domain->id,
->>> +                                       start_pfn, last_pfn - start_pfn + 1, 0);
->>> +                       rcu_read_unlock();
->>> +                       __free_iova(&si_domain->iovad, iova);
->>> +               }
->>
->> The same as above. Looks we need to consider hw_pass_through for the si_domain.
->>
->> -Kai
->>
->>> +               break;
->>> +       }
->>> +
->>> +       return NOTIFY_OK;
->>> +}
->>> +
->>> +static struct notifier_block intel_iommu_memory_nb = {
->>> +       .notifier_call = intel_iommu_memory_notifier,
->>> +       .priority = 0
->>> +};
->>> +
->>>  int __init intel_iommu_init(void)
->>>  {
->>>         int ret = -ENODEV;
->>> @@ -3761,8 +3810,9 @@ int __init intel_iommu_init(void)
->>>         init_iommu_pm_ops();
->>>
->>>         bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
->>> -
->>>         bus_register_notifier(&pci_bus_type, &device_nb);
->>> +       if (si_domain)
->>> +               register_memory_notifier(&intel_iommu_memory_nb);
->>>
->>>         intel_iommu_enabled = 1;
->>>
->>> --
->>> 1.7.10.4
->>>
->>> _______________________________________________
->>> iommu mailing list
->>> iommu@lists.linux-foundation.org
->>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+[1] - http://article.gmane.org/gmane.linux.ports.arm.kernel/289895
+
+Changelog:
+
+v4:
+- Updated DT binding document for clock binding
+
+v3:
+- Rebased on top of 3.13-rc7
+
+cheers,
+-roger
+
+Roger Quadros (5):
+  mfd: omap-usb-host: Update DT clock binding information
+  ARM: dts: OMAP5: Add 60MHz clock reference to USB Host module
+  ARM: dts: omap4-panda: Provide USB PHY clock
+  ARM: dts: omap5-uevm: Provide USB PHY clock
+  ARM: OMAP2+: Remove legacy_init_ehci_clk()
+
+ Documentation/devicetree/bindings/mfd/omap-usb-host.txt |  4 ++++
+ arch/arm/boot/dts/omap4-panda-common.dtsi               |  8 ++------
+ arch/arm/boot/dts/omap5-uevm.dts                        |  8 ++------
+ arch/arm/boot/dts/omap5.dtsi                            |  2 ++
+ arch/arm/mach-omap2/pdata-quirks.c                      | 16 ----------------
+ 5 files changed, 10 insertions(+), 28 deletions(-)
+
+-- 
+1.8.3.2
+
