@@ -1,163 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503AbaAHWM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 17:12:28 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:38194 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467AbaAHWME (ORCPT
+	id S932439AbaAHWLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 17:11:53 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:58238 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757364AbaAHWJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 17:12:04 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: John Crispin <blogic@openwrt.org>, Aurelien Jarno <aurelien@aurel32.net>,
-        Huacai Chen <chenhc@lemote.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: [PATCH 2/2] MIPS: fix blast_icache32 on loongson2
-Date: Thu,  9 Jan 2014 00:11:19 +0200
-Message-Id: <1389219079-6133-3-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389219079-6133-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1389219079-6133-1-git-send-email-aaro.koskinen@iki.fi>
+	Wed, 8 Jan 2014 17:09:56 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
+        jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: [PATCH 08/11] ext4: rename: create ext4_renament structure for local vars
+Date: Wed,  8 Jan 2014 23:10:12 +0100
+Message-Id: <1389219015-10980-9-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 14bd8c082016cd1f67fdfd702e4cf6367869a712 (MIPS: Loongson: Get
-rid of Loongson 2 #ifdefery all over arch/mips.) failed to add Loongson2
-specific blast_icache32 functions. Fix that.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-The patch fixes the following crash seen with 3.13-rc1:
+Need to split up ext4_rename() into helpers but there are too many local
+variables involved, so create a new structure.  This also, apparently,
+makes the generated code size slightly smaller.
 
-[    3.652000] Reserved instruction in kernel code[#1]:
-[...]
-[    3.652000] Call Trace:
-[    3.652000] [<ffffffff802223c8>] blast_icache32_page+0x8/0xb0
-[    3.652000] [<ffffffff80222c34>] r4k_flush_cache_page+0x19c/0x200
-[    3.652000] [<ffffffff802d17e4>] do_wp_page.isra.97+0x47c/0xe08
-[    3.652000] [<ffffffff802d51b0>] handle_mm_fault+0x938/0x1118
-[    3.652000] [<ffffffff8021bd40>] __do_page_fault+0x140/0x540
-[    3.652000] [<ffffffff80206be4>] resume_userspace_check+0x0/0x10
-[    3.652000]
-[    3.652000] Code: 00200825  64834000  00200825 <bc900000> bc900020  bc900040  bc900060  bc900080  bc9000a0
-[    3.656000] ---[ end trace cd8a48f722f5c5f7 ]---
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Reviewed-by: Aurelien Jarno <aurelien@aurel32.net>
-Acked-by: John Crispin <blogic@openwrt.org>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- arch/mips/include/asm/r4kcache.h | 43 ++++++++++++++++++++--------------------
- arch/mips/mm/c-r4k.c             |  7 +++++++
- 2 files changed, 29 insertions(+), 21 deletions(-)
+ fs/ext4/namei.c | 211 ++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 114 insertions(+), 97 deletions(-)
 
-diff --git a/arch/mips/include/asm/r4kcache.h b/arch/mips/include/asm/r4kcache.h
-index 91d20b08246f..c84caddb8bde 100644
---- a/arch/mips/include/asm/r4kcache.h
-+++ b/arch/mips/include/asm/r4kcache.h
-@@ -357,8 +357,8 @@ static inline void invalidate_tcache_page(unsigned long addr)
- 		  "i" (op));
- 
- /* build blast_xxx, blast_xxx_page, blast_xxx_page_indexed */
--#define __BUILD_BLAST_CACHE(pfx, desc, indexop, hitop, lsize) \
--static inline void blast_##pfx##cache##lsize(void)			\
-+#define __BUILD_BLAST_CACHE(pfx, desc, indexop, hitop, lsize, extra)	\
-+static inline void extra##blast_##pfx##cache##lsize(void)		\
- {									\
- 	unsigned long start = INDEX_BASE;				\
- 	unsigned long end = start + current_cpu_data.desc.waysize;	\
-@@ -376,7 +376,7 @@ static inline void blast_##pfx##cache##lsize(void)			\
- 	__##pfx##flush_epilogue						\
- }									\
- 									\
--static inline void blast_##pfx##cache##lsize##_page(unsigned long page) \
-+static inline void extra##blast_##pfx##cache##lsize##_page(unsigned long page) \
- {									\
- 	unsigned long start = page;					\
- 	unsigned long end = page + PAGE_SIZE;				\
-@@ -391,7 +391,7 @@ static inline void blast_##pfx##cache##lsize##_page(unsigned long page) \
- 	__##pfx##flush_epilogue						\
- }									\
- 									\
--static inline void blast_##pfx##cache##lsize##_page_indexed(unsigned long page) \
-+static inline void extra##blast_##pfx##cache##lsize##_page_indexed(unsigned long page) \
- {									\
- 	unsigned long indexmask = current_cpu_data.desc.waysize - 1;	\
- 	unsigned long start = INDEX_BASE + (page & indexmask);		\
-@@ -410,23 +410,24 @@ static inline void blast_##pfx##cache##lsize##_page_indexed(unsigned long page)
- 	__##pfx##flush_epilogue						\
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index e0129b6e74cf..bb3e2b4614dc 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -3001,6 +3001,22 @@ static struct buffer_head *ext4_get_first_dir_block(handle_t *handle,
+ 	return ext4_get_first_inline_block(inode, parent_de, retval);
  }
  
--__BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 16)
--__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 16)
--__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 16)
--__BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 32)
--__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 32)
--__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 32)
--__BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 64)
--__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 64)
--__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 64)
--__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 128)
--
--__BUILD_BLAST_CACHE(inv_d, dcache, Index_Writeback_Inv_D, Hit_Invalidate_D, 16)
--__BUILD_BLAST_CACHE(inv_d, dcache, Index_Writeback_Inv_D, Hit_Invalidate_D, 32)
--__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 16)
--__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 32)
--__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 64)
--__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 128)
-+__BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 16, )
-+__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 16, )
-+__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 16, )
-+__BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 32, )
-+__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 32, )
-+__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I_Loongson2, 32, loongson2_)
-+__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 32, )
-+__BUILD_BLAST_CACHE(d, dcache, Index_Writeback_Inv_D, Hit_Writeback_Inv_D, 64, )
-+__BUILD_BLAST_CACHE(i, icache, Index_Invalidate_I, Hit_Invalidate_I, 64, )
-+__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 64, )
-+__BUILD_BLAST_CACHE(s, scache, Index_Writeback_Inv_SD, Hit_Writeback_Inv_SD, 128, )
++struct ext4_renament {
++	struct inode *dir;
++	struct dentry *dentry;
++	struct inode *inode;
 +
-+__BUILD_BLAST_CACHE(inv_d, dcache, Index_Writeback_Inv_D, Hit_Invalidate_D, 16, )
-+__BUILD_BLAST_CACHE(inv_d, dcache, Index_Writeback_Inv_D, Hit_Invalidate_D, 32, )
-+__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 16, )
-+__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 32, )
-+__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 64, )
-+__BUILD_BLAST_CACHE(inv_s, scache, Index_Writeback_Inv_SD, Hit_Invalidate_SD, 128, )
++	/* entry for "dentry" */
++	struct buffer_head *bh;
++	struct ext4_dir_entry_2 *de;
++	int inlined;
++
++	/* entry for ".." in inode if it's a directory */
++	struct buffer_head *dir_bh;
++	struct ext4_dir_entry_2 *parent_de;
++	int dir_inlined;
++};
++
+ /*
+  * Anybody can rename anything with this: the permission checks are left to the
+  * higher-level routines.
+@@ -3014,196 +3030,197 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		       unsigned int flags)
+ {
+ 	handle_t *handle = NULL;
+-	struct inode *old_inode, *new_inode;
+-	struct buffer_head *old_bh, *new_bh, *dir_bh;
+-	struct ext4_dir_entry_2 *old_de, *new_de;
++	struct ext4_renament old = {
++		.dir = old_dir,
++		.dentry = old_dentry,
++		.inode = old_dentry->d_inode,
++	};
++	struct ext4_renament new = {
++		.dir = new_dir,
++		.dentry = new_dentry,
++		.inode = new_dentry->d_inode,
++	};
+ 	int retval;
+-	int inlined = 0, new_inlined = 0;
+-	struct ext4_dir_entry_2 *parent_de;
  
- /* build blast_xxx_range, protected_blast_xxx_range */
- #define __BUILD_BLAST_CACHE_RANGE(pfx, desc, hitop, prot, extra)	\
-diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
-index 73f02da61baf..49e572d879e1 100644
---- a/arch/mips/mm/c-r4k.c
-+++ b/arch/mips/mm/c-r4k.c
-@@ -237,6 +237,8 @@ static void r4k_blast_icache_page_setup(void)
- 		r4k_blast_icache_page = (void *)cache_noop;
- 	else if (ic_lsize == 16)
- 		r4k_blast_icache_page = blast_icache16_page;
-+	else if (ic_lsize == 32 && current_cpu_type() == CPU_LOONGSON2)
-+		r4k_blast_icache_page = loongson2_blast_icache32_page;
- 	else if (ic_lsize == 32)
- 		r4k_blast_icache_page = blast_icache32_page;
- 	else if (ic_lsize == 64)
-@@ -261,6 +263,9 @@ static void r4k_blast_icache_page_indexed_setup(void)
- 		else if (TX49XX_ICACHE_INDEX_INV_WAR)
- 			r4k_blast_icache_page_indexed =
- 				tx49_blast_icache32_page_indexed;
-+		else if (current_cpu_type() == CPU_LOONGSON2)
-+			r4k_blast_icache_page_indexed =
-+				loongson2_blast_icache32_page_indexed;
- 		else
- 			r4k_blast_icache_page_indexed =
- 				blast_icache32_page_indexed;
-@@ -284,6 +289,8 @@ static void r4k_blast_icache_setup(void)
- 			r4k_blast_icache = blast_r4600_v1_icache32;
- 		else if (TX49XX_ICACHE_INDEX_INV_WAR)
- 			r4k_blast_icache = tx49_blast_icache32;
-+		else if (current_cpu_type() == CPU_LOONGSON2)
-+			r4k_blast_icache = loongson2_blast_icache32;
- 		else
- 			r4k_blast_icache = blast_icache32;
- 	} else if (ic_lsize == 64)
+ 	if (flags & ~RENAME_NOREPLACE)
+ 		return -EOPNOTSUPP;
+ 
+-	dquot_initialize(old_dir);
+-	dquot_initialize(new_dir);
+-
+-	old_bh = new_bh = dir_bh = NULL;
++	dquot_initialize(old.dir);
++	dquot_initialize(new.dir);
+ 
+ 	/* Initialize quotas before so that eventual writes go
+ 	 * in separate transaction */
+-	if (new_dentry->d_inode)
+-		dquot_initialize(new_dentry->d_inode);
++	if (new.inode)
++		dquot_initialize(new.inode);
+ 
+-	old_bh = ext4_find_entry(old_dir, &old_dentry->d_name, &old_de, NULL);
++	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name, &old.de, NULL);
+ 	/*
+ 	 *  Check for inode number is _not_ due to possible IO errors.
+ 	 *  We might rmdir the source, keep it as pwd of some process
+ 	 *  and merrily kill the link to whatever was created under the
+ 	 *  same name. Goodbye sticky bit ;-<
+ 	 */
+-	old_inode = old_dentry->d_inode;
+ 	retval = -ENOENT;
+-	if (!old_bh || le32_to_cpu(old_de->inode) != old_inode->i_ino)
++	if (!old.bh || le32_to_cpu(old.de->inode) != old.inode->i_ino)
+ 		goto end_rename;
+ 
+-	new_inode = new_dentry->d_inode;
+-	new_bh = ext4_find_entry(new_dir, &new_dentry->d_name,
+-				 &new_de, &new_inlined);
+-	if (new_bh) {
+-		if (!new_inode) {
+-			brelse(new_bh);
+-			new_bh = NULL;
++	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
++				 &new.de, &new.inlined);
++	if (new.bh) {
++		if (!new.inode) {
++			brelse(new.bh);
++			new.bh = NULL;
+ 		}
+ 	}
+-	if (new_inode && !test_opt(new_dir->i_sb, NO_AUTO_DA_ALLOC))
+-		ext4_alloc_da_blocks(old_inode);
++	if (new.inode && !test_opt(new.dir->i_sb, NO_AUTO_DA_ALLOC))
++		ext4_alloc_da_blocks(old.inode);
+ 
+-	handle = ext4_journal_start(old_dir, EXT4_HT_DIR,
+-		(2 * EXT4_DATA_TRANS_BLOCKS(old_dir->i_sb) +
++	handle = ext4_journal_start(old.dir, EXT4_HT_DIR,
++		(2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
+ 		 EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2));
+ 	if (IS_ERR(handle))
+ 		return PTR_ERR(handle);
+ 
+-	if (IS_DIRSYNC(old_dir) || IS_DIRSYNC(new_dir))
++	if (IS_DIRSYNC(old.dir) || IS_DIRSYNC(new.dir))
+ 		ext4_handle_sync(handle);
+ 
+-	if (S_ISDIR(old_inode->i_mode)) {
+-		if (new_inode) {
++	if (S_ISDIR(old.inode->i_mode)) {
++		if (new.inode) {
+ 			retval = -ENOTEMPTY;
+-			if (!empty_dir(new_inode))
++			if (!empty_dir(new.inode))
+ 				goto end_rename;
+ 		}
+ 		retval = -EIO;
+-		dir_bh = ext4_get_first_dir_block(handle, old_inode,
+-						  &retval, &parent_de,
+-						  &inlined);
+-		if (!dir_bh)
++		old.dir_bh = ext4_get_first_dir_block(handle, old.inode,
++						  &retval, &old.parent_de,
++						  &old.dir_inlined);
++		if (!old.dir_bh)
+ 			goto end_rename;
+-		if (le32_to_cpu(parent_de->inode) != old_dir->i_ino)
++		if (le32_to_cpu(old.parent_de->inode) != old.dir->i_ino)
+ 			goto end_rename;
+ 		retval = -EMLINK;
+-		if (!new_inode && new_dir != old_dir &&
+-		    EXT4_DIR_LINK_MAX(new_dir))
++		if (!new.inode && new.dir != old.dir &&
++		    EXT4_DIR_LINK_MAX(new.dir))
+ 			goto end_rename;
+-		BUFFER_TRACE(dir_bh, "get_write_access");
+-		retval = ext4_journal_get_write_access(handle, dir_bh);
++		BUFFER_TRACE(old.dir_bh, "get_write_access");
++		retval = ext4_journal_get_write_access(handle, old.dir_bh);
+ 		if (retval)
+ 			goto end_rename;
+ 	}
+-	if (!new_bh) {
+-		retval = ext4_add_entry(handle, new_dentry, old_inode);
++	if (!new.bh) {
++		retval = ext4_add_entry(handle, new.dentry, old.inode);
+ 		if (retval)
+ 			goto end_rename;
+ 	} else {
+-		BUFFER_TRACE(new_bh, "get write access");
+-		retval = ext4_journal_get_write_access(handle, new_bh);
++		BUFFER_TRACE(new.bh, "get write access");
++		retval = ext4_journal_get_write_access(handle, new.bh);
+ 		if (retval)
+ 			goto end_rename;
+-		new_de->inode = cpu_to_le32(old_inode->i_ino);
+-		if (EXT4_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
++		new.de->inode = cpu_to_le32(old.inode->i_ino);
++		if (EXT4_HAS_INCOMPAT_FEATURE(new.dir->i_sb,
+ 					      EXT4_FEATURE_INCOMPAT_FILETYPE))
+-			new_de->file_type = old_de->file_type;
+-		new_dir->i_version++;
+-		new_dir->i_ctime = new_dir->i_mtime =
+-					ext4_current_time(new_dir);
+-		ext4_mark_inode_dirty(handle, new_dir);
+-		BUFFER_TRACE(new_bh, "call ext4_handle_dirty_metadata");
+-		if (!new_inlined) {
++			new.de->file_type = old.de->file_type;
++		new.dir->i_version++;
++		new.dir->i_ctime = new.dir->i_mtime =
++					ext4_current_time(new.dir);
++		ext4_mark_inode_dirty(handle, new.dir);
++		BUFFER_TRACE(new.bh, "call ext4_handle_dirty_metadata");
++		if (!new.inlined) {
+ 			retval = ext4_handle_dirty_dirent_node(handle,
+-							       new_dir, new_bh);
++							       new.dir, new.bh);
+ 			if (unlikely(retval)) {
+-				ext4_std_error(new_dir->i_sb, retval);
++				ext4_std_error(new.dir->i_sb, retval);
+ 				goto end_rename;
+ 			}
+ 		}
+-		brelse(new_bh);
+-		new_bh = NULL;
++		brelse(new.bh);
++		new.bh = NULL;
+ 	}
+ 
+ 	/*
+ 	 * Like most other Unix systems, set the ctime for inodes on a
+ 	 * rename.
+ 	 */
+-	old_inode->i_ctime = ext4_current_time(old_inode);
+-	ext4_mark_inode_dirty(handle, old_inode);
++	old.inode->i_ctime = ext4_current_time(old.inode);
++	ext4_mark_inode_dirty(handle, old.inode);
+ 
+ 	/*
+ 	 * ok, that's it
+ 	 */
+-	if (le32_to_cpu(old_de->inode) != old_inode->i_ino ||
+-	    old_de->name_len != old_dentry->d_name.len ||
+-	    strncmp(old_de->name, old_dentry->d_name.name, old_de->name_len) ||
+-	    (retval = ext4_delete_entry(handle, old_dir,
+-					old_de, old_bh)) == -ENOENT) {
+-		/* old_de could have moved from under us during htree split, so
++	if (le32_to_cpu(old.de->inode) != old.inode->i_ino ||
++	    old.de->name_len != old.dentry->d_name.len ||
++	    strncmp(old.de->name, old.dentry->d_name.name, old.de->name_len) ||
++	    (retval = ext4_delete_entry(handle, old.dir,
++					old.de, old.bh)) == -ENOENT) {
++		/* old.de could have moved from under us during htree split, so
+ 		 * make sure that we are deleting the right entry.  We might
+ 		 * also be pointing to a stale entry in the unused part of
+-		 * old_bh so just checking inum and the name isn't enough. */
++		 * old.bh so just checking inum and the name isn't enough. */
+ 		struct buffer_head *old_bh2;
+ 		struct ext4_dir_entry_2 *old_de2;
+ 
+-		old_bh2 = ext4_find_entry(old_dir, &old_dentry->d_name,
++		old_bh2 = ext4_find_entry(old.dir, &old.dentry->d_name,
+ 					  &old_de2, NULL);
+ 		if (old_bh2) {
+-			retval = ext4_delete_entry(handle, old_dir,
++			retval = ext4_delete_entry(handle, old.dir,
+ 						   old_de2, old_bh2);
+ 			brelse(old_bh2);
+ 		}
+ 	}
+ 	if (retval) {
+-		ext4_warning(old_dir->i_sb,
++		ext4_warning(old.dir->i_sb,
+ 				"Deleting old file (%lu), %d, error=%d",
+-				old_dir->i_ino, old_dir->i_nlink, retval);
++				old.dir->i_ino, old.dir->i_nlink, retval);
+ 	}
+ 
+-	if (new_inode) {
+-		ext4_dec_count(handle, new_inode);
+-		new_inode->i_ctime = ext4_current_time(new_inode);
++	if (new.inode) {
++		ext4_dec_count(handle, new.inode);
++		new.inode->i_ctime = ext4_current_time(new.inode);
+ 	}
+-	old_dir->i_ctime = old_dir->i_mtime = ext4_current_time(old_dir);
+-	ext4_update_dx_flag(old_dir);
+-	if (dir_bh) {
+-		parent_de->inode = cpu_to_le32(new_dir->i_ino);
+-		BUFFER_TRACE(dir_bh, "call ext4_handle_dirty_metadata");
+-		if (!inlined) {
+-			if (is_dx(old_inode)) {
++	old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
++	ext4_update_dx_flag(old.dir);
++	if (old.dir_bh) {
++		old.parent_de->inode = cpu_to_le32(new.dir->i_ino);
++		BUFFER_TRACE(old.dir_bh, "call ext4_handle_dirty_metadata");
++		if (!old.dir_inlined) {
++			if (is_dx(old.inode)) {
+ 				retval = ext4_handle_dirty_dx_node(handle,
+-								   old_inode,
+-								   dir_bh);
++								   old.inode,
++								   old.dir_bh);
+ 			} else {
+ 				retval = ext4_handle_dirty_dirent_node(handle,
+-							old_inode, dir_bh);
++							old.inode, old.dir_bh);
+ 			}
+ 		} else {
+-			retval = ext4_mark_inode_dirty(handle, old_inode);
++			retval = ext4_mark_inode_dirty(handle, old.inode);
+ 		}
+ 		if (retval) {
+-			ext4_std_error(old_dir->i_sb, retval);
++			ext4_std_error(old.dir->i_sb, retval);
+ 			goto end_rename;
+ 		}
+-		ext4_dec_count(handle, old_dir);
+-		if (new_inode) {
++		ext4_dec_count(handle, old.dir);
++		if (new.inode) {
+ 			/* checked empty_dir above, can't have another parent,
+ 			 * ext4_dec_count() won't work for many-linked dirs */
+-			clear_nlink(new_inode);
++			clear_nlink(new.inode);
+ 		} else {
+-			ext4_inc_count(handle, new_dir);
+-			ext4_update_dx_flag(new_dir);
+-			ext4_mark_inode_dirty(handle, new_dir);
++			ext4_inc_count(handle, new.dir);
++			ext4_update_dx_flag(new.dir);
++			ext4_mark_inode_dirty(handle, new.dir);
+ 		}
+ 	}
+-	ext4_mark_inode_dirty(handle, old_dir);
+-	if (new_inode) {
+-		ext4_mark_inode_dirty(handle, new_inode);
+-		if (!new_inode->i_nlink)
+-			ext4_orphan_add(handle, new_inode);
++	ext4_mark_inode_dirty(handle, old.dir);
++	if (new.inode) {
++		ext4_mark_inode_dirty(handle, new.inode);
++		if (!new.inode->i_nlink)
++			ext4_orphan_add(handle, new.inode);
+ 	}
+ 	retval = 0;
+ 
+ end_rename:
+-	brelse(dir_bh);
+-	brelse(old_bh);
+-	brelse(new_bh);
++	brelse(old.dir_bh);
++	brelse(old.bh);
++	brelse(new.bh);
+ 	if (handle)
+ 		ext4_journal_stop(handle);
+ 	return retval;
 -- 
-1.8.5.2
+1.8.1.4
 
