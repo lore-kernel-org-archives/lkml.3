@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077AbaAHJsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:48:13 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60042 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943AbaAHJre (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:47:34 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <tj@kernel.org>
-CC: <sergei.shtylyov@cogentembedded.com>, <kishon@ti.com>,
-        <b.zolnierkie@samsung.com>, <hdegoede@redhat.com>,
-        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Roger Quadros <rogerq@ti.com>,
-        Balaji T K <balajitk@ti.com>
-Subject: [PATCH v3 3/3] ata: ahci_platform: runtime resume the device before use
-Date: Wed, 8 Jan 2014 15:17:08 +0530
-Message-ID: <1389174428-31414-4-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389174428-31414-1-git-send-email-rogerq@ti.com>
-References: <1389174428-31414-1-git-send-email-rogerq@ti.com>
+	id S1756117AbaAHJs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:48:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59638 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753960AbaAHJsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 04:48:24 -0500
+Message-ID: <52CD1EE0.9000309@ti.com>
+Date: Wed, 8 Jan 2014 11:48:16 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wang YanQing <udknight@gmail.com>
+CC: <plagnioj@jcrosoft.com>, <airlied@redhat.com>,
+        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <kamal@whence.com>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbcon: trivial optimization for fbcon_exit
+References: <20131227023917.GA3908@udknight>
+In-Reply-To: <20131227023917.GA3908@udknight>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="RI8SJQ5MHFLwVUdDcVK9XNsvsVfcmJHt0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On OMAP platforms the device needs to be runtime resumed before
-it can be accessed. The OMAP HWMOD framework takes care of
-enabling the module and its resources based on the
-device's runtime PM state.
+--RI8SJQ5MHFLwVUdDcVK9XNsvsVfcmJHt0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-In this patch we runtime resume during .probe() and runtime suspend
-during .remove() (i.e. ahci_host_stop()).
+On 2013-12-27 04:39, Wang YanQing wrote:
+> Break out as soon as we find a mapped entry con2fb_map.
+>=20
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  drivers/video/console/fbcon.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbco=
+n.c
+> index cd8a802..f39931f 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -3547,8 +3547,10 @@ static void fbcon_exit(void)
+>  			"no"));
+> =20
+>  		for (j =3D first_fb_vc; j <=3D last_fb_vc; j++) {
+> -			if (con2fb_map[j] =3D=3D i)
+> +			if (con2fb_map[j] =3D=3D i) {
+>  				mapped =3D 1;
+> +				break;
+> +			}
+>  		}
+> =20
+>  		if (mapped) {
+>=20
 
-We also update the runtime PM state during .resume().
+Thanks, queued for 3.14.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Balaji T K <balajitk@ti.com>
----
- drivers/ata/ahci_platform.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ Tomi
 
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index f61093b..04c4ac2 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -23,6 +23,7 @@
- #include <linux/platform_device.h>
- #include <linux/libata.h>
- #include <linux/ahci_platform.h>
-+#include <linux/pm_runtime.h>
- #include "ahci.h"
- 
- static void ahci_host_stop(struct ata_host *host);
-@@ -142,6 +143,9 @@ static int ahci_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	pm_runtime_enable(dev);
-+	pm_runtime_get_sync(dev);
-+
- 	hpriv->phy = devm_phy_get(dev, "sata-phy");
- 	if (IS_ERR(hpriv->phy)) {
- 		dev_dbg(dev, "can't get sata-phy\n");
-@@ -269,6 +273,9 @@ static void ahci_host_stop(struct ata_host *host)
- 		clk_disable_unprepare(hpriv->clk);
- 		clk_put(hpriv->clk);
- 	}
-+
-+	pm_runtime_put_sync(dev);
-+	pm_runtime_disable(dev);
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -340,6 +347,11 @@ static int ahci_resume(struct device *dev)
- 
- 	ata_host_resume(host);
- 
-+	/* We resumed so update PM runtime state */
-+	pm_runtime_disable(dev);
-+	pm_runtime_set_active(dev);
-+	pm_runtime_enable(dev);
-+
- 	return 0;
- 
- disable_unprepare_clk:
--- 
-1.8.3.2
 
+
+--RI8SJQ5MHFLwVUdDcVK9XNsvsVfcmJHt0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJSzR7gAAoJEPo9qoy8lh71lbAP/AsMdZIennrcPHhw5rV+puby
+SRxItG9kpWuU907q8AY5eFFMliqlztdgVQh6d0j7Jqy2rKHA158VxKXmQguQGgrM
+3zddGA8RBWvBdjqVTURrGDY7gbFy4252uVPWxN3xmBhXifLj29oRyEW9UkZr3m9o
+C7NEUZLC4FBOKJATYAxLXWkrxjMYO31YNo+fBXnGxitCjjAQQ69OUMsn2oA6Jsgf
+FIEQAD1hN26i4+AlnVxNSfiFL3xsCQUOsgWD4CqD/jTmkd4pdML7Tl7qK3MTNY3R
+9En2ZuiaHiFW6Axbyt8OXPubdfjPWBDwwsSgxd+CmmaJw+xXOA6yoY1XAEp8c5B9
++tUzp/fvG9KKevKrzrUpD2dG/ONMUi+oGNCVvGf/3uVHEbRZFYIP5yuQ2iPEtrQR
+7hrHyy9bBMsU6cmhSTYecn7olPu2wD/urmMvHuqgaNr16nEdhwokv1zJ6t9RkrVr
+KNefnmtHha5qfG26tW+f4Htxo/hi45eFZ0Ht8lkvGWinhDjHF+Eshg9N74//VbH6
+aezo3AA3DSJqJVt0SqF5B6pYyjbFlYqOjmcip/63lrAHuMkP7PazyHF4rd9trFrX
+2nAoLaiTUsSQiFkopbmQPTFOD0npbnMwLHsdEjFcjhcj6cXQei86KR4GqBgT9Ub0
+WqISp5Dc6M/7gSbw3pTh
+=8BzD
+-----END PGP SIGNATURE-----
+
+--RI8SJQ5MHFLwVUdDcVK9XNsvsVfcmJHt0--
