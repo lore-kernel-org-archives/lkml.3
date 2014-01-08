@@ -1,59 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888AbaAHNuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:50:06 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:43864 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaAHNuA (ORCPT
+	id S1756822AbaAHNtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:49:22 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37772 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356AbaAHNtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:50:00 -0500
-X-IronPort-AV: E=Sophos;i="4.95,624,1384300800"; 
-   d="scan'208";a="88712747"
-Message-ID: <52CD5785.4050402@citrix.com>
-Date: Wed, 8 Jan 2014 13:49:57 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v3 6/9] xen-netback: Handle guests with too many
- frags
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>	 <1389139818-24458-7-git-send-email-zoltan.kiss@citrix.com> <1389147141.26646.74.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1389147141.26646.74.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+	Wed, 8 Jan 2014 08:49:12 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, angus.clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v4 30/37] mtd: st_spi_fsm: Erase partly or as a whole a Serial Flash device
+Date: Wed,  8 Jan 2014 13:47:13 +0000
+Message-Id: <1389188840-14306-31-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 02:12, Eric Dumazet wrote:
-> On Wed, 2014-01-08 at 00:10 +0000, Zoltan Kiss wrote:
->
->>
->> +		if (skb_shinfo(skb)->frag_list) {
->> +			nskb = skb_shinfo(skb)->frag_list;
->> +			xenvif_fill_frags(vif, nskb, INVALID_PENDING_IDX);
->> +			skb->len += nskb->len;
->> +			skb->data_len += nskb->len;
->> +			skb->truesize += nskb->truesize;
->> +			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
->> +			skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
->> +			vif->tx_zerocopy_sent += 2;
->> +			nskb = skb;
->> +
->> +			skb = skb_copy_expand(skb,
->> +					0,
->> +					0,
->> +					GFP_ATOMIC | __GFP_NOWARN);
->
-> skb can be NULL here
+When an erase is requested by userspace the MTD framework calls back
+into the driver to conduct the actual command issue. Here we provide the
+routines which do exactly that. We can choose to either do an entire chip
+erase or by sector.
 
-Thanks, fixed that.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 113 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 112 insertions(+), 1 deletion(-)
 
-Zoli
-
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 0b80d74..eac23df 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -565,6 +565,27 @@ static struct stfsm_seq stfsm_seq_erase_sector = {
+ 		    SEQ_CFG_STARTSEQ),
+ };
+ 
++static struct stfsm_seq stfsm_seq_erase_chip = {
++	.seq_opc = {
++		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
++		 SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
++
++		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
++		 SEQ_OPC_OPCODE(FLASH_CMD_CHIPERASE) | SEQ_OPC_CSDEASSERT),
++	},
++	.seq = {
++		STFSM_INST_CMD1,
++		STFSM_INST_CMD2,
++		STFSM_INST_WAIT,
++		STFSM_INST_STOP,
++	},
++	.seq_cfg = (SEQ_CFG_PADS_1 |
++		    SEQ_CFG_ERASE |
++		    SEQ_CFG_READNOTWRITE |
++		    SEQ_CFG_CSDEASSERT |
++		    SEQ_CFG_STARTSEQ),
++};
++
+ static struct stfsm_seq stfsm_seq_wrvcr = {
+ 	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
+ 		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
+@@ -1203,6 +1224,47 @@ static int stfsm_mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
+ 	return 0;
+ }
+ 
++static int stfsm_erase_sector(struct stfsm *fsm, const uint32_t offset)
++{
++	struct stfsm_seq *seq = &stfsm_seq_erase_sector;
++	int ret;
++
++	dev_dbg(fsm->dev, "erasing sector at 0x%08x\n", offset);
++
++	/* Enter 32-bit address mode, if required */
++	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
++		stfsm_enter_32bit_addr(fsm, 1);
++
++	seq->addr1 = (offset >> 16) & 0xffff;
++	seq->addr2 = offset & 0xffff;
++
++	stfsm_load_seq(fsm, seq);
++
++	stfsm_wait_seq(fsm);
++
++	/* Wait for completion */
++	ret = stfsm_wait_busy(fsm);
++
++	/* Exit 32-bit address mode, if required */
++	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
++		stfsm_enter_32bit_addr(fsm, 0);
++
++	return ret;
++}
++
++static int stfsm_erase_chip(struct stfsm *fsm)
++{
++	const struct stfsm_seq *seq = &stfsm_seq_erase_chip;
++
++	dev_dbg(fsm->dev, "erasing chip\n");
++
++	stfsm_load_seq(fsm, seq);
++
++	stfsm_wait_seq(fsm);
++
++	return stfsm_wait_busy(fsm);
++}
++
+ /*
+  * Write an address range to the flash chip.  Data must be written in
+  * FLASH_PAGESIZE chunks.  The address range may be any size provided
+@@ -1260,6 +1322,54 @@ out1:
+ 	return ret;
+ }
+ 
++/*
++ * Erase an address range on the flash chip. The address range may extend
++ * one or more erase sectors.  Return an error is there is a problem erasing.
++ */
++static int stfsm_mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
++{
++	struct stfsm *fsm = dev_get_drvdata(mtd->dev.parent);
++	u32 addr, len;
++	int ret;
++
++	dev_dbg(fsm->dev, "%s at 0x%llx, len %lld\n", __func__,
++		(long long)instr->addr, (long long)instr->len);
++
++	addr = instr->addr;
++	len = instr->len;
++
++	mutex_lock(&fsm->lock);
++
++	/* Whole-chip erase? */
++	if (len == mtd->size) {
++		ret = stfsm_erase_chip(fsm);
++		if (ret)
++			goto out1;
++	} else {
++		while (len) {
++			ret = stfsm_erase_sector(fsm, addr);
++			if (ret)
++				goto out1;
++
++			addr += mtd->erasesize;
++			len -= mtd->erasesize;
++		}
++	}
++
++	mutex_unlock(&fsm->lock);
++
++	instr->state = MTD_ERASE_DONE;
++	mtd_erase_callback(instr);
++
++	return 0;
++
++out1:
++	instr->state = MTD_ERASE_FAILED;
++	mutex_unlock(&fsm->lock);
++
++	return ret;
++}
++
+ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
+ {
+ 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
+@@ -1530,8 +1640,9 @@ static int stfsm_probe(struct platform_device *pdev)
+ 
+ 	fsm->mtd._read  = stfsm_mtd_read;
+ 	fsm->mtd._write = stfsm_mtd_write;
++	fsm->mtd._erase = stfsm_mtd_erase;
+ 
+-	dev_err(&pdev->dev,
++	dev_info(&pdev->dev,
+ 		"Found serial flash device: %s\n"
+ 		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
+ 		info->name,
+-- 
+1.8.3.2
 
