@@ -1,146 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047AbaAHQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:21:26 -0500
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:61951 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaAHQVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:21:22 -0500
+	id S1757145AbaAHQWK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:22:10 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:52305 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755610AbaAHQWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 11:22:07 -0500
+From: Qais Yousef <Qais.Yousef@imgtec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Michael Holzheu" <holzheu@linux.vnet.ibm.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Vivek Goyal (vgoyal@redhat.com)" <vgoyal@redhat.com>
+Subject: RE: [PATCH] crash_dump: fix compilation error (on MIPS at least)
+Thread-Topic: [PATCH] crash_dump: fix compilation error (on MIPS at least)
+Thread-Index: AQHO8QnExmvHISq+vkaNQVlz0RPH3ppFohqAgAlF3UCAAcaXgIAqiqDA
+Date: Wed, 8 Jan 2014 16:22:02 +0000
+Message-ID: <392C4BDEFF12D14FA57A3F30B283D7D13F8E75@LEMAIL01.le.imgtec.org>
+References: <1386172702-31266-1-git-send-email-qais.yousef@imgtec.com>
+ <20131205135835.GA1600@redhat.com>
+ <392C4BDEFF12D14FA57A3F30B283D7D13C7764@LEMAIL01.le.imgtec.org>
+ <20131212144201.GA31540@redhat.com>
+In-Reply-To: <20131212144201.GA31540@redhat.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.154.95]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20140108143529.GB14122@mudshark.cambridge.arm.com>
-References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com>
-	<20140108143529.GB14122@mudshark.cambridge.arm.com>
-Date: Wed, 8 Jan 2014 08:21:21 -0800
-X-Google-Sender-Auth: jw4wFHU6dqtdIvkUTvigZV7Kdeg
-Message-ID: <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
-Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
-From: Doug Anderson <dianders@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        David Garbett <David.Garbett@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+X-SEF-Processed: 7_3_0_01192__2014_01_08_16_22_03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s08GMGM5027745
 
-WIll,
+Ping.
 
-Thanks for your comments!
-
-On Wed, Jan 8, 2014 at 6:35 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Jan 08, 2014 at 01:33:11PM +0000, Vivek Gautam wrote:
->> The erratum-773769 occurs on Arm Coretex-A15 (rev r2p0),
->> when L2 Data Ram latency is set to 4 cycles or more; or
->> when ACP is in use, or with L2 Data RAM slice configured.
->> Therefore, the effective latency as calculated in Table 7-2 of
->> Cotex-A15 (rev r2p0) trm should be 3 cycles or less.
->>
->> On Exynos5250 based systems the effective data ram latency
->> is 4 cycles, since we have DATA_RAM_SETUP bit enabled (L2CTRL[5]=1b'1)
->> and DATA_RAM_LATENCY bits set to 0x2 (L2CTLR[2:0]=3b'010) therefore,
->> the effective L2 data RAM latency becomes 4 cycles.
->> So erratum '773769' occurs causing a corrupted L2 Cache.
->>
->> This patch gives a workaround to the mentioned erratum, using below
->> mentioned algo:
->> ----------------------------------------------------------------
->> if data RAM setup = 1
->>   then check if effective latency i.e (latency + setup + 1) > 3
->>   if 'true'
->>     then clear data RAM setup
->>       goto branch 'a'
->> if data RAM setup = 0
->>   a: then check if data RAM latency > 0x10
->>     if true then force data RAM latency = 0x10
->> ----------------------------------------------------------------
->> so that the effective data RAM latency reduces to 3 cycles or less
->> and hence prevent hitting the erratum.
->>
->> NOTE: The Exynos5250 based products have already been shipped, which
->>       makes it impossible to add the change in bootloader, so we are
->>       adding the required change in kernel.
->
-> NAK. Whilst I appreciate that you may not be able to fix your bootloader,
-> this isn't the right change to make in the kernel. Blindly changing memory
-> latencies is likely to do more harm than good for a multi-platform kernel,
-> even if it works for exynos 5250. The only alternative I can think of (if you
-> have to make a mainline kernel change) is to restrict the clock frequencies at
-> which the CPU is allowed to run, although that obviously requires some
-> investigation in order to determine how viable it is for your SoC.
-
-OK, so humor me a little here...
-
-I'll start off by saying that I'm totally OK if mainline doesn't want
-this fixed.  If mainline is not interested in running reliably on
-exynos5250-based products then there's nothing I can do about it.  It
-seems unfortunate, but I'm not going to get into a shouting match
-about it.
-
-You're saying that this patch is blindly changing memory latencies.  I
-don't think it is (please correct me if I'm wrong!).  This patch:
-
-* Is guarded by a CONFIG option so the code isn't even compiled in if
-you don't want EXYNOS5250 support.  I know this doesn't help
-multiplatform, but it means that if you really hate the code it's easy
-to disable.
-
-* Is guarded by a runtime check of the revision number so that it
-doesn't run on unaffected A15 revisions.
-
-* Is guarded by a runtime check so it does nothing at all if the total
-latency is <= 3 (AKA if boot code already picked a sane value)
-
-...with the above guards it's pretty safe...
-
-I will agree that there is a _potential_ that this could make things
-work worse on an already broken product our there, but I would say
-there's a reasonable chance that such a product doesn't exist (but
-please correct me if I'm wrong).  Specifically, this patch will cause
-problems in two examples that I can think of:
-
---
-
-Example A: existing A15 <=r2p0 product with 773769-ignorant boot code
-that could be fixed, but that needs "setup = 1"
-
-In this case we've got boot code that's like the exynos5250 boot code
-that accidentally sets the total latency to >= 4 when it would work
-just fine to use a value of 3.  ...except that unlike the exynos5250
-this hypthetical SoC needs to leave setup = 1.
-
-...if such a machine were found in the wild (seems unlikely?) then
-we'll need to figure out what to do.  If its boot code cannot be
-updated and we want to support this product with a similar patch then
-we'll need to be more dynamic.
-
---
-
-Example B: existing A15 <=r2p0 product that just has to live with crashes
-
-In this case we've got a product where we're going to just accept that
-it crashes sometimes (since this is a fairly hard crash to trigger)
-because it crashes even more when the total latency < 4.  In this case
-we don't want to "fix" the errata because that makes things worse.
-
-...if such a machine were find in the wild (it's possible, I guess?)
-then that's a really good reason not to take this patch or to find
-some way to dynamically enable / disable it.
-
---
-
-Let me know what you think of the above, or if I'm misunderstanding something...
-
--Doug
+> -----Original Message-----
+> From: Vivek Goyal [mailto:vgoyal@redhat.com]
+> Sent: 12 December 2013 14:42
+> To: Qais Yousef; Andrew Morton
+> Cc: linux-kernel@vger.kernel.org; Michael Holzheu; linux-mips@linux-mips.org;
+> stable@vger.kernel.org
+> Subject: Re: [PATCH] crash_dump: fix compilation error (on MIPS at least)
+> 
+> Generally akpm picks the kexec/kdump arch independent changes.
+> 
+> Andrew, can you please consider this patch for inclusion.
+> 
+> Thanks
+> Vivek
+> 
+> On Wed, Dec 11, 2013 at 11:43:32AM +0000, Qais Yousef wrote:
+> > > -----Original Message-----
+> > > From: Vivek Goyal [mailto:vgoyal@redhat.com]
+> > > Sent: 05 December 2013 13:59
+> > > To: Qais Yousef
+> > > Cc: linux-kernel@vger.kernel.org; Andrew Morton; Michael Holzheu;
+> > > linux- mips@linux-mips.org; stable@vger.kernel.org
+> > > Subject: Re: [PATCH] crash_dump: fix compilation error (on MIPS at
+> > > least)
+> > >
+> > > On Wed, Dec 04, 2013 at 03:58:22PM +0000, Qais Yousef wrote:
+> > > >   In file included from kernel/crash_dump.c:2:0:
+> > > >   include/linux/crash_dump.h:22:27: error: unknown type name â€˜pgprot_tâ€™
+> > > >
+> > > > when CONFIG_CRASH_DUMP=y
+> > > >
+> > > > The error was traced back to this commit:
+> > > >
+> > > >   9cb218131de1 vmcore: introduce remap_oldmem_pfn_range()
+> > > >
+> > > > include <asm/pgtable.h> to get the missing definition
+> > > >
+> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > > Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > > > Cc: Vivek Goyal <vgoyal@redhat.com>
+> > > > Cc: <linux-mips@linux-mips.org>
+> > > > Cc: <stable@vger.kernel.org> # 3.12
+> > > > Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> > > > Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+> > > > ---
+> > >
+> > > Looks good to me.
+> > >
+> > > Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> > >
+> > > Vivek
+> >
+> > Hi,
+> >
+> > I failed to see this picked up by anyone. I'm not sure which tree it
+> > should go to to be honest. Do I need to add more people to the Cc? Or
+> > am I just being impatient? :)
+> >
+> > Thanks,
+> > Qais
+> >
+> > >
+> > > > I haven't tried any other architecture except mips.
+> > > > If OK this should be considered for stable 3.12 (CCed).
+> > > >
+> > > >  include/linux/crash_dump.h |    2 ++
+> > > >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > > >
+> > > > diff --git a/include/linux/crash_dump.h
+> > > > b/include/linux/crash_dump.h index fe68a5a..7032518 100644
+> > > > --- a/include/linux/crash_dump.h
+> > > > +++ b/include/linux/crash_dump.h
+> > > > @@ -6,6 +6,8 @@
+> > > >  #include <linux/proc_fs.h>
+> > > >  #include <linux/elf.h>
+> > > >
+> > > > +#include <asm/pgtable.h> /* for pgprot_t */
+> > > > +
+> > > >  #define ELFCORE_ADDR_MAX	(-1ULL)
+> > > >  #define ELFCORE_ADDR_ERR	(-2ULL)
+> > > >
+> > > > --
+> > > > 1.7.1
+> > > >
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
