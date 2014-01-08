@@ -1,175 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910AbaAHG2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 01:28:08 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:58169 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078AbaAHG15 (ORCPT
+	id S1755084AbaAHG3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 01:29:06 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:52450 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaAHG3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 01:27:57 -0500
+	Wed, 8 Jan 2014 01:29:02 -0500
+Message-ID: <52CCF027.6040607@ti.com>
+Date: Wed, 8 Jan 2014 11:58:55 +0530
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <52CCEE80.20001@linux.intel.com>
-References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>
-	<1389085234-22296-15-git-send-email-jiang.liu@linux.intel.com>
-	<CAOtp4Kqn5e_51hwrRMgRmam7jXaVC=md7BAuwnG3gJGETj9iQA@mail.gmail.com>
-	<52CCE9CD.5060404@linux.intel.com>
-	<CAOtp4KqvzrJr=Z5xj-vZnnL--W6R2CjZ=m0rFgR9DzxVKjfwSQ@mail.gmail.com>
-	<52CCEE80.20001@linux.intel.com>
-Date: Wed, 8 Jan 2014 14:27:56 +0800
-Message-ID: <CAOtp4KptOrCEoO8uc6gH=c+t1qJccE=yDFYXcZcCBTRy6LJc3g@mail.gmail.com>
-Subject: Re: [RFC Patch Part2 V1 14/14] iommu/vt-d: update IOMMU state when
- memory hotplug happens
-From: Kai Huang <dev.kai.huang@gmail.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] mfd: omap-usb-tll: Don't hold lock during pm_runtime_get/put_sync()
+References: <1387360909-10624-1-git-send-email-rogerq@ti.com> <20131218103641.GD14274@lee--X1>
+In-Reply-To: <20131218103641.GD14274@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 2:21 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->
->
-> On 2014/1/8 14:14, Kai Huang wrote:
->> On Wed, Jan 8, 2014 at 2:01 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->>>
->>>
->>> On 2014/1/8 13:07, Kai Huang wrote:
->>>> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
->>>>> If static identity domain is created, IOMMU driver needs to update
->>>>> si_domain page table when memory hotplug event happens. Otherwise
->>>>> PCI device DMA operations can't access the hot-added memory regions.
->>>>>
->>>>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->>>>> ---
->>>>>  drivers/iommu/intel-iommu.c |   52 ++++++++++++++++++++++++++++++++++++++++++-
->>>>>  1 file changed, 51 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->>>>> index 83e3ed4..35a987d 100644
->>>>> --- a/drivers/iommu/intel-iommu.c
->>>>> +++ b/drivers/iommu/intel-iommu.c
->>>>> @@ -33,6 +33,7 @@
->>>>>  #include <linux/dmar.h>
->>>>>  #include <linux/dma-mapping.h>
->>>>>  #include <linux/mempool.h>
->>>>> +#include <linux/memory.h>
->>>>>  #include <linux/timer.h>
->>>>>  #include <linux/iova.h>
->>>>>  #include <linux/iommu.h>
->>>>> @@ -3689,6 +3690,54 @@ static struct notifier_block device_nb = {
->>>>>         .notifier_call = device_notifier,
->>>>>  };
->>>>>
->>>>> +static int intel_iommu_memory_notifier(struct notifier_block *nb,
->>>>> +                                      unsigned long val, void *v)
->>>>> +{
->>>>> +       struct memory_notify *mhp = v;
->>>>> +       unsigned long long start, end;
->>>>> +       struct iova *iova;
->>>>> +
->>>>> +       switch (val) {
->>>>> +       case MEM_GOING_ONLINE:
->>>>> +               start = mhp->start_pfn << PAGE_SHIFT;
->>>>> +               end = ((mhp->start_pfn + mhp->nr_pages) << PAGE_SHIFT) - 1;
->>>>> +               if (iommu_domain_identity_map(si_domain, start, end)) {
->>>>> +                       pr_warn("dmar: failed to build identity map for [%llx-%llx]\n",
->>>>> +                               start, end);
->>>>> +                       return NOTIFY_BAD;
->>>>> +               }
->>>>
->>>> Better to use iommu_prepare_identity_map? For si_domain, if
->>>> hw_pass_through is used, there's no page table.
->>> Hi Kai,
->>>         Good catch!
->>> Seems function iommu_prepare_identity_map() is designed to handle
->>> RMRRs. So how about avoiding of registering memory hotplug notifier
->>> if hw_pass_through is true?
->>
->> I think that's also fine :)
->>
->> Btw, I have a related question to memory hotplug but not related to
->> intel IOMMU specifically. For the devices use DMA remapping, suppose
->> the device is already using the memory that we are trying to remove,
->> is this case, looks we need to change the existing iova <-> pa
->> mappings for the pa that is in the memory range about to be removed,
->> and reset the mapping to different pa (iova remains the same). Does
->> existing code have this covered? Is there a generic IOMMU layer memory
->> hotplug notifier to handle memory removal?
-> That's a big issue about how to reclaim memory in use. Current rule
-> is that memory used by DMA won't be removed until released.
->
+Hi,
 
-Understood. Thanks.
-
--Kai
+On 12/18/2013 04:06 PM, Lee Jones wrote:
+>> pm_runtime_get/put_sync() can sleep so don't hold spinlock while
+>> calling them.
 >>
->> -Kai
->>>
->>> Thanks!
->>> Gerry
->>>
->>>>
->>>>> +               break;
->>>>> +       case MEM_OFFLINE:
->>>>> +       case MEM_CANCEL_ONLINE:
->>>>> +               /* TODO: enhance RB-tree and IOVA code to support of splitting iova */
->>>>> +               iova = find_iova(&si_domain->iovad, mhp->start_pfn);
->>>>> +               if (iova) {
->>>>> +                       unsigned long start_pfn, last_pfn;
->>>>> +                       struct dmar_drhd_unit *drhd;
->>>>> +                       struct intel_iommu *iommu;
->>>>> +
->>>>> +                       start_pfn = mm_to_dma_pfn(iova->pfn_lo);
->>>>> +                       last_pfn = mm_to_dma_pfn(iova->pfn_hi + 1) - 1;
->>>>> +                       dma_pte_clear_range(si_domain, start_pfn, last_pfn);
->>>>> +                       dma_pte_free_pagetable(si_domain, start_pfn, last_pfn);
->>>>> +                       rcu_read_lock();
->>>>> +                       for_each_active_iommu(iommu, drhd)
->>>>> +                               iommu_flush_iotlb_psi(iommu, si_domain->id,
->>>>> +                                       start_pfn, last_pfn - start_pfn + 1, 0);
->>>>> +                       rcu_read_unlock();
->>>>> +                       __free_iova(&si_domain->iovad, iova);
->>>>> +               }
->>>>
->>>> The same as above. Looks we need to consider hw_pass_through for the si_domain.
->>>>
->>>> -Kai
->>>>
->>>>> +               break;
->>>>> +       }
->>>>> +
->>>>> +       return NOTIFY_OK;
->>>>> +}
->>>>> +
->>>>> +static struct notifier_block intel_iommu_memory_nb = {
->>>>> +       .notifier_call = intel_iommu_memory_notifier,
->>>>> +       .priority = 0
->>>>> +};
->>>>> +
->>>>>  int __init intel_iommu_init(void)
->>>>>  {
->>>>>         int ret = -ENODEV;
->>>>> @@ -3761,8 +3810,9 @@ int __init intel_iommu_init(void)
->>>>>         init_iommu_pm_ops();
->>>>>
->>>>>         bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
->>>>> -
->>>>>         bus_register_notifier(&pci_bus_type, &device_nb);
->>>>> +       if (si_domain)
->>>>> +               register_memory_notifier(&intel_iommu_memory_nb);
->>>>>
->>>>>         intel_iommu_enabled = 1;
->>>>>
->>>>> --
->>>>> 1.7.10.4
->>>>>
->>>>> _______________________________________________
->>>>> iommu mailing list
->>>>> iommu@lists.linux-foundation.org
->>>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+>> This patch prevents a BUG() when CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
+>> Bug is present in Kernel versions v3.9 onwards.
+>>
+>> Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+>> Cc: <stable@vger.kernel.org> # 3.9+
+>> ---
+>>  drivers/mfd/omap-usb-tll.c | 11 ++++++-----
+>>  1 file changed, 6 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+>> index 0d946ae1..248004c 100644
+>> --- a/drivers/mfd/omap-usb-tll.c
+>> +++ b/drivers/mfd/omap-usb-tll.c
+>> @@ -346,7 +346,9 @@ int omap_tll_init(struct usbhs_omap_platform_data *pdata)
+>>  	for (i = 0; i < tll->nch; i++)
+>>  		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
+>>  
+>> +	spin_unlock(&tll_lock);
+>>  	pm_runtime_get_sync(tll_dev);
+>> +	spin_lock(&tll_lock);
+> 
+> This is pretty ugly. Can't you move it above the spin_lock() instead?
+
+OK. I'll also remove NULL check for tll_dev outside the spin_lock().
+
+> 
+> <snip>
+> 
+>>  	tll = dev_get_drvdata(tll_dev);
+>>  
+>> +	spin_unlock(&tll_lock);
+>>  	pm_runtime_get_sync(tll_dev);
+>> +	spin_lock(&tll_lock);
+> 
+> Same here?
+
+Yes.
+
+> 
+>>  	for (i = 0; i < tll->nch; i++) {
+>>  		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+>> @@ -438,7 +441,6 @@ int omap_tll_enable(struct usbhs_omap_platform_data *pdata)
+>>  	}
+>>  
+>>  	spin_unlock(&tll_lock);
+>> -
+> 
+> This doesn't belong in this patch and is now inconsistent with the
+> other functions in the driver.
+
+OK.
+
+> 
+>>  	return 0;
+>>  }
+>>  EXPORT_SYMBOL_GPL(omap_tll_enable);
+>> @@ -464,9 +466,8 @@ int omap_tll_disable(struct usbhs_omap_platform_data *pdata)
+>>  		}
+>>  	}
+>>  
+>> -	pm_runtime_put_sync(tll_dev);
+>> -
+>>  	spin_unlock(&tll_lock);
+>> +	pm_runtime_put_sync(tll_dev);
+>>  
+>>  	return 0;
+>>  }
+> 
+
+cheers,
+-roger
+
