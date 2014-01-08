@@ -1,116 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaAHCBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 21:01:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44444 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaAHCBk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 21:01:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <52C80AE6.1070302@acm.org>
-References: <52C80A50.3000602@acm.org>
-	<52C80AE6.1070302@acm.org>
-Date: Wed, 8 Jan 2014 10:01:38 +0800
-Message-ID: <CACVXFVODMd1UPbzg-fBn-n991scnAseArvFLpPExe44EoPZuyA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] driver-core: Fix use-after-free triggered by bus_unregister()
-From: Ming Lei <ming.lei@canonical.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754852AbaAHCDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 21:03:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:55873 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753627AbaAHCDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 21:03:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,621,1384329600"; 
+   d="scan'208";a="435445742"
+Message-ID: <1389146573.6486.1.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] hwmon/sensors: fix SENSORS_LM75 dependencies
+From: Zhang Rui <rui.zhang@intel.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Frodo Looijaard <frodol@dds.nl>,
+        lm-sensors@lm-sensors.org, linux-pm@vger.kernel.org
+Date: Wed, 08 Jan 2014 10:02:53 +0800
+In-Reply-To: <20140107152148.36768345@endymion.delvare>
+References: <20140106204020.b47e53cc3ead8f90164ef5b7@canb.auug.org.au>
+	 <52CB0948.6030702@infradead.org> <20140106203209.GA21630@roeck-us.net>
+	 <52CB53DC.4030901@infradead.org> <52CB65DA.2010103@roeck-us.net>
+	 <20140107130401.23bffcd2@endymion.delvare> <52CBF1CF.2000603@ti.com>
+	 <20140107152148.36768345@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 4, 2014 at 9:21 PM, Bart Van Assche <bvanassche@acm.org> wrote:
-> Avoid that bus_unregister() triggers a use-after-free with
-> CONFIG_DEBUG_KOBJECT_RELEASE=y. This patch avoids that the
-> following sequence triggers a kernel crash with memory poisoning
-> enabled:
-> * bus_register()
-> * driver_register()
-> * driver_unregister()
-> * bus_unregister()
->
-> The above sequence causes the bus private data to be freed from
-> inside the bus_unregister() call although it is not guaranteed in
-> that function that the reference count on the bus private data has
-> dropped to zero. As an example, with CONFIG_DEBUG_KOBJECT_RELEASE=y
-> the ${bus}/drivers kobject is still holding a reference on
-> bus->p->subsys.kobj via its parent pointer at the time the bus
-> private data is freed. Fix this by deferring freeing the bus private
-> data until the last kobject_put() call on bus->p->subsys.kobj.
->
-> The kernel oops triggered by the above sequence and with memory
-> poisoning enabled and that is fixed by this patch is as follows:
->
-> general protection fault: 0000 [#1] PREEMPT SMP
-> CPU: 3 PID: 2711 Comm: kworker/3:32 Tainted: G        W  O 3.13.0-rc4-debug+ #1
-> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> Workqueue: events kobject_delayed_cleanup
-> task: ffff880037f866d0 ti: ffff88003b638000 task.ti: ffff88003b638000
-> Call Trace:
->  [<ffffffff81263105>] ? kobject_get_path+0x25/0x100
->  [<ffffffff81264354>] kobject_uevent_env+0x134/0x600
->  [<ffffffff8126482b>] kobject_uevent+0xb/0x10
->  [<ffffffff81262fa2>] kobject_delayed_cleanup+0xc2/0x1b0
->  [<ffffffff8106c047>] process_one_work+0x217/0x700
->  [<ffffffff8106bfdb>] ? process_one_work+0x1ab/0x700
->  [<ffffffff8106c64b>] worker_thread+0x11b/0x3a0
->  [<ffffffff8106c530>] ? process_one_work+0x700/0x700
->  [<ffffffff81074b70>] kthread+0xf0/0x110
->  [<ffffffff81074a80>] ? insert_kthread_work+0x80/0x80
->  [<ffffffff815673bc>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81074a80>] ? insert_kthread_work+0x80/0x80
-> Code: 89 f8 48 89 e5 f6 82 c0 27 63 81 20 74 15 0f 1f 44 00 00 48 83 c0 01 0f b6 10 f6 82 c0 27 63 81 20 75 f0 5d c3 66 0f 1f 44 00 00 <80> 3f 00 55 48 89 e5 74 15 48 89 f8 0f 1f 40 00 48 83 c0 01 80
-> RIP  [<ffffffff81267ed0>] strlen+0x0/0x30
->  RSP <ffff88003b639c70>
-> ---[ end trace 210f883ef80376aa ]---
->
-> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+On Tue, 2014-01-07 at 15:21 +0100, Jean Delvare wrote:
+> Hi Eduardo,
+> 
+> On Tue, 7 Jan 2014 08:23:43 -0400, Eduardo Valentin wrote:
+> > On 07-01-2014 08:04, Jean Delvare wrote:
+> > > On Mon, 06 Jan 2014 18:26:34 -0800, Guenter Roeck wrote:
+> > >> This needs to be addressed
+> > >> in the thermal code, for example with dummy declarations if THERMAL=m but
+> > >> SENSORS_LM75=y. The functions are already declared as dummies if THERMAL_OF=n.
+> > > 
+> > > This won't fly I'm afraid, the number of hwmon drivers affected will
+> > > grow in the future and you certainly don't want to have to change the
+> > > generic thermal code every time a new driver is added/converted.
+> > 
+> > Agreed
+> > 
+> > > 
+> > > I've looked at the problem this morning and I will admit I do not even
+> > > understand what the problem is. In Randy's config, CONFIG_THERMAL_OF=y
+> > > so both thermal_zone_of_sensor_unregister and
+> > > thermal_zone_of_sensor_register are built-in. SENSORS_LM75=y so the
+> > > calls to these functions are built-in too. I just can't see how this
+> > > can be a problem at link time. Can anyone enlighten me?
+> > 
+> > I believe the problem is more in the fact that THERMAL_OF is a bool, but
+> > the way it is in thermal Kconfig, it will link to the thermal module, in
+> > case CONFIG_THERMAL=m.
+> 
+> Doh. I've been looking at this for an hour and managed to miss
+> that :( Thanks for explaining.
+> 
+> > Thus I am proposing the following,
+> > which limits the user to have THERMAL_OF only as builtin and whenever
+> > is selected, it will select THERMAL too. That is:
+> > 
+> > 
+> > From b643aa260ed4f3514d1ca51b1ecbe4be7652a8d0 Mon Sep 17 00:00:00 2001
+> > From: Eduardo Valentin <eduardo.valentin@ti.com>
+> > Date: Tue, 7 Jan 2014 08:04:02 -0400
+> > Subject: [PATCH 1/1] thermal: fix compilation issue on CONFIG_THERMAL_OF
+> >  dependencies
+> > 
+> > Users of API provided by THERMAL_OF config may suffer when
+> > CONFIG_THERMAL=y, causing linking issues, such as:
+> > 
+> > drivers/built-in.o: In function `lm75_remove':
+> > lm75.c:(.text+0x12bd8c): undefined reference to
+> > `thermal_zone_of_sensor_unregister'
+> > drivers/built-in.o: In function `lm75_probe':
+> > lm75.c:(.text+0x12c123): undefined reference to
+> > `thermal_zone_of_sensor_register'
+> > 
+> > Therefore, this patch limits the compilation build to always
+> > have THERMAL=y, whenever THERMAL_OF=y. In this way, whenever
+> > the API user is built, if THERMAL_OF=y, the build shall have
+> > the full thermal support, otherwise, the thermal API will provide
+> > stubs.
+> > 
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: linux-pm@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> > ---
+> >  drivers/thermal/Kconfig | 29 ++++++++++++++++-------------
+> >  1 file changed, 16 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> > index 58f98bd..dc315e9 100644
+> > --- a/drivers/thermal/Kconfig
+> > +++ b/drivers/thermal/Kconfig
+> > @@ -29,19 +29,6 @@ config THERMAL_HWMON
+> >  	  Say 'Y' here if you want all thermal sensors to
+> >  	  have hwmon sysfs interface too.
+> > 
+> > -config THERMAL_OF
+> > -	bool
+> > -	prompt "APIs to parse thermal data out of device tree"
+> > -	depends on OF
+> > -	default y
+> > -	help
+> > -	  This options provides helpers to add the support to
+> > -	  read and parse thermal data definitions out of the
+> > -	  device tree blob.
+> > -
+> > -	  Say 'Y' here if you need to build thermal infrastructure
+> > -	  based on device tree.
+> > -
+> >  choice
+> >  	prompt "Default Thermal governor"
+> >  	default THERMAL_DEFAULT_GOV_STEP_WISE
+> > @@ -235,3 +222,19 @@ source "drivers/thermal/samsung/Kconfig"
+> >  endmenu
+> > 
+> >  endif
+> > +
+> > +menuconfig THERMAL_OF
+> > +	bool
+> > +	prompt "APIs to parse thermal data out of device tree"
+> > +	depends on OF
+> > +	select THERMAL
+> > +	default y
+> > +	help
+> > +	  This options enables DT thermal API which adds support to
+> > +	  read and parse thermal data definitions out of the
+> > +	  device tree blob. This option is mostly used by embedded
+> > +	  thermal drivers.
+> > +
+> > +	  Say 'Y' here if you need to build thermal infrastructure
+> > +	  based on device tree.
+> > +
+> 
+> I suppose this works, however I believe there is value in allowing for
+> modular building of as much code as possible.
+> 
+> I have an alternative proposal, which lets thermal be built as module,
+> and hopefully also addresses the issue (I can't test...) The only
+> drawback is that the same dependency must be added for every other
+> hwmon driver which optionally uses THERMAL_OF.
+> 
+> From: Jean Delvare <khali@linux-fr.org>
+> 
+> Based on an earlier attempt by Randy Dunlap.
+> 
+> Fix SENSORS_LM75 dependencies to eliminate build errors:
+> 
+> drivers/built-in.o: In function `lm75_remove':
+> lm75.c:(.text+0x12bd8c): undefined reference to `thermal_zone_of_sensor_unregister'
+> drivers/built-in.o: In function `lm75_probe':
+> lm75.c:(.text+0x12c123): undefined reference to `thermal_zone_of_sensor_register'
+> 
+> Add depends on THERMAL since that is what provides the
+> register/unregister functions above, but only if THERMAL_OF was
+> selected as this is an optional feature of the driver.
+> 
+> Signed-off-by: Jean Delvare <khali@linux-fr.org>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+
+Acked-by: Zhang Rui <rui.zhang@intel.com>
+
+thanks,
+rui
 > ---
->  drivers/base/bus.c | 13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-> index 73f6c29..59dc808 100644
-> --- a/drivers/base/bus.c
-> +++ b/drivers/base/bus.c
-> @@ -146,8 +146,19 @@ void bus_remove_file(struct bus_type *bus, struct bus_attribute *attr)
->  }
->  EXPORT_SYMBOL_GPL(bus_remove_file);
->
-> +static void bus_release(struct kobject *kobj)
-> +{
-> +       struct subsys_private *priv =
-> +               container_of(kobj, typeof(*priv), subsys.kobj);
-> +       struct bus_type *bus = priv->bus;
-> +
-> +       kfree(priv);
-> +       bus->p = NULL;
-> +}
-> +
->  static struct kobj_type bus_ktype = {
->         .sysfs_ops      = &bus_sysfs_ops,
-> +       .release        = bus_release,
->  };
->
->  static int bus_uevent_filter(struct kset *kset, struct kobject *kobj)
-> @@ -953,8 +964,6 @@ void bus_unregister(struct bus_type *bus)
->         kset_unregister(bus->p->devices_kset);
->         bus_remove_file(bus, &bus_attr_uevent);
->         kset_unregister(&bus->p->subsys);
-> -       kfree(bus->p);
-> -       bus->p = NULL;
->  }
->  EXPORT_SYMBOL_GPL(bus_unregister);
-
-Looks the fix is fine,
-
-Acked-by: Ming Lei <ming.lei@canonical.com>
+>  drivers/hwmon/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-3.13-rc7.orig/drivers/hwmon/Kconfig	2014-01-07 09:01:24.812848091 +0100
+> +++ linux-3.13-rc7/drivers/hwmon/Kconfig	2014-01-07 15:19:11.039472329 +0100
+> @@ -650,6 +650,7 @@ config SENSORS_LM73
+>  config SENSORS_LM75
+>  	tristate "National Semiconductor LM75 and compatibles"
+>  	depends on I2C
+> +	depends on THERMAL || !THERMAL_OF
+>  	help
+>  	  If you say yes here you get support for one common type of
+>  	  temperature sensor chip, with models including:
+> 
+> 
 
 
-Thanks,
---
-Ming Lei
