@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156AbaAHXX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:23:27 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:40870 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757565AbaAHXXY (ORCPT
+	id S932266AbaAHXXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:23:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43763 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182AbaAHXXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 18:23:24 -0500
-Date: Thu, 9 Jan 2014 00:23:22 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, peterz@infradead.org, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lockdep: increase static allocations
-Message-ID: <20140108232322.GH20765@two.firstfloor.org>
-References: <1389208906-24338-1-git-send-email-sasha.levin@oracle.com>
- <87lhyq45go.fsf@tassilo.jf.intel.com>
- <52CDB0CF.5060904@oracle.com>
+	Wed, 8 Jan 2014 18:23:40 -0500
+Date: Wed, 8 Jan 2014 15:24:10 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: Re: [char-misc 1/4] mei: do not run reset flow from the interrupt
+ thread
+Message-ID: <20140108232410.GA11300@kroah.com>
+References: <1389205164-13553-1-git-send-email-tomas.winkler@intel.com>
+ <1389205164-13553-2-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52CDB0CF.5060904@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1389205164-13553-2-git-send-email-tomas.winkler@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 03:10:55PM -0500, Sasha Levin wrote:
-> On 01/08/2014 02:51 PM, Andi Kleen wrote:
-> >Sasha Levin <sasha.levin@oracle.com> writes:
-> >
-> >>Fuzzing a recent kernel with a large configuration hits the static
-> >>allocation limits and disables lockdep.
-> >
-> >Doesn't that use a lot more memory?  I thought lockdep preallocates.
-> >
-> >Doubling may be too aggressive.
+On Wed, Jan 08, 2014 at 08:19:21PM +0200, Tomas Winkler wrote:
+> This fixes a potential deadlock in case of a firmware
+> initiated reset
 > 
-> The patch adds about 4MB of memory usage, I didn't think it's too much for something
-> that is only enabled during debugging.
-
-Wasting 4MB is an issue.
-
-Linus' first Linux system had less total memory than that.
-
+> mei_reset has a dialog with the interrupt thread hence
+> it has to be run from an another work item
 > 
-> If this is an issue, can I suggest making these values configurable in the .config
-> and just let users pick whatever they want?
+> Most of the mei_resets were called from mei_hbm_dispatch
+> which is called in interrupt thread context so this
+> function underwent major revamp. The error code is
+> propagated to the interrupt thread and if needed
+> the reset is scheduled from there.
+> 
+> Cc: <stable@vger.kernel.org> 
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+> ---
+>  drivers/misc/mei/hbm.c       | 200 +++++++++++++++++++++++++++----------------
+>  drivers/misc/mei/hbm.h       |   6 +-
+>  drivers/misc/mei/hw-me.c     |  32 ++++---
+>  drivers/misc/mei/init.c      | 100 +++++++++++++---------
+>  drivers/misc/mei/interrupt.c |   9 +-
+>  drivers/misc/mei/mei_dev.h   |   1 +
+>  6 files changed, 210 insertions(+), 138 deletions(-)
 
-Better allocate it at boot time, using a boot parameter or somesuch.
+This is a _really_ big patch for a stable kernel tree.  Are you sure
+it's needed there?  Please go read Documentation/stable_kernel_rules.txt
+again.
 
--Andi
+greg k-h
