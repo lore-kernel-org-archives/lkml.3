@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbaAHHIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:08:09 -0500
-Received: from s3.neomailbox.net ([178.209.62.157]:12296 "EHLO
-	s3.neomailbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaAHHIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:08:00 -0500
-Message-ID: <52CCF906.7000400@meshcoding.com>
-Date: Wed, 08 Jan 2014 08:06:46 +0100
-From: Antonio Quartulli <antonio@meshcoding.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1754994AbaAHHOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:14:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaAHHOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 02:14:37 -0500
+Message-ID: <52CCFADB.6080909@suse.de>
+Date: Wed, 08 Jan 2014 08:14:35 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: The list for a Better Approach To Mobile Ad-hoc
-	 Networking <b.a.t.m.a.n@lists.open-mesh.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [B.A.T.M.A.N.] [PATCH v3.6 06/19] batman-adv: use batadv_compare_eth
- for concise
-References: <52CCBDA9.8090205@huawei.com>
-In-Reply-To: <52CCBDA9.8090205@huawei.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>, chuck.lever@oracle.com,
+        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: status of block-integrity
+References: <20131222192128.GA28532@infradead.org> <52C6D0DB.1050906@suse.de>	<yq1wqigzvc1.fsf@sermon.lab.mkp.net>	<20140107013646.GB10297@birch.djwong.org> <52CBAA1B.7000509@suse.de> <yq1a9f7wjqr.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1a9f7wjqr.fsf@sermon.lab.mkp.net>
 X-Enigmail-Version: 1.6
-OpenPGP: id=43FD7307
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="Lmqr1f0DQ1OfLbpb69ua0l3uRU4dTPUCD"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Lmqr1f0DQ1OfLbpb69ua0l3uRU4dTPUCD
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 01/07/2014 10:43 PM, Martin K. Petersen wrote:
+>>>>>> "Hannes" == Hannes Reinecke <hare@suse.de> writes:
+> 
+> Hannes> Plus (as hch rightly pointed out) as there is no defined
+> Hannes> userland interface the question is why we bother with all the
+> Hannes> DIX stuff in the block layer.  
+> 
+> Because it catches problems in the path between block layer and HBA
+> ASIC? FWIW, we find more issues there than we do between initiator and
+> target.
+> 
+But how should it do that exactly?
+As there is no user (apart from oracleasm) no-one can attach
+protection information to any data, so even the most dedicated admin
+cannot exercise this path, let alone find issues here.
 
-On 08/01/14 03:53, Ding Tianhong wrote:
-> It is better to use batadv_compate_eth instead of memcpy for
-> concise style.
->=20
-> Cc: Marek Lindner <mareklindner@neomailbox.ch>
-> Cc: Simon Wunderlich <sw@simonwunderlich.de>
-> Cc: Antonio Quartulli <antonio@meshcoding.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: b.a.t.m.a.n@lists.open-mesh.org
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
-> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> Acked-by: Antonio Quartulli <antonio@meshcoding.com>
+> API issues aside, another reason adoption has been slow is that very few
+> applications truly care about this stuff. The current approach in which
+> data is protected when the I/O is submitted by the filesystem is good
+> enough for most things. Saves the filesystem people the trouble of
+> dealing with it too.
+> 
+> In reality there are only a handful of applications that would actually
+> benefit from an explicit userland API. Mostly in the database
+> department. All the potential consumers of an interface I talked to
+> wanted to use aio so that's why we've focused our efforts there.
+> 
+aio is perfectly fine; all I care is to have _any_ way of feeding
+protection information into the kernel.
 
-Am I wrong or this patch has already been merged in net-next (together
-with other patches from this series)?
+> Both Darrick and I have been busy with other projects the last little
+> while. I'll start looking at this again when I'm done with copy
+> offload...
+> 
+Speaking of which, are there any patches?
+Doug Gilbert and I are currently discussing LID4 / ROD Token copy
+for sg3_utils and the block layer, so any patches would be very
+helpful here.
 
+Cheers,
 
-
-Regards,
-
-
---=20
-Antonio Quartulli
-
-
---Lmqr1f0DQ1OfLbpb69ua0l3uRU4dTPUCD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSzPkNAAoJEEKTMo6mOh1VAeoP/i02FowknGOtWPmjRfEVt6VQ
-P0Sv8OK8Y1LRCQRR/UAZV6lwfV+BNrFhGiJBUF3KSvE78mREsWPqzXIlcOtQWsAt
-5nuJ4hvv7nJUKKjuAizgZ0Sl3ENxegLxcWBluD/qJIggkSMNEnUlXx32eupQU49w
-YjtqqVgEGwjlbuMcD7BXBMQkPLt2mMPqM+e5OKzYwnSi1WXGue9ftq2R1Lt1qOxl
-/A/GZPm/D+GpmNxv4AVu/86+5UWTxKjHrD1Ti6IS/XZntVl//0vFkb8Q7293eGn1
-1gb7iF0AJNAD5tqqih+QZSRp9eBMVSCQNHGUjEdNSs4sMEaZg3K7Jm6FGoqi1SoQ
-p4VXuPE5yayFVdq9Mnvsp5fqXstqWLNN84mRN+kIUXjRt3uS8XjMjPmcwq2yJUET
-EnPDgMcT0bqzuSydmYK8Fq18zkZ3+n4N4ZdZd/3NjoWiJN8j02ulyh4+ReblwWp8
-ys0NQhFjjfhbaZghT+5QZvx0BcVAJVEjzdZvuIsQyOjugYHzSfDhtijf0fXe5uIf
-JmoUYnZtvtCPA4xmXsgxs9AoVCV3gaGBSg/Rw4Oaj76QgQeMBf3Ka63FOSKvzC4A
-rJhtRqIGgLz5NSPECsOMnqCMg7QGIhKbQpgv8NesUOzUATWGEHOyPQtuRBJ7iB2M
-HfNYdb6JgSinhN0kxSPP
-=t6AJ
------END PGP SIGNATURE-----
-
---Lmqr1f0DQ1OfLbpb69ua0l3uRU4dTPUCD--
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
