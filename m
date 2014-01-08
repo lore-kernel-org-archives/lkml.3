@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaAHJE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:04:56 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59409 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170AbaAHJEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:04:53 -0500
-Message-ID: <52CD148D.7060107@ti.com>
-Date: Wed, 8 Jan 2014 11:04:13 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755944AbaAHJF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:05:56 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:36264 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755140AbaAHJFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 04:05:51 -0500
+Date: Wed, 8 Jan 2014 10:05:41 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Peter Wu <lekensteyn@gmail.com>
+Cc: linux-i2c@vger.kernel.org, Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: i801: fix memleak on probe error
+Message-ID: <20140108100541.2ef7ebb7@endymion.delvare>
+In-Reply-To: <4657870.yOE66qJqIC@al>
+References: <20130123174204.00463f98@endymion.delvare>
+	<1387791578-1372-1-git-send-email-lekensteyn@gmail.com>
+	<4657870.yOE66qJqIC@al>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 0/2] video: mxsfb: fix broken videomode selection
-References: <1389014278-4903-1-git-send-email-LW@KARO-electronics.de>
-In-Reply-To: <1389014278-4903-1-git-send-email-LW@KARO-electronics.de>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="GMq3TqRcUMdQXMwxcJqh5L0lPUnf2JAHD"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GMq3TqRcUMdQXMwxcJqh5L0lPUnf2JAHD
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Peter,
 
-On 2014-01-06 15:17, Lothar Wa=C3=9Fmann wrote:
-> The first patch in this set converts some messages that are printed
-> in case of errors to be error messages rather than debug messages.
->=20
-> The second patch fixes a bug in the video selection code that
-> incorrectly OR's together the 'pixelclk-active' and 'de-active'
-> flags from all possible video modes specified in DT into one flag.
->=20
-> The current code does not allow selecting one specific mode from a
-> list of video modes, but always uses the last one of the video modes
-> listed in the DT.
->=20
->=20
-> Since all current dts files only have one entry in their
-> 'display-timings' node, this bug was not apparent and the fix does not
-> change the driver's behaviour for the current users.
->=20
->  b/drivers/video/mxsfb.c |    6 +--
->  drivers/video/mxsfb.c   |  120 +++++++++++++++++++++++++++++----------=
--------------------------------
->  2 files changed, 53 insertions(+), 73 deletions(-)
->=20
+Joining the discussion late as I was on vacation...
 
-Thanks, queued for 3.14.
+On Mon, 23 Dec 2013 11:43:21 +0100, Peter Wu wrote:
+> Nevermind this patch, it does not really fix the memleak because
+> i2c_set_adapdata() calls dev_set_drvdata() which allocates memory.
+> (I must have ran kmemleak too early, right after boot it did not
+> give any warnings, now it does).
 
-Your diffstat above looks a bit funny. Where did that "b/" come from?
+I can confirm that your proposed patch doesn't fix anything. It makes
+no difference if pci_set_drvdata(dev, priv) is called earlier or later.
 
- Tomi
+> RFC: what about dropping i2c_set_adapdata() from the probe function
+> and replacing i2c_get_adapdata(adapter) by
+> pci_get_drvdata(adapter->pci_dev) on top of this patch? I am not
+> sure what the purpose is for i2c_set_adapdata, hence this question.
 
+The purpose of i2c_set_adapdata is to attach a data structure to a
+specific i2c_adapter device. In the case of the i2c-i801 driver,
+there's only one such (class) device per PCI device so we could indeed
+reuse the PCI device data pointer as you suggest above. But in the
+general case there can be several i2c_adapter devices and each needs
+its own data.
 
+Also for performance reasons we don't want to do that because
+pci_get_drvdata(adapter->pci_dev) is slower than
+i2c_get_adapdata(adapter) (due to the extra pointer deference.) As this
+happens repeatedly at run-time (in function i801_access) we want it to
+be as fast as possible.
 
---GMq3TqRcUMdQXMwxcJqh5L0lPUnf2JAHD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Note that we could (ab)use i2c_adapter.algo_data to store the
+i2c_adapter device-specific data. Some drivers are doing exactly that,
+for example i2c-nforce2. I suspect this legacy field is now somewhat
+redundant with i2c_set_adapdata() as I couldn't find any i2c bus
+driver using both.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJSzRSNAAoJEPo9qoy8lh71ti0P/Rrj7HkaiwvhlokkLcSL5k1S
-Xk5uwQHZNXWousKFOM8JQwlspYVCbaKXW6aBTOu60kBxcmqFvcCgCERSDqnOJoBT
-8oQf3tRinL9knd7D/2E3etnc1rCrJFu2MVVPyaKMX4a7/qYyG1q3ZmxDIbtn6whD
-lfV6qRaaHMkkUvHaf9GFS5sjdlV6JrPkpUkpsmbaNq6tnaglnrAZchBnX6vbDhor
-in9zUfzbBNLhqVEs1JP11W0XHUytuTItLlueMxlLxt7WzsN2shTyy3S1NfNpcJuD
-LTOHQcgiS0v4yl3Hzci1r6UMP9qt+4iK1jxmDug4mPbEWP3M0d667wbt0u5EKs8/
-oD1KLvogy6H37d/+gkcRnlyXN64R2XXF9I6ywjj4tsUxnOqaWhspN/YgTSgffD50
-Jj0+ewHm3wO+b1BLbf0HxML/xTRRs3RFeRtiWfLNBoGdoE172TN1XVx7jHMarHEh
-7BcCZV8rfBXX+JXptJ1kGgDN5qJ+yHWCfdj8Soaie+w/vxGLqnwLCZs/rgm9yH6h
-95dXWv0xneDjlLULF0zApE5XULOXTgXlaunscrMQ2YPtX1YQVuWh+3o5EmwI0VgV
-g1X6rSQq1syz6I8TWTzuDQSRRc0acOj0xkqxDx6Y/QqNpiKLgxagErh/BrxgHiLI
-3kBkWPsYA2Hdyq59PFD1
-=s1co
------END PGP SIGNATURE-----
-
---GMq3TqRcUMdQXMwxcJqh5L0lPUnf2JAHD--
+-- 
+Jean Delvare
