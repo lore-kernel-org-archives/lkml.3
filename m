@@ -1,315 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaAHFsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 00:48:45 -0500
-Received: from mga03.intel.com ([143.182.124.21]:20867 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaAHFsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 00:48:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,622,1384329600"; 
-   d="scan'208";a="455246180"
-Message-ID: <52CCE6AE.1070809@linux.intel.com>
-Date: Wed, 08 Jan 2014 13:48:30 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754919AbaAHFvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 00:51:11 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:46958 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910AbaAHFvD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 00:51:03 -0500
 MIME-Version: 1.0
-To: Kai Huang <dev.kai.huang@gmail.com>
-CC: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: Re: [Patch Part2 V1 03/14] iommu/vt-d: simplify function get_domain_for_dev()
-References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>	<1389085234-22296-4-git-send-email-jiang.liu@linux.intel.com> <CAOtp4KrK8yOktru+hgLSxYNZ67Nm2WYVGi2aGaJ3JJWLrdOq_g@mail.gmail.com>
-In-Reply-To: <CAOtp4KrK8yOktru+hgLSxYNZ67Nm2WYVGi2aGaJ3JJWLrdOq_g@mail.gmail.com>
+In-Reply-To: <8738l15pht.fsf@nemi.mork.no>
+References: <f9d7b0d5424e4443597d2ed39bec3fedd2b10d1e.1387848958.git.viresh.kumar@linaro.org>
+	<5562479.pVWRuDL0y6@vostro.rjw.lan>
+	<87zjne7f75.fsf@nemi.mork.no>
+	<2302938.b8tymqrMEz@vostro.rjw.lan>
+	<878uuxquxu.fsf@nemi.mork.no>
+	<871u0po0gx.fsf@nemi.mork.no>
+	<CAKohpo=9p8ArfWyyWkdQm_BWtyWbWe_dsg6VAUP60VUFcAjFSw@mail.gmail.com>
+	<87wqihmg9a.fsf@nemi.mork.no>
+	<CAKohpo=3s6=gw8OJTrUdLH8o2ouA=8a8MhrgNRXwHmOf0si5Pw@mail.gmail.com>
+	<87iotx32mx.fsf@nemi.mork.no>
+	<CAKohpo=KgHqz0KYv7h0EYP3=8h7T3ZfPpFTMS6qVoEb6dXGnSQ@mail.gmail.com>
+	<87a9f92xnn.fsf@nemi.mork.no>
+	<CAKohpon7u_1h+9rKQeC8J4Pqd_6bSajn7Ag8=COqczhbSPEgMA@mail.gmail.com>
+	<8738l15pht.fsf@nemi.mork.no>
+Date: Wed, 8 Jan 2014 11:21:00 +0530
+Message-ID: <CAKohpomEr_caoDGeUWWMeJ1_siEQguUTaPF6zgD62YqT=4F7og@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: try to resume policies which failed on last resume
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: =?ISO-8859-1?Q?Bj=F8rn_Mork?= <bjorn@mork.no>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6 January 2014 16:47, Bjørn Mork <bjorn@mork.no> wrote:
+> Viresh Kumar <viresh.kumar@linaro.org> writes:
+>
+>> On 6 January 2014 16:19, Bjørn Mork <bjorn@mork.no> wrote:
+>>> I cancelled by pressing backspace while the image was being written.
+>>
+>> I will answer other queries on next mail, but a quick question:
+>> Do you get these warnings even if you don't cancel hibernation?
+>
+> Yes.
 
+Hmm.. I see. Now, I really don't believe that you wouldn't get these
+warnings on a suspend/resume but only on hibernation.
 
-On 2014/1/8 11:06, Kai Huang wrote:
-> 
-> 
-> 
-> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com
-> <mailto:jiang.liu@linux.intel.com>> wrote:
-> 
->     Function get_domain_for_dev() is a little complex, simplify it
->     by factoring out dmar_search_domain_by_dev_info() and
->     dmar_insert_dev_info().
-> 
->     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com
->     <mailto:jiang.liu@linux.intel.com>>
->     ---
->      drivers/iommu/intel-iommu.c |  161
->     ++++++++++++++++++++-----------------------
->      1 file changed, 75 insertions(+), 86 deletions(-)
-> 
->     diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->     index 1704e97..da65884 100644
->     --- a/drivers/iommu/intel-iommu.c
->     +++ b/drivers/iommu/intel-iommu.c
->     @@ -1957,18 +1957,70 @@ find_domain(struct pci_dev *pdev)
->             return NULL;
->      }
-> 
->     +static inline struct dmar_domain *
->     +dmar_search_domain_by_dev_info(int segment, int bus, int devfn)
->     +{
->     +       struct device_domain_info *info;
->     +
->     +       list_for_each_entry(info, &device_domain_list, global)
->     +               if (info->segment == segment && info->bus == bus &&
->     +                   info->devfn == devfn)
->     +                       return info->domain;
->     +
->     +       return NULL;
->     +}
->     +
->     +static int dmar_insert_dev_info(int segment, int bus, int devfn,
->     +                               struct pci_dev *dev, struct
->     dmar_domain **domp)
->     +{
->     +       struct dmar_domain *found, *domain = *domp;
->     +       struct device_domain_info *info;
->     +       unsigned long flags;
->     +
->     +       info = alloc_devinfo_mem();
->     +       if (!info)
->     +               return -ENOMEM;
->     +
->     +       info->segment = segment;
->     +       info->bus = bus;
->     +       info->devfn = devfn;
->     +       info->dev = dev;
->     +       info->domain = domain;
->     +       if (!dev)
->     +               domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
->     +
->     +       spin_lock_irqsave(&device_domain_lock, flags);
->     +       if (dev)
->     +               found = find_domain(dev);
->     +       else
->     +               found = dmar_search_domain_by_dev_info(segment, bus,
->     devfn);
->     +       if (found) {
->     +               spin_unlock_irqrestore(&device_domain_lock, flags);
->     +               free_devinfo_mem(info);
->     +               if (found != domain) {
->     +                       domain_exit(domain);
->     +                       *domp = found;
->     +               }
->     +       } else {
->     +               list_add(&info->link, &domain->devices);
->     +               list_add(&info->global, &device_domain_list);
->     +               if (dev)
->     +                       dev->dev.archdata.iommu = info;
->     +               spin_unlock_irqrestore(&device_domain_lock, flags);
->     +       }
->     +
->     +       return 0;
->     +}
-> 
-> 
-> I am a little bit confused about the "alloc before check" sequence in
-> above function. I believe the purpose of allocating the
-> device_domain_info before searching the domain with spin_lock hold is to
-> avoid the memory allocation in the spin_lock? In this case, why can't we
-> use mutex instead of spin_lock? In my understanding, if we use mutex, we
-> can first check if the domain exists or not before we really allocate
-> device_domain_info, right?
-Hi Kai,
-	Thanks for review!
-	The domain->devices list may be access in interrupt context,
-so we need to protect it with spin_lock_irqsave(). Otherwise it may
-case deadlock.
+> I believe the photo shows that you are right: This warning happens when
+> the failure path is entered, even if both the hibernation and following
+> resume is successful.  We see __cpufreq_add_dev calling
+> cpufreq_policy_put_kobj here as well.
 
-> 
-> Another question is when is info->iommu field initialized? Looks it is
-> not initialized here?
-It's set in function iommu_support_dev_iotlb() for devices supporting
-device IOTLB.
+@Rafael: I need your expert opinion here, I am not so good with these
+concepts :)
 
-> 
-> -Kai
-> 
->     +
->      /* domain is initialized */
->      static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev,
->     int gaw)
->      {
->     -       struct dmar_domain *domain, *found = NULL;
->     +       struct dmar_domain *domain;
->             struct intel_iommu *iommu;
->             struct dmar_drhd_unit *drhd;
->     -       struct device_domain_info *info, *tmp;
->     -       struct pci_dev *dev_tmp;
->     +       struct pci_dev *bridge;
->             unsigned long flags;
->     -       int bus = 0, devfn = 0;
->     -       int segment;
->     -       int ret;
->     +       int segment, bus, devfn;
-> 
->             domain = find_domain(pdev);
->             if (domain)
->     @@ -1976,119 +2028,56 @@ static struct dmar_domain
->     *get_domain_for_dev(struct pci_dev *pdev, int gaw)
-> 
->             segment = pci_domain_nr(pdev->bus);
-> 
->     -       dev_tmp = pci_find_upstream_pcie_bridge(pdev);
->     -       if (dev_tmp) {
->     -               if (pci_is_pcie(dev_tmp)) {
->     -                       bus = dev_tmp->subordinate->number;
->     +       bridge = pci_find_upstream_pcie_bridge(pdev);
->     +       if (bridge) {
->     +               if (pci_is_pcie(bridge)) {
->     +                       bus = bridge->subordinate->number;
->                             devfn = 0;
->                     } else {
->     -                       bus = dev_tmp->bus->number;
->     -                       devfn = dev_tmp->devfn;
->     +                       bus = bridge->bus->number;
->     +                       devfn = bridge->devfn;
->                     }
->                     spin_lock_irqsave(&device_domain_lock, flags);
->     -               list_for_each_entry(info, &device_domain_list, global) {
->     -                       if (info->segment == segment &&
->     -                           info->bus == bus && info->devfn == devfn) {
->     -                               found = info->domain;
->     -                               break;
->     -                       }
->     -               }
->     +               domain = dmar_search_domain_by_dev_info(segment,
->     bus, devfn);
->                     spin_unlock_irqrestore(&device_domain_lock, flags);
->                     /* pcie-pci bridge already has a domain, uses it */
->     -               if (found) {
->     -                       domain = found;
->     +               if (domain)
->                             goto found_domain;
->     -               }
->             }
-> 
->     -       domain = alloc_domain();
->     -       if (!domain)
->     -               goto error;
->     -
->     -       /* Allocate new domain for the device */
->             drhd = dmar_find_matched_drhd_unit(pdev);
->             if (!drhd) {
->                     printk(KERN_ERR "IOMMU: can't find DMAR for device
->     %s\n",
->                             pci_name(pdev));
->     -               free_domain_mem(domain);
->                     return NULL;
->             }
->             iommu = drhd->iommu;
-> 
->     -       ret = iommu_attach_domain(domain, iommu);
->     -       if (ret) {
->     +       /* Allocate new domain for the device */
->     +       domain = alloc_domain();
->     +       if (!domain)
->     +               goto error;
->     +       if (iommu_attach_domain(domain, iommu)) {
->                     free_domain_mem(domain);
->                     goto error;
->             }
->     -
->             if (domain_init(domain, gaw)) {
->                     domain_exit(domain);
->                     goto error;
->             }
-> 
->             /* register pcie-to-pci device */
->     -       if (dev_tmp) {
->     -               info = alloc_devinfo_mem();
->     -               if (!info) {
->     +       if (bridge) {
->     +               if (dmar_insert_dev_info(segment, bus, devfn, NULL,
->     &domain)) {
->                             domain_exit(domain);
->                             goto error;
->                     }
->     -               info->segment = segment;
->     -               info->bus = bus;
->     -               info->devfn = devfn;
->     -               info->dev = NULL;
->     -               info->domain = domain;
->     -               /* This domain is shared by devices under p2p bridge */
->     -               domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
->     -
->     -               /* pcie-to-pci bridge already has a domain, uses it */
->     -               found = NULL;
->     -               spin_lock_irqsave(&device_domain_lock, flags);
->     -               list_for_each_entry(tmp, &device_domain_list, global) {
->     -                       if (tmp->segment == segment &&
->     -                           tmp->bus == bus && tmp->devfn == devfn) {
->     -                               found = tmp->domain;
->     -                               break;
->     -                       }
->     -               }
->     -               if (found) {
->     -                       spin_unlock_irqrestore(&device_domain_lock,
->     flags);
->     -                       free_devinfo_mem(info);
->     -                       domain_exit(domain);
->     -                       domain = found;
->     -               } else {
->     -                       list_add(&info->link, &domain->devices);
->     -                       list_add(&info->global, &device_domain_list);
->     -                       spin_unlock_irqrestore(&device_domain_lock,
->     flags);
->     -               }
->             }
-> 
->      found_domain:
->     -       info = alloc_devinfo_mem();
->     -       if (!info)
->     -               goto error;
->     -       info->segment = segment;
->     -       info->bus = pdev->bus->number;
->     -       info->devfn = pdev->devfn;
->     -       info->dev = pdev;
->     -       info->domain = domain;
->     -       spin_lock_irqsave(&device_domain_lock, flags);
->     -       /* somebody is fast */
->     -       found = find_domain(pdev);
->     -       if (found != NULL) {
->     -               spin_unlock_irqrestore(&device_domain_lock, flags);
->     -               if (found != domain) {
->     -                       domain_exit(domain);
->     -                       domain = found;
->     -               }
->     -               free_devinfo_mem(info);
->     +       if (dmar_insert_dev_info(segment, pdev->bus->number,
->     pdev->devfn,
->     +                                pdev, &domain) == 0)
->                     return domain;
->     -       }
->     -       list_add(&info->link, &domain->devices);
->     -       list_add(&info->global, &device_domain_list);
->     -       pdev->dev.archdata.iommu = info;
->     -       spin_unlock_irqrestore(&device_domain_lock, flags);
->     -       return domain;
->      error:
->             /* recheck it here, maybe others set it */
->             return find_domain(pdev);
->     --
->     1.7.10.4
-> 
->     _______________________________________________
->     iommu mailing list
->     iommu@lists.linux-foundation.org
->     <mailto:iommu@lists.linux-foundation.org>
->     https://lists.linuxfoundation.org/mailman/listinfo/iommu
-> 
-> 
+Here is my theory about these warnings:
+- Bjorn gets these only when CONFIG_PROVE_LOCKING=y.
+- This feature enables the kernel to report locking related deadlocks
+before they actually occur. (lib/Kconfig.debug)
+- So, no locking issue has happened here but its just an warning that
+you might end up getting into such issue later.
+- Contention is between sysfs and cpu-hotplug lock.
+- While changing stuff from sysfs we do this:
+   sysfs-lock (by kernel)
+   cpu-hotplug lock (by cpufreq)
+- And while doing hibernation if add_dev fails then we do this
+   cpu-hotplug lock (by kernel while adding CPUs)
+   sysfs-lock (by cpufreq while removing sysfs directories)
+
+And kernel is recording all these sequences all the time. Because
+we first tried changing values from sysfs, kernel recorded that
+sequence. And as soon as it found another one it WARNed us?
+
+While on a suspend/resume, we will get into add-dev failure only
+in resume and probably by that time these recordings are refreshed?
+And that's why Bjorn isn't facing any issue there ? Just an wild guess.
+
+And if all above "virtual" theory is correct, then I don't know if we
+can/want to fix that..
+
+> Thinking about this: This failure will always happen, regardless of
+> cancelling or not, won't it?
+
+Yeah.
+
+> But it happens *after* the freeze so it
+> doesn't matter if we resume from the frozen image.
+
+yeah..
+
+So, even tests like this should give you this warning:
+
+Documentation/power/basic-pm-debugging.txt
+core
+- test the freezing of processes, suspending of devices, platform global
+  control methods(*), the disabling of nonboot CPUs and suspending of
+  platform/system devices
+
+> So you are probably right as usual:
+
+Really? Ask Rafael, he doesn't agree :)
+
+> This warning is related to the
+> acpi-cpufreq driver failing, and you cannot reproduce it without
+> simulating such a failure (or using that driver yourself).  Which means
+> that the warning disappears with my patch in
+> http://www.spinics.net/lists/cpufreq/msg08714.html
+> which explains why I don't normally see it.  I depend on being able to
+> cancel hibernation, so I use that patch most of the time. Except when
+> I'm testing one of your branches.
+
+Correct.
