@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299AbaAHUQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:16:59 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:35675 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751273AbaAHUQz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:16:55 -0500
-From: Chris Mason <clm@fb.com>
-To: "muthu.lkml@gmail.com" <muthu.lkml@gmail.com>
-CC: "kmo@daterainc.com" <kmo@daterainc.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lkp@linux.intel.com" <lkp@linux.intel.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-Thread-Topic: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-Thread-Index: AQHPCL03PcXQz/ImsUiAzg3MZ0ORWpp4zOEAgAAr4ACAAFVnAIAA8PCAgAAEF4CAAA6/AIABdgMAgAADfgCAAAZsgA==
-Date: Wed, 8 Jan 2014 20:16:43 +0000
-Message-ID: <1389212231.23310.33.camel@ret.masoncoding.com>
-References: <20140102053101.GA29352@localhost>
-	 <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
-	 <20140106221036.GE9037@kmo>
-	 <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-	 <20140107055318.GA19016@localhost>
-	 <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
-	 <1389126617.23310.19.camel@ret.masoncoding.com>
-	 <CAFR8ueezG4U5ULcp0ayhY690RUE7280UL68d55+tGCqDW9A1Kg@mail.gmail.com>
-	 <1389210102.23310.31.camel@ret.masoncoding.com>
-	 <CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
-In-Reply-To: <CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <027F44E7846408448DABB2418E715E36@fb.com>
-Content-Transfer-Encoding: 8BIT
+	id S1757334AbaAHUSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:18:48 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60960 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750839AbaAHUSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:18:43 -0500
+Date: Wed, 8 Jan 2014 21:18:38 +0100
+From: Florian Westphal <fw@strlen.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Florian Westphal <fw@strlen.de>, Andrey Vagin <avagin@openvz.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+Message-ID: <20140108201838.GI9894@breakpoint.cc>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+ <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140107152520.GF9894@breakpoint.cc>
+ <1389188536.26646.84.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140108140444.GH9894@breakpoint.cc>
+ <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-08_08:2014-01-07,2014-01-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=184.135548313533
- compositescore=0.324642340081358 urlsuspect_oldscore=0.324642340081358
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.324642340081358 spamscore=0
- recipient_to_sender_domain_totalscore=122 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1401080119
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-08 at 11:54 -0800, Muthu Kumar wrote:
-+AD4- Chris,
-+AD4- 
-+AD4- +AFs-    8.336061+AF0- WARNING: CPU: 0 PID: 0 at fs/bio.c:1778 bio+AF8-endio+-0xbe/0x100()
-+AD4- +AFs-    8.336062+AF0- bio+AF8-endio: bio for (unknown) without endio
-+AD4- 
-+AD4- This is my recent change to avoid memory leak in bio+AF8-endio. But I
-+AD4- think the problem is higher up, most likely bio+AF8-endio is called twice
-+AD4- on the same bio (which was freed before).
-+AD4- 
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > The confirmed bit should always be set here.
+> 
+> So why are you testing it ?
 
-I think these are just two separate problems.  Lets ignore the WARN+AF8-ON
-for now.
+To detect ct object recycling when tuple is identical.
 
-+AD4- Are you running the unmodified for-3.14/core or do you have local patches?
-+AD4- 
+This is my understanding of how we can end up with two
+cpus thinking they have exclusive ownership of the same ct:
 
-It's for-3.14/core with my btrfs branch.  Basically rc7 instead of rc6
-but no changes to the block layer.  I hadn't mounted btrfs yet.
+A cpu0: starts lookup: find ct for tuple t
+B cpu1: starts lookup: find ct for tuple t
+C cpu0: finds ct c for tuple t, no refcnt taken yet
+  cpu1: finds ct c for tuple t, no refcnt taken yet
+   cpu2: destroys ct c, removes from hash table, calls ->destroy function
+D cpu0: tries to increment refcnt; fails since its 0: lookup ends
+E cpu0: allocates a new ct object since no acceptable ct was found for t
+F cpu0: allocator gives us just-freed ct c
+G cpu0: initialises ct, sets refcnt to 1
+H cpu0: adds extensions, ct object is put on unconfirmed list and
+        assigned to skb->nfct
+I cpu0: skb continues through network stack
+J cpu1: tries to increment refcnt, ok
+K cpu1: checks if ct matches requested tuple t: it does
+L cpu0: sets refcnt conntrack tuple, allocates extensions, etc.
+  cpu1: sets skb->nfct to ct, skb continues through network stack
 
--chris
+-> both cpu0 and cpu1 reference a ct object that was not in hash table
 
+cpu0 and cpu1 will then race, for example in
+net/ipv4/netfilter/iptable_nat.c:nf_nat_rule_find():
+
+        if (!nf_nat_initialized(ct, HOOK2MANIP(hooknum)))
+              ret = alloc_null_binding(ct, hooknum);
+
+[ Its possible that I misunderstand and that there is something that
+  precents this from happening.  Usually its the 'tuple equal' test
+  that is performed post-atomic-inc-not-zero that detects the recycling,
+  so step K above would fail ]
+
+The idea of the 'confirmed bit test' is that when its not set then the
+conntrack was recycled and should not be used before the cpu that
+currently 'owns' that entry has put it into the hash table again.
+
+> I did this RCU conversion, so I think I know what I am talking about.
+
+Yes, I know.  If you have any suggestions on how to fix it, I'd be very
+interested to hear about them.
+
+> The entry should not be put into hash table (or refcnt set to 1),
+> if its not ready. It is that simple.
+
+I understand what you're saying, but I don't see how we can do it.
+
+I think the assumption that we have a refcnt on skb->nfct is everywhere.
+
+If I understand you correctly we'd have to differentiate between
+'can be used fully (e.g. nf_nat_setup_info done for both directions)'
+and 'a new conntrack was created (extensions may not be ready yet)'.
+
+But currently in both cases the ct is assigned to the skb, and in both
+cases a refcnt is taken.  I am out of ideas, except perhaps using
+ct->lock to serialize the nat setup (but I don't like that since
+I'm not sure that the nat race is the only one).
+
+> We need to address this problem without adding an extra test and
+> possible loop for the lookups.
+
+Agreed.  I don't like the extra test either.
+
+Many thanks for looking into this Eric!
