@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771AbaAHPzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:55:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224AbaAHPzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:55:20 -0500
-Message-ID: <52CD74D8.4080808@redhat.com>
-Date: Wed, 08 Jan 2014 16:55:04 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-CC: tj@kernel.org, sergei.shtylyov@cogentembedded.com,
-        b.zolnierkie@samsung.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Balaji T K <balajitk@ti.com>
-Subject: Re: [PATCH v3 2/3] ata: ahci_platform: Manage SATA PHY
-References: <1389174428-31414-1-git-send-email-rogerq@ti.com> <1389174428-31414-3-git-send-email-rogerq@ti.com> <52CD2176.6050102@ti.com> <6214646.nAF6lzWV79@wuerfel> <52CD364F.4060104@ti.com> <52CD4F2A.9080301@redhat.com>
-In-Reply-To: <52CD4F2A.9080301@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756852AbaAHP5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:57:23 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58884 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755363AbaAHP5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 10:57:20 -0500
+Message-ID: <1389196639.23721.16.camel@hornet>
+Subject: Re: [RFC 03/18] GPIO: gpio-generic: Add label to platform data
+From: Pawel Moll <pawel.moll@arm.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Alexandre Courbot <gnurou@gmail.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Date: Wed, 08 Jan 2014 15:57:19 +0000
+In-Reply-To: <CACRpkdb4w26vuOtR1bAhQ6k=1uQx=np4WwoabvH8pOq8HK54=w@mail.gmail.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	 <1387815830-8794-4-git-send-email-pawel.moll@arm.com>
+	 <CACRpkdb4w26vuOtR1bAhQ6k=1uQx=np4WwoabvH8pOq8HK54=w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Greetings (and the usual: Happy New Year!)
 
-On 01/08/2014 02:14 PM, Hans de Goede wrote:
-> Hi,
->
-> On 01/08/2014 12:28 PM, Roger Quadros wrote:
->> On 01/08/2014 03:35 PM, Arnd Bergmann wrote:
->>> On Wednesday 08 January 2014 15:29:18 Kishon Vijay Abraham I wrote:
->>>>> +     hpriv->phy = devm_phy_get(dev, "sata-phy");
->>>>> +     if (IS_ERR(hpriv->phy)) {
->>>>> +             dev_dbg(dev, "can't get sata-phy\n");
->>>>> +             /* return only if -EPROBE_DEFER */
->>>>> +             if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
->>>>> +                     rc = -EPROBE_DEFER;
->>>>> +                     goto disable_unprepare_clk;
->>>>> +             }
->>>>> +     }
->>>
->>> This should probably check for all errors except "not present"
->>> rather than checking for -EPROBE_DEFER. We want to abort the
->>> probe function for deferred probe as well as the case where we
->>> a PHY was listed but isn't working properly.
->>
->> OK.
->>
->>>
->>>>> +     if (!IS_ERR(hpriv->phy)) {
->>>>> +             phy_init(hpriv->phy);
->>>>
->>>> Don't we have to check the return values of phy_init and phy_power_on? Is it
->>>> not needed because it is an optional phy?
->>>
->>> Right. I think we should set hpriv->phy to NULL if it's not there and
->>> then call the functions only if it's actually present but bail out on
->>> an error.
->>
->> OK. How does this look?
->>
->> hpriv->phy = devm_phy_get(dev, "sata-phy");
->> if (IS_ERR(hpriv->phy)) {
->>     if (PTR_ERR(hpriv->phy) == -ENODEV)
->>         goto continue;
->
-> -ENODEV is not the right errno to check for,
-> if there is no phy specified in the dt then
-> you will get -EINVAL (no phy-names property) or
-> -ENODATA (phy-names property is there but name
-> not found).
->
-> Also you don't want to log an error on
-> PROBE_DEFERRAL.
->
-> Here is what I've for similar code I'm working on
-> for ehci-platform.c and ohci-platform.c :
->
->                  priv->phy = devm_phy_get(&dev->dev, "phy0");
->                  if (IS_ERR(priv->phy)) {
->                          err = PTR_ERR(priv->phy);
->                          if (err != -EINVAL && err != -ENODATA) {
->                                  if (err != -EPROBE_DEFER)
->                                          dev_err(&dev->dev,
->                                                  "Error getting phy\n");
->                                  goto err_put_hcd;
->                          }
->                          priv->phy = NULL;
->                  }
+On Mon, 2013-12-23 at 17:26 +0000, Linus Walleij wrote:
+> On Mon, Dec 23, 2013 at 5:23 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+> 
+> > When registering more than one platform device, it is
+> > useful to set the gpio chip label in the platform data.
+> >
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Cc: Alexandre Courbot <gnurou@gmail.com>
+> > Cc: Anton Vorontsov <anton@enomsg.org>
+> 
+> Good point. But what about also adding device tree support for
+> naming the chips while you're at it?
+> 
+> I imagine a generic gpiochip property in
+> Documentation/devicetree/bindings/gpio/gpio.txt
 
-Scrap that I was reading the code wrong. Indeed if there is no
-devicetree phy info it will return -ENODEV. Actually it will only ever
-return one of -ENOPROBE or -ENODEV, so only checking for -ENOPROBE and
-then fail silently be enough. This also has the advantage of being
-future proof, if the error code for no phy found ever changes,
-things won't break.
+Well, this has been discussed almost to death already (as you may
+remember ;-) in the thread:
 
-Regards,
+http://www.spinics.net/lists/devicetree/msg00072.html
 
-Hans
+(only portions survived)
+
+Although I was in favour of the generic binding (as were you if I
+remember correctly), the final non-conclusion was not to open the
+"generic door". Fair enough with me, I went the defined-in-code way
+here...
+
+Paweł
+
