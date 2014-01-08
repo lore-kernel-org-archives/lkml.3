@@ -1,54 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441AbaAHJMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:12:45 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33008 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753919AbaAHJMn (ORCPT
+	id S1755629AbaAHJOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:14:12 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:47809 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278AbaAHJOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:12:43 -0500
-Date: Wed, 8 Jan 2014 09:12:37 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: sameo@linux.intel.com, balbi@ti.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2] mfd: omap-usb-tll: Don't hold lock during
- pm_runtime_get/put_sync()
-Message-ID: <20140108091237.GE19974@lee--X1>
-References: <1389165333-7573-1-git-send-email-rogerq@ti.com>
+	Wed, 8 Jan 2014 04:14:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1389165333-7573-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1388353682-19065-1-git-send-email-ant@area128.com>
+References: <1388353682-19065-1-git-send-email-ant@area128.com>
+Date: Wed, 8 Jan 2014 10:14:08 +0100
+Message-ID: <CACRpkda7Rwk=guyetWh2pCQ8RZiOdJt62FY5zrteAMzkj2+cMg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl/lantiq: fix typo
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Antonios Vamporakis <ant@area128.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Crispin <blogic@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> pm_runtime_get/put_sync() can sleep so don't hold spinlock while
-> calling them.
-> 
-> This patch prevents a BUG() during system suspend when
-> CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
-> 
-> Bug is present in Kernel versions v3.9 onwards.
-> 
-> Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: <stable@vger.kernel.org> # 3.9+
-> ---
->  drivers/mfd/omap-usb-tll.c | 36 ++++++++++++------------------------
->  1 file changed, 12 insertions(+), 24 deletions(-)
+On Sun, Dec 29, 2013 at 10:48 PM, Antonios Vamporakis <ant@area128.com> wrote:
 
-Patch looks good to me now.
+> Signed-off-by: Antonios Vamporakis <ant@area128.com>
+> CC: John Crispin <blogic@openwrt.org>
 
-Applied, thanks.
+Patch is obviously correct, applied.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
