@@ -1,56 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933AbaAHAcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 19:32:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60799 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403AbaAHAcJ (ORCPT
+	id S1753861AbaAHAcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 19:32:45 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:46891 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875AbaAHAch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 19:32:09 -0500
-Date: Tue, 7 Jan 2014 16:32:37 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Marius Silaghi <msilaghi@fit.edu>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2
- devices on USB3 bus
-Message-ID: <20140108003237.GF13062@kroah.com>
-References: <02270BA454DB7548ABE8E2EBF31D46D96FC7B4C5@EX10-BE1.fit.edu>
+	Tue, 7 Jan 2014 19:32:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <02270BA454DB7548ABE8E2EBF31D46D96FC7B4C5@EX10-BE1.fit.edu>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140107204233.GA22413@amd.pavel.ucw.cz>
+References: <20140107204233.GA22413@amd.pavel.ucw.cz>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 7 Jan 2014 16:32:15 -0800
+Message-ID: <CAK5ve-Kk9BuH=56F98aZOgPS+w-=8iF0HtpOYWNjRN8am2Zqjg@mail.gmail.com>
+Subject: Re: Broken locking in leds-lp5523.c
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, milo kim <milo.kim@ti.com>,
+        =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 24, 2013 at 04:19:18AM +0000, Marius  Silaghi wrote:
-> From: Marius C Silaghi <msilaghi@fit.edu>
-> 
-> This patch is generated against the last kernel version in the github kernel repository.
+On Tue, Jan 7, 2014 at 12:42 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+> There's some locking weirdness, and few missing comments in lp5523
+> driver.
+>
+> Now, this is untested patch from my reverse-engineering. I hope I
+> understood things right...
+>
+> In particular, there's unbalanced unlock in
+> lp5523_update_program_memory, and lp5523_update_program_memory needs
+> to be protected by the lock.
+>
+> Comments? Does someone maintain this?
+>
 
-We work off of the git.kernel.org trees, not github :)
+Actually the locking issue was fixed in my for-next branch,
+http://git.kernel.org/cgit/linux/kernel/git/cooloney/linux-leds.git/commit/?h=for-next&id=0d70bdb957cde2c25a4b3e4c93d0d33403795be9
 
+Thanks,
+-Bryan
 
-> Some older families of USB2 cameras (STC-XXXXXUSB) do not support querying only the first 8 bytes of their 
-> device descriptor and therefore fail at enumeration on USB3 HCDs, with babble error -75 as they send more than
-> the expected 8 bytes. The proposed patch extends the mechanism used for non USB3 HCDs in the first part of 
-> the same function, and  successively tries to query both the 8 byte prefix of the device descriptor, as well as 
-> the whole device descriptor (in case the old style query of the 8 byte prefix fails).
-> In fact, for the cameras I try to fix, the preferred condition is the negation of the one in the proposed patch,  
-> "if (!USE_NEW_SCHEME(retry_counter))", to try first the version successful on this case, but I keep the 
-> current order of the "if" branches to ensure clean continuation of support for other supported devices.
-> 
-> Signed-off-by: Marius C Silaghi <msilaghi@fit.edu>
-
-I'll let Sarah take this patch, if it passes her testing.
-
-thanks,
-
-greg k-h
+> Thanks,
+>                                                                 Pavel
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>
+>
+> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+> index c00f55e4..e8b83e9 100644
+> --- a/drivers/leds/leds-lp5523.c
+> +++ b/drivers/leds/leds-lp5523.c
+> @@ -34,7 +34,15 @@
+>
+>  #include "leds-lp55xx-common.h"
+>
+> -#define LP5523_PROGRAM_LENGTH          32
+> +#define LP5523_PROGRAM_LENGTH          32      /* bytes */
+> +/* Memory is used like this:
+> +   0x00 engine 1 program
+> +   0x10 engine 2 program
+> +   0x20 engine 3 program
+> +   0x30 engine 1 muxing info
+> +   0x40 engine 2 muxing info
+> +   0x50 engine 3 muxing info
+> +   ...and offsets are hard-coded all around :-( */
+>  #define LP5523_MAX_LEDS                        9
+>
+>  /* Registers */
+> @@ -265,20 +273,25 @@ static int lp5523_init_program_engine(struct lp55xx_chip *chip)
+>         /* one pattern per engine setting LED MUX start and stop addresses */
+>         static const u8 pattern[][LP5523_PROGRAM_LENGTH] =  {
+>                 { 0x9c, 0x30, 0x9c, 0xb0, 0x9d, 0x80, 0xd8, 0x00, 0},
+> +               /* 9c30 -- mux_map_start(0x30)
+> +                  9cb0 -- mux_ld_end(0x50)
+> +                  9d80 -- mux_sel???(0x00)
+> +                  d800 -- invalid?? */
+>                 { 0x9c, 0x40, 0x9c, 0xc0, 0x9d, 0x80, 0xd8, 0x00, 0},
+>                 { 0x9c, 0x50, 0x9c, 0xd0, 0x9d, 0x80, 0xd8, 0x00, 0},
+>         };
+>
+> -       /* hardcode 32 bytes of memory for each engine from program memory */
+> +       /* hardcode LP5523_PROGRAM_LENGTH bytes of memory for each
+> +          engine from program memory */
+>         ret = lp55xx_write(chip, LP5523_REG_CH1_PROG_START, 0x00);
+>         if (ret)
+>                 return ret;
+>
+> -       ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, 0x10);
+> +       ret = lp55xx_write(chip, LP5523_REG_CH2_PROG_START, LP5523_PROGRAM_LENGTH / 2);
+>         if (ret)
+>                 return ret;
+>
+> -       ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, 0x20);
+> +       ret = lp55xx_write(chip, LP5523_REG_CH3_PROG_START, LP5523_PROGRAM_LENGTH);
+>         if (ret)
+>                 return ret;
+>
+> @@ -346,10 +359,8 @@ static int lp5523_update_program_memory(struct lp55xx_chip *chip,
+>
+>         for (i = 0; i < LP5523_PROGRAM_LENGTH; i++) {
+>                 ret = lp55xx_write(chip, LP5523_REG_PROG_MEM + i, pattern[i]);
+> -               if (ret) {
+> -                       mutex_unlock(&chip->lock);
+> +               if (ret)
+>                         return -EINVAL;
+> -               }
+>         }
+>
+>         return size;
+> @@ -551,15 +562,17 @@ static ssize_t store_engine_load(struct device *dev,
+>  {
+>         struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
+>         struct lp55xx_chip *chip = led->chip;
+> +       ssize_t res;
+>
+>         mutex_lock(&chip->lock);
+>
+>         chip->engine_idx = nr;
+>         lp5523_load_engine_and_select_page(chip);
+>
+> +       res = lp5523_update_program_memory(chip, buf, len);
+>         mutex_unlock(&chip->lock);
+>
+> -       return lp5523_update_program_memory(chip, buf, len);
+> +       return res;
+>  }
+>  store_load(1)
+>  store_load(2)
+> diff --git a/drivers/leds/leds-lp8501.c b/drivers/leds/leds-lp8501.c
+> index 8d55a780..ae5c6fe 100644
+> --- a/drivers/leds/leds-lp8501.c
+> +++ b/drivers/leds/leds-lp8501.c
+> @@ -262,7 +262,7 @@ static void lp8501_firmware_loaded(struct lp55xx_chip *chip)
+>         }
+>
+>         /*
+> -        * Program momery sequence
+> +        * Program memory sequence
+>          *  1) set engine mode to "LOAD"
+>          *  2) write firmware data into program memory
+>          */
+>
+> --
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
