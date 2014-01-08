@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189AbaAHSYY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:24:24 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:6335 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaAHSYW (ORCPT
+	id S1757026AbaAHSZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:25:34 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:52539 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751565AbaAHSZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:24:22 -0500
-Message-ID: <1389205457.1644.13.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: [PATCH net-next v2 6/6] r8152: support RTL8153
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: hayeswang <hayeswang@realtek.com>
-CC: "=?ISO-8859-1?Q?=27Bj=F8rn?= Mork'" <bjorn@mork.no>, <oliver@neukum.org>,
-        <netdev@vger.kernel.org>, "'nic_swsd'" <nic_swsd@realtek.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Date: Wed, 8 Jan 2014 18:24:17 +0000
-In-Reply-To: <749DBDC9792E47BBA5884BEC7CF2D639@realtek.com.tw>
-References: <1388632963-1341-1-git-send-email-hayeswang@realtek.com>
-	<1388633110-1435-1-git-send-email-hayeswang@realtek.com>
-	<877gai8nqu.fsf@nemi.mork.no>
-	<605671F106F540BA9665A195CACB78A0@realtek.com.tw>
-	<8738l58pyd.fsf@nemi.mork.no>
-	<AA7EB9EA13B74B14BBE08C4278F7948C@realtek.com.tw>
-	 <87eh4l31or.fsf@nemi.mork.no>
-	 <749DBDC9792E47BBA5884BEC7CF2D639@realtek.com.tw>
-Organization: Solarflare
+	Wed, 8 Jan 2014 13:25:32 -0500
+Message-ID: <1389205531.23721.40.camel@hornet>
+Subject: Re: [RFC 10/18] regulator: vexpress: Use regmap instead of custom
+ interface
+From: Pawel Moll <pawel.moll@arm.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Liam Girdwood <lgirdwood@gmail.com>
+Date: Wed, 08 Jan 2014 18:25:31 +0000
+In-Reply-To: <20131224122455.GY30815@sirena.org.uk>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	 <1387815830-8794-11-git-send-email-pawel.moll@arm.com>
+	 <20131224122455.GY30815@sirena.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20416.005
-X-TM-AS-Result: No--21.684600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 20:35 +0800, hayeswang wrote:
->  Bjørn Mork [mailto:bjorn@mork.no] 
-> > Sent: Monday, January 06, 2014 5:22 PM
-> > To: Hayeswang
-> > Cc: oliver@neukum.org; netdev@vger.kernel.org; nic_swsd; 
-> > linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> > Subject: Re: [PATCH net-next v2 6/6] r8152: support RTL8153
-> [...]
-> > Exactly the same device, but now cfg #1 is active and a 
-> > different set of
-> > drivers have bound to the interfaces.  This is possible 
-> > because none of
-> > the involved drivers disable the support for this device at 
-> > build-time.
-> > Instead they use the available interface descriptors for matching and
-> > probing supported functions.
-> > 
-> > End users will of course normally not go around writing stuff to sysfs
-> > attributes like this.  Creating an udev rule to select a specific
-> > counfiguration when the device is plugged is more useful for normal
-> > usage.
+On Tue, 2013-12-24 at 12:24 +0000, Mark Brown wrote:
+> On Mon, Dec 23, 2013 at 04:23:42PM +0000, Pawel Moll wrote:
 > 
-> Thanks for your answer. I would study udev rule first.
-> Does the udev alwayes exist for all Linux system, such as
-> Android, embedded system, and so on?
+> > This patch makes the Versatile Express regulator driver
+> > use regmap interface, instead of custom vexpress config
+> > one. It will request the regmap resource associated
+> > with the device, which makes it pretty much hardware
+> > agnostic.
+> 
+> If this change is making the operations hardware agnostic regmap based
+> ones then they should be being either replaced with standard operations
+> or standard operations being added.  It looks like you should be able to
+> use the existing linear map operations.
 
-They may not have udev, but if not they will normally have an alternate
-such as mdev.
+Bad wording on my side. What I meant was: it doesn't matter what wacky
+VE-specific interface is hidden behind the regmap, not it's a generic
+regulator driver.
 
-Ben.
+Having said that, I could create helpers for continuous (linear won't
+cut - if you remember the continuous_voltage_range was introduced for
+VE's sake) regulator, which would simply read/write value to a specified
+register. Not sure how useful would that be, though. I doubt that such
+"regulator" will appear anywhere outside VE world. And if so, this would
+probably call for a "generic continuous regulator" driver and a relevant
+DT binding, which I don't think anyone really wants. If your opinion
+differs, I'm happy to botch something up.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Cheers!
+
+Paweł
+
 
