@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790AbaAHXlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:41:55 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:58630 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624AbaAHXlx (ORCPT
+	id S932207AbaAHXq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:46:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43927 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077AbaAHXqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 18:41:53 -0500
+	Wed, 8 Jan 2014 18:46:54 -0500
+Date: Wed, 8 Jan 2014 15:47:24 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rashika Kheria <rashika.kheria@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, Paul Zimmerman <paulz@synopsys.com>,
+        josh@joshtriplett.org
+Subject: Re: [PATCH] drivers: dwc2: Mark function as static in core.c
+Message-ID: <20140108234724.GA13405@kroah.com>
+References: <20131221102029.GA3151@rashika>
 MIME-Version: 1.0
-In-Reply-To: <4679785.iPCX7mECEL@vostro.rjw.lan>
-References: <37552283.kG1L4S8Daa@vostro.rjw.lan>
-	<2459491.HIKjAnF27k@vostro.rjw.lan>
-	<CAE9FiQV1tui+nHMFF419dpTOKt_x4US6R=3uPhDvUDJ0zoMrEg@mail.gmail.com>
-	<4679785.iPCX7mECEL@vostro.rjw.lan>
-Date: Wed, 8 Jan 2014 15:41:52 -0800
-X-Google-Sender-Auth: KJyq8wJUaWiTdh8ULpgihkNJgyA
-Message-ID: <CAE9FiQXYskZcfccVO6OacYchfA=cd0Ns9EF1CbwERS7MR05bUA@mail.gmail.com>
-Subject: Re: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to
- avoid sysfs warnings
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20131221102029.GA3151@rashika>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 6, 2014 at 12:41 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+On Sat, Dec 21, 2013 at 03:50:29PM +0530, Rashika Kheria wrote:
+> Mark function dwc2_set_param_uframe_sched() as static in core.c because
+> it is not used outside this file.
+> 
+> This eliminates the following warning in core.c:
+> drivers/staging/dwc2/core.c:2739:5: warning: no previous prototype for ‘dwc2_set_param_uframe_sched’ [-Wmissing-prototypes]
+> 
+> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 
->> Not sure how that could happen.
->>
->> If it would really happen, we could set dev->match_driver to 0 in pci_stop_dev.
->
-> Simply, run "modprobe -r driver && modprobe driver" in a loop and
-> remove the PCI host bridge the given device is on in parallel to that.  Chances
-> are, you'll see some nice breakage.
+This patch doesn't apply to my tree.
 
-I would suggest using match_driver prevent driver from attaching again.
+And please stop sending patches in base64 mode, it makes it impossible
+to add reviewed-by: markings to them.
 
----
- drivers/pci/remove.c |    1 +
- 1 file changed, 1 insertion(+)
+thanks,
 
-Index: linux-2.6/drivers/pci/remove.c
-===================================================================
---- linux-2.6.orig/drivers/pci/remove.c
-+++ linux-2.6/drivers/pci/remove.c
-@@ -11,6 +11,7 @@ static void pci_stop_dev(struct pci_dev
-         pci_proc_detach_device(dev);
-         pci_remove_sysfs_dev_files(dev);
-         device_release_driver(&dev->dev);
-+        dev->match_driver = false;
-         dev->is_added = 0;
-     }
-
-
->
-> Also what happens if somebody uses the "remove" sysfs attribute on a device
-> needed by ioapic/dmar?
-
-Good question, we will have problem in that case.
-To make it simple, we may hide the "remove" in sysfs for ioapic pci device ?
-
-Thanks
-
-Yinghai
+greg k-h
