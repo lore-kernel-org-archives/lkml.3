@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308AbaAHNKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:10:32 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:64820 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755200AbaAHNKa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:10:30 -0500
+	id S1756115AbaAHNOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:14:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53373 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755075AbaAHNO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:14:29 -0500
+Date: Wed, 8 Jan 2014 13:14:24 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
+ prep_new_page() race
+Message-ID: <20140108131424.GE27046@suse.de>
+References: <20131216183618.GA28252@redhat.com>
+ <20131216201952.GE21218@redhat.com>
+ <20131219190846.GA24566@redhat.com>
+ <20131219190920.GB24566@redhat.com>
+ <20131223114300.GC727@redhat.com>
+ <20140103195519.GA26555@redhat.com>
+ <20140103195547.GB26555@redhat.com>
+ <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org>
+ <20140104164347.GA31359@redhat.com>
+ <20140108115400.GD27046@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20140108124240.GH27937@dhcp22.suse.cz>
-References: <20140106112422.GA27602@dhcp22.suse.cz>
-	<CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
-	<20140106141827.GB27602@dhcp22.suse.cz>
-	<CAA_GA1csMEhSYmeS7qgDj7h=Xh2WrsYvirkS55W4Jj3LTHy87A@mail.gmail.com>
-	<20140107102212.GC8756@dhcp22.suse.cz>
-	<20140107173034.GE8756@dhcp22.suse.cz>
-	<CAA_GA1fN5p3-m40Mf3nqFzRrGcJ9ni9Cjs_q4fm1PCLnzW1cEw@mail.gmail.com>
-	<20140108100859.GC27937@dhcp22.suse.cz>
-	<CAA_GA1emcHt+9zOqAKHPoXLd-ofyfYyuQn9fcdLOox5k7BLgww@mail.gmail.com>
-	<20140108124240.GH27937@dhcp22.suse.cz>
-Date: Wed, 8 Jan 2014 21:10:29 +0800
-Message-ID: <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
-Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
-From: Bob Liu <lliubbo@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140108115400.GD27046@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 8:42 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Wed 08-01-14 20:09:30, Bob Liu wrote:
->> On Wed, Jan 8, 2014 at 6:08 PM, Michal Hocko <mhocko@suse.cz> wrote:
->>
->> >
->> > If I was debugging this I would simply add printk into page_address_in_vma
->> > error paths.
->> >
->> > Anyway, I think that at least hugetlbfs part should be reverted because
->> > it might paper over real bugs. Although the migration would fail for
->> > such hugetlb page we should catch that a weird page was tried to be
->> > migrated. What about the patch below?
->>
->> Looks good to me. But we need to confirm whether our assumption is right.
->
-> Which assumption you have in mind? non-linear mapping or failing on
-> anon_vma or f_mapping checks?
->
+On Wed, Jan 08, 2014 at 11:54:00AM +0000, Mel Gorman wrote:
+> On Sat, Jan 04, 2014 at 05:43:47PM +0100, Oleg Nesterov wrote:
+> > On 01/03, Andrew Morton wrote:
+> > >
+> > > On Fri, 3 Jan 2014 20:55:47 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
+> > >
+> > > > get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
+> > > > compound_lock(). In theory this page_head can be already freed and
+> > > > reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
+> > > > get_page_unless_zero() can succeed right after set_page_refcounted(),
+> > > > and compound_lock() can race with the non-atomic __SetPageHead().
+> > >
+> > > Would be useful to mention that these things are happening inside
+> > > prep_compound_opage() (yes?).
+> > 
+> > Agreed. Added "in prep_compound_opage()" into the changelog:
+> > 
+> > 	get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
+> > 	compound_lock(). In theory this page_head can be already freed and
+> > 	reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
+> > 	get_page_unless_zero() can succeed right after set_page_refcounted(),
+> > 	and compound_lock() can race with the non-atomic __SetPageHead() in
+> > 	prep_compound_page().
+> > 
+> > 	Perhaps we should rework the thp locking (under discussion), but
+> > 	until then this patch moves set_page_refcounted() and adds wmb()
+> > 	to ensure that page->_count != 0 comes as a last change.
+> > 
+> > 	I am not sure about other callers of set_page_refcounted(), but at
+> > 	first glance they look fine to me.
+> > 
+> > or should I send v3?
+> > 
+> 
+> This patch is putting a write barrier in the page allocator fast path and
+> that is going to be a leading cause of Sad Face.
 
-The assumption that the original BUG_ON(!vma) was triggered by
-non-linear mapping.
-
->> Sasha, could you please have a test with Michal's patch?
->
-> I obviously doesn't have anything against testing but we should really
-> focus on the original issue. This patch simply restores hugetlb code
-
-Oh, I see your point.
-Yes, I agree that your patch should be merged and if the BUG_ON() is
-triggered(which is unlikely) again.
-We can open another thread and analysis the root cause.
-
->> > ---
->> > From 2d61421f26a3b63b4670d71b7adc67e2191b6157 Mon Sep 17 00:00:00 2001
->> > From: Michal Hocko <mhocko@suse.cz>
->> > Date: Wed, 8 Jan 2014 10:57:41 +0100
->> > Subject: [PATCH] mm: new_vma_page cannot see NULL vma for hugetlb pages
->> >
->> > 11c731e81bb0 (mm/mempolicy: fix !vma in new_vma_page()) has removed
->> > BUG_ON(!vma) from new_vma_page which is partially correct because
->> > page_address_in_vma will return EFAULT for non-linear mappings and at
->> > least shared shmem might be mapped this way.
->> >
->> > The patch also tried to prevent NULL ptr for hugetlb pages which is not
->> > correct AFAICS because hugetlb pages cannot be mapped as VM_NONLINEAR
->> > and other conditions in page_address_in_vma seem to be legit and catch
->> > real bugs.
->> >
->> > This patch restores BUG_ON for PageHuge to catch potential issues when
->> > the to-be-migrated page is not setup properly.
->> >
->> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
-
->> > ---
->> >  mm/mempolicy.c | 6 ++----
->> >  1 file changed, 2 insertions(+), 4 deletions(-)
->> >
->> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
->> > index 9e8d2d86978a..f3f51464a23b 100644
->> > --- a/mm/mempolicy.c
->> > +++ b/mm/mempolicy.c
->> > @@ -1199,10 +1199,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
->> >         }
->> >
->> >         if (PageHuge(page)) {
->> > -               if (vma)
->> > -                       return alloc_huge_page_noerr(vma, address, 1);
->> > -               else
->> > -                       return NULL;
->> > +               BUG_ON(vma)
->> > +               return alloc_huge_page_noerr(vma, address, 1);
->> >         }
->> >         /*
->> >          * if !vma, alloc_page_vma() will use task or system default policy
->> > --
->> > 1.8.5.2
->> >
+Peter Zijlstra correctly pointed out to me that on x86 that we generally
+would not care/notice a write barrier as it almost always is a no-op.
+X86 (which is all I test any more) can execute an sfence for a smp_wmb
+but not in any configuration that matters. The previous barrier damage in
+page_alloc.c was due to full barriers but I generally assume barriers have a
+cost in core code when I see them regardless of the underlying architecture
+details. So 99% of the time, we will not care and I won't be making Sad
+Face but eventually someone using an affected architecture will whinge --
+ppc64 probably as write barriers on sparc are compile barriers.
 
 -- 
-Regards,
---Bob
+Mel Gorman
+SUSE Labs
