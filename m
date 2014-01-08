@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaAHCMd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 21:12:33 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:65171 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750AbaAHCMY (ORCPT
+	id S1754641AbaAHCa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 21:30:26 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40870 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755AbaAHCaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 21:12:24 -0500
-Message-ID: <1389147141.26646.74.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next v3 6/9] xen-netback: Handle guests with too
- many frags
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
-Date: Tue, 07 Jan 2014 18:12:21 -0800
-In-Reply-To: <1389139818-24458-7-git-send-email-zoltan.kiss@citrix.com>
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
-	 <1389139818-24458-7-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 7 Jan 2014 21:30:18 -0500
+From: John Tobias <john.tobias.ph@gmail.com>
+To: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: shawn.guo@linaro.org, John Tobias <john.tobias.ph@gmail.com>
+Subject: [PATCH v2] ARM: imx: select ARCH_HAS_CPUFREQ for iMX6SL
+Date: Tue,  7 Jan 2014 18:29:23 -0800
+Message-Id: <1389148163-5243-1-git-send-email-john.tobias.ph@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-08 at 00:10 +0000, Zoltan Kiss wrote:
+iMX6SL now supports the cpufreq scaling by re-using the imx6q-cpufreq driver.
+By adding it, the user has the capability to select the said driver without
+depending it to SOC_IMX6Q.
 
->  
-> +		if (skb_shinfo(skb)->frag_list) {
-> +			nskb = skb_shinfo(skb)->frag_list;
-> +			xenvif_fill_frags(vif, nskb, INVALID_PENDING_IDX);
-> +			skb->len += nskb->len;
-> +			skb->data_len += nskb->len;
-> +			skb->truesize += nskb->truesize;
-> +			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-> +			skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-> +			vif->tx_zerocopy_sent += 2;
-> +			nskb = skb;
-> +
-> +			skb = skb_copy_expand(skb,
-> +					0,
-> +					0,
-> +					GFP_ATOMIC | __GFP_NOWARN);
+Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
+---
+Changes since v1:
+- Fix typo in commit log
+- Added Shawn Guo on Cc
 
-skb can be NULL here
+ arch/arm/mach-imx/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-> +			skb_shinfo(skb)->destructor_arg = NULL;
-> +		}
->  		if (skb_is_nonlinear(skb) && skb_headlen(skb) < PKT_PROT_LEN) {
->  			int target = min_t(int, skb->len, PKT_PROT_LEN);
->  			__pskb_pull_tail(skb, target - skb_headlen(skb));
-> @@ -1568,6 +1660,9 @@ static int xenvif_tx_submit(struct xenvif *vif)
->  		}
->  
-
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 7a6e6f7..704e5ae 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -808,6 +808,7 @@ config SOC_IMX6Q
+ 
+ config SOC_IMX6SL
+ 	bool "i.MX6 SoloLite support"
++	select ARCH_HAS_CPUFREQ
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_775420
+ 	select ARM_GIC
+-- 
+1.8.3.2
 
