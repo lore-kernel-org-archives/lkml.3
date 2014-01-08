@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380AbaAHH4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:56:39 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:54249 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754957AbaAHH4b convert rfc822-to-8bit (ORCPT
+	id S1755385AbaAHH71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:59:27 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:7798 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754596AbaAHH7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:56:31 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s087u5pi007468, This message is accepted by code: ctloc85258
-From: Roger Tseng <rogerable@realtek.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wei_wang <wei_wang@realsil.com.cn>
-Date: Wed, 8 Jan 2014 15:56:05 +0800
-Subject: RE: [PATCH 1/3] mfd: Add realtek USB card reader driver
-Thread-Topic: [PATCH 1/3] mfd: Add realtek USB card reader driver
-Thread-Index: Ac8Hn7x98MWTBFq9ThKLX7hyJeTgiwEoLdpK
-Message-ID: <1121E117AD4ECE49880A389A396215BB939A5BD715@rtitmbs7.realtek.com.tw>
-References: <1387792327-2511-1-git-send-email-rogerable@realtek.com>
- <1387792327-2511-2-git-send-email-rogerable@realtek.com>,<20140102094750.GZ28413@mwanda>
-In-Reply-To: <20140102094750.GZ28413@mwanda>
-Accept-Language: en-US, zh-TW
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, zh-TW
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 8 Jan 2014 02:59:18 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <kuninori.morimoto.gx@renesas.com>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 2/4] ASoC: simple-card: simple audio card widgets getting
+Date: Wed, 8 Jan 2014 15:02:34 +0800
+Message-ID: <1389164556-2728-2-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/generic/simple-card.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
->> +int rtsx_usb_ep0_write_register(struct rtsx_ucr *ucr, u16 addr,
->> +             u8 mask, u8 data)
->> +{
->> +     u16 value = 0, index = 0;
->> +
->> +     value |= (u16)(3 & 0x03) << 14;
->> +     value |= (u16)(addr & 0x3FFF);
->
->Don't do pointless things:
->
->        value |= 0x03 << 14;
->        value |= addr & 0x3FFF;
->
->> +     value = ((value << 8) & 0xFF00) | ((value >> 8) & 0x00FF);
->
->This is an endian conversion?  It is buggy.  Use the kernel endian
->conversion functions cpu_to_le16().
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index e473dc9..e7cd9bb 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -125,6 +125,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 				     struct device_node **of_codec,
+ 				     struct device_node **of_platform)
+ {
++	struct asoc_simple_card_widgets *comp;
+ 	struct device_node *np;
+ 	char *name;
+ 	int ret;
+@@ -133,6 +134,14 @@ static int asoc_simple_card_parse_of(struct device_node *node,
+ 	info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
+ 		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
+ 
++	comp = asoc_simple_card_get_widgets(node);
++	if (!IS_ERR_OR_NULL(comp)) {
++		info->snd_card.dapm_widgets = comp->widgets;
++		info->snd_card.num_dapm_widgets = comp->widgets_cnt;
++	} else if (IS_ERR(comp)) {
++		return PTR_ERR(comp);
++	}
++
+ 	/* DAPM routes */
+ 	if (of_property_read_bool(node, "simple-audio-card,routing")) {
+ 		ret = snd_soc_of_parse_audio_routing(&info->snd_card,
+-- 
+1.8.4
 
-This is not a conversion for endianess with respect to CPU but for command format  of the device. It should always be performed regardless of platform.
 
-In other words, it could be equivalent to:
-        value |= 0x03 << 6; // lower byte
-        value |= (addr & 0x3F00) >> 8; // lower byte
-        value |= (addr & 0xFF) << 8; //higher byte
-
-We think the previous form is easier to read. Should we keep it or change to the later one?
