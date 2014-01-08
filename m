@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaAHLub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:50:31 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50851 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960AbaAHLu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:50:28 -0500
-Message-ID: <52CD3D36.1010706@linux.vnet.ibm.com>
-Date: Wed, 08 Jan 2014 17:27:42 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756032AbaAHLwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:52:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57810 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755201AbaAHLwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:52:00 -0500
+Date: Wed, 8 Jan 2014 12:54:01 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        wil6210@qca.qualcomm.com, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 7/7] wil6210: Use new interfaces for MSI enablement
+Message-ID: <20140108115400.GD20157@dhcp-26-207.brq.redhat.com>
+References: <cover.1389103215.git.agordeev@redhat.com>
+ <a5774459cb8eebfc95156b8cd3b249d896e04400.1389103215.git.agordeev@redhat.com>
+ <1649789.pNiBbZVqTd@lx-vladimir>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>,
-        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V3] mm readahead: Fix the readahead fail in case of
- empty numa node
-References: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140106141300.4e1c950d45c614d6c29bdd8f@linux-foundation.org> <52CD1113.2070003@linux.vnet.ibm.com> <20140108104713.GB8256@quack.suse.cz>
-In-Reply-To: <20140108104713.GB8256@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010811-2674-0000-0000-00000C327F05
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1649789.pNiBbZVqTd@lx-vladimir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 04:17 PM, Jan Kara wrote:
-> On Wed 08-01-14 14:19:23, Raghavendra K T wrote:
->> On 01/07/2014 03:43 AM, Andrew Morton wrote:
->>> On Mon,  6 Jan 2014 15:51:55 +0530 Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> wrote:
-[...]
->> But having said that I am not able to get an idea of sane implementation
->> to solve this readahead failure bug overcoming the anomaly you pointed
->> :(.  hints/ideas.. ?? please let me know.
->    So if we would be happy with just fixing corner cases like this, we might
-> use total node memory size to detect them, can't we? If total node memory
-> size is 0, we can use 16 MB (or global number of free pages / 2 if we would
-> be uneasy with fixed 16 MB limit) as an upperbound...
->
+On Wed, Jan 08, 2014 at 01:30:45PM +0200, Vladimir Kondratiev wrote:
+> On Tuesday, January 07, 2014 07:05:42 PM Alexander Gordeev wrote:
+> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> > ---
+> >  drivers/net/wireless/ath/wil6210/pcie_bus.c |   36 ++++++++++++++------------
+> >  1 files changed, 19 insertions(+), 17 deletions(-)
+> > 
+> 
+> Patch looks fine, but I can't validate it as I can't find patch introducing
+> pci_enable_msi_range(). Where this patch landed on?
 
-Thanks Honza.
+Vladimir,
 
-This seems to be more sensible option, I 'll send the patch with that
-change (including 16MB limit if nobody disagrees).
+This series is against pci/msi branch in Bjorn Helgaas's repo:
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
 
+Commit 302a252 "PCI/MSI: Add pci_enable_msi_range() and pci_enable_msix_range()"
+
+> I am working with:
+> git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git
+> 
+> I also checked
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> and, of course
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> 
+> Thanks, Vladimir
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
