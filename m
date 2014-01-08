@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087AbaAHQKt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:10:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756406AbaAHQKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:10:46 -0500
-Message-ID: <1389197388.29144.37.camel@deneb.redhat.com>
-Subject: Re: [PATCH v2 1/5] mm: create generic early_ioremap() support
-From: Mark Salter <msalter@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        patches@linaro.org, linux-mm@kvack.org, x86@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Dave Young <dyoung@redhat.com>
-Date: Wed, 08 Jan 2014 11:09:48 -0500
-In-Reply-To: <52CC89B4.4060300@zytor.com>
-References: <1389062120-31896-1-git-send-email-msalter@redhat.com>
-	 <1389062120-31896-2-git-send-email-msalter@redhat.com>
-	 <52CC89B4.4060300@zytor.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932077AbaAHQLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:11:06 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:34857 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757149AbaAHQLC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 11:11:02 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>, walt <w41ter@gmail.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Index: AQHPDAsx5d97FnYUxUSD3GhphkgfRJp67eMA
+Date: Wed, 8 Jan 2014 16:09:14 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D455431@AcuExch.aculab.com>
+References: <52CC944C.50702@gmail.com> <20140107212101.GA4199@xanatos>
+ <20140108004724.GA14082@xanatos>
+In-Reply-To: <20140108004724.GA14082@xanatos>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 15:11 -0800, H. Peter Anvin wrote:
-> On 01/06/2014 06:35 PM, Mark Salter wrote:
-> > 
-> > There is one difference from the existing x86 implementation which
-> > should be noted. The generic early_memremap() function does not return
-> > an __iomem pointer and a new early_memunmap() function has been added
-> > to act as a wrapper for early_iounmap() but with a non __iomem pointer
-> > passed in. This is in line with the first patch of this series:
-> > 
+> From: Sarah Sharp
+> On Tue, Jan 07, 2014 at 03:57:00PM -0800, walt wrote:
+> > On 01/07/2014 01:21 PM, Sarah Sharp wrote:
+> >
+> > > Can you please try the attached patch, on top of the previous three
+> > > patches, and send me dmesg?
+> >
+> > Hi Sarah, I just now finished running 0001-More-debugging.patch for the
+> > first time.  The previous dmesg didn't include that patch, but this one
+> > does.
+> >
+> > I read through this dmesg but I nodded off somewhere around line 500.
+> > I hope you can stay awake :)
 > 
-> This makes a lot of sense.  However, I would suggest that we preface the
-> patch series with a single patch changing the signature for the existing
-> x86 function, that way this change becomes bisectable.
+> Well, it has all the info I need, but the results don't make me too
+> happy.  Everything I've checked seems consistent, and I don't know why
+> the host stopped.  The link TRBs are intact, the dequeue pointer for the
+> endpoint was pointing to the transfer that timed out and it had the
+> cycle bit set correctly, etc.  Perhaps the no-op TRBs are really the
+> issue.
+> 
+> I'll have to take a look at the log again tomorrow.  I posted the dmesg
+> on pastebin if David wants to check it out as well:
+> http://pastebin.com/a4AUpsL1
 
-Ok, that sounds like a good idea. I'm uncertain how best to coordinate
-with Dave Young's patch series to avoid conflicts. His first patch does
-the signature change (and adds the early_memunmap function but that
-isn't used anywhere):
+I can't see anything obvious either.
+However there is no response to the 'stop endpoint' command.
+Section 4.6.9 (page 107 of rev1.0) states that the controller will complete
+any USB IN or OUT transaction before raising the command completion event.
+Possibly it is too 'stuck' to complete the transaction?
 
- https://lkml.org/lkml/2013/12/20/143
+The endpoint status is also still '1' (running).
+This also means that the 'TR dequeue pointer' is undefined - so the
+controller could easily be processing a later TRB.
+This field might even still contain the ring base address written by
+the driver much earlier.
 
-Any thoughts on how best to avoid potential merge conflicts here?
+This might mean that something 'catastrophic' has happened earlier.
+Maybe the controller isn't actually seeing any doorbell writes at all.
+Maybe the base addresses it has for the rings have all got corrupted.
+At least this looks like amd64 - so there aren't memory coherency issues.
 
+Some hacks that might help isolate the problem:
+1) Request an interrupt from the last nop data TRB.
+2) Put a command nop (decimal 23) TRB into the command ring before
+   the 'stop endpoint'.
+3) Comment out the code that adds the nop data TRBs.
+The first two might need code adding to handle the responses.
+
+Do we know the actual xhci device?
+I think it reports version 0x96.
+(Sarah - it might be useful if that version were in one of the trace
+messages that is output by default.)
+
+	David
 
 
