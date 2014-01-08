@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739AbaAHIwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:52:18 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:61879 "EHLO
+	id S1756655AbaAHIwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:52:44 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:48061 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbaAHIqs (ORCPT
+	with ESMTP id S1755841AbaAHIql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:46:48 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-1b-52cd106fdf72
+	Wed, 8 Jan 2014 03:46:41 -0500
+X-AuditID: 9c93017d-b7b66ae000006a2a-02-52cd106ea260
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 14/28] perf ui/hist: Add support to accumulated hist stat
-Date: Wed,  8 Jan 2014 17:46:19 +0900
-Message-Id: <1389170793-21926-15-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 06/28] perf hists: Add support for accumulated stat of hist entry
+Date: Wed,  8 Jan 2014 17:46:11 +0900
+Message-Id: <1389170793-21926-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
 References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
@@ -26,123 +26,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print accumulated stat of a hist entry if requested.
+Maintain accumulated stat information in hist_entry->stat_acc if
+symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
+vaules initially, and will be updated as callchain is processed later.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   | 45 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h |  1 +
- 2 files changed, 46 insertions(+)
+ tools/perf/util/hist.c   | 28 ++++++++++++++++++++++++++--
+ tools/perf/util/sort.h   |  1 +
+ tools/perf/util/symbol.h |  1 +
+ 3 files changed, 28 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 78f4c92e9b73..eb9c07bcdb01 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -129,6 +129,28 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			  scnprintf, true);					\
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index ca3b3b707983..50de02c478b4 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -230,6 +230,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+ 		return true;
+ 
+ 	he_stat__decay(&he->stat);
++	if (symbol_conf.cumulate_callchain)
++		he_stat__decay(he->stat_acc);
+ 
+ 	if (!he->filtered)
+ 		hists->stats.total_period -= prev_period - he->stat.period;
+@@ -271,12 +273,26 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ 
+ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ {
+-	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
+-	struct hist_entry *he = zalloc(sizeof(*he) + callchain_size);
++	size_t callchain_size = 0;
++	struct hist_entry *he;
++
++	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
++		callchain_size = sizeof(struct callchain_root);
++
++	he = zalloc(sizeof(*he) + callchain_size);
+ 
+ 	if (he != NULL) {
+ 		*he = *template;
+ 
++		if (symbol_conf.cumulate_callchain) {
++			he->stat_acc = malloc(sizeof(he->stat));
++			if (he->stat_acc == NULL) {
++				free(he);
++				return NULL;
++			}
++			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
++		}
++
+ 		if (he->ms.map)
+ 			he->ms.map->referenced = true;
+ 
+@@ -288,6 +304,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 			 */
+ 			he->branch_info = malloc(sizeof(*he->branch_info));
+ 			if (he->branch_info == NULL) {
++				free(he->stat_acc);
+ 				free(he);
+ 				return NULL;
+ 			}
+@@ -360,6 +377,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 
+ 		if (!cmp) {
+ 			he_stat__add_period(&he->stat, period, weight);
++			if (symbol_conf.cumulate_callchain)
++				he_stat__add_period(he->stat_acc, period, weight);
+ 
+ 			/*
+ 			 * This mem info was allocated from machine__resolve_mem
+@@ -396,6 +415,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+ 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
++	if (symbol_conf.cumulate_callchain)
++		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
+ 	return he;
  }
  
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int hpp__color_acc_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	return __hpp__fmt(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			  (hpp_snprint_fn)percent_color_snprintf, true);	\
-+}
-+
-+#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+static int hpp__entry_acc_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,	\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-+	return __hpp__fmt(hpp, he, he_get_acc_##_field, fmt,			\
-+			  scnprintf, true);					\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -148,17 +170,25 @@ __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_COLOR_PERCENT_FN(_type, _field)					\
- __HPP_ENTRY_PERCENT_FN(_type, _field)
- 
-+#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)
-+
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_ENTRY_RAW_FN(_type, _field)
- 
-+__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
- HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
- HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
- HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
- HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-+HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
- 
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
-@@ -171,6 +201,14 @@ HPP_RAW_FNS(period, "Period", period, 12, 12)
- 		.entry	= hpp__entry_ ## _name		\
- 	}
- 
-+#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
-+	{						\
-+		.header	= hpp__header_ ## _name,	\
-+		.width	= hpp__width_ ## _name,		\
-+		.color	= hpp__color_acc_ ## _name,	\
-+		.entry	= hpp__entry_acc_ ## _name	\
-+	}
-+
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
-@@ -184,6 +222,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	HPP__COLOR_PRINT_FNS(overhead_us),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
-+	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
- 	HPP__PRINT_FNS(samples),
- 	HPP__PRINT_FNS(period)
- };
-@@ -208,6 +247,12 @@ void perf_hpp__init(void)
+@@ -470,6 +491,7 @@ void hist_entry__free(struct hist_entry *he)
  {
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
+ 	zfree(&he->branch_info);
+ 	zfree(&he->mem_info);
++	zfree(&he->stat_acc);
+ 	free_srcline(he->srcline);
+ 	free(he);
+ }
+@@ -495,6 +517,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
  
-+	if (symbol_conf.cumulate_callchain) {
-+		perf_hpp__format[PERF_HPP__OVERHEAD].header =
-+						hpp__header_overhead_self;
-+		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
-+	}
-+
- 	if (symbol_conf.show_cpu_utilization) {
- 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_SYS);
- 		perf_hpp__column_enable(PERF_HPP__OVERHEAD_US);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 212aec21735f..e632b29fe5d6 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -164,6 +164,7 @@ enum {
- 	PERF_HPP__OVERHEAD_US,
- 	PERF_HPP__OVERHEAD_GUEST_SYS,
- 	PERF_HPP__OVERHEAD_GUEST_US,
-+	PERF_HPP__OVERHEAD_ACC,
- 	PERF_HPP__SAMPLES,
- 	PERF_HPP__PERIOD,
+ 		if (!cmp) {
+ 			he_stat__add_stat(&iter->stat, &he->stat);
++			if (symbol_conf.cumulate_callchain)
++				he_stat__add_stat(iter->stat_acc, he->stat_acc);
  
+ 			if (symbol_conf.use_callchain) {
+ 				callchain_cursor_reset(&callchain_cursor);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 43e5ff42a609..309f2838a1b4 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -81,6 +81,7 @@ struct hist_entry {
+ 		struct list_head head;
+ 	} pairs;
+ 	struct he_stat		stat;
++	struct he_stat		*stat_acc;
+ 	struct map_symbol	ms;
+ 	struct thread		*thread;
+ 	struct comm		*comm;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index e42b410c3f11..a384fba8e585 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -92,6 +92,7 @@ struct symbol_conf {
+ 			show_nr_samples,
+ 			show_total_period,
+ 			use_callchain,
++			cumulate_callchain,
+ 			exclude_other,
+ 			show_cpu_utilization,
+ 			initialized,
 -- 
 1.7.11.7
 
