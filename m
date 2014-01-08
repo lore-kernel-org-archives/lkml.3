@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaAHAFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 19:05:21 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33338 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752310AbaAHAFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 19:05:16 -0500
-Message-ID: <1389139510.2064.22.camel@dabdike.pnp.gw>
-Subject: Re: status of block-integrity
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Hannes Reinecke <hare@suse.de>, Ric Wheeler <ricwheeler@gmail.com>,
-        "Martin K. Petersen" <mkp@mkp.net>,
-        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Date: Wed, 08 Jan 2014 08:05:10 +0800
-In-Reply-To: <20140107233410.GA1263@parisc-linux.org>
-References: <20131222192128.GA28532@infradead.org>
-	 <yq11u134rmt.fsf@sermon.lab.mkp.net> <52CBBABD.50902@gmail.com>
-	 <52CC0216.5060900@suse.de> <20140107233410.GA1263@parisc-linux.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754501AbaAHAK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 19:10:57 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:9940 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555AbaAHAKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 19:10:54 -0500
+X-IronPort-AV: E=Sophos;i="4.95,621,1384300800"; 
+   d="scan'208";a="90699151"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v2 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY instead of copy
+Date: Wed, 8 Jan 2014 00:10:09 +0000
+Message-ID: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-07 at 16:34 -0700, Matthew Wilcox wrote:
-> On Tue, Jan 07, 2014 at 02:33:10PM +0100, Hannes Reinecke wrote:
-> > I would indeed like to have a discussion at LSF about the future of
-> > DIX. DIF is not an issue, as most HBAs support it already and we
-> > actually need it for proper connectivity.
-> > 
-> > DIX, OTOH, has been left dormant since time immemorial, with the
-> > only known (supposed) user being Oracle.
-> > (I actually talked to the DB/2 folks about it, and the response
-> > was a polite feigned interest ...)
-> 
-> I think there's a terminology confusion here; you seem to be using DIX
-> to mean the TCP CRC and DIF to mean T10DIF.  I've seen other people use
-> DIX to mean separate SGLs for metadata and DIF to mean interleaved data.
-> Can you confirm which thing you mean here?
+A long known problem of the upstream netback implementation that on the TX
+path (from guest to Dom0) it copies the whole packet from guest memory into
+Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+huge perfomance penalty. The classic kernel version of netback used grant
+mapping, and to get notified when the page can be unmapped, it used page
+destructors. Unfortunately that destructor is not an upstreamable solution.
+Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+problem, however it seems to be very invasive on the network stack's code,
+and therefore haven't progressed very well.
+This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+know when the skb is freed up. That is the way KVM solved the same problem,
+and based on my initial tests it can do the same for us. Avoiding the extra
+copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+switch)
+Based on my investigations the packet get only copied if it is delivered to
+Dom0 stack, which is due to this [2] patch. That's a bit unfortunate, but
+luckily it doesn't cause a major regression for this usecase. In the future
+we should try to eliminate that copy somehow.
+There are a few spinoff tasks which will be addressed in separate patches:
+- grant copy the header directly instead of map and memcpy. This should help
+  us avoiding TLB flushing
+- use something else than ballooned pages
+- fix grant map to use page->index properly
+I will run some more extensive tests, but some basic XenRT tests were already
+passed with good results.
+I've tried to broke it down to smaller patches, with mixed results, so I
+welcome suggestions on that part as well:
+1: Introduce TX grant map definitions
+2: Change TX path from grant copy to mapping
+3: Remove old TX grant copy definitons and fix indentations
+4: Change RX path for mapped SKB fragments
+5: Add stat counters for zerocopy
+6: Handle guests with too many frags
+7: Add stat counters for frag_list skbs
+8: Timeout packets in RX path
+9: Aggregate TX unmap operations
 
-No, I think you're confusing algorithms with protocols.  DIF and DIX are
-two names for protection envelopes.  DIF verifies integrity from the HBA
-to the device surface.  DIX verifies integrity from an application to
-the HBA.  Both DIF and DIX have pluggable checksum algorithms (and, in
-theory, as long as the HBA does the conversion, they don't have to use
-the same one, although the confusion over protection types and
-algorithms is so dense already that the only way not to go insane is to
-use the same end to end one).  Oracle has the best data sources to
-explain this, including Martin's slides:
+v2: I've fixed some smaller things, see the individual patches. I've added a
+few new stat counters, and handling the important use case when an older guest
+sends lots of slots. Instead of delayed copy now we timeout packets on the RX
+path, based on the assumption that otherwise packets should get stucked
+anywhere else. Finally some unmap batching to avoid too much TLB flush
 
-https://oss.oracle.com/projects/data-integrity/documentation/
+v3: Apart from fixing a few things mentioned in responses the important change
+is the use the hypercall directly for grant [un]mapping, therefore we can
+avoid m2p override.
 
-The specific problem is that there's no defined interface for any
-application to use DIX easily because it has to supply additional
-protection information when it reads or writes data and there's no
-agreed way to extend read/write to do this and, as Martin has said,
-thinging about trying to do this with mmap leads to a "bonghit bonanza".
+[1] http://lwn.net/Articles/491522/
+[2] https://lkml.org/lkml/2012/7/20/363
 
-So, the question is do we need to bother with DIX at all?  No filesystem
-uses it and there seems to be weak user demand at best.  We could just
-strip DIX, losing the protection envelope from the application to the
-HBA but keeping DIF, which is the protection envelope from the HBA to
-the device.  
-
-James
-
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
