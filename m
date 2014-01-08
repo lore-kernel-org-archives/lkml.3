@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162AbaAHUHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:07:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932119AbaAHUHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:07:00 -0500
-Date: Wed, 8 Jan 2014 15:06:52 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, dsaxena@linaro.org,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH] audit: correct a type mismatch in audit_syscall_exit()
-Message-ID: <20140108200652.GA23577@madcap2.tricolour.ca>
-References: <1387938953-15667-1-git-send-email-takahiro.akashi@linaro.org>
+	id S932194AbaAHUHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:07:19 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:63998 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717AbaAHUHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:07:15 -0500
+Date: Wed, 8 Jan 2014 21:05:05 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
+Message-ID: <20140108200504.GD1298@ulmo.nvidia.com>
+References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com>
+ <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
+ <52CB14D3.2060904@wwwdotorg.org>
+ <20140108133951.GD1592@ulmo.nvidia.com>
+ <52CD9DFB.9010007@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
 Content-Disposition: inline
-In-Reply-To: <1387938953-15667-1-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52CD9DFB.9010007@wwwdotorg.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/12/25, AKASHI Takahiro wrote:
-> audit_syscall_exit() saves a result of regs_return_value() in intermediate
-> "int" variable and passes it to __audit_syscall_exit(), which expects its
-> second argument as a "long" value.
-> This will result in truncating the value returned by a system call and
-> making a wrong audit record.
-> I don't know why gcc compiler doesn't complain about this, but anyway it
-> causes a problem at runtime on arm64 (and probably most 64-bit archs).
-> 
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-Thanks for catching this, Takakiro.
+--u65IjBhB3TIa72Vp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  include/linux/audit.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/audit.h b/include/linux/audit.h
-> index c49a312..3dcb3f0 100644
-> --- a/include/linux/audit.h
-> +++ b/include/linux/audit.h
-> @@ -144,7 +144,7 @@ static inline void audit_syscall_exit(void *pt_regs)
->  {
->  	if (unlikely(current->audit_context)) {
->  		int success = is_syscall_success(pt_regs);
-> -		int return_code = regs_return_value(pt_regs);
-> +		long return_code = regs_return_value(pt_regs);
->  
->  		__audit_syscall_exit(success, return_code);
->  	}
+On Wed, Jan 08, 2014 at 11:50:35AM -0700, Stephen Warren wrote:
+> On 01/08/2014 06:39 AM, Thierry Reding wrote:
+> > On Mon, Jan 06, 2014 at 01:40:51PM -0700, Stephen Warren wrote:
+> >> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
+> > [...]
+> >>> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra=
+20.dtsi
+> >>
+> >>> +	efuse@7000F800 {
+> >>
+> >> "fuse" might be a better node name; "efuse" is presumably the name of
+> >> the instance, not the type of object.
+> >=20
+> > There's another occurrence I noticed recently where we haven't followed
+> > that rule. The PMIC node on Venice2 for instance is called as3722.
+> > Perhaps that should also be renamed.
+>=20
+> Yes, we should fix that. Care to send a patch?
 
-- RGB
+Will do.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Thierry
+
+--u65IjBhB3TIa72Vp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSza9wAAoJEN0jrNd/PrOhB84QAK1ZPKj6gFYAJFaabDtwZz9y
+yWMnI+N0c3Sz/6Ps/1hGgzJAZLm4x4DUOy6k4UjP8j6azfIKhGSUMfk7NewLOIUr
+7OwNvRqFlIB9n3rKEXiAp18zIhpO8OK5KpKDYeDKCw7JdfHdQz+HhkQmd3Q45a+r
+ZYVXjCRbeaR641XcjfDiipscn1xyRnOXEviDBeUVh6d5T2JpwOynT5yNU/MPtPZI
+CTp+r8WuGmiHjavjh3bG3b1oTw2U/be9v7AV5B55f5uU7sxdsCAmA4feakZhPEdG
+TKPT9B8D0WYFymras9sqZTEM+FlFR9FYu27kqGPbvnADH+lRX9d3N/GkHzxc6Vi0
+c/NDKBW3GUqa8JHcNp8ZDwsnSoS/Z77vlD7sBmuWDKOfvt0F9S5EXDYhjXw/Y7qL
+Zv3Q2BLozL92BeJ2oQBFiPYldxEu6sf9GwBfSp+ZWWCosABT4vwuppYfwrvzT4rx
+YQy3MIMO+yJ5e0nMYY/YN9qeu+GC+IhZDvOYpaeUVx1WdxLmkRou6V9BPNd40OCz
+NigIAJsoi8eyG8QvjGbRRe33gf8o9VqhG50V4mlGfZSk8fW+TCiZlxlNz/9Qc/Er
+CRKnXTDTCB/98UGYsFXDG3/MCkwNYwKVNV3pFE9SLsmNat+BpjxfpP6ckz5tcY6X
+AxepF0hrfInZ5Cx5DXSv
+=SWyH
+-----END PGP SIGNATURE-----
+
+--u65IjBhB3TIa72Vp--
