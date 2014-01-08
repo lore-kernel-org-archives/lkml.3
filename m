@@ -1,107 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372AbaAHTBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:01:11 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:42517 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180AbaAHTBG (ORCPT
+	id S1757167AbaAHTDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:03:31 -0500
+Received: from [65.55.88.15] ([65.55.88.15]:38012 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752515AbaAHTD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:01:06 -0500
-Message-ID: <1389207661.10754.42.camel@host5.omatika.ru>
-Subject: Re: [PATCH v3 11/21] ARM: pxa: support ICP DAS LP-8x4x FPGA irq
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
-Date: Wed, 08 Jan 2014 23:01:01 +0400
-In-Reply-To: <CACRpkdaY7xpoeeUqBBqUS2swe6Y5gKt67VYNvNRrsbFhyU=ATw@mail.gmail.com>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-12-git-send-email-ynvich@gmail.com>
-	 <CACRpkdaY7xpoeeUqBBqUS2swe6Y5gKt67VYNvNRrsbFhyU=ATw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
+	Wed, 8 Jan 2014 14:03:28 -0500
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -6
+X-BigFish: VPS-6(zzbb2dI98dI9371I1458K1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchd2iz1de098h8275bh1de097hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h1155h)
+X-WSS-ID: 0MZ3JFW-07-581-02
+X-M-MSG: 
+Message-ID: <52CDA054.4010700@amd.com>
+Date: Wed, 8 Jan 2014 13:00:36 -0600
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: <fweisbec@gmail.com>, <mingo@kernel.org>, <mingo@redhat.com>,
+        <jacob.w.shin@gmail.com>
+CC: <oleg@redhat.com>, <a.p.zijlstra@chello.nl>, <acme@ghostprotocols.net>,
+        <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
+        <sherry.hurwitz@amd.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: Re: [PATCH V6 0/4] perf/x86/amd: AMD Family 16h Data Breakpoint Extensions
+References: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-02 at 13:32 +0100, Linus Walleij wrote:
-> On Tue, Dec 17, 2013 at 8:37 PM, Sergei Ianovich <ynvich@gmail.com> wrote:
-> Usually combined GPIO+IRQ controllers are put into drivers/gpio but
-> this is a bit special as it seems to handle also non-GPIO-related IRQs
-> so let's get some input on this.
+Ping.  Are there any other concerns regarding this patch?
 
-This one is a plain IRQ controller. It has simple input lines, not GPIO
-pins. The chip reports its status to upper level interrupt controller.
-The upper level controller is PXA GPIO in this case.
+Thank you,
 
-(...)
+Suravee
 
-> > +static struct irq_chip lp8x4x_irq_chip = {
-> > +       .name                   = "FPGA",
-> > +       .irq_ack                = lp8x4x_mask_irq,
-> > +       .irq_mask               = lp8x4x_mask_irq,
-> > +       .irq_mask_ack           = lp8x4x_mask_irq,
-> > +       .irq_unmask             = lp8x4x_unmask_irq,
-> > +};
-> 
-> After you have added your state container you will have
-> a handle to your struct gpio_chip in the cookie passed to
-> as irqdata.
-> 
-> Then you need to mark the GPIO lines used for IRQs by
-> doing something similar to this patch in your startup()
-> and shutdown() callbacks:
-> http://marc.info/?l=linux-gpio&m=138547223832167&w=2
+On 12/11/2013 6:28 AM, suravee.suthikulpanit@amd.com wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>
+> The following patchset enables hardware breakpoint bp_len greater than
+> HW_BREAKPOINT_LEN_8 on AMD Family 16h and later.
+>
+>    $ perf stat -e mem:0x1000/16:w a.out
+>                              ^^
+>                              bp_len
+>
+> This will count writes to [0x1000 ~ 0x1010)
+>
+> V6:
+> * Minor clean up in patch 1 and 2 based on comment from Frederic and Oleg.
+> * Split out changes in patch1 into patch4 per Frederic request.
+>
+> V5:
+> * Rebase onto 3.12.0-rc3.
+> * Modify the tools/perf/util/parse-events.y due to change in
+>    parse_events_add_breakpoint().
+>
+> V4:
+> Even more per Oleg's suggestion:
+> * Further simplify info->len and info->mask setting switch statement
+>
+> V3:
+> More per Oleg's suggestion:
+> * Use already existing bp_len instead of changing userland API and
+>    in kernel turn bp_len into proper AMD hardware breakpoint address
+>    mask.
+>
+> V2:
+> Per Oleg's suggestions:
+> * Moved testing of bp_addr_mask to validate_hw_breakpoint()
+> * Changed perf tool syntax to mem:<addr>[/addr_mask][:access]
+>
+> Jacob Shin (4):
+>    perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
+>    perf tools: allow user to specify hardware breakpoint bp_len
+>    perf tools: add hardware breakpoint bp_len test cases
+>    perf/x86: Remove get_hbp_len and replace with bp_len
+>
+>   arch/x86/include/asm/cpufeature.h        |  2 ++
+>   arch/x86/include/asm/debugreg.h          |  5 +++
+>   arch/x86/include/asm/hw_breakpoint.h     |  1 +
+>   arch/x86/include/uapi/asm/msr-index.h    |  4 +++
+>   arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
+>   arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++----------------
+>   tools/perf/Documentation/perf-record.txt |  7 ++--
+>   tools/perf/tests/parse-events.c          | 55 ++++++++++++++++++++++++++++++++
+>   tools/perf/util/parse-events.c           | 21 ++++++------
+>   tools/perf/util/parse-events.h           |  2 +-
+>   tools/perf/util/parse-events.l           |  1 +
+>   tools/perf/util/parse-events.y           | 26 +++++++++++++--
+>   12 files changed, 145 insertions(+), 43 deletions(-)
+>
 
-The chip requires no GPIO initialization. 
-
-(...)
-
-> > +       iowrite8(0, base + EOI);
-> 
-> This looks dangerous, what are you doing here?
-
-This is done in kernel source which comes with the device. The
-controller won't work without this line.
-
-I cannot know for sure, as I don't have board datasheets or drawings. I
-suspect, this clears GPIO line which reports interrupts to the upper
-level controller.
-
-(...)
-
-> > +static int __init lp8x4x_irq_init(void)
-> > +{
-> > +       return platform_driver_register(&lp8x4x_irq_driver);
-> > +}
-> > +postcore_initcall(lp8x4x_irq_init);
-> 
-> Do you *have* to do it this early? I guess if it's used for
-> the UARTs then yes, but make a case for it...
-
-PXA isn't DT-only at the moment. As a result, it is impossible
-to use IRQCHIP_DECLARE(). So drivers for the on-CPU IRQs and GPIO-IRQs
-are loaded using postcore_initcall(). We need to have all irq domain
-drivers loaded prior to DT parsing in order to allow normal
-initialization of IRQ resources with DT. I'll update the commit message.
-
-The rest of review comment are implemented. The changes don't affect any
-other patches in the series. Should I repost the whole series?
-
-Or only this patch?
-
-Thanks.
 
