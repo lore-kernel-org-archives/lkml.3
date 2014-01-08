@@ -1,55 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708AbaAHPMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:12:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31158 "EHLO mx1.redhat.com"
+	id S1756750AbaAHPPC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:15:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55904 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754910AbaAHPMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:12:42 -0500
-Date: Wed, 8 Jan 2014 13:12:33 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        artagnon@gmail.com
-Subject: Re: [PATCH 3/8] perf tools: free aliases[j] in pmu.c if name_only is
- true.
-Message-ID: <20140108151233.GB2626@infradead.org>
-References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com>
- <f4427175be649aa6cdf477980051688c525b46ab.1388416837.git.yangds.fnst@cn.fujitsu.com>
+	id S1755224AbaAHPO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 10:14:59 -0500
+Date: Wed, 8 Jan 2014 16:14:57 +0100
+From: David Sterba <dsterba@suse.cz>
+To: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs: Return EXDEV for cross file system snapshot
+Message-ID: <20140108151457.GH6498@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Kusanagi Kouichi <slash@ac.auone-net.jp>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <52cd2c7c00011d8a00004f4e0000743e400004e23b8c@amlmta033.auone-net.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f4427175be649aa6cdf477980051688c525b46ab.1388416837.git.yangds.fnst@cn.fujitsu.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <52cd2c7c00011d8a00004f4e0000743e400004e23b8c@amlmta033.auone-net.jp>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What for? Please be clear in the changelogs, it helps with review.
-
-Now I'll have to follow the logic to figure this out, i.e. _why_ we
-should free aliases[j] if name_only is true? Is it safe?
-
-- Arnaldo
-
-Em Mon, Dec 30, 2013 at 10:26:38AM -0500, Dongsheng Yang escreveu:
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->  tools/perf/util/pmu.c | 1 +
->  1 file changed, 1 insertion(+)
+On Wed, Jan 08, 2014 at 07:46:19PM +0900, Kusanagi Kouichi wrote:
+> EXDEV seems an appropriate error if an operation fails bacause it
+> crosses file system boundaries.
 > 
-> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-> index 331dc2c..169c480 100644
-> --- a/tools/perf/util/pmu.c
-> +++ b/tools/perf/util/pmu.c
-> @@ -752,6 +752,7 @@ unsigned int print_pmu_events(const char *event_glob, bool name_only)
->  	for (j = 0; j < len; j++) {
->  		if (name_only) {
->  			printf("%s ", aliases[j]);
-> +			zfree(&aliases[j]);
->  			count++;
->  			continue;
->  		}
-> -- 
-> 1.8.2.1
+> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Reviewed-by: David Sterba <dsterba@suse.cz>
