@@ -1,73 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543AbaAHNXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:23:53 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:48730 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216AbaAHNXv (ORCPT
+	id S1756605AbaAHNYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:24:04 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:59057 "EHLO
+	vsp-authed-04-02.binero.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756216AbaAHNX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:23:51 -0500
+	Wed, 8 Jan 2014 08:23:59 -0500
+Message-ID: <52CD5138.1040601@gaisler.com>
+Date: Wed, 08 Jan 2014 14:23:04 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140107225345.GE29041@8bytes.org>
-References: <1389134846-1000-1-git-send-email-joro@8bytes.org>
-	<20140107225345.GE29041@8bytes.org>
-Date: Wed, 8 Jan 2014 08:23:49 -0500
-Message-ID: <CAF6AEGtHR9-oy+xaZM2bbJHnqhrwHiZeAC+asc7+Ds0x_hJeNQ@mail.gmail.com>
-Subject: Re: [PATCH] drm/msm: Fix link error with !MSM_IOMMU
-From: Rob Clark <robdclark@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Rutland <mark.rutland@arm.com>, Felipe Balbi <balbi@ti.com>
+CC: Robert Baldyga <r.baldyga@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "software@gaisler.com" <software@gaisler.com>
+Subject: Re: [PATCH v6] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
+References: <1387830349-12241-1-git-send-email-andreas@gaisler.com> <20140106162218.GF24664@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140106162218.GF24664@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 7, 2014 at 5:53 PM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Tue, Jan 07, 2014 at 11:47:26PM +0100, Joerg Roedel wrote:
->> The DRM driver for MSM depends on symbols from the MSM
->> IOMMU driver. Add this dependency to the Kconfig file.
->>
->> Fixes this comile error:
->>
->>   Kernel: arch/arm/boot/zImage is ready
->>   ERROR: "msm_iommu_get_ctx" [drivers/gpu/drm/msm/msm.ko]
->>   undefined!
->>   make[2]: *** [__modpost] Error 1
+On 2014-01-06 17:22, Mark Rutland wrote:
+> Hi,
+>
+> Apologies for the late reply, I wasn't able to access my mail much over
+> the Christmas break.
 
-Thanks, I'll pull this into my pull req for 3.14 drm-next.. although,
-after chatting with Stephen Boyd, I think we should eventually be able
-to get rid of this (seems msm_iommu_get_ctx() was mainly for dealing
-with secure playback (?))
+The patch is already applied to both the next branch of Felipe Balbi's 
+usb/next branch and merged from there into Greg Kroah-Hartman's 
+usb/usb-next branch, so it might be too late for including in the 
+initial patch.
 
-BR,
--R
+I'll be happy to send a patch series to improve things as indicated 
+inline below. There are no functional bugs running on SPARC which is the 
+ordinary environment for this core, so adding patches to do these 
+improvements should work fine.
 
+>
+> On Mon, Dec 23, 2013 at 08:25:49PM +0000, Andreas Larsson wrote:
+>> This adds an UDC driver for GRUSBDC USB Device Controller cores available in the
+>> GRLIB VHDL IP core library. The driver only supports DMA mode.
 >>
->> Cc: Rob Clark <robdclark@gmail.com>
->> Signed-off-by: Joerg Roedel <joro@8bytes.org>
+>> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 >> ---
->>  drivers/gpu/drm/msm/Kconfig |    1 +
->>  1 file changed, 1 insertion(+)
 >>
->> diff --git a/drivers/gpu/drm/msm/Kconfig b/drivers/gpu/drm/msm/Kconfig
->> index f39ab75..d3de8e1 100644
->> --- a/drivers/gpu/drm/msm/Kconfig
->> +++ b/drivers/gpu/drm/msm/Kconfig
->> @@ -4,6 +4,7 @@ config DRM_MSM
->>       depends on DRM
->>       depends on ARCH_MSM
->>       depends on ARCH_MSM8960
->> +     depends on MSM_IOMMU
->>       select DRM_KMS_HELPER
->>       select SHMEM
->>       select TMPFS
+>> Differences since v1:
+>> - Use hexprint for debug printoutes instead of homemade equivalent
+>> - Use the dev_* printk variants over the board
+>> - Get rid of unnecessary casts and includes
+>> - Use USB_STATE_NOTATTACHED instead of USB_STATE_ATTACHED for clarity
+>> - Get rid of commented out VERBOSE_DEBUG definition
+>> - Do not devm-allocate any requests
+>> - Get rid of unnecessary resqueduling of the workqueue handler
+>> - Make sure that gadget setup function is called with interrupts disabled
+>> Differences since v2:
+>> - Fixed an error printout
+>> - Got rid of the work queue in favor of threaded interrupts
+>> Differences since v3:
+>> - Disable interrupts when locking spinlocks instead of using
+>>    local_irq_save deeper within critical section
+>> Differences since v4:
+>> - Set quirk_ep_out_aligned_size
+>> - Use usb_ep_set_maxpacket_limit
+>> - Add devicetree documentation
+>> Differences since v5:
+>> - Declare unexpected spin_unlock and spin_lock for sparse
+>> - Fix a bad comment
+>> - Use ACCESS_ONCE instead of gr_read32 when checking for update of dma descriptor
+>>
+>>   Documentation/devicetree/bindings/usb/gr-udc.txt |   28 +
+>>   drivers/usb/gadget/Kconfig                       |    7 +
+>>   drivers/usb/gadget/Makefile                      |    1 +
+>>   drivers/usb/gadget/gr_udc.c                      | 2242 ++++++++++++++++++++++
+>>   drivers/usb/gadget/gr_udc.h                      |  220 +++
+>>   5 files changed, 2498 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/usb/gr-udc.txt
+>>   create mode 100644 drivers/usb/gadget/gr_udc.c
+>>   create mode 100644 drivers/usb/gadget/gr_udc.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/gr-udc.txt b/Documentation/devicetree/bindings/usb/gr-udc.txt
+>> new file mode 100644
+>> index 0000000..0c5118f
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/usb/gr-udc.txt
+>> @@ -0,0 +1,28 @@
+>> +USB Peripheral Controller driver for Aeroflex Gaisler GRUSBDC.
+>> +
+>> +The GRUSBDC USB Device Controller core is available in the GRLIB VHDL
+>> +IP core library.
+>> +
+>> +Note: In the ordinary environment for the core, a Leon SPARC system,
+>> +these properties are built from information in the AMBA plug&play.
+>> +
+>> +Required properties:
+>> +
+>> +- name : Should be "GAISLER_USBDC" or "01_021"
 >
-> FYI, I put the patch to my arm/msm branch meanwhile to get the build
-> error fixed. Please let me know when there is another solution merged
-> and I will drop it.
+> What's this for?
 >
+> Why is this not matched using a compatible string?
 >
->         Joerg
+> What does "01_021" mean?
+
+Regarding using name, this is standard for SPARC. The names in the
+device tree originates from the PROM.
+
+The name field is the actually the first field checked for a match in
+of_match_node, followed by type then compatible. See
+http://lxr.free-electrons.com/source/drivers/of/base.c?v=3.12#L723
+
+Examples can be found among others in:
+- drivers/watchdog/riowd.c
+- drivers/watchdog/cpwd.c
+- drivers/mtd/maps/sun_uflash.c
+- drivers/input/misc/sparcspkr.c
+- drivers/input/serio/i8042-sparcio.h
+- drivers/hwmon/ultra45_env.c
+
+As for the "01_021", the LEON SPARC systems uses a plug&play to identify
+different IP cores in the system. When the PROM is unaware of the name
+of a certain core, the name field presented from the PROM will be on
+this form. This is standard handling for LEON SPARC drivers.
+Examples of this can be found in:
+- drivers/gpio/gpio-grgpio.c
+- drivers/usb/host/uhci-grlib.c
+- drivers/usb/host/ehci-grlib.c
+- drivers/video/grvga.c
+- drivers/net/can/grcan.c
+- drivers/net/ethernet/aeroflex/greth.c
+- drivers/tty/serial/apbuart.c
+- drivers/gpio/gpio-grgpio.c
+
+
+>> +
+>> +- reg : Address and length of the register set for the device
+>> +
+>> +- interrupts : Interrupt numbers for this device
 >
+> How many, and what do they correspond to?
+
+I'll add text on that
+
 >
+>> +
+>> +Optional properties:
+>> +
+>> +- epobufsizes : An array of buffer sizes for OUT endpoints. If the property is
+>> +       not present, or for endpoints outside of the array, 1024 is assumed by
+>> +       the driver.
+>> +
+>> +- epibufsizes : An array of buffer sizes for IN endpoints. If the property is
+>> +       not present, or for endpoints outside of the array, 1024 is assumed by
+>> +       the driver.
+>
+> These names are rather opaque. Something like {input,output}-buf-lens
+> would be far clearer.
+
+Unless Felipe wants to merge with the original patch I don't think it is 
+a good idea to have the property name change from one version of the 
+driver to another - especially if the change does not makes it into 
+3.14. There are no dts files for SPARC.
+
+
+>
+> How many entries are expected?
+
+I'll add text on that.
+
+> A specific driver should have no relevance to the binding. Just say "if
+> not 1024".
+
+Sure!
+
+> [...]
+>
+>> +/* Must be called with dev->lock held */
+>> +static int gr_udc_init(struct gr_udc *dev)
+>> +{
+>> +       struct device_node *np = dev->dev->of_node;
+>> +       u32 epctrl_val;
+>> +       u32 dmactrl_val;
+>> +       int i;
+>> +       int ret = 0;
+>> +       u32 *bufsizes;
+>> +       u32 bufsize;
+>> +       int len;
+>> +
+>> +       gr_set_address(dev, 0);
+>> +
+>> +       INIT_LIST_HEAD(&dev->gadget.ep_list);
+>> +       dev->gadget.speed = USB_SPEED_UNKNOWN;
+>> +       dev->gadget.ep0 = &dev->epi[0].ep;
+>> +
+>> +       INIT_LIST_HEAD(&dev->ep_list);
+>> +       gr_set_ep0state(dev, GR_EP0_DISCONNECT);
+>> +
+>> +       bufsizes = (u32 *)of_get_property(np, "epobufsizes", &len);
+>
+> of_get_property gives you the raw property value bye string, which is
+> _not_ a u32 pointer -- it's not necessarily the same endianness as the
+> kernel. Please use an appropriate accessor.
+
+Sure, it makes for better looking code in general as well.
+
+>
+>> +       len /= sizeof(u32);
+>> +       for (i = 0; i < dev->nepo; i++) {
+>> +               bufsize = (bufsizes && i < len) ? bufsizes[i] : 1024;
+>
+> You can use of_property_read_u32_index within the loop for this:
+>
+>                  if (of_property_read_u32_index(np, "epobufsizes", &bufsize)
+>                          bufsize = 1024;
+>
+>> +               ret = gr_ep_init(dev, i, 0, bufsize);
+>> +               if (ret)
+>> +                       return ret;
+>> +       }
+>> +
+>> +       bufsizes = (u32 *)of_get_property(np, "epibufsizes", &len);
+>> +       len /= sizeof(u32);
+>> +       for (i = 0; i < dev->nepi; i++) {
+>> +               bufsize = (bufsizes && i < len) ? bufsizes[i] : 1024;
+>
+> Likewise here.
+>
+> [...]
+>
+>> +static int gr_probe(struct platform_device *ofdev)
+>> +{
+>> +       struct gr_udc *dev;
+>> +       struct resource *res;
+>> +       struct gr_regs __iomem *regs;
+>> +       int retval;
+>> +       u32 status;
+>> +
+>> +       dev = devm_kzalloc(&ofdev->dev, sizeof(*dev), GFP_KERNEL);
+>> +       if (!dev)
+>> +               return -ENOMEM;
+>> +       dev->dev = &ofdev->dev;
+>> +
+>> +       res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
+>> +       regs = devm_ioremap_resource(dev->dev, res);
+>> +       if (IS_ERR(regs))
+>> +               return PTR_ERR(regs);
+>> +
+>> +       dev->irq = irq_of_parse_and_map(dev->dev->of_node, 0);
+>> +       if (!dev->irq) {
+>> +               dev_err(dev->dev, "No irq found\n");
+>> +               return -ENODEV;
+>> +       }
+>
+> The platform_device probing code will have parsed and mapped the irq
+> already. You can use platform_get_irq(ofdev->dev, 0) here.
+
+Sure
+
+> Also, naming the platform_device ofdev is confusing. It has nothing to
+> do with OF, and the more common pdev name would be far clearer.
+
+Sure
+
+>> +
+>> +       /* Some core configurations has separate irqs for IN and OUT events */
+>> +       dev->irqi = irq_of_parse_and_map(dev->dev->of_node, 1);
+>> +       if (dev->irqi) {
+>> +               dev->irqo = irq_of_parse_and_map(dev->dev->of_node, 2);
+>> +               if (!dev->irqo) {
+>> +                       dev_err(dev->dev, "Found irqi but not irqo\n");
+>> +                       return -ENODEV;
+>> +               }
+>> +       }
+>
+> Likewise here you can use platform_get_irq.
+>
+> [...]
+>
+>> +static struct of_device_id gr_match[] = {
+>> +       {.name = "GAISLER_USBDC"},
+>> +       {.name = "01_021"},
+>> +       {},
+>
+> This seems extremely odd to me. I think a compatible string would be far
+> preferable.
+
+As explained above it is the standard method of matching for SPARC.
+
+>
+> Thanks,
+> Mark.
+>
+
+Thank you for the feedback!
+
+Best regards,
+Andreas Larsson
