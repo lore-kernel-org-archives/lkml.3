@@ -1,160 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbaAHEAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 23:00:40 -0500
-Received: from smtphost-2000.fit.edu ([163.118.131.50]:55532 "EHLO
-	smtphost-2000.fit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaAHEAb convert rfc822-to-8bit (ORCPT
+	id S1754829AbaAHEG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 23:06:58 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55188 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550AbaAHEGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 23:00:31 -0500
-From: "Marius  Silaghi" <msilaghi@fit.edu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Lan Tianyu" <tianyu.lan@intel.com>,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        "Jiri Kosina" <trivial@kernel.org>
-Subject: RE: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2
- devices on USB3 bus
-Thread-Topic: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2
- devices on USB3 bus
-Thread-Index: AQHPAFzcYZtWgZLIz0KQ9y3GFuGqZJp6ZVqA///hxTQ=
-Date: Wed, 8 Jan 2014 04:00:22 +0000
-Message-ID: <02270BA454DB7548ABE8E2EBF31D46D96FC7F254@EX10-BE1.fit.edu>
-References: <02270BA454DB7548ABE8E2EBF31D46D96FC7B4C5@EX10-BE1.fit.edu>,<20140108003237.GF13062@kroah.com>
-In-Reply-To: <20140108003237.GF13062@kroah.com>
-Accept-Language: en-US, ro-RO
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.88.117.201]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 7 Jan 2014 23:06:51 -0500
+X-AuditID: 9c93017d-b7b66ae000006a2a-28-52ccced84686
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] tools lib traceevent: Add state member to struct trace_seq
+References: <1389063612-18173-1-git-send-email-namhyung@kernel.org>
+	<1389063612-18173-3-git-send-email-namhyung@kernel.org>
+	<20140107130558.GB2919@krava.brq.redhat.com>
+Date: Wed, 08 Jan 2014 13:06:48 +0900
+In-Reply-To: <20140107130558.GB2919@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Tue, 7 Jan 2014 14:05:58 +0100")
+Message-ID: <87lhyrce1z.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiri,
 
-Great observation,
-Sarah located a patch that is queued for the 3.14 kernel and that has a similar effect. So future kernels could work with that one as well.
-
-The patch I provided (being very small and safe) can still be suggested for maintainers of older kernels in various long-term maintained distributions (if you know who is doing that).
-
-Here are some versions of the patch I made for current kernels:
-
-The next one was tested on Ubuntu, applied to the source for 3.5.0-17-generic (Ubuntu)
-
---- linux-3.5.0/drivers/usb/core/hub.c.orig	2014-01-07 18:16:01.997031650 -0500
-+++ linux-3.5.0/drivers/usb/core/hub.c	2014-01-07 18:19:41.617022465 -0500
-@@ -4043,7 +4043,11 @@
- 				break;
-   		}
- 
--		retval = usb_get_device_descriptor(udev, 8);
-+		if (!USE_NEW_SCHEME(retry_counter))
-+		  retval = usb_get_device_descriptor(udev, 8);
-+		else
-+		  retval = usb_get_device_descriptor(udev,
-+			    sizeof(struct usb_device_descriptor));
- 		if (retval < 8) {
- 			dev_err(&udev->dev,
- 					"device descriptor read/8, error %d\n",
-
-
-________________________________________
-For kernel 3.9.0-0.4
-
---- linux-3.5.0/drivers/usb/core/hub.c.orig	2014-01-07 18:16:01.997031650 -0500
-+++ linux-3.5.0/drivers/usb/core/hub.c	2014-01-07 18:19:41.617022465 -0500
-@@ -4043,7 +4043,11 @@
- 				break;
-   		}
- 
--		retval = usb_get_device_descriptor(udev, 8);
-+		if (!USE_NEW_SCHEME(retry_counter))
-+		  retval = usb_get_device_descriptor(udev, 8);
-+		else
-+		  retval = usb_get_device_descriptor(udev,
-+			    sizeof(struct usb_device_descriptor));
- 		if (retval < 8) {
- 			dev_err(&udev->dev,
- 					"device descriptor read/8, error %d\n",
-
-________________________________________
-
-For kernel 3.10.0-5.15
-
---- ubuntu-saucy/drivers/usb/core/hub.c.orig	2014-01-07 16:52:41.300835262 -0500
-+++ ubuntu-saucy/drivers/usb/core/hub.c	2014-01-07 16:54:53.612829730 -0500
-@@ -4126,8 +4126,11 @@
- 			if (USE_NEW_SCHEME(retry_counter) && !(hcd->driver->flags & HCD_USB3))
- 				break;
-   		}
--
--		retval = usb_get_device_descriptor(udev, 8);
-+		if (!USE_NEW_SCHEME(retry_counter))
-+		  retval = usb_get_device_descriptor(udev, 8);
-+		else
-+		  retval = usb_get_device_descriptor(udev,
-+			    sizeof(struct usb_device_descriptor));
- 		if (retval < 8) {
- 			if (retval != -ENODEV)
- 				dev_err(&udev->dev,
-________________________________________
-
-For kernel 3.11
---- linux-3.11/drivers/usb/core/hub.c.orig	2014-01-07 16:57:16.352823760 -0500
-+++ linux-3.11/drivers/usb/core/hub.c	2014-01-07 16:58:10.168821508 -0500
-@@ -4161,7 +4161,11 @@
- 				break;
-   		}
- 
--		retval = usb_get_device_descriptor(udev, 8);
-+		if (!USE_NEW_SCHEME(retry_counter))
-+		  retval = usb_get_device_descriptor(udev, 8);
-+		else
-+		  retval = usb_get_device_descriptor(udev,
-+			    sizeof(struct usb_device_descriptor));
- 		if (retval < 8) {
- 			if (retval != -ENODEV)
- 				dev_err(&udev->dev,
-
-
-________________________________________
-From: linux-usb-owner@vger.kernel.org [linux-usb-owner@vger.kernel.org] on behalf of Greg Kroah-Hartman [gregkh@linuxfoundation.org]
-Sent: Tuesday, January 07, 2014 19:32
-To: Marius  Silaghi
-Cc: Sarah Sharp; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Alan Stern; Lan Tianyu; Xenia Ragiadakou; Jiri Kosina
-Subject: Re: [PATCH] usbcore: fix BABBLE failed enumeration of legacy USB2 devices on USB3 bus
-
-On Tue, Dec 24, 2013 at 04:19:18AM +0000, Marius  Silaghi wrote:
-> From: Marius C Silaghi <msilaghi@fit.edu>
+On Tue, 7 Jan 2014 14:05:58 +0100, Jiri Olsa wrote:
+> On Tue, Jan 07, 2014 at 12:00:09PM +0900, Namhyung Kim wrote:
 >
-> This patch is generated against the last kernel version in the github kernel repository.
-
-We work off of the git.kernel.org trees, not github :)
-
-
-> Some older families of USB2 cameras (STC-XXXXXUSB) do not support querying only the first 8 bytes of their
-> device descriptor and therefore fail at enumeration on USB3 HCDs, with babble error -75 as they send more than
-> the expected 8 bytes. The proposed patch extends the mechanism used for non USB3 HCDs in the first part of
-> the same function, and  successively tries to query both the 8 byte prefix of the device descriptor, as well as
-> the whole device descriptor (in case the old style query of the 8 byte prefix fails).
-> In fact, for the cameras I try to fix, the preferred condition is the negation of the one in the proposed patch,
-> "if (!USE_NEW_SCHEME(retry_counter))", to try first the version successful on this case, but I keep the
-> current order of the "if" branches to ensure clean continuation of support for other supported devices.
+> SNIP
 >
-> Signed-off-by: Marius C Silaghi <msilaghi@fit.edu>
+>>  void trace_seq_init(struct trace_seq *s);
+>> diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+>> index d7f2e68bc5b9..1747aa50ecb0 100644
+>> --- a/tools/lib/traceevent/trace-seq.c
+>> +++ b/tools/lib/traceevent/trace-seq.c
+>> @@ -32,8 +32,9 @@
+>>  #define TRACE_SEQ_POISON	((void *)0xdeadbeef)
+>>  #define TRACE_SEQ_CHECK(s)						\
+>>  do {									\
+>> -	if ((s)->buffer == TRACE_SEQ_POISON)			\
+>> -		die("Usage of trace_seq after it was destroyed");	\
+>> +	if (WARN_ONCE((s)->buffer == TRACE_SEQ_POISON,			\
+>> +		      "Usage of trace_seq after it was destroyed"))	\
+>> +		(s)->state = TRACE_SEQ__BUFFER_POISONED;		\
+>>  } while (0)
+>>  
+>>  /**
+>> @@ -46,6 +47,7 @@ void trace_seq_init(struct trace_seq *s)
+>>  	s->readpos = 0;
+>>  	s->buffer_size = TRACE_SEQ_BUF_SIZE;
+>>  	s->buffer = malloc_or_die(s->buffer_size);
+>> +	s->state = TRACE_SEQ__GOOD;
+>>  }
+>>  
+>>  /**
+>> @@ -81,7 +83,7 @@ static void expand_buffer(struct trace_seq *s)
+>>  	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+>>  	s->buffer = realloc(s->buffer, s->buffer_size);
+>>  	if (!s->buffer)
+>> -		die("Can't allocate trace_seq buffer memory");
+>> +		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
+>
+> and also here?
+>
+> 	if (WARN_ONCE(!s->buffer))
+> 		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
 
-I'll let Sarah take this patch, if it passes her testing.
+Ah, will fix.
 
-thanks,
+>
+> otherwise the whole series seems ok,
 
-greg k-h
---
-To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks for your review!
+Namhyung
