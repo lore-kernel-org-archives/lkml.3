@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615AbaAHM5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 07:57:17 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:54998 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751AbaAHM5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 07:57:15 -0500
-Message-ID: <52CD4B27.2030200@compulab.co.il>
-Date: Wed, 08 Jan 2014 14:57:11 +0200
-From: Denis Turischev <denis.turischev@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756462AbaAHM6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 07:58:05 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:45666 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200AbaAHM6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 07:58:03 -0500
+Date: Wed, 8 Jan 2014 09:57:55 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 03/28] perf tools: Remove symbol_conf.use_callchain check
+Message-ID: <20140108125755.GC15464@ghostprotocols.net>
+References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
+ <1389170793-21926-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Takashi Iwai <tiwai@suse.de>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, dashing.meng@gmail.com,
-        Niklas Schnelle <niklas@komani.de>, Giorgos <ganastasiouGR@gmail.com>,
-        art1@vhex.net
-Subject: Re: [PATCH v1] xhci: Switch Intel Lynx Point ports to EHCI on shutdown
-References: <52B31EDA.60908@compulab.co.il> <52B327D5.3080805@compulab.co.il> <20131219182110.GC3573@xanatos> <52B41EC7.1070704@compulab.co.il> <20131220234547.GC2835@xanatos> <52B69925.8030409@compulab.co.il> <20140103000334.GE9621@xanatos> <52CAA2D4.2040103@compulab.co.il> <s5hd2k4qfcb.wl%tiwai@suse.de> <20140107231103.GD4199@xanatos>
-In-Reply-To: <20140107231103.GD4199@xanatos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389170793-21926-4-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 01:11 AM, Sarah Sharp wrote:
-> Denis, what do you mean by "works for Lynx Point"?  Do you mean that
-> adding the quirk to switch the ports on EHCI on shutdown (e95829f474)
-> for the Intense-PC2 *instead of* the commit to put the host in D3 on
-> shutdown (638298dc66) works?  Or do you mean you need both patches for
-> your system?
-> 
-> If you only need the quirk to switch the ports to EHCI on shutdown, then
-> we could apply that broadly to Lynx Point LP, and see whether other
-> BIOSes tolerate that quirk.
+Em Wed, Jan 08, 2014 at 05:46:08PM +0900, Namhyung Kim escreveu:
+> The machine__resolve_callchain() is called only if symbol_conf.
+> use_callchain is set so no need to check it again.
 
-Yes, switching the ports on EHCI on shutdown is enough for Intense-PC2.
-I don't need both patches.
+Not really it may be called with use_callchain not set, I'm checking if
+the logic is needed (doesn't look like).
+
+- Arnaldo
+ 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/machine.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index a98538dc465a..4dcc89490858 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -1313,8 +1313,6 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+>  				*root_al = al;
+>  				callchain_cursor_reset(&callchain_cursor);
+>  			}
+> -			if (!symbol_conf.use_callchain)
+> -				break;
+>  		}
+>  
+>  		err = callchain_cursor_append(&callchain_cursor,
+> -- 
+> 1.7.11.7
