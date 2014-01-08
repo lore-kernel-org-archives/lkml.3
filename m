@@ -1,139 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948AbaAHP5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:57:53 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:10121 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756876AbaAHP5t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:57:49 -0500
-Message-ID: <1389196669.23721.17.camel@hornet>
-Subject: Re: [RFC 08/18] hwmon: vexpress: Use regmap instead of custom
- interface
-From: Pawel Moll <pawel.moll@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Olof Johansson <olof@lixom.net>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Wed, 08 Jan 2014 15:57:49 +0000
-In-Reply-To: <20131223173139.GA1678@roeck-us.net>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
-	 <1387815830-8794-9-git-send-email-pawel.moll@arm.com>
-	 <20131223173139.GA1678@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1756996AbaAHP67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:58:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755610AbaAHP65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 10:58:57 -0500
+Date: Wed, 8 Jan 2014 10:58:29 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Baoquan <bhe@redhat.com>
+Cc: linux-acpi@vger.kernel.org, zhangyanfei@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dyoung@redhat.com
+Subject: Re: kdump failed because of hotplug memory adding in kdump kernel
+Message-ID: <20140108155829.GC13649@redhat.com>
+References: <52CD6E33.400@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CD6E33.400@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-12-23 at 17:31 +0000, Guenter Roeck wrote:
-> On Mon, Dec 23, 2013 at 04:23:40PM +0000, Pawel Moll wrote:
-> > This patch makes the Versatile Express hwmon driver
-> > use regmap interface, instead of custom vexpress config
-> > one. It will request the regmap resource associated
-> > with the device, which makes it pretty much hardware
-> > agnostic.
-> > 
-> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> > Cc: Jean Delvare <khali@linux-fr.org>
-> > Cc: Guenter Roeck <linux@roeck-us.net>
-> > Cc: lm-sensors@lm-sensors.org
-> > ---
-> >  drivers/hwmon/Kconfig    |  3 ++-
-> >  drivers/hwmon/vexpress.c | 29 +++++++++++------------------
-> >  2 files changed, 13 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> > index 52d548f..7747a47 100644
-> > --- a/drivers/hwmon/Kconfig
-> > +++ b/drivers/hwmon/Kconfig
-> > @@ -1324,7 +1324,8 @@ config SENSORS_TWL4030_MADC
-> >  
-> >  config SENSORS_VEXPRESS
-> >  	tristate "Versatile Express"
-> > -	depends on VEXPRESS_CONFIG
-> > +	depends on ARM || ARM64
-> > +	depends on REGMAP
-> >  	help
-> >  	  This driver provides support for hardware sensors available on
-> >  	  the ARM Ltd's Versatile Express platform. It can provide wide
-> > diff --git a/drivers/hwmon/vexpress.c b/drivers/hwmon/vexpress.c
-> > index d867e6b..b58cf1c 100644
-> > --- a/drivers/hwmon/vexpress.c
-> > +++ b/drivers/hwmon/vexpress.c
-> > @@ -22,11 +22,11 @@
-> >  #include <linux/of.h>
-> >  #include <linux/of_device.h>
-> >  #include <linux/platform_device.h>
-> > -#include <linux/vexpress.h>
-> > +#include <linux/regmap.h>
-> >  
-> >  struct vexpress_hwmon_data {
-> >  	struct device *hwmon_dev;
-> > -	struct vexpress_config_func *func;
-> > +	struct regmap *reg;
-> >  };
-> >  
-> >  static ssize_t vexpress_hwmon_name_show(struct device *dev,
-> > @@ -56,7 +56,7 @@ static ssize_t vexpress_hwmon_u32_show(struct device *dev,
-> >  	int err;
-> >  	u32 value;
-> >  
-> > -	err = vexpress_config_read(data->func, 0, &value);
-> > +	err = regmap_read(data->reg, 0, &value);
-> >  	if (err)
-> >  		return err;
-> >  
-> > @@ -69,13 +69,13 @@ static ssize_t vexpress_hwmon_u64_show(struct device *dev,
-> >  {
-> >  	struct vexpress_hwmon_data *data = dev_get_drvdata(dev);
-> >  	int err;
-> > -	u32 value_hi, value_lo;
-> > +	unsigned int value_hi, value_lo;
-> >  
-> > -	err = vexpress_config_read(data->func, 0, &value_lo);
-> > +	err = regmap_read(data->reg, 0, &value_lo);
-> >  	if (err)
-> >  		return err;
-> >  
-> > -	err = vexpress_config_read(data->func, 1, &value_hi);
-> > +	err = regmap_read(data->reg, 1, &value_hi);
-> >  	if (err)
-> >  		return err;
-> >  
-> > @@ -175,26 +175,21 @@ static int vexpress_hwmon_probe(struct platform_device *pdev)
-> >  	if (!match)
-> >  		return -ENODEV;
-> >  
-> > -	data->func = vexpress_config_func_get_by_dev(&pdev->dev);
-> > -	if (!data->func)
-> > +	data->reg = dev_get_regmap(&pdev->dev, NULL);
-> > +	if (!data->reg)
-> >  		return -ENODEV;
-> >  
-> >  	err = sysfs_create_group(&pdev->dev.kobj, match->data);
-> >  	if (err)
-> > -		goto error;
-> > +		return err;
-> >  
-> >  	data->hwmon_dev = hwmon_device_register(&pdev->dev);
-> >  	if (IS_ERR(data->hwmon_dev)) {
-> > -		err = PTR_ERR(data->hwmon_dev);
-> > -		goto error;
-> > +		sysfs_remove_group(&pdev->dev.kobj, match->data);
-> > +		return PTR_ERR(data->hwmon_dev);
-> 
-> This change is unrelated and violates coding style. If the goto disturbs you,
-> I would suggest to convert the driver to use devm_hwmon_device_register_with_groups() 
-> in a separate patch and get rid of the error handling and the entire remove() function.
+On Wed, Jan 08, 2014 at 11:26:43PM +0800, Baoquan wrote:
 
-Ok, will do, thanks!
+[..]
+> [    1.592222] acpi PNP0A03:03: fail to add MMCONFIG information, can't access extended PCI configuration space under this bridge.
+> [    1.605045] PCI host bridge to bus 0000:ff
+> [    1.609615] pci_bus 0000:ff: root bus resource [bus ff]
+> [    1.632117] System RAM resource [mem 0x01000000-0x7bffffff] cannot be added
+> [    1.639892] init_memory_mapping: [mem 0x100000000-0x87fffffff]
+> [    1.717793] swapper/0: page allocation failure: order:9, mode:0x84d0
+> [    1.724884] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-59.el7.x86_64 #1
+> [    1.732842] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S001.032520101647 03/25/2010
+> [    1.743224]  0000000000000000 ffff8800339878c8 ffffffff815b64ad ffff880033987950
+> [    1.751513]  ffffffff8113a980 ffff88003673ab28 00000000000001fe 0000000000000001
+> [    1.759804]  ffff880000000040 ffffffff810bc28a 0000000000000000 0000000000000200
+> [    1.768096] Call Trace:                                                                                                                                            [348/1928]
+> [    1.770834]  [<ffffffff815b64ad>] dump_stack+0x19/0x1b
+> [    1.776561]  [<ffffffff8113a980>] warn_alloc_failed+0xf0/0x160
+> [    1.783076]  [<ffffffff810bc28a>] ? on_each_cpu_mask+0x2a/0x60
+> [    1.789581]  [<ffffffff8113e92f>] __alloc_pages_nodemask+0x7ff/0xa00
+> [    1.796672]  [<ffffffff815ada2c>] vmemmap_alloc_block+0x62/0xba
+> [    1.803274]  [<ffffffff815ada99>] vmemmap_alloc_block_buf+0x15/0x3b
+> [    1.810263]  [<ffffffff815ab8a6>] vmemmap_populate+0xb4/0x21b
+> [    1.816673]  [<ffffffff815adecd>] sparse_mem_map_populate+0x27/0x35
+> [    1.823665]  [<ffffffff815ad8bf>] sparse_add_one_section+0x7a/0x185
+> [    1.830659]  [<ffffffff8159b74f>] __add_pages+0xaf/0x240
+> [    1.836588]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    1.842804]  [<ffffffff8159ba89>] add_memory+0xb9/0x1b0
+> [    1.848638]  [<ffffffff8132dd2c>] acpi_memory_device_add+0x18d/0x26d
+> [    1.855728]  [<ffffffff81303b91>] acpi_bus_device_attach+0x7d/0xcd
+> [    1.862625]  [<ffffffff8131d92d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    1.869616]  [<ffffffff81303b14>] ? acpi_bus_type_and_status+0x90/0x90
+> [    1.876896]  [<ffffffff81303b14>] ? acpi_bus_type_and_status+0x90/0x90
+> [    1.884177]  [<ffffffff8131de1c>] acpi_walk_namespace+0x95/0xc5
+> [    1.890780]  [<ffffffff81304866>] acpi_bus_scan+0x8b/0x9d
+> [    1.896805]  [<ffffffff81a14a15>] acpi_scan_init+0x63/0x160
+> [    1.903021]  [<ffffffff81a14830>] acpi_init+0x25d/0x2a6
 
-Paweł
+So basically acpi thinks that some memory block is a hot plug memory
+and tries to add it. And that consumes lots of memory and we don't have
+that memory in second kernel.
 
+For this reason, we pass a custom E820 map to second kernel so that it
+only initializes page tables and memmap array for a very small physical
+memory range.
+
+Now question is what is hot plug memory. In this case we have not
+physically plugged in any physical memory. So why acpi is considering
+this memory to be a hot add memory operation.
+
+Are there memory hotplug slots and these ranges always considered hot added
+memory? IOW, what if I hotplug a memory and then reboot the system. Will
+new E820 map contain this new memory range or not?
+
+I guess simplest way to solve this problem might be to disable memory hot
+plug in kdump kernel. Is there any command line parameter to do that?
+
+If we disable memory hotplug in second kernel, and a hot plug memory
+is passed in E820 map, will it still work. Can I access that memory in
+second kernel?
+
+Thanks
+Vivek
