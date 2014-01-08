@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994AbaAHHOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:14:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47859 "EHLO mx2.suse.de"
+	id S1755081AbaAHHPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:15:49 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:53273 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaAHHOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:14:37 -0500
-Message-ID: <52CCFADB.6080909@suse.de>
-Date: Wed, 08 Jan 2014 08:14:35 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1750790AbaAHHPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 02:15:41 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <stable@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v2] mfd: omap-usb-tll: Don't hold lock during pm_runtime_get/put_sync()
+Date: Wed, 8 Jan 2014 12:45:33 +0530
+Message-ID: <1389165333-7573-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "Darrick J. Wong" <darrick.wong@oracle.com>, chuck.lever@oracle.com,
-        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: status of block-integrity
-References: <20131222192128.GA28532@infradead.org> <52C6D0DB.1050906@suse.de>	<yq1wqigzvc1.fsf@sermon.lab.mkp.net>	<20140107013646.GB10297@birch.djwong.org> <52CBAA1B.7000509@suse.de> <yq1a9f7wjqr.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1a9f7wjqr.fsf@sermon.lab.mkp.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 10:43 PM, Martin K. Petersen wrote:
->>>>>> "Hannes" == Hannes Reinecke <hare@suse.de> writes:
-> 
-> Hannes> Plus (as hch rightly pointed out) as there is no defined
-> Hannes> userland interface the question is why we bother with all the
-> Hannes> DIX stuff in the block layer.  
-> 
-> Because it catches problems in the path between block layer and HBA
-> ASIC? FWIW, we find more issues there than we do between initiator and
-> target.
-> 
-But how should it do that exactly?
-As there is no user (apart from oracleasm) no-one can attach
-protection information to any data, so even the most dedicated admin
-cannot exercise this path, let alone find issues here.
+pm_runtime_get/put_sync() can sleep so don't hold spinlock while
+calling them.
 
-> API issues aside, another reason adoption has been slow is that very few
-> applications truly care about this stuff. The current approach in which
-> data is protected when the I/O is submitted by the filesystem is good
-> enough for most things. Saves the filesystem people the trouble of
-> dealing with it too.
-> 
-> In reality there are only a handful of applications that would actually
-> benefit from an explicit userland API. Mostly in the database
-> department. All the potential consumers of an interface I talked to
-> wanted to use aio so that's why we've focused our efforts there.
-> 
-aio is perfectly fine; all I care is to have _any_ way of feeding
-protection information into the kernel.
+This patch prevents a BUG() during system suspend when
+CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
 
-> Both Darrick and I have been busy with other projects the last little
-> while. I'll start looking at this again when I'm done with copy
-> offload...
-> 
-Speaking of which, are there any patches?
-Doug Gilbert and I are currently discussing LID4 / ROD Token copy
-for sg3_utils and the block layer, so any patches would be very
-helpful here.
+Bug is present in Kernel versions v3.9 onwards.
 
-Cheers,
+Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: <stable@vger.kernel.org> # 3.9+
+---
+ drivers/mfd/omap-usb-tll.c | 36 ++++++++++++------------------------
+ 1 file changed, 12 insertions(+), 24 deletions(-)
 
-Hannes
+diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
+index 0d946ae1..c409be9 100644
+--- a/drivers/mfd/omap-usb-tll.c
++++ b/drivers/mfd/omap-usb-tll.c
+@@ -333,21 +333,17 @@ int omap_tll_init(struct usbhs_omap_platform_data *pdata)
+ 	unsigned reg;
+ 	struct usbtll_omap *tll;
+ 
+-	spin_lock(&tll_lock);
+-
+-	if (!tll_dev) {
+-		spin_unlock(&tll_lock);
++	if (!tll_dev)
+ 		return -ENODEV;
+-	}
+ 
+-	tll = dev_get_drvdata(tll_dev);
++	pm_runtime_get_sync(tll_dev);
+ 
++	spin_lock(&tll_lock);
++	tll = dev_get_drvdata(tll_dev);
+ 	needs_tll = false;
+ 	for (i = 0; i < tll->nch; i++)
+ 		needs_tll |= omap_usb_mode_needs_tll(pdata->port_mode[i]);
+ 
+-	pm_runtime_get_sync(tll_dev);
+-
+ 	if (needs_tll) {
+ 		void __iomem *base = tll->base;
+ 
+@@ -398,9 +394,8 @@ int omap_tll_init(struct usbhs_omap_platform_data *pdata)
+ 		}
+ 	}
+ 
+-	pm_runtime_put_sync(tll_dev);
+-
+ 	spin_unlock(&tll_lock);
++	pm_runtime_put_sync(tll_dev);
+ 
+ 	return 0;
+ }
+@@ -411,17 +406,14 @@ int omap_tll_enable(struct usbhs_omap_platform_data *pdata)
+ 	int i;
+ 	struct usbtll_omap *tll;
+ 
+-	spin_lock(&tll_lock);
+-
+-	if (!tll_dev) {
+-		spin_unlock(&tll_lock);
++	if (!tll_dev)
+ 		return -ENODEV;
+-	}
+-
+-	tll = dev_get_drvdata(tll_dev);
+ 
+ 	pm_runtime_get_sync(tll_dev);
+ 
++	spin_lock(&tll_lock);
++	tll = dev_get_drvdata(tll_dev);
++
+ 	for (i = 0; i < tll->nch; i++) {
+ 		if (omap_usb_mode_needs_tll(pdata->port_mode[i])) {
+ 			int r;
+@@ -448,13 +440,10 @@ int omap_tll_disable(struct usbhs_omap_platform_data *pdata)
+ 	int i;
+ 	struct usbtll_omap *tll;
+ 
+-	spin_lock(&tll_lock);
+-
+-	if (!tll_dev) {
+-		spin_unlock(&tll_lock);
++	if (!tll_dev)
+ 		return -ENODEV;
+-	}
+ 
++	spin_lock(&tll_lock);
+ 	tll = dev_get_drvdata(tll_dev);
+ 
+ 	for (i = 0; i < tll->nch; i++) {
+@@ -464,9 +453,8 @@ int omap_tll_disable(struct usbhs_omap_platform_data *pdata)
+ 		}
+ 	}
+ 
+-	pm_runtime_put_sync(tll_dev);
+-
+ 	spin_unlock(&tll_lock);
++	pm_runtime_put_sync(tll_dev);
+ 
+ 	return 0;
+ }
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+1.8.3.2
+
