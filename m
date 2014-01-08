@@ -1,184 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaAHWRP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 17:17:15 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:36672 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932192AbaAHWPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 17:15:54 -0500
-From: Matthias Oefelein <ma.oefelein@arcor.de>
-To: ma.oefelein@arcor.de
-Cc: linux-kernel@rmueck.de, linux-kernel@i4.cs.fau.de,
-        gregkh@linuxfoundation.org, lisa@xenapiadmin.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] beeceem: Fix broken indentations in InterfaceRx.c
-Date: Wed,  8 Jan 2014 23:15:07 +0100
-Message-Id: <1389219310-8015-4-git-send-email-ma.oefelein@arcor.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1389219310-8015-1-git-send-email-ma.oefelein@arcor.de>
-References: <1389219310-8015-1-git-send-email-ma.oefelein@arcor.de>
+	id S932457AbaAHWTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 17:19:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757036AbaAHWTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 17:19:02 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Andrew de los Reyes <adlr@chromium.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] HID: logitech-dj: rely on hid groups to separate receivers from dj devices
+Date: Wed,  8 Jan 2014 17:18:47 -0500
+Message-Id: <1389219529-29671-4-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch reports a lot of spaces at the beginning of lines and other wrong indentations. This patch fixes these issues.
+From: Benjamin Tisssoires <benjamin.tissoires@redhat.com>
 
-Signed-off-by: Matthias Oefelein <ma.oefelein@arcor.de>
-Signed-off-by: Ralph Mueck <linux-kernel@rmueck.de>
+Several benefits here:
+- we can drop the macro is_dj_device: I never been really conviced by
+  this macro as we could fall into a null pointer anytime. Anyway time
+  showed that this never happened.
+- we can simplify the hid driver logitech-djdevice, and make it aware
+  of any new receiver VID/PID.
+- we can use the Wireless PID of the DJ device as the product id of the
+  hid device, this way the sysfs will differentiate between different
+  DJ devices.
 
+Signed-off-by: Benjamin Tisssoires <benjamin.tissoires@redhat.com>
 ---
- drivers/staging/bcm/InterfaceRx.c | 55 ++++++++++++++++++---------------------
- 1 file changed, 26 insertions(+), 29 deletions(-)
+ drivers/hid/hid-logitech-dj.c | 37 +++++++++----------------------------
+ drivers/hid/hid-logitech-dj.h | 10 ----------
+ include/linux/hid.h           |  1 +
+ 3 files changed, 10 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/staging/bcm/InterfaceRx.c b/drivers/staging/bcm/InterfaceRx.c
-index aa1df66..5ebcf9b 100644
---- a/drivers/staging/bcm/InterfaceRx.c
-+++ b/drivers/staging/bcm/InterfaceRx.c
-@@ -19,14 +19,14 @@ GetBulkInRcb(struct bcm_interface_adapter *psIntfAdapter)
- 	UINT index = 0;
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index f45279c..a4b3cee 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -263,11 +263,14 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 	dj_hiddev->dev.parent = &djrcv_hdev->dev;
+ 	dj_hiddev->bus = BUS_USB;
+ 	dj_hiddev->vendor = le16_to_cpu(usbdev->descriptor.idVendor);
+-	dj_hiddev->product = le16_to_cpu(usbdev->descriptor.idProduct);
++	dj_hiddev->product =
++	    (dj_report->report_params[DEVICE_PAIRED_PARAM_EQUAD_ID_MSB] << 8) |
++	     dj_report->report_params[DEVICE_PAIRED_PARAM_EQUAD_ID_LSB];
+ 	snprintf(dj_hiddev->name, sizeof(dj_hiddev->name),
+-		"Logitech Unifying Device. Wireless PID:%02x%02x",
+-		dj_report->report_params[DEVICE_PAIRED_PARAM_EQUAD_ID_MSB],
+-		dj_report->report_params[DEVICE_PAIRED_PARAM_EQUAD_ID_LSB]);
++		"Logitech Unifying Device. Wireless PID:%04x",
++		dj_hiddev->product);
++
++	dj_hiddev->group = HID_GROUP_LOGITECH_DJ_DEVICE_GENERIC;
  
- 	if((atomic_read(&psIntfAdapter->uNumRcbUsed) < MAXIMUM_USB_RCB) &&
--		(psIntfAdapter->psAdapter->StopAllXaction == false))
-+	   (psIntfAdapter->psAdapter->StopAllXaction == false))
- 	{
- 		index = atomic_read(&psIntfAdapter->uCurrRcb);
- 		pRcb = &psIntfAdapter->asUsbRcb[index];
- 		pRcb->bUsed = TRUE;
- 		pRcb->psIntfAdapter = psIntfAdapter;
- 		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Got Rx desc %d used %d",
--			index, atomic_read(&psIntfAdapter->uNumRcbUsed));
-+				index, atomic_read(&psIntfAdapter->uNumRcbUsed));
- 		index = (index + 1) % MAXIMUM_USB_RCB;
- 		atomic_set(&psIntfAdapter->uCurrRcb, index);
- 		atomic_inc(&psIntfAdapter->uNumRcbUsed);
-@@ -52,13 +52,12 @@ static void read_bulk_callback(struct urb *urb)
- 		pr_info(PFX "%s: rx urb status %d length %d\n",
- 			Adapter->dev->name, urb->status, urb->actual_length);
+ 	usb_make_path(usbdev, dj_hiddev->phys, sizeof(dj_hiddev->phys));
+ 	snprintf(tmpstr, sizeof(tmpstr), ":%d", dj_report->device_index);
+@@ -752,9 +755,6 @@ static int logi_dj_probe(struct hid_device *hdev,
+ 	struct dj_receiver_dev *djrcv_dev;
+ 	int retval;
  
--	if((Adapter->device_removed == TRUE)  ||
--		(TRUE == Adapter->bEndPointHalted) ||
--		(0 == urb->actual_length)
--		)
-+	if((Adapter->device_removed == TRUE) ||
-+	   (TRUE == Adapter->bEndPointHalted) ||
-+	   (0 == urb->actual_length))
- 	{
--	 	pRcb->bUsed = false;
-- 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
-+		pRcb->bUsed = false;
-+		atomic_dec(&psIntfAdapter->uNumRcbUsed);
- 		return;
- 	}
+-	if (is_dj_device((struct dj_device *)hdev->driver_data))
+-		return -ENODEV;
+-
+ 	dbg_hid("%s called for ifnum %d\n", __func__,
+ 		intf->cur_altsetting->desc.bInterfaceNumber);
  
-@@ -74,7 +73,7 @@ static void read_bulk_callback(struct urb *urb)
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Rx URB has got cancelled. status :%d", urb->status);
- 		}
- 		pRcb->bUsed = false;
-- 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
-+		atomic_dec(&psIntfAdapter->uNumRcbUsed);
- 		urb->status = STATUS_SUCCESS;
- 		return;
- 	}
-@@ -119,14 +118,14 @@ static void read_bulk_callback(struct urb *urb)
- 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
- 		return;
- 	}
--    /* If it is a control Packet, then call handle_bcm_packet ()*/
-+	/* If it is a control Packet, then call handle_bcm_packet ()*/
- 	if((ntohs(pLeader->Vcid) == VCID_CONTROL_PACKET) ||
--	    (!(pLeader->Status >= 0x20  &&  pLeader->Status <= 0x3F)))
-+	   (!(pLeader->Status >= 0x20  &&  pLeader->Status <= 0x3F)))
- 	{
--	    BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_CTRL, DBG_LVL_ALL, "Received control pkt...");
-+		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_CTRL, DBG_LVL_ALL, "Received control pkt...");
- 		*(PUSHORT)skb->data = pLeader->Status;
--       	memcpy(skb->data+sizeof(USHORT), urb->transfer_buffer +
--			(sizeof(struct bcm_leader)), pLeader->PLength);
-+		memcpy(skb->data+sizeof(USHORT), urb->transfer_buffer +
-+		       (sizeof(struct bcm_leader)), pLeader->PLength);
- 		skb->len = pLeader->PLength + sizeof(USHORT);
- 
- 		spin_lock(&Adapter->control_queue_lock);
-@@ -139,10 +138,10 @@ static void read_bulk_callback(struct urb *urb)
- 	else
- 	{
- 		/*
--		  * Data Packet, Format a proper Ethernet Header
--        	  * and give it to the stack
--		  */
--        BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt...");
-+		 * Data Packet, Format a proper Ethernet Header
-+		 * and give it to the stack
-+		 */
-+		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt...");
- 		skb_reserve(skb, 2 + SKB_RESERVE_PHS_BYTES);
- 		memcpy(skb->data+ETH_HLEN, (PUCHAR)urb->transfer_buffer + sizeof(struct bcm_leader), pLeader->PLength);
- 		skb->dev = Adapter->dev;
-@@ -151,14 +150,14 @@ static void read_bulk_callback(struct urb *urb)
- 		skb_put (skb, pLeader->PLength + ETH_HLEN);
- 		Adapter->PackInfo[QueueIndex].uiTotalRxBytes += pLeader->PLength;
- 		Adapter->PackInfo[QueueIndex].uiThisPeriodRxBytes += pLeader->PLength;
--        BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt of len :0x%X", pLeader->PLength);
-+		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt of len :0x%X", pLeader->PLength);
- 
- 		if(netif_running(Adapter->dev))
- 		{
- 			/* Moving ahead by ETH_HLEN to the data ptr as received from FW */
- 			skb_pull(skb, ETH_HLEN);
- 			PHSReceive(Adapter, pLeader->Vcid, skb, &skb->len,
--					NULL, bHeaderSupressionEnabled);
-+				   NULL, bHeaderSupressionEnabled);
- 
- 			if(!Adapter->PackInfo[QueueIndex].bEthCSSupport)
- 			{
-@@ -177,7 +176,7 @@ static void read_bulk_callback(struct urb *urb)
- 		}
- 		else
- 		{
--		    BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "i/f not up hance freeing SKB...");
-+			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "i/f not up hance freeing SKB...");
- 			dev_kfree_skb(skb);
- 		}
- 
-@@ -186,12 +185,12 @@ static void read_bulk_callback(struct urb *urb)
- 
- 		for(uiIndex = 0; uiIndex < MIBS_MAX_HIST_ENTRIES; uiIndex++)
- 		{
--			if((pLeader->PLength <= MIBS_PKTSIZEHIST_RANGE*(uiIndex+1))
--				&& (pLeader->PLength > MIBS_PKTSIZEHIST_RANGE*(uiIndex)))
-+			if((pLeader->PLength <= MIBS_PKTSIZEHIST_RANGE*(uiIndex+1)) &&
-+			   (pLeader->PLength > MIBS_PKTSIZEHIST_RANGE*(uiIndex)))
- 				Adapter->aRxPktSizeHist[uiIndex]++;
- 		}
- 	}
-- 	Adapter->PrevNumRecvDescs++;
-+	Adapter->PrevNumRecvDescs++;
- 	pRcb->bUsed = false;
- 	atomic_dec(&psIntfAdapter->uNumRcbUsed);
- }
-@@ -201,10 +200,8 @@ static int ReceiveRcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_us
- 	struct urb *urb = pRcb->urb;
- 	int retval = 0;
- 
--	usb_fill_bulk_urb(urb, psIntfAdapter->udev, usb_rcvbulkpipe(
--			psIntfAdapter->udev, psIntfAdapter->sBulkIn.bulk_in_endpointAddr),
--		  	urb->transfer_buffer, BCM_USB_MAX_READ_LENGTH, read_bulk_callback,
--			pRcb);
-+	usb_fill_bulk_urb(urb, psIntfAdapter->udev, usb_rcvbulkpipe(psIntfAdapter->udev, psIntfAdapter->sBulkIn.bulk_in_endpointAddr),
-+			  urb->transfer_buffer, BCM_USB_MAX_READ_LENGTH, read_bulk_callback, pRcb);
- 	if(false == psIntfAdapter->psAdapter->device_removed &&
- 	   false == psIntfAdapter->psAdapter->bEndPointHalted &&
- 	   false == psIntfAdapter->bSuspended &&
-@@ -258,7 +255,7 @@ bool InterfaceRx (struct bcm_interface_adapter *psIntfAdapter)
- 		//atomic_inc(&psIntfAdapter->uNumRcbUsed);
- 		ReceiveRcb(psIntfAdapter, pRcb);
- 		RxDescCount--;
--    }
-+	}
- 	return TRUE;
+@@ -907,22 +907,6 @@ static void logi_dj_remove(struct hid_device *hdev)
+ 	hid_set_drvdata(hdev, NULL);
  }
  
+-static int logi_djdevice_probe(struct hid_device *hdev,
+-			 const struct hid_device_id *id)
+-{
+-	int ret;
+-	struct dj_device *dj_dev = hdev->driver_data;
+-
+-	if (!is_dj_device(dj_dev))
+-		return -ENODEV;
+-
+-	ret = hid_parse(hdev);
+-	if (!ret)
+-		ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+-
+-	return ret;
+-}
+-
+ static const struct hid_device_id logi_dj_receivers[] = {
+ 	{HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+ 		USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER)},
+@@ -946,17 +930,14 @@ static struct hid_driver logi_djreceiver_driver = {
+ 
+ 
+ static const struct hid_device_id logi_dj_devices[] = {
+-	{HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+-		USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER)},
+-	{HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH,
+-		USB_DEVICE_ID_LOGITECH_UNIFYING_RECEIVER_2)},
++	{ HID_DEVICE(BUS_USB, HID_GROUP_LOGITECH_DJ_DEVICE_GENERIC,
++		USB_VENDOR_ID_LOGITECH, HID_ANY_ID)},
+ 	{}
+ };
+ 
+ static struct hid_driver logi_djdevice_driver = {
+ 	.name = "logitech-djdevice",
+ 	.id_table = logi_dj_devices,
+-	.probe = logi_djdevice_probe,
+ };
+ 
+ 
+diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
+index 4a40003..2e52167 100644
+--- a/drivers/hid/hid-logitech-dj.h
++++ b/drivers/hid/hid-logitech-dj.h
+@@ -111,14 +111,4 @@ struct dj_device {
+ 	u8 device_index;
+ };
+ 
+-/**
+- * is_dj_device - know if the given dj_device is not the receiver.
+- * @dj_dev: the dj device to test
+- *
+- * This macro tests if a struct dj_device pointer is a device created
+- * by the bus enumarator.
+- */
+-#define is_dj_device(dj_dev) \
+-	(&(dj_dev)->dj_receiver_dev->hdev->dev == (dj_dev)->hdev->dev.parent)
+-
+ #endif
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 31b9d29..eacf556 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -299,6 +299,7 @@ struct hid_item {
+ #define HID_GROUP_MULTITOUCH			0x0002
+ #define HID_GROUP_SENSOR_HUB			0x0003
+ #define HID_GROUP_MULTITOUCH_WIN_8		0x0004
++#define HID_GROUP_LOGITECH_DJ_DEVICE_GENERIC	0x0005
+ 
+ /*
+  * This is the global environment of the parser. This information is
 -- 
-1.8.1.2
+1.8.4.2
 
