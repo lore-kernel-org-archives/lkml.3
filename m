@@ -1,221 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096AbaAHEP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 23:15:56 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13539 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885AbaAHEPn (ORCPT
+	id S1755152AbaAHEQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 23:16:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33966 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107AbaAHEQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 23:15:43 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 07 Jan 2014 20:16:08 -0800
-Message-ID: <52CCD107.8030106@nvidia.com>
-Date: Wed, 8 Jan 2014 12:16:07 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Hu Yaohui <loki2441@gmail.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+	Tue, 7 Jan 2014 23:16:01 -0500
+Date: Tue, 7 Jan 2014 20:16:20 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Tang, Jianqiang" <jianqiang.tang@intel.com>
+Cc: David Cohen <david.a.cohen@linux.intel.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
-References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
-	<1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
-	<52C299A8.4010108@nvidia.com>	<52CB6AE2.2090002@nvidia.com>
-	<52CBE237.7010309@ti.com>	<52CCC3CF.7000103@nvidia.com>
- <CAHqbYQvchi3QSgcitUtguFyOJtXhFt5OjcoiSDZnPg9ZyiN4cg@mail.gmail.com>
-In-Reply-To: <CAHqbYQvchi3QSgcitUtguFyOJtXhFt5OjcoiSDZnPg9ZyiN4cg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC/PATCH] usb/xhci: avoid kernel panic on xhci_suspend()
+Message-ID: <20140108041620.GA9618@kroah.com>
+References: <1389145466-8302-1-git-send-email-david.a.cohen@linux.intel.com>
+ <20140108014639.GB7823@kroah.com>
+ <08C00E7DCA84054D93A5BD962777345A01E2EE3E@SHSMSX102.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <08C00E7DCA84054D93A5BD962777345A01E2EE3E@SHSMSX102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 11:24 AM, Hu Yaohui wrote:
-> I am new here. How can I could not mail a new message to this mail list?
-> TIA
 
-I use Thunderbird, it's a pretty good mail client :)
+A: No.
+Q: Should I include quotations after my reply?
 
+http://daringfireball.net/2007/07/on_top
+
+On Wed, Jan 08, 2014 at 03:49:07AM +0000, Tang, Jianqiang wrote:
+> Hi,
+>  1) I met this issue one time just boot up our Linux Platform(Kernel3.10) with XHCI driver, then kernel panic happen.
 > 
+>    And this issue reported once by other internal team.
 > 
-> On Tue, Jan 7, 2014 at 10:19 PM, Wei Ni <wni@nvidia.com
-> <mailto:wni@nvidia.com>> wrote:
+>    Nothing special of reproduce step and do not need special Hardware I think.
 > 
->     On 01/07/2014 07:17 PM, Eduardo Valentin wrote:
->     > * PGP Signed by an unknown key
->     >
->     > On 06-01-2014 22:48, Wei Ni wrote:
->     >> Hi, Eduardo
->     >> Will you consider my comments :)
->     >
->     > By now Wei, it is better if you start a new thread, by sending a patch
->     > on top of it, as this thread has been already merged by Rui.
+>    Just random issue which will happen when meet the timing condition.
 > 
->     Ok, I will send it.
+>  2) This issue is introduced by this patch:
 > 
->     Thanks.
->     Wei.
->     >
->     >>
->     >> Thanks.
->     >> Wei.
->     >>
->     >> On 12/31/2013 06:17 PM, Wei Ni wrote:
->     >>> On 11/13/2013 03:46 AM, Eduardo Valentin wrote:
->     >>>> This patch introduces a device tree bindings for
->     >>>> describing the hardware thermal behavior and limits.
->     >>>> Also a parser to read and interpret the data and feed
->     >>>> it in the thermal framework is presented.
->     >>>>
->     >>>> This patch introduces a thermal data parser for device
->     >>>> tree. The parsed data is used to build thermal zones
->     >>>> and thermal binding parameters. The output data
->     >>>> can then be used to deploy thermal policies.
->     >>>>
->     >>>> This patch adds also documentation regarding this
->     >>>> API and how to define tree nodes to use
->     >>>> this infrastructure.
->     >>>>
->     >>>> Note that, in order to be able to have control
->     >>>> on the sensor registration on the DT thermal zone,
->     >>>> it was required to allow changing the thermal zone
->     >>>> .get_temp callback. For this reason, this patch
->     >>>> also removes the 'const' modifier from the .ops
->     >>>> field of thermal zone devices.
->     >>>>
->     >>>> ...
->     >>>> +
->     >>>> +static int of_thermal_get_trend(struct thermal_zone_device
->     *tz, int trip,
->     >>>> +                          enum thermal_trend *trend)
->     >>>> +{
->     >>>> +  struct __thermal_zone *data = tz->devdata;
->     >>>> +  long dev_trend;
->     >>>> +  int r;
->     >>>> +
->     >>>> +  if (!data->get_trend)
->     >>>> +          return -EINVAL;
->     >>>> +
->     >>>> +  r = data->get_trend(data->sensor_data, &dev_trend);
->     >>> I think the ->get_trend should be defined as:
->     >>> .get_trend(*dev, int, *long)
->     >>> so that the "trip" can be passed into it, otherwise the "trip"
->     can't be
->     >>> used.
->     >>> And the dev_trend should be returned as THERMAL_TREND_XXX directly.
->     >>> because the THERM_TREND_xx is more than three states.
->     >>>
->     >>> The code may be something like:
->     >>> r = data->get_trend(data->sensor_data, trip, &dev_trend);
->     >>> if (r)
->     >>>     return r;
->     >>> *trend = dev_trend;
->     >>> return 0;
->     >>>> +  if (r)
->     >>>> +          return r;
->     >>>> +
->     >>>> +  /* TODO: These intervals might have some thresholds, but in
->     core code */
->     >>>> +  if (dev_trend > 0)
->     >>>> +          *trend = THERMAL_TREND_RAISING;
->     >>>> +  else if (dev_trend < 0)
->     >>>> +          *trend = THERMAL_TREND_DROPPING;
->     >>>> +  else
->     >>>> +          *trend = THERMAL_TREND_STABLE;
->     >>>> +
->     >>>> +  return 0;
->     >>>> +}
->     >>>> +
->     >>>> .....
->     >>>> +
->     >>>> +/***   sensor API   ***/
->     >>>> +
->     >>>> +static struct thermal_zone_device *
->     >>>> +thermal_zone_of_add_sensor(struct device_node *zone,
->     >>>> +                     struct device_node *sensor, void *data,
->     >>>> +                     int (*get_temp)(void *, long *),
->     >>>> +                     int (*get_trend)(void *, long *))
->     >>>> +{
->     >>>> +  struct thermal_zone_device *tzd;
->     >>>> +  struct __thermal_zone *tz;
->     >>>> +
->     >>>> +  tzd = thermal_zone_get_zone_by_name(zone->name);
->     >>> I think we could get the thermal zone by node,
->     >>> something like:
->     >>> thermal_zone_get_zone_by_node(zone);
->     >>> so that it can get unique zone.
->     >>>
->     >>> I think we can add a member "struct device_node *np" in the
->     >>> thermal_zone_device,
->     >>> and set it after you call thermal_zone_device_register successfully.
->     >>> Then add following codes:
->     >>> thermal_zone_get_zone_by_node(struct device_node *node)
->     >>> {
->     >>>         struct thermal_zone_device *pos = NULL, *ref =
->     ERR_PTR(-ENODEV);
->     >>>         bool found = false;
->     >>>
->     >>>         if (!node)
->     >>>                 return ERR_PTR(-EINVAL);
->     >>>
->     >>>         mutex_lock(&thermal_list_lock);
->     >>>         list_for_each_entry(pos, &thermal_tz_list, node)
->     >>>                 if (node == pos->np) {
->     >>>                         ref = pos;
->     >>>                         found = true;
->     >>>                         break;
->     >>>                 }
->     >>>         mutex_unlock(&thermal_list_lock);
->     >>>
->     >>>         return ref;
->     >>> }
->     >>>
->     >>> Thanks.
->     >>> Wei.
->     >>>> +  if (IS_ERR(tzd))
->     >>>> +          return ERR_PTR(-EPROBE_DEFER);
->     >>>> +
->     >>>> +  tz = tzd->devdata;
->     >>>> +
->     >>>> +  mutex_lock(&tzd->lock);
->     >>>> +  tz->get_temp = get_temp;
->     >>>> +  tz->get_trend = get_trend;
->     >>>> +  tz->sensor_data = data;
->     >>>> +
->     >>>> +  tzd->ops->get_temp = of_thermal_get_temp;
->     >>>> +  tzd->ops->get_trend = of_thermal_get_trend;
->     >>>> +  mutex_unlock(&tzd->lock);
->     >>>> +
->     >>>> +  return tzd;
->     >>>> +}
->     >>>> +
->     >>>>
->     >>>
->     >>
->     >>
->     >>
->     >
->     >
+>      https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=596d789a211d134dc5f94d1e5957248c204ef850
 > 
->     --
->     To unsubscribe from this list: send the line "unsubscribe
->     linux-kernel" in
->     the body of a message to majordomo@vger.kernel.org
->     <mailto:majordomo@vger.kernel.org>
->     More majordomo info at  http://vger.kernel.org/majordomo-info.html
->     Please read the FAQ at  http://www.tux.org/lkml/
+>    which set all hub autosuspend delay to 0.
+
+That patch was released in a kernel almost a full year ago, yet we have
+never had a report of this happening before, so are you sure this patch
+is the root cause?
+
+>    This causes race condition during XHCI driver initialization,
 > 
+>     After USB2 hcd and USB2 root hub finish the initialization, USB2 root hub is functional and auto suspend right now, hence trigger XHCI runtime suspend flow;
 > 
+>     At the same time, XHCI driver continue to initialize the USB3 hcd and assign to xhci->shared_hcd after finish the initialization;
+>     
+>     Since xhci_suspend() use the xhci->shared_hcd, so there is race condition that when XHCI runtime suspend called, xhci->shared_hcd still NULL.
+> 
+>     I think this patch is a fix solution since before XHCI finish the whole initialization, USB2 root hub triggered runtime suspend is mean less and do not need to handle.
+
+With this patch applied, does the crash go away?
 
