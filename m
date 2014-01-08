@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191AbaAHTS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:18:56 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59159 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751008AbaAHTSw (ORCPT
+	id S1756963AbaAHTUl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:20:41 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59437 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752110AbaAHTUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:18:52 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18KCwEVD0x/fhyuF8YEV7g0
-Date: Wed, 8 Jan 2014 11:18:47 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        dt list <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        lkml <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        linux-omap <linux-omap@vger.kernel.org>,
+	Wed, 8 Jan 2014 14:20:39 -0500
+Date: Wed, 8 Jan 2014 19:20:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Will Deacon <will.deacon@arm.com>, Vivek Gautam <gautam.vivek@samsung.com>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 0/2] ARM: OMAP2+/dts: standardize SoC naming
-Message-ID: <20140108191846.GE31323@atomide.com>
-References: <1386204578-6018-1-git-send-email-nm@ti.com>
- <CAGo_u6o+Lcf0wzmsSir1APd4T3A4D+GPtdRmkBM79mjW2aEGHA@mail.gmail.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        David Garbett <David.Garbett@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
+Message-ID: <20140108192028.GM27432@n2100.arm.linux.org.uk>
+References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com> <20140108143529.GB14122@mudshark.cambridge.arm.com> <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGo_u6o+Lcf0wzmsSir1APd4T3A4D+GPtdRmkBM79mjW2aEGHA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140106 16:49]:
-> Hi Benoit, Tony,
+On Wed, Jan 08, 2014 at 08:21:21AM -0800, Doug Anderson wrote:
+> WIll,
 > 
-> On Wed, Dec 4, 2013 at 6:49 PM, Nishanth Menon <nm@ti.com> wrote:
-> > Originally attempted partially in [1], the missing binding were
-> > reported as part of Rob's report in [2].
+> Thanks for your comments!
 > 
-> Would you like me to send this series again since I do not see this in:
-> https://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.14/dts
+> On Wed, Jan 8, 2014 at 6:35 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > NAK. Whilst I appreciate that you may not be able to fix your bootloader,
+> > this isn't the right change to make in the kernel. Blindly changing memory
+> > latencies is likely to do more harm than good for a multi-platform kernel,
+> > even if it works for exynos 5250. The only alternative I can think of (if you
+> > have to make a mainline kernel change) is to restrict the clock frequencies at
+> > which the CPU is allowed to run, although that obviously requires some
+> > investigation in order to determine how viable it is for your SoC.
 
-No need to and sorry for the delays. I'm applying these into
-omap-for-v3.14/fixes-not-urgent as they should not conflict with
-other DT related patches.
++1
 
-Regards,
+> I'll start off by saying that I'm totally OK if mainline doesn't want
+> this fixed.  If mainline is not interested in running reliably on
+> exynos5250-based products then there's nothing I can do about it.  It
+> seems unfortunate, but I'm not going to get into a shouting match
+> about it.
 
-Tony
- 
-> patchwork links:
-> https://patchwork.kernel.org/patch/3286051/
-> https://patchwork.kernel.org/patch/3286061/
+No, we're saying to put the work-around in the boot loader, not the kernel.
+
+> You're saying that this patch is blindly changing memory latencies.  I
+> don't think it is (please correct me if I'm wrong!).  This patch:
 > 
-> >
-> > So, here is take two of the series, lacking an standard causes issues
-> > that was fixed such as [3]. Ideally, we should never again introduce a
-> > board file without a exact compatible SoC match.
-> >
-> > I have stayed a bit away from updating board and SoC dts files yet
-> > to look at the direction we'd like to go here. If we feel things are
-> > good, I would gladly try to clean our mess up.
-> >
-> > Nishanth Menon (2):
-> >   Documentation: dt: OMAP: explicitly state SoC compatible strings
-> >   ARM: OMAP2+: board-generic: update SoC compatibility strings
-> >
-> >  .../devicetree/bindings/arm/omap/omap.txt          |   53 ++++++++++++++++++++
-> >  arch/arm/mach-omap2/board-generic.c                |    7 +++
-> >  2 files changed, 60 insertions(+)
-> >
-> > [1] https://patchwork.kernel.org/patch/2998201/
-> > [2] http://marc.info/?l=linux-arm-kernel&m=138378029113665&w=2
-> > [3] https://patchwork.kernel.org/patch/3279281/
-> >
-> > --
-> > 1.7.9.5
-> >
-> >
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> * Is guarded by a CONFIG option so the code isn't even compiled in if
+> you don't want EXYNOS5250 support.  I know this doesn't help
+> multiplatform, but it means that if you really hate the code it's easy
+> to disable.
+
+As you identify, this is completely useless in the multiplatform kernel
+case, so you can completely remove this from the argument _for_ this
+change - it carries no weight what so ever.
+
+> * Is guarded by a runtime check of the revision number so that it
+> doesn't run on unaffected A15 revisions.
+
+So what if the A15 reports an affected revision, but the SoC integrator
+has fixed the problem - why should they have to put up with the work-
+around being applied on their silicon?
+
+> * Is guarded by a runtime check so it does nothing at all if the total
+> latency is <= 3 (AKA if boot code already picked a sane value)
+
+Right, so the effect of the above is that with a multiplatform kernel
+including Exynos 5 support, all platforms with an A15 r2p0 or earlier
+have this work-around applied even if it was actually fixed in the
+silicon - which there's no way to know from the software perspective.
+
+We've been through these arguments many times, you're not the first to
+raise it, and we've decided upon the policy.  We want as _few_ work-
+arounds in the kernel as possible, because applying the work-arounds
+is very problematical with the mixture of secure and non-secure booting.
+
+Maybe Will can check, but I believe that the L2 cache control register
+is one of those which is not writable from non-secure mode, and thus
+will crash the kernel at boot if a write is attempted.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
