@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219AbaAHSvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:51:08 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:9052 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757167AbaAHSvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:51:02 -0500
+	id S1757084AbaAHSvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:51:00 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:55841 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbaAHSu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 13:50:57 -0500
 X-IronPort-AV: E=Sophos;i="4.95,625,1384300800"; 
-   d="scan'208";a="90999357"
+   d="scan'208";a="88846946"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -16,97 +17,52 @@ CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>,
         <arnd@arndb.de>, <catalin.marinas@arm.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <nico@linaro.org>, <cov@codeaurora.org>, <Catalin.Marinas@arm.com>
-Subject: [PATCH v8 4/6] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING and pv_time_ops
-Date: Wed, 8 Jan 2014 18:49:56 +0000
-Message-ID: <1389206998-27875-4-git-send-email-stefano.stabellini@eu.citrix.com>
+        <mingo@redhat.com>, <peterz@infradead.org>
+Subject: [PATCH v8 2/6] kernel: missing include in cputime.c
+Date: Wed, 8 Jan 2014 18:49:54 +0000
+Message-ID: <1389206998-27875-2-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
-Necessary duplication of paravirt.h and paravirt.c with ARM.
-
-The only paravirt interface supported is pv_time_ops.steal_clock, so no
-runtime pvops patching needed.
-
-This allows us to make use of steal_account_process_tick for stolen
-ticks accounting.
+steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
+currently missing amoung the included header files.
+Add include asm/paravirt.h.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: will.deacon@arm.com
-CC: nico@linaro.org
-CC: marc.zyngier@arm.com
-CC: cov@codeaurora.org
-CC: arnd@arndb.de
-CC: olof@lixom.net
-CC: Catalin.Marinas@arm.com
+CC: mingo@redhat.com
+CC: peterz@infradead.org
 
 ---
 
 Changes in v7:
-- ifdef CONFIG_PARAVIRT the content of paravirt.h.
----
- arch/arm64/Kconfig         |   20 ++++++++++++++++++++
- arch/arm64/kernel/Makefile |    1 +
- 2 files changed, 21 insertions(+)
+- remove ifdef CONFIG_PARAVIRT (the ifdef has been moved inside the
+  paravirt headers).
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 6d4dd22..d1003ba 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -212,6 +212,25 @@ config HAVE_ARCH_TRANSPARENT_HUGEPAGE
+Changes in v5:
+- add ifdef CONFIG_PARAVIRT.
+---
+ kernel/sched/cputime.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 9994791..9f9b76a 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -5,6 +5,7 @@
+ #include <linux/static_key.h>
+ #include <linux/context_tracking.h>
+ #include "sched.h"
++#include <asm/paravirt.h>
  
- source "mm/Kconfig"
  
-+config PARAVIRT
-+	bool "Enable paravirtualization code"
-+	---help---
-+	  This changes the kernel so it can modify itself when it is run
-+	  under a hypervisor, potentially improving performance significantly
-+	  over full virtualization.
-+
-+config PARAVIRT_TIME_ACCOUNTING
-+	bool "Paravirtual steal time accounting"
-+	select PARAVIRT
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task steal time
-+	  accounting. Time spent executing other tasks in parallel with
-+	  the current vCPU is discounted from the vCPU power. To account for
-+	  that, there can be a small performance impact.
-+
-+	  If in doubt, say N here.
-+
- config XEN_DOM0
- 	def_bool y
- 	depends on XEN
-@@ -220,6 +239,7 @@ config XEN
- 	bool "Xen guest support on ARM64 (EXPERIMENTAL)"
- 	depends on ARM64 && OF
- 	select SWIOTLB_XEN
-+	select PARAVIRT
- 	help
- 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
- 
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 5ba2fd4..1dee735 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
- arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
- arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
- arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-+arm64-obj-$(CONFIG_PARAVIRT)		+= paravirt.o
- 
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
 -- 
 1.7.10.4
 
