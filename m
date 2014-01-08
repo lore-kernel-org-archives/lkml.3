@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315AbaAHMfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 07:35:37 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56661 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755610AbaAHMfe (ORCPT
+	id S1756558AbaAHMgO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 07:36:14 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:46163 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755610AbaAHMgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 07:35:34 -0500
-Date: Wed, 8 Jan 2014 12:35:34 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140108123534.GI2936@e103034-lin>
-References: <20131105222752.GD16117@laptop.programming.kicks-ass.net>
- <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
- <52B87149.4010801@arm.com>
- <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
- <20140106163123.GN31570@twins.programming.kicks-ass.net>
- <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
- <20140107132220.GZ31570@twins.programming.kicks-ass.net>
- <20140107141059.GY3694@twins.programming.kicks-ass.net>
- <20140107154154.GH2936@e103034-lin>
- <20140107204951.GD2480@laptop.programming.kicks-ass.net>
+	Wed, 8 Jan 2014 07:36:12 -0500
+Message-ID: <52CD4637.8010805@vmware.com>
+Date: Wed, 08 Jan 2014 13:36:07 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107204951.GD2480@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Jakob Bornecrantz <wallbraker@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Dave Airlie <airlied@redhat.com>, Rob Clark <rob@ti.com>
+Subject: Re: [PATCH 82/85] drivers: gpu: Mark functions as static in vmwgfx_kms.c
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com> <477dcfde0b9247c91030dedcbf71af7dafdb7bf4.1389018325.git.rashika.kheria@gmail.com> <CADdNU4TUh-Xe=UpzT8=j5+VVi6pYGa4rPsrDCqrmCOuNfcJTRA@mail.gmail.com> <20140107105154.GC4891@leaf>
+In-Reply-To: <20140107105154.GC4891@leaf>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 08:49:51PM +0000, Peter Zijlstra wrote:
-> On Tue, Jan 07, 2014 at 03:41:54PM +0000, Morten Rasmussen wrote:
-> > I think that could work if we sort of the priority scaling issue that I
-> > mentioned before.
-> 
-> We talked a bit about this on IRC a month or so ago, right? My memories
-> from that are that your main complaint is that we don't detect the
-> overload scenario right.
-> 
-> That is; the point at which we should start caring about SMP-nice is
-> when all our CPUs are fully occupied, because up to that point we're
-> under utilized and work preservation mandates we utilize idle time.
+On 01/07/2014 11:51 AM, Josh Triplett wrote:
+> On Tue, Jan 07, 2014 at 11:21:12AM +0100, Jakob Bornecrantz wrote:
+>> On Mon, Jan 6, 2014 at 5:48 PM, Rashika Kheria <rashika.kheria@gmail.com> wrote:
+>>> Mark functions as static because they are not used outside the file
+>>> drm/vmwgfx/vmwgfx_kms.c.
+>>>
+>>> This eliminates the following warnings in drm/vmwgfx/vmwgfx_kms.c:
+>>> drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:43:6: warning: no previous prototype for ‘vmw_clip_cliprects’ [-Wmissing-prototypes]
+>>> drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:426:6: warning: no previous prototype for ‘vmw_framebuffer_surface_destroy’ [-Wmissing-prototypes]
+>>> drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:592:5: warning: no previous prototype for ‘vmw_framebuffer_surface_dirty’ [-Wmissing-prototypes]
+>>> drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:757:6: warning: no previous prototype for ‘vmw_framebuffer_dmabuf_destroy’ [-Wmissing-prototypes]
+>>> drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:943:5: warning: no previous prototype for ‘vmw_framebuffer_dmabuf_dirty’ [-Wmissing-prototypes]
+>>> drivers/gpu/drm/vmwgfx/vmwgfx_kms.c:1666:5: warning: no previous prototype for ‘vmw_du_update_layout’ [-Wmissing-prototypes]
+>>>
+>>> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>>> ---
+>>>  drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |   12 ++++++------
+>>>  1 file changed, 6 insertions(+), 6 deletions(-)
+>>
+>> This and patch 83, 84, 85 are
+>> Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+> Can you take them through your tree, or are you expecting them to follow
+> another path?
 
-Yes. I think I stated the problem differently, but I think we talk about
-the same thing. Basically, priority-scaling in task load_contrib means
-that runnable_load_avg and blocked_load_avg are poor indicators of cpu
-load (available idle time). Priority scaling only makes sense when the
-system is fully utilized. When that is not the case, it just gives us a
-potentially very inaccurate picture of the load (available idle time).
+I'll take them through vmwgfx-next. However, patch 83/85 conflicts
+heavily with an internal vmwgfx patch series. If applicable, I'll apply
+it after resolving those conflicts.
 
-Pretty much what you just said :-)
+Thanks,
 
-> Currently we detect overload by sg.nr_running >= sg.capacity, which can
-> be very misleading because while a cpu might have a task running 'now'
-> it might be 99% idle.
-> 
-> At which point I argued we should change the capacity thing anyhow. Ever
-> since the runnable_avg patch set I've been arguing to change that into
-> an actual utilization test.
-> 
-> So I think that if we measure overload by something like >95% utilization
-> on the entire group the load scaling again makes perfect sense.
+/Thomas
 
-I agree that it make more sense to change the overload test to be based
-on some tracked load. How about the non-overloaded case? Load balancing
-would have to be based on unweighted task loads in that case?
 
-> 
-> Given the 3 task {A,B,C} workload where A and B are niced, to land on a
-> symmetric dual CPU system like: {A,B}+{C}, assuming they're all while(1)
-> loops :-).
-> 
-> The harder case is where all 3 tasks are of equal weight; in which case
-> fairness would mandate we (slowly) rotate the tasks such that they all
-> get 2/3 time -- we also horribly fail at this :-)
 
-I have encountered that one a number of times. All the middleware noise
-in Android sometimes give that effect.
-
-I'm not sure if the NUMA guy would like rotating scheduler though :-)
+>
+> - Josh Triplett
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
