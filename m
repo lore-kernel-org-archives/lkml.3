@@ -1,83 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaAHEPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 23:15:12 -0500
-Received: from ozlabs.org ([203.10.76.45]:47902 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255AbaAHEPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 23:15:07 -0500
-Date: Wed, 8 Jan 2014 15:14:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>, Chris Zankel <chris@zankel.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Baruch Siach <baruch@tkos.co.il>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: linux-next: manual merge of the gpio tree with the xtensa tree
-Message-Id: <20140108151459.d4743129d9cae88865774073@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__8_Jan_2014_15_14_59_+1100_kzhUPIu4Kdwt9pGt"
+	id S1755096AbaAHEP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 23:15:56 -0500
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:13539 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754885AbaAHEPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 23:15:43 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 07 Jan 2014 20:16:08 -0800
+Message-ID: <52CCD107.8030106@nvidia.com>
+Date: Wed, 8 Jan 2014 12:16:07 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Hu Yaohui <loki2441@gmail.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv9 02/20] thermal: introduce device tree parser
+References: <1384285582-16933-1-git-send-email-eduardo.valentin@ti.com>
+	<1384285582-16933-3-git-send-email-eduardo.valentin@ti.com>
+	<52C299A8.4010108@nvidia.com>	<52CB6AE2.2090002@nvidia.com>
+	<52CBE237.7010309@ti.com>	<52CCC3CF.7000103@nvidia.com>
+ <CAHqbYQvchi3QSgcitUtguFyOJtXhFt5OjcoiSDZnPg9ZyiN4cg@mail.gmail.com>
+In-Reply-To: <CAHqbYQvchi3QSgcitUtguFyOJtXhFt5OjcoiSDZnPg9ZyiN4cg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__8_Jan_2014_15_14_59_+1100_kzhUPIu4Kdwt9pGt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/08/2014 11:24 AM, Hu Yaohui wrote:
+> I am new here. How can I could not mail a new message to this mail list?
+> TIA
 
-Hi Linus,
+I use Thunderbird, it's a pretty good mail client :)
 
-Today's linux-next merge of the gpio tree got a conflict in
-arch/xtensa/Kconfig between commit dbacef090841 ("xtensa: add SMP
-support") from the xtensa tree and commit a1a2bdec4772 ("gpio: xtensa:
-depend on HAVE_XTENSA_GPIO32") from the gpio tree.
+> 
+> 
+> On Tue, Jan 7, 2014 at 10:19 PM, Wei Ni <wni@nvidia.com
+> <mailto:wni@nvidia.com>> wrote:
+> 
+>     On 01/07/2014 07:17 PM, Eduardo Valentin wrote:
+>     > * PGP Signed by an unknown key
+>     >
+>     > On 06-01-2014 22:48, Wei Ni wrote:
+>     >> Hi, Eduardo
+>     >> Will you consider my comments :)
+>     >
+>     > By now Wei, it is better if you start a new thread, by sending a patch
+>     > on top of it, as this thread has been already merged by Rui.
+> 
+>     Ok, I will send it.
+> 
+>     Thanks.
+>     Wei.
+>     >
+>     >>
+>     >> Thanks.
+>     >> Wei.
+>     >>
+>     >> On 12/31/2013 06:17 PM, Wei Ni wrote:
+>     >>> On 11/13/2013 03:46 AM, Eduardo Valentin wrote:
+>     >>>> This patch introduces a device tree bindings for
+>     >>>> describing the hardware thermal behavior and limits.
+>     >>>> Also a parser to read and interpret the data and feed
+>     >>>> it in the thermal framework is presented.
+>     >>>>
+>     >>>> This patch introduces a thermal data parser for device
+>     >>>> tree. The parsed data is used to build thermal zones
+>     >>>> and thermal binding parameters. The output data
+>     >>>> can then be used to deploy thermal policies.
+>     >>>>
+>     >>>> This patch adds also documentation regarding this
+>     >>>> API and how to define tree nodes to use
+>     >>>> this infrastructure.
+>     >>>>
+>     >>>> Note that, in order to be able to have control
+>     >>>> on the sensor registration on the DT thermal zone,
+>     >>>> it was required to allow changing the thermal zone
+>     >>>> .get_temp callback. For this reason, this patch
+>     >>>> also removes the 'const' modifier from the .ops
+>     >>>> field of thermal zone devices.
+>     >>>>
+>     >>>> ...
+>     >>>> +
+>     >>>> +static int of_thermal_get_trend(struct thermal_zone_device
+>     *tz, int trip,
+>     >>>> +                          enum thermal_trend *trend)
+>     >>>> +{
+>     >>>> +  struct __thermal_zone *data = tz->devdata;
+>     >>>> +  long dev_trend;
+>     >>>> +  int r;
+>     >>>> +
+>     >>>> +  if (!data->get_trend)
+>     >>>> +          return -EINVAL;
+>     >>>> +
+>     >>>> +  r = data->get_trend(data->sensor_data, &dev_trend);
+>     >>> I think the ->get_trend should be defined as:
+>     >>> .get_trend(*dev, int, *long)
+>     >>> so that the "trip" can be passed into it, otherwise the "trip"
+>     can't be
+>     >>> used.
+>     >>> And the dev_trend should be returned as THERMAL_TREND_XXX directly.
+>     >>> because the THERM_TREND_xx is more than three states.
+>     >>>
+>     >>> The code may be something like:
+>     >>> r = data->get_trend(data->sensor_data, trip, &dev_trend);
+>     >>> if (r)
+>     >>>     return r;
+>     >>> *trend = dev_trend;
+>     >>> return 0;
+>     >>>> +  if (r)
+>     >>>> +          return r;
+>     >>>> +
+>     >>>> +  /* TODO: These intervals might have some thresholds, but in
+>     core code */
+>     >>>> +  if (dev_trend > 0)
+>     >>>> +          *trend = THERMAL_TREND_RAISING;
+>     >>>> +  else if (dev_trend < 0)
+>     >>>> +          *trend = THERMAL_TREND_DROPPING;
+>     >>>> +  else
+>     >>>> +          *trend = THERMAL_TREND_STABLE;
+>     >>>> +
+>     >>>> +  return 0;
+>     >>>> +}
+>     >>>> +
+>     >>>> .....
+>     >>>> +
+>     >>>> +/***   sensor API   ***/
+>     >>>> +
+>     >>>> +static struct thermal_zone_device *
+>     >>>> +thermal_zone_of_add_sensor(struct device_node *zone,
+>     >>>> +                     struct device_node *sensor, void *data,
+>     >>>> +                     int (*get_temp)(void *, long *),
+>     >>>> +                     int (*get_trend)(void *, long *))
+>     >>>> +{
+>     >>>> +  struct thermal_zone_device *tzd;
+>     >>>> +  struct __thermal_zone *tz;
+>     >>>> +
+>     >>>> +  tzd = thermal_zone_get_zone_by_name(zone->name);
+>     >>> I think we could get the thermal zone by node,
+>     >>> something like:
+>     >>> thermal_zone_get_zone_by_node(zone);
+>     >>> so that it can get unique zone.
+>     >>>
+>     >>> I think we can add a member "struct device_node *np" in the
+>     >>> thermal_zone_device,
+>     >>> and set it after you call thermal_zone_device_register successfully.
+>     >>> Then add following codes:
+>     >>> thermal_zone_get_zone_by_node(struct device_node *node)
+>     >>> {
+>     >>>         struct thermal_zone_device *pos = NULL, *ref =
+>     ERR_PTR(-ENODEV);
+>     >>>         bool found = false;
+>     >>>
+>     >>>         if (!node)
+>     >>>                 return ERR_PTR(-EINVAL);
+>     >>>
+>     >>>         mutex_lock(&thermal_list_lock);
+>     >>>         list_for_each_entry(pos, &thermal_tz_list, node)
+>     >>>                 if (node == pos->np) {
+>     >>>                         ref = pos;
+>     >>>                         found = true;
+>     >>>                         break;
+>     >>>                 }
+>     >>>         mutex_unlock(&thermal_list_lock);
+>     >>>
+>     >>>         return ref;
+>     >>> }
+>     >>>
+>     >>> Thanks.
+>     >>> Wei.
+>     >>>> +  if (IS_ERR(tzd))
+>     >>>> +          return ERR_PTR(-EPROBE_DEFER);
+>     >>>> +
+>     >>>> +  tz = tzd->devdata;
+>     >>>> +
+>     >>>> +  mutex_lock(&tzd->lock);
+>     >>>> +  tz->get_temp = get_temp;
+>     >>>> +  tz->get_trend = get_trend;
+>     >>>> +  tz->sensor_data = data;
+>     >>>> +
+>     >>>> +  tzd->ops->get_temp = of_thermal_get_temp;
+>     >>>> +  tzd->ops->get_trend = of_thermal_get_trend;
+>     >>>> +  mutex_unlock(&tzd->lock);
+>     >>>> +
+>     >>>> +  return tzd;
+>     >>>> +}
+>     >>>> +
+>     >>>>
+>     >>>
+>     >>
+>     >>
+>     >>
+>     >
+>     >
+> 
+>     --
+>     To unsubscribe from this list: send the line "unsubscribe
+>     linux-kernel" in
+>     the body of a message to majordomo@vger.kernel.org
+>     <mailto:majordomo@vger.kernel.org>
+>     More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>     Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/xtensa/Kconfig
-index 70a160be3464,f8df0cc70cb6..000000000000
---- a/arch/xtensa/Kconfig
-+++ b/arch/xtensa/Kconfig
-@@@ -64,9 -64,9 +64,12 @@@ config MM
-  config VARIANT_IRQ_SWITCH
-  	def_bool n
- =20
- +config MAY_HAVE_SMP
- +	def_bool n
- +
-+ config HAVE_XTENSA_GPIO32
-+ 	def_bool n
-+=20
-  menu "Processor type and features"
- =20
-  choice
-
---Signature=_Wed__8_Jan_2014_15_14_59_+1100_kzhUPIu4Kdwt9pGt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSzNDHAAoJEMDTa8Ir7ZwVYBEP/j5Wchm5FadSkTn+3ke4uda5
-EYTIcVL+IucXtF20Q1wKwM7HrVzOgTDPJoZcvBndDaYoSIvxtn6ZcPUXHjyE8QH9
-t2oNNYio5hbx/81Scu3q7gJHnWdElAbeyFyqMxrTs7bdCs1MCXwza0IDRIan8POt
-WuNY2Z2KF9DSq6K5p6ZdVLrMNM/AbZoqeHqI/ScJ5H89MFiZZuNrA1Wqv3YgEomp
-0nhjVYapxb+eeIBH6EF61Fcj89XrPrMyiqcBeUIOB4ZfYGwzjz3hzP5jzNWyI3hB
-t0iNb4KHjrAcxcMyPt7FZcw2Qw8HJLw9byinB4kJAdgXOCnq1Ik2q5lQQ6DMfawL
-Bs686cPcRoOE8hOofqqqdFwqoONWgqe7mK6Z8DU2VMZAD/UDtaxJY02Gfzb2kxDz
-jc2BquW8fSl6vr2iyJmugd/3duZTO+ORFX7ckb9/IXKuuESM1rYHpIeQYic3GqIy
-OJT6nyYuioK9xOkhaxttZ2Ym+u16gEO/9L4yEu+9uvb6WZKKpJOIoD9JDSeVzOA4
-0VpM7ilEbU88MUJllGJ6kydy47g7KmpM+slEHAdB5Qu/1Y6DkBEcHUCXn977R90a
-mGM/CTvfXGn3LdWd/o4TJSCA4X1QZGPCDbdUvg3Lz52hPFswyqZzsQ+rtqldpNiU
-Fmqy5aFjKAiF0zBur9Jp
-=cmF7
------END PGP SIGNATURE-----
-
---Signature=_Wed__8_Jan_2014_15_14_59_+1100_kzhUPIu4Kdwt9pGt--
