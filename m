@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaAHIqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:46:46 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:48061 "EHLO
+	id S1755172AbaAHIq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:46:56 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63883 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192AbaAHIqi (ORCPT
+	with ESMTP id S1755347AbaAHIqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Jan 2014 03:46:38 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-df-52cd106b4b26
+X-AuditID: 9c93017d-b7b66ae000006a2a-ed-52cd106c9d15
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,273 +15,209 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCHSET 00/28] perf tools: Add support to accumulate hist periods (v5)
-Date: Wed,  8 Jan 2014 17:46:05 +0900
-Message-Id: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 01/28] perf tools: Insert filtered entries to hists also
+Date: Wed,  8 Jan 2014 17:46:06 +0900
+Message-Id: <1389170793-21926-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
+References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently if a sample was filtered by command line option, it just
+dropped.  But this affects final output in that the percentage can be
+different since the filtered entries were not included to the total.
 
-This is my third attempt to implement cumulative hist period report.
-This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
-rewrote it from scratch.
+For example, if an original output looked like below:
 
-The patch 01 to 03 are independent cleanups and can be applied separately.
+  $ perf report --stdio -s comm
 
-Please see the patch 04/28.  I refactored functions that add hist
-entries with struct add_entry_iter.  While I converted all functions
-carefully, it'd be better anyone can test and confirm that I didn't
-mess up something - especially for branch stack and mem stuff.
-
-This patchset basically adds period in a sample to every node in the
-callchain.  A hist_entry now has an additional fields to keep the
-cumulative period if --children option is given on perf report.
-
-I changed the option as a separate --children and added a new
-"Children" column (and renamed the default "Overhead" column into
-"Self").  The output will be sorted by children (cumulative) overhead
-for now.  The reason I changed to the --children is that I still think
-it's much different from other --call-graph options.  The --call-graph
-option will take care of it even with --children option.
-
-I know that the UI should be changed also to be more flexible as Ingo
-requested, but I'd like to do this first and then move to work on the
-next.  I also added a new config option to enable it by default.
-
- * changes in v5:
-  - support both of --children and --call-graph (Arun)
-  - refactor hist_entry_iter to share with perf top (Jiri)
-  - various cleanups and fixes (Jiri)
-  - add ack's from Jiri
-
- * changes in v4:
-  - change to --children option (Ingo)
-  - rebased on new annotation change (Arnaldo)
-  - support perf top also
-  - enable --children option by default (Ingo)
-
- * changes in v3:
-  - change to --cumulate option
-  - fix a couple of bugs (Jiri, Rodrigo)
-  - rename some help functions (Arnaldo)
-  - cache previous hist entries rathen than just symbol and dso
-  - add some preparatory cleanups
-  - add report.cumulate config option
-
-
-Let me show you an example:
-
-  $ cat abc.c
-  #define barrier() asm volatile("" ::: "memory")
-
-  void a(void)
-  {
-  	int i;
-  	for (i = 0; i < 1000000; i++)
-  		barrier();
-  }
-  void b(void)
-  {
-  	a();
-  }
-  void c(void)
-  {
-  	b();
-  }
-  int main(void)
-  {
-  	c();
-  	return 0;
-  }
-
-With this simple program I ran perf record and report:
-
-  $ perf record -g -e cycles:u ./abc
-
-
-Case 1.
-
-  $ perf report --stdio --no-call-graph --no-children
-
-  # Overhead  Command      Shared Object          Symbol
-  # ........  .......  .................  ..............
+  # Overhead  Command
+  # ........  .......
   #
-      91.50%      abc  abc                [.] a         
-       8.18%      abc  ld-2.17.so         [.] strlen    
-       0.31%      abc  [kernel.kallsyms]  [k] page_fault
-       0.01%      abc  ld-2.17.so         [.] _start    
+      74.19%      cc1
+       7.61%      gcc
+       6.11%       as
+       4.35%       sh
+       4.14%     make
+       1.13%   fixdep
 
+If we gave a filter, the output changed like below:
 
-Case 2. (current default behavior)
+  $ perf report --stdio -s comm -c gcc,as
 
-  $ perf report --stdio --call-graph --no-children
-
-  # Overhead  Command      Shared Object          Symbol
-  # ........  .......  .................  ..............
+  # Overhead  Command
+  # ........  .......
   #
-      91.50%      abc  abc                [.] a         
-                  |
-                  --- a
-                      b
-                      c
-                      main
-                      __libc_start_main
+      55.49%      gcc
+      44.51%       as
 
-       8.18%      abc  ld-2.17.so         [.] strlen    
-                  |
-                  --- strlen
-                      _dl_sysdep_start
+But user might want to see this:
 
-       0.31%      abc  [kernel.kallsyms]  [k] page_fault
-                  |
-                  --- page_fault
-                      _start
+  $ perf report --stdio -s comm -c gcc,as
 
-       0.01%      abc  ld-2.17.so         [.] _start    
-                  |
-                  --- _start
-
-
-Case 3.
-
-  $ perf report --no-call-graph --children --stdio
-
-  #     Self  Children  Command      Shared Object                 Symbol
-  # ........  ........  .......  .................  .....................
+  # Overhead  Command
+  # ........  .......
   #
-       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
-       0.00%    91.50%      abc  abc                [.] main             
-       0.00%    91.50%      abc  abc                [.] c                
-       0.00%    91.50%      abc  abc                [.] b                
-      91.50%    91.50%      abc  abc                [.] a                
-       0.00%     8.18%      abc  ld-2.17.so         [.] _dl_sysdep_start 
-       8.18%     8.18%      abc  ld-2.17.so         [.] strlen           
-       0.01%     0.33%      abc  ld-2.17.so         [.] _start           
-       0.31%     0.31%      abc  [kernel.kallsyms]  [k] page_fault       
+       7.61%      gcc
+       6.11%       as
 
-As you can see __libc_start_main -> main -> c -> b -> a callchain show
-up in the output.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c |  2 +-
+ tools/perf/util/event.c     | 18 ++++++++----------
+ tools/perf/util/hist.c      | 11 ++---------
+ tools/perf/util/hist.h      |  7 +++++++
+ tools/perf/util/symbol.h    |  2 +-
+ 5 files changed, 19 insertions(+), 21 deletions(-)
 
-Finally, it looks like below with both option enabled:
-
-Case 4. (default behavior?)
-
-  $ perf report --call-graph --children --stdio
-
-  #     Self  Children  Command      Shared Object                 Symbol
-  # ........  ........  .......  .................  .....................
-  #
-       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
-                  |
-                  --- __libc_start_main
-
-       0.00%    91.50%      abc  abc                [.] main             
-                  |
-                  --- main
-                      __libc_start_main
-
-       0.00%    91.50%      abc  abc                [.] c                
-                  |
-                  --- c
-                      main
-                      __libc_start_main
-
-       0.00%    91.50%      abc  abc                [.] b                
-                  |
-                  --- b
-                      c
-                      main
-                      __libc_start_main
-
-      91.50%    91.50%      abc  abc                [.] a                
-                  |
-                  --- a
-                      b
-                      c
-                      main
-                      __libc_start_main
-  ...
-
-
-Currently the perf enables both of --call-graph and --children when it
-finds callchains in the samples.  While this is useful for TUI or GTK,
-I'm not sure for stdio as it'd consume so much lines.
-
-I know it have some rough edges or even bugs, but I really want to
-release it and get reviews.  It does not handle event groups and
-annotations yet.
-
-You can also get this series on 'perf/cumulate-v5' branch in my tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments are welcome, thanks.
-Namhyung
-
-
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-
-[1] https://lkml.org/lkml/2012/3/31/6
-
-
-Namhyung Kim (28):
-  perf tools: Insert filtered entries to hists also
-  perf tools: Do not update total period of a hists when filtering
-  perf tools: Remove symbol_conf.use_callchain check
-  perf tools: Introduce struct hist_entry_iter
-  perf hists: Convert hist entry functions to use struct he_stat
-  perf hists: Add support for accumulated stat of hist entry
-  perf hists: Check if accumulated when adding a hist entry
-  perf hists: Accumulate hist entry stat based on the callchain
-  perf tools: Update cpumode for each cumulative entry
-  perf report: Cache cumulative callchains
-  perf callchain: Add callchain_cursor_snapshot()
-  perf tools: Save callchain info for each cumulative entry
-  perf hists: Sort hist entries by accumulated period
-  perf ui/hist: Add support to accumulated hist stat
-  perf ui/browser: Add support to accumulated hist stat
-  perf ui/gtk: Add support to accumulated hist stat
-  perf tools: Apply percent-limit to cumulative percentage
-  perf tools: Add more hpp helper functions
-  perf report: Add --children option
-  perf report: Add report.children config option
-  perf tools: Factor out sample__resolve_callchain()
-  perf tools: Factor out fill_callchain_info()
-  perf tools: Factor out hist_entry_iter code
-  perf tools: Add callback function to hist_entry_iter
-  perf top: Convert to hist_entry_iter
-  perf top: Add --children option
-  perf top: Add top.children config option
-  perf tools: Enable --children option by default
-
- tools/perf/Documentation/perf-report.txt |   5 +
- tools/perf/Documentation/perf-top.txt    |   6 +
- tools/perf/builtin-annotate.c            |   3 +-
- tools/perf/builtin-diff.c                |   2 +-
- tools/perf/builtin-report.c              | 202 +++---------
- tools/perf/builtin-top.c                 | 104 +++---
- tools/perf/tests/hists_link.c            |   4 +-
- tools/perf/ui/browsers/hists.c           |  50 +--
- tools/perf/ui/gtk/hists.c                |  20 +-
- tools/perf/ui/hist.c                     |  62 ++++
- tools/perf/ui/stdio/hist.c               |   4 +-
- tools/perf/util/callchain.c              |  66 ++++
- tools/perf/util/callchain.h              |  17 +
- tools/perf/util/event.c                  |  18 +-
- tools/perf/util/hist.c                   | 542 +++++++++++++++++++++++++++++--
- tools/perf/util/hist.h                   |  49 ++-
- tools/perf/util/machine.c                |   2 -
- tools/perf/util/sort.h                   |  18 +-
- tools/perf/util/symbol.c                 |  11 +-
- tools/perf/util/symbol.h                 |   3 +-
- 20 files changed, 899 insertions(+), 289 deletions(-)
-
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index bf8dd2e893e4..6bfcb83db8ff 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -247,7 +247,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 		return -1;
+ 	}
+ 
+-	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
++	if (rep->hide_unresolved && al.sym == NULL)
+ 		return 0;
+ 
+ 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 45a76c69a9ed..2c6a583bc2e9 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -3,6 +3,7 @@
+ #include "debug.h"
+ #include "machine.h"
+ #include "sort.h"
++#include "hist.h"
+ #include "string.h"
+ #include "strlist.h"
+ #include "thread.h"
+@@ -663,7 +664,7 @@ void thread__find_addr_map(struct thread *thread,
+ 	al->thread = thread;
+ 	al->addr = addr;
+ 	al->cpumode = cpumode;
+-	al->filtered = false;
++	al->filtered = 0;
+ 
+ 	if (machine == NULL) {
+ 		al->map = NULL;
+@@ -750,9 +751,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (thread == NULL)
+ 		return -1;
+ 
+-	if (thread__is_filtered(thread))
+-		goto out_filtered;
+-
+ 	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
+ 	/*
+ 	 * Have we already created the kernel maps for this machine?
+@@ -767,6 +765,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+ 			      sample->ip, al);
++
++	if (thread__is_filtered(thread))
++		al->filtered |= (1 << HIST_FILTER__THREAD);
++
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+@@ -782,7 +784,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 			       (dso->short_name != dso->long_name &&
+ 				strlist__has_entry(symbol_conf.dso_list,
+ 						   dso->long_name)))))
+-			goto out_filtered;
++			al->filtered |= (1 << HIST_FILTER__DSO);
+ 
+ 		al->sym = map__find_symbol(al->map, al->addr,
+ 					   machine->symbol_filter);
+@@ -791,11 +793,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 	if (symbol_conf.sym_list &&
+ 		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
+ 						al->sym->name)))
+-		goto out_filtered;
+-
+-	return 0;
++		al->filtered |= (1 << HIST_FILTER__SYMBOL);
+ 
+-out_filtered:
+-	al->filtered = true;
+ 	return 0;
+ }
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 4ed3e883240d..64df6b96e7ea 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
+ static bool hists__filter_entry_by_symbol(struct hists *hists,
+ 					  struct hist_entry *he);
+ 
+-enum hist_filter {
+-	HIST_FILTER__DSO,
+-	HIST_FILTER__THREAD,
+-	HIST_FILTER__PARENT,
+-	HIST_FILTER__SYMBOL,
+-};
+-
+ struct callchain_param	callchain_param = {
+ 	.mode	= CHAIN_GRAPH_REL,
+ 	.min_percent = 0.5,
+@@ -329,8 +322,8 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+ 	if (!h->filtered) {
+ 		hists__calc_col_len(hists, h);
+ 		++hists->nr_entries;
+-		hists->stats.total_period += h->stat.period;
+ 	}
++	hists->stats.total_period += h->stat.period;
+ }
+ 
+ static u8 symbol__parent_filter(const struct symbol *parent)
+@@ -429,7 +422,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 			.weight = weight,
+ 		},
+ 		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
++		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
+ 		.hists	= hists,
+ 		.branch_info = bi,
+ 		.mem_info = mi,
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index a59743fa3ef7..7d1d973d9a39 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -14,6 +14,13 @@ struct hist_entry;
+ struct addr_location;
+ struct symbol;
+ 
++enum hist_filter {
++	HIST_FILTER__DSO,
++	HIST_FILTER__THREAD,
++	HIST_FILTER__PARENT,
++	HIST_FILTER__SYMBOL,
++};
++
+ /*
+  * The kernel collects the number of events it couldn't send in a stretch and
+  * when possible sends this number in a PERF_RECORD_LOST event. The number of
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index cbd680361806..e42b410c3f11 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -170,7 +170,7 @@ struct addr_location {
+ 	struct symbol *sym;
+ 	u64	      addr;
+ 	char	      level;
+-	bool	      filtered;
++	u8	      filtered;
+ 	u8	      cpumode;
+ 	s32	      cpu;
+ };
 -- 
 1.7.11.7
 
