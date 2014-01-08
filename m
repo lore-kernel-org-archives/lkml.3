@@ -1,95 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337AbaAHSAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:00:47 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48838 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAHSAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:00:44 -0500
-Date: Wed, 8 Jan 2014 18:00:30 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Message-ID: <20140108180030.GR31886@sirena.org.uk>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
- <1387815830-8794-8-git-send-email-pawel.moll@arm.com>
- <20131224121912.GX30815@sirena.org.uk>
- <1389202297.23721.33.camel@hornet>
+	id S1756559AbaAHSBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:01:23 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:30261 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750793AbaAHSBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 13:01:20 -0500
+X-IronPort-AV: E=Sophos;i="4.95,625,1384300800"; 
+   d="scan'208";a="90980126"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <linux@arm.linux.org.uk>
+CC: <stefano.stabellini@eu.citrix.com>, <arnd@arndb.de>, <will.deacon@arm.com>,
+        <gang.chen@asianux.com>, <catalin.marinas@arm.com>,
+        <jaccon.bastiaansen@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build dependencies for XEN
+Date: Wed, 8 Jan 2014 18:00:23 +0000
+Message-ID: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rbg6pv1WwQpmCPiZ"
-Content-Disposition: inline
-In-Reply-To: <1389202297.23721.33.camel@hornet>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 07/18] regmap: debugfs: Always create "registers" &
- "access" files
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove !GENERIC_ATOMIC64 build dependency:
+- rename atomic64_xchg to armv7_atomic64_xchg and define it even ifdef
+  GENERIC_ATOMIC64;
+- call armv7_atomic64_xchg directly from xen/events.h.
 
---rbg6pv1WwQpmCPiZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Remove !CPU_V6 build dependency:
+- introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
+  CONFIG_CPU_V6;
+- implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16.
 
-On Wed, Jan 08, 2014 at 05:31:37PM +0000, Pawel Moll wrote:
-> On Tue, 2013-12-24 at 12:19 +0000, Mark Brown wrote:
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: arnd@arndb.de
+CC: linux@arm.linux.org.uk
+CC: will.deacon@arm.com
+CC: gang.chen@asianux.com
+CC: catalin.marinas@arm.com
+CC: jaccon.bastiaansen@gmail.com
+CC: linux-arm-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org
 
-> > No, we need to find a better way of doing this such as checking to see
-> > if register zero is accessible in some way.  We want to avoid having
-> > those files if there's no way of populating them since this is useful
-> > information for tooling.
 
-> Something like this then?
+---
 
-> diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/r=
-egmap-debugfs.c
-> index c5471cd..45d812c 100644
-> --- a/drivers/base/regmap/regmap-debugfs.c
-> +++ b/drivers/base/regmap/regmap-debugfs.c
-> @@ -511,7 +511,7 @@ void regmap_debugfs_init(struct regmap *map, const ch=
-ar *name)
->  	debugfs_create_file("range", 0400, map->debugfs,
->  			    map, &regmap_reg_ranges_fops);
-> =20
-> -	if (map->max_register) {
-> +	if (map->max_register || regmap_readable(map, 0)) {
+Changes in v3:
+- rebase.
 
-Yes.
+Changes in v2:
+- handle return value of __cmpxchg8 and __cmpxchg16 in __cmpxchg;
+- remove sync_cmpxchg to sync_cmpxchg16 rename in grant-table.c,
+  implement a generic sync_cmpxchg instead.
+---
+ arch/arm/Kconfig                   |    3 +-
+ arch/arm/include/asm/atomic.h      |   47 +++++++++++++++-------------
+ arch/arm/include/asm/cmpxchg.h     |   60 ++++++++++++++++++++++++------------
+ arch/arm/include/asm/sync_bitops.h |   24 ++++++++++++++-
+ arch/arm/include/asm/xen/events.h  |    2 +-
+ 5 files changed, 91 insertions(+), 45 deletions(-)
 
---rbg6pv1WwQpmCPiZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c1f1a7e..ae54ae0 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1881,8 +1881,7 @@ config XEN_DOM0
+ config XEN
+ 	bool "Xen guest support on ARM (EXPERIMENTAL)"
+ 	depends on ARM && AEABI && OF
+-	depends on CPU_V7 && !CPU_V6
+-	depends on !GENERIC_ATOMIC64
++	depends on CPU_V7
+ 	select ARM_PSCI
+ 	select SWIOTLB_XEN
+ 	help
+diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
+index 62d2cb5..dfe1cd6 100644
+--- a/arch/arm/include/asm/atomic.h
++++ b/arch/arm/include/asm/atomic.h
+@@ -382,26 +382,7 @@ static inline long long atomic64_cmpxchg(atomic64_t *ptr, long long old,
+ 	return oldval;
+ }
+ 
+-static inline long long atomic64_xchg(atomic64_t *ptr, long long new)
+-{
+-	long long result;
+-	unsigned long tmp;
+-
+-	smp_mb();
+-
+-	__asm__ __volatile__("@ atomic64_xchg\n"
+-"1:	ldrexd	%0, %H0, [%3]\n"
+-"	strexd	%1, %4, %H4, [%3]\n"
+-"	teq	%1, #0\n"
+-"	bne	1b"
+-	: "=&r" (result), "=&r" (tmp), "+Qo" (ptr->counter)
+-	: "r" (&ptr->counter), "r" (new)
+-	: "cc");
+-
+-	smp_mb();
+-
+-	return result;
+-}
++#define armv7_atomic64_xchg atomic64_xchg
+ 
+ static inline long long atomic64_dec_if_positive(atomic64_t *v)
+ {
+@@ -469,6 +450,30 @@ static inline int atomic64_add_unless(atomic64_t *v, long long a, long long u)
+ #define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
+ #define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1LL, 0LL)
+ 
+-#endif /* !CONFIG_GENERIC_ATOMIC64 */
++#else /* !CONFIG_GENERIC_ATOMIC64 */
++#include <asm-generic/atomic64.h>
++#endif
++
++static inline u64 armv7_atomic64_xchg(atomic64_t *ptr, u64 new)
++{
++	long long result;
++	unsigned long tmp;
++
++	smp_mb();
++
++	__asm__ __volatile__("@ armv7_atomic64_xchg\n"
++"1:	ldrexd	%0, %H0, [%3]\n"
++"	strexd	%1, %4, %H4, [%3]\n"
++"	teq	%1, #0\n"
++"	bne	1b"
++	: "=&r" (result), "=&r" (tmp), "+Qo" (ptr->counter)
++	: "r" (&ptr->counter), "r" (new)
++	: "cc");
++
++	smp_mb();
++
++	return result;
++}
++
+ #endif
+ #endif
+diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
+index df2fbba..cc8a4a2 100644
+--- a/arch/arm/include/asm/cmpxchg.h
++++ b/arch/arm/include/asm/cmpxchg.h
+@@ -133,6 +133,44 @@ extern void __bad_cmpxchg(volatile void *ptr, int size);
+  * cmpxchg only support 32-bits operands on ARMv6.
+  */
+ 
++static inline unsigned long __cmpxchg8(volatile void *ptr, unsigned long old,
++				      unsigned long new)
++{
++	unsigned long oldval, res;
++
++	do {
++		asm volatile("@ __cmpxchg1\n"
++		"	ldrexb	%1, [%2]\n"
++		"	mov	%0, #0\n"
++		"	teq	%1, %3\n"
++		"	strexbeq %0, %4, [%2]\n"
++			: "=&r" (res), "=&r" (oldval)
++			: "r" (ptr), "Ir" (old), "r" (new)
++			: "memory", "cc");
++	} while (res);
++
++	return oldval;
++}
++
++static inline unsigned long __cmpxchg16(volatile void *ptr, unsigned long old,
++				      unsigned long new)
++{
++	unsigned long oldval, res;
++
++	do {
++		asm volatile("@ __cmpxchg1\n"
++		"	ldrexh	%1, [%2]\n"
++		"	mov	%0, #0\n"
++		"	teq	%1, %3\n"
++		"	strexheq %0, %4, [%2]\n"
++			: "=&r" (res), "=&r" (oldval)
++			: "r" (ptr), "Ir" (old), "r" (new)
++			: "memory", "cc");
++	} while (res);
++
++	return oldval;
++}
++
+ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
+ 				      unsigned long new, int size)
+ {
+@@ -141,28 +179,10 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
+ 	switch (size) {
+ #ifndef CONFIG_CPU_V6	/* min ARCH >= ARMv6K */
+ 	case 1:
+-		do {
+-			asm volatile("@ __cmpxchg1\n"
+-			"	ldrexb	%1, [%2]\n"
+-			"	mov	%0, #0\n"
+-			"	teq	%1, %3\n"
+-			"	strexbeq %0, %4, [%2]\n"
+-				: "=&r" (res), "=&r" (oldval)
+-				: "r" (ptr), "Ir" (old), "r" (new)
+-				: "memory", "cc");
+-		} while (res);
++		oldval = __cmpxchg8(ptr, old, new);
+ 		break;
+ 	case 2:
+-		do {
+-			asm volatile("@ __cmpxchg1\n"
+-			"	ldrexh	%1, [%2]\n"
+-			"	mov	%0, #0\n"
+-			"	teq	%1, %3\n"
+-			"	strexheq %0, %4, [%2]\n"
+-				: "=&r" (res), "=&r" (oldval)
+-				: "r" (ptr), "Ir" (old), "r" (new)
+-				: "memory", "cc");
+-		} while (res);
++		oldval = __cmpxchg16(ptr, old, new);
+ 		break;
+ #endif
+ 	case 4:
+diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
+index 63479ee..942659a 100644
+--- a/arch/arm/include/asm/sync_bitops.h
++++ b/arch/arm/include/asm/sync_bitops.h
+@@ -21,7 +21,29 @@
+ #define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
+ #define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
+ #define sync_test_bit(nr, addr)		test_bit(nr, addr)
+-#define sync_cmpxchg			cmpxchg
+ 
++static inline unsigned long sync_cmpxchg(volatile void *ptr,
++										 unsigned long old,
++										 unsigned long new)
++{
++	unsigned long oldval;
++	int size = sizeof(*(ptr));
++
++	smp_mb();
++	switch (size) {
++	case 1:
++		oldval = __cmpxchg8(ptr, old, new);
++		break;
++	case 2:
++		oldval = __cmpxchg16(ptr, old, new);
++		break;
++	default:
++		oldval = __cmpxchg(ptr, old, new, size);
++		break;
++	}
++	smp_mb();
++
++	return oldval;
++}
+ 
+ #endif
+diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+index 8b1f37b..4269519 100644
+--- a/arch/arm/include/asm/xen/events.h
++++ b/arch/arm/include/asm/xen/events.h
+@@ -16,7 +16,7 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
+ 	return raw_irqs_disabled_flags(regs->ARM_cpsr);
+ }
+ 
+-#define xchg_xen_ulong(ptr, val) atomic64_xchg(container_of((ptr),	\
++#define xchg_xen_ulong(ptr, val) armv7_atomic64_xchg(container_of((ptr),	\
+ 							    atomic64_t,	\
+ 							    counter), (val))
+ 
+-- 
+1.7.10.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIbBAEBAgAGBQJSzZI7AAoJELSic+t+oim9fU8P+K9OFpFDhPFobb1/9JrobIaY
-tPnWUBD76fpRs+A+wnzgFh3xqNQ2ItaSs/+x7QpizbTGfADz8jTpJ1lNjCQUcH8/
-gfmcJmKWYSCeql9RBij5wY+8Uvl25oJM8AgVUzjXqxfjbyumWTJ6urIFYAotAwEz
-jN1G20fepdBak6nkZOj/1VDZy/VAoX7dMjW1lKWvn63iwUqrHax2i3asW1DReDBA
-8y1ZXL7PqDrCyvOab1PUaut4lEPojObTgV25ldLxCMQEN6y0noGNkYm+w3OIoOX1
-UlwLvkui2iO8D52wSLtKXZ8gHNJJuBJUQo+KjMDVo5docIo68a4fcsTAwuc94yrt
-1w3Nn1Aw+XfD+zmOItEkHgcRzRbUtQw0xG8ciD4wZFuWPYjUKnL0+2F/LRqN95DP
-DCGc97OtPB1wRqp2MRAUAJ2vh8YTYfZlI3xgOjXkt/3YzX+8k5bD5SnoF2xOfsmT
-6LzX01mc2UeKdY/ZSUXGDxy63rc9EQTRmgg0v15nwS3k+9GD/R/oqMqMyWtc4FsS
-yetxM3CPBJwgKNkb8kMxB3Dq79CLXvjAYaOrS9dPLYXy69fgfipNOMYTCZuiaDJ9
-0DAOGZ01Zq5qe6+HDgjSBnJGILPpJSsneqOpGiZ+yaRQrk+fIyqDnZwBHWbsM8oC
-gq4QFDNF/4t5avC068Q=
-=Mp25
------END PGP SIGNATURE-----
-
---rbg6pv1WwQpmCPiZ--
