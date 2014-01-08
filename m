@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255AbaAHNyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:54:31 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:44382 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225AbaAHNy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757249AbaAHNy1 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 8 Jan 2014 08:54:27 -0500
-Message-ID: <1389189272.26646.89.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next v3 6/9] xen-netback: Handle guests with too
- many frags
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jonathan.davies@citrix.com
-Date: Wed, 08 Jan 2014 05:54:32 -0800
-In-Reply-To: <52CD5785.4050402@citrix.com>
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
-		 <1389139818-24458-7-git-send-email-zoltan.kiss@citrix.com>
-	 <1389147141.26646.74.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <52CD5785.4050402@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Received: from cantor2.suse.de ([195.135.220.15]:54122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756225AbaAHNyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:54:23 -0500
+Date: Wed, 8 Jan 2014 14:54:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Bob Liu <lliubbo@gmail.com>
+Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
+Message-ID: <20140108135422.GJ27937@dhcp22.suse.cz>
+References: <CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
+ <20140106141827.GB27602@dhcp22.suse.cz>
+ <CAA_GA1csMEhSYmeS7qgDj7h=Xh2WrsYvirkS55W4Jj3LTHy87A@mail.gmail.com>
+ <20140107102212.GC8756@dhcp22.suse.cz>
+ <20140107173034.GE8756@dhcp22.suse.cz>
+ <CAA_GA1fN5p3-m40Mf3nqFzRrGcJ9ni9Cjs_q4fm1PCLnzW1cEw@mail.gmail.com>
+ <20140108100859.GC27937@dhcp22.suse.cz>
+ <CAA_GA1emcHt+9zOqAKHPoXLd-ofyfYyuQn9fcdLOox5k7BLgww@mail.gmail.com>
+ <20140108124240.GH27937@dhcp22.suse.cz>
+ <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-08 at 13:49 +0000, Zoltan Kiss wrote:
-> On 08/01/14 02:12, Eric Dumazet wrote:
-> > On Wed, 2014-01-08 at 00:10 +0000, Zoltan Kiss wrote:
-> >
-> >>
-> >> +		if (skb_shinfo(skb)->frag_list) {
-> >> +			nskb = skb_shinfo(skb)->frag_list;
-> >> +			xenvif_fill_frags(vif, nskb, INVALID_PENDING_IDX);
-> >> +			skb->len += nskb->len;
-> >> +			skb->data_len += nskb->len;
-> >> +			skb->truesize += nskb->truesize;
-> >> +			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-> >> +			skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-> >> +			vif->tx_zerocopy_sent += 2;
-> >> +			nskb = skb;
-> >> +
-> >> +			skb = skb_copy_expand(skb,
-> >> +					0,
-> >> +					0,
-> >> +					GFP_ATOMIC | __GFP_NOWARN);
-> >
-> > skb can be NULL here
-> 
-> Thanks, fixed that.
+Hi Andrew,
+the whole thread started here: http://lkml.org/lkml/2014/1/6/217
+I guess it makes sense to revert part of the already merged commit with
+the following patch. If the BUG_ON triggers again then we should rather
+find out why page_address_in_vma fails on anon_vma or f_mapping checks
+and not simply paper over it.
+---
+>From 805035f35e8865f6233f88c78e7063512042afea Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 8 Jan 2014 10:57:41 +0100
+Subject: [PATCH] mm: new_vma_page cannot see NULL vma for hugetlb pages
 
-BTW, I am not sure why you copy the skb.
+11c731e81bb0 (mm/mempolicy: fix !vma in new_vma_page()) has removed
+BUG_ON(!vma) from new_vma_page which is partially correct because
+page_address_in_vma will return EFAULT for non-linear mappings and at
+least shared shmem might be mapped this way.
 
-Is it to get rid of frag_list, and why ?
+The patch also tried to prevent NULL ptr for hugetlb pages which is not
+correct AFAICS because hugetlb pages cannot be mapped as VM_NONLINEAR
+and other conditions in page_address_in_vma seem to be legit and catch
+real bugs.
 
+This patch restores BUG_ON for PageHuge to catch potential issues when
+the to-be-migrated page is not setup properly.
 
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+---
+ mm/mempolicy.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 9e8d2d86978a..1a368cd925ed 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1199,10 +1199,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
+ 	}
+ 
+ 	if (PageHuge(page)) {
+-		if (vma)
+-			return alloc_huge_page_noerr(vma, address, 1);
+-		else
+-			return NULL;
++		BUG_ON(!vma);
++		return alloc_huge_page_noerr(vma, address, 1);
+ 	}
+ 	/*
+ 	 * if !vma, alloc_page_vma() will use task or system default policy
+-- 
+1.8.5.2
 
-
+-- 
+Michal Hocko
+SUSE Labs
