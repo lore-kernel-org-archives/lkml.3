@@ -1,102 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008AbaAHP1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:27:18 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44582 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756983AbaAHP1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:27:17 -0500
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Fengguang Wu <fengguang.wu@intel.com>, <santosh.shilimkar@ti.com>
-CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] x86/mm: memblock: switch to use NUMA_NO_NODE
-Date: Wed, 8 Jan 2014 18:23:18 +0200
-Message-ID: <1389198198-31027-1-git-send-email-grygorii.strashko@ti.com>
+	id S1757068AbaAHP2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:28:52 -0500
+Received: from 14.mo3.mail-out.ovh.net ([188.165.43.98]:34265 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756620AbaAHP2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 10:28:46 -0500
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org, dev@linux-sunxi.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+Subject: [RFC PATCH 9/9] ARM: sunxi/dt: enable NAND on cubietruck board
+Date: Wed,  8 Jan 2014 16:28:11 +0100
+Message-Id: <1389194891-26771-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20140107022559.GE14055@localhost>
-References: <20140107022559.GE14055@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 7975311991454070973
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update X86 code to use NUMA_NO_NODE instead of MAX_NUMNODES while
-calling memblock APIs, because memblock API is changed to use NUMA_NO_NODE and
-will produce warning during boot otherwise.
+Enable the NFC and describe the NAND flash connected to this controller.
 
-See:
- https://lkml.org/lkml/2013/12/9/898
-
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
-Hi Fengguang,
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts |   33 ++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-This patch should fix these warnings.
-
-Regards,
--grygorii
-
- arch/x86/kernel/check.c |    2 +-
- arch/x86/kernel/e820.c  |    2 +-
- arch/x86/mm/memtest.c   |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/check.c b/arch/x86/kernel/check.c
-index e2dbcb7..83a7995 100644
---- a/arch/x86/kernel/check.c
-+++ b/arch/x86/kernel/check.c
-@@ -91,7 +91,7 @@ void __init setup_bios_corruption_check(void)
+diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+index 8a1009d..08ee7d3 100644
+--- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
++++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+@@ -18,7 +18,40 @@
+ 	model = "Cubietech Cubietruck";
+ 	compatible = "cubietech,cubietruck", "allwinner,sun7i-a20";
  
- 	corruption_check_size = round_up(corruption_check_size, PAGE_SIZE);
- 
--	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
-+	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL) {
- 		start = clamp_t(phys_addr_t, round_up(start, PAGE_SIZE),
- 				PAGE_SIZE, corruption_check_size);
- 		end = clamp_t(phys_addr_t, round_down(end, PAGE_SIZE),
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 174da5f..988c00a 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1120,7 +1120,7 @@ void __init memblock_find_dma_reserve(void)
- 		nr_pages += end_pfn - start_pfn;
- 	}
- 
--	for_each_free_mem_range(u, MAX_NUMNODES, &start, &end, NULL) {
-+	for_each_free_mem_range(u, NUMA_NO_NODE, &start, &end, NULL) {
- 		start_pfn = min_t(unsigned long, PFN_UP(start), MAX_DMA_PFN);
- 		end_pfn = min_t(unsigned long, PFN_DOWN(end), MAX_DMA_PFN);
- 		if (start_pfn < end_pfn)
-diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
-index 8dabbed..1e9da79 100644
---- a/arch/x86/mm/memtest.c
-+++ b/arch/x86/mm/memtest.c
-@@ -74,7 +74,7 @@ static void __init do_one_pass(u64 pattern, u64 start, u64 end)
- 	u64 i;
- 	phys_addr_t this_start, this_end;
- 
--	for_each_free_mem_range(i, MAX_NUMNODES, &this_start, &this_end, NULL) {
-+	for_each_free_mem_range(i, NUMA_NO_NODE, &this_start, &this_end, NULL) {
- 		this_start = clamp_t(phys_addr_t, this_start, start, end);
- 		this_end = clamp_t(phys_addr_t, this_end, start, end);
- 		if (this_start < this_end) {
++	chosen {
++		bootargs = "console=ttyS0,115200 earlyprintk root=/dev/ram0 rootfstype=ext2 rw";
++	};
++
+ 	soc@01c00000 {
++		nfc: nand@01c03000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&nand_pins_a &nand_cs0_pins_a &nand_rb0_pins_a>;
++			status = "okay";
++
++			nand@0 {
++				reg = <0>;
++				allwinner,rb = <0>;
++				nand-ecc-mode = "soft_bch";
++
++				/* nand timings */
++				tCLS-min = <6>;
++				tCLH-min = <3>;
++				tCS-min = <20>;
++				tCH-min = <5>;
++				tWP-min = <8>;
++				tWH-min = <6>;
++				tALS-min = <6>;
++				tDS-min = <6>;
++				tDH-min = <2>;
++				tRR-min = <20>;
++				tALH-min = <3>;
++				tRP-min = <8>;
++				tREH-min = <6>;
++				tRC-min = <16>;
++				tWC-min = <16>;
++			};
++		};
++
+ 		pinctrl@01c20800 {
+ 			led_pins_cubietruck: led_pins@0 {
+ 				allwinner,pins = "PH7", "PH11", "PH20", "PH21";
 -- 
 1.7.9.5
 
