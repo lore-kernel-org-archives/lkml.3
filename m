@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191AbaAHQiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:38:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48950 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360AbaAHQis (ORCPT
+	id S1757239AbaAHQjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:39:43 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59113 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756514AbaAHQjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:38:48 -0500
-Message-ID: <52CD7F0F.9030209@canonical.com>
-Date: Wed, 08 Jan 2014 11:38:39 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 8 Jan 2014 11:39:39 -0500
+Date: Wed, 8 Jan 2014 11:39:38 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: walt <w41ter@gmail.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        David Laight <david.laight@aculab.com>, <linux-usb@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+In-Reply-To: <20140108004724.GA14082@xanatos>
+Message-ID: <Pine.LNX.4.44L0.1401081130410.1659-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
- mmio
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com> <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
-In-Reply-To: <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 02:55 PM, Yinghai Lu wrote:
-> On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
->>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> That doesn't answer my question at all.
->>>>
->>>> I understand that this change makes it so Joseph doesn't have to use
->>>> "pci=realloc=off".  But why should auto-reallocation be limited to
->>>> buses that have resources above 4GB?  That doesn't make any sense.
->>>>
->>>> We should fix the reallocation code so it can deal with this case.  If
->>>> there's not enough space for everything, obviously we have to leave
->>>> something unassigned.  A ROM BAR is a good candidate for leaving
->>>> unassigned, because most of the time we can get along without it.
->>> Yes, that is ideal and not that simple.
->>> but that would be hard to backport to old kernels.
->>>
->>> BTW, Joseph, can you try
->>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>> for-pci-3.14
->>> with pci=realloc=on
->>>
->>> on that system?
->>>
->>> Thanks
->>>
->>> Yinghai
->> I noticed there was some back and forth on this thread.  Do you still
->> want me to test this version, Yinghai?
-> Yes, if that works, we would not need to put the patch in upstream for limiting
-> realloc auto scope.
->
-> Thanks
->
-> Yinghai
-Hi Yinghai,
+On Tue, 7 Jan 2014, Sarah Sharp wrote:
 
-Sorry for the delay.  The bug reporter was finally able to test your
-patch.  He reports that this version of the patch does in fact fix the
-bug.  See comment #72 here:
+> On Tue, Jan 07, 2014 at 03:57:00PM -0800, walt wrote:
+> > On 01/07/2014 01:21 PM, Sarah Sharp wrote:
+> > 
+> > > Can you please try the attached patch, on top of the previous three
+> > > patches, and send me dmesg?
+> > 
+> > Hi Sarah, I just now finished running 0001-More-debugging.patch for the
+> > first time.  The previous dmesg didn't include that patch, but this one
+> > does.
+> > 
+> > I read through this dmesg but I nodded off somewhere around line 500.
+> > I hope you can stay awake :)
+> 
+> Well, it has all the info I need, but the results don't make me too
+> happy.  Everything I've checked seems consistent, and I don't know why
+> the host stopped.  The link TRBs are intact, the dequeue pointer for the
+> endpoint was pointing to the transfer that timed out and it had the
+> cycle bit set correctly, etc.  Perhaps the no-op TRBs are really the
+> issue.
 
-http://pad.lv/1245938
+This may be a foolish question, but why is xhci-hcd using no-op TRBs in 
+the first place?
 
-Thanks again for all your help!
+It makes sense that they would be needed if you have to unlink an URB 
+that isn't the first one on the endpoint ring.  But usb-storage never 
+does that; whenever it unlinks an URB, it always unlinks the earliest 
+entry in the endpoint's queue.
 
-Joe
+After unlinking the first URB on the ring, you don't need to fill in
+its TRBs with no-ops.  Instead, when you are ready to start the ring
+againk, just tell the host controller to move the dequeue pointer up to
+the start of the next surviving URB.  (You'll also have to adjust the
+CYCLE bits of the TRBs that get skipped over, but that's trivial.)
+
+Alan Stern
 
