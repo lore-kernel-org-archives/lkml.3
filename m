@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782AbaAHLSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:18:23 -0500
-Received: from mail-we0-f182.google.com ([74.125.82.182]:52529 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbaAHLSV (ORCPT
+	id S1755112AbaAHLSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:18:48 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:53886 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755075AbaAHLSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:18:21 -0500
-Date: Wed, 8 Jan 2014 11:18:16 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/11] ASoC: twl4030: Remove local reg cache
-Message-ID: <20140108111816.GH19974@lee--X1>
-References: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
- <1388755676-16036-9-git-send-email-peter.ujfalusi@ti.com>
- <20140108080535.GA19974@lee--X1>
- <52CD318E.3090706@ti.com>
+	Wed, 8 Jan 2014 06:18:46 -0500
+Message-ID: <52CD340F.8000903@mellanox.com>
+Date: Wed, 8 Jan 2014 13:18:39 +0200
+From: Or Gerlitz <ogerlitz@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52CD318E.3090706@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Bolle <pebolle@tiscali.nl>,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Rony Efraim <ronye@mellanox.com>, Hadar Hen Zion <hadarh@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] net/mlx4_core: clean up cq_res_start_move_to()
+References: <1389099678.15032.19.camel@x41>
+In-Reply-To: <1389099678.15032.19.camel@x41>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Depend on the regmap reg cache implementation for register caching done in
-> >> the twl-core driver.
-> >> The local register cache can be removed and we can keep only shadow copies
-> >> of certain ctl registers for pop noise reduction.
-> >>
-> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> >> ---
-> >>  sound/soc/codecs/twl4030.c | 207 ++++++++++++++-------------------------------
-> >>  1 file changed, 63 insertions(+), 144 deletions(-)
-> > 
-> > Which commit is the patch-set based on? This patch doesn't apply.
-> 
-> When I have sent it it was mainline 3.13-rc6, Now I rebased my series on
-> 3.13-rc7 locally.
-> 
-> > At a guess I'd say it's becuase this commit is applied on my tree:
-> > 
-> >   mfd: twl6040: reg_defaults support for regmap
-> 
-> I also have the twl6040 series underneath the twl4030 patches in my working
-> branch and the two series does not touch the same files.
-> 
-> > Would you mind rebasing on my ASoC branch please?
-> > 
-> >   git://git.linaro.org/people/lee.jones/mfd.git  ib-asoc
-> 
-> I have applied this twl4030 series on this branch and all patches (from 01 to
-> 11) applied w/o issue, not even offset difference.
-> 
-> Not sure what is going on since the sound/soc/codecs/twl4030.c file is
-> identical in 3.13-rc7 and in your ib-asoc branch so the series should apply
-> cleanly for you.
+On 07/01/2014 15:01, Paul Bolle wrote:
+> Building resource_tracker.o triggers a GCC warning:
+>      drivers/net/ethernet/mellanox/mlx4/resource_tracker.c: In function 'mlx4_HW2SW_CQ_wrapper':
+>      drivers/net/ethernet/mellanox/mlx4/resource_tracker.c:3019:16: warning: 'cq' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>        atomic_dec(&cq->mtt->ref_count);
+>                      ^
+>
+> This is a false positive. But a cleanup of cq_res_start_move_to() can
+> help GCC here. The code currently uses a switch statement where a plain
+> if/else would do, since only two of the switch's four cases can ever
+> occur. Dropping that switch makes the warning go away.
+>
+> While we're at it, do some coding style cleanups (missing braces), and
+> drop a test that always evaluates to true.
+>
 
-Now that is strange. I just attempted to apply them again and they did
-so cleanly. I'm not sure what happened, but they're find now.
+Hi Paul,
 
-Applied, thanks.
+Our maintainer of that area of the code (SRIOV resource tracker) is busy 
+now, but we will definitely look on these two patches in the coming 
+days, thanks for posting them!
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
