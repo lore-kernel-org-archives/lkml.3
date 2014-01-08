@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaAHBIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 20:08:05 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57245 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaAHBH4 (ORCPT
+	id S1754608AbaAHBLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 20:11:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32822 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaAHBLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 20:07:56 -0500
-Message-ID: <52CCA4DD.40406@huawei.com>
-Date: Wed, 8 Jan 2014 09:07:41 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 7 Jan 2014 20:11:08 -0500
+Date: Tue, 7 Jan 2014 17:11:37 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Leilei Zhao <leilei.zhao@atmel.com>, mark.roszko@gmail.com,
+        mdeneen@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3/4] tty/serial: at91: prevent null dereference in
+ tasklet function
+Message-ID: <20140108011137.GA13590@kroah.com>
+References: <cover.1389090437.git.nicolas.ferre@atmel.com>
+ <69b33ebdc9427b5c036b4ba09151ae88c14a30f4.1389090437.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v3 13/19] media: dvb_core: slight optimization of addr
- compare
-References: <52BA5113.7070908@huawei.com> <52BABA23.2040709@cogentembedded.com> <52BC0E56.80003@huawei.com> <20140107115438.02c7424e@samsung.com>
-In-Reply-To: <20140107115438.02c7424e@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <69b33ebdc9427b5c036b4ba09151ae88c14a30f4.1389090437.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/7 21:54, Mauro Carvalho Chehab wrote:
-> Em Thu, 26 Dec 2013 19:09:10 +0800
-> Ding Tianhong <dingtianhong@huawei.com> escreveu:
+On Tue, Jan 07, 2014 at 11:45:08AM +0100, Nicolas Ferre wrote:
+> From: Marek Roszko <mark.roszko@gmail.com>
 > 
->> On 2013/12/25 18:57, Sergei Shtylyov wrote:
->>> Hello.
->>>
->>> On 25-12-2013 7:29, Ding Tianhong wrote:
->>>
->>>> Use possibly more efficient ether_addr_equal
->>>> instead of memcmp.
->>>
->>>> Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
->>>> Cc: linux-media@vger.kernel.org
->>>> Cc: linux-kernel@vger.kernel.org
->>>> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
->>>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->>>> ---
->>>>   drivers/media/dvb-core/dvb_net.c | 8 ++++----
->>>>   1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>>> diff --git a/drivers/media/dvb-core/dvb_net.c b/drivers/media/dvb-core/dvb_net.c
->>>> index f91c80c..3dfc33b 100644
->>>> --- a/drivers/media/dvb-core/dvb_net.c
->>>> +++ b/drivers/media/dvb-core/dvb_net.c
->>>> @@ -179,7 +179,7 @@ static __be16 dvb_net_eth_type_trans(struct sk_buff *skb,
->>>>       eth = eth_hdr(skb);
->>>>
->>>>       if (*eth->h_dest & 1) {
->>>> -        if(memcmp(eth->h_dest,dev->broadcast, ETH_ALEN)==0)
->>>> +        if(ether_addr_equal(eth->h_dest,dev->broadcast))
->>>
->>>    There should be space after comma.
->>>
->>>> @@ -674,11 +674,11 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
->>>>                       if (priv->rx_mode != RX_MODE_PROMISC) {
->>>>                           if (priv->ule_skb->data[0] & 0x01) {
->>>>                               /* multicast or broadcast */
->>>> -                            if (memcmp(priv->ule_skb->data, bc_addr, ETH_ALEN)) {
->>>> +                            if (!ether_addr_equal(priv->ule_skb->data, bc_addr)) {
->>>>                                   /* multicast */
->>>>                                   if (priv->rx_mode == RX_MODE_MULTI) {
->>>>                                       int i;
->>>> -                                    for(i = 0; i < priv->multi_num && memcmp(priv->ule_skb->data, priv->multi_macs[i], ETH_ALEN); i++)
->>>> +                                    for(i = 0; i < priv->multi_num && !ether_addr_equal(priv->ule_skb->data, priv->multi_macs[i]); i++)
->>>
->>>    Shouldn't this line be broken?
->>>
->>
->> ok, thanks.
-> 
-> Also, since you're touching on those lines, could you please add an space
-> after 'if' (on the first hunk) and after 'for' (on the second one)?
-> 
+> Something asks a tasklet to be scheduled when the uart port is closed.
 
-Ok, thanks
+What is that something?  Shouldn't you track that down and find the real
+problem here?
 
-Regards
-Ding
-
->>
->> Regards
->>>>                                           ;
->>>>                                       if (i == priv->multi_num)
->>>>                                           drop = 1;
->>>
->>> WBR, Sergei
->>>
->>>
->>>
->>>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-media" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Need to supress the kernel panic for now by checking if the port is NULL or
+> not.
 > 
-> Thanks,
-> Mauro
+> Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+> Acked-by: Leilei Zhao <leilei.zhao@atmel.com>
+> Cc: <stable@vger.kernel.org> # v3.12
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/tty/serial/atmel_serial.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> .
-> 
+> diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+> index c421d11b3d4c..6e68486c83cb 100644
+> --- a/drivers/tty/serial/atmel_serial.c
+> +++ b/drivers/tty/serial/atmel_serial.c
+> @@ -1360,6 +1360,10 @@ static void atmel_tasklet_func(unsigned long data)
+>  	unsigned int status;
+>  	unsigned int status_change;
+>  
+> +	if(!port->state || !port->state->port.tty)
+> +		/* uart has been closed */
+> +		return;
 
+Did you really test this?
 
+How about running it through checkpatch?
+
+thanks,
+
+greg k-h
