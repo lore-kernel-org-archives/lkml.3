@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaAHH7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:59:55 -0500
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:34586
+	id S1755501AbaAHIAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:00:12 -0500
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:47369
 	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754539AbaAHH7b (ORCPT
+	by vger.kernel.org with ESMTP id S1755465AbaAHH7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:59:31 -0500
+	Wed, 8 Jan 2014 02:59:49 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h1155h)
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <broonie@kernel.org>, <lgirdwood@gmail.com>, <perex@perex.cz>,
         <tiwai@suse.de>, <kuninori.morimoto.gx@renesas.com>
 CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
         Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 3/4] ASoC: fsl: Add VF610 simple audio card widgets driver.
-Date: Wed, 8 Jan 2014 15:02:35 +0800
-Message-ID: <1389164556-2728-3-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCH 4/4] ARM: dts: Enable SGTL5000 codec based audio driver node for VF610 TOWER.
+Date: Wed, 8 Jan 2014 15:02:36 +0800
+Message-ID: <1389164556-2728-4-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
 References: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
@@ -31,110 +31,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the SGTL5000 codec based off-CODEC widgets supports.
+This patch adds and enables SGTL5000 codec support, and also specified
+the corresponding SAI node.
 
 Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- sound/soc/fsl/Kconfig                     | 25 ++++++++++++++++++
- sound/soc/fsl/Makefile                    |  3 +++
- sound/soc/fsl/snd-soc-simple-card-vf610.c | 44 +++++++++++++++++++++++++++++++
- 3 files changed, 72 insertions(+)
- create mode 100644 sound/soc/fsl/snd-soc-simple-card-vf610.c
+ arch/arm/boot/dts/vf610-twr.dts | 47 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
-index 514c275..fc25d8a 100644
---- a/sound/soc/fsl/Kconfig
-+++ b/sound/soc/fsl/Kconfig
-@@ -216,3 +216,28 @@ config SND_SOC_IMX_MC13783
- 	select SND_SOC_IMX_PCM_DMA
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index e60c20c..f7a1be7 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -34,6 +34,43 @@
+ 		};
+ 	};
  
- endif # SND_IMX_SOC
++	regulators {
++		compatible = "simple-bus";
 +
-+menuconfig SND_VF610_SOC
-+       tristate "SoC Audio for Freescale VF610 CPUs"
-+       select DMA_ENGINE
-+       help
-+         Say Y or M if you want to add support for codecs attached to
-+         the VF610 CPUs.
++		reg_3p3v: 3p3v {
++			compatible = "regulator-fixed";
++			regulator-name = "3P3V";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++	};
 +
-+         This will enable Freeacale SAI and SGTL5000 codec, and an extra
-+         TWR-AUDIO-SGTL sub-board is needed for SGTL5000.
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,widgets = "vf610-sgtl5000";
++		simple-audio-card,routing =
++			"MIC_IN", "Mic Jack",
++			"Mic Jack", "Mic Bias",
++			"LINE_IN", "Line In Jack",
++			"Headphone Jack", "HP_OUT",
++			"Ext Spk", "LINE_OUT";
 +
-+if SND_VF610_SOC
++		simple-audio-card,cpu {
++			sound-dai = <&sai2>;
++			master-clkdir-out;
++			frame-master;
++			bitclock-master;
++		};
 +
-+config SND_SOC_VF610_SGTL5000
-+       tristate "SoC Audio support for VF610 boards with SGTL5000"
-+       depends on OF && I2C
-+       select SND_SOC_FSL_SAI
-+       select SND_SOC_SGTL5000
-+       select SND_SIMPLE_CARD
-+       help
-+         Say Y if you want to add support for SoC audio on an VF610 board with
-+         a SGTL5000 codec and a SAI.
++		simple-audio-card,codec {
++			sound-dai = <&codec>;
++			frame-master;
++			bitclock-master;
++		};
++	};
 +
+ };
+ 
+ &dspi0 {
+@@ -72,9 +109,19 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_i2c0_1>;
+ 	status = "okay";
 +
-+endif #SND_VF610_SOC
-diff --git a/sound/soc/fsl/Makefile b/sound/soc/fsl/Makefile
-index aaccbee..19690c5 100644
---- a/sound/soc/fsl/Makefile
-+++ b/sound/soc/fsl/Makefile
-@@ -58,3 +58,6 @@ obj-$(CONFIG_SND_SOC_IMX_SGTL5000) += snd-soc-imx-sgtl5000.o
- obj-$(CONFIG_SND_SOC_IMX_WM8962) += snd-soc-imx-wm8962.o
- obj-$(CONFIG_SND_SOC_IMX_SPDIF) += snd-soc-imx-spdif.o
- obj-$(CONFIG_SND_SOC_IMX_MC13783) += snd-soc-imx-mc13783.o
-+
-+# Simple audio card widgets Support
-+obj-$(CONFIG_SND_SOC_VF610_SGTL5000) += snd-soc-simple-card-vf610.o
-diff --git a/sound/soc/fsl/snd-soc-simple-card-vf610.c b/sound/soc/fsl/snd-soc-simple-card-vf610.c
-new file mode 100644
-index 0000000..692561c
---- /dev/null
-+++ b/sound/soc/fsl/snd-soc-simple-card-vf610.c
-@@ -0,0 +1,44 @@
-+/*
-+ * ASoC VF610 SGTL5000 off-CODEC widgets support
-+ *
-+ * Copyright 2013 Freescale Semiconductor, Inc.
-+ * Xiubo Li <Li.Xiubo@freescale.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/module.h>
-+#include <sound/simple_card.h>
-+#include <sound/soc-dapm.h>
-+
-+static const struct snd_soc_dapm_widget vf610_sgtl5000_dapm_widgets[] = {
-+	SND_SOC_DAPM_MIC("Mic Jack", NULL),
-+	SND_SOC_DAPM_LINE("Line In Jack", NULL),
-+	SND_SOC_DAPM_HP("Headphone Jack", NULL),
-+	SND_SOC_DAPM_SPK("Line Out Jack", NULL),
-+	SND_SOC_DAPM_SPK("Ext Spk", NULL),
-+};
-+
-+struct asoc_simple_card_widgets vf610_sgtl5000_widgets = {
-+	.name = "vf610-sgtl5000",
-+	.widgets = vf610_sgtl5000_dapm_widgets,
-+	.widgets_cnt = ARRAY_SIZE(vf610_sgtl5000_dapm_widgets),
-+};
-+
-+static int __init __vf610_sgtl5000_widgets_init(void)
-+{
-+	return asoc_simple_card_widgets_register(&vf610_sgtl5000_widgets);
-+}
-+module_init(__vf610_sgtl5000_widgets_init);
-+
-+static void __exit __vf610_sgtl5000_widgets_exit(void)
-+{
-+	asoc_simple_card_widgets_unregister(&vf610_sgtl5000_widgets);
-+}
-+module_exit(__vf610_sgtl5000_widgets_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:vf610-simple-card-widgets");
-+MODULE_DESCRIPTION("ASoC Simple Sound Card Widgets");
-+MODULE_AUTHOR("Xiubo Li <Li.Xiubo@freescale.com>");
++	codec: sgtl5000@0a {
++	       #sound-dai-cells = <0>;
++	       compatible = "fsl,sgtl5000";
++	       reg = <0x0a>;
++	       VDDA-supply = <&reg_3p3v>;
++	       VDDIO-supply = <&reg_3p3v>;
++	       clocks = <&clks VF610_CLK_SAI2>;
++	};
+ };
+ 
+ &sai2 {
++	#sound-dai-cells = <0>;
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_sai2_1>;
+ 	status = "okay";
 -- 
 1.8.4
 
