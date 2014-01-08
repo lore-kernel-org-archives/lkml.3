@@ -1,182 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaAHXb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:31:29 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:53768 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757109AbaAHXb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 18:31:26 -0500
-Date: Wed, 8 Jan 2014 15:30:15 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Eric Biederman <ebiederm@xmission.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Rob Landley <rob@landley.net>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH v3] kexec: add sysctl to disable kexec_load
-Message-ID: <20140108233015.GA11428@www.outflux.net>
+	id S932270AbaAHXe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:34:57 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:57917 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757266AbaAHXez (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 18:34:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <CAE9FiQU88EO=e+CR7RKnZ6r7ofSwi9J1QisnrnDyDz6Qh367YQ@mail.gmail.com>
+References: <1387485843-17403-1-git-send-email-yinghai@kernel.org>
+	<1387485843-17403-3-git-send-email-yinghai@kernel.org>
+	<CAErSpo5VWREGptW0MU0wLJUa3h23DXMZPGkdJFMTx5WAGL8J6Q@mail.gmail.com>
+	<CAE9FiQU88EO=e+CR7RKnZ6r7ofSwi9J1QisnrnDyDz6Qh367YQ@mail.gmail.com>
+Date: Wed, 8 Jan 2014 15:34:54 -0800
+X-Google-Sender-Auth: Olq148JblJGLqe9sTk30-xlvvqc
+Message-ID: <CAE9FiQVZ9yrcViFNx5q65ot=nNP=JBuvotpEjUis2FF11wjg6w@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] PCI: Try best to allocate pref mmio 64bit above 4g
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For general-purpose (i.e. distro) kernel builds it makes sense to build with
-CONFIG_KEXEC to allow end users to choose what kind of things they want to do
-with kexec. However, in the face of trying to lock down a system with such
-a kernel, there needs to be a way to disable kexec_load (much like module
-loading can be disabled). Without this, it is too easy for the root user to
-modify kernel memory even when CONFIG_STRICT_DEVMEM and modules_disabled are
-set. With this change, it is still possible to load an image for use later,
-then disable kexec_load so the image (or lack of image) can't be altered.
+On Sun, Dec 22, 2013 at 5:14 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Sun, Dec 22, 2013 at 4:00 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Thu, Dec 19, 2013 at 1:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> Let me see if I can figure out what you're trying to do here.  Please
+>> correct me if I'm wrong:
+>>
+>>> When one of children resources does not support MEM_64, MEM_64 for
+>>> bridge get reset, so pull down whole pref resource on the bridge under 4G.
+>>
+>> When we allocate space for a bridge's prefetchable window, we
+>> currently look at the devices behind the bridge and put the window
+>> below 4GB if any of those children has a 32-bit prefetchable BAR.
+>>
+>> This maximizes the use of prefetch, at the cost of using more 32-bit
+>> address space.
+>
+> yes. and we have problem when we have 8 sockets or 32 sockets system,
+> will have limit 32bit space.
+> but we have enough above 4G 64bit mmio for prefetchable.
+>
+>>
+>>> If the bridge support pref mem 64, will only allocate that with pref mem64 to
+>>> children that support it.
+>>> For children resources if they only support pref mem 32, will allocate them
+>>> from non pref mem instead.
+>>
+>> You are changing this so that we will always try to put a bridge's
+>> 64-bit prefetchable window above 4GB, regardless of what devices are
+>> behind the bridge.  If a device behind the bridge has a 32-bit
+>> prefetchable BAR, we will place that BAR in the bridge's 32-bit
+>> non-prefetchable window.
+>
+> Yes. so we can keep IORESOURCE_MEM64 in the flags for PREF.
+>
+>>
+>> This minimizes the use of the 32-bit address space, at the cost of not
+>> being able to use prefetch as much.
+>>
+>>> If the bridge only support 32bit pref mmio, will still have all children pref
+>>> mmio under that.
+>>
+>> Obviously, if a bridge has a prefetchable window that's only 32 bits,
+>> 64-bit prefetchable BARs behind the bridge will have to be in that
+>> 32-bit prefetchable window or the 32-bit non-prefetchable window.  And
+>> if the bridge has no prefetchable window at all, every memory BAR
+>> behind the bridge will have to be in the 32-bit non-prefetchable
+>> window.
+>
+> Yes.
+>
+>>
+>> I'll look at the actual patch later; I just want to make sure I
+>> understand your intent first.
 
-The intention is for using this in environments where "perfect"
-enforcement is hard. Without a verified boot, along with verified modules,
-and along with verified kexec, this is trying to give a system a better
-chance to defend itself (or at least grow the window of discoverability)
-against attack in the face of a privilege escalation.
+Hi, Bjorn,
 
-In my mind, I consider several boot scenarios:
+Can you check and add this one to your pci/resource branch?
+With that we can close the loop for 64bit mmio resource allocation.
 
-1) Verified boot of read-only verified root fs loading fd-based
-   verification of kexec images.
-2) Secure boot of writable root fs loading signed kexec images.
-3) Regular boot loading kexec (e.g. kcrash) image early and locking it.
-4) Regular boot with no control of kexec image at all.
+Thanks
 
-1 and 2 don't exist yet, but will soon once the verified kexec series
-has landed. 4 is the state of things now. The gap between 2 and 4 is
-too large, so this change creates scenario 3, a middle-ground above 4
-when 2 and 1 are not possible for a system.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Rik van Riel <riel@redhat.com>
----
-v4:
- - improved commit message; akpm
-v3:
- - renamed and clarified to kexec_load_disabled; Eric W. Biederman
-v2:
- - updated sysctl documentation; akpm
----
- Documentation/sysctl/kernel.txt |   15 ++++++++++++++-
- include/linux/kexec.h           |    1 +
- kernel/kexec.c                  |    3 ++-
- kernel/sysctl.c                 |   13 +++++++++++++
- 4 files changed, 30 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 26b7ee491df8..3e1846427eda 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -33,6 +33,7 @@ show up in /proc/sys/kernel:
- - domainname
- - hostname
- - hotplug
-+- kexec_load_disabled
- - kptr_restrict
- - kstack_depth_to_print       [ X86 only ]
- - l2cr                        [ PPC only ]
-@@ -287,6 +288,18 @@ Default value is "/sbin/hotplug".
- 
- ==============================================================
- 
-+kexec_load_disabled:
-+
-+A toggle indicating if the kexec_load syscall has been disabled. This
-+value defaults to 0 (false: kexec_load enabled), but can be set to 1
-+(true: kexec_load disabled). Once true, kexec can no longer be used, and
-+the toggle cannot be set back to false. This allows a kexec image to be
-+loaded before disabling the syscall, allowing a system to set up (and
-+later use) an image without it being altered. Generally used together
-+with the "modules_disabled" sysctl.
-+
-+==============================================================
-+
- kptr_restrict:
- 
- This toggle indicates whether restrictions are placed on
-@@ -331,7 +344,7 @@ A toggle value indicating if modules are allowed to be loaded
- in an otherwise modular kernel.  This toggle defaults to off
- (0), but can be set true (1).  Once true, modules can be
- neither loaded nor unloaded, and the toggle cannot be set back
--to false.
-+to false.  Generally used with the "kexec_load_disabled" toggle.
- 
- ==============================================================
- 
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 5fd33dc1fe3a..6d4066cdb5b5 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -170,6 +170,7 @@ unsigned long paddr_vmcoreinfo_note(void);
- 
- extern struct kimage *kexec_image;
- extern struct kimage *kexec_crash_image;
-+extern int kexec_load_disabled;
- 
- #ifndef kexec_flush_icache_page
- #define kexec_flush_icache_page(page)
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 9c970167e402..ac738781d356 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -932,6 +932,7 @@ static int kimage_load_segment(struct kimage *image,
-  */
- struct kimage *kexec_image;
- struct kimage *kexec_crash_image;
-+int kexec_load_disabled;
- 
- static DEFINE_MUTEX(kexec_mutex);
- 
-@@ -942,7 +943,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
- 	int result;
- 
- 	/* We only trust the superuser with rebooting the system. */
--	if (!capable(CAP_SYS_BOOT))
-+	if (!capable(CAP_SYS_BOOT) || kexec_load_disabled)
- 		return -EPERM;
- 
- 	/*
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 34a604726d0b..ea4bb8152a34 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -62,6 +62,7 @@
- #include <linux/capability.h>
- #include <linux/binfmts.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/kexec.h>
- 
- #include <asm/uaccess.h>
- #include <asm/processor.h>
-@@ -614,6 +615,18 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+#ifdef CONFIG_KEXEC
-+	{
-+		.procname	= "kexec_load_disabled",
-+		.data		= &kexec_load_disabled,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		/* only handle a transition from default "0" to "1" */
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &one,
-+		.extra2		= &one,
-+	},
-+#endif
- #ifdef CONFIG_MODULES
- 	{
- 		.procname	= "modprobe",
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Yinghai
