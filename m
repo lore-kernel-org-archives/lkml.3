@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbaAHN42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:56:28 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:50681 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391AbaAHN4Y (ORCPT
+	id S1756853AbaAHN4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:56:51 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:54634 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266AbaAHNsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:56:24 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52CD5905.7030203@roeck-us.net>
-Date: Wed, 08 Jan 2014 05:56:21 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: shuah.kh@samsung.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.12 000/144] 3.12.7-stable review
-References: <20140106223745.326293132@linuxfoundation.org> <52CC5062.3080708@samsung.com> <20140107191639.GA2825@kroah.com> <52CC78EC.3000806@samsung.com>
-In-Reply-To: <52CC78EC.3000806@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Jan 2014 08:48:51 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, angus.clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v4 17/37] mtd: st_spi_fsm: Provide the sequence for enabling 32bit addressing mode
+Date: Wed,  8 Jan 2014 13:47:00 +0000
+Message-Id: <1389188840-14306-18-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 02:00 PM, Shuah Khan wrote:
-> On 01/07/2014 12:16 PM, Greg Kroah-Hartman wrote:
->> On Tue, Jan 07, 2014 at 12:07:14PM -0700, Shuah Khan wrote:
->>> On 01/06/2014 03:36 PM, Greg Kroah-Hartman wrote:
->>>> This is the start of the stable review cycle for the 3.12.7 release.
->>>> There are 144 patches in this series, all will be posted as a response
->>>> to this one.  If anyone has any issues with these being applied, please
->>>> let me know.
->>>>
->>>> Responses should be made by Wed Jan  8 22:37:25 UTC 2014.
->>>> Anything received after that time might be too late.
->>>>
->>>> The whole patch series can be found in one patch at:
->>>>     kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.7-rc1.gz
->>>> and the diffstat can be found below.
->>>>
->>>> thanks,
->>>>
->>>> greg k-h
->>>
->>> Patches testing - passed
->>> Compile testing - passed
->>> Boot testing - passed
->>> dmesg regression testing - passed
->>>
->>> Test systems
->>>
->>>      Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
->>>      HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
->>>      Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
->>>
->>> Detailed test status
->>>
->>> Patches applied cleanly
->>> dmesgs look good. No regressions compared to the previous dmesgs for this
->>> release. dmesg emerg, crit, alert, err are clean. No regressions in warn.
->>
->> Just in time for me to do a -rc2 release for this, and the 3.10 -rc1
->> announcement, sorry :)
->>
->
-> 3.10.26-rc2 and 3.12.7-rc2 are looking good on all my 3 test systems. No dmesg regressions.
->
-Same here.
+The FSM Serial Flash Controller is driven by issuing a standard set of
+register writes we call a message sequence. This patch supplies a method
+to prepare the message sequence responsible for setting 32bit addressing
+mode on the Flash chip.
 
-Guenter
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 5ee6d08..02718ae 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -447,6 +447,28 @@ static struct stfsm_seq stfsm_seq_erase_sector = {
+ 		    SEQ_CFG_STARTSEQ),
+ };
+ 
++static int stfsm_n25q_en_32bit_addr_seq(struct stfsm_seq *seq)
++{
++	seq->seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
++			   SEQ_OPC_OPCODE(FLASH_CMD_EN4B_ADDR));
++	seq->seq_opc[1] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
++			   SEQ_OPC_OPCODE(FLASH_CMD_WREN) |
++			   SEQ_OPC_CSDEASSERT);
++
++	seq->seq[0] = STFSM_INST_CMD2;
++	seq->seq[1] = STFSM_INST_CMD1;
++	seq->seq[2] = STFSM_INST_WAIT;
++	seq->seq[3] = STFSM_INST_STOP;
++
++	seq->seq_cfg = (SEQ_CFG_PADS_1 |
++			SEQ_CFG_ERASE |
++			SEQ_CFG_READNOTWRITE |
++			SEQ_CFG_CSDEASSERT |
++			SEQ_CFG_STARTSEQ);
++
++	return 0;
++}
++
+ static inline int stfsm_is_idle(struct stfsm *fsm)
+ {
+ 	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
+-- 
+1.8.3.2
 
