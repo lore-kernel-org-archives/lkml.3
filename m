@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400AbaAHUYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:24:39 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:64432 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaAHUYg convert rfc822-to-8bit (ORCPT
+	id S1757357AbaAHUZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:25:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42001 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaAHUZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:24:36 -0500
+	Wed, 8 Jan 2014 15:25:43 -0500
+Date: Wed, 8 Jan 2014 12:26:13 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: x86@kernel.org, linuxppc-dev@lists.ozlabs.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ashok Raj <ashok.raj@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH RFC 1/3] drivers: base: support cpu cache information
+ interface to userspace via sysfs
+Message-ID: <20140108202613.GD8417@kroah.com>
+References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com>
+ <1389209168-17189-2-git-send-email-sudeep.holla@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1389211403.678513817@f123.i.mail.ru>
-References: <1389210991-23688-1-git-send-email-john.tobias.ph@gmail.com>
-	<1389211403.678513817@f123.i.mail.ru>
-Date: Wed, 8 Jan 2014 12:24:34 -0800
-Message-ID: <CACUGKYNnbQQAkw2=NxBhyrgvrwsOoTCqS4qzP1SYev+tXaMGDQ@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: imx: add select on ARCH_MXC for cpufreq support
-From: John Tobias <john.tobias.ph@gmail.com>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: "<kernel@pengutronix.de>" <kernel@pengutronix.de>,
-        "<linux@arm.linux.org.uk>" <linux@arm.linux.org.uk>,
-        "<linux-arm-kernel@lists.infradead.org>" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389209168-17189-2-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks for the info. Will fix it.
-
-On Wed, Jan 8, 2014 at 12:03 PM, Alexander Shiyan <shc_work@mail.ru> wrote:
-> Hello.
->
-> Среда,  8 января 2014, 11:56 -08:00 от John Tobias <john.tobias.ph@gmail.com>:
->> Moved ARCH_HAS_CPUFREQ, HAVE_IMX_ANATOP and PM_OPP on ARCH_MXC so that
->> the user can enable the cpufreq support for iMX6Q and/or iMX6SL.
->>
->> Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
->> ---
->>  arch/arm/mach-imx/Kconfig | 13 ++++++-------
->>  1 file changed, 6 insertions(+), 7 deletions(-)
->>
->> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
->> index 7a6e6f7..3c326be 100644
->> --- a/arch/arm/mach-imx/Kconfig
->> +++ b/arch/arm/mach-imx/Kconfig
->> @@ -1,5 +1,6 @@
->>  config ARCH_MXC
->>       bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7
->> +     select ARCH_HAS_CPUFREQ
->>       select ARCH_REQUIRE_GPIOLIB
->>       select ARM_CPU_SUSPEND if PM
->>       select ARM_PATCH_PHYS_VIRT
->> @@ -9,8 +10,10 @@ config ARCH_MXC
->>       select GENERIC_ALLOCATOR
->>       select GENERIC_CLOCKEVENTS
->>       select GENERIC_IRQ_CHIP
->> +     select HAVE_IMX_ANATOP
->
-> Maybe better:
-> select HAVE_IMX_ANATOP if ARCH_MULTI_V6_V7
->
+On Wed, Jan 08, 2014 at 07:26:06PM +0000, Sudeep Holla wrote:
+> From: Sudeep Holla <sudeep.holla@arm.com>
+> 
+> This patch adds initial support for providing processor cache information
+> to userspace through sysfs interface. This is based on x86 implementation
+> and hence the interface is intended to be fully compatible.
+> 
+> A per-cpu array of cache information maintained is used mainly for
+> sysfs-related book keeping.
+> 
+> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
 > ---
+>  drivers/base/Makefile     |   2 +-
+>  drivers/base/cacheinfo.c  | 296 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/cacheinfo.h |  43 +++++++
+>  3 files changed, 340 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/base/cacheinfo.c
+>  create mode 100644 include/linux/cacheinfo.h
+
+You are creating sysfs files, yet you didn't add Documentation/ABI/
+information, which is required.  Please fix that.
+
+greg k-h
