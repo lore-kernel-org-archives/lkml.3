@@ -1,165 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710AbaAHPBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:01:34 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60431 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaAHPBa (ORCPT
+	id S1756803AbaAHPGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:06:49 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52397 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755664AbaAHPGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:01:30 -0500
-Message-ID: <52CD6849.4050007@gmail.com>
-Date: Wed, 08 Jan 2014 23:01:29 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 8 Jan 2014 10:06:46 -0500
+Date: Wed, 8 Jan 2014 15:06:12 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 4/9] ARM: Introduce CPU_METHOD_OF_DECLARE() for cpu
+ hotplug/smp
+Message-ID: <20140108150612.GC11753@e106331-lin.cambridge.arm.com>
+References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+ <1387845593-10050-5-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-metag@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggest] arch: metag: compiler: Are they compiler's issues?
-References: <52B8F33C.3030808@gmail.com> <52CA85FF.8050604@imgtec.com>
-In-Reply-To: <52CA85FF.8050604@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387845593-10050-5-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 06:31 PM, James Hogan wrote:
-> On 24/12/13 02:36, Chen Gang wrote:
->> Helllo Maintainers:
->>
->> When compile metag with allmodconfig, I met the 2 kinds of issues, I
->> guess they are compiler's issues, please help check, thanks.
->>
->>
->> Issue 1: compiler report the issue, but after check the related kernel
->> source code, I can not find any issues.
->>
->>     CC [M]  drivers/isdn/hisax/s0box.o
->>   drivers/isdn/hisax/hscx_irq.c: In function 'hscx_fill_fifo':
->>   /upstream/linux-next/arch/metag/include/asm/io.h:62: error: 'asm' operand requires impossible reload
->>   make[3]: *** [drivers/isdn/hisax/s0box.o] Error 1
->>   make[2]: *** [drivers/isdn/hisax] Error 2
->>   make[1]: *** [drivers/isdn] Error 2
->>   make: *** [drivers] Error 2
+On Tue, Dec 24, 2013 at 12:39:48AM +0000, Stephen Boyd wrote:
+> The goal of multi-platform kernels is to remove the need for mach
+> directories and machine descriptors. To further that goal,
+> introduce CPU_METHOD_OF_DECLARE() to allow cpu hotplug/smp
+> support to be separated from the machine descriptors.
+> Implementers should specify an enable-method property in their
+> cpus node and then implement a matching set of smp_ops in their
+> hotplug/smp code, wiring it up with the CPU_METHOD_OF_DECLARE()
+> macro. When the kernel is compiled we'll collect all the
+> enable-method smp_ops into one section for use at boot.
 > 
-> This was a compiler bug in an old version of the toolchain.
-> What does metag-linux-gcc -v give you?
-> It should be "gcc version 4.2.4 (IMG-1.4.0.700)"
+> At boot time we'll look for an enable-method in each cpu node and
+> try to match that against all known CPU enable methods in the
+> kernel. If there are no enable-methods in the cpu nodes we
+> fallback to the cpus node and try to use any enable-method found
+> there. If that doesn't work we fall back to the old way of using
+> the machine descriptor.
+
+Nice!
+
 > 
-
-OK, thanks, and the gcc version is below:
-
-[root@gchen ~]# /usr/bin/metag-buildroot-linux-uclibc-gcc -v
-Using built-in specs.
-Target: metag-buildroot-linux-uclibc
-Configured with: /upstream/src/metag/metag-core-2013.11/output/toolchain/gcc-4.2.4/configure --prefix=/upstream/src/metag/metag-core-2013.11/output/host/usr --build=x86_64-unknown-linux-gnu --host=x86_64-unknown-linux-gnu --target=metag-buildroot-linux-uclibc --enable-languages=c --with-sysroot=/upstream/src/metag/metag-core-2013.11/output/host/usr/metag-buildroot-linux-uclibc/sysroot --with-build-time-tools=/upstream/src/metag/metag-core-2013.11/output/host/usr/metag-buildroot-linux-uclibc/bin --disable-__cxa_atexit --enable-target-optspace --disable-libgomp --with-gnu-ld --disable-libssp --disable-multilib --enable-tls --enable-shared --with-gmp=/upstream/src/metag/metag-core-2013.11/output/host/usr --with-mpfr=/upstream/src/metag/metag-core-2013.11/output/host/usr --disable-nls --enable-threads --with-cpu=2.1 --enable-meta-default --disable-symvers
-Thread model: posix
-gcc version 4.2.4 (IMG-1.4.0.300)
-
-
->> Issue 2: they are about structure variables alignment, I guess, the
->> compiler can not notice about the "#pragma pack()" correctly.
->>
->>     CC [M]  drivers/staging/lustre/lustre/lov/lov_pack.o
->>   drivers/staging/lustre/lustre/lov/lov_pack.c: In function 'lov_getstripe':
->>   drivers/staging/lustre/lustre/lov/lov_pack.c:630: error: duplicate case value
->>   drivers/staging/lustre/lustre/lov/lov_pack.c:630: error: previously used here
->>   make[5]: *** [drivers/staging/lustre/lustre/lov/lov_pack.o] Error 1
->>   make[4]: *** [drivers/staging/lustre/lustre/lov] Error 2
->>   make[3]: *** [drivers/staging/lustre/lustre] Error 2
->>   make[2]: *** [drivers/staging/lustre] Error 2
->>   make[1]: *** [drivers/staging] Error 2
->>   make: *** [drivers] Error 2
->>
->>     MODPOST 2909 modules
->>   ERROR: "__compiletime_assert_426" [net/batman-adv/batman-adv.ko] undefined!
->>   ERROR: "__compiletime_assert_429" [net/batman-adv/batman-adv.ko] undefined!
->>   ERROR: "__compiletime_assert_425" [net/batman-adv/batman-adv.ko] undefined!
->>   ERROR: "__compiletime_assert_428" [net/batman-adv/batman-adv.ko] undefined!
->>   ERROR: "__compiletime_assert_427" [net/batman-adv/batman-adv.ko] undefined!
->>   ERROR: "__compiletime_assert_430" [net/batman-adv/batman-adv.ko] undefined!
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: <devicetree@vger.kernel.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/include/asm/smp.h        |  9 +++++++++
+>  arch/arm/kernel/devtree.c         | 40 +++++++++++++++++++++++++++++++++++++++
+>  include/asm-generic/vmlinux.lds.h | 10 ++++++++++
+>  3 files changed, 59 insertions(+)
 > 
-> I suspect this is due to bad assumptions in the code. The metag ABI is
-> unusual in padding the size of structs to a 32bit boundary even if all
-> members are <32bit. This is actually permitted by the C standard but
-> it's a bit of a pain. e.g.
-> 
-> struct s {
-> 	short x
-> 	struct {
-> 		short x[3];
-> 	} y;
-> 	short z;
-> };
-> 
-> on x86
-> 	alignof(s::y) == 2
-> 	s::y at offset 2
-> 	sizeof(s::y) == 6
-> 	s::z at offset 6+2 = 8
-> 	sizeof(struct s) == 10
-> 
-> but on metag
-> 	alignof(s::y) == 4
-> 	s::y at offset 4
-> 	sizeof(s::y) == 8 (padding, this is what catches people out)
-> 	s::z at offset 4+8 = 12
-> 	sizeof(struct s) == 16 (and here too)
-> 
-> Adding packed attribute on outer struct reduces sizeof(struct s) to 12
-> on metag:
-> 	alignof(s::y) == 4
-> 	s::y at offset 2 (packed)
-> 	sizeof(s::y) == 8 (still padded)
+> diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+> index 22a3b9b..772435b 100644
+> --- a/arch/arm/include/asm/smp.h
+> +++ b/arch/arm/include/asm/smp.h
+> @@ -114,6 +114,15 @@ struct smp_operations {
+>  #endif
+>  };
+>  
+> +struct of_cpu_method {
+> +	const char *method;
+> +	struct smp_operations *ops;
+> +};
+> +
+> +#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
+> +	static const struct of_cpu_method __cpu_method_of_table_##name	\
+> +		__used __section(__cpu_method_of_table)			\
+> +		= { .method = _method, .ops = _ops }
+>  /*
+>   * set platform specific SMP operations
+>   */
+> diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+> index 739c3df..91cc3f8 100644
+> --- a/arch/arm/kernel/devtree.c
+> +++ b/arch/arm/kernel/devtree.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/of_fdt.h>
+>  #include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+> +#include <linux/smp.h>
+>  
+>  #include <asm/cputype.h>
+>  #include <asm/setup.h>
+> @@ -63,6 +64,34 @@ void __init arm_dt_memblock_reserve(void)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_SMP
+> +extern struct of_cpu_method __cpu_method_of_table_begin[];
+> +extern struct of_cpu_method __cpu_method_of_table_end[];
+> +
+> +static int __init set_smp_ops_by_method(struct device_node *node)
+> +{
+> +	const char *method;
+> +	struct of_cpu_method *m = __cpu_method_of_table_begin;
+> +
+> +	if (of_property_read_string(node, "enable-method", &method))
+> +		return 0;
+> +
+> +	for (; m < __cpu_method_of_table_end; m++)
+> +		if (!strcmp(m->method, method)) {
+> +			smp_set_ops(m->ops);
+> +			return 1;
+> +		}
+> +
+> +	return 0;
+> +}
+> +#else
+> +static inline int set_smp_ops_by_method(struct device_node *node)
+> +{
+> +	return 1;
+> +}
+> +#endif
 
-In my memory, when packed(2), it breaks the C standard (although I am
-not quit sure).
+I was going to comment that this would look nicer using an error code or
+0, rather than 0 or 1, but I see that would make the call sites more
+complicated / less legible.
 
-And I guess, all C programmers will assume it will be 6 when within
-pack(2) or pack(1).
+> +
+> +
+>  /*
+>   * arm_dt_init_cpu_maps - Function retrieves cpu nodes from the device tree
+>   * and builds the cpu logical map array containing MPIDR values related to
+> @@ -79,6 +108,7 @@ void __init arm_dt_init_cpu_maps(void)
+>  	 * read as 0.
+>  	 */
+>  	struct device_node *cpu, *cpus;
+> +	int found_method = 0;
+>  	u32 i, j, cpuidx = 1;
+>  	u32 mpidr = is_smp() ? read_cpuid_mpidr() & MPIDR_HWID_BITMASK : 0;
+>  
+> @@ -150,8 +180,18 @@ void __init arm_dt_init_cpu_maps(void)
+>  		}
+>  
+>  		tmp_map[i] = hwid;
+> +
+> +		if (!found_method)
+> +			found_method = set_smp_ops_by_method(cpu);
+>  	}
+>  
+> +	/*
+> +	 * Fallback to an enable-method in the cpus node if nothing found in
+> +	 * a cpu node.
+> +	 */
+> +	if (!found_method)
+> +		set_smp_ops_by_method(cpus);
+> +
+>  	if (!bootcpu_valid) {
+>  		pr_warn("DT missing boot CPU MPIDR[23:0], fall back to default cpu_logical_map\n");
+>  		return;
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index bc2121f..bd02ca7 100644
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -167,6 +167,15 @@
+>  #define CLK_OF_TABLES()
+>  #endif
+>  
+> +#ifdef CONFIG_SMP
+> +#define CPU_METHOD_OF_TABLES() . = ALIGN(8);				    \
+> +			   VMLINUX_SYMBOL(__cpu_method_of_table_begin) = .; \
+> +			   *(__cpu_method_of_table)			    \
+> +			   VMLINUX_SYMBOL(__cpu_method_of_table_end) = .;
+> +#else
+> +#define CPU_METHOD_OF_TABLES()
+> +#endif
 
-> 	s::z at offset 2+8 = 10
-> 	sizeof(struct s) == 12 (packed)
-> 
-> Also reduced to 12 if only inner struct is marked packed:
-> 	alignof(s::y) == 2
-> 	s::y at offset 2
-> 	sizeof(s::y) == 6 (packed)
-> 	s::z at offset 2+6 = 8
-> 	sizeof(struct s) == 12 (still padded)
-> 
-> Adding packed attribute on both outer and inner struct reduces
-> sizeof(struct s) to 10 to match x86.
-> 
-> Unfortunately it's years too late to change this ABI, so we're stuck
-> with it.
-> 
+I suspect we'll use this on arm64 in future, where we might need this
+even on UP systems (for PSCI's cpu_suspend method). However, I think
+that can change that as and when we require it.
 
-Unfortunately too, most using cases are related with API (the related
-structure definition must be the same in binary data).
+> +
+>  #define KERNEL_DTB()							\
+>  	STRUCT_ALIGN();							\
+>  	VMLINUX_SYMBOL(__dtb_start) = .;				\
+> @@ -491,6 +500,7 @@
+>  	MEM_DISCARD(init.rodata)					\
+>  	CLK_OF_TABLES()							\
+>  	CLKSRC_OF_TABLES()						\
+> +	CPU_METHOD_OF_TABLES()						\
+>  	KERNEL_DTB()							\
+>  	IRQCHIP_OF_MATCH_TABLE()
 
-I am sure there are still another ways to bypass this issue, but that
-will make the code looks very strange (especially they are API).
+Enthusiastically Acked-by: Mark Rutland <mark.rutland@arm.com>
 
-:-(
-
->>
->>
->> Making cross-compiler:
->>
->>   git clone git://github.com/img-meta/metag-buildroot.git metag-core-2013.11
->>   make meta2_defconfig.
-> 
-> That loads the meta2_defconfig. Did you rebuild it? If in doubt you can
-> always "rm -fr output" and re-make.
-> 
-
-Yeah, I had done, and no doubt to me.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Cheers,
+Mark.
