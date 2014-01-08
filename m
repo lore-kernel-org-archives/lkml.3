@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392AbaAHGR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 01:17:27 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52041 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105AbaAHGQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 01:16:33 -0500
+	id S1755441AbaAHGR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 01:17:57 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51245 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477AbaAHGQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 01:16:20 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <bcousson@baylibre.com>, <tony@atomide.com>
 CC: <balbi@ti.com>, <arnd@arndb.de>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v4 5/5] ARM: OMAP2+: Remove legacy_init_ehci_clk()
-Date: Wed, 8 Jan 2014 11:45:42 +0530
-Message-ID: <1389161742-10533-6-git-send-email-rogerq@ti.com>
+        Roger Quadros <rogerq@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v4 1/5] mfd: omap-usb-host: Update DT clock binding information
+Date: Wed, 8 Jan 2014 11:45:38 +0530
+Message-ID: <1389161742-10533-2-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389161742-10533-1-git-send-email-rogerq@ti.com>
 References: <1389161742-10533-1-git-send-email-rogerq@ti.com>
@@ -25,55 +25,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The necessary clock phandle for the EHCI clock is now provided
-via device tree so we no longer need this legacy method.
+The omap-usb-host driver expects the 60MHz functional clock
+of the USB host module to be named as "init_60m_fclk".
+Add this information in the DT binding document.
 
+CC: Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- arch/arm/mach-omap2/pdata-quirks.c | 16 ----------------
- 1 file changed, 16 deletions(-)
+ Documentation/devicetree/bindings/mfd/omap-usb-host.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
-index 39f020c..6a4e2d1 100644
---- a/arch/arm/mach-omap2/pdata-quirks.c
-+++ b/arch/arm/mach-omap2/pdata-quirks.c
-@@ -26,20 +26,6 @@ struct pdata_init {
- 	void (*fn)(void);
- };
+diff --git a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
+index b381fa6..5635202 100644
+--- a/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
++++ b/Documentation/devicetree/bindings/mfd/omap-usb-host.txt
+@@ -32,6 +32,10 @@ Optional properties:
+ - single-ulpi-bypass: Must be present if the controller contains a single
+   ULPI bypass control bit. e.g. OMAP3 silicon <= ES2.1
  
--/*
-- * Create alias for USB host PHY clock.
-- * Remove this when clock phandle can be provided via DT
-- */
--static void __init __used legacy_init_ehci_clk(char *clkname)
--{
--	int ret;
--
--	ret = clk_add_alias("main_clk", NULL, clkname, NULL);
--	if (ret)
--		pr_err("%s:Failed to add main_clk alias to %s :%d\n",
--		       __func__, clkname, ret);
--}
--
- #if IS_ENABLED(CONFIG_WL12XX)
++- clocks: phandle to 60MHz functional clock to the USB Host module.
++
++- clock-names: must be "init_60m_fclk"
++
+ Required properties if child node exists:
  
- static struct wl12xx_platform_data wl12xx __initdata;
-@@ -105,7 +91,6 @@ static void __init omap4_sdp_legacy_init(void)
- static void __init omap4_panda_legacy_init(void)
- {
- 	omap4_panda_display_init_of();
--	legacy_init_ehci_clk("auxclk3_ck");
- 	legacy_init_wl12xx(WL12XX_REFCLOCK_38, 0, 53);
- }
- #endif
-@@ -113,7 +98,6 @@ static void __init omap4_panda_legacy_init(void)
- #ifdef CONFIG_SOC_OMAP5
- static void __init omap5_uevm_legacy_init(void)
- {
--	legacy_init_ehci_clk("auxclk1_ck");
- }
- #endif
- 
+ - #address-cells: Must be 1
 -- 
 1.8.3.2
 
