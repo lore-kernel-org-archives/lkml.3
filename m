@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623AbaAHVtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:49:16 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49036 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757076AbaAHVtN (ORCPT
+	id S932208AbaAHVuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:50:19 -0500
+Received: from nwas12.bluewin.ch ([195.186.228.230]:45665 "EHLO
+	zhhdzmsp-nwas12.bluewin.ch" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753532AbaAHVuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:49:13 -0500
-Date: Wed, 8 Jan 2014 21:49:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20140108214906.GB31886@sirena.org.uk>
-References: <1389201738-31406-1-git-send-email-lpapp@kde.org>
- <20140108180747.GT31886@sirena.org.uk>
- <CAOMwXhN8x0xHstrwsrxqXoE+n19TP=r1HJDCFOHs2O024HaY1w@mail.gmail.com>
- <20140108190758.GY31886@sirena.org.uk>
- <CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
- <CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
+	Wed, 8 Jan 2014 16:50:16 -0500
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jan 2014 16:50:16 EST
+Date: Wed, 8 Jan 2014 22:36:53 +0100 (CET)
+From: Daniel Matuschek <daniel@matuschek.net>
+X-X-Sender: parallels@parallels-Parallels-Virtual-Platform
+To: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Dimitris.Papastamos@Wolfsonmicro.com, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] ASoC: wm8804: Allow fine-grained control of the PLL
+ generation
+Message-ID: <alpine.DEB.2.02.1401082231260.4025@parallels-Parallels-Virtual-Platform>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IIbt9kHO0VqlT224"
-Content-Disposition: inline
-In-Reply-To: <CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] include/linux/regmap.h: fix a couple of typos
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
 
---IIbt9kHO0VqlT224
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  WM8804 can run
+  with PLL frequencies of 256xfs and 128xfs for most sample
+  rates. At 192kHz only 128xfs is supported. The existing
+  driver selects 128xfs automatically for some lower samples
+  rates. By using the "pllid" argument of the "set_pll"
+  function is is now possible to control the behaviour. This
+  allows using 256xfs PLL frequency on all sample rates up to
+  96kHz. It should allow lower jitter and better signal
+  quality. When pllid=0, the behaviour of the driver does not
+  change.
 
-On Wed, Jan 08, 2014 at 09:08:44PM +0000, Laszlo Papp wrote:
-> On Wed, Jan 8, 2014 at 9:02 PM, Laszlo Papp <lpapp@kde.org> wrote:
+---
+  sound/soc/codecs/wm8804.c |   18 +++++++++++++-----
+  sound/soc/codecs/wm8804.h |    7 +++++++
+  2 files changed, 20 insertions(+), 5 deletions(-)
 
-> > That being said, I will not have time, nor the motivation to argue
-> > over such a nuance, so feel free to reject the change.
+diff --git a/sound/soc/codecs/wm8804.c b/sound/soc/codecs/wm8804.c
+index 1704b1e..e79c408 100644
+--- a/sound/soc/codecs/wm8804.c
++++ b/sound/soc/codecs/wm8804.c
+@@ -2,6 +2,8 @@
+   * wm8804.c  --  WM8804 S/PDIF transceiver driver
+   *
+   * Copyright 2010-11 Wolfson Microelectronics plc
++ * patched by Daniel Matuschek <info@crazyaudio.com> to allow
++ * fine-grained control of PLL
+   *
+   * Author: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+   *
+@@ -318,7 +320,7 @@ static struct {
 
-> Of course, this is just on top of the vim spell checker error as I
-> wrote in the commit message...
+  #define FIXED_PLL_SIZE ((1ULL << 22) * 10)
+  static int pll_factors(struct pll_div *pll_div, unsigned int target,
+-		       unsigned int source)
++		       unsigned int source, int mclk_div)
+  {
+  	u64 Kpart;
+  	unsigned long int K, Ndiv, Nmod, tmp;
+@@ -332,9 +334,15 @@ static int pll_factors(struct pll_div *pll_div, unsigned int target,
+  		tmp = target * post_table[i].div;
+  		if (tmp >= 90000000 && tmp <= 100000000) {
+  			pll_div->freqmode = post_table[i].freqmode;
+-			pll_div->mclkdiv = post_table[i].mclkdiv;
+-			target *= post_table[i].div;
+-			break;
++			if ((mclk_div == WM8804_MCLKDIV_DONTCARE) ||
++			    ((post_table[i].mclkdiv == 1) &&
++				(mclk_div == WM8804_MCLKDIV_1)) ||
++			    ((post_table[i].mclkdiv == 0) &&
++				(mclk_div == WM8804_MCLKDIV_0))) {
++				pll_div->mclkdiv = post_table[i].mclkdiv;
++				target *= post_table[i].div;
++				break;
++			}
+  		}
+  	}
 
-> Oh yes, and one more factual data in here:
+@@ -388,7 +396,7 @@ static int wm8804_set_pll(struct snd_soc_dai *dai, int pll_id,
+  		int ret;
+  		struct pll_div pll_div;
 
-> lpapp ~/Projects/linux-staging $ grep -rn "e\.g\." . | wc -l
-> 3447
+-		ret = pll_factors(&pll_div, freq_out, freq_in);
++		ret = pll_factors(&pll_div, freq_out, freq_in, pll_id);
+  		if (ret)
+  			return ret;
 
-> lpapp ~/Projects/linux-staging $ grep -rn " eg," | wc -l
-> 18
+diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
+index 8ec14f5..0365177 100644
+--- a/sound/soc/codecs/wm8804.h
++++ b/sound/soc/codecs/wm8804.h
+@@ -58,4 +58,11 @@
 
-That's not the issue - it's dropping the comma.  It's either "e.g." or
-"eg", the comma is a separate thing providing a break between clauses.
-Strictly it should have the periods since it is an abbreviation but
-their use is more vauge in fixed point text since they look ugly, the
-thing that made me complain was that you dropped the comma as well as
-substituting in the expanded version.
+  #define WM8804_CLKOUT_DIV			1
 
---IIbt9kHO0VqlT224
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
++#define WM8804_MCLKDIV_DONTCARE			0
++#define WM8804_MCLKDIV_0			1
++#define WM8804_MCLKDIV_1			2
++#define WM8804_PLL_MCLKDIV_DONTCARE		WM8804_MCLKDIV_DONTCARE
++#define WM8804_PLL_MCLKDIV_0			WM8804_MCLKDIV_0
++#define WM8804_PLL_MCLKDIV_1			WM8804_MCLKDIV_1
++
+  #endif  /* _WM8804_H */
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzcfOAAoJELSic+t+oim9dj8P/R4bwJnWypNsMgQdCbq0umYs
-qvyt4jD4a+52+g6wY5S9eH19hteIvXIlEVJQQ6GETPoKNQNyy66klTw0O1bJo9uk
-HA8657TERC63GxafjzrCPWXdWRWX9sV8U3dvZJfT+qqVvV8CJjkfjgmVVYkU0dO9
-mgdPNyBS6z7OL/ios+3Dt8iId9kO3y0w0k0u9a2vsXJqtnoWt3JIYjvhPFS5lieJ
-cw0rD+swYNrKTlgtTZYLkzgmYhctTs0/GuKinq3rRCd+yEqvX6gJihUDFYsZMMyK
-lTL27/yafhnF9JDZG1z7hFsR3yG/J5Cz18g/DPAdiLV8M2XvwMKjvLXJuivcUWOk
-eeUrktaMrY5ckk+r+3Q7e9ChcUj3u1Am5wIRIDnrNu/MbnvvTAG2ckuMYimIUlPH
-bX7icltJn5e1T8q5lpGxgfkbMCTmyFgfQ3GNcXiqTBC7nGFoQAXtiKybXz/ZHmeA
-gbo900RoSZ2qIu6BHed+DCPLN6VV17nlvAxdFL+g5Sza3Dcrr+wS2LzcagrnlUzt
-kw9LLdHvG8G8SlntfXI15PWsVyp86GbftmnqWc+iIEQGyylZ7LVMtLnqYaOt+tiG
-KN7AqBaw58fRTdr3lmPGtOpVQ8VmPOGhgjMhKd9c3/lU7Yp36r9vn4Aa4oVbVRJA
-zN4XQN2l+Cm9R941Mt0z
-=wgZj
------END PGP SIGNATURE-----
-
---IIbt9kHO0VqlT224--
