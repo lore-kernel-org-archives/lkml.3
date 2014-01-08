@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518AbaAHVB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:01:57 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62021 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757026AbaAHVBy (ORCPT
+	id S1757502AbaAHVCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:02:38 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59581 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756768AbaAHVCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:01:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] driver-core: platform: Resolve DT interrupt references late
-Date: Wed, 08 Jan 2014 22:01:46 +0100
-Message-ID: <5253830.a53UI1vY1X@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140108202407.GA28442@ulmo.nvidia.com>
-References: <20140108011957.GK5074@atomide.com> <14122609.M29raBct1E@wuerfel> <20140108202407.GA28442@ulmo.nvidia.com>
+	Wed, 8 Jan 2014 16:02:36 -0500
+Date: Wed, 8 Jan 2014 21:02:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Will Deacon <will.deacon@arm.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        David Garbett <David.Garbett@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
+Message-ID: <20140108210228.GO27432@n2100.arm.linux.org.uk>
+References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com> <20140108143529.GB14122@mudshark.cambridge.arm.com> <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com> <20140108192028.GM27432@n2100.arm.linux.org.uk> <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Didzo7D9pu3n2JlL0wVfzDEMzISLoChZX2gBV8ZPvVF
- xgY5BHhpdBdnpaOk1c8leTdxJo9MGhFedz6k69w0bCvnJ56EYD
- VsYV48DGZR79GTUP4XvFHMWq0vyXQCx2bARaOvSLd2TejZbQx0
- HTprT8NxQK96ZeK9beaRnMr7zm4jeb4D2Lk90oU00VQVLtTx+v
- f3M0oe5+V1zVM/COGMISsKezk+gNJD5kFp8IDuEmdnt7nENTes
- 1d9aLmiR/FniO7/BreisHX6I4KieXeJYadtsZxkBA1GSNUvPQo
- Zi9l+KyecZuU1eeASfd7d3p/k1vQV7ETcbbwPDtMvuPgv7rhmV
- u2qvQ6cycbI3MgCgw3iU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014 21:24:08 Thierry Reding wrote:
-> 
-> The problem with devres, or any other solution for that matter, is that
-> for the cases where we'd need something like this (that is, statically
-> allocated devices in board setup code) we don't have a fully initialized
-> struct device. We need at least device_initialize() to have been called
-> before devres can be used. Therefore we still need some sort of lookup
-> table that can be used to seed devres objects. Also devres will go away
-> completely when a driver is unloaded, so it'll have to be repopulated
-> everytime.
-> 
-> I don't think that would buy us much over a simple table lookup.
+On Wed, Jan 08, 2014 at 11:43:29AM -0800, Doug Anderson wrote:
+> Olof came up with the idea that you could update the RW firmware
+> (affects initial boot) and then cache away the value and restore it in
+> the kernel after resume.  That would still require a kernel patch but
+> perhaps a less objectionable one.  ...of course if writing this
+> register is a problem in secure mode then maybe that patch would be
+> NAKed anyway.
 
-I would think we can come up with a way to add data to a device that
-ends up in devres by the time the device gets registered. The question
-is more whether you want a global table (or a set of global tables
-for that matter) or rather have all the data local to the devices
-you register. I generally prefer the latter.
+It's not a problem in secure mode, since secure mode will have access
+to the register.  It's the non-secure mode where various registers
+either ignore writes, or they trigger an exception that are the problem.
 
-There is an interesting question about what subsystems you'd want to
-include in this mechanism. We have a growing number of subsystems
-that want data represented in DT (clock, regulator, dmaengine, reset,
-led, pwm, irq, iommu, ...), most of which don't have a 'struct resource'
-equivalent. We could either try to create something generic enough
-to easily cover all of them, or we declare that if you actually want
-to use all of them you should really use DT, and we make it hard to
-add another subsystem specific lookup mechanism.
+Consider what would happen if an exception were to be triggered when no
+exception handlers were installed (eg, because the MMU is not enabled.)
 
-	Arnd
+> That's one I didn't think about, you're right.  ...but we're really
+> getting into hypothetical situations here.  Are there any r2p0
+> products that have such a fix (and thus require a latency of >= 4)?
+
+Really, we can't know, because this kind of information is dependent on
+the SoC, and probably such customisations are only knowable via NDAs.
+
+However, I do know of some A9 CPUs where exactly this kind of thing has
+happened - where various selected silicon bugs have been fixed but the
+revision still reports the same as one with all those bugs.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
