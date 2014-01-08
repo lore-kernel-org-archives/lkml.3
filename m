@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167AbaAHTDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:03:31 -0500
-Received: from [65.55.88.15] ([65.55.88.15]:38012 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752515AbaAHTD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:03:28 -0500
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VPS-6(zzbb2dI98dI9371I1458K1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchd2iz1de098h8275bh1de097hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h1155h)
-X-WSS-ID: 0MZ3JFW-07-581-02
-X-M-MSG: 
-Message-ID: <52CDA054.4010700@amd.com>
-Date: Wed, 8 Jan 2014 13:00:36 -0600
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1757227AbaAHTEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:04:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1209 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477AbaAHTEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 14:04:48 -0500
+Date: Wed, 8 Jan 2014 20:04:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
+	prep_new_page() race
+Message-ID: <20140108190443.GA17282@redhat.com>
+References: <20131219190846.GA24566@redhat.com> <20131219190920.GB24566@redhat.com> <20131223114300.GC727@redhat.com> <20140103195519.GA26555@redhat.com> <20140103195547.GB26555@redhat.com> <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org> <20140104164347.GA31359@redhat.com> <20140108115400.GD27046@suse.de> <20140108161338.GA10434@redhat.com> <20140108180202.GL27046@suse.de>
 MIME-Version: 1.0
-To: <fweisbec@gmail.com>, <mingo@kernel.org>, <mingo@redhat.com>,
-        <jacob.w.shin@gmail.com>
-CC: <oleg@redhat.com>, <a.p.zijlstra@chello.nl>, <acme@ghostprotocols.net>,
-        <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <sherry.hurwitz@amd.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH V6 0/4] perf/x86/amd: AMD Family 16h Data Breakpoint Extensions
-References: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140108180202.GL27046@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.  Are there any other concerns regarding this patch?
+On 01/08, Mel Gorman wrote:
+>
+> On Wed, Jan 08, 2014 at 05:13:38PM +0100, Oleg Nesterov wrote:
+> >
+> > Yes. But, for example, get_futex_key() does
+> >
+> > 	if (unlikely(PageTail(page))) {
+> > 		put_page(page);
+> >
+> > why this put_page() can't race with _split? If nothing else, another thread
+> > can unmap the part of this vma.
+> >
+>
+> The race is not prevented but that does not mean it matters. Basic
+> scenario where a split starts after the PageTail check but before the
+> put_page in get_futex_key
+>
+> CPU A
+> get_futex_key
+>   -> fast gup, page table removing prevents parallel unmap and free
+>     -> gup_huge_pmd (arch/x86/mm/gup.c at least)
+>       -> get_huge_page_tail (increment page tail _map_count)
+>       -> get_huge_page_multiple (increment ref on head page)
+>   -> Check PageTail
+> 					CPU B
+> 					split_huge_page_to_list
+> 					  -> split_huge_page_refcount
+> 					     spin_lock_irq(lru_lock)
+> 					     compound_lock
+>   -> put_page(tail_page)
+>     ->put_compound_page
+>        looks up head page
 
-Thank you,
+Yes.
 
-Suravee
+But suppose that CPU B completes split_huge_page_to_list/munmap/etc
+and frees this head page.
 
-On 12/11/2013 6:28 AM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->
-> The following patchset enables hardware breakpoint bp_len greater than
-> HW_BREAKPOINT_LEN_8 on AMD Family 16h and later.
->
->    $ perf stat -e mem:0x1000/16:w a.out
->                              ^^
->                              bp_len
->
-> This will count writes to [0x1000 ~ 0x1010)
->
-> V6:
-> * Minor clean up in patch 1 and 2 based on comment from Frederic and Oleg.
-> * Split out changes in patch1 into patch4 per Frederic request.
->
-> V5:
-> * Rebase onto 3.12.0-rc3.
-> * Modify the tools/perf/util/parse-events.y due to change in
->    parse_events_add_breakpoint().
->
-> V4:
-> Even more per Oleg's suggestion:
-> * Further simplify info->len and info->mask setting switch statement
->
-> V3:
-> More per Oleg's suggestion:
-> * Use already existing bp_len instead of changing userland API and
->    in kernel turn bp_len into proper AMD hardware breakpoint address
->    mask.
->
-> V2:
-> Per Oleg's suggestions:
-> * Moved testing of bp_addr_mask to validate_hw_breakpoint()
-> * Changed perf tool syntax to mem:<addr>[/addr_mask][:access]
->
-> Jacob Shin (4):
->    perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
->    perf tools: allow user to specify hardware breakpoint bp_len
->    perf tools: add hardware breakpoint bp_len test cases
->    perf/x86: Remove get_hbp_len and replace with bp_len
->
->   arch/x86/include/asm/cpufeature.h        |  2 ++
->   arch/x86/include/asm/debugreg.h          |  5 +++
->   arch/x86/include/asm/hw_breakpoint.h     |  1 +
->   arch/x86/include/uapi/asm/msr-index.h    |  4 +++
->   arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
->   arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++----------------
->   tools/perf/Documentation/perf-record.txt |  7 ++--
->   tools/perf/tests/parse-events.c          | 55 ++++++++++++++++++++++++++++++++
->   tools/perf/util/parse-events.c           | 21 ++++++------
->   tools/perf/util/parse-events.h           |  2 +-
->   tools/perf/util/parse-events.l           |  1 +
->   tools/perf/util/parse-events.y           | 26 +++++++++++++--
->   12 files changed, 145 insertions(+), 43 deletions(-)
->
+>        takes reference unless zero
 
+suppose this page_head was reallocated and get_page_unless_zero()
+succeds right after set_page_refcounted(),
+
+>        compound_lock (block)
+> 					     complete split
+> 					     compound_unlock
+>        check PageTail
+>
+> This put_page blocks on the compound lock, finds the page is no longer a
+> PageTail
+
+Sure. The problem is that compound_lock() itself can race with prep_new_page()
+or I missed something.
+
+> The parallel unmap is prevented by get_huge_page_multiple in the gup path
+> and held in place until put_page_compound frees it later.
+
+Again, I can easily miss something. And yes, page_tail returned by gup
+has a reference to its page_head (via page_head->_count). But
+__split_huge_page_refcount() destroys this connection and decrements
+page_head->_count.
+
+Oleg.
 
