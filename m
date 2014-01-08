@@ -1,258 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaAHJCA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:02:00 -0500
-Received: from [125.89.61.122] ([125.89.61.122]:50678 "EHLO
-	mz-mail03.meizu.com" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753596AbaAHJB5 (ORCPT
+	id S1755666AbaAHJCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:02:25 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36813 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162AbaAHJCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:01:57 -0500
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jan 2014 04:01:56 EST
-From: <falcon@meizu.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Mario Fetka <mario.fetka@gmail.com>
-Subject: [RFC PATCH V2] ARM: compressed: Move ramdisk forward to reserve more memory for kernel image
-Date: Wed, 8 Jan 2014 16:56:45 +0800
-Message-ID: <1389171405-19658-1-git-send-email-falcon@meizu.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 8 Jan 2014 04:02:15 -0500
+Date: Wed, 8 Jan 2014 09:02:08 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        broonie@kernel.org, robh+dt@kernel.org, lgirdwood@gmail.com,
+        sameo@linux.intel.com, sbkim73@samsung.com, patches@linaro.org
+Subject: Re: [PATCH 1/3] mfd: Add support for S2MPA01 device
+Message-ID: <20140108090208.GD19974@lee--X1>
+References: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.179]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wu Zhangjin <falcon@meizu.com>
+> Add the necessary entries required for S2MPA01 multi-function
+> device. While at it also convert whitespaces to tabs in core.h.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/mfd/sec-core.c              |   39 +++++++
+>  include/linux/mfd/samsung/core.h    |   16 ++-
+>  include/linux/mfd/samsung/irq.h     |   50 +++++++++
+>  include/linux/mfd/samsung/s2mpa01.h |  192 +++++++++++++++++++++++++++++++++++
+>  4 files changed, 292 insertions(+), 5 deletions(-)
+>  create mode 100644 include/linux/mfd/samsung/s2mpa01.h
+> 
+> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+> index a139798b8065..d2e890d50a36 100644
+> --- a/drivers/mfd/sec-core.c
+> +++ b/drivers/mfd/sec-core.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/mfd/samsung/core.h>
+>  #include <linux/mfd/samsung/irq.h>
+>  #include <linux/mfd/samsung/rtc.h>
+> +#include <linux/mfd/samsung/s2mpa01.h>
+>  #include <linux/mfd/samsung/s2mps11.h>
+>  #include <linux/mfd/samsung/s5m8763.h>
+>  #include <linux/mfd/samsung/s5m8767.h>
+> @@ -69,6 +70,13 @@ static const struct mfd_cell s2mps11_devs[] = {
+>  	}
+>  };
+>  
+> +static const struct mfd_cell s2mpa01_devs[] = {
+> +	{
+> +		.name = "s2mpa01-pmic",
+> +	},
+> +};
+> +
+> +
 
-During embedded linux system booting, before decompressing the kernel image,
-the bootloader(E.g. Uboot) loads the compressed kernel image and ramdisk into
-two contiguous memory space, these two memory space are fixed after the Uboot
-is released, as a result, the maximum size of the decompressed kernel image is
-limited by the size of the reserved memory space (the difference of the two
-contiguous memory addresses).
+Extra '/n' here.
 
-If want more functions or some debug options, the decompressed kernel image
-may be bigger and may overwrite the followed ramdisk and result in kernel boot
-failure for missing a valid ramdisk.
+>  #ifdef CONFIG_OF
+>  static struct of_device_id sec_dt_match[] = {
+>  	{	.compatible = "samsung,s5m8767-pmic",
+> @@ -77,10 +85,25 @@ static struct of_device_id sec_dt_match[] = {
+>  	{	.compatible = "samsung,s2mps11-pmic",
+>  		.data = (void *)S2MPS11X,
+>  	},
+> +	{	.compatible = "samsung,s2mpa01-pmic",
+> +		.data = (void *)S2MPA01,
+> +	},
 
-To fix up this issue, before decompressing the kernel image, this option moves
-the loaded ramdisk image forward with a specified offset and reserve more
-memory for the decompressed kernel image.
+Can you use the same format at the rest of the file.
 
---
+I'm happy for you to fix the entire struct in this patch.
 
-v1-->v2:
+Rest of the file uses overlapping format:
 
-  o Fix up ATAG_RAMDISK support
-  o Add phys base addr for ORION5X and KIRKWOOD
-  o Add an independent move_ramdisk.h, new board support can be added here.
+        }, {
+                .compatible = "samsung,s2mpa01-pmic",
+        },
 
-TODO:
 
-  o Add dtb support
+<snip>
 
-Signed-off-by: Wu Zhangjin <falcon@meizu.com>
----
- arch/arm/boot/compressed/Makefile       |    2 +-
- arch/arm/boot/compressed/misc.c         |    7 +++-
- arch/arm/boot/compressed/move_ramdisk.c |   61 +++++++++++++++++++++++++++++++
- arch/arm/boot/compressed/move_ramdisk.h |   35 ++++++++++++++++++
- usr/Kconfig                             |   29 +++++++++++++++
- 5 files changed, 131 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm/boot/compressed/move_ramdisk.c
- create mode 100644 arch/arm/boot/compressed/move_ramdisk.h
+> @@ -92,7 +93,7 @@ struct sec_platform_data {
+>  	int				buck3_default_idx;
+>  	int				buck4_default_idx;
+>  
+> -	int                             buck_ramp_delay;
+> +	int				buck_ramp_delay;
 
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index bb26756..e4ef227 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -23,7 +23,7 @@ endif
- 
- AFLAGS_head.o += -DTEXT_OFFSET=$(TEXT_OFFSET)
- HEAD	= head.o
--OBJS	+= misc.o decompress.o
-+OBJS	+= misc.o decompress.o move_ramdisk.o
- FONTC	= $(srctree)/drivers/video/console/font_acorn_8x8.c
- 
- # string library code (-Os is enforced to keep it much smaller)
-diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
-index 8e2a8fc..df1df60 100644
---- a/arch/arm/boot/compressed/misc.c
-+++ b/arch/arm/boot/compressed/misc.c
-@@ -22,7 +22,8 @@ unsigned int __machine_arch_type;
- #include <linux/types.h>
- #include <linux/linkage.h>
- 
--static void putstr(const char *ptr);
-+extern void move_ramdisk(void);
-+extern void putstr(const char *ptr);
- extern void error(char *x);
- 
- #include <mach/uncompress.h>
-@@ -83,7 +84,7 @@ static void icedcc_putc(int ch)
- #define putc(ch)	icedcc_putc(ch)
- #endif
- 
--static void putstr(const char *ptr)
-+void putstr(const char *ptr)
- {
- 	char c;
- 
-@@ -144,6 +145,8 @@ decompress_kernel(unsigned long output_start, unsigned long free_mem_ptr_p,
- 
- 	arch_decomp_setup();
- 
-+	move_ramdisk();
-+
- 	putstr("Uncompressing Linux...");
- 	ret = do_decompress(input_data, input_data_end - input_data,
- 			    output_data, error);
-diff --git a/arch/arm/boot/compressed/move_ramdisk.c b/arch/arm/boot/compressed/move_ramdisk.c
-new file mode 100644
-index 0000000..b984433
---- /dev/null
-+++ b/arch/arm/boot/compressed/move_ramdisk.c
-@@ -0,0 +1,61 @@
-+/*
-+ * move_ramdisk.c
-+ *
-+ * Author: Wu Zhangjin, wuzhangjin@gmail.com, December 2013
-+ * Copyright: (C) 2013 Meizu Telecom Equipment Co., Ltd
-+ *
-+ * Please get help of MOVE_RAMDISK from usr/Kconfig.
-+ */
-+
-+
-+#include "move_ramdisk.h"
-+
-+extern void putstr(const char *ptr);
-+
-+void move_ramdisk(void)
-+{
-+#if defined(CONFIG_MOVE_RAMDISK) && defined(TAG_BASE_ADDR)
-+	struct tag *tags = (struct tag *)(TAG_BASE_ADDR);
-+	__u32 start, target, size;
-+	int found = 0, type = 0;
-+
-+	putstr("Searching ramdisk ...\n");
-+	if (tags->hdr.tag == ATAG_CORE) {
-+		putstr("Found tags ...\n");
-+		for (tags = tag_next(tags); tags->hdr.size; tags = tag_next(tags)) {
-+			if (tags->hdr.tag == ATAG_INITRD2) {
-+				putstr("Found initrd2 tag ...\n");
-+				found = 1;
-+				break;
-+			} else if (tags->hdr.tag == ATAG_INITRD) {
-+				putstr("Found initrd tag ...\n");
-+				found = 1;
-+				break;
-+			} else if (tags->hdr.tag == ATAG_RAMDISK) {
-+				putstr("Found ramdisk tag ...\n");
-+				found = 1;
-+				type = 1;
-+				break;
-+			}
-+		}
-+		if (found) {
-+			if (type == 0) {
-+				start = tags->u.initrd.start;
-+				size = tags->u.initrd.size;
-+				target = start + MOVE_RAMDISK_OFFSET;
-+				tags->u.initrd.start = target;
-+			} else {
-+				start = tags->u.ramdisk.start;
-+				size = tags->u.ramdisk.size;
-+				target = start + MOVE_RAMDISK_OFFSET;
-+				tags->u.ramdisk.start = target;
-+			}
-+
-+			putstr("Moving ramdisk forward ...\n");
-+			memcpy((char *)target, (char *)start, size + SIZE_FIXUP_OFFSET);
-+		}
-+	} else {
-+		putstr("No tag found ...\n");
-+	}
-+#endif
-+}
-diff --git a/arch/arm/boot/compressed/move_ramdisk.h b/arch/arm/boot/compressed/move_ramdisk.h
-new file mode 100644
-index 0000000..b824cde
---- /dev/null
-+++ b/arch/arm/boot/compressed/move_ramdisk.h
-@@ -0,0 +1,35 @@
-+#ifndef _MOVE_RAMDISK_H
-+#define _MOVE_RAMDISK_H
-+
-+#include <asm/setup.h>
-+#include <asm/memory.h>
-+#include <asm/string.h>
-+
-+/* The physical base address of your platform, see PHYS_OFFSET */
-+#ifdef PLAT_PHYS_OFFSET
-+#define __PLAT_PHYS_OFFSET	(PLAT_PHYS_OFFSET)
-+#else
-+
-+#ifdef defined (CONFIG_ARCH_ORION5X) || defined (CONFIG_ARCH_KIRKWOOD)
-+#define __PLAT_PHYS_OFFSET    UL(0x00000000)
-+#else
-+#error "Please define __PLAT_PHYS_OFFSET, the physical base address of DRAM"
-+#endif
-+
-+#endif /* PLAT_PHYS_OFFSET */
-+
-+/* Most boards put tag at the offset 0x100 with the base PHYS_OFFSET */
-+#define TAG_BASE_OFFSET		(0x100)
-+
-+/* The tag address */
-+#ifdef __PLAT_PHYS_OFFSET
-+#define TAG_BASE_ADDR		(__PLAT_PHYS_OFFSET + TAG_BASE_OFFSET)
-+#endif
-+
-+/* Some old Uboot pass the wrong size to kernel, fix up it with an offset. */
-+#define SIZE_FIXUP_OFFSET	(1024)
-+
-+#define MOVE_RAMDISK_OFFSET	(CONFIG_MOVE_RAMDISK_OFFSET_M * 1024 * 1024)
-+#define tag_next(t)	((struct tag *)((__u32 *)(t) + (t)->hdr.size))
-+
-+#endif /* _MOVE_RAMDISK_H */
-diff --git a/usr/Kconfig b/usr/Kconfig
-index 65b845b..ad5ce5b 100644
---- a/usr/Kconfig
-+++ b/usr/Kconfig
-@@ -166,3 +166,32 @@ config INITRAMFS_COMPRESSION_LZO
- 	  (both compression and decompression) is the fastest.
- 
- endchoice
-+
-+config MOVE_RAMDISK
-+	bool "Move ramdisk forward to reserve more memory for kernel image"
-+	depends on ARM
-+	help
-+	  During embedded linux system booting, before decompressing the kernel
-+	  image, the bootloader(E.g. Uboot) loads the compressed kernel image
-+	  and ramdisk into two contiguous memory space, these two memory space
-+	  are fixed after the Uboot is released, as a result, the maximum size
-+	  of the decompressed kernel image is limited by the size of the
-+	  reserved memory space (the difference of the two contiguous memory
-+	  addresses).
-+
-+	  If want more functions or some debug options, the decompressed kernel
-+	  image may be bigger and may override the followed ramdisk and result
-+	  in kernel boot failure for missing a valid ramdisk.
-+
-+	  To fix up this issue, before decompressing the kernel image, this
-+	  option moves the loaded ramdisk image forward with a specified offset
-+	  and reserve more memory for the decompressed kernel image.
-+
-+config MOVE_RAMDISK_OFFSET_M
-+	int "Set the move offset of ramdisk (in Mbytes)"
-+	range 5 100
-+	default "20"
-+	depends on MOVE_RAMDISK
-+	help
-+	  Specify the move offset of the ramdisk, if want a bigger kernel, please
-+	  Increase this size.
+What's this? Are you fixing (or breaking) white space here?
+
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
