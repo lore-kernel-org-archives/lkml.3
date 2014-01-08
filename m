@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959AbaAHOkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:40:14 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:2462 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755029AbaAHOkK (ORCPT
+	id S932067AbaAHOk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:40:29 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:34741 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988AbaAHOkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:40:10 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zcb8kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 8 Jan 2014 22:40:57 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: John Tobias <john.tobias.ph@gmail.com>
-CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: imx: select ARCH_HAS_CPUFREQ for iMX6SL
-Message-ID: <20140108144056.GD10725@S2101-09.ap.freescale.net>
-References: <1389148163-5243-1-git-send-email-john.tobias.ph@gmail.com>
+	Wed, 8 Jan 2014 09:40:25 -0500
+Message-ID: <52CD6358.7010706@gmail.com>
+Date: Wed, 08 Jan 2014 22:40:24 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1389148163-5243-1-git-send-email-john.tobias.ph@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Hannes Reinecke <hare@suse.de>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Hogan <james.hogan@imgtec.com>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
+ instead of operator '%' for u64
+References: <52B4F837.1010403@gmail.com>  <1387680997.5567.91.camel@haakon3.risingtidesystems.com>  <52B6AE19.80401@gmail.com> <1387781487.5567.147.camel@haakon3.risingtidesystems.com> <52B90111.5050203@gmail.com> <52CCFF0C.7070704@suse.de>
+In-Reply-To: <52CCFF0C.7070704@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 06:29:23PM -0800, John Tobias wrote:
-> iMX6SL now supports the cpufreq scaling by re-using the imx6q-cpufreq driver.
-> By adding it, the user has the capability to select the said driver without
-> depending it to SOC_IMX6Q.
+On 01/08/2014 03:32 PM, Hannes Reinecke wrote:
+> On 12/24/2013 04:35 AM, Chen Gang wrote:
+>> On 12/23/2013 02:51 PM, Nicholas A. Bellinger wrote:
+>>> On Sun, 2013-12-22 at 17:17 +0800, Chen Gang wrote:
+>>>> On 12/22/2013 10:56 AM, Nicholas A. Bellinger wrote:
+>>>>> Hi Chen,
+>>>>>
+>>>>> On Sat, 2013-12-21 at 10:08 +0800, Chen Gang wrote:
+>>>>>> In kernel, need use div64_u64_rem() instead of operator '%' for u64, or
+>>>>>> can not pass compiling (with allmodconfig under metag):
+>>>>>>
+>>>>>>     MODPOST 2909 modules
+>>>>>>   ERROR: "__umoddi3" [drivers/target/target_core_mod.ko] undefined!
+>>>>>>
+>>>>>> Also need u64 type cast for u32 variable multiply u32 variable, or will
+>>>>>> cause type overflow issue.
+>>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>>> ---
+>>>>>>  drivers/target/target_core_alua.c | 3 ++-
+>>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>>>
+>>>>>
+>>>>> FYI, this unsigned long long division in core_alua_state_lba_dependent()
+>>>>> was fixed for 32-bit in linux-next >= 12192013 code.
+>>>>>
+>>>>
+>>>> OK, thanks.
+>>>>
+>>>> The related fix patch changed "start_lba = lba % ..." to "start_lba =
+>>>> lba / ...", and also assumed "segment_size * segment_mult" is still
+>>>> within u32 (can not cause type over flow).
+>>>>
+>>>> I guess the original author already knew about them, and intended to do
+>>>> like that (if not, please let me know, thanks).
+>>>>
+>>>
+>>> Sorry, your correct that the original code is using modulo division to
+>>> calculate start_lba.
+>>>
+>>
+>> Oh, that's all right, (in fact, don't need sorry), I am not quite
+>> familiar with the details, so need related member help check it.  :-)
+>>
+>>> Hannes, can you please double check this below..?
+>>>
+>>
+>> Please help check when have time, thanks.
+>>
+> I would even convert segment_size and segment_mult to u64,
+> to ensure no overflows occur:
 > 
-> Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
-> ---
-> Changes since v1:
-> - Fix typo in commit log
-> - Added Shawn Guo on Cc
+> diff --git a/drivers/target/target_core_alua.c
+> b/drivers/target/target_core_alua
+> .c
+> index 9b1856d..54b1e52 100644
+> --- a/drivers/target/target_core_alua.c
+> +++ b/drivers/target/target_core_alua.c
+> @@ -477,8 +477,7 @@ static inline int core_alua_state_lba_dependent(
+>         u8 *alua_ascq)
+>  {
+>         struct se_device *dev = cmd->se_dev;
+> -       u32 segment_size, segment_mult, sectors;
+> -       u64 lba;
+> +       u64 segment_size, segment_mult, sectors, lba;
 > 
->  arch/arm/mach-imx/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
+>         /* Only need to check for cdb actually containing LBAs */
+>         if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB))
 > 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index 7a6e6f7..704e5ae 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -808,6 +808,7 @@ config SOC_IMX6Q
->  
->  config SOC_IMX6SL
->  	bool "i.MX6 SoloLite support"
-> +	select ARCH_HAS_CPUFREQ
-
-Since we will eventually enable CPUFREQ and OPP for most of the
-platforms, maybe we should just move selection of ARCH_HAS_CPUFREQ,
-ARCH_HAS_OPP and PM_OPP into 'config ARCH_MXC'?
-
-Shawn
-
->  	select ARM_ERRATA_754322
->  	select ARM_ERRATA_775420
->  	select ARM_GIC
-> -- 
-> 1.8.3.2
 > 
 
+OK, thanks.
+
+> Other than that the sector_div() patch is correct.
+> 
+
+So we really need use '/' instead of original '%'?
+
+
+Thanks
+-- 
+Chen Gang
+
+Open, share and attitude like air, water and life which God blessed
