@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaAHBR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 20:17:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44123 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654AbaAHBRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 20:17:18 -0500
-Date: Wed, 8 Jan 2014 02:17:13 +0100
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Sergey Meirovich <rathamahata@gmail.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-Message-ID: <20140108011713.GA5212@quack.suse.cz>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz>
- <20140107155830.GA28395@infradead.org>
+	id S1754411AbaAHBUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 20:20:17 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55605 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753284AbaAHBUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 20:20:08 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Z4QrjNmFjTHHYgYGcwq5r
+Date: Tue, 7 Jan 2014 17:19:58 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>, Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when
+ populating interrupts
+Message-ID: <20140108011957.GK5074@atomide.com>
+References: <20131123004334.GJ10023@atomide.com>
+ <20131123010850.GN10023@atomide.com>
+ <20131123015034.GP10023@atomide.com>
+ <20131124212757.7D224C402A3@trevor.secretlab.ca>
+ <alpine.DEB.2.02.1312100331460.32309@utopia.booyaka.com>
+ <alpine.DEB.2.02.1312302209200.8869@utopia.booyaka.com>
+ <CAL_Jsq+X5G94DUn-zFKQkhEy91cdjCyeciny+kDjr=V6EiBHfQ@mail.gmail.com>
+ <alpine.DEB.2.02.1401062340240.31394@utopia.booyaka.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140107155830.GA28395@infradead.org>
+In-Reply-To: <alpine.DEB.2.02.1401062340240.31394@utopia.booyaka.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07-01-14 07:58:30, Christoph Hellwig wrote:
-> On Mon, Jan 06, 2014 at 09:10:32PM +0100, Jan Kara wrote:
-> >   This is likely a problem of Linux direct IO implementation. The thing is
-> > that in Linux when you are doing appending direct IO (i.e., direct IO which
-> > changes file size), the IO is performed synchronously so that we have our
-> > life simpler with inode size update etc. (and frankly our current locking
-> > rules make inode size update on IO completion almost impossible). Since
-> > appending direct IO isn't very common, we seem to get away with this
-> > simplification just fine...
+* Paul Walmsley <paul@pwsan.com> [140106 15:43]:
+> On Tue, 31 Dec 2013, Rob Herring wrote:
+> > On Mon, Dec 30, 2013 at 4:10 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> > > On Tue, 10 Dec 2013, Paul Walmsley wrote:
+> > >> Is it possible to get this patch, or something similar, merged for
+> > >> v3.13-rc?
+> > >>
+> > >> Once something like PM is broken, it's pretty easy for other broken
+> > >> patches to make it into the tree, since it becomes very difficult to test
+> > >> without turning into a maintainer denial-of-service attack.
+> > >
+> > > Ping.  Could you please provide some guidance here about what you'd need
+> > > to get this solved for v3.13-rc?
+> > 
+> > I agree with doing the platform_get_irq modification and feel free to
+> > add my ack. I'm going to be offline for the next week.
 > 
-> Shouldn't be too much of a problem at least for XFS and maybe even ext4
-> with the workqueue based I/O end handler.  For XFS we protect size
-> updates by the ilock which we already taken in that handler, not sure
-> what ext4 would do there.
-  Well, I was specifically worried about i_mutex locking. In particular:
-Before we report appending IO completion we need to update i_size.
-To update i_size we need to grab i_mutex.
+> Thanks Rob!
+> 
+> Tony, would you consider sending this patch upstream for v3.13-rc along 
+> with your 37xxevm fix patches?
 
-Now this is unpleasant because inode_dio_wait() happens under i_mutex so
-the above would create lock inversion. And we cannot really do
-inode_dio_done() before grabbing i_mutex as that would open interesting
-races between truncate decreasing i_size and DIO increasing it.
+Hmm I'd like to see a proper patch posted for platform_get_irq() by
+Thierry as that one is really his patch. And it also had a comment from
+Grant.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+After that I can queue it if nobody else is picking it as I have a
+dependency to it.
+
+Regards,
+
+Tony
