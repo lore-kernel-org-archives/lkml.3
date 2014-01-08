@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345AbaAHTAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:00:18 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55305 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523AbaAHTAQ (ORCPT
+	id S1757348AbaAHTAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:00:43 -0500
+Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:52697 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751273AbaAHTAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:00:16 -0500
-Date: Wed, 8 Jan 2014 13:45:43 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-01-07
-Message-ID: <20140108184543.GE11076@tuxdriver.com>
-References: <20140107152251.GA24183@joana>
+	Wed, 8 Jan 2014 14:00:38 -0500
+Message-ID: <52CDA032.3010804@overkiz.com>
+Date: Wed, 08 Jan 2014 20:00:02 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107152251.GA24183@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <20140108183418.GA12358@obsidianresearch.com>
+In-Reply-To: <20140108183418.GA12358@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 11549762721196701930
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 01:22:51PM -0200, Gustavo Padovan wrote:
-> Hi John,
-> 
-> More patches to 3.14. The bulk of changes here is the 6LoWPAN support for
-> Bluetooth LE Devices. The commits that touches net/ieee802154/ are already
-> acked by David Miller. Other than that we have some RFCOMM fixes and
-> improvements plus fixes and clean ups all over the tree.
-> 
-> Please pull, or let me know of any concerns you have.
-> 
-> 	Gustavo
-> 
-> ---
-> The following changes since commit 71fb419724fadab4efdf98210aa3fe053bd81d29:
-> 
->   Bluetooth: Fix handling of L2CAP Command Reject over LE (2013-12-10 01:15:44 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to e825eb1d7e06f616003c17e2e8e421c2e5e44142:
-> 
->   Bluetooth: Fix 6loWPAN peer lookup (2014-01-07 11:32:15 -0200)
+Hello Jason,
 
-Pulling now...
+Le 08/01/2014 19:34, Jason Gunthorpe a écrit :
+> On Wed, Jan 08, 2014 at 03:21:58PM +0100, Boris BREZILLON wrote:
+>
+>> +int of_get_nand_timings(struct device_node *np, struct nand_timings *timings)
+>> +{
+>> +	memset(timings, 0, sizeof(*timings));
+>> +	of_property_read_u32(np, "tCLS-min", &timings->tCLS_min);
+>> +	of_property_read_u32(np, "tCLH-min", &timings->tCLH_min);
+>> +	of_property_read_u32(np, "tCS-min", &timings->tCS_min);
+> [..]
+>
+> A while ago when discussing another controller it was pointed out
+> these values are all auto-probable directly from the NAND via a ONFI
+> defined GET FEATURE @0x01 query, and adding these timings to the DT
+> was NAK'd..
+>
+> Basically you set the interface to the slowest ONFI timing mode, do
+> the GET FEATURE to the NAND chip and then increase the interface speed
+> to the highest mutually supported ONFI mode.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> Is there some reason you need to encode this in the DT?
+
+What if the NAND does not support the ONFI interface (and this is
+exactly the case for the NAND available on the cubietruck board:
+H27UCG8T2ATR).
+
+But I'm glag to hear about this ONFI feature :).
+I'll add a function to retrieve these timings if the NAND support
+the ONFI interface.
+
+Best Regards,
+
+Boris
+>
+> Jason
+
