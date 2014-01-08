@@ -1,286 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584AbaAHMrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 07:47:41 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:46836 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163AbaAHMrh (ORCPT
+	id S1756622AbaAHMsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 07:48:55 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48683 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388AbaAHMsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 07:47:37 -0500
-Date: Wed, 8 Jan 2014 09:41:13 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 01/28] perf tools: Insert filtered entries to hists also
-Message-ID: <20140108124113.GA15464@ghostprotocols.net>
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
- <1389170793-21926-2-git-send-email-namhyung@kernel.org>
+	Wed, 8 Jan 2014 07:48:53 -0500
+Date: Wed, 8 Jan 2014 12:48:39 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140108124839.GZ31886@sirena.org.uk>
+References: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
+ <20140108114232.GI19974@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MuDnMMoGCLJmcLvf"
 Content-Disposition: inline
-In-Reply-To: <1389170793-21926-2-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20140108114232.GI19974@lee--X1>
+X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 00/11] ASoC/MFD: twl4030 codec local register cache
+ removal
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 08, 2014 at 05:46:06PM +0900, Namhyung Kim escreveu:
-> Currently if a sample was filtered by command line option, it just
-> dropped.  But this affects final output in that the percentage can be
-> different since the filtered entries were not included to the total.
-> 
-> For example, if an original output looked like below:
 
-Humm, if one says that he/she is interested on just samples for a and b,
-the current behaviour will state how many of the filtered samples are
-for a and b, which is valid.
+--MuDnMMoGCLJmcLvf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- I bet the number of samples will reflect that as well, but you filtered
-it out, yes, it stays there, so the percentages are relative to the
-number of samples.
+On Wed, Jan 08, 2014 at 11:42:32AM +0000, Lee Jones wrote:
 
-So I think this change in behaviour is wrong, no?
+> are available in the git repository at:
+>=20
+>   git://git.linaro.org/people/ljones/mfd.git tags/ib-asoc-3.14.2
+>=20
+> for you to fetch changes up to 9146070089cca0fa5c396f1a4d0b96d675004c04:
 
-Example used:
+Pulled, thanks.
 
-[root@ssdandy ~]# perf report --stdio -s comm
-# To display the perf.data header info, please use
-# --header/--header-only options.
-#
-# Samples: 158  of event 'cycles'
-# Event count (approx.): 75273747
-#
-# Overhead          Command
-# ........  ...............
-#
-    42.65%          swapper
-    25.58%         qemu-kvm
-     8.85%             Xorg
-     7.81%      gnome-shell
-     3.81%       vhost-7290
-     3.25%   gnome-terminal
-     2.74%  gnome-settings-
-     2.68%   irq/55-iwlwifi
-     1.71%             perf
-     0.61%    gnome-session
-     0.31%      kworker/4:2
+>  drivers/mfd/twl-core.c  | 190 ++++++++++++++++++++++++++++++++++++++++++=
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--------=
+----------
+>  drivers/mfd/twl6040.c   |  92 ++++++++++++++++++++++++++++++++++++++++++=
+++++++++++++++++++--
 
-[root@ssdandy ~]#
+Wrapping seems broken here...
 
-[root@ssdandy ~]# perf report --stdio -s comm -c swapper,qemu-kvm
-# To display the perf.data header info, please use
-# --header/--header-only options.
-#
-# Samples: 97  of event 'cycles'
-# Event count (approx.): 51360039
-#
-# Overhead   Command
-# ........  ........
-#
-    62.50%   swapper
-    37.50%  qemu-kvm
+--MuDnMMoGCLJmcLvf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[root@ssdandy ~]#
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-To get what you want, kinda:
+iQIcBAEBAgAGBQJSzUkkAAoJELSic+t+oim9Z/QP/ReAlQY7Wb/OrcOlgFANPGW0
+APtqhkZWChBFc0WX9PGI6Yh9iAWAgRAmCQ9vYcB6+FhTN+cxFBsxEOpy3oR7NT9w
+bxWcSmV6t70re9dLEL3Mc2QkD/Q+7UFcVnizxXahXqG3KimjSd/zYZST/a8iW0LO
+8GFz7UswkoB0B4wJ2uyh+eUZHeNIzJv7zFOFzy41Ul0vK3VWCwZg8DUvxam90mL1
+eQKQ5GNtTA4GDzqbptNIo2nEn3N5UL7qo5WHYDc+KTO6RCmEx+Fv2V21OHTgeJlA
+kUNVdCD00p1dphEmRDeBAKsVu3cyTMGisk6+fC09AaQRhrZNJHY4r3ESpIjhuPNA
+nOwMZOmnjNHAbOcHAnAGinGujbiWC0TfATwRdjArvTGLovwLrhzgr1HtK8T7q5RU
+GaEAqeTgMXm70gJ9SWq3cqVPRmtp66yiWza7ImFeUZKYd+LGVKWfc8ajWUE03g5a
+vd0gdrvNVb7uY/Ci2bXELHp5h7heUsCtGOM62L6kev4/N9CZHJ7aNjzO2wZEebNa
+OxgNpsrlhd/zTeZkb+SmwieTqS9fjbt9w+u9FVCjTlgWhfW4Oxx/eLUxSi0jLDll
+cpejHJgR0RQKK5oj/OitjLiPn/uVltI5nRmS3zZMT9oAMBty061Rng9vA6uE6Hgu
+oD2V1Yq4nTzzP6dluw0l
+=peWa
+-----END PGP SIGNATURE-----
 
-[root@ssdandy ~]# perf report --stdio -s comm | egrep -w swapper\|qemu-kvm
-    42.65%          swapper
-    25.58%         qemu-kvm
-[root@ssdandy ~]#
-
-- Arnaldo
- 
->   $ perf report --stdio -s comm
-> 
->   # Overhead  Command
->   # ........  .......
->   #
->       74.19%      cc1
->        7.61%      gcc
->        6.11%       as
->        4.35%       sh
->        4.14%     make
->        1.13%   fixdep
-> 
-> If we gave a filter, the output changed like below:
-> 
->   $ perf report --stdio -s comm -c gcc,as
-> 
->   # Overhead  Command
->   # ........  .......
->   #
->       55.49%      gcc
->       44.51%       as
-> 
-> But user might want to see this:
-> 
->   $ perf report --stdio -s comm -c gcc,as
-> 
->   # Overhead  Command
->   # ........  .......
->   #
->        7.61%      gcc
->        6.11%       as
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-report.c |  2 +-
->  tools/perf/util/event.c     | 18 ++++++++----------
->  tools/perf/util/hist.c      | 11 ++---------
->  tools/perf/util/hist.h      |  7 +++++++
->  tools/perf/util/symbol.h    |  2 +-
->  5 files changed, 19 insertions(+), 21 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index bf8dd2e893e4..6bfcb83db8ff 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -247,7 +247,7 @@ static int process_sample_event(struct perf_tool *tool,
->  		return -1;
->  	}
->  
-> -	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
-> +	if (rep->hide_unresolved && al.sym == NULL)
->  		return 0;
->  
->  	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> index 45a76c69a9ed..2c6a583bc2e9 100644
-> --- a/tools/perf/util/event.c
-> +++ b/tools/perf/util/event.c
-> @@ -3,6 +3,7 @@
->  #include "debug.h"
->  #include "machine.h"
->  #include "sort.h"
-> +#include "hist.h"
->  #include "string.h"
->  #include "strlist.h"
->  #include "thread.h"
-> @@ -663,7 +664,7 @@ void thread__find_addr_map(struct thread *thread,
->  	al->thread = thread;
->  	al->addr = addr;
->  	al->cpumode = cpumode;
-> -	al->filtered = false;
-> +	al->filtered = 0;
->  
->  	if (machine == NULL) {
->  		al->map = NULL;
-> @@ -750,9 +751,6 @@ int perf_event__preprocess_sample(const union perf_event *event,
->  	if (thread == NULL)
->  		return -1;
->  
-> -	if (thread__is_filtered(thread))
-> -		goto out_filtered;
-> -
->  	dump_printf(" ... thread: %s:%d\n", thread__comm_str(thread), thread->tid);
->  	/*
->  	 * Have we already created the kernel maps for this machine?
-> @@ -767,6 +765,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
->  
->  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
->  			      sample->ip, al);
-> +
-> +	if (thread__is_filtered(thread))
-> +		al->filtered |= (1 << HIST_FILTER__THREAD);
-> +
->  	dump_printf(" ...... dso: %s\n",
->  		    al->map ? al->map->dso->long_name :
->  			al->level == 'H' ? "[hypervisor]" : "<not found>");
-> @@ -782,7 +784,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
->  			       (dso->short_name != dso->long_name &&
->  				strlist__has_entry(symbol_conf.dso_list,
->  						   dso->long_name)))))
-> -			goto out_filtered;
-> +			al->filtered |= (1 << HIST_FILTER__DSO);
->  
->  		al->sym = map__find_symbol(al->map, al->addr,
->  					   machine->symbol_filter);
-> @@ -791,11 +793,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
->  	if (symbol_conf.sym_list &&
->  		(!al->sym || !strlist__has_entry(symbol_conf.sym_list,
->  						al->sym->name)))
-> -		goto out_filtered;
-> -
-> -	return 0;
-> +		al->filtered |= (1 << HIST_FILTER__SYMBOL);
->  
-> -out_filtered:
-> -	al->filtered = true;
->  	return 0;
->  }
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 4ed3e883240d..64df6b96e7ea 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -13,13 +13,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
->  static bool hists__filter_entry_by_symbol(struct hists *hists,
->  					  struct hist_entry *he);
->  
-> -enum hist_filter {
-> -	HIST_FILTER__DSO,
-> -	HIST_FILTER__THREAD,
-> -	HIST_FILTER__PARENT,
-> -	HIST_FILTER__SYMBOL,
-> -};
-> -
->  struct callchain_param	callchain_param = {
->  	.mode	= CHAIN_GRAPH_REL,
->  	.min_percent = 0.5,
-> @@ -329,8 +322,8 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
->  	if (!h->filtered) {
->  		hists__calc_col_len(hists, h);
->  		++hists->nr_entries;
-> -		hists->stats.total_period += h->stat.period;
->  	}
-> +	hists->stats.total_period += h->stat.period;
->  }
->  
->  static u8 symbol__parent_filter(const struct symbol *parent)
-> @@ -429,7 +422,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
->  			.weight = weight,
->  		},
->  		.parent = sym_parent,
-> -		.filtered = symbol__parent_filter(sym_parent),
-> +		.filtered = symbol__parent_filter(sym_parent) | al->filtered,
->  		.hists	= hists,
->  		.branch_info = bi,
->  		.mem_info = mi,
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index a59743fa3ef7..7d1d973d9a39 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -14,6 +14,13 @@ struct hist_entry;
->  struct addr_location;
->  struct symbol;
->  
-> +enum hist_filter {
-> +	HIST_FILTER__DSO,
-> +	HIST_FILTER__THREAD,
-> +	HIST_FILTER__PARENT,
-> +	HIST_FILTER__SYMBOL,
-> +};
-> +
->  /*
->   * The kernel collects the number of events it couldn't send in a stretch and
->   * when possible sends this number in a PERF_RECORD_LOST event. The number of
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index cbd680361806..e42b410c3f11 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -170,7 +170,7 @@ struct addr_location {
->  	struct symbol *sym;
->  	u64	      addr;
->  	char	      level;
-> -	bool	      filtered;
-> +	u8	      filtered;
->  	u8	      cpumode;
->  	s32	      cpu;
->  };
-> -- 
-> 1.7.11.7
+--MuDnMMoGCLJmcLvf--
