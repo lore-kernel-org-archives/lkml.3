@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757727AbaAHXix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:38:53 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:54059 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757266AbaAHXiu (ORCPT
+	id S1757790AbaAHXlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:41:55 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:58630 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757624AbaAHXlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 18:38:50 -0500
+	Wed, 8 Jan 2014 18:41:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <1389120821-12007-1-git-send-email-tim.kryger@linaro.org>
-References: <1389120821-12007-1-git-send-email-tim.kryger@linaro.org>
-Date: Wed, 8 Jan 2014 15:38:49 -0800
-Message-ID: <CAEPRUYo0r5YcRTYdgSNLqedVV4D0bsor7USBoxRRpBXRs7wpbw@mail.gmail.com>
-Subject: Re: [RESEND PATCH] ARM: dts: bcm28155-ap: Fix Card Detection GPIO
-From: Christian Daudt <bcm@fixthebug.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Arm Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
+In-Reply-To: <4679785.iPCX7mECEL@vostro.rjw.lan>
+References: <37552283.kG1L4S8Daa@vostro.rjw.lan>
+	<2459491.HIKjAnF27k@vostro.rjw.lan>
+	<CAE9FiQV1tui+nHMFF419dpTOKt_x4US6R=3uPhDvUDJ0zoMrEg@mail.gmail.com>
+	<4679785.iPCX7mECEL@vostro.rjw.lan>
+Date: Wed, 8 Jan 2014 15:41:52 -0800
+X-Google-Sender-Auth: KJyq8wJUaWiTdh8ULpgihkNJgyA
+Message-ID: <CAE9FiQXYskZcfccVO6OacYchfA=cd0Ns9EF1CbwERS7MR05bUA@mail.gmail.com>
+Subject: Re: [PATCH][tentative] PCI / ACPI: Rework PCI host bridge removal to
+ avoid sysfs warnings
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 7, 2014 at 10:53 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
-> The board schematic states that the "SD_CARD_DET_N gets pulled to GND
-> when card is inserted" so the polarity has been updated to active low.
->
-> Polarity is now specified with a GPIO define instead of a magic number.
->
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> Reviewed-by: Matt Porter <matt.porter@linaro.org>
-> ---
->  arch/arm/boot/dts/bcm28155-ap.dts | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
-> index 08e47c2..27dd110 100644
-> --- a/arch/arm/boot/dts/bcm28155-ap.dts
-> +++ b/arch/arm/boot/dts/bcm28155-ap.dts
-> @@ -13,6 +13,8 @@
->
->  /dts-v1/;
->
-> +#include <dt-bindings/gpio/gpio.h>
-> +
->  #include "bcm11351.dtsi"
->
->  / {
-> @@ -40,7 +42,7 @@
->
->         sdio4: sdio@3f1b0000 {
->                 max-frequency = <48000000>;
-> -               cd-gpios = <&gpio 14 0>;
-> +               cd-gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
->                 status = "okay";
->         };
->  };
-> --
-> 1.8.0.1
->
-Tim,
- Does bcm11351-brt not also suffer from the same bug? If it does can
-you pls update the patch to also fix it?
+On Mon, Jan 6, 2014 at 12:41 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 
- Thanks,
-   csd
+>> Not sure how that could happen.
+>>
+>> If it would really happen, we could set dev->match_driver to 0 in pci_stop_dev.
+>
+> Simply, run "modprobe -r driver && modprobe driver" in a loop and
+> remove the PCI host bridge the given device is on in parallel to that.  Chances
+> are, you'll see some nice breakage.
+
+I would suggest using match_driver prevent driver from attaching again.
+
+---
+ drivers/pci/remove.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/drivers/pci/remove.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/remove.c
++++ linux-2.6/drivers/pci/remove.c
+@@ -11,6 +11,7 @@ static void pci_stop_dev(struct pci_dev
+         pci_proc_detach_device(dev);
+         pci_remove_sysfs_dev_files(dev);
+         device_release_driver(&dev->dev);
++        dev->match_driver = false;
+         dev->is_added = 0;
+     }
+
+
+>
+> Also what happens if somebody uses the "remove" sysfs attribute on a device
+> needed by ioapic/dmar?
+
+Good question, we will have problem in that case.
+To make it simple, we may hide the "remove" in sysfs for ioapic pci device ?
+
+Thanks
+
+Yinghai
