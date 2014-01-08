@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105AbaAHOlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:41:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398AbaAHOlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:41:35 -0500
-Date: Wed, 8 Jan 2014 09:41:09 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: kexec: reuse 1st kernel as kexec/kdump kernel?
-Message-ID: <20140108144109.GA13649@redhat.com>
-References: <20140107023405.GC3967@dhcp-16-126.nay.redhat.com>
- <20140107143723.GB1524@redhat.com>
- <20140108012422.GA3819@dhcp-16-126.nay.redhat.com>
+	id S1757152AbaAHOnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:43:33 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:52344 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756754AbaAHOn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 09:43:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108012422.GA3819@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140108140307.GA588@infradead.org>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz> <20140107155830.GA28395@infradead.org>
+ <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com> <20140108140307.GA588@infradead.org>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Wed, 8 Jan 2014 16:43:07 +0200
+Message-ID: <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 09:24:22AM +0800, Dave Young wrote:
-> On 01/07/14 at 09:37am, Vivek Goyal wrote:
-> > On Tue, Jan 07, 2014 at 10:34:06AM +0800, Dave Young wrote:
-> > > Hi, all
-> > > 
-> > > I have a question in mind: can we copy and prepare kexec kernel while
-> > > normal booting?
-> > > 
-> > > Just like below wild idea:
-> > > 
-> > > Kernel uncompress itself (assume kernel is relocatable)
-> > > -> copy the kernel image somewhere for backup
-> > >   -> reserver crashkernel memory
-> > >     -> copy the backuped kernel image/initrd image to reserved memory
-> > >       -> copy the purgatory which can be embedded in elf section?
-> > >         -> prepare the e820 memory ranges which is for kdump kernel
-> > > 
-> > > So userspace only need to call kexec reboot, kexec_load is not necessary.
-> > > The initrd for kdump should be different, but we can add some different logic
-> > > which will be only for kdump and it can be skipped in normal boot.
-> > > 
-> > > Is it doable?
-> > 
-> > What's the advantage of doing all this? Why are you trying to skip load
-> > step.
-> 
-> Hi, Vivek
-> 
-> It's just a thought that kernel already have all the information for kexecing so
-> we can save user space works. Rethinking about it it benefits more to kexec than
-> kdump. For kexec user he can reboot with kexec without any user space actions.
-> For kdump there's no much advantage though.
+Hi Christoph,
 
-We should rather have a kexec service which starts and loads the kernel
-at startup and reboot will simply use kexec boot to boot into that kernel.
-We don't need to do anything at kernel level.
+On 8 January 2014 16:03, Christoph Hellwig <hch@infradead.org> wrote:
+> On Tue, Jan 07, 2014 at 08:37:23PM +0200, Sergey Meirovich wrote:
+>> Actually my initial report (14.67Mb/sec  3755.41 Requests/sec) was about ext4
+>> However I have tried XFS as well. It was a bit slower than ext4 on all
+>> occasions.
+>
+> I wasn't trying to say XFS fixes your problem, but that we could
+> implement appending AIO writes in XFS fairly easily.
+>
+> To verify Jan's theory, can you try to preallocate the file to the full
+> size and then run the benchmark by doing a:
+>
+> # fallocate -l <size> <filename>
+>
+> and then run it?  If that's indeed the issue I'd be happy to implement
+> the "real aio" append support for you as well.
+>
 
-Thanks
-Vivek
+After fallocate:
+[root@illin01 ext4]# du -k test_file.* | awk '{print $1}' |sort |uniq
+81920
+[root@illin01 ext4]# fallocate -l 81920k test_file.*
+
+Results are almost the same:
+    14.68Mb/sec  3758.02 Requests/sec
