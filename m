@@ -1,117 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917AbaAHPZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:25:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756660AbaAHPZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:25:01 -0500
-Date: Wed, 8 Jan 2014 16:19:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] rcu_dereference_check_fdtable fix/cleanups
-Message-ID: <20140108151918.GA5156@redhat.com>
-References: <20140107181258.GA29288@redhat.com> <20140108132852.GF10038@linux.vnet.ibm.com>
+	id S1756791AbaAHP0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:26:15 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:60416 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301AbaAHP0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 10:26:13 -0500
+Date: Wed, 8 Jan 2014 07:26:10 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Sergey Meirovich <rathamahata@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+Message-ID: <20140108152610.GA5863@infradead.org>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz>
+ <20140107155830.GA28395@infradead.org>
+ <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
+ <20140108140307.GA588@infradead.org>
+ <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140108132852.GF10038@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08, Paul E. McKenney wrote:
+On Wed, Jan 08, 2014 at 04:43:07PM +0200, Sergey Meirovich wrote:
+> Results are almost the same:
+>     14.68Mb/sec  3758.02 Requests/sec
 >
-> I am not all that excited about invoking rcu_lock_acquire() outside
-> of RCU...
 
-Yes, me too. That is why I thought about the helper with a good name,
-see below.
+On my laptop SSD I get the following results (sometimes up to 200MB/s,
+sometimes down to 100MB/s, always in the 40k to 50k IOps range):
 
-> Another approach would be to add an argument to files_fdtable()
-> that is zero normally and one for "we know we don't need RCU
-> protection."  Then rcu_dereference_check() could be something
-> like the following:
->
-> #define files_fdtable(files, c) \
-> 		(rcu_dereference_check_fdtable((files), (files)->fdt) || c)
->
-> Would that work?
+time elapsed (sec.):	5
+bandwidth (MiB/s):	160.00
+IOps:			40960.00
 
-Yes, I considered this optiion, but this needs much more uglifications^W
-changes.
+The IOps are more than the hardware is physically capable of, but given
+that you didn't specify O_SYNC this seems sensible given that we never
+have to flush the disk cache.
 
-Either we need to change all users of files_fdtable(), or we need something
-like
+Could it be that your array has WCE=0?  In Linux we'll never enable the
+cache automatically, but Solaris does at least when using ZFS.  Try
+running:
 
-	#define __rcu_dereference_check_fdtable(files, unshared, fdtfd) \
-		rcu_dereference_check((fdtfd), unshared || lockdep_is_held(&(files)->file_lock))
+   sdparm --set=WCE /dev/sdX
 
-	#define rcu_dereference_check_fdtable(files, fdtfd)
-		__rcu_dereference_check_fdtable(files, false, fdtfd)
-
-	#define __files_fdtable(files)
-		__rcu_dereference_check_fdtable((files), true, (files)->fdt)
-
-	#define files_fdtable(files)
-		__rcu_dereference_check_fdtable((files), false, (files)->fdt)
-
-Plus we need
-
-	static inline struct file *__fcheck_files(struct files_struct *files,
-						bool unshared, unsigned int fd)
-	{
-		struct file *file = NULL;
-		struct fdtable *fdt = __rcu_dereference_check_fdtable(files, unshared, files->fdt);
-
-		if (fd < fdt->max_fds)
-			file = __rcu_dereference_check_fdtable(files, unshared, fdt->fd[fd]);
-		return file;
-	}
-
-doesn't look very nice...
-
-As for 2/2, probably close_files() can simply do
-
-	/*
-	 * It is safe to dereference the fd table without RCU or
-	 * ->file_lock because this is the last reference to the
-	 * files structure.
-	 */
-	fdt = rcu_dereference_raw(files->fdt);
-
-Or we can add
-
-	#define __files_fdtable(files)	\
-		 rcu_dereference_raw((files)->fdt)
-
-but it is not clear to me what 1/1 should do. Perhaps
-
-	static inline struct file *__fcheck_files(struct files_struct *files, unsigned int fd)
-	{
-		struct fdtable *fdt = rcu_dereference_raw(files->fdt);
-		struct file *file = NULL;
-
-		if (fd < fdt->max_fds)
-			file = rcu_dereference_raw(fdt->fd[fd]);
-
-		return file;
-	}
-
-	static inline struct file *fcheck_files(struct files_struct *files, unsigned int fd)
-	{
-		rcu_lockdep_assert(rcu_read_lock_held() ||
-				   lockdep_is_held(files->file_lock),
-				   "message");
-		return __fcheck_files(files, fd);
-	}
-
-?
-
-Oleg.
-
+and try again.
