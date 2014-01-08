@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738AbaAHPnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 10:43:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35716 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301AbaAHPnp (ORCPT
+	id S1756838AbaAHPn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 10:43:58 -0500
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:56981 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755301AbaAHPnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 10:43:45 -0500
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Matthew Wilcox <matthew@wil.cx>, Hannes Reinecke <hare@suse.de>,
-        Ric Wheeler <ricwheeler@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Subject: Re: status of block-integrity
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20131222192128.GA28532@infradead.org>
-	<yq11u134rmt.fsf@sermon.lab.mkp.net> <52CBBABD.50902@gmail.com>
-	<52CC0216.5060900@suse.de> <20140107233410.GA1263@parisc-linux.org>
-	<1389139510.2064.22.camel@dabdike.pnp.gw>
-Date: Wed, 08 Jan 2014 10:43:11 -0500
-In-Reply-To: <1389139510.2064.22.camel@dabdike.pnp.gw> (James Bottomley's
-	message of "Wed, 08 Jan 2014 08:05:10 +0800")
-Message-ID: <yq1ha9ev5rk.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 8 Jan 2014 10:43:55 -0500
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, rob@landley.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alan@linux.intel.com
+Subject: [PATCH] n_gsm/documentation: Add some words about DCD signal
+Date: Wed,  8 Jan 2014 16:42:55 +0100
+Message-Id: <1389195775-22959-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "James" == James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+From: Lars Poeschel <poeschel@lemonage.de>
 
-James> No, I think you're confusing algorithms with protocols.  DIF and
-James> DIX are two names for protection envelopes.  DIF verifies
-James> integrity from the HBA to the device surface.  DIX verifies
-James> integrity from an application to the HBA. 
+Add some words about modem control lines, DCD signal and that
+an open may block to the n_gsm documentation.
 
-Actually, DIX is a data integrity-aware HBA programming interface. We
-have an implementation of that interface in the SCSI layer and in some
-of the initiator drivers (lpfc, qla2xxx, mptNsas).
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+ Documentation/serial/n_gsm.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-There is no single name for stuff above DIX. Other than "block layer
-data integrity goo", "page cache black magic" and "let's add a few
-fields to struct iocb".
-
-James> So, the question is do we need to bother with DIX at all?  No
-James> filesystem uses it 
-
-...explicitly. Every filesystem uses it implicitly. There are only two
-reasons for filesystems to want to be explicitly "block layer data
-integrity goo"-aware:
-
-     1. To be able to use the application tag space for back pointers or
-        other metadata without requiring disk format changes.
-
-     2. To facilitate passthrough of protection information submitted
-        via the $TBD application programming interface.
-
-I was hoping the extN folks would be interested in (1) but there were no
-takers. (2) is hard but not forgotten. In any case the status quo is
-that there is no point in filesystems manually generating protection
-information when the block layer is going to do it for them when the bio
-is submitted.
-
+diff --git a/Documentation/serial/n_gsm.txt b/Documentation/serial/n_gsm.txt
+index a5d9112..089b934 100644
+--- a/Documentation/serial/n_gsm.txt
++++ b/Documentation/serial/n_gsm.txt
+@@ -74,6 +74,12 @@ done
+ for example, it's possible :
+ - and to use gnokii to send / receive SMS on ttygsm1
+ - to use ppp to establish a datalink on ttygsm2
++- If you want to use a virtual muxed channel in your own programs, be aware
++  that it respects the modem control lines. If you open the virtual port it
++  will block, if it is not connected to a carrier (DCD signal missing). You
++  could open the virtual port with O_NDELAY flag and do normal AT commands
++  to the modem without a carrier. You can change to blocking mode later if
++  you need this with fcntl F_SETFL/F_GETFL.
+ 
+ 6- first close all virtual ports before closing the physical port.
+ 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+1.8.5.2
+
