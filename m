@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106AbaAHGGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 01:06:45 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:35595 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910AbaAHGGj (ORCPT
+	id S1754994AbaAHGOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 01:14:23 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:60345 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaAHGON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 01:06:39 -0500
+	Wed, 8 Jan 2014 01:14:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <52CCE6AE.1070809@linux.intel.com>
+In-Reply-To: <52CCE9CD.5060404@linux.intel.com>
 References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>
-	<1389085234-22296-4-git-send-email-jiang.liu@linux.intel.com>
-	<CAOtp4KrK8yOktru+hgLSxYNZ67Nm2WYVGi2aGaJ3JJWLrdOq_g@mail.gmail.com>
-	<52CCE6AE.1070809@linux.intel.com>
-Date: Wed, 8 Jan 2014 14:06:36 +0800
-Message-ID: <CAOtp4Kqo5m-uOKfr8WDwH1v3+23iSv9_329xS=K76Kpq-QXdVw@mail.gmail.com>
-Subject: Re: [Patch Part2 V1 03/14] iommu/vt-d: simplify function get_domain_for_dev()
+	<1389085234-22296-15-git-send-email-jiang.liu@linux.intel.com>
+	<CAOtp4Kqn5e_51hwrRMgRmam7jXaVC=md7BAuwnG3gJGETj9iQA@mail.gmail.com>
+	<52CCE9CD.5060404@linux.intel.com>
+Date: Wed, 8 Jan 2014 14:14:12 +0800
+Message-ID: <CAOtp4KqvzrJr=Z5xj-vZnnL--W6R2CjZ=m0rFgR9DzxVKjfwSQ@mail.gmail.com>
+Subject: Re: [RFC Patch Part2 V1 14/14] iommu/vt-d: update IOMMU state when
+ memory hotplug happens
 From: Kai Huang <dev.kai.huang@gmail.com>
 To: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
@@ -29,302 +30,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 1:48 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+On Wed, Jan 8, 2014 at 2:01 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
 >
 >
-> On 2014/1/8 11:06, Kai Huang wrote:
+> On 2014/1/8 13:07, Kai Huang wrote:
+>> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>>> If static identity domain is created, IOMMU driver needs to update
+>>> si_domain page table when memory hotplug event happens. Otherwise
+>>> PCI device DMA operations can't access the hot-added memory regions.
+>>>
+>>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>>> ---
+>>>  drivers/iommu/intel-iommu.c |   52 ++++++++++++++++++++++++++++++++++++++++++-
+>>>  1 file changed, 51 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+>>> index 83e3ed4..35a987d 100644
+>>> --- a/drivers/iommu/intel-iommu.c
+>>> +++ b/drivers/iommu/intel-iommu.c
+>>> @@ -33,6 +33,7 @@
+>>>  #include <linux/dmar.h>
+>>>  #include <linux/dma-mapping.h>
+>>>  #include <linux/mempool.h>
+>>> +#include <linux/memory.h>
+>>>  #include <linux/timer.h>
+>>>  #include <linux/iova.h>
+>>>  #include <linux/iommu.h>
+>>> @@ -3689,6 +3690,54 @@ static struct notifier_block device_nb = {
+>>>         .notifier_call = device_notifier,
+>>>  };
+>>>
+>>> +static int intel_iommu_memory_notifier(struct notifier_block *nb,
+>>> +                                      unsigned long val, void *v)
+>>> +{
+>>> +       struct memory_notify *mhp = v;
+>>> +       unsigned long long start, end;
+>>> +       struct iova *iova;
+>>> +
+>>> +       switch (val) {
+>>> +       case MEM_GOING_ONLINE:
+>>> +               start = mhp->start_pfn << PAGE_SHIFT;
+>>> +               end = ((mhp->start_pfn + mhp->nr_pages) << PAGE_SHIFT) - 1;
+>>> +               if (iommu_domain_identity_map(si_domain, start, end)) {
+>>> +                       pr_warn("dmar: failed to build identity map for [%llx-%llx]\n",
+>>> +                               start, end);
+>>> +                       return NOTIFY_BAD;
+>>> +               }
 >>
->>
->>
->> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com
->> <mailto:jiang.liu@linux.intel.com>> wrote:
->>
->>     Function get_domain_for_dev() is a little complex, simplify it
->>     by factoring out dmar_search_domain_by_dev_info() and
->>     dmar_insert_dev_info().
->>
->>     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com
->>     <mailto:jiang.liu@linux.intel.com>>
->>     ---
->>      drivers/iommu/intel-iommu.c |  161
->>     ++++++++++++++++++++-----------------------
->>      1 file changed, 75 insertions(+), 86 deletions(-)
->>
->>     diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->>     index 1704e97..da65884 100644
->>     --- a/drivers/iommu/intel-iommu.c
->>     +++ b/drivers/iommu/intel-iommu.c
->>     @@ -1957,18 +1957,70 @@ find_domain(struct pci_dev *pdev)
->>             return NULL;
->>      }
->>
->>     +static inline struct dmar_domain *
->>     +dmar_search_domain_by_dev_info(int segment, int bus, int devfn)
->>     +{
->>     +       struct device_domain_info *info;
->>     +
->>     +       list_for_each_entry(info, &device_domain_list, global)
->>     +               if (info->segment == segment && info->bus == bus &&
->>     +                   info->devfn == devfn)
->>     +                       return info->domain;
->>     +
->>     +       return NULL;
->>     +}
->>     +
->>     +static int dmar_insert_dev_info(int segment, int bus, int devfn,
->>     +                               struct pci_dev *dev, struct
->>     dmar_domain **domp)
->>     +{
->>     +       struct dmar_domain *found, *domain = *domp;
->>     +       struct device_domain_info *info;
->>     +       unsigned long flags;
->>     +
->>     +       info = alloc_devinfo_mem();
->>     +       if (!info)
->>     +               return -ENOMEM;
->>     +
->>     +       info->segment = segment;
->>     +       info->bus = bus;
->>     +       info->devfn = devfn;
->>     +       info->dev = dev;
->>     +       info->domain = domain;
->>     +       if (!dev)
->>     +               domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
->>     +
->>     +       spin_lock_irqsave(&device_domain_lock, flags);
->>     +       if (dev)
->>     +               found = find_domain(dev);
->>     +       else
->>     +               found = dmar_search_domain_by_dev_info(segment, bus,
->>     devfn);
->>     +       if (found) {
->>     +               spin_unlock_irqrestore(&device_domain_lock, flags);
->>     +               free_devinfo_mem(info);
->>     +               if (found != domain) {
->>     +                       domain_exit(domain);
->>     +                       *domp = found;
->>     +               }
->>     +       } else {
->>     +               list_add(&info->link, &domain->devices);
->>     +               list_add(&info->global, &device_domain_list);
->>     +               if (dev)
->>     +                       dev->dev.archdata.iommu = info;
->>     +               spin_unlock_irqrestore(&device_domain_lock, flags);
->>     +       }
->>     +
->>     +       return 0;
->>     +}
->>
->>
->> I am a little bit confused about the "alloc before check" sequence in
->> above function. I believe the purpose of allocating the
->> device_domain_info before searching the domain with spin_lock hold is to
->> avoid the memory allocation in the spin_lock? In this case, why can't we
->> use mutex instead of spin_lock? In my understanding, if we use mutex, we
->> can first check if the domain exists or not before we really allocate
->> device_domain_info, right?
+>> Better to use iommu_prepare_identity_map? For si_domain, if
+>> hw_pass_through is used, there's no page table.
 > Hi Kai,
->         Thanks for review!
->         The domain->devices list may be access in interrupt context,
-> so we need to protect it with spin_lock_irqsave(). Otherwise it may
-> case deadlock.
->
+>         Good catch!
+> Seems function iommu_prepare_identity_map() is designed to handle
+> RMRRs. So how about avoiding of registering memory hotplug notifier
+> if hw_pass_through is true?
 
-Thanks. That's what I am thinking. I observed lots of other iommu
-functions also use spin_lock.
+I think that's also fine :)
 
->>
->> Another question is when is info->iommu field initialized? Looks it is
->> not initialized here?
-> It's set in function iommu_support_dev_iotlb() for devices supporting
-> device IOTLB.
-
-Thanks. I see in iommu_support_dev_iotlb, info->iommu won't be set
-unless the device supports iotlb and ATS. Does this mean the
-info->iommu won't be used if the device doesn't support iotlb?
-
-If this is true, looks it's not convenient to find the IOMMU that
-handles the device via info, as it's possible that different IOMMUs
-share the same domain, and we don't know which IOMMU actually handles
-this device if we try to find it via the info->domain.
+Btw, I have a related question to memory hotplug but not related to
+intel IOMMU specifically. For the devices use DMA remapping, suppose
+the device is already using the memory that we are trying to remove,
+is this case, looks we need to change the existing iova <-> pa
+mappings for the pa that is in the memory range about to be removed,
+and reset the mapping to different pa (iova remains the same). Does
+existing code have this covered? Is there a generic IOMMU layer memory
+hotplug notifier to handle memory removal?
 
 -Kai
-
 >
+> Thanks!
+> Gerry
+>
+>>
+>>> +               break;
+>>> +       case MEM_OFFLINE:
+>>> +       case MEM_CANCEL_ONLINE:
+>>> +               /* TODO: enhance RB-tree and IOVA code to support of splitting iova */
+>>> +               iova = find_iova(&si_domain->iovad, mhp->start_pfn);
+>>> +               if (iova) {
+>>> +                       unsigned long start_pfn, last_pfn;
+>>> +                       struct dmar_drhd_unit *drhd;
+>>> +                       struct intel_iommu *iommu;
+>>> +
+>>> +                       start_pfn = mm_to_dma_pfn(iova->pfn_lo);
+>>> +                       last_pfn = mm_to_dma_pfn(iova->pfn_hi + 1) - 1;
+>>> +                       dma_pte_clear_range(si_domain, start_pfn, last_pfn);
+>>> +                       dma_pte_free_pagetable(si_domain, start_pfn, last_pfn);
+>>> +                       rcu_read_lock();
+>>> +                       for_each_active_iommu(iommu, drhd)
+>>> +                               iommu_flush_iotlb_psi(iommu, si_domain->id,
+>>> +                                       start_pfn, last_pfn - start_pfn + 1, 0);
+>>> +                       rcu_read_unlock();
+>>> +                       __free_iova(&si_domain->iovad, iova);
+>>> +               }
+>>
+>> The same as above. Looks we need to consider hw_pass_through for the si_domain.
 >>
 >> -Kai
 >>
->>     +
->>      /* domain is initialized */
->>      static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev,
->>     int gaw)
->>      {
->>     -       struct dmar_domain *domain, *found = NULL;
->>     +       struct dmar_domain *domain;
->>             struct intel_iommu *iommu;
->>             struct dmar_drhd_unit *drhd;
->>     -       struct device_domain_info *info, *tmp;
->>     -       struct pci_dev *dev_tmp;
->>     +       struct pci_dev *bridge;
->>             unsigned long flags;
->>     -       int bus = 0, devfn = 0;
->>     -       int segment;
->>     -       int ret;
->>     +       int segment, bus, devfn;
->>
->>             domain = find_domain(pdev);
->>             if (domain)
->>     @@ -1976,119 +2028,56 @@ static struct dmar_domain
->>     *get_domain_for_dev(struct pci_dev *pdev, int gaw)
->>
->>             segment = pci_domain_nr(pdev->bus);
->>
->>     -       dev_tmp = pci_find_upstream_pcie_bridge(pdev);
->>     -       if (dev_tmp) {
->>     -               if (pci_is_pcie(dev_tmp)) {
->>     -                       bus = dev_tmp->subordinate->number;
->>     +       bridge = pci_find_upstream_pcie_bridge(pdev);
->>     +       if (bridge) {
->>     +               if (pci_is_pcie(bridge)) {
->>     +                       bus = bridge->subordinate->number;
->>                             devfn = 0;
->>                     } else {
->>     -                       bus = dev_tmp->bus->number;
->>     -                       devfn = dev_tmp->devfn;
->>     +                       bus = bridge->bus->number;
->>     +                       devfn = bridge->devfn;
->>                     }
->>                     spin_lock_irqsave(&device_domain_lock, flags);
->>     -               list_for_each_entry(info, &device_domain_list, global) {
->>     -                       if (info->segment == segment &&
->>     -                           info->bus == bus && info->devfn == devfn) {
->>     -                               found = info->domain;
->>     -                               break;
->>     -                       }
->>     -               }
->>     +               domain = dmar_search_domain_by_dev_info(segment,
->>     bus, devfn);
->>                     spin_unlock_irqrestore(&device_domain_lock, flags);
->>                     /* pcie-pci bridge already has a domain, uses it */
->>     -               if (found) {
->>     -                       domain = found;
->>     +               if (domain)
->>                             goto found_domain;
->>     -               }
->>             }
->>
->>     -       domain = alloc_domain();
->>     -       if (!domain)
->>     -               goto error;
->>     -
->>     -       /* Allocate new domain for the device */
->>             drhd = dmar_find_matched_drhd_unit(pdev);
->>             if (!drhd) {
->>                     printk(KERN_ERR "IOMMU: can't find DMAR for device
->>     %s\n",
->>                             pci_name(pdev));
->>     -               free_domain_mem(domain);
->>                     return NULL;
->>             }
->>             iommu = drhd->iommu;
->>
->>     -       ret = iommu_attach_domain(domain, iommu);
->>     -       if (ret) {
->>     +       /* Allocate new domain for the device */
->>     +       domain = alloc_domain();
->>     +       if (!domain)
->>     +               goto error;
->>     +       if (iommu_attach_domain(domain, iommu)) {
->>                     free_domain_mem(domain);
->>                     goto error;
->>             }
->>     -
->>             if (domain_init(domain, gaw)) {
->>                     domain_exit(domain);
->>                     goto error;
->>             }
->>
->>             /* register pcie-to-pci device */
->>     -       if (dev_tmp) {
->>     -               info = alloc_devinfo_mem();
->>     -               if (!info) {
->>     +       if (bridge) {
->>     +               if (dmar_insert_dev_info(segment, bus, devfn, NULL,
->>     &domain)) {
->>                             domain_exit(domain);
->>                             goto error;
->>                     }
->>     -               info->segment = segment;
->>     -               info->bus = bus;
->>     -               info->devfn = devfn;
->>     -               info->dev = NULL;
->>     -               info->domain = domain;
->>     -               /* This domain is shared by devices under p2p bridge */
->>     -               domain->flags |= DOMAIN_FLAG_P2P_MULTIPLE_DEVICES;
->>     -
->>     -               /* pcie-to-pci bridge already has a domain, uses it */
->>     -               found = NULL;
->>     -               spin_lock_irqsave(&device_domain_lock, flags);
->>     -               list_for_each_entry(tmp, &device_domain_list, global) {
->>     -                       if (tmp->segment == segment &&
->>     -                           tmp->bus == bus && tmp->devfn == devfn) {
->>     -                               found = tmp->domain;
->>     -                               break;
->>     -                       }
->>     -               }
->>     -               if (found) {
->>     -                       spin_unlock_irqrestore(&device_domain_lock,
->>     flags);
->>     -                       free_devinfo_mem(info);
->>     -                       domain_exit(domain);
->>     -                       domain = found;
->>     -               } else {
->>     -                       list_add(&info->link, &domain->devices);
->>     -                       list_add(&info->global, &device_domain_list);
->>     -                       spin_unlock_irqrestore(&device_domain_lock,
->>     flags);
->>     -               }
->>             }
->>
->>      found_domain:
->>     -       info = alloc_devinfo_mem();
->>     -       if (!info)
->>     -               goto error;
->>     -       info->segment = segment;
->>     -       info->bus = pdev->bus->number;
->>     -       info->devfn = pdev->devfn;
->>     -       info->dev = pdev;
->>     -       info->domain = domain;
->>     -       spin_lock_irqsave(&device_domain_lock, flags);
->>     -       /* somebody is fast */
->>     -       found = find_domain(pdev);
->>     -       if (found != NULL) {
->>     -               spin_unlock_irqrestore(&device_domain_lock, flags);
->>     -               if (found != domain) {
->>     -                       domain_exit(domain);
->>     -                       domain = found;
->>     -               }
->>     -               free_devinfo_mem(info);
->>     +       if (dmar_insert_dev_info(segment, pdev->bus->number,
->>     pdev->devfn,
->>     +                                pdev, &domain) == 0)
->>                     return domain;
->>     -       }
->>     -       list_add(&info->link, &domain->devices);
->>     -       list_add(&info->global, &device_domain_list);
->>     -       pdev->dev.archdata.iommu = info;
->>     -       spin_unlock_irqrestore(&device_domain_lock, flags);
->>     -       return domain;
->>      error:
->>             /* recheck it here, maybe others set it */
->>             return find_domain(pdev);
->>     --
->>     1.7.10.4
->>
->>     _______________________________________________
->>     iommu mailing list
->>     iommu@lists.linux-foundation.org
->>     <mailto:iommu@lists.linux-foundation.org>
->>     https://lists.linuxfoundation.org/mailman/listinfo/iommu
->>
->>
+>>> +               break;
+>>> +       }
+>>> +
+>>> +       return NOTIFY_OK;
+>>> +}
+>>> +
+>>> +static struct notifier_block intel_iommu_memory_nb = {
+>>> +       .notifier_call = intel_iommu_memory_notifier,
+>>> +       .priority = 0
+>>> +};
+>>> +
+>>>  int __init intel_iommu_init(void)
+>>>  {
+>>>         int ret = -ENODEV;
+>>> @@ -3761,8 +3810,9 @@ int __init intel_iommu_init(void)
+>>>         init_iommu_pm_ops();
+>>>
+>>>         bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
+>>> -
+>>>         bus_register_notifier(&pci_bus_type, &device_nb);
+>>> +       if (si_domain)
+>>> +               register_memory_notifier(&intel_iommu_memory_nb);
+>>>
+>>>         intel_iommu_enabled = 1;
+>>>
+>>> --
+>>> 1.7.10.4
+>>>
+>>> _______________________________________________
+>>> iommu mailing list
+>>> iommu@lists.linux-foundation.org
+>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
