@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321AbaAHUMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:12:00 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:55628 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757277AbaAHUL6 (ORCPT
+	id S1757109AbaAHUQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:16:07 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:58703 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaAHUQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:11:58 -0500
-Date: Wed, 8 Jan 2014 21:09:48 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
-Message-ID: <20140108200946.GE1298@ulmo.nvidia.com>
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com>
- <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
- <52CB14D3.2060904@wwwdotorg.org>
- <20140108133951.GD1592@ulmo.nvidia.com>
- <52CD9DFB.9010007@wwwdotorg.org>
+	Wed, 8 Jan 2014 15:16:03 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH] [SCSI] advansys: change buildtime warning into runtime error
+Date: Wed, 8 Jan 2014 21:15:28 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Matthew Wilcox <matthew@wil.cx>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1352113082.1434.31.camel@x61.thuisdomein> <1359454842.1345.40.camel@x61.thuisdomein> <1389211514.14754.10.camel@x220>
+In-Reply-To: <1389211514.14754.10.camel@x220>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dFWYt1i2NyOo1oI9"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <52CD9DFB.9010007@wwwdotorg.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Message-Id: <201401082115.28472.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---dFWYt1i2NyOo1oI9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Jan 08, 2014 at 11:50:35AM -0700, Stephen Warren wrote:
-> On 01/08/2014 06:39 AM, Thierry Reding wrote:
-> > On Mon, Jan 06, 2014 at 01:40:51PM -0700, Stephen Warren wrote:
-> >> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
-> > [...]
-> >>> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra=
-20.dtsi
-> >>
-> >>> +	efuse@7000F800 {
-> >>
-> >> "fuse" might be a better node name; "efuse" is presumably the name of
-> >> the instance, not the type of object.
-> >=20
-> > There's another occurrence I noticed recently where we haven't followed
-> > that rule. The PMIC node on Venice2 for instance is called as3722.
-> > Perhaps that should also be renamed.
->=20
-> Yes, we should fix that. Care to send a patch?
-
-Ugh... I've just been going through some of the other DTS files and see
-that quite a lot of other places aren't following this rule either. The
-Beaver DTS has things like:
-
-		rt5640: rt5640@1c {
-			...
-		};
-
-which I guess "should have been"
-
-		rt5640: codec@1c { /* or even audio-codec@1c */
-			...
-		};
-
-and
-
-		pmic: tps65911@2d {
-			...
-		};
+On Wednesday 08 January 2014 21:05:14 Paul Bolle wrote:
+> On Tue, 2013-01-29 at 11:20 +0100, Paul Bolle wrote:
+> > On Mon, 2012-11-05 at 11:58 +0100, Paul Bolle wrote:
+> > > Building advansys.o triggers this warning:
+> > >     drivers/scsi/advansys.c:71:2: warning: #warning this driver is
+> > > still not properly converted to the DMA API [-Wcpp]
+> > >
+> > > This warning can be traced back to a patch called "advansys: add
+> > > warning and convert #includes" which was included in v2.6.10. That
+> > > patch also marked the driver as BROKEN.
+> > >
+> > > Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
+> > > driver: limp along on x86") enabled this driver for x86-32. And commit
+> > > 9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
+> > > work on parisc") enabled this driver for all architectures. But the
+> > > commit explanation stated:
+> > >     I haven't removed the #warning yet because virt_to_bus/bus_to_virt
+> > > are only eliminated for narrow boards.  Wide boards need more work.
+> > >
+> > > Five years have passed and, apparently, those wide boards still need
+> > > more work. So let's change the buildtime warning into a runtime error,
+> > > only printed for those wide boards. Perhaps that might push the people
+> > > using those wide boards to convert this driver. And for all others
+> > > there's now one less buildtime warning to ignore.
+> > >
+> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > > ---
+> > > Compile tested only. I don't have any AdvanSys SCSI boards (neither
+> > > narrow nor wide).
+> >
+> > The date of this message suggests I submitted this patch for a warning
+> > seen while building v3.7-rc4. An identical warning can be seen while
+> > building v3.8-rc5. What's the status of my patch? Did anyone find some
+> > time to have a look at it?
 >
-which would be another candidate for pmic@2d.
+> I've been carrying this patch locally for over a year. Is there any
+> chance of someone trying to remove this buildtime warning?
+>
+> I'm inclined to submit a path to Fedora - my local builds use
+> their .config as a base - to just disable this driver. It seems that
+> would increase my chances of finally shutting down this warning.
+>
+>
+> Paul Bolle
 
-Perhaps it isn't worth fixing them all up after all?
+The driver works fine with narrow boards. Please don't break working drivers 
+because of some stupid warning.
 
-Thierry
-
---dFWYt1i2NyOo1oI9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzbCKAAoJEN0jrNd/PrOhK6EP/RYFt4xDK/5hdp4EPLPOJtNf
-Ecw5kpV/DClLaYh72xvzOplIE47gEedCHJyzv0CG6+bf/JEaTJ9uDj2Kq0UIYxqt
-gJTlzHZ3qzOOME80XP0hRSmzznGKqLxgGXGKmvHaKgvM0VSyjXm1lGqz1wzgVDjA
-5b+lAVXJPaXW5pV2uCDacBxXHtpWb3b98tBman6khjI77zuDUPpXcdCzqMKqGxoz
-sMT+nA179raHHy06xNR70OsvzPsZqkkPC1fnsdmonLTHrkYsfjjR8BYqehP30fiX
-fE16Ty6Fqxn3HsWd1msE4nyUzXhxB2rJUVKExKavXpYzjAaocLooUGXnad8ptUeu
-3BkCHqaDmfqB0aN3gFb/odJZXpN9mAnrEjLft6FBKOP3SQkPLoLllKdRfEHTDzJ/
-grES4xodoZE0wHw3uqe+2WQfQ6klRRdl8+WYOnw6CWQc9CICXX11AXl32bYGH+dB
-xE4oRuSZWTBv6nwO7u93o6Mow8XHy7G225z+WB0UeFWfZ7Nc6cvKD7OICI/HhZVD
-OQLq1hRnostBrPzfzlRpG4WokB2yJdDlCyNxuqR/xwQH2qz5+IanFWecJYeGqRRU
-1S2bsMTlmIj0ODArNA8+roImmGvghAOLkdyLPGjuXTpZ7h7G6KS2S9CQt7Fj32z7
-8iZERIaCEwWmyvOR91nn
-=qana
------END PGP SIGNATURE-----
-
---dFWYt1i2NyOo1oI9--
+-- 
+Ondrej Zary
