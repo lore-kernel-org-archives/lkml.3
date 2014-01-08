@@ -1,60 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332AbaAHN6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:58:23 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:57791 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849AbaAHN6T (ORCPT
+	id S932268AbaAHN7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:59:08 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:36354 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932186AbaAHNsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:58:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <52CC6A53.9010508@emulex.com>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com>
-From: Sergey Meirovich <rathamahata@gmail.com>
-Date: Wed, 8 Jan 2014 15:57:57 +0200
-Message-ID: <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-To: James Smart <james.smart@emulex.com>
-Cc: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 8 Jan 2014 08:48:36 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, angus.clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v4 08/37] mtd: devices: Provide header for shared OPCODEs and SFDP commands
+Date: Wed,  8 Jan 2014 13:46:51 +0000
+Message-Id: <1389188840-14306-9-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+JEDEC have helped to standardise a great deal of the commands which
+can be issued to a Serial Flash devices. Many of the Serial Flash
+Discoverable Parameters (SFDP) commands are generic across devices.
+This patch provides a shared point where these commands can be
+defined.
 
-On 7 January 2014 22:57, James Smart <james.smart@emulex.com> wrote:
-> Sergey,
->
-> The Thor chipset is a bit old - a 4Gig adapter.  Most of our performance
-> improvements, including parallelization, have gone into the 8G and 16G
-> adapters. But you still should have seen significantly beyond what you
-> reported.
+Suggested-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/serial_flash_cmds.h | 81 +++++++++++++++++++++++++++++++++
+ drivers/mtd/devices/st_spi_fsm.c        |  2 +
+ 2 files changed, 83 insertions(+)
+ create mode 100644 drivers/mtd/devices/serial_flash_cmds.h
 
-First of all - thanks a lot!
+diff --git a/drivers/mtd/devices/serial_flash_cmds.h b/drivers/mtd/devices/serial_flash_cmds.h
+new file mode 100644
+index 0000000..4f0c2c7
+--- /dev/null
++++ b/drivers/mtd/devices/serial_flash_cmds.h
+@@ -0,0 +1,81 @@
++/*
++ * Generic/SFDP Flash Commands and Device Capabilities
++ *
++ * Copyright (C) 2013 Lee Jones <lee.jones@lianro.org>
++ *
++ * This code is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef _MTD_SERIAL_FLASH_CMDS_H
++#define _MTD_SERIAL_FLASH_CMDS_H
++
++/* Generic Flash Commands/OPCODEs */
++#define FLASH_CMD_WREN		0x06
++#define FLASH_CMD_WRDI		0x04
++#define FLASH_CMD_RDID		0x9f
++#define FLASH_CMD_RDSR		0x05
++#define FLASH_CMD_RDSR2		0x35
++#define FLASH_CMD_WRSR		0x01
++#define FLASH_CMD_SE_4K		0x20
++#define FLASH_CMD_SE_32K	0x52
++#define FLASH_CMD_SE		0xd8
++#define FLASH_CMD_CHIPERASE	0xc7
++#define FLASH_CMD_WRVCR		0x81
++#define FLASH_CMD_RDVCR		0x85
++
++/* JEDEC Standard - Serial Flash Discoverable Parmeters (SFDP) Commands */
++#define FLASH_CMD_READ		0x03	/* READ */
++#define FLASH_CMD_READ_FAST	0x0b	/* FAST READ */
++#define FLASH_CMD_READ_1_1_2	0x3b	/* DUAL OUTPUT READ */
++#define FLASH_CMD_READ_1_2_2	0xbb	/* DUAL I/O READ */
++#define FLASH_CMD_READ_1_1_4	0x6b	/* QUAD OUTPUT READ */
++#define FLASH_CMD_READ_1_4_4	0xeb	/* QUAD I/O READ */
++
++#define FLASH_CMD_WRITE		0x02	/* PAGE PROGRAM */
++#define FLASH_CMD_WRITE_1_1_2	0xa2	/* DUAL INPUT PROGRAM */
++#define FLASH_CMD_WRITE_1_2_2	0xd2	/* DUAL INPUT EXT PROGRAM */
++#define FLASH_CMD_WRITE_1_1_4	0x32	/* QUAD INPUT PROGRAM */
++#define FLASH_CMD_WRITE_1_4_4	0x12	/* QUAD INPUT EXT PROGRAM */
++
++#define FLASH_CMD_EN4B_ADDR	0xb7	/* Enter 4-byte address mode */
++#define FLASH_CMD_EX4B_ADDR	0xe9	/* Exit 4-byte address mode */
++
++/* READ commands with 32-bit addressing */
++#define FLASH_CMD_READ4		0x13
++#define FLASH_CMD_READ4_FAST	0x0c
++#define FLASH_CMD_READ4_1_1_2	0x3c
++#define FLASH_CMD_READ4_1_2_2	0xbc
++#define FLASH_CMD_READ4_1_1_4	0x6c
++#define FLASH_CMD_READ4_1_4_4	0xec
++
++/* Configuration flags */
++#define FLASH_FLAG_SINGLE	0x000000ff
++#define FLASH_FLAG_READ_WRITE	0x00000001
++#define FLASH_FLAG_READ_FAST	0x00000002
++#define FLASH_FLAG_SE_4K	0x00000004
++#define FLASH_FLAG_SE_32K	0x00000008
++#define FLASH_FLAG_CE		0x00000010
++#define FLASH_FLAG_32BIT_ADDR	0x00000020
++#define FLASH_FLAG_RESET	0x00000040
++#define FLASH_FLAG_DYB_LOCKING	0x00000080
++
++#define FLASH_FLAG_DUAL		0x0000ff00
++#define FLASH_FLAG_READ_1_1_2	0x00000100
++#define FLASH_FLAG_READ_1_2_2	0x00000200
++#define FLASH_FLAG_READ_2_2_2	0x00000400
++#define FLASH_FLAG_WRITE_1_1_2	0x00001000
++#define FLASH_FLAG_WRITE_1_2_2	0x00002000
++#define FLASH_FLAG_WRITE_2_2_2	0x00004000
++
++#define FLASH_FLAG_QUAD		0x00ff0000
++#define FLASH_FLAG_READ_1_1_4	0x00010000
++#define FLASH_FLAG_READ_1_4_4	0x00020000
++#define FLASH_FLAG_READ_4_4_4	0x00040000
++#define FLASH_FLAG_WRITE_1_1_4	0x00100000
++#define FLASH_FLAG_WRITE_1_4_4	0x00200000
++#define FLASH_FLAG_WRITE_4_4_4	0x00400000
++
++#endif /* _MTD_SERIAL_FLASH_CMDS_H */
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 8a10f16..fe4f3c1 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -21,6 +21,8 @@
+ #include <linux/io.h>
+ #include <linux/of.h>
+ 
++#include "serial_flash_cmds.h"
++
+ /*
+  * FSM SPI Controller Registers
+  */
+-- 
+1.8.3.2
 
-I took Thor because we have exactly the same Thors in some of our
-Solaris servers. I've also tried 6 different qlogics (mostly 8G) and
-fnic (10G) as well. Surprisingly enough Thor was the fastest one for
-seqwr 4k. Though in most of the cases machines were from our different
-DCs and hence each one connected to yet another storage.
-
->
-> We did a sanity check some hardware we already had set up with a Thor
-> adapter.  We saw 23555 iop/s and 92.1 MB/s without needing to do much, well
-> beyond what you've reported, and still not up to what we know the card can
-> do.  There are some inefficiencies from the linux kernel and some locking
-> deltas between our solaris and linux drivers - but not enough to account for
-> what you are seeing.
->
-> I expect the Direct IO filesystem behavior is the root issue.
-
-The strangest thing to me that this is the problem with sequential
-write. For example the fnic one machine is zoned to EMC XtremIO and
-had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
-same fnic machine perfrormed rather impressive for random 4k
-451.11Mb/sec 115485.02 Requests/sec
