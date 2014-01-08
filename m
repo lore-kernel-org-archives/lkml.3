@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360AbaAHN1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:27:41 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32083 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755717AbaAHN1j (ORCPT
+	id S932085AbaAHN3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:29:01 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37280 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828AbaAHN3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:27:39 -0500
-Date: Wed, 8 Jan 2014 13:27:39 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140108132739.GK2936@e103034-lin>
-References: <52B87149.4010801@arm.com>
- <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
- <20140106163123.GN31570@twins.programming.kicks-ass.net>
- <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
- <20140107132220.GZ31570@twins.programming.kicks-ass.net>
- <20140107141059.GY3694@twins.programming.kicks-ass.net>
- <20140107154154.GH2936@e103034-lin>
- <20140107204951.GD2480@laptop.programming.kicks-ass.net>
- <20140108123534.GI2936@e103034-lin>
- <20140108124534.GD31570@twins.programming.kicks-ass.net>
+	Wed, 8 Jan 2014 08:29:00 -0500
+Date: Wed, 8 Jan 2014 05:28:52 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] rcu_dereference_check_fdtable fix/cleanups
+Message-ID: <20140108132852.GF10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140107181258.GA29288@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140108124534.GD31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140107181258.GA29288@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010813-9332-0000-0000-000002B2585C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 12:45:34PM +0000, Peter Zijlstra wrote:
-> On Wed, Jan 08, 2014 at 12:35:34PM +0000, Morten Rasmussen wrote:
-> > > Currently we detect overload by sg.nr_running >= sg.capacity, which can
-> > > be very misleading because while a cpu might have a task running 'now'
-> > > it might be 99% idle.
-> > > 
-> > > At which point I argued we should change the capacity thing anyhow. Ever
-> > > since the runnable_avg patch set I've been arguing to change that into
-> > > an actual utilization test.
-> > > 
-> > > So I think that if we measure overload by something like >95% utilization
-> > > on the entire group the load scaling again makes perfect sense.
-> > 
-> > I agree that it make more sense to change the overload test to be based
-> > on some tracked load. How about the non-overloaded case? Load balancing
-> > would have to be based on unweighted task loads in that case?
+On Tue, Jan 07, 2014 at 07:12:58PM +0100, Oleg Nesterov wrote:
+> Hello.
 > 
-> Yeah, until we're overloaded our goal is to minimize idle time.
+> I tried to audit the users of thread_group_empty() (we need
+> to change it) and found rcu_my_thread_group_empty() which
+> looks wrong.
+> 
+> The patches look simple, but I am not sure it is fine to use
+> rcu_lock_acquire() directly. Perhaps it makes sense to add a
+> new helper? Note that we have more users which take rcu lock
+> only to shut up lockdep. Please review.
+> 
+> And I am a bit confused. Perhaps rcu_lock_acquire() should
+> depend on CONFIG_PROVE_RCU, not on CONFIG_DEBUG_LOCK_ALLOC?
+> We only need rcu_lock_map/etc for rcu_lockdep_assert().
 
-I would say, make the most of the available cpu cycles. Minimizing idle
-time is not always the right thing to do when considering power
-awareness.
+I am not all that excited about invoking rcu_lock_acquire() outside
+of RCU...
 
-If we know the actual load of the tasks, we may be able to consolidate
-them on fewer cpus and save power by idling cpus. In that case the idle
-time (total) is unchanged (unless the P-state is changed). Somewhat
-similar to the video use-case running on 1, 2, and 4 cpu that I reposted
-yesterday.
+Another approach would be to add an argument to files_fdtable()
+that is zero normally and one for "we know we don't need RCU
+protection."  Then rcu_dereference_check() could be something
+like the following:
+
+#define files_fdtable(files, c) \
+		(rcu_dereference_check_fdtable((files), (files)->fdt) || c)
+
+Would that work?
+
+							Thanx, Paul
+
+> Oleg.
+> 
+>  fs/file.c                |   24 +++++++++++-------------
+>  include/linux/fdtable.h  |   19 +++++++++++++------
+>  include/linux/rcupdate.h |    2 --
+>  kernel/rcu/update.c      |   11 -----------
+>  4 files changed, 24 insertions(+), 32 deletions(-)
+> 
+
