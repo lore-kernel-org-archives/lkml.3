@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbaAGXzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 18:55:32 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15724 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754139AbaAGXzY (ORCPT
+	id S1754520AbaAGX5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 18:57:42 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63153 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754667AbaAGX5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 18:55:24 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18iVqgcq7SDxVO5tzC+VKsc
-Date: Tue, 7 Jan 2014 15:55:15 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, linux@arm.linux.org.uk, rnayak@ti.com,
-        marc.zyngier@arm.com, grant.likely@linaro.org, mark.rutland@arm.com,
-        robherring2@gmail.com, tglx@linutronix.de, galak@codeaurora.org,
-        rob.herring@calxeda.com, nm@ti.com, bcousson@baylibre.com
-Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
-Message-ID: <20140107235514.GG5074@atomide.com>
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com>
- <52B168A5.4010202@ti.com>
- <52BBB614.5010707@ti.com>
- <52BC6B16.80507@ti.com>
- <52BD856E.7010609@ti.com>
- <52C11284.2030500@ti.com>
- <20140107230733.GD5074@atomide.com>
+	Tue, 7 Jan 2014 18:57:34 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, mjg59@srcf.ucam.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v6][RESEND] platform: x86: New BayTrail IOSF-SB MBI driver
+Date: Wed, 08 Jan 2014 01:11:22 +0100
+Message-ID: <3119193.jBSlNlK309@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140107214300.GA30423@linux.intel.com>
+References: <1388427149-25456-1-git-send-email-david.e.box@linux.intel.com> <4364833.i22acYTaeM@vostro.rjw.lan> <20140107214300.GA30423@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140107230733.GD5074@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [140107 15:10]:
-> * Sricharan R <r.sricharan@ti.com> [131229 22:30]:
-> > On Friday 27 December 2013 07:19 PM, Sricharan R wrote:
-> > > On Thursday 26 December 2013 11:14 PM, Santosh Shilimkar wrote:
-> > >> On Wednesday 25 December 2013 11:52 PM, Sricharan R wrote:
-> > >>> On Wednesday 18 December 2013 02:49 PM, Sricharan R wrote:
-> > >>>> I have addressed all the comments on this series, can this be merged now ?
-> > >>>>
-> > >>>   Ping..
-> > >>>
-> > >> Thomas has already given his reviewed-by tag so the patches can be
-> > >> taken via arm-soc tree considering OMAP and GIC changes. Can you
-> > >> create a branch with all these patches applied and send it
-> > >> to Tony ?
-> > >>
-> > > Ok, i will send out a branch for this.
+On Tuesday, January 07, 2014 01:43:00 PM David E. Box wrote:
+> On Tue, Jan 07, 2014 at 09:46:57PM +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, January 07, 2014 10:48:05 AM David E. Box wrote:
+> > > On Tue, Jan 07, 2014 at 10:15:03AM -0800, Randy Dunlap wrote:
+> > > > On 01/07/14 10:03, David E. Box wrote:
+> > > > > From: "David E. Box" <david.e.box@linux.intel.com>
+> > > > > 
+> > > > > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> > > > > index b51a746..6e199a5 100644
+> > > > > --- a/drivers/platform/x86/Kconfig
+> > > > > +++ b/drivers/platform/x86/Kconfig
+> > > > > @@ -819,4 +819,14 @@ config PVPANIC
+> > > > >  	  a paravirtualized device provided by QEMU; it lets a virtual machine
+> > > > >  	  (guest) communicate panic events to the host.
+> > > > >  
+> > > > > +config INTEL_BAYTRAIL_MBI
+> > > > > +	tristate
+> > > > 
+> > > > Is this kconfig option displayed when you run menuconfig/nconfig/xconfig/gconfig etc.?
+> > > > Doesn't it need a prompt string?
+> > > > How did you enable it and test it?
+> > > > 
 > > > 
-> >  
-> >  I have pushed the below branch
+> > > It is not displayed on purpose. The driver isn't exposed to user space.
+> > > It was tested by adding the option to .config, both as module and built-in.
+> > > 
+> > > > > +	depends on PCI
+> > > > > +	---help---
+> > > > > +	  Needed on Baytrail platforms for access to the IOSF Sideband Mailbox
+> > > > > +	  Interface. This is a requirement for systems that need to configure
+> > > > > +	  the PUNIT for power management features such as RAPL. Register
+> > > > > +	  addresses and r/w opcodes are defined in
+> > > > 
+> > > > Think of users reading this.  At least change "r/w" to read/write.
+> > > > What is IOSF?  does it matter here?
+> > > > PUNIT?  RAPL?
+> > > > 
+> > > 
+> > > If you don't know what the IOSF Sideband is you probably shouldn't be enabling
+> > > this feature.
 > > 
-> > git://github.com/Sricharanti/sricharan.git
-> > branch: crossbar
-> > 
-> > This is on top of Tony's linux-omap master branch
+> > What about generic x86 distro kernels?  They won't know in advance whether or
+> > not they will need this feature.
 > 
-> The linux-omap master branch cannot be used as a base as it
-> contains tons of commit history not in mainline. So I'll
-> manually applied these patches into omap-for-v3.14/crosbar
-> branch.
+> Ok, I spoke with other developers and I apparently misunderstood the context
+> here. Distro's enable these features and this is too detailed for them to know
+> what to do with it. How about simply "Required to enable platform specific power
+> managemnet features on Baytrail"?
+> 
+> KISS is easier said than done.
 
-Oops, I noticed some errors on these:
+Well, I personally think that this code should go into arch/x86/ as library code
+needed to access IOSF Sideband on some platforms.  I probably would make modules
+depending on it select it, so for example if the RAPL driver is going to be
+built, your driver should be build either and rather unconditionally in that
+case.
 
-WARNING: drivers/built-in.o(.text+0xcd0): Section mismatch in reference from the function irqcrossbar_init() to the function .init.text:crossbar_of_init()
-The function irqcrossbar_init() references
-the function __init crossbar_of_init().
-This is often because irqcrossbar_init lacks a __init 
-annotation or the annotation of crossbar_of_init is wrong.
+So the rule should be "if something *may* need it, build it" in my opinion.
 
-WARNING: drivers/built-in.o(.text+0xcdc): Section mismatch in reference from the function irqcrossbar_init() to the (unknown reference) .init.rodata:(unknown)
-The function irqcrossbar_init() references
-the (unknown reference) __initconst (unknown).
-This is often because irqcrossbar_init lacks a __initconst 
-annotation or the annotation of (unknown) is wrong.
+Thanks!
 
-So I've dropped them for now. Care to fix up those errors and
-base your patches against let's say v3.13-rc5?
-
-Regards,
-
-Tony
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
