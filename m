@@ -1,577 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292AbaAHT2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:28:17 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54430 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752264AbaAHT1a (ORCPT
+	id S1756485AbaAHTaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:30:46 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:36746 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaAHTam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:27:30 -0500
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: x86@kernel.org, linuxppc-dev@lists.ozlabs.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: sudeep.holla@arm.com, Ashok Raj <ashok.raj@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <robh@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH RFC 2/3] ARM: kernel: add support for cpu cache information
-Date: Wed,  8 Jan 2014 19:26:07 +0000
-Message-Id: <1389209168-17189-3-git-send-email-sudeep.holla@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com>
-References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com>
+	Wed, 8 Jan 2014 14:30:42 -0500
+Date: Wed, 8 Jan 2014 20:28:32 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] driver-core: platform: Resolve DT interrupt references
+ late
+Message-ID: <20140108192830.GA1298@ulmo.nvidia.com>
+References: <20140108011957.GK5074@atomide.com>
+ <1389185477-507-1-git-send-email-treding@nvidia.com>
+ <20140108164040.GA31686@atomide.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <20140108164040.GA31686@atomide.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudeep Holla <sudeep.holla@arm.com>
 
-This implementation maintains the hierarchy of cache objects which reflects
-the system's cache topology. Cache objects are instantiated as needed as
-CPUs come online. The cache objects are replicated per-cpu even if they are
-shared(similar to x86 implementation, for simpler design).
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It also implements the shared_cpu_map attribute, which is essential for
-enabling both kernel and user-space to discover the system's overall cache
-topology. Since the architecture doesn't provide any way of discovering this
-information, we need to rely on device tree for this.
+On Wed, Jan 08, 2014 at 08:40:41AM -0800, Tony Lindgren wrote:
+> * Thierry Reding <thierry.reding@gmail.com> [140108 04:55]:
+> > When devices are probed from the device tree, any interrupts that they
+> > reference are resolved at device creation time. This causes problems if
+> > the interrupt provider hasn't been registered yet at that time, which
+> > results in the interrupt being set to 0.
+> >=20
+> > This is especially bad for platform devices because they are created at
+> > a very early stage during boot when the majority of interrupt providers
+> > haven't had a chance to be probed yet. One of the platform where this
+> > causes major issues is OMAP.
+> >=20
+> > Note that this patch is the easy way out to fix a large part of the
+> > problems for now. A more proper solution for the long term would be to
+> > transition drivers to an API that always resolves resources of any kind
+> > (not only interrupts) at probe time.
+> >=20
+> > For some background and discussion on possible solutions, see:
+> >=20
+> > 	https://lkml.org/lkml/2013/11/22/520
+> >=20
+> > Acked-by: Rob Herring <robherring2@gmail.com>
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> > Note that this is somewhat urgent and should if at all possible go into
+> > v3.13 before the release.
+> >=20
+> >  drivers/base/platform.c | 8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> >=20
+> > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > index 3a94b799f166..c894d1af3a5e 100644
+> > --- a/drivers/base/platform.c
+> > +++ b/drivers/base/platform.c
+> > @@ -13,6 +13,7 @@
+> >  #include <linux/string.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/of_device.h>
+> > +#include <linux/of_irq.h>
+> >  #include <linux/module.h>
+> >  #include <linux/init.h>
+> >  #include <linux/dma-mapping.h>
+> > @@ -87,7 +88,12 @@ int platform_get_irq(struct platform_device *dev, un=
+signed int num)
+> >  		return -ENXIO;
+> >  	return dev->archdata.irqs[num];
+> >  #else
+> > -	struct resource *r =3D platform_get_resource(dev, IORESOURCE_IRQ, num=
+);
+> > +	struct resource *r;
+> > +
+> > +	if (IS_ENABLED(CONFIG_OF) && dev->dev.of_node)
+> > +		return irq_of_parse_and_map(dev->dev.of_node, num);
+> > +
+> > +	r =3D platform_get_resource(dev, IORESOURCE_IRQ, num);
+> > =20
+> >  	return r ? r->start : -ENXIO;
+> >  #endif
+>=20
+> Hmm actually testing this patch, it does not fix fix the $Subject bug :(
+>=20
+> irq: no irq domain found for /ocp/pinmux@48002030 !
+> [    0.301361] ------------[ cut here ]------------
+> [    0.301391] WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_dev=
+ice_alloc+0x144/0x184()
+> [    0.301422] Modules linked in:
+> [    0.301452] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc7-00002=
+-g4d998a6 #17
+> [    0.301513] [<c0015c04>] (unwind_backtrace+0x0/0xf4) from [<c00127b0>]=
+ (show_stack+0x14/0x1c)
+> [    0.301544] [<c00127b0>] (show_stack+0x14/0x1c) from [<c05685a4>] (dum=
+p_stack+0x6c/0xa0)
+> [    0.301574] [<c05685a4>] (dump_stack+0x6c/0xa0) from [<c00425b4>] (war=
+n_slowpath_common+0x64/0x84)
+> [    0.301605] [<c00425b4>] (warn_slowpath_common+0x64/0x84) from [<c0042=
+5f0>] (warn_slowpath_null+0x1c/0x24)
+> [    0.301635] [<c00425f0>] (warn_slowpath_null+0x1c/0x24) from [<c048521=
+0>] (of_device_alloc+0x144/0x184)
+> [    0.301635] [<c0485210>] (of_device_alloc+0x144/0x184) from [<c0485294=
+>] (of_platform_device_create_pdata+0x44/0x9c)
+> [    0.301666] [<c0485294>] (of_platform_device_create_pdata+0x44/0x9c) f=
+rom [<c04853bc>] (of_platform_bus_create+0xd0/0x170)
+> [    0.301696] [<c04853bc>] (of_platform_bus_create+0xd0/0x170) from [<c0=
+485418>] (of_platform_bus_create+0x12c/0x170)
+> [    0.301727] [<c0485418>] (of_platform_bus_create+0x12c/0x170) from [<c=
+04854bc>] (of_platform_populate+0x60/0x98)
+> [    0.301757] [<c04854bc>] (of_platform_populate+0x60/0x98) from [<c07ca=
+53c>] (pdata_quirks_init+0x28/0x78)
+> [    0.301788] [<c07ca53c>] (pdata_quirks_init+0x28/0x78) from [<c07bab20=
+>] (customize_machine+0x20/0x48)
+> [    0.301818] [<c07bab20>] (customize_machine+0x20/0x48) from [<c000882c=
+>] (do_one_initcall+0x2c/0x150)
+> [    0.301849] [<c000882c>] (do_one_initcall+0x2c/0x150) from [<c07b75d8>=
+] (do_basic_setup+0x94/0xd4)
+> [    0.301879] [<c07b75d8>] (do_basic_setup+0x94/0xd4) from [<c07b7694>] =
+(kernel_init_freeable+0x7c/0x120)
+> [    0.301910] [<c07b7694>] (kernel_init_freeable+0x7c/0x120) from [<c056=
+67ec>] (kernel_init+0x8/0x120)
+> [    0.301940] [<c05667ec>] (kernel_init+0x8/0x120) from [<c000e908>] (re=
+t_from_fork+0x14/0x2c)
+> [    0.302124] ---[ end trace 2b87f5de2f86f809 ]---
+> ...
+>=20
+> There's nothing wrong with the interrupt related code paths, we're just
+> trying to call the functions at a wrong time when thing are not yet
+> initialized.
 
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
----
- arch/arm/include/asm/cacheinfo.h |   7 +
- arch/arm/kernel/Makefile         |   1 +
- arch/arm/kernel/cacheinfo.c      | 419 +++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c          |   2 +
- arch/arm/mm/Kconfig              |  13 ++
- 5 files changed, 442 insertions(+)
- create mode 100644 arch/arm/include/asm/cacheinfo.h
- create mode 100644 arch/arm/kernel/cacheinfo.c
+The patch won't get rid of that warning, but it should at least restore
+things to a working state at runtime. At least for well-behaved drivers
+that use platform_get_irq() rather than those that try to access the
+resources directly.
 
-diff --git a/arch/arm/include/asm/cacheinfo.h b/arch/arm/include/asm/cacheinfo.h
-new file mode 100644
-index 0000000..4baf948
---- /dev/null
-+++ b/arch/arm/include/asm/cacheinfo.h
-@@ -0,0 +1,7 @@
-+#ifndef _ASM_ARM_CACHEINFO_H
-+#define _ASM_ARM_CACHEINFO_H
-+
-+int detect_cache_attributes(unsigned int cpu);
-+void free_cache_attributes(unsigned int cpu);
-+
-+#endif /* _ASM_ARM_CACHEINFO_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index a30fc9b..f86a4ff 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -29,6 +29,7 @@ obj-y		+= entry-v7m.o v7m.o
- else
- obj-y		+= entry-armv.o
- endif
-+obj-$(CONFIG_CPU_HAS_CACHE) += cacheinfo.o
- 
- obj-$(CONFIG_OC_ETM)		+= etm.o
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
-diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
-new file mode 100644
-index 0000000..5f8a89e
---- /dev/null
-+++ b/arch/arm/kernel/cacheinfo.c
-@@ -0,0 +1,419 @@
-+/*
-+ *  ARM cacheinfo support
-+ *
-+ *  Copyright (C) 2013 ARM Ltd.
-+ *  All Rights Reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/compiler.h>
-+#include <linux/cpu.h>
-+#include <linux/device.h>
-+#include <linux/init.h>
-+#include <linux/of.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/smp.h>
-+
-+#include <asm/processor.h>
-+
-+enum cache_type {
-+	CACHE_TYPE_NOCACHE = 0,
-+	CACHE_TYPE_INST = 1,
-+	CACHE_TYPE_DATA = 2,
-+	CACHE_TYPE_SEPARATE = 3,
-+	CACHE_TYPE_UNIFIED = 4,
-+};
-+
-+struct cache_info {
-+	enum cache_type type; /* data, inst or unified */
-+	unsigned int level;
-+	unsigned int coherency_line_size; /* cache line size  */
-+	unsigned int number_of_sets; /* no. of sets per way */
-+	unsigned int ways_of_associativity; /* no. of ways */
-+	unsigned int size; /* total cache size */
-+};
-+
-+struct cpu_cacheinfo {
-+	struct cache_info info;
-+	struct device_node *of_node;	/* cpu if no explicit cache node */
-+	cpumask_t shared_cpu_map;
-+};
-+
-+static DEFINE_PER_CPU(unsigned int, num_cache_leaves);
-+static DEFINE_PER_CPU(unsigned int, num_cache_levels);
-+#define cache_leaves(cpu)      per_cpu(num_cache_leaves, cpu)
-+#define cache_levels(cpu)      per_cpu(num_cache_levels, cpu)
-+
-+#if __LINUX_ARM_ARCH__ < 7 /* pre ARMv7 */
-+
-+#define MAX_CACHE_LEVEL		1	/* Only 1 level supported */
-+#define CTR_CTYPE_SHIFT		24
-+#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
-+
-+static inline unsigned int get_ctr(void)
-+{
-+	unsigned int ctr;
-+	asm volatile ("mrc p15, 0, %0, c0, c0, 1" : "=r" (ctr));
-+	return ctr;
-+}
-+
-+static enum cache_type get_cache_type(int level)
-+{
-+	if (level > MAX_CACHE_LEVEL)
-+		return CACHE_TYPE_NOCACHE;
-+	return get_ctr() & CTR_CTYPE_MASK ?
-+		CACHE_TYPE_SEPARATE : CACHE_TYPE_UNIFIED;
-+}
-+
-+/*
-+ *  +---------------------------------+
-+ *  | 9  8  7  6 | 5  4  3 | 2 | 1  0 |
-+ *  +---------------------------------+
-+ *  |    size    |  assoc  | m |  len |
-+ *  +---------------------------------+
-+ * linelen        = 1 << (len + 3)
-+ * multiplier     = 2 + m
-+ * nsets          = 1 << (size + 6 - assoc - len)
-+ * associativity  = multiplier << (assoc - 1)
-+ * cache_size     = multiplier << (size + 8)
-+ */
-+#define CTR_LINESIZE_MASK	0x3
-+#define CTR_MULTIPLIER_SHIFT	2
-+#define CTR_MULTIPLIER_MASK	0x1
-+#define CTR_ASSOCIAT_SHIFT	3
-+#define CTR_ASSOCIAT_MASK	0x7
-+#define CTR_SIZE_SHIFT		6
-+#define CTR_SIZE_MASK		0xF
-+#define CTR_DCACHE_SHIFT	12
-+
-+static void __cpu_cache_info_init(enum cache_type type,
-+					struct cache_info *this_leaf)
-+{
-+	unsigned int size, multiplier, assoc, len, tmp = get_ctr();
-+
-+	if (type == CACHE_TYPE_DATA)
-+		tmp >>= CTR_DCACHE_SHIFT;
-+
-+	len = tmp & CTR_LINESIZE_MASK;
-+	size = (tmp >> CTR_SIZE_SHIFT) & CTR_SIZE_MASK;
-+	assoc = (tmp >> CTR_ASSOCIAT_SHIFT) & CTR_ASSOCIAT_MASK;
-+	multiplier = ((tmp >> CTR_MULTIPLIER_SHIFT) & CTR_MULTIPLIER_MASK) + 2;
-+
-+	this_leaf->type = type;
-+	this_leaf->coherency_line_size = 1 << (len + 3);
-+	this_leaf->number_of_sets = 1 << (size + 6 - assoc - len);
-+	this_leaf->ways_of_associativity = multiplier << (assoc - 1);
-+	this_leaf->size = multiplier << (size + 8);
-+}
-+
-+#else /* ARMv7 */
-+
-+#define MAX_CACHE_LEVEL			7	/* Max 7 level supported */
-+/* Ctypen, bits[3(n - 1) + 2 : 3(n - 1)], for n = 1 to 7 */
-+#define CLIDR_CTYPE_SHIFT(level)	(3 * (level - 1))
-+#define CLIDR_CTYPE_MASK(level)		(7 << CLIDR_CTYPE_SHIFT(level))
-+#define CLIDR_CTYPE(clidr, level)	\
-+	(((clidr) & CLIDR_CTYPE_MASK(level)) >> CLIDR_CTYPE_SHIFT(level))
-+
-+static inline enum cache_type get_cache_type(int level)
-+{
-+	unsigned int clidr;
-+	if (level > MAX_CACHE_LEVEL)
-+		return CACHE_TYPE_NOCACHE;
-+	asm volatile ("mrc p15, 1, %0, c0, c0, 1" : "=r" (clidr));
-+	return CLIDR_CTYPE(clidr, level);
-+}
-+
-+/*
-+ * NumSets, bits[27:13] - (Number of sets in cache) - 1
-+ * Associativity, bits[12:3] - (Associativity of cache) - 1
-+ * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
-+ */
-+#define CCSIDR_LINESIZE_MASK	0x7
-+#define CCSIDR_ASSOCIAT_SHIFT	3
-+#define CCSIDR_ASSOCIAT_MASK	0x3FF
-+#define CCSIDR_NUMSETS_SHIFT	13
-+#define CCSIDR_NUMSETS_MASK	0x7FF
-+
-+/*
-+ * Which cache CCSIDR represents depends on CSSELR value
-+ * Make sure no one else changes CSSELR during this
-+ * smp_call_function_single prevents preemption for us
-+ */
-+static inline u32 get_ccsidr(u32 csselr)
-+{
-+	u32 ccsidr;
-+
-+	/* Put value into CSSELR */
-+	asm volatile ("mcr p15, 2, %0, c0, c0, 0" : : "r" (csselr));
-+	isb();
-+	/* Read result out of CCSIDR */
-+	asm volatile ("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
-+
-+	return ccsidr;
-+}
-+
-+static void __cpu_cache_info_init(enum cache_type type,
-+					struct cache_info *this_leaf)
-+{
-+	bool is_instr_cache = type & CACHE_TYPE_INST;
-+	u32 tmp = get_ccsidr((this_leaf->level - 1) << 1 | is_instr_cache);
-+
-+	this_leaf->type = type;
-+	this_leaf->coherency_line_size =
-+	    (1 << ((tmp & CCSIDR_LINESIZE_MASK) + 2)) * 4;
-+	this_leaf->number_of_sets =
-+	    ((tmp >> CCSIDR_NUMSETS_SHIFT) & CCSIDR_NUMSETS_MASK) + 1;
-+	this_leaf->ways_of_associativity =
-+	    ((tmp >> CCSIDR_ASSOCIAT_SHIFT) & CCSIDR_ASSOCIAT_MASK) + 1;
-+	this_leaf->size = this_leaf->number_of_sets *
-+	    this_leaf->coherency_line_size * this_leaf->ways_of_associativity;
-+}
-+
-+#endif
-+
-+/* pointer to cpu_cacheinfo array (for each cache leaf) */
-+static DEFINE_PER_CPU(struct cpu_cacheinfo *, ci_cpu_cache_info);
-+#define per_cpu_cacheinfo(cpu)	 (per_cpu(ci_cpu_cache_info, cpu))
-+#define CPU_CACHEINFO_IDX(cpu, idx)    (&(per_cpu_cacheinfo(cpu)[idx]))
-+
-+#ifdef CONFIG_OF
-+static int cache_setup_of_node(unsigned int cpu)
-+{
-+	struct device_node *np;
-+	struct cpu_cacheinfo *this_leaf;
-+	struct device *cpu_dev = get_cpu_device(cpu);
-+	int index = 0;
-+
-+	if (!cpu_dev) {
-+		pr_err("No cpu device for CPU %d\n", cpu);
-+		return -ENODEV;
-+	}
-+	np = cpu_dev->of_node;
-+	if (!np) {
-+		pr_err("Failed to find cpu%d device node\n", cpu);
-+		return -ENOENT;
-+	}
-+
-+	while (np && index < cache_leaves(cpu)) {
-+		this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+		if (this_leaf->info.level != 1)
-+			np = of_find_next_cache_node(np);
-+		else
-+			np = of_node_get(np);/* cpu node itself */
-+		this_leaf->of_node = np;
-+		index++;
-+	}
-+	return 0;
-+}
-+static inline bool cache_leaves_are_shared(struct cpu_cacheinfo *this_leaf,
-+					struct cpu_cacheinfo *sib_leaf)
-+{
-+	return sib_leaf->of_node == this_leaf->of_node;
-+}
-+#else
-+static inline int cache_setup_of_node(unsigned int cpu) { return 0; }
-+static inline bool cache_leaves_are_shared(struct cpu_cacheinfo *this_leaf,
-+					struct cpu_cacheinfo *sib_leaf)
-+{
-+	/*
-+	 * For non-DT systems, assume unique level 1 cache,
-+	 * system-wide shared caches for all other levels
-+	 */
-+	return !(this_leaf->info.level == 1);
-+}
-+#endif
-+
-+static int cache_add_cpu_shared_map(unsigned int cpu)
-+{
-+	struct cpu_cacheinfo *this_leaf, *sib_leaf;
-+	int ret, index;
-+
-+	ret = cache_setup_of_node(cpu);
-+	if (ret)
-+		return ret;
-+
-+	for (index = 0; index < cache_leaves(cpu); index++) {
-+		int i;
-+		this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+		cpumask_set_cpu(cpu, &this_leaf->shared_cpu_map);
-+
-+		for_each_online_cpu(i) {
-+			if (i == cpu || !per_cpu_cacheinfo(i))
-+				continue;/* skip if itself or no cacheinfo */
-+			sib_leaf = CPU_CACHEINFO_IDX(i, index);
-+			if (cache_leaves_are_shared(this_leaf, sib_leaf)) {
-+				cpumask_set_cpu(cpu, &sib_leaf->shared_cpu_map);
-+				cpumask_set_cpu(i, &this_leaf->shared_cpu_map);
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static void cache_remove_cpu_shared_map(unsigned int cpu)
-+{
-+	struct cpu_cacheinfo *this_leaf, *sib_leaf;
-+	int sibling, index;
-+
-+	for (index = 0; index < cache_leaves(cpu); index++) {
-+		this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+		for_each_cpu(sibling, &this_leaf->shared_cpu_map) {
-+			if (sibling == cpu) /* skip itself */
-+				continue;
-+			sib_leaf = CPU_CACHEINFO_IDX(sibling, index);
-+			cpumask_clear_cpu(cpu, &sib_leaf->shared_cpu_map);
-+			cpumask_clear_cpu(sibling, &this_leaf->shared_cpu_map);
-+		}
-+		of_node_put(this_leaf->of_node);
-+	}
-+}
-+
-+static void init_cache_level(unsigned int cpu)
-+{
-+	unsigned int ctype, level = 1, leaves = 0;
-+
-+	do {
-+		ctype = get_cache_type(level);
-+		if (ctype == CACHE_TYPE_NOCACHE)
-+			break;
-+		/* Separate instruction and data caches */
-+		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
-+	} while (++level <= MAX_CACHE_LEVEL);
-+	cache_levels(cpu) = level - 1;
-+	cache_leaves(cpu) = leaves;
-+}
-+
-+static void cpu_cache_info_init(unsigned int cpu, enum cache_type type,
-+				unsigned int level, unsigned int index)
-+{
-+	struct cpu_cacheinfo *this_leaf;
-+
-+	this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	this_leaf->info.level = level;
-+	__cpu_cache_info_init(type, &this_leaf->info);
-+}
-+
-+static void init_cache_leaves(unsigned int cpu)
-+{
-+	int level, idx;
-+	enum cache_type type;
-+
-+	for (idx = 0, level = 1; level <= cache_levels(cpu) &&
-+					idx < cache_leaves(cpu);) {
-+		type = get_cache_type(level);
-+
-+		if (type == CACHE_TYPE_SEPARATE) {
-+			cpu_cache_info_init(cpu, CACHE_TYPE_DATA, level, idx++);
-+			cpu_cache_info_init(cpu, CACHE_TYPE_INST,
-+					    level++, idx++);
-+		} else {
-+			cpu_cache_info_init(cpu, type, level++, idx++);
-+		}
-+	}
-+}
-+
-+static int __detect_cache_attributes(unsigned int cpu)
-+{
-+	int ret;
-+
-+	init_cache_level(cpu);
-+	if (cache_leaves(cpu) == 0)
-+		return -ENOENT;
-+
-+	per_cpu_cacheinfo(cpu) = kzalloc(sizeof(struct cpu_cacheinfo) *
-+					cache_leaves(cpu), GFP_KERNEL);
-+	if (per_cpu_cacheinfo(cpu) == NULL)
-+		return -ENOMEM;
-+
-+	init_cache_leaves(cpu);
-+	ret = cache_add_cpu_shared_map(cpu);
-+	if (ret) {
-+		kfree(per_cpu_cacheinfo(cpu));
-+		per_cpu_cacheinfo(cpu) = NULL;
-+	}
-+	return ret;
-+}
-+
-+static void _detect_cache_attributes(void *retval)
-+{
-+	int cpu = smp_processor_id();
-+	*(int *)retval = __detect_cache_attributes(cpu);
-+}
-+
-+int detect_cache_attributes(unsigned int cpu)
-+{
-+	int retval;
-+	smp_call_function_single(cpu, _detect_cache_attributes, &retval, true);
-+	return retval;
-+}
-+
-+void free_cache_attributes(unsigned int cpu)
-+{
-+	cache_remove_cpu_shared_map(cpu);
-+
-+	kfree(per_cpu_cacheinfo(cpu));
-+	per_cpu_cacheinfo(cpu) = NULL;
-+}
-+
-+int cacheinfo_leaf_count(unsigned int cpu)
-+{
-+	return cache_leaves(cpu);
-+}
-+bool cacheinfo_populated(unsigned int cpu)
-+{
-+	return per_cpu_cacheinfo(cpu) != NULL;
-+}
-+unsigned int cacheinfo_level(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	return this_leaf ? this_leaf->info.level : 0;
-+}
-+unsigned int cacheinfo_linesize(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	return this_leaf ? this_leaf->info.coherency_line_size : 0;
-+}
-+unsigned int cacheinfo_associativity(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	return this_leaf ? this_leaf->info.ways_of_associativity : 0;
-+}
-+unsigned int cacheinfo_sets(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	return this_leaf ? this_leaf->info.number_of_sets : 0;
-+}
-+unsigned int cacheinfo_size(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	return this_leaf ? this_leaf->info.size : 0;
-+}
-+
-+char *cacheinfo_type(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	if (!this_leaf)
-+		return "Unknown\n";
-+	switch (this_leaf->info.type) {
-+	case CACHE_TYPE_DATA:
-+		return "Data\n";
-+	case CACHE_TYPE_INST:
-+		return "Instruction\n";
-+	case CACHE_TYPE_UNIFIED:
-+		return "Unified\n";
-+	default:
-+		return "Unknown\n";
-+	}
-+}
-+const struct cpumask *cacheinfo_cpumap(unsigned int cpu, unsigned short index)
-+{
-+	struct cpu_cacheinfo *this_leaf = CPU_CACHEINFO_IDX(cpu, index);
-+	return this_leaf ? &this_leaf->shared_cpu_map : cpumask_of(cpu);
-+}
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 987a7f5..e92bf47 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -32,6 +32,7 @@
- #include <linux/sort.h>
- 
- #include <asm/unified.h>
-+#include <asm/cacheinfo.h>
- #include <asm/cp15.h>
- #include <asm/cpu.h>
- #include <asm/cputype.h>
-@@ -947,6 +948,7 @@ static int __init topology_init(void)
- 		struct cpuinfo_arm *cpuinfo = &per_cpu(cpu_data, cpu);
- 		cpuinfo->cpu.hotpluggable = 1;
- 		register_cpu(&cpuinfo->cpu, cpu);
-+		detect_cache_attributes(cpu);
- 	}
- 
- 	return 0;
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 1f8fed9..c4abb89 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -495,30 +495,42 @@ config CPU_PABRT_V7
- # The cache model
- config CPU_CACHE_V4
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V4WT
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V4WB
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V6
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V7
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_NOP
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_VIVT
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_VIPT
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_FA
- 	bool
-+	select CPU_HAS_CACHE
-+
-+config CPU_HAS_CACHE
-+	bool
- 
- if MMU
- # The copy-page model
-@@ -846,6 +858,7 @@ config DMA_CACHE_RWFO
- 
- config OUTER_CACHE
- 	bool
-+	select CPU_HAS_CACHE
- 
- config OUTER_CACHE_SYNC
- 	bool
--- 
-1.8.3.2
+> Below is a repost of what works for me without using notifiers. Anybody
+> got any better ideas for a minimal fix?
 
+That patch is somewhat big for something that should be a minimal fix.
+Being the size that it is it might have undesired side-effects that may
+not get noticed until it's way too late, so I'm hesitant to have
+something like this merged at this point in the release cycle.
+
+Thierry
+
+> 8< -------------------------------
+> From: Tony Lindgren <tony@atomide.com>
+> Date: Tue, 7 Jan 2014 17:07:18 -0800
+> Subject: [PATCH] of/platform: Fix no irq domain found errors when populat=
+ing interrupts
+>=20
+> Currently we get the following kind of errors if we try to use interrupt
+> phandles to irqchips that have not yet initialized:
+>=20
+> irq: no irq domain found for /ocp/pinmux@48002030 !
+> ------------[ cut here ]------------
+> WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144=
+/0x184()
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
+> (show_stack+0x14/0x1c)
+> (dump_stack+0x6c/0xa0)
+> (warn_slowpath_common+0x64/0x84)
+> (warn_slowpath_null+0x1c/0x24)
+> (of_device_alloc+0x144/0x184)
+> (of_platform_device_create_pdata+0x44/0x9c)
+> (of_platform_bus_create+0xd0/0x170)
+> (of_platform_bus_create+0x12c/0x170)
+> (of_platform_populate+0x60/0x98)
+>=20
+> This is because we're wrongly trying to populate resources that are not y=
+et
+> available. It's perfectly valid to create irqchips dynamically, so let's
+> fix up the issue by populating the interrupt resources at the driver probe
+> time instead.
+>=20
+> Note that at least currently we cannot dynamically allocate the resources=
+ as bus
+> specific code may add legacy resources with platform_device_add_resources=
+()
+> before the driver probe. At least omap_device_alloc() currently relies on
+> num_resources to determine if legacy resources should be added. This issue
+> will get fixed automatically when mach-omap2 boots with DT only, but there
+> are probably other places too where platform_device_add_resources() modif=
+ies
+> things before driver probe.
+>=20
+> The addition of of_platform_probe() is based on patches posted earlier by
+> Thierry Reding <thierry.reding@gmail.com>.
+>=20
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
+>=20
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -481,6 +481,10 @@ static int platform_drv_probe(struct device *_dev)
+>  	struct platform_device *dev =3D to_platform_device(_dev);
+>  	int ret;
+> =20
+> +	ret =3D of_platform_probe(dev);
+> +	if (ret)
+> +		return ret;
+> +
+>  	if (ACPI_HANDLE(_dev))
+>  		acpi_dev_pm_attach(_dev, true);
+> =20
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -141,7 +141,7 @@ struct platform_device *of_device_alloc(struct device=
+_node *np,
+>  				  struct device *parent)
+>  {
+>  	struct platform_device *dev;
+> -	int rc, i, num_reg =3D 0, num_irq;
+> +	int num_reg =3D 0, num_irq;
+>  	struct resource *res, temp_res;
+> =20
+>  	dev =3D platform_device_alloc("", -1);
+> @@ -154,7 +154,14 @@ struct platform_device *of_device_alloc(struct devic=
+e_node *np,
+>  			num_reg++;
+>  	num_irq =3D of_irq_count(np);
+> =20
+> -	/* Populate the resource table */
+> +	/*
+> +	 * Only allocate the resources for us to use later on. Note that bus
+> +	 * specific code may also add in additional legacy resources using
+> +	 * platform_device_add_resources(), and may even rely on us allocating
+> +	 * the basic resources here to do so. So we cannot allocate the
+> +	 * resources lazily until the legacy code has been fixed to not rely
+> +	 * on allocating resources here.
+> +	 */
+>  	if (num_irq || num_reg) {
+>  		res =3D kzalloc(sizeof(*res) * (num_irq + num_reg), GFP_KERNEL);
+>  		if (!res) {
+> @@ -164,11 +171,7 @@ struct platform_device *of_device_alloc(struct devic=
+e_node *np,
+> =20
+>  		dev->num_resources =3D num_reg + num_irq;
+>  		dev->resource =3D res;
+> -		for (i =3D 0; i < num_reg; i++, res++) {
+> -			rc =3D of_address_to_resource(np, i, res);
+> -			WARN_ON(rc);
+> -		}
+> -		WARN_ON(of_irq_to_resource_table(np, res, num_irq) !=3D num_irq);
+> +		/* See of_device_resource_populate for populating the data */
+>  	}
+> =20
+>  	dev->dev.of_node =3D of_node_get(np);
+> @@ -187,6 +190,50 @@ struct platform_device *of_device_alloc(struct devic=
+e_node *np,
+>  EXPORT_SYMBOL(of_device_alloc);
+> =20
+>  /**
+> + * of_device_resource_populate - Populate device resources from device t=
+ree
+> + * @dev: pointer to platform device
+> + *
+> + * The device interrupts are not necessarily available for all
+> + * irqdomains initially so we need to populate them lazily at
+> + * device probe time from of_platform_populate.
+> + */
+> +static int of_device_resource_populate(struct platform_device *pdev)
+> +{
+> +	struct device_node *np =3D pdev->dev.of_node;
+> +	int rc, i, num_reg =3D 0, num_irq;
+> +	struct resource *res, temp_res;
+> +
+> +	res =3D pdev->resource;
+> +
+> +	/*
+> +	 * Count the io and irq resources again. Currently we cannot rely on
+> +	 * pdev->num_resources as bus specific code may have changed that
+> +	 * with platform_device_add_resources(). But the resources we allocated
+> +	 * earlier are still there and available for us to populate.
+> +	 */
+> +	if (of_can_translate_address(np))
+> +		while (of_address_to_resource(np, num_reg, &temp_res) =3D=3D 0)
+> +			num_reg++;
+> +	num_irq =3D of_irq_count(np);
+> +
+> +	if (pdev->num_resources < num_reg + num_irq) {
+> +		dev_WARN(&pdev->dev, "not enough resources %i < %i\n",
+> +			 pdev->num_resources, num_reg + num_irq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	for (i =3D 0; i < num_reg; i++, res++) {
+> +		rc =3D of_address_to_resource(np, i, res);
+> +		WARN_ON(rc);
+> +	}
+> +
+> +	if (num_irq)
+> +		WARN_ON(of_irq_to_resource_table(np, res, num_irq) !=3D num_irq);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+>   * of_platform_device_create_pdata - Alloc, initialize and register an o=
+f_device
+>   * @np: pointer to node to create device for
+>   * @bus_id: name to assign device
+> @@ -485,4 +532,35 @@ int of_platform_populate(struct device_node *root,
+>  	return rc;
+>  }
+>  EXPORT_SYMBOL_GPL(of_platform_populate);
+> +
+> +/**
+> + * of_platform_probe() - OF specific initialization at probe time
+> + * @pdev: pointer to a platform device
+> + *
+> + * This function is called by the driver core to perform devicetree-spec=
+ific
+> + * setup for a given platform device at probe time. If a device's resour=
+ces
+> + * as specified in the device tree are not available yet, this function =
+can
+> + * return -EPROBE_DEFER and cause the device to be probed again later, w=
+hen
+> + * other drivers that potentially provide the missing resources have been
+> + * probed in turn.
+> + *
+> + * Note that because of the above, all code executed by this function mu=
+st
+> + * be prepared to be run multiple times on the same device (i.e. it must=
+ be
+> + * idempotent).
+> + *
+> + * Returns 0 on success or a negative error code on failure.
+> + */
+> +int of_platform_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +
+> +	if (!pdev->dev.of_node)
+> +		return 0;
+> +
+> +	ret =3D of_device_resource_populate(pdev);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+>  #endif /* CONFIG_OF_ADDRESS */
+> --- a/include/linux/of_platform.h
+> +++ b/include/linux/of_platform.h
+> @@ -72,6 +72,8 @@ extern int of_platform_populate(struct device_node *roo=
+t,
+>  				const struct of_device_id *matches,
+>  				const struct of_dev_auxdata *lookup,
+>  				struct device *parent);
+> +
+> +extern int of_platform_probe(struct platform_device *pdev);
+>  #else
+>  static inline int of_platform_populate(struct device_node *root,
+>  					const struct of_device_id *matches,
+> @@ -80,6 +82,11 @@ static inline int of_platform_populate(struct device_n=
+ode *root,
+>  {
+>  	return -ENODEV;
+>  }
+> +
+> +static inline int of_platform_probe(struct platform_device *pdev)
+> +{
+> +	return 0;
+> +}
+>  #endif
+> =20
+>  #endif	/* _LINUX_OF_PLATFORM_H */
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSzabeAAoJEN0jrNd/PrOhCg0P/jWiAmuDWWQXPJkUbquzhvbf
+Z0GqKCDOyTcEPgJLKDDkYUSozEqSkVWUKWm4gca/Y9ea8Zg75eXTOLHuXLoXRQGD
+eSx884YW65rIC5FswPxAx3w9xAW2xJ75UzmpwSQtOf4mO8K2DhkfQmasGmINJSQO
+ULSfd/5PEXSF9TdbnGJeCH+1LJPQ1xOcAq72ROcXTW8OtMHFdz3gcH8GX7Uk5Lw8
+IZsWJ73gCWilRhmsaQLoneLOtEV6t33Bx6yzsr3P7Sk1/GVq6QhKUJxfdvJYdDKS
+oY+gTg25szPYZekXyjN7N/MBHBkNCaQMT1E7IEidn8/N422weKZK1PoVDZL1SuUF
+C6DpGc6tRE0jLQhFjhKqzTFpeAM8DEUpsmKOkfffcR7Ix5eLEkSwOnF1rXzJFMxS
+Rcg1NG0Kh8gOR1f7H9eg2Qho7DOsazJaq8DMUJGG8/xRLgWJNcsAji3how5jZES2
+Q2haUYENgmCUWBWSMT2tdiBgF/F4/2NZUNJxVZ30TVa0Tbgf6RKGtj4XLL6REFlV
+lt99ob0JzC+Cky0vCPTwOY2TII5egSdz2vBZqRc+fmcCT4lTtekg6xI+SHIYiXB2
+VSYY0md0INt4mRgpzc4YkvASjcXSoZrF0sWHVAgjj+f99HpvIXxzIKFzFZQWow5m
+ny9PjI6ZuRUbyI3cao5w
+=7O5q
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
