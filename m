@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305AbaAHNlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:41:55 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50303 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664AbaAHNlx (ORCPT
+	id S1756518AbaAHNmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:42:08 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:45381 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498AbaAHNmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:41:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, devicetree@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] driver-core: platform: Resolve DT interrupt references late
-Date: Wed, 08 Jan 2014 14:41:19 +0100
-Message-ID: <4589157.TquA4Q59fC@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1389185477-507-1-git-send-email-treding@nvidia.com>
-References: <20140108011957.GK5074@atomide.com> <1389185477-507-1-git-send-email-treding@nvidia.com>
+	Wed, 8 Jan 2014 08:42:02 -0500
+Date: Wed, 8 Jan 2014 14:39:52 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
+Message-ID: <20140108133951.GD1592@ulmo.nvidia.com>
+References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com>
+ <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
+ <52CB14D3.2060904@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:5xeP46aozvxxxm6elq3YqXYuLJ8vvjBEsP+gSjOQCV0
- I+PZwB+GDCxJahlvFL99R62EQ5r1Yf6tFfkM7VOXH5qV0/Ni7S
- AHkjZ+bWsN+TDIFgOoBp/yv1joxCTjiV5OqZT727AI5Fl3+Flt
- KSsf0NJX8E+r+oZdQWCf/M4WVgsbe96nAZJGhgfWmRDycQE0me
- Iilc5xot4aX3OYzOw88o84LJ9+4CiLnQY1d2T89fWykSsc+0Pa
- HlNWN/J6P3QMU6NeygtG0NsZq/wV+uIfLMOWzW8qBJpjZ99SRq
- Szk0CCtA3oivEyty1OXNE31KpcRbj6Ja5LTLvtXqhvX4dcQe3H
- LCXu0oq05M646P2b2YyY=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1sNVjLsmu1MXqwQ/"
+Content-Disposition: inline
+In-Reply-To: <52CB14D3.2060904@wwwdotorg.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014 13:51:17 Thierry Reding wrote:
-> When devices are probed from the device tree, any interrupts that they
-> reference are resolved at device creation time. This causes problems if
-> the interrupt provider hasn't been registered yet at that time, which
-> results in the interrupt being set to 0.
 
-Thanks for looking at this problem, it has bothered a lot of people
-for a long time. I'm sorry I wasn't there for the discussion in November,
-but when it came up before, I suggested a different solution that
-apparently didn't get implemented.
+--1sNVjLsmu1MXqwQ/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Note that this patch is the easy way out to fix a large part of the
-> problems for now. A more proper solution for the long term would be to
-> transition drivers to an API that always resolves resources of any kind
-> (not only interrupts) at probe time.
-> 
-> For some background and discussion on possible solutions, see:
-> 
-> 	https://lkml.org/lkml/2013/11/22/520
+On Mon, Jan 06, 2014 at 01:40:51PM -0700, Stephen Warren wrote:
+> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
+[...]
+> > diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20=
+=2Edtsi
+>=20
+> > +	efuse@7000F800 {
+>=20
+> "fuse" might be a better node name; "efuse" is presumably the name of
+> the instance, not the type of object.
 
-I hope I read this thread correctly, sorry if I missed an important
-part. My idea was to add the code not in platform_get_irq() but add
-the resource in platform_drv_probe(), and just bail out with
--EPROBE_DEFER there if necessary.
+There's another occurrence I noticed recently where we haven't followed
+that rule. The PMIC node on Venice2 for instance is called as3722.
+Perhaps that should also be renamed.
 
-We could then skip adding the resources at device creation time.
-Is this something you already plan to do later, or is there a reason
-it wouldn't work?
+Thierry
 
-In the meantime, I don't see anything with your patch, but it also
-wouldn't hurt to do it now if it solves all the problems.
+--1sNVjLsmu1MXqwQ/
+Content-Type: application/pgp-signature
 
-	Arnd
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSzVUnAAoJEN0jrNd/PrOh2IUP/0HmJ+zy8f/2KJjdWlr0482w
+QNMB6eOD3oYxRgXyxjAtQTqb2RHASLLvSRdLKz8mz+/0ZP9is7ufOYJtin4VnDki
+8N5mqGuRtkk/XDLWPdqWbJT42h3SrGq7yC3tvG11cnNuw/jrZGrmPyfWn3e/sUFw
+jY24rUqPg6oI1XnVNn2BGsI0URellhGxHFtKrmYkmHIpBCUa1XrU5OoAsmXAwAl0
+/OgshcxI3J6IQ2R0ClQydmlI83Lfz1D+BixyH4G3pxl5MKkg9I/josOkWZv5InRW
+9IaS6KpEpoouAuoRDoA0XGXLt/c2pE583DiTs3cFUON7b2o5ECpiyK/D+LlipsrG
+cgr6q39iZrQPP3iH1Dz35HrTBa3ZHktTGB7ZJrAoZ8G0dTbanvaeBlAgVj99YMnA
+Zuvw4iAXlxxV4T6Vl9tkeAn2UXrPT5UQhN4bnH3VMQDlgHeHO5MNENUJCj2OpVuv
+Wud7TICgJAGOICBF61jSWaUAUR4Az9kFA5Q5V0sCpwM3qrdQJQydLnoJ8/qhpWyG
+9FRpSehrRyh6Ua/8/xvdJOMXt+CItXs3GozgYCpbT27XLhL62A9CKGcNq7HJDGjv
+xCexfDB8HYGYiSAmEs3xAT99SxfpzqNHPWXbkl4lXOhJi4Y1nkycL9NFTaNPSxug
+OigsMWOU/MGKAHXHF9xT
+=l8Z3
+-----END PGP SIGNATURE-----
+
+--1sNVjLsmu1MXqwQ/--
