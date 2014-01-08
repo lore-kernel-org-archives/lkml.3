@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314AbaAHTHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:07:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40812 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523AbaAHTHS (ORCPT
+	id S1757388AbaAHTHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:07:43 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39907 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757362AbaAHTHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:07:18 -0500
-Date: Wed, 8 Jan 2014 11:07:47 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
-        Martin Hofmann <martin.hofmann@studium.uni-erlange.de>,
-        linux-kernel@vger.kernel.org,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlange.de>,
-        martin.hofmann@studium.uni-erlangen.de, forest@alittletooquiet.net
-Subject: Re: [PATCHv2 7/7] vt6655: Remove typedefs in 80211hdr.h
-Message-ID: <20140108190747.GA7326@kroah.com>
-References: <1389096711-8595-1-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
- <1389096711-8595-8-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
+	Wed, 8 Jan 2014 14:07:39 -0500
+Message-ID: <52CDA1F7.90606@linaro.org>
+Date: Wed, 08 Jan 2014 11:07:35 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389096711-8595-8-git-send-email-michael.gunselmann@studium.uni-erlangen.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Greg Hackmann <ghackmann@google.com>, linux-kernel@vger.kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] timerfd: support CLOCK_BOOTTIME clock
+References: <1389207423-31154-1-git-send-email-ghackmann@google.com>
+In-Reply-To: <1389207423-31154-1-git-send-email-ghackmann@google.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 01:11:51PM +0100, Michael Gunselmann wrote:
-> From: Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>
-> 
-> The file 80211hdr.h contained typedefs for 5 types. To satisfy checkpatch,
-> this commit removes them. In 11 other files, every occurence of a now deleted
-> type has been substituted with the correct struct ... syntax.
+On 01/08/2014 10:57 AM, Greg Hackmann wrote:
+> Add CLOCK_BOOTTIME support to timerfd
+>
+> Signed-off-by: Greg Hackmann <ghackmann@google.com>
+> ---
+>  fs/timerfd.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/fs/timerfd.c b/fs/timerfd.c
+> index 9293121..0013142 100644
+> --- a/fs/timerfd.c
+> +++ b/fs/timerfd.c
+> @@ -317,6 +317,7 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+>  	    (clockid != CLOCK_MONOTONIC &&
+>  	     clockid != CLOCK_REALTIME &&
+>  	     clockid != CLOCK_REALTIME_ALARM &&
+> +	     clockid != CLOCK_BOOTTIME &&
+>  	     clockid != CLOCK_BOOTTIME_ALARM))
+>  		return -EINVAL;
+>  
 
-Why not split this into 5 patches, one for each typedef?  That way the
-one I don't like, I could have ignored, and taken the other 4 patches?
-:)
+Thanks! I've already sent out my 3.14 queue to Thomas, but I'll queue
+this for 3.15.
 
-> -typedef union tagUWLAN_80211HDR {
-> -	WLAN_80211HDR_A2        sA2;
-> -	WLAN_80211HDR_A3        sA3;
-> -	WLAN_80211HDR_A4        sA4;
-> -} UWLAN_80211HDR, *PUWLAN_80211HDR;
-> +} __attribute__((__packed__));
-> +
-> +union UWLAN_80211HDR {
-> +	struct WLAN_80211HDR_A2 sA2;
-> +	struct WLAN_80211HDR_A3 sA3;
-> +	struct WLAN_80211HDR_A4 sA4;
-> +};
+-john
 
-This really should be a struct of a union, right?  Then you don't have
-these "odd" casts to do:
-
-> -	pFrame->pHdr = (PUWLAN_80211HDR)pFrame->pBuf;
-> +	pFrame->pHdr = (union UWLAN_80211HDR *)pFrame->pBuf;
-
-And are these casts even needed?
-
-thanks,
-
-greg k-h
