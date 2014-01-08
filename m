@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791AbaAHUjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:39:45 -0500
-Received: from mout2.freenet.de ([195.4.92.92]:33830 "EHLO mout2.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757397AbaAHUjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:39:41 -0500
-Message-ID: <52CDB6CB.8080803@01019freenet.de>
-Date: Wed, 08 Jan 2014 21:36:27 +0100
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0 SeaMonkey/2.23
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Cong Wang <amwang@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Out of the box (ootb) multicast broken since Linux 3.5 until min.
- 3.12.
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Originated-At: 79.222.9.3!49772
+	id S932198AbaAHUkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:40:32 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49843 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaAHUgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:36:21 -0500
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 03/14] target/sbc: Add sbc_check_prot + update sbc_parse_cdb for DIF
+Date: Wed,  8 Jan 2014 20:15:46 +0000
+Message-Id: <1389212157-14540-4-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch:
+This patch adds sbc_check_prot() for performing various DIF
+related CDB sanity checks, along with setting SCF_PROT once
+sanity checks have passed.
 
-commit c5c23260594c5701af66ef754916775ba6a46bbc
-Author: Herbert Xu <herbert@gondor.apana.org.au>
-Date:   Fri Apr 13 02:37:42 2012 +0000
+Also, add calls in sbc_parse_cdb() for READ_[10,12,16] +
+WRITE_[10,12,16] to perform DIF sanity checking.
 
-    bridge: Add multicast_querier toggle and disable queries by default
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Sagi Grimberg <sagig@mellanox.com>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_sbc.c |   39 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-    Sending general queries was implemented as an optimisation to speed
-    up convergence on start-up.  In order to prevent interference with
-    multicast routers a zero source address has to be used.
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index 52ae54e..600ffcb 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -563,6 +563,27 @@ sbc_compare_and_write(struct se_cmd *cmd)
+ 	return TCM_NO_SENSE;
+ }
+ 
++bool
++sbc_check_prot(struct se_device *dev, struct se_cmd *cmd, unsigned char *cdb)
++{
++	if (!dev->dev_attrib.pi_prot_type)
++		return true;
++
++	if (dev->dev_attrib.pi_prot_type == TARGET_DIF_TYPE2_PROT &&
++	   (cdb[1] & 0xe0))
++		return false;
++
++	if (!(cdb[1] & 0xe0)) {
++		pr_warn("Target: Unprotected READ/WRITE to DIF device\n");
++		return true;
++	}
++	if (!cmd->t_prot_sg || !cmd->t_prot_nents)
++		return true;
++
++	cmd->se_cmd_flags |= SCF_PROT;
++	return true;
++}
++
+ sense_reason_t
+ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ {
+@@ -581,6 +602,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		cmd->execute_cmd = sbc_execute_rw;
+ 		break;
+ 	case READ_10:
++		if (!sbc_check_prot(dev, cmd, cdb))
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
+ 		sectors = transport_get_sectors_10(cdb);
+ 		cmd->t_task_lba = transport_lba_32(cdb);
+ 		cmd->se_cmd_flags |= SCF_SCSI_DATA_CDB;
+@@ -588,6 +612,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		cmd->execute_cmd = sbc_execute_rw;
+ 		break;
+ 	case READ_12:
++		if (!sbc_check_prot(dev, cmd, cdb))
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
+ 		sectors = transport_get_sectors_12(cdb);
+ 		cmd->t_task_lba = transport_lba_32(cdb);
+ 		cmd->se_cmd_flags |= SCF_SCSI_DATA_CDB;
+@@ -595,6 +622,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		cmd->execute_cmd = sbc_execute_rw;
+ 		break;
+ 	case READ_16:
++		if (!sbc_check_prot(dev, cmd, cdb))
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
+ 		sectors = transport_get_sectors_16(cdb);
+ 		cmd->t_task_lba = transport_lba_64(cdb);
+ 		cmd->se_cmd_flags |= SCF_SCSI_DATA_CDB;
+@@ -610,6 +640,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		break;
+ 	case WRITE_10:
+ 	case WRITE_VERIFY:
++		if (!sbc_check_prot(dev, cmd, cdb))
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
+ 		sectors = transport_get_sectors_10(cdb);
+ 		cmd->t_task_lba = transport_lba_32(cdb);
+ 		if (cdb[1] & 0x8)
+@@ -619,6 +652,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		cmd->execute_cmd = sbc_execute_rw;
+ 		break;
+ 	case WRITE_12:
++		if (!sbc_check_prot(dev, cmd, cdb))
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
+ 		sectors = transport_get_sectors_12(cdb);
+ 		cmd->t_task_lba = transport_lba_32(cdb);
+ 		if (cdb[1] & 0x8)
+@@ -628,6 +664,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 		cmd->execute_cmd = sbc_execute_rw;
+ 		break;
+ 	case WRITE_16:
++		if (!sbc_check_prot(dev, cmd, cdb))
++			return TCM_UNSUPPORTED_SCSI_OPCODE;
++
+ 		sectors = transport_get_sectors_16(cdb);
+ 		cmd->t_task_lba = transport_lba_64(cdb);
+ 		if (cdb[1] & 0x8)
+-- 
+1.7.10.4
 
-    Unfortunately these packets appear to cause some multicast-aware
-    switches to misbehave, e.g., by disrupting multicast packets to us.
-
-    Since the multicast snooping feature still functions without sending
-    our own queries, this patch will change the default to not send
-    queries.
-
-    For those that need queries in order to speed up convergence on
-    start-up, a toggle is provided to restore the previous behaviour.
-
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
-incompatibly broke ootb multicast in Linux until 3.12 or even higher
-(didn't test) for this use case:
-
-http://thread.gmane.org/gmane.linux.kernel/1622550
-
-
-It is necessary to manually add this switch
-
-echo "1" > /sys/devices/virtual/net/br0/bridge/multicast_querier
-
-to get multicast working again.
-
-
-Would be nice to get the old behaviour (= working multicast ootb) back
-again. This would have saved a lot of time, probably not only in my case
-here (e.g. see https://bugzilla.redhat.com/show_bug.cgi?id=880035).
-
-
-Regards,
-Andreas
