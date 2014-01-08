@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880AbaAHQal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:30:41 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:51447 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928AbaAHQaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:30:39 -0500
+	id S1757158AbaAHQbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:31:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47346 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757052AbaAHQbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 11:31:24 -0500
+Message-ID: <52CD8A9A.3010608@ti.com>
+Date: Wed, 8 Jan 2014 19:27:54 +0200
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com>
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
-	<1389190924-26226-4-git-send-email-b.brezillon@overkiz.com>
-Date: Wed, 8 Jan 2014 10:30:39 -0600
-Message-ID: <CAL_Jsq+PT9MzEpHwuiSU2oeqzzqajGdBKgdxCZ8S+9W2mPN+tA@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
-From: Rob Herring <robherring2@gmail.com>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        dev@linux-sunxi.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Fengguang Wu <fengguang.wu@intel.com>, <santosh.shilimkar@ti.com>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86/mm: memblock: switch to use NUMA_NO_NODE
+References: <20140107022559.GE14055@localhost> <1389198198-31027-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1389198198-31027-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.75]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 8:21 AM, Boris BREZILLON <b.brezillon@overkiz.com> wrote:
-> Add a function to retrieve NAND timings from a given DT node.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->  drivers/of/of_mtd.c    |   47 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_mtd.h |    9 +++++++++
->  2 files changed, 56 insertions(+)
->
-> diff --git a/drivers/of/of_mtd.c b/drivers/of/of_mtd.c
-> index a27ec94..52e07fd 100644
-> --- a/drivers/of/of_mtd.c
-> +++ b/drivers/of/of_mtd.c
-> @@ -83,3 +83,50 @@ bool of_get_nand_on_flash_bbt(struct device_node *np)
->         return of_property_read_bool(np, "nand-on-flash-bbt");
->  }
->  EXPORT_SYMBOL_GPL(of_get_nand_on_flash_bbt);
-> +
-> +/**
-> + * of_get_nand_timings - Get nand timings for the given device_node
-> + * @np:        Pointer to the given device_node
-> + *
-> + * return 0 on success errno other wise
-> + */
-> +int of_get_nand_timings(struct device_node *np, struct nand_timings *timings)
-> +{
-> +       memset(timings, 0, sizeof(*timings));
-> +
-> +       of_property_read_u32(np, "tCLS-min", &timings->tCLS_min);
-> +       of_property_read_u32(np, "tCLH-min", &timings->tCLH_min);
-> +       of_property_read_u32(np, "tCS-min", &timings->tCS_min);
-> +       of_property_read_u32(np, "tCH-min", &timings->tCH_min);
-> +       of_property_read_u32(np, "tWP-min", &timings->tWP_min);
-> +       of_property_read_u32(np, "tALS-min", &timings->tALS_min);
-> +       of_property_read_u32(np, "tALH-min", &timings->tALH_min);
-> +       of_property_read_u32(np, "tDS-min", &timings->tDS_min);
-> +       of_property_read_u32(np, "tDH-min", &timings->tDH_min);
-> +       of_property_read_u32(np, "tWC-min", &timings->tWC_min);
-> +       of_property_read_u32(np, "tWH-min", &timings->tWH_min);
-> +       of_property_read_u32(np, "tR-max", &timings->tR_max);
-> +       of_property_read_u32(np, "tAR-min", &timings->tAR_min);
-> +       of_property_read_u32(np, "tCLR-min", &timings->tCLR_min);
-> +       of_property_read_u32(np, "tRR-min", &timings->tRR_min);
-> +       of_property_read_u32(np, "tRP-min", &timings->tRP_min);
-> +       of_property_read_u32(np, "tWB-max", &timings->tWB_max);
-> +       of_property_read_u32(np, "tRC-min", &timings->tRC_min);
-> +       of_property_read_u32(np, "tREA-max", &timings->tREA_max);
-> +       of_property_read_u32(np, "tRHZ-max", &timings->tRHZ_max);
-> +       of_property_read_u32(np, "tCHZ-max", &timings->tCHZ_max);
-> +       of_property_read_u32(np, "tRHOH-min", &timings->tRHOH_min);
-> +       of_property_read_u32(np, "tRLOH-min", &timings->tRLOH_min);
-> +       of_property_read_u32(np, "tCOH-min", &timings->tCOH_min);
-> +       of_property_read_u32(np, "tREH-min", &timings->tREH_min);
-> +       of_property_read_u32(np, "tWHR-min", &timings->tWHR_min);
-> +       of_property_read_u32(np, "tRHW-min", &timings->tRHW_min);
-> +       of_property_read_u32(np, "tIR-min", &timings->tIR_min);
-> +       of_property_read_u32(np, "tCR-min", &timings->tCR_min);
-> +       of_property_read_u32(np, "tADL-min", &timings->tADL_min);
-> +       of_property_read_u32(np, "tRST-max", &timings->tRST_max);
-> +       of_property_read_u32(np, "tWW-min", &timings->tWW_min);
+Hi,
 
-These all need to be documented. These apply to which compatible
-strings? They should also be suffixed with the unit the property is in
-(i.e. -ms, -us, -ns).
+On 01/08/2014 06:23 PM, Grygorii Strashko wrote:
+> Update X86 code to use NUMA_NO_NODE instead of MAX_NUMNODES while
+> calling memblock APIs, because memblock API is changed to use NUMA_NO_NODE and
+> will produce warning during boot otherwise.
+> 
+> See:
+>   https://lkml.org/lkml/2013/12/9/898
+> 
+[...]
 
-Rob
+or, there are other 3 patches from Sergey Senozhatsky, which actually fix the same warnings:
+ https://lkml.org/lkml/2014/1/6/277 - [PATCH -next] x86 memtest: use NUMA_NO_NODE in do_one_pass()
+ https://lkml.org/lkml/2014/1/6/280 - [PATCH -next] e820: use NUMA_NO_NODE in memblock_find_dma_reserve()
+ http://comments.gmane.org/gmane.linux.kernel/1623429 - [PATCH -next] check: use NUMA_NO_NODE in setup_bios_corruption_check()
+
+Regards,
+- grygorii
+
+
+	
+
+
+
