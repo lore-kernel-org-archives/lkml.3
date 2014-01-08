@@ -1,93 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267AbaAHNTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:19:04 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53125 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755121AbaAHNTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:19:02 -0500
-Message-ID: <52CD5010.6030309@ti.com>
-Date: Wed, 8 Jan 2014 18:48:08 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1756318AbaAHNWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:22:04 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48715 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610AbaAHNWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:22:01 -0500
+Date: Wed, 8 Jan 2014 13:21:47 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: nicolas.ferre@atmel.com, richard.genoud@gmail.com,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140108132147.GF31886@sirena.org.uk>
+References: <1389160188-4030-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
-        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <marc.zyngier@arm.com>,
-        <grant.likely@linaro.org>, <mark.rutland@arm.com>,
-        <robherring2@gmail.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
-        <rob.herring@calxeda.com>, <nm@ti.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH V5 0/4] DRIVERS: IRQCHIP: Add support for crossbar IP
-References: <1386066445-28245-1-git-send-email-r.sricharan@ti.com> <52B168A5.4010202@ti.com> <52BBB614.5010707@ti.com> <52BC6B16.80507@ti.com> <52BD856E.7010609@ti.com> <52C11284.2030500@ti.com> <20140107230733.GD5074@atomide.com> <20140107235514.GG5074@atomide.com>
-In-Reply-To: <20140107235514.GG5074@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Tpk2fHXvUN/GnVDH"
+Content-Disposition: inline
+In-Reply-To: <1389160188-4030-1-git-send-email-wenyou.yang@atmel.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: atmel: Refactor spi-atmel to use SPI framework queue
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
 
-On Wednesday 08 January 2014 05:25 AM, Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [140107 15:10]:
->> * Sricharan R <r.sricharan@ti.com> [131229 22:30]:
->>> On Friday 27 December 2013 07:19 PM, Sricharan R wrote:
->>>> On Thursday 26 December 2013 11:14 PM, Santosh Shilimkar wrote:
->>>>> On Wednesday 25 December 2013 11:52 PM, Sricharan R wrote:
->>>>>> On Wednesday 18 December 2013 02:49 PM, Sricharan R wrote:
->>>>>>> I have addressed all the comments on this series, can this be merged now ?
->>>>>>>
->>>>>>   Ping..
->>>>>>
->>>>> Thomas has already given his reviewed-by tag so the patches can be
->>>>> taken via arm-soc tree considering OMAP and GIC changes. Can you
->>>>> create a branch with all these patches applied and send it
->>>>> to Tony ?
->>>>>
->>>> Ok, i will send out a branch for this.
->>>>
->>>  
->>>  I have pushed the below branch
->>>
->>> git://github.com/Sricharanti/sricharan.git
->>> branch: crossbar
->>>
->>> This is on top of Tony's linux-omap master branch
->>
->> The linux-omap master branch cannot be used as a base as it
->> contains tons of commit history not in mainline. So I'll
->> manually applied these patches into omap-for-v3.14/crosbar
->> branch.
-> 
-> Oops, I noticed some errors on these:
-> 
-> WARNING: drivers/built-in.o(.text+0xcd0): Section mismatch in reference from the function irqcrossbar_init() to the function .init.text:crossbar_of_init()
-> The function irqcrossbar_init() references
-> the function __init crossbar_of_init().
-> This is often because irqcrossbar_init lacks a __init 
-> annotation or the annotation of crossbar_of_init is wrong.
-> 
-> WARNING: drivers/built-in.o(.text+0xcdc): Section mismatch in reference from the function irqcrossbar_init() to the (unknown reference) .init.rodata:(unknown)
-> The function irqcrossbar_init() references
-> the (unknown reference) __initconst (unknown).
-> This is often because irqcrossbar_init lacks a __initconst 
-> annotation or the annotation of (unknown) is wrong.
-> 
-> So I've dropped them for now. Care to fix up those errors and
-> base your patches against let's say v3.13-rc5?
-> 
-   Very Sorry for the section mismatch warning.
-   I have fixed it and pushed a new branch below based on v3.13-rc5
+--Tpk2fHXvUN/GnVDH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-   git://github.com/Sricharanti/sricharan.git
-   branch: crossbar_3.13_rc5
+On Wed, Jan 08, 2014 at 01:49:48PM +0800, Wenyou Yang wrote:
 
-Regards,
- Sricharan
+> The patch is based on for-next branch of
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git
 
-   
-  
+Sorry, there was a patch from Richard which got applied but not pushed
+out - I've pushed it now but it conflicts with this.  Can you please
+rebase?  It should be a simple update from the looks of things.
 
+> -		tasklet_schedule(&as->tasklet);
+> +		atmel_spi_lock(as);
+> +		complete(&as->xfer_completion);
+> +		atmel_spi_unlock(as);
+
+Why do you need to hold the lock to complete the transfer?  That seems
+very odd.
+
+> +	/*
+> +	 * DMA map early, for performance (empties dcache ASAP) and
+> +	 * better fault reporting.
+> +	 */
+> +	if ((!msg->is_dma_mapped)
+> +		&& (atmel_spi_use_dma(as, xfer)	|| as->use_pdc)) {
+> +		if (atmel_spi_dma_map_xfer(as, xfer) < 0)
+> +			return -ENOMEM;
+> +	}
+
+Just a heads up at this point but this is most likely going to be moved
+into the core soon.
+
+> +	if (xfer->delay_usecs)
+> +		udelay(xfer->delay_usecs);
+
+If you convert to transfer_one() instead of transfer_one_message() then
+this will be handled for you.  What you're doing at the minute is still
+an improvement so it should be OK but it'd be worth a look.  There will
+be further changes in this to factor out the DMA and message push code.
+
+> +	if (xfer->cs_change) {
+> +		cs_deactivate(as, msg->spi);
+> +		udelay(1);
+> +		cs_activate(as, msg->spi);
+> +	}
+
+This is buggy, cs_change should flip the polarity of /CS rather than
+bounce it on and off except if set on the last transfer in a message in
+which case it should cause /CS to remain asserted after the message is
+finished.  Again, transfer_one() factors this out - you can at least
+look at this to see what should be done.
+
+> +	if (as->stopping)
+> +		return -ESHUTDOWN;
+
+You shouldn't need to worry about this, the core should handle this.
+
+--Tpk2fHXvUN/GnVDH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSzVDoAAoJELSic+t+oim9e6QQAJeAZCShweZDAhVWO6bGXQP6
+1fwxE4++Zd+puAMvO042zMLwmYwXHNo3IAV4Z4H8UZNVRn98F9+M2IW9Jvc9vFQr
+avgrK+CVE92NNmSatnyYwdAjoeokRpBtvBpns/XduFfwhoVjiOFKmsk7c56wBNOP
+aFzoxkJl/ql4iaZRjFew4MAXaBDdjqURnzlxf7WQVrzd8YVsYY7/6qqm5kD6t8Do
+kUc9xnDm6e9TwQrFBBjyDDjgGShlO4ajq4r/b+EFutwg++FQNMynnlD2fGAEY6Gv
++7/ze/ZsE9CmUVpEZd5ebF6HwvWPKaGoHUEsUhShxbULyObDM5S9x5niHoBL+P+o
+y6fK5MP7y3Gu/xFQqfU4LgePnVwGmFIEJ33ankvs3KfUvKYNo/A4Nl/rcntbBKWr
+443JNvi4vbrIRANbeZrotlKqWWWJ0Fnp9TBOUXsAa3EQ73VrmhTI38Xv1tImhGjm
+olERKF/MLD91SZhlp7a3DNuv/rQS98iXVYF16nO7FxlMn5gfHzaw07PFpWEmJwAs
+LI0fxNGLZ+rSfYudHdlxG8Q67IE5QPJw8y6xFuoCiEaCpkZFEvt5fFipHGoNVxAs
+PjO1WWZKvMsgwf/ITX6X5HI8xD/VWa0jW4afxq+LqjNav11qqmpAnaVl55rrNp8d
++OMOFpauKekLtOQkHNzB
+=Zig6
+-----END PGP SIGNATURE-----
+
+--Tpk2fHXvUN/GnVDH--
