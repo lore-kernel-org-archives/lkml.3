@@ -1,135 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899AbaAHOSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:18:52 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63197 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610AbaAHOSr (ORCPT
+	id S1756770AbaAHOUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:20:18 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63995 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756433AbaAHOUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:18:47 -0500
-Message-ID: <52CD5D9A.30604@linaro.org>
-Date: Wed, 08 Jan 2014 22:15:54 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "jason.low2@hp.com" <jason.low2@hp.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] sched: bias to target cpu load to reduce task moving
-References: <1386061556-28233-1-git-send-email-alex.shi@linaro.org> <1386061556-28233-5-git-send-email-alex.shi@linaro.org> <20131217141012.GG10134@e103034-lin> <20131217153809.GP21999@twins.programming.kicks-ass.net> <52B2F5D0.2050707@linaro.org> <20131220111926.GA11605@e103034-lin> <52BAF292.1070404@linaro.org> <20140102160404.GA3000@e103034-lin> <52CAB12B.4090701@linaro.org> <20140107125518.GE2936@e103034-lin> <20140107125930.GW31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140107125930.GW31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Jan 2014 09:20:15 -0500
+X-Nat-Received: from [202.181.97.72]:62800 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1389190749.16929
+To: pavel@ucw.cz, joe@perches.com
+Cc: keescook@chromium.org, akpm@linux-foundation.org, geert@linux-m68k.org,
+        jkosina@suse.cz, viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20140107001604.GD24243@amd.pavel.ucw.cz>
+	<1389056635.2433.22.camel@joe-AO722>
+	<20140107083740.GA5683@amd.pavel.ucw.cz>
+	<1389116048.32137.14.camel@joe-AO722>
+	<20140107175656.GB18316@amd.pavel.ucw.cz>
+In-Reply-To: <20140107175656.GB18316@amd.pavel.ucw.cz>
+Message-Id: <201401082319.FEC82827.JFFMOQSHOOVtFL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 8 Jan 2014 23:19:04 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 08012014 #7270042, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 08:59 PM, Peter Zijlstra wrote:
-> On Tue, Jan 07, 2014 at 12:55:18PM +0000, Morten Rasmussen wrote:
->> My understanding is that should_we_balance() decides which cpu is
->> eligible for doing the load balancing for a given domain (and the
->> domains above). That is, only one cpu in a group is allowed to load
->> balance between the local group and other groups. That cpu would
->> therefore be reponsible for pulling enough load that the groups are
->> balanced even if it means temporarily overloading itself. The other cpus
->> in the group will take care of load balancing the extra load within the
->> local group later.
-
-Thanks for both of you comments and explanations! :)
-
-I know this patch's change is arguable and my attempt doesn't tune well. But I believe I am in a correct way. :) let me explain a bit for this patch again.
-
-First cpu_load includes the history load info, so repeatedly decay and use the history load is kind of non-sense. and the old source/target_load randomly select history load or current load just according to max/min, it also owe a well explanation.
-Second, we consider the bias in source/target_load already. but still use imbalance_pct as last check in idlest/busiest group finding. It is also a kind of redundant job. If we can consider the source/target bias, we'd better not use imbalance_pct again.
-And last, imbalance pct overused with quickly core number increasing cpu. Like in find_busiset_group:
-Assume a 2 groups domain, each group has 8 cores cpus.
-    The target group will bias 8 * (imbalance_pct -100) 
-				= 8 * (125 - 100) = 200.
-     Since each of cpu bias .25 times load, for 8 cpus, totally bias 2 times average cpu load between groups. That is a too much. But if there only 2 cores in cpu group(common case when the code introduced). the bias is just 2 * 25 / 100 = 0.5 times average cpu load.
-
-Now this patchset remove the cpu_load array avoid repeated history decay; reorganize the imbalance_pct usage to avoid redundant balance bias. and reduce the bias value between cpu groups -- maybe it isn't tune well. :)
-
+Pavel Machek wrote:
+> > > > I'm not nacking this, just stating my view.
+> > > 
+> > > And I believe Andrew clearly stated his view, on the very topic you
+> > > asked him on.
+> > 
+> > I believe Andrew's view:
+> > 
+> > On Sat, 2013-12-28 at 12:08 -0800, Andrew Morton wrote:
+> > > On Sat, 28 Dec 2013 11:53:25 -0800 Joe Perches <joe@perches.com> wrote:
+> > > > Tell me again, what's wrong with using p or current?
+> > > > printk("%pt", current);
+> > > 
+> > > Nothing much.  It's just that all these callsites are generating the
+> > > code to pass an argument which the callee already has access to. 
+> > > Optimizing that will reduce text size a bit.
+> > 
+> > was that the argument passing was the primary issue.
 > 
-> Correct.
-> 
->> I may have missed something, but I don't understand the reason for the
->> performance improvements that you are reporting. I see better numbers
->> for a few benchmarks, but I still don't understand why the code makes
->> sense after the cleanup. If we don't understand why it works, we cannot
->> be sure that it doesn't harm other benchmarks. There is always a chance
->> that we miss something but, IMHO, not having any idea to begin with
->> increases the chances for problems later significantly. So why not get
->> to the bottom of the problem of cleaning up cpu_load?
->>
->> Have you done more extensive benchmarking? Have you seen any regressions
->> in other benchmarks?
-> 
-> I only remember hackbench numbers and that generally fares well with a
-> more aggressive balancer since it has no actual work to speak of the
-> migration penalty is very low and because there's a metric ton of tasks
-> the aggressive leveling makes for more coherent 'throughput'.
+> Yes. He dislikes passing argument callee has already access
+> to. "current". This patch does not do this, it just passes the NULL as
+> a marker... and to keep printf() checkers happy.
 
-I just tested hackbench on arm. and with more testing times plus rebase to .13-rc6, the variation increased, then the benefit become unclear. anyway still no regression find on both perf-stat cpu-migration times and real execute time.
+Excuse me?
+Compilers or kernel developers, which one does "printf() checkers" refer to?
 
-On 0day performance testing should tested kbuild, hackbench, aim7, dbench, tbench, sysbench, netperf etc. etc. No regression found.
+The "%pT" patch is for printing tsk->comm consistently, but not always
+tsk == current .
 
-The 0day performance testing also catch a cpu migration reduced on kvm guest.
-https://lkml.org/lkml/2013/12/21/135 
+The "\x1A" patch is for printing tsk->xxx without passing tsk->xxx as
+arguments, but always tsk == current .
 
-and another benchmark get benefit on the old patchset:
-like the testing results show on 0day performance testing: 
+These two patches have different purposes and do not overwrap.
 
-https://lkml.org/lkml/2013/12/4/102
+Both patches are written not to confuse compilers when using
+__attribute__((format(printf, a, b))) check. Therefore, I don't think that
+the "\x1A" patch makes compilers unhappy. Rather, the "\x1A" patch would make
+compilers more happy because it replaces cost of passing current or NULL
+as arguments with cost of symbolic names (e.g. two bytes for
+  #define EMBED_CURRENT_COMM "\x1A\xFF"
+case) within the format string.
 
-Hi Alex,
+  (no patch applied)
+  tsk = current;
+  pr_info("%s[%d] trap %s ip:%lx sp:%lx error:%lx",
+          tsk->comm, tsk->pid, str, regs->ip, regs->sp, error_code);
 
-We obsevered 150% performance gain with vm-scalability/300s-mmap-pread-seq
-testcase with this patch applied. Here is a list of changes we got so far:
+  (the "%pT" patch applied)
+  tsk = current;
+  pr_info("%pT[%d] trap %s ip:%lx sp:%lx error:%lx",
+          NULL, tsk->pid, str, regs->ip, regs->sp, error_code);
 
-testbox : brickland
-testcase: vm-scalability/300s-mmap-pread-seq
+  (the "\x1A" patch applied)
+  pr_info(EMBED_CURRENT_COMM "[" EMBED_CURRENT_PID "] trap %s ip:%lx sp:%lx error:%lx",
+          str, regs->ip, regs->sp, error_code);
 
+By reducing number of function arguments, those who audit the correctness of
+kernel source code would gain more readability.
 
-    f1b6442c7dd12802e622      d70495ef86f397816d73  
-       (parent commit)            (this commit)
-------------------------  ------------------------  
-             26393249.80      +150.9%  66223933.60  vm-scalability.throughput
+  (no patch applied)
+  tsk = current;
+  pr_info("%s[%d] trap %s ip:%lx sp:%lx error:%lx",
+          tsk->comm, tsk->pid, str, regs->ip, regs->sp, error_code);
 
-                  225.12       -49.9%       112.75  time.elapsed_time
-                36333.40       -90.7%      3392.20  vmstat.system.cs
-                    2.40      +375.0%        11.40  vmstat.cpu.id
-              3770081.60       -97.7%     87673.40  time.major_page_faults
-              3975276.20       -97.0%    117409.60  time.voluntary_context_switches
-                    3.05      +301.7%        12.24  iostat.cpu.idle
-                21118.41       -70.3%      6277.19  time.system_time
-                   18.40      +130.4%        42.40  vmstat.cpu.us
-                   77.00       -41.3%        45.20  vmstat.cpu.sy
-                47459.60       -31.3%     32592.20  vmstat.system.in
-                82435.40       -12.1%     72443.60  time.involuntary_context_switches
-                 5128.13       +14.0%      5848.30  time.user_time
-                11656.20        -7.8%     10745.60  time.percent_of_cpu_this_job_got
-           1069997484.80        +0.3% 1073679919.00 time.minor_page_faults
+  (the "\x1A" patch applied)
+  pr_info(EMBED_CURRENT_COMM "[" EMBED_CURRENT_PID "] trap %s ip:%lx sp:%lx error:%lx",
+          str, regs->ip, regs->sp, error_code);
 
-Btw, the latest patchset include more clean up.
-	git@github.com:alexshi/power-scheduling.git noload
-Guess fengguang's 0day performance is doing test on it.
+There might be kernel developers who are using \x1A within the format string as
+a literal byte, but we will be able to find and rewrite \x1A in the format
+string like
 
--- 
-Thanks
-    Alex
+  (before fixing problem)
+  const chat *fmt = "aaa\x1Axxx\n";
+  pr_debug(fmt);
+
+  (after fixing problem)
+  const char *str = "aaa\x1Axxx"
+  pr_debug("%s\n", str);
+
+as with we find and rewrite '%' in the format string like
+
+  (before fixing problem)
+  const chat *fmt = "aaa%xxx\n";
+  pr_debug(fmt);
+
+  (after fixing problem)
+  const char *str = "aaa%xxx"
+  pr_debug("%s\n", str);
+
+.
+
+It seems to me that we can agree with the "%pT" patch.
+But how does the "\x1A" patch make compilers or kernel developers unhappy?
