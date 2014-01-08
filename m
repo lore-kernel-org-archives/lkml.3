@@ -1,53 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbaAHJ1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:27:39 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:34114 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229AbaAHJ1g (ORCPT
+	id S1755193AbaAHJhv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:37:51 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:32810 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960AbaAHJhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:27:36 -0500
-Date: Wed, 8 Jan 2014 09:27:31 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, robh+dt@kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Patch Tracking <patches@linaro.org>
-Subject: Re: [PATCH 1/3] mfd: Add support for S2MPA01 device
-Message-ID: <20140108092731.GF19974@lee--X1>
-References: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
- <20140108090208.GD19974@lee--X1>
- <CAK9yfHyDNfRcn4J6N5u=CbVHsRqCp5LSgUavsD1p7Gjp+m9dfQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK9yfHyDNfRcn4J6N5u=CbVHsRqCp5LSgUavsD1p7Gjp+m9dfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 8 Jan 2014 04:37:47 -0500
+X-AuditID: cbfee690-b7f266d00000287c-51-52cd1c6970d9
+Message-id: <DC.EF.14383.B9B1DC25@epcpsbgx3.samsung.com>
+Date: Wed, 08 Jan 2014 09:34:19 +0000 (GMT)
+From: Pankaj Kumar <pankaj.k2@samsung.com>
+Subject: [Patch] Linux Security Module - SMACK bugfix patch
+To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        casey@schaufler-ca.com
+Reply-to: pankaj.k2@samsung.com
+MIME-version: 1.0
+X-MTR: 20140108092850218@pankaj.k2
+Msgkey: 20140108092850218@pankaj.k2
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140108092850218@pankaj.k2
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: multipart/mixed;
+ boundary="----=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY"
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFKsWRmVeSWpSXmKPExsWyRsSkRjdT5myQwdVHChaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugStj8pOtLAWf1SumLAtvYDyp1sXIySEkoCJx+uEJVhBbQsBEou3y
+	cyYIW0ziwr31bF2MXEA1Sxkltu37zwRT1LyonwkiMZ9RYnnDFzaQBK+AhcTshkNgRSxAU98d
+	f80OYrMJaEvMet7OAmILC1hLvFx3A8wWESiSePZpIhPEFfISizftYIaYIyhxcuYTFohlShIL
+	nzexQ8SVJRZc/gh1qZzEkqmXoQ7ilZjR/pQFJj7t6xpmCFta4vysDYww3yz+/hgqzi9x7PYO
+	oF4OsN4n94NhxuzeDPGKhICAxNQzB6Fa1SWubb4I1consWbhWxaYMbtOLWeG6b2/ZS7YOcwC
+	kRJ3VjxjB4WPhMAODolNTx+yQ8JEQOLb5ENQzZISB1fcYJnAqDALycuzkPRD2IoSU7ofQtkG
+	EkcWzWFFV88r4CLx5s8TRoiaIIn2DY3MmHr9JfquzGJawMi5ilE0tSC5oDgpvchErzgxt7g0
+	L10vOT93EyMwIZ3+92zCDsZ7B6wPMU5kBDp4IrOUaHI+MKXllcQbGpsZWZiamBobmVua0VJY
+	SZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGadcap8WwXgxo491u/vmVrecFTvHb
+	QQpRAVd+vVQwqHzpot3D0WOXohG0VLJCy/8tJ++XOYt7M9gWrLT7nJWWw8fyk2nT9Kn8f1cl
+	WTZf8nuoeHRTwXcvB92Hz8LmHTyp2+K8nWXznQzBqOc9/yO8zqeYzjHwuGGz+dv36qzyViWT
+	FdVfc6YrsRRnJBpqMRcVJwIAylM/uI0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJsWRmVeSWpSXmKPExsVy+t/tGbqzpc8GGZx4pW5xedccNgdGj8+b
+	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
+	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DE1jrQwNDIxMgWoS0jIm
+	P9nKUvBZvWLKsvAGxpNqXYycHEICKhKnH55gBbElBEwkmhf1M0HYYhIX7q1n62LkAqqZzyix
+	vOELG0iCBajh3fHX7CA2m4C2xKzn7SwgtrCAtcTLdTfAbBGBIolnnyYyQSyQl1i8aQcziM0r
+	IChxcuYTFogFShILnzexQ8SVJRZc/gh1hJzEkqmXoY7glZjR/pQFJj7t6xpmCFta4vysDYww
+	hy7+/hgqzi9x7PYOoF4OsN4n94NhxuzeDHG+hICAxNQzB6Fa1SWubb4I1consWbhWxaYMbtO
+	LWeG6b2/ZS7YOcwCkRJ3Vjxjn8AoNQvJN7OQpCBsRYkp3Q+hbAOJI4vmsKKr5xVwkXjz5wkj
+	RE2QRPuGRmZMvf4SfVdmMS1g5FzFKJpakFxQnJReYaxXnJhbXJqXrpecn7uJEZy0ni3ewfj/
+	vPUhRgEORiUe3gaVM0FCrIllxZW5hxhVgOY82rD6AqMUS15+XqqSCK+E6NkgId6UxMqq1KL8
+	+KLSnNTiQ4z7GYExO5FZSjQ5H5hq80riDY1NzE2NTS0MDM3NzQaPsJI4b/ytpCAhgfTEktTs
+	1NSC1CKYF5g4OKUaGDv9eFcstnvO3bY5sndLWHBSSOi+omCNBv7SSOvzjI8Lp+Sl3f6Vynla
+	qGJ17uZi1pTmc6qi/1IffV5ygnPq1NZtxw/ohS2Uj7z16/6Jxy+U7Bu2Xb95NGWRk2D3JM3Z
+	1vEVqsyh2f3dDbleoQuvv3i1JujAeoVbzb57VJvParKFxDy49uxMthJLcUaioRZzUXEiAM4H
+	M1IHBAAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> @@ -92,7 +93,7 @@ struct sec_platform_data {
-> >>       int                             buck3_default_idx;
-> >>       int                             buck4_default_idx;
-> >>
-> >> -     int                             buck_ramp_delay;
-> >> +     int                             buck_ramp_delay;
-> >
-> > What's this? Are you fixing (or breaking) white space here?
-> 
-> I didn't get you. I have converted spaces to tabs here. See some problem?
 
-No problem. It was unclear in the patch, as white space changes do not
-show up in my mail client.
+------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY
+Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="windows-1252"
+MIME-Version: 1.0
+Message-ID: <26661144.379821389173658876.JavaMail.weblogic@epv6ml03>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+SGkgYWxsDQoNClBsZWFzZSBmaW5kIGF0dGFjaGVkIGJ1Z2ZpeCBwYXRjaCBmb3IgU01BQ0sgTGlu
+dXggc2VjdXJpdHkgbW9kdWxlLiANCg0KVGhpcyBwYXRjaCBmaXhlcyBmb2xsb3dpbmcgYnVncyBp
+biBzbWFja19sc20uYyBmaWxlIDogDQoxLiBJbiBvcmRlciB0byByZW1vdmUgYW55IFNNQUNLIGV4
+dGVuZGVkIGF0dHJpYnV0ZSBmcm9tIGEgZmlsZSwgYSB1c2VyIHNob3VsZCBoYXZlIENBUF9NQUNf
+QURNSU4gY2FwYWJpbGl0eS4gDQpCdXQgdXNlciB3aXRob3V0IHRoaXMgY2FwYWJpbGl0eSBpcyBh
+YmxlIHRvIHJlbW92ZSBTTUFDSzY0TU1BUCBzZWN1cml0eSBhdHRyaWJ1dGUuIA0KVGhpcyBlcnJv
+ciBoYXMgYmVlbiBjb3JyZWN0ZWQgYnkgYSBtb2RpZmljYXRpb24gaW4gc21hY2tfaW5vZGVfcmVt
+b3ZleGF0dHIgU01BQ0sgaG9vay4NCg0KMi4gV2hpbGUgc2V0dGluZyBleHRlbmRlZCBhdHRyaWJ1
+dGUgaW4gc21hY2tfaW5vZGVfc2V0c2VjdXJpdHkgaG9vaywgDQoiLUVBQ0NFUyIgZXJyb3IgaXMg
+Z2V0dGluZyByZXR1cm5lZCBpZiBleHRlbmRlZCBhdHRyaWJ1dGUgc2l6ZSBvciB2YWx1ZSBpcyBu
+b3QgY29ycmVjdC4gDQpCdXQgdGhpcyBpcyBub3QgY29ycmVjdCBlcnJvciB0byBiZSByZXR1cm5l
+ZCBhcyBleHRlbmRlZCBhdHRyaWJ1dGUgaXMgaW52YWxpZA0Kc28gd2Ugc2hvdWxkIHJldHVybiAi
+LUVJTlZBTCIgZXJyb3IuIA0KVG8gY29ycmVjdCB0aGlzIHByb2JsZW0gbm93IHdlIGFyZSByZXR1
+cm5pbmcgIi1FSU5WQUwiIGVycm9yLg0KDQotLS0NCiBzZWN1cml0eS9zbWFjay9zbWFja19sc20u
+YyB8IDQgKystLQ0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25z
+KC0pDQoNCmRpZmYgLS1naXQgYS9zZWN1cml0eS9zbWFjay9zbWFja19sc20uYyBiL3NlY3VyaXR5
+L3NtYWNrL3NtYWNrX2xzbS5jDQppbmRleCBiMGJlODkzLi5iMGU2NTUyIDEwMDY0NA0KLS0tIGEv
+c2VjdXJpdHkvc21hY2svc21hY2tfbHNtLmMNCisrKyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xz
+bS5jDQpAQCAtOTUxLDcgKzk1MSw3IEBAIHN0YXRpYyBpbnQgc21hY2tfaW5vZGVfcmVtb3ZleGF0
+dHIoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBjb25zdCBjaGFyICpuYW1lKQ0KIAkgICAgc3RyY21w
+KG5hbWUsIFhBVFRSX05BTUVfU01BQ0tJUE9VVCkgPT0gMCB8fA0KIAkgICAgc3RyY21wKG5hbWUs
+IFhBVFRSX05BTUVfU01BQ0tFWEVDKSA9PSAwIHx8DQogCSAgICBzdHJjbXAobmFtZSwgWEFUVFJf
+TkFNRV9TTUFDS1RSQU5TTVVURSkgPT0gMCB8fA0KLQkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05B
+TUVfU01BQ0tNTUFQKSkgew0KKwkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVfU01BQ0tNTUFQ
+KSA9PSAwKSB7DQogCQlpZiAoIXNtYWNrX3ByaXZpbGVnZWQoQ0FQX01BQ19BRE1JTikpDQogCQkJ
+cmMgPSAtRVBFUk07DQogCX0gZWxzZQ0KQEAgLTIwODksNyArMjA4OSw3IEBAIHN0YXRpYyBpbnQg
+c21hY2tfaW5vZGVfc2V0c2VjdXJpdHkoc3RydWN0IGlub2RlICppbm9kZSwgY29uc3QgY2hhciAq
+bmFtZSwNCiAJaW50IHJjID0gMDsNCiANCiAJaWYgKHZhbHVlID09IE5VTEwgfHwgc2l6ZSA+IFNN
+S19MT05HTEFCRUwgfHwgc2l6ZSA9PSAwKQ0KLQkJcmV0dXJuIC1FQUNDRVM7DQorCQlyZXR1cm4g
+LUVJTlZBTDsNCiANCiAJc2twID0gc21rX2ltcG9ydF9lbnRyeSh2YWx1ZSwgc2l6ZSk7DQogCWlm
+IChza3AgPT0gTlVMTCkNCi0tIA0KMS44LjEuMg0KDQpJbiBjYXNlIG9mIGFueSBpc3N1ZSwgUGxl
+YXNlIGZlZWwgZnJlZSB0byBjb250YWN0IG1lLg0KDQpUaGFua3MgJiBSZWdhcmRzDQpQYW5rYWog
+S3VtYXI=
+
+
+------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY
+Content-Type: application/octet-stream;
+ name="0001-bugfix-patch-for-SMACK.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0001-bugfix-patch-for-SMACK.patch"
+
+
+RnJvbSA3NTlmNmU1ODdjYzcwMTlhYTlmOTU5MTY4YjBjMTU1ZGZhYjEyM2QyIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUGFua2FqIEt1bWFyIDxwYW5rYWouazJAc2Ftc3Vu
+Zy5jb20+DQpEYXRlOiBGcmksIDEzIERlYyAyMDEzIDE1OjEyOjIyICswNTMwDQpTdWJqZWN0
+OiBbUEFUQ0hdIGJ1Z2ZpeCBwYXRjaCBmb3IgU01BQ0sNCg0KMS4gSW4gb3JkZXIgdG8gcmVt
+b3ZlIGFueSBTTUFDSyBleHRlbmRlZCBhdHRyaWJ1dGUgZnJvbSBhIGZpbGUsIGEgdXNlcg0K
+c2hvdWxkIGhhdmUgQ0FQX01BQ19BRE1JTiBjYXBhYmlsaXR5LiBCdXQgdXNlciB3aXRob3V0
+IGhhdmluZyB0aGlzDQpjYXBhYmlsaXR5IGlzIGFibGUgdG8gcmVtb3ZlIFNNQUNLNjRNTUFQ
+IHNlY3VyaXR5IGF0dHJpYnV0ZS4NCg0KMi4gV2hpbGUgdmFsaWRhdGluZyBzaXplIGFuZCB2
+YWx1ZSBvZiBzbWFjayBleHRlbmRlZCBhdHRyaWJ1dGUgaW4NCnNtYWNrX2lub2RlX3NldHNl
+Y3VyaXR5IGhvb2ssIHdyb25nIGVycm9yIGNvZGUgaXMgcmV0dXJuZWQuDQotLS0NCiBzZWN1
+cml0eS9zbWFjay9zbWFja19sc20uYyB8IDQgKystLQ0KIDEgZmlsZSBjaGFuZ2VkLCAyIGlu
+c2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9zZWN1cml0eS9z
+bWFjay9zbWFja19sc20uYyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xzbS5jDQppbmRleCBi
+MGJlODkzLi5iMGU2NTUyIDEwMDY0NA0KLS0tIGEvc2VjdXJpdHkvc21hY2svc21hY2tfbHNt
+LmMNCisrKyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xzbS5jDQpAQCAtOTUxLDcgKzk1MSw3
+IEBAIHN0YXRpYyBpbnQgc21hY2tfaW5vZGVfcmVtb3ZleGF0dHIoc3RydWN0IGRlbnRyeSAq
+ZGVudHJ5LCBjb25zdCBjaGFyICpuYW1lKQ0KIAkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05B
+TUVfU01BQ0tJUE9VVCkgPT0gMCB8fA0KIAkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVf
+U01BQ0tFWEVDKSA9PSAwIHx8DQogCSAgICBzdHJjbXAobmFtZSwgWEFUVFJfTkFNRV9TTUFD
+S1RSQU5TTVVURSkgPT0gMCB8fA0KLQkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVfU01B
+Q0tNTUFQKSkgew0KKwkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVfU01BQ0tNTUFQKSA9
+PSAwKSB7DQogCQlpZiAoIXNtYWNrX3ByaXZpbGVnZWQoQ0FQX01BQ19BRE1JTikpDQogCQkJ
+cmMgPSAtRVBFUk07DQogCX0gZWxzZQ0KQEAgLTIwODksNyArMjA4OSw3IEBAIHN0YXRpYyBp
+bnQgc21hY2tfaW5vZGVfc2V0c2VjdXJpdHkoc3RydWN0IGlub2RlICppbm9kZSwgY29uc3Qg
+Y2hhciAqbmFtZSwNCiAJaW50IHJjID0gMDsNCiANCiAJaWYgKHZhbHVlID09IE5VTEwgfHwg
+c2l6ZSA+IFNNS19MT05HTEFCRUwgfHwgc2l6ZSA9PSAwKQ0KLQkJcmV0dXJuIC1FQUNDRVM7
+DQorCQlyZXR1cm4gLUVJTlZBTDsNCiANCiAJc2twID0gc21rX2ltcG9ydF9lbnRyeSh2YWx1
+ZSwgc2l6ZSk7DQogCWlmIChza3AgPT0gTlVMTCkNCi0tIA0KMS44LjEuMg0KDQo=
+
+
+------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY--
