@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068AbaAHLwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:52:36 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44630 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163AbaAHLwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:52:33 -0500
-Message-ID: <52CD3DBD.401@linux.vnet.ibm.com>
-Date: Wed, 08 Jan 2014 17:29:57 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756230AbaAHLx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:53:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:58249 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755205AbaAHLxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:53:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,624,1384329600"; 
+   d="scan'208";a="455386713"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
+In-Reply-To: <20140107154805.GD20765@two.firstfloor.org>
+References: <20131219103134.GD30183@twins.programming.kicks-ass.net> <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com> <20131219112812.GY21999@twins.programming.kicks-ass.net> <20131219123955.GA18186@gmail.com> <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com> <20131219151024.GI16438@laptop.programming.kicks-ass.net> <87iotw6bwx.fsf@tassilo.jf.intel.com> <20140106220509.GI30183@twins.programming.kicks-ass.net> <20140107005231.GZ20765@two.firstfloor.org> <20140107084215.GO30183@twins.programming.kicks-ass.net> <20140107154805.GD20765@two.firstfloor.org>
+User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 08 Jan 2014 13:53:15 +0200
+Message-ID: <87a9f6ellg.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>,
-        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V3] mm readahead: Fix the readahead fail in case of
- empty numa node
-References: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140106105620.GC3312@quack.suse.cz> <52CD0E2F.8000903@linux.vnet.ibm.com> <20140108103843.GA8256@quack.suse.cz>
-In-Reply-To: <20140108103843.GA8256@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010811-9574-0000-0000-00000B660E55
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 04:08 PM, Jan Kara wrote:
-> On Wed 08-01-14 14:07:03, Raghavendra K T wrote:
->> On 01/06/2014 04:26 PM, Jan Kara wrote:
->>> On Mon 06-01-14 15:51:55, Raghavendra K T wrote:
->> ---
->> test file looked something like this:
->>
->> char buf[4096];
->>
->> int main()
->> {
->> int fd = open("testfile", O_RDONLY);
->> unsigned long read_bytes = 0;
->> int sz;
->> posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
->    Hum, but this call should have rather been:
-> struct stat st;
->
-> fstat(fd, &st);
-> posix_fadvise(fd, 0, st.st_size, POSIX_FADV_WILLNEED);
->
-> The posix_fadvise() call you had doesn't do anything...
->
-> 								Honza
+Andi Kleen <andi@firstfloor.org> writes:
 
-I reran the test with that change, no change the outcome though.
-(I had earlier tested with hardcoded size etc.. but fstat was the
-correct thing to do.. thanks). will include the result in V4
-
+>> So create two events, one for the PT stuff and one to track the
+>> side-band stuff. We have a NOP event for just this purpose.
 >
->> do {
->> 	sz = read(fd, buf, 4096);
->> 	read_bytes += sz;
->> } while (sz > 0);
->>
->> close(fd);
->> printf (" Total bytes read = %lu \n", read_bytes);
->> return 0;
->> }
+> Ok I guess that could work.
+>
+> Essentially replace the magic mmap offset with a second fd.
+>
+> Alex, what do you think?
 
+Yes, that's what I suggested some time ago in [1]. A second buffer
+(through another fd or otherwise) is an essential thing from my point of
+view.
+
+[1] http://marc.info/?l=linux-kernel&m=138737306725663
+
+Regards,
+--
+Alex
