@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311AbaAHVOP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:14:15 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:64630 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291AbaAHVON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:14:13 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 08 Jan 2014 15:58:52 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1757396AbaAHVQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:16:15 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:47726 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752511AbaAHVQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 16:16:12 -0500
+Date: Wed, 8 Jan 2014 14:16:10 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        David Garbett <David.Garbett@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
-In-reply-to: <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
-Message-id: <alpine.LFD.2.10.1401081538350.1851@knanqh.ubzr>
-References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com>
- <20140108143529.GB14122@mudshark.cambridge.arm.com>
- <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
- <20140108192028.GM27432@n2100.arm.linux.org.uk>
- <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
-User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] dt: Document a compatible entry for MDIO ethernet Phys
+Message-ID: <20140108211610.GC12358@obsidianresearch.com>
+References: <20131210193947.GU5429@obsidianresearch.com>
+ <CAL_JsqLpWSXd44ErAs=+xYS8ESaBSY6EJEneZFYqtbpfyM4iPQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqLpWSXd44ErAs=+xYS8ESaBSY6EJEneZFYqtbpfyM4iPQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014, Doug Anderson wrote:
+On Wed, Jan 08, 2014 at 12:37:03PM -0600, Rob Herring wrote:
 
-> On Wed, Jan 8, 2014 at 11:20 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > We've been through these arguments many times, you're not the first to
-> > raise it, and we've decided upon the policy.  We want as _few_ work-
-> > arounds in the kernel as possible, because applying the work-arounds
-> > is very problematical with the mixture of secure and non-secure booting.
+> > Patch to parse this compatible string to follow if this binding is
+> > acceptable.
 > 
-> OK, fair enough.  If we want no workaround here then we can drop this patch.
+> One minor comment below, otherwise:
 > 
-> 
-> I'd guess that the way forward is:
-> 
-> * Land kernel workaround locally in Chromium tree
-> 
-> * I'll try to land FW change locally in at least one Chromium branch.
-> If we were to get a new RO build ever (seems unlikely at this point)
-> it would be fixed for upstream kernels.  If we were to get a new RW
-> build (seems unlikely, but at least less unlikely) it would be fixed
-> if someone landed a kernel patch to save/restore this register across
-> suspend/resume.
-> 
-> * If Joe Upstream wants to run an upstream kernel on some type of
-> exynos5250 product (Samsung ARM Chromebook, HP Chromebook 11, Nexus 10
-> are the ones I know of) then he will deal with the small number of
-> crashes or figure out a solution.
+> Acked-by: Rob Herring <robh@kernel.org>
 
-At some point you have to realize that what you're proposing is not 
-viable when taking into account the bigger picture.  And your FW 
-architecture is to blame.  If you were running Windows instead of Linux 
-I bet you'd have found a way to fix things differently than asking 
-Microsoft to add a special quirk in their code.  In the PC world you are 
-required to perform a BIOS update instead.
+K, I'll send a series hopefully in a few weeks after some travel.
+ 
+> > +  If the phy's identifier is known then the list may contain an entry
+> > +  of the form: "ethernet-phy-idAAAA,BBBB" where
+> 
+> I think this should be a period rather than a comma as we are not
+> separating a vendor ID from product ID.
 
-So you really need to provision the ability to update at least a portion 
-of the firmware that is not read-only.  That may be a third-stage 
-bootloader or the like which purpose is only to install workarounds such 
-as this before executing the kernel and which doesn't need to be updated 
-with the kernel.  And in theory you should be able to do that on top of 
-your current RO firmware.
+OK, that makes sense.
 
-Errata workarounds are often machine specific and they can be applied 
-only in special conditions the kernel might not safely know about until 
-it is too late.
+Inspecting further, the format of the 32 bit AAAABBBB is actually
+broken out into:
+  OUI[3:18] || OUI[19:24] || MODEL[5:0] || REV[3:0]
 
+So a possible choice with the 'vendor ID,product ID' split is:
+  ethernet-phyOOOOO,MM.R
 
-Nicolas
+xlate is:
+
+AAAABBBB = ((OOOOO >> 6) << 16) |
+           ((OOOOO & 0x3f) << 10) |
+           (MM << 4) |
+      	   R
+
+Which doesn't textually match the register value, or any other
+phy ID constants in the kernel, however makes more sense from the
+'vendor ID,product ID' angle.
+
+Eg a Marvell 88E1310 would encode into the two options as:
+  ethernet-phy05043,29.0
+  ethernet-phy-id0141.0e90
+
+And the kernel has constants like this:
+include/linux/marvell_phy.h:#define MARVELL_PHY_ID_88E1318S 0x01410e90
+
+In light of this detail do you still like 'ethernet-phy-id0141.0e90' ?
+
+Thanks,
+Jason
