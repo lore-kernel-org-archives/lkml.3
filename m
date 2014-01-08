@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932128AbaAHRbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:31:42 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15166 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756136AbaAHRbi (ORCPT
+	id S932166AbaAHRbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:31:50 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:51466 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137AbaAHRbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:31:38 -0500
-Message-ID: <1389202297.23721.33.camel@hornet>
-Subject: Re: [RFC 07/18] regmap: debugfs: Always create "registers" &
- "access" files
-From: Pawel Moll <pawel.moll@arm.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Wed, 08 Jan 2014 17:31:37 +0000
-In-Reply-To: <20131224121912.GX30815@sirena.org.uk>
-References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
-	 <1387815830-8794-8-git-send-email-pawel.moll@arm.com>
-	 <20131224121912.GX30815@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Wed, 8 Jan 2014 12:31:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140108172240.GD14575@lee--X1>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	<20140107090938.GF3182@lee--X1>
+	<CAOMwXhMqwC9zx6GKY+QXzy7s+u4ZapyPyLBz-ANgS8qMTDNyhg@mail.gmail.com>
+	<CAOMwXhN7JzCZZVtNTHPAhrdFkM4z10J634ctBPR2u+tRUOtSqw@mail.gmail.com>
+	<20140108172240.GD14575@lee--X1>
+Date: Wed, 8 Jan 2014 17:31:45 +0000
+X-Google-Sender-Auth: XwdOCZY7yTyhN7x_tb6moULKw8o
+Message-ID: <CAOMwXhMVkk5Lbuh6EHtmUqm3QCNbqRbHRPf5RKEQcWuTM7ScOg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Add GPIO support for the MAX6650/6651 ICs
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-12-24 at 12:19 +0000, Mark Brown wrote:
-> On Mon, Dec 23, 2013 at 04:23:39PM +0000, Pawel Moll wrote:
-> > When a map covers a single register, max_register is equal
-> > to 0, so the "registers" & "access" files were not created.
-> > 
-> > This patch is removing this restriction. It should be save,
-> > as the maps not without register 0 should return false
-> > for regmap_readable(map, 0).
-> 
-> No, we need to find a better way of doing this such as checking to see
-> if register zero is accessible in some way.  We want to avoid having
-> those files if there's no way of populating them since this is useful
-> information for tooling.
+On Wed, Jan 8, 2014 at 5:22 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Wed, 08 Jan 2014, Laszlo Papp wrote:
+>
+>> In other words, I really do not know what format you prefer for design review.
+>>
+>> Apparently, not as previously requested, so please tell me what format
+>> one _should_ submit design reviews in.
+>>
+>> I personally still think that submitting "pseudo-code" is a good way
+>> of it if it is clearly marked so like in my case, so that it does not
+>> mislead anyone that I accidentally submit a clearly broken change for
+>> an integration candidate.
+>>
+>> I hope it is understood that I am asking about design reviews before
+>> the lengthy implementation to potentially avoid a lot of additional
+>> work on both sides with writing and reviewing an implementation with a
+>> "wrong" approach...
+>
+> The correct way to do this is to submit RFC patches. If you start your
+> $SUBJECT line with [PATCH RFC x/x], then we know that they're
+> development patches and we can treat them as such.
+>
+> If you're submitting code, in form, which are you in this case, they
+> should still abide by the submission rules. I you'd like us to review
+> them, then they need to be in an easy to read format. Submitting
+> patches with lots of whitespace variation is off-putting and hard to
+> review. If you want people to put aside their time to help you, then
+> the least you can do is make it easy for them to read. Conforming to
+> the 3 documentation files (I know how much you love documentation)
+> will ensure you're giving yourself a snowball's chance in Hell of
+> 'winning' the response you desire.
+>
+> All this toing and froing is wasting everyone's time. Just submit
+> nice patches for us to review and you will receive the help you
+> crave.
 
-Something like this then?
+Please let me know an automatized way for fixing up style issues for
+the kernel. Should I use a separate editor profile for Linux kernel
+development? What is the best practice out there?
 
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index c5471cd..45d812c 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -511,7 +511,7 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
- 	debugfs_create_file("range", 0400, map->debugfs,
- 			    map, &regmap_reg_ranges_fops);
- 
--	if (map->max_register) {
-+	if (map->max_register || regmap_readable(map, 0)) {
- 		debugfs_create_file("registers", 0400, map->debugfs,
- 				    map, &regmap_map_fops);
- 		debugfs_create_file("access", 0400, map->debugfs,
+I can say that from practice that Lindent and others things made the
+code even messier than it had been. It is not as simple as you may
+think for a newcomer than me. I would rather _not_ spend time with
+stylistic issues when the main point is clearly not styling, but
+design review.
 
-Other possibility would be replacing max_register with registers_num,
-but it looks a massive job...
+My conclusion from your email is that, I will not submit code then
+because it is just a waste of time for design discussion unless there
+is a simple and automated way of taking care of the style stuff.
 
-Paweł
-
+Cheers again ...
