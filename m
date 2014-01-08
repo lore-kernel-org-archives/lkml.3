@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972AbaAHIrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:47:17 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47900 "EHLO
+	id S1755998AbaAHIr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:47:29 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:48061 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781AbaAHIqj (ORCPT
+	with ESMTP id S1755876AbaAHIqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:46:39 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-f3-52cd106ccfaf
+	Wed, 8 Jan 2014 03:46:46 -0500
+X-AuditID: 9c93017d-b7b66ae000006a2a-14-52cd106f88bf
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 02/28] perf tools: Do not update total period of a hists when filtering
-Date: Wed,  8 Jan 2014 17:46:07 +0900
-Message-Id: <1389170793-21926-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 12/28] perf tools: Save callchain info for each cumulative entry
+Date: Wed,  8 Jan 2014 17:46:17 +0900
+Message-Id: <1389170793-21926-13-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
 References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
@@ -26,55 +26,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When filtering by thread, dso or symbol on TUI it also update total
-period so that the output shows different result than no filter - the
-percentage changed to relative to filtered entries only.  Sometimes
-(always?)  this is not desired since users might expect same results
-with filter.
+When accumulating callchain entry, also save current snapshot of the
+chain so that it can show the rest of the chain.
 
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ tools/perf/builtin-report.c | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 64df6b96e7ea..266d9b238856 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -698,7 +698,6 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
- 	if (h->ms.unfolded)
- 		hists->nr_entries += h->nr_rows;
- 	h->row_offset = 0;
--	hists->stats.total_period += h->stat.period;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
- 
- 	hists__calc_col_len(hists, h);
-@@ -721,7 +720,7 @@ void hists__filter_by_dso(struct hists *hists)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 087d01cac1aa..5f07da10f83c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -363,7 +363,6 @@ static int
+ iter_prepare_cumulative_entry(struct hist_entry_iter *iter __maybe_unused,
+ 			      struct addr_location *al __maybe_unused)
  {
- 	struct rb_node *nd;
+-	struct callchain_cursor_node *node;
+ 	struct hist_entry **he_cache;
  
--	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->nr_entries = 0;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
- 	hists__reset_col_len(hists);
+ 	callchain_cursor_commit(&callchain_cursor);
+@@ -380,10 +379,6 @@ iter_prepare_cumulative_entry(struct hist_entry_iter *iter __maybe_unused,
+ 	iter->priv = he_cache;
+ 	iter->curr = 0;
  
-@@ -754,7 +753,7 @@ void hists__filter_by_thread(struct hists *hists)
- {
- 	struct rb_node *nd;
+-	node = callchain_cursor_current(&callchain_cursor);
+-	if (node == NULL)
+-		return 0;
+-
+ 	return 0;
+ }
  
--	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->nr_entries = 0;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
- 	hists__reset_col_len(hists);
+@@ -404,6 +399,14 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
  
-@@ -785,7 +784,7 @@ void hists__filter_by_symbol(struct hists *hists)
- {
- 	struct rb_node *nd;
+ 	he_cache[iter->curr++] = he;
  
--	hists->nr_entries = hists->stats.total_period = 0;
-+	hists->nr_entries = 0;
- 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
- 	hists__reset_col_len(hists);
++	callchain_append(he->callchain, &callchain_cursor, sample->period);
++
++	/*
++	 * We need to re-initialize the cursor since callchain_append()
++	 * advanced the cursor to the end.
++	 */
++	callchain_cursor_commit(&callchain_cursor);
++
+ 	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ }
+ 
+@@ -453,7 +456,6 @@ iter_next_cumulative_entry(struct hist_entry_iter *iter,
+ 	}
+ 
+ out:
+-	callchain_cursor_advance(&callchain_cursor);
+ 	return 1;
+ }
+ 
+@@ -477,6 +479,11 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 		.parent = iter->parent,
+ 	};
+ 	int i;
++	struct callchain_cursor cursor;
++
++	callchain_cursor_snapshot(&cursor, &callchain_cursor);
++
++	callchain_cursor_advance(&callchain_cursor);
+ 
+ 	/*
+ 	 * Check if there's duplicate entries in the callchain.
+@@ -495,6 +502,8 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 
+ 	he_cache[iter->curr++] = he;
+ 
++	callchain_append(he->callchain, &cursor, sample->period);
++
+ 	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ }
  
 -- 
 1.7.11.7
