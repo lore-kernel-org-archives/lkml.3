@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739AbaAHLgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:36:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59892 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbaAHLf5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:35:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/5] mfd: omap-usb-host: Update DT clock binding information
-Date: Wed, 8 Jan 2014 12:35:40 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Roger Quadros <rogerq@ti.com>, Sebastian Reichel <sre@debian.org>,
-        devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        tony@atomide.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com,
-        "Kristo, Tero" <t-kristo@ti.com>, bcousson@baylibre.com,
-        linux-omap@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-References: <1389161742-10533-1-git-send-email-rogerq@ti.com> <3761842.HRY1CDBF4z@wuerfel> <52CD324D.3020701@ti.com>
-In-Reply-To: <52CD324D.3020701@ti.com>
+	id S1755597AbaAHLlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:41:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755106AbaAHLlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:41:12 -0500
+Date: Wed, 8 Jan 2014 19:41:37 +0800
+From: Dave Young <dyoung@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: README: update about .tar.xz format
+Message-ID: <20140108114137.GA19456@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401081235.40927.arnd@arndb.de>
-X-Provags-ID: V02:K0:HcDeunmEVIeboUV09K0SUGl2QLJIE3h3DFyIw+QRloV
- l8mjVuQZv6MeE88SXqeAf8uoldp0H4i8NGuOMGhbnf4LYgoWEO
- WSLvZgyJzUD6bpC8t3WQ7WHilB6Zpp9P6QdXXlsiLwAbbY4WR1
- m3X/1QU9fp5dyNnLBisjpBRrpV6WggMlc2fnhwHZuysnMh/0Df
- X0hqA/UsbQGy/WK7TEdeFxnGygfiAmJV69g4/m1coebe1x+Kmg
- ydCXQwyBhvv75v2YUF6LVJoOS8apkNe1+DIVxeWTFN+56qlg6z
- M4nVSxr50HV/W9Mrjn9KLHpAmOxCAB2DRt3aixdjBKwQEwkiBk
- pkgYfu/I1m1pBMvvs+UQ=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014, Roger Quadros wrote:
-> OK. I'll update the binding information to reflect all the clocks.
-> 
-> But what about clk_get() vs of_clk_get_by_name() ?
+kernel.org do not provide .bz2 for downloading, see below:
+https://www.kernel.org/happy-new-year-and-good-bye-bzip2.html
 
-I think the convention these days is to just use clk_get(), which calls
-of_clk_get_by_name() internally. Not sure if that's what you are asking.
+Thus update README about using xz format.
 
-	Arnd
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ README |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- linux.orig/README
++++ linux/README
+@@ -66,7 +66,7 @@ INSTALLING the kernel source:
+ 
+    or
+ 
+-     bzip2 -dc linux-3.X.tar.bz2 | tar xvf -
++     xz -dc linux-3.X.tar.xz | tar xvf -
+ 
+    Replace "X" with the version number of the latest kernel.
+ 
+@@ -76,7 +76,7 @@ INSTALLING the kernel source:
+    whatever the kernel-du-jour happens to be.
+ 
+  - You can also upgrade between 3.x releases by patching.  Patches are
+-   distributed in the traditional gzip and the newer bzip2 format.  To
++   distributed in the traditional gzip and the newer xz format.  To
+    install by patching, get all the newer patch files, enter the
+    top level directory of the kernel source (linux-3.X) and execute:
+ 
+@@ -84,7 +84,7 @@ INSTALLING the kernel source:
+ 
+    or
+ 
+-     bzip2 -dc ../patch-3.x.bz2 | patch -p1
++     xz -dc ../patch-3.x.xz | patch -p1
+ 
+    Replace "x" for all versions bigger than the version "X" of your current
+    source tree, _in_order_, and you should be ok.  You may want to remove
