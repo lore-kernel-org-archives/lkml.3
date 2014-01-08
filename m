@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaAHXYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:24:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43767 "EHLO
+	id S932328AbaAHX0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:26:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43851 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757312AbaAHXYH (ORCPT
+	with ESMTP id S1757268AbaAHX0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 18:24:07 -0500
-Date: Wed, 8 Jan 2014 15:24:37 -0800
+	Wed, 8 Jan 2014 18:26:19 -0500
+Date: Wed, 8 Jan 2014 15:26:49 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Tomas Winkler <tomas.winkler@intel.com>
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         Alexander Usyskin <alexander.usyskin@intel.com>
 Subject: Re: [char-misc 3/4] mei: revamp mei reset state machine
-Message-ID: <20140108232437.GB11300@kroah.com>
+Message-ID: <20140108232649.GA21386@kroah.com>
 References: <1389205164-13553-1-git-send-email-tomas.winkler@intel.com>
  <1389205164-13553-4-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
@@ -41,7 +41,6 @@ On Wed, Jan 08, 2014 at 08:19:23PM +0200, Tomas Winkler wrote:
 > 
 > 5. Add mei_restart function to wrap the pci resume
 > 
-> Cc: <stable@vger.kernel.org> 
 > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 > Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 > ---
@@ -53,6 +52,22 @@ On Wed, Jan 08, 2014 at 08:19:23PM +0200, Tomas Winkler wrote:
 >  drivers/misc/mei/pci-me.c    |  10 +--
 >  6 files changed, 143 insertions(+), 105 deletions(-)
 
-Again, way too big for stable kernels, sorry.
+This patch fails to apply to my tree:
+
+checking file drivers/misc/mei/hbm.c
+checking file drivers/misc/mei/hw-me.c
+checking file drivers/misc/mei/init.c
+Hunk #3 FAILED at 85.
+Hunk #4 succeeded at 119 (offset -1 lines).
+Hunk #5 succeeded at 246 (offset -1 lines).
+Hunk #6 succeeded at 267 (offset -1 lines).
+1 out of 6 hunks FAILED
+checking file drivers/misc/mei/interrupt.c
+checking file drivers/misc/mei/mei_dev.h
+checking file drivers/misc/mei/pci-me.c
+
+Care to fix it up and resend?
+
+thanks,
 
 greg k-h
