@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaAHHct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:32:49 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:30841 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170AbaAHHcm (ORCPT
+	id S1755268AbaAHHfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:35:43 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:60358 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539AbaAHHfg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:32:42 -0500
-Message-ID: <52CCFEFB.201@huawei.com>
-Date: Wed, 8 Jan 2014 15:32:11 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 8 Jan 2014 02:35:36 -0500
 MIME-Version: 1.0
-To: Antonio Quartulli <antonio@meshcoding.com>,
-        "The list for a Better Approach To Mobile Ad-hoc Networking" 
-	<b.a.t.m.a.n@lists.open-mesh.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Simon Wunderlich <sw@simonwunderlich.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [B.A.T.M.A.N.] [PATCH v3.6 06/19] batman-adv: use batadv_compare_eth
- for concise
-References: <52CCBDA9.8090205@huawei.com> <52CCF906.7000400@meshcoding.com>
-In-Reply-To: <52CCF906.7000400@meshcoding.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1389146191-2096-1-git-send-email-ying.xue@windriver.com>
+References: <1389146191-2096-1-git-send-email-ying.xue@windriver.com>
+Date: Wed, 8 Jan 2014 08:35:35 +0100
+Message-ID: <CAKMK7uH1PjT7mfZunhFdftNe0WKHEYMU_xm7mMJCWR8CtDA--g@mail.gmail.com>
+Subject: Re: [PATCH] drm/i915: silence compiler warning
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Ying Xue <ying.xue@windriver.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/8 15:06, Antonio Quartulli wrote:
-> On 08/01/14 03:53, Ding Tianhong wrote:
->> It is better to use batadv_compate_eth instead of memcpy for
->> concise style.
->>
->> Cc: Marek Lindner <mareklindner@neomailbox.ch>
->> Cc: Simon Wunderlich <sw@simonwunderlich.de>
->> Cc: Antonio Quartulli <antonio@meshcoding.com>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: b.a.t.m.a.n@lists.open-mesh.org
->> Cc: netdev@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
->> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->> Acked-by: Antonio Quartulli <antonio@meshcoding.com>
-> 
-> Am I wrong or this patch has already been merged in net-next (together
-> with other patches from this series)?
-> 
-> 
-> 
-> Regards,
-> 
-> 
-Yesï¼Œ it is already in net-next, so miss it, thanks.
+On Wed, Jan 8, 2014 at 2:56 AM, Ying Xue <ying.xue@windriver.com> wrote:
+> drivers/gpu/drm/i915/i915_debugfs.c: In function ‘display_crc_ctl_write’:
+> drivers/gpu/drm/i915/i915_debugfs.c:2393:2: warning: ‘val’ may be used uninitialized in this function [-Wuninitialized]
+> drivers/gpu/drm/i915/i915_debugfs.c:2350:6: note: ‘val’ was declared here
+>
+> Signed-off-by: Ying Xue <ying.xue@windriver.com>
 
-Regards
-Ding
+I already have such a patch in my -next queue, thanks anyway.
+-Daniel
 
+
+> ---
+>  drivers/gpu/drm/i915/i915_debugfs.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
+> index 6ed45a9..7963ba5 100644
+> --- a/drivers/gpu/drm/i915/i915_debugfs.c
+> +++ b/drivers/gpu/drm/i915/i915_debugfs.c
+> @@ -2347,7 +2347,7 @@ static int pipe_crc_set_source(struct drm_device *dev, enum pipe pipe,
+>  {
+>         struct drm_i915_private *dev_priv = dev->dev_private;
+>         struct intel_pipe_crc *pipe_crc = &dev_priv->pipe_crc[pipe];
+> -       u32 val;
+> +       u32 val = 0;
+>         int ret;
+>
+>         if (pipe_crc->source == source)
+> --
+> 1.7.9.5
+>
+
+
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
