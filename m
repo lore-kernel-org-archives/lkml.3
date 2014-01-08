@@ -1,53 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230AbaAHLx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:53:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58249 "EHLO mga09.intel.com"
+	id S1756269AbaAHLyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:54:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51994 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755205AbaAHLxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:53:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,624,1384329600"; 
-   d="scan'208";a="455386713"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v0 04/71] itrace: Infrastructure for instruction flow tracing units
-In-Reply-To: <20140107154805.GD20765@two.firstfloor.org>
-References: <20131219103134.GD30183@twins.programming.kicks-ass.net> <87ob4drsww.fsf@ashishki-desk.ger.corp.intel.com> <20131219112812.GY21999@twins.programming.kicks-ass.net> <20131219123955.GA18186@gmail.com> <87haa4kj4y.fsf@ashishki-desk.ger.corp.intel.com> <20131219151024.GI16438@laptop.programming.kicks-ass.net> <87iotw6bwx.fsf@tassilo.jf.intel.com> <20140106220509.GI30183@twins.programming.kicks-ass.net> <20140107005231.GZ20765@two.firstfloor.org> <20140107084215.GO30183@twins.programming.kicks-ass.net> <20140107154805.GD20765@two.firstfloor.org>
-User-Agent: Notmuch/0.15.2+182~gd0bd88f (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 08 Jan 2014 13:53:15 +0200
-Message-ID: <87a9f6ellg.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1755605AbaAHLyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:54:06 -0500
+Date: Wed, 8 Jan 2014 11:54:00 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
+ prep_new_page() race
+Message-ID: <20140108115400.GD27046@suse.de>
+References: <20131213173406.GG5408@redhat.com>
+ <20131216183618.GA28252@redhat.com>
+ <20131216201952.GE21218@redhat.com>
+ <20131219190846.GA24566@redhat.com>
+ <20131219190920.GB24566@redhat.com>
+ <20131223114300.GC727@redhat.com>
+ <20140103195519.GA26555@redhat.com>
+ <20140103195547.GB26555@redhat.com>
+ <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org>
+ <20140104164347.GA31359@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140104164347.GA31359@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+On Sat, Jan 04, 2014 at 05:43:47PM +0100, Oleg Nesterov wrote:
+> On 01/03, Andrew Morton wrote:
+> >
+> > On Fri, 3 Jan 2014 20:55:47 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > > get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
+> > > compound_lock(). In theory this page_head can be already freed and
+> > > reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
+> > > get_page_unless_zero() can succeed right after set_page_refcounted(),
+> > > and compound_lock() can race with the non-atomic __SetPageHead().
+> >
+> > Would be useful to mention that these things are happening inside
+> > prep_compound_opage() (yes?).
+> 
+> Agreed. Added "in prep_compound_opage()" into the changelog:
+> 
+> 	get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
+> 	compound_lock(). In theory this page_head can be already freed and
+> 	reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
+> 	get_page_unless_zero() can succeed right after set_page_refcounted(),
+> 	and compound_lock() can race with the non-atomic __SetPageHead() in
+> 	prep_compound_page().
+> 
+> 	Perhaps we should rework the thp locking (under discussion), but
+> 	until then this patch moves set_page_refcounted() and adds wmb()
+> 	to ensure that page->_count != 0 comes as a last change.
+> 
+> 	I am not sure about other callers of set_page_refcounted(), but at
+> 	first glance they look fine to me.
+> 
+> or should I send v3?
+> 
 
->> So create two events, one for the PT stuff and one to track the
->> side-band stuff. We have a NOP event for just this purpose.
->
-> Ok I guess that could work.
->
-> Essentially replace the magic mmap offset with a second fd.
->
-> Alex, what do you think?
+This patch is putting a write barrier in the page allocator fast path and
+that is going to be a leading cause of Sad Face. We already have seen
+large regressions before when write barriers were introduced to the page
+allocator paths for cpusets.  Sticking it under CONFIG_TRANSPARENT_HUGEPAGE
+does not really address the issue.
 
-Yes, that's what I suggested some time ago in [1]. A second buffer
-(through another fd or otherwise) is an essential thing from my point of
-view.
+> > > Perhaps we should rework the thp locking (under discussion), but
+> > > until then this patch moves set_page_refcounted() and adds wmb()
+> > > to ensure that page->_count != 0 comes as a last change.
+> > >
+> > > I am not sure about other callers of set_page_refcounted(), but at
+> > > first glance they look fine to me.
+> >
+> > I don't get it.  We're in prep_new_page() - this page is freshly
+> > allocated and no other thread yet has any means by which to look it up
+> > and start fiddling with it?
+> 
+> Yes, but thp can access this page_head via stale pointer, tail->first_page,
+> if it races with split_huge_page_refcount().
 
-[1] http://marc.info/?l=linux-kernel&m=138737306725663
+To justify the introduction of a performance regression we need to be 100%
+sure this race actually exists and not just theoretical. I had lost track
+of this thread but did not see a description of how this bug can actually
+happen. At the risk of sounding stupid -- what are the actual circumstances
+when this race can occur?
 
-Regards,
---
-Alex
+For example, in the reclaim paths, we are going to be dealing with the head
+pages as they are on the LRU. They get split into base pages and then the
+compound handling becomes irrelevant. I cannot see problems there.
+
+For futex, the THP page (and the tail) must have been discovered via
+the page tables in which case the page tables are temporarily preventing
+the page being freed to the allocator. GUP fast paths are protected from
+parallel teardowns and the slow paths are protected from parallel unmaps
+and frees by mmap_sem.
+
+Compaction and other walkers mostly deal with the head and/or deal with
+pages on the LRU where there will be an elevated reference count.
+
+The changelog needs a specific example where the problem can occur and
+even then we should consider if there is an option other than smacking
+the page allocator.
+
+>  In this case we rely on
+> compound_lock() to detect this race, the problem is that compound_lock()
+> itself can race with head_page->flags manipulations.
+> 
+> For example, __get_page_tail() roughly does:
+> 
+> 	// PageTail(page) was already checked
+> 
+> 	page_head = page->first_page;
+> 
+> 	/* WINDOW */
+> 
+> 	get_page_unless_zero(page_head);
+> 
+> 	compound_lock(page_head);
+> 
+> 	recheck PageTail(page) to ensure page_head is still valid
+> 
+> However, in the WINDOW above, split_huge_page() can split this huge page.
+> After that its head can be freed and reallocated. Of course, I don't think
+> it is possible to hit this race in practice, but still this looks wrong.
+> 
+
+I can't think of a reason why we would actually hit that race in practice
+but I might have tunnel vision due to disliking that barrier so much. Unless
+there is an example with no other possible solution, I do not think we
+should stick a write barrier into the page allocator fast path.
+
+-- 
+Mel Gorman
+SUSE Labs
