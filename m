@@ -1,49 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765AbaAHSun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:50:43 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36251 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaAHSuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:50:40 -0500
-Message-ID: <52CD9DFB.9010007@wwwdotorg.org>
-Date: Wed, 08 Jan 2014 11:50:35 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757175AbaAHSvC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:51:02 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:9052 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756880AbaAHSu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 13:50:57 -0500
+X-IronPort-AV: E=Sophos;i="4.95,625,1384300800"; 
+   d="scan'208";a="90999329"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, <Stefano.Stabellini@eu.citrix.com>,
+        <Ian.Campbell@citrix.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>,
+        <arnd@arndb.de>, <catalin.marinas@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v8 6/6] xen/arm: account for stolen ticks
+Date: Wed, 8 Jan 2014 18:49:58 +0000
+Message-ID: <1389206998-27875-6-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com> <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com> <52CB14D3.2060904@wwwdotorg.org> <20140108133951.GD1592@ulmo.nvidia.com>
-In-Reply-To: <20140108133951.GD1592@ulmo.nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 06:39 AM, Thierry Reding wrote:
-> On Mon, Jan 06, 2014 at 01:40:51PM -0700, Stephen Warren wrote:
->> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
-> [...]
->>> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
->>
->>> +	efuse@7000F800 {
->>
->> "fuse" might be a better node name; "efuse" is presumably the name of
->> the instance, not the type of object.
-> 
-> There's another occurrence I noticed recently where we haven't followed
-> that rule. The PMIC node on Venice2 for instance is called as3722.
-> Perhaps that should also be renamed.
+Register the runstate_memory_area with the hypervisor.
+Use pv_time_ops.steal_clock to account for stolen ticks.
 
-Yes, we should fix that. Care to send a patch?
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+
+---
+
+Changes in v4:
+- don't use paravirt_steal_rq_enabled: we do not support retrieving
+stolen ticks for vcpus other than one we are running on.
+
+Changes in v3:
+- use BUG_ON and smp_processor_id.
+---
+ arch/arm/xen/enlighten.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 8550123..fa8bdc0 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -14,7 +14,10 @@
+ #include <xen/xen-ops.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
++#include <asm/arch_timer.h>
+ #include <asm/system_misc.h>
++#include <asm/paravirt.h>
++#include <linux/jump_label.h>
+ #include <linux/interrupt.h>
+ #include <linux/irqreturn.h>
+ #include <linux/module.h>
+@@ -154,6 +157,19 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+ }
+ EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
+ 
++unsigned long long xen_stolen_accounting(int cpu)
++{
++	struct vcpu_runstate_info state;
++
++	BUG_ON(cpu != smp_processor_id());
++
++	xen_get_runstate_snapshot(&state);
++
++	WARN_ON(state.state != RUNSTATE_running);
++
++	return state.time[RUNSTATE_runnable] + state.time[RUNSTATE_offline];
++}
++
+ static void __init xen_percpu_init(void *unused)
+ {
+ 	struct vcpu_register_vcpu_info info;
+@@ -171,6 +187,8 @@ static void __init xen_percpu_init(void *unused)
+ 	BUG_ON(err);
+ 	per_cpu(xen_vcpu, cpu) = vcpup;
+ 
++	xen_setup_runstate_info(cpu);
++
+ 	enable_percpu_irq(xen_events_irq, 0);
+ 	put_cpu();
+ }
+@@ -313,6 +331,9 @@ static int __init xen_init_events(void)
+ 
+ 	on_each_cpu(xen_percpu_init, NULL, 0);
+ 
++	pv_time_ops.steal_clock = xen_stolen_accounting;
++	static_key_slow_inc(&paravirt_steal_enabled);
++
+ 	return 0;
+ }
+ postcore_initcall(xen_init_events);
+-- 
+1.7.10.4
 
