@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998AbaAHKQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 05:16:10 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:37986 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298AbaAHKQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 05:16:04 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, zheng.z.yan@intel.com, bp@alien8.de,
-        vincent.weaver@maine.edu, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v2 1/2] perf/x86: fix active_entry initialization
-Date: Wed,  8 Jan 2014 11:15:52 +0100
-Message-Id: <1389176153-3128-2-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389176153-3128-1-git-send-email-eranian@google.com>
-References: <1389176153-3128-1-git-send-email-eranian@google.com>
+	id S1756039AbaAHKQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 05:16:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50381 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756008AbaAHKQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 05:16:13 -0500
+Date: Wed, 8 Jan 2014 11:16:11 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org, Dave Hansen <dave.hansen@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-ID: <20140108101611.GD27937@dhcp22.suse.cz>
+References: <20140101002935.GA15683@localhost.localdomain>
+ <52C5AA61.8060701@intel.com>
+ <20140103033303.GB4106@localhost.localdomain>
+ <52C6FED2.7070700@intel.com>
+ <20140105003501.GC4106@localhost.localdomain>
+ <20140106164604.GC27602@dhcp22.suse.cz>
+ <20140108082000.GJ4106@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140108082000.GJ4106@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a problem with the initialization of the
-struct perf_event active_entry field. It is defined inside
-an anonymous union and was initialized in perf_event_alloc()
-using INIT_LIST_HEAD(). However at that time, we do not know
-whether the event is going to use active_entry or hlist_entry (SW).
-Or at last, we don't want to make that determination there.
-The problem is that hlist and list_head are not initialized
-the same way. One is okay with NULL (from kzmalloc), the other
-needs to pointers to point to self.
+On Wed 08-01-14 16:20:01, Han Pingtian wrote:
+> On Mon, Jan 06, 2014 at 05:46:04PM +0100, Michal Hocko wrote:
+> > On Sun 05-01-14 08:35:01, Han Pingtian wrote:
+> > [...]
+> > > From f4d085a880dfae7638b33c242554efb0afc0852b Mon Sep 17 00:00:00 2001
+> > > From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+> > > Date: Fri, 3 Jan 2014 11:10:49 +0800
+> > > Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
+> > > 
+> > > min_free_kbytes may be raised during THP's initialization. Sometimes,
+> > > this will change the value being set by user. Showing message will
+> > > clarify this confusion.
+> > 
+> > I do not have anything against informing about changing value
+> > set by user but this will inform also when the default value is
+> > updated. Is this what you want? Don't you want to check against
+> > user_min_free_kbytes? (0 if not set by user)
+> > 
+> 
+> To use user_min_free_kbytes in mm/huge_memory.c, we need a 
+> 
+>     extern int user_min_free_kbytes;
 
-This patch resolves this problem by dropping the union.
-This will avoid problems later on, if someone starts using
-active_entry or hlist_entry without verifying that they
-actually overlap. This also solves the initialization
-problem.
+The variable is not defined as static so you can use it outside of
+mm/page_alloc.c.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- include/linux/perf_event.h |    6 ++----
- kernel/events/core.c       |    2 ++
- 2 files changed, 4 insertions(+), 4 deletions(-)
+> in somewhere? Where should we put it? I guess it is mm/internal.h,
+> right?
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8f4a70f..e56b07f 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -319,10 +319,8 @@ struct perf_event {
- 	 */
- 	struct list_head		migrate_entry;
- 
--	union {
--		struct hlist_node	hlist_entry;
--		struct list_head	active_entry;
--	};
-+	struct hlist_node		hlist_entry;
-+	struct list_head		active_entry;
- 	int				nr_siblings;
- 	int				group_flags;
- 	struct perf_event		*group_leader;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 4b743b2..74fdef5 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6685,6 +6685,8 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	INIT_LIST_HEAD(&event->sibling_list);
- 	INIT_LIST_HEAD(&event->rb_entry);
- 	INIT_LIST_HEAD(&event->active_entry);
-+	INIT_HLIST_NODE(&event->hlist_entry);
-+
- 
- 	init_waitqueue_head(&event->waitq);
- 	init_irq_work(&event->pending, perf_pending_event);
+I do not think this has to be globaly visible though. Why not just
+extern declaration in mm/huge_memory.c?
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
