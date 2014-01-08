@@ -1,35 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaAHAQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 19:16:12 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:46298 "EHLO SMTP.CITRIX.COM"
+	id S1754406AbaAHAQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 19:16:47 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:1062 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755006AbaAHAQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 19:16:03 -0500
+	id S1754874AbaAHAPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 19:15:30 -0500
 X-IronPort-AV: E=Sophos;i="4.95,621,1384300800"; 
-   d="scan'208";a="90700427"
-Message-ID: <52CC98C0.8070008@citrix.com>
-Date: Wed, 8 Jan 2014 00:16:00 +0000
+   d="scan'208";a="88543909"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: Re: [PATCH net-next v2 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY
- instead of copy
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v3 9/9] xen-netback: Aggregate TX unmap operations
+Date: Wed, 8 Jan 2014 00:10:18 +0000
+Message-ID: <1389139818-24458-10-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, the version number in the subject should be v3
+Unmapping causes TLB flushing, therefore we should make it in the largest
+possible batches. However we shouldn't starve the guest for too long. So if
+the guest has space for at least two big packets and we don't have at least a
+quarter ring to unmap, delay it for at most 1 milisec.
 
-Zoli
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+ drivers/net/xen-netback/common.h    |    2 ++
+ drivers/net/xen-netback/interface.c |    2 ++
+ drivers/net/xen-netback/netback.c   |   31 ++++++++++++++++++++++++++++++-
+ 3 files changed, 34 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 063fcda..55d1f14 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -115,6 +115,8 @@ struct xenvif {
+ 	u16 dealloc_ring[MAX_PENDING_REQS];
+ 	struct task_struct *dealloc_task;
+ 	wait_queue_head_t dealloc_wq;
++	struct timer_list dealloc_delay;
++	bool dealloc_delay_timed_out;
+ 
+ 	/* Use kthread for guest RX */
+ 	struct task_struct *task;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index ce032f9..0287d62 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -406,6 +406,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+ 			  .desc = i };
+ 		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
+ 	}
++	init_timer(&vif->dealloc_delay);
+ 
+ 	/*
+ 	 * Initialise a dummy MAC address. We choose the numerically
+@@ -551,6 +552,7 @@ void xenvif_disconnect(struct xenvif *vif)
+ 	}
+ 
+ 	if (vif->dealloc_task) {
++		del_timer_sync(&vif->dealloc_delay);
+ 		kthread_stop(vif->dealloc_task);
+ 		vif->dealloc_task = NULL;
+ 	}
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 6bc5413..27cc36c 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -134,6 +134,11 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
+ 		vif->pending_prod + vif->pending_cons;
+ }
+ 
++static inline pending_ring_idx_t nr_free_slots(struct xen_netif_tx_back_ring *ring)
++{
++	return ring->nr_ents -	(ring->sring->req_prod - ring->rsp_prod_pvt);
++}
++
+ bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
+ {
+ 	RING_IDX prod, cons;
+@@ -1904,10 +1909,34 @@ static inline int tx_work_todo(struct xenvif *vif)
+ 	return 0;
+ }
+ 
++static void xenvif_dealloc_delay(unsigned long data)
++{
++	struct xenvif *vif = (struct xenvif *)data;
++
++	vif->dealloc_delay_timed_out = true;
++	wake_up(&vif->dealloc_wq);
++}
++
+ static inline int tx_dealloc_work_todo(struct xenvif *vif)
+ {
+-	if (vif->dealloc_cons != vif->dealloc_prod)
++	if (vif->dealloc_cons != vif->dealloc_prod) {
++		if ((nr_free_slots(&vif->tx) > 2 * XEN_NETBK_LEGACY_SLOTS_MAX) &&
++			(vif->dealloc_prod - vif->dealloc_cons < MAX_PENDING_REQS / 4) &&
++			!vif->dealloc_delay_timed_out) {
++			if (!timer_pending(&vif->dealloc_delay)) {
++				vif->dealloc_delay.function =
++					xenvif_dealloc_delay;
++				vif->dealloc_delay.data = (unsigned long)vif;
++				mod_timer(&vif->dealloc_delay,
++					jiffies + msecs_to_jiffies(1));
++
++			}
++			return 0;
++		}
++		del_timer_sync(&vif->dealloc_delay);
++		vif->dealloc_delay_timed_out = false;
+ 		return 1;
++	}
+ 
+ 	return 0;
+ }
