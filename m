@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373AbaAHMaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 07:30:12 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48664 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290AbaAHMaI (ORCPT
+	id S1756426AbaAHMbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 07:31:43 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56491 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106AbaAHMbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 07:30:08 -0500
-Date: Wed, 8 Jan 2014 12:30:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        lee.jones@linaro.org, robh+dt@kernel.org, lgirdwood@gmail.com,
-        sameo@linux.intel.com, sbkim73@samsung.com, patches@linaro.org
-Message-ID: <20140108123002.GY31886@sirena.org.uk>
-References: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
- <1389162390-4582-2-git-send-email-sachin.kamat@linaro.org>
+	Wed, 8 Jan 2014 07:31:41 -0500
+Date: Wed, 8 Jan 2014 13:31:18 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: mingo@kernel.org, rjw@rjwysocki.net, markgross@thegnar.org,
+        vincent.guittot@linaro.org, catalin.marinas@arm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [5/11] issue 5: Frequency and uarch invariant task load
+Message-ID: <20140108123118.GS30183@twins.programming.kicks-ass.net>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-6-git-send-email-morten.rasmussen@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pt/BdA48mw0ySYRj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389162390-4582-2-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: Go climb a gravity well!
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/3] regulator: Add support for S2MPA01 regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1389111587-5923-6-git-send-email-morten.rasmussen@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 07, 2014 at 04:19:41PM +0000, Morten Rasmussen wrote:
+> Potential solution: Frequency invariance has been proposed before [1]
+> where the task load is scaled by the cur/max freq ratio. Another
+> possibility is to use hardware counters if such are available on the
+> platform.
+> 
+> [1] https://lkml.org/lkml/2013/4/16/289
 
---Pt/BdA48mw0ySYRj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, I just had a look at those patches.. they're not horrible but I
+think they're missing a few opportunities.
 
-On Wed, Jan 08, 2014 at 11:56:29AM +0530, Sachin Kamat wrote:
+My main objection to them is that I think the newly introduced
+max_capacity is exactly what the current cpu_power thing is -- then
+again, I still haven't let the entire thing sink in well enough.
 
-> +	if (!iodev->dev->of_node) {
-> +		if (pdata) {
-> +			goto common_reg;
-> +		} else {
-> +			dev_err(pdev->dev.parent,
-> +				"Platform data or DT node not supplied\n");
-> +			return -ENODEV;
-> +		}
-> +	}
+Not to mention we need to fix some of the cpu_power abuse -- like the
+correlation to capacity, which as stated in previous emails should be
+sorted using utilization.
 
-The driver shouldn't need these to probe, it should be able to start in
-read only mode with no configuration.
+So DVFS certainly makes sense, and would indeed be required in order to
+make sensible decisions in the face of P states. Even in the face of
+funny hardware like Intel which pretty much ignores whatever you tell it
+and does it own merry thing.
 
-> +static int __init s2mpa01_pmic_init(void)
-> +{
-> +	return platform_driver_register(&s2mpa01_pmic_driver);
-> +}
-> +subsys_initcall(s2mpa01_pmic_init);
 
-module_platform_driver().
+A few random thoughts:
 
---Pt/BdA48mw0ySYRj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ - I think for SMP-nice we want to migrate from /max_capacity to
+   /curr_capacity; because SMP-nice cares about 100% utilization
+   regardless of the actual P state. If we're somehow forced into a
+   lower P state (thermal or otherwise) fairness is best served by
+   normalizing at the rate we're actually running at, not the potential
+   maximal.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ - We need to re-think SMT and turbo-bins in general; I think we can
+   think of those two as the same effective thing. This does mean Intel
+   chips will have a dual layer of this goo, and we can currently barely
+   deal with the 1 SMT layer, let alone do something sensible with 2.
 
-iQIcBAEBAgAGBQJSzUTGAAoJELSic+t+oim9F7oQAIMU9mZu44894P1CKlL/x3io
-1kRJBv20T76gg/CIge4Y9m0Bq7I3ztbUT+Muv/tmfUZZ3E5nPLgePZXYEFhkxjRD
-jEdKkRVUJ4LkQkbakU9cT1nVikBRcbNgC/AWvFZwUlQCZXTcKZNfKrcv/ml1Lk4n
-5hbvN2W4LGYJjIqE/PQaMI/yMPkBvt8fBqQSwxQqJ/Uibqw172VUCBrzdkV9GcTG
-6hPy5bDC43Ws/ZHQNKgzouAw+5/i04EdJ8c7cNzGmXUVVScXV5kN5zMpTf2bb+bY
-e8TWRsqMTTRZSgdyVk0V/4z3Q3+z48GXVA50TLcsZ5+AGWSebHcPHUkLqhzXArEJ
-mF7ApjFtvklhiL1c+yVBHEC8Oj1Rx4gSkgc6QvuWdFdfnh38GuTwiDsBRvLSpSu0
-/wuTen3PEHw3C5wU+62rMmS/ktJBt4Xmn/cW6OsvnF+zsc1zhT3j63j6fbUzJS8d
-Y8d31RcjZxgawnHtlhp3VINiDwGGE4xKA+l8nZ5PzZZftCo+x7qP2/DjK8ebk4pP
-Lq+4IdInRXyF8F3k078kLm2xEk6y+mLrDGHOJM24nOV5SzmjDrQgkFrbK4gGLWr9
-BvsPfW1lgtpV/gkf9uYngpbcFd/H6qwVKJGXM/jSB7T/W/rs1SnRw9RuBdQgATnX
-2c0mzd7NP5Mm/aLc9N/Y
-=31zK
------END PGP SIGNATURE-----
+   To clarify, a single SMT thread will generally go 'faster' on its own
+   since it doesn't need to compete with the other thread(s) for core
+   resources, but together they might better utilize the core resources
+   giving an over-all throughput win.
 
---Pt/BdA48mw0ySYRj--
+   Similar for turbo bins, a single core can go faster on its own since
+   it doesn't have competition for energy and thermal constraints, but
+   together cores can probably achieve greater throughput.
+
+   So we need a better way to describe this capacity dependency and
+   variability.
+
+   I'm fairly sure ARM doesn't do SMT, but they certainly suffer from
+   thermal caps and can thus have effective turbo bins, even though
+   they're not explicit and magic like with Intel.
+
+   And of course the honorary mention goes to Power7 which has
+   asymmetric bins -- lets hope they fix it and nobody else things them
+   a great idea.
+
+ - For hardware without P state controls, or hardware that pretty much
+   ignores them, we need means of obtaining the max and curr capacity.
+
+   Intel has the APERF, MPERF registers which resp. count at actual
+   frequency and fixed frequency. Using them is a bit tricky since
+   APERF doesn't count when idle, but when filtering out the idle time
+   they do provide a current performance ratio.
+
+   From that we could obtain a max performance ratio by using a wide
+   window max on the current value or somesuch.
+
+   Again, SMT and turbo-bins will complicate matters..
+
+   Other CPUs that have magic P state control might not provide such
+   registers which would require PMU resources, which would completely
+   blow :/
+
+
