@@ -1,150 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193AbaAHJhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:37:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:32810 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaAHJhr (ORCPT
+	id S1755698AbaAHJiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:38:08 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:33691 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755575AbaAHJhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:37:47 -0500
-X-AuditID: cbfee690-b7f266d00000287c-51-52cd1c6970d9
-Message-id: <DC.EF.14383.B9B1DC25@epcpsbgx3.samsung.com>
-Date: Wed, 08 Jan 2014 09:34:19 +0000 (GMT)
-From: Pankaj Kumar <pankaj.k2@samsung.com>
-Subject: [Patch] Linux Security Module - SMACK bugfix patch
-To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        casey@schaufler-ca.com
-Reply-to: pankaj.k2@samsung.com
-MIME-version: 1.0
-X-MTR: 20140108092850218@pankaj.k2
-Msgkey: 20140108092850218@pankaj.k2
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140108092850218@pankaj.k2
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: multipart/mixed;
- boundary="----=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY"
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFKsWRmVeSWpSXmKPExsWyRsSkRjdT5myQwdVHChaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugStj8pOtLAWf1SumLAtvYDyp1sXIySEkoCJx+uEJVhBbQsBEou3y
-	cyYIW0ziwr31bF2MXEA1Sxkltu37zwRT1LyonwkiMZ9RYnnDFzaQBK+AhcTshkNgRSxAU98d
-	f80OYrMJaEvMet7OAmILC1hLvFx3A8wWESiSePZpIhPEFfISizftYIaYIyhxcuYTFohlShIL
-	nzexQ8SVJRZc/gh1qZzEkqmXoQ7ilZjR/pQFJj7t6xpmCFta4vysDYww3yz+/hgqzi9x7PYO
-	oF4OsN4n94NhxuzeDPGKhICAxNQzB6Fa1SWubb4I1consWbhWxaYMbtOLWeG6b2/ZS7YOcwC
-	kRJ3VjxjB4WPhMAODolNTx+yQ8JEQOLb5ENQzZISB1fcYJnAqDALycuzkPRD2IoSU7ofQtkG
-	EkcWzWFFV88r4CLx5s8TRoiaIIn2DY3MmHr9JfquzGJawMi5ilE0tSC5oDgpvchErzgxt7g0
-	L10vOT93EyMwIZ3+92zCDsZ7B6wPMU5kBDp4IrOUaHI+MKXllcQbGpsZWZiamBobmVua0VJY
-	SZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGadcap8WwXgxo491u/vmVrecFTvHb
-	QQpRAVd+vVQwqHzpot3D0WOXohG0VLJCy/8tJ++XOYt7M9gWrLT7nJWWw8fyk2nT9Kn8f1cl
-	WTZf8nuoeHRTwXcvB92Hz8LmHTyp2+K8nWXznQzBqOc9/yO8zqeYzjHwuGGz+dv36qzyViWT
-	FdVfc6YrsRRnJBpqMRcVJwIAylM/uI0DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJsWRmVeSWpSXmKPExsVy+t/tGbqzpc8GGZx4pW5xedccNgdGj8+b
-	5AIYo9JsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
-	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaINzY30jAz0TI30DE1jrQwNDIxMgWoS0jIm
-	P9nKUvBZvWLKsvAGxpNqXYycHEICKhKnH55gBbElBEwkmhf1M0HYYhIX7q1n62LkAqqZzyix
-	vOELG0iCBajh3fHX7CA2m4C2xKzn7SwgtrCAtcTLdTfAbBGBIolnnyYyQSyQl1i8aQcziM0r
-	IChxcuYTFogFShILnzexQ8SVJRZc/gh1hJzEkqmXoY7glZjR/pQFJj7t6xpmCFta4vysDYww
-	hy7+/hgqzi9x7PYOoF4OsN4n94NhxuzeDHG+hICAxNQzB6Fa1SWubb4I1consWbhWxaYMbtO
-	LWeG6b2/ZS7YOcwCkRJ3Vjxjn8AoNQvJN7OQpCBsRYkp3Q+hbAOJI4vmsKKr5xVwkXjz5wkj
-	RE2QRPuGRmZMvf4SfVdmMS1g5FzFKJpakFxQnJReYaxXnJhbXJqXrpecn7uJEZy0ni3ewfj/
-	vPUhRgEORiUe3gaVM0FCrIllxZW5hxhVgOY82rD6AqMUS15+XqqSCK+E6NkgId6UxMqq1KL8
-	+KLSnNTiQ4z7GYExO5FZSjQ5H5hq80riDY1NzE2NTS0MDM3NzQaPsJI4b/ytpCAhgfTEktTs
-	1NSC1CKYF5g4OKUaGDv9eFcstnvO3bY5sndLWHBSSOi+omCNBv7SSOvzjI8Lp+Sl3f6Vynla
-	qGJ17uZi1pTmc6qi/1IffV5ygnPq1NZtxw/ohS2Uj7z16/6Jxy+U7Bu2Xb95NGWRk2D3JM3Z
-	1vEVqsyh2f3dDbleoQuvv3i1JujAeoVbzb57VJvParKFxDy49uxMthJLcUaioRZzUXEiAM4H
-	M1IHBAAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Wed, 8 Jan 2014 04:37:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387463671-1164-2-git-send-email-b.brezillon@overkiz.com>
+References: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com>
+	<1387463671-1164-2-git-send-email-b.brezillon@overkiz.com>
+Date: Wed, 8 Jan 2014 10:37:49 +0100
+Message-ID: <CACRpkdb=atfrW+Wqbi17a1KhstS7XHkutuXsM24gL2VPEri_cw@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Rob Landley <rob@landley.net>, Alexandre Courbot <gnurou@gmail.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Ben Gamari <bgamari.foss@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 19, 2013 at 3:34 PM, Boris BREZILLON
+<b.brezillon@overkiz.com> wrote:
 
-------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY
-Content-Transfer-Encoding: base64
-Content-Type: text/plain; charset="windows-1252"
-MIME-Version: 1.0
-Message-ID: <26661144.379821389173658876.JavaMail.weblogic@epv6ml03>
+> GPIO hogging is a way to request and configure specific GPIO without
+> explicitly requesting it in the device driver.
+>
+> The request and configuration procedure is handled in the core device
+> driver code before the driver probe function is called.
 
-SGkgYWxsDQoNClBsZWFzZSBmaW5kIGF0dGFjaGVkIGJ1Z2ZpeCBwYXRjaCBmb3IgU01BQ0sgTGlu
-dXggc2VjdXJpdHkgbW9kdWxlLiANCg0KVGhpcyBwYXRjaCBmaXhlcyBmb2xsb3dpbmcgYnVncyBp
-biBzbWFja19sc20uYyBmaWxlIDogDQoxLiBJbiBvcmRlciB0byByZW1vdmUgYW55IFNNQUNLIGV4
-dGVuZGVkIGF0dHJpYnV0ZSBmcm9tIGEgZmlsZSwgYSB1c2VyIHNob3VsZCBoYXZlIENBUF9NQUNf
-QURNSU4gY2FwYWJpbGl0eS4gDQpCdXQgdXNlciB3aXRob3V0IHRoaXMgY2FwYWJpbGl0eSBpcyBh
-YmxlIHRvIHJlbW92ZSBTTUFDSzY0TU1BUCBzZWN1cml0eSBhdHRyaWJ1dGUuIA0KVGhpcyBlcnJv
-ciBoYXMgYmVlbiBjb3JyZWN0ZWQgYnkgYSBtb2RpZmljYXRpb24gaW4gc21hY2tfaW5vZGVfcmVt
-b3ZleGF0dHIgU01BQ0sgaG9vay4NCg0KMi4gV2hpbGUgc2V0dGluZyBleHRlbmRlZCBhdHRyaWJ1
-dGUgaW4gc21hY2tfaW5vZGVfc2V0c2VjdXJpdHkgaG9vaywgDQoiLUVBQ0NFUyIgZXJyb3IgaXMg
-Z2V0dGluZyByZXR1cm5lZCBpZiBleHRlbmRlZCBhdHRyaWJ1dGUgc2l6ZSBvciB2YWx1ZSBpcyBu
-b3QgY29ycmVjdC4gDQpCdXQgdGhpcyBpcyBub3QgY29ycmVjdCBlcnJvciB0byBiZSByZXR1cm5l
-ZCBhcyBleHRlbmRlZCBhdHRyaWJ1dGUgaXMgaW52YWxpZA0Kc28gd2Ugc2hvdWxkIHJldHVybiAi
-LUVJTlZBTCIgZXJyb3IuIA0KVG8gY29ycmVjdCB0aGlzIHByb2JsZW0gbm93IHdlIGFyZSByZXR1
-cm5pbmcgIi1FSU5WQUwiIGVycm9yLg0KDQotLS0NCiBzZWN1cml0eS9zbWFjay9zbWFja19sc20u
-YyB8IDQgKystLQ0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25z
-KC0pDQoNCmRpZmYgLS1naXQgYS9zZWN1cml0eS9zbWFjay9zbWFja19sc20uYyBiL3NlY3VyaXR5
-L3NtYWNrL3NtYWNrX2xzbS5jDQppbmRleCBiMGJlODkzLi5iMGU2NTUyIDEwMDY0NA0KLS0tIGEv
-c2VjdXJpdHkvc21hY2svc21hY2tfbHNtLmMNCisrKyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xz
-bS5jDQpAQCAtOTUxLDcgKzk1MSw3IEBAIHN0YXRpYyBpbnQgc21hY2tfaW5vZGVfcmVtb3ZleGF0
-dHIoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBjb25zdCBjaGFyICpuYW1lKQ0KIAkgICAgc3RyY21w
-KG5hbWUsIFhBVFRSX05BTUVfU01BQ0tJUE9VVCkgPT0gMCB8fA0KIAkgICAgc3RyY21wKG5hbWUs
-IFhBVFRSX05BTUVfU01BQ0tFWEVDKSA9PSAwIHx8DQogCSAgICBzdHJjbXAobmFtZSwgWEFUVFJf
-TkFNRV9TTUFDS1RSQU5TTVVURSkgPT0gMCB8fA0KLQkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05B
-TUVfU01BQ0tNTUFQKSkgew0KKwkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVfU01BQ0tNTUFQ
-KSA9PSAwKSB7DQogCQlpZiAoIXNtYWNrX3ByaXZpbGVnZWQoQ0FQX01BQ19BRE1JTikpDQogCQkJ
-cmMgPSAtRVBFUk07DQogCX0gZWxzZQ0KQEAgLTIwODksNyArMjA4OSw3IEBAIHN0YXRpYyBpbnQg
-c21hY2tfaW5vZGVfc2V0c2VjdXJpdHkoc3RydWN0IGlub2RlICppbm9kZSwgY29uc3QgY2hhciAq
-bmFtZSwNCiAJaW50IHJjID0gMDsNCiANCiAJaWYgKHZhbHVlID09IE5VTEwgfHwgc2l6ZSA+IFNN
-S19MT05HTEFCRUwgfHwgc2l6ZSA9PSAwKQ0KLQkJcmV0dXJuIC1FQUNDRVM7DQorCQlyZXR1cm4g
-LUVJTlZBTDsNCiANCiAJc2twID0gc21rX2ltcG9ydF9lbnRyeSh2YWx1ZSwgc2l6ZSk7DQogCWlm
-IChza3AgPT0gTlVMTCkNCi0tIA0KMS44LjEuMg0KDQpJbiBjYXNlIG9mIGFueSBpc3N1ZSwgUGxl
-YXNlIGZlZWwgZnJlZSB0byBjb250YWN0IG1lLg0KDQpUaGFua3MgJiBSZWdhcmRzDQpQYW5rYWog
-S3VtYXI=
+Why?
 
+Why can't these hogs be handled right after the gpio chip has been
+added in the end of the gpiochio_add() function?
 
-------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY
-Content-Type: application/octet-stream;
- name="0001-bugfix-patch-for-SMACK.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="0001-bugfix-patch-for-SMACK.patch"
+> +It might contain GPIO hog definitions. GPIO hogging is a mechanism providing
+> +automatic GPIO request and configuration before the device is passed to its
+> +driver probe function (the same mechanism is used for pinctrl pin config).
+> +
+> +Each GPIO hog definition is represented as a child node of the GPIO controller.
+> +Required properties:
+> +- gpio: store the gpio informations (id, flags, ...). Shall contain the
+> +  number of cells specified in its parent node (GPIO controller node).
 
+This property is alway plural "gpios".
 
-RnJvbSA3NTlmNmU1ODdjYzcwMTlhYTlmOTU5MTY4YjBjMTU1ZGZhYjEyM2QyIE1vbiBTZXAg
-MTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUGFua2FqIEt1bWFyIDxwYW5rYWouazJAc2Ftc3Vu
-Zy5jb20+DQpEYXRlOiBGcmksIDEzIERlYyAyMDEzIDE1OjEyOjIyICswNTMwDQpTdWJqZWN0
-OiBbUEFUQ0hdIGJ1Z2ZpeCBwYXRjaCBmb3IgU01BQ0sNCg0KMS4gSW4gb3JkZXIgdG8gcmVt
-b3ZlIGFueSBTTUFDSyBleHRlbmRlZCBhdHRyaWJ1dGUgZnJvbSBhIGZpbGUsIGEgdXNlcg0K
-c2hvdWxkIGhhdmUgQ0FQX01BQ19BRE1JTiBjYXBhYmlsaXR5LiBCdXQgdXNlciB3aXRob3V0
-IGhhdmluZyB0aGlzDQpjYXBhYmlsaXR5IGlzIGFibGUgdG8gcmVtb3ZlIFNNQUNLNjRNTUFQ
-IHNlY3VyaXR5IGF0dHJpYnV0ZS4NCg0KMi4gV2hpbGUgdmFsaWRhdGluZyBzaXplIGFuZCB2
-YWx1ZSBvZiBzbWFjayBleHRlbmRlZCBhdHRyaWJ1dGUgaW4NCnNtYWNrX2lub2RlX3NldHNl
-Y3VyaXR5IGhvb2ssIHdyb25nIGVycm9yIGNvZGUgaXMgcmV0dXJuZWQuDQotLS0NCiBzZWN1
-cml0eS9zbWFjay9zbWFja19sc20uYyB8IDQgKystLQ0KIDEgZmlsZSBjaGFuZ2VkLCAyIGlu
-c2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pDQoNCmRpZmYgLS1naXQgYS9zZWN1cml0eS9z
-bWFjay9zbWFja19sc20uYyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xzbS5jDQppbmRleCBi
-MGJlODkzLi5iMGU2NTUyIDEwMDY0NA0KLS0tIGEvc2VjdXJpdHkvc21hY2svc21hY2tfbHNt
-LmMNCisrKyBiL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xzbS5jDQpAQCAtOTUxLDcgKzk1MSw3
-IEBAIHN0YXRpYyBpbnQgc21hY2tfaW5vZGVfcmVtb3ZleGF0dHIoc3RydWN0IGRlbnRyeSAq
-ZGVudHJ5LCBjb25zdCBjaGFyICpuYW1lKQ0KIAkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05B
-TUVfU01BQ0tJUE9VVCkgPT0gMCB8fA0KIAkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVf
-U01BQ0tFWEVDKSA9PSAwIHx8DQogCSAgICBzdHJjbXAobmFtZSwgWEFUVFJfTkFNRV9TTUFD
-S1RSQU5TTVVURSkgPT0gMCB8fA0KLQkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVfU01B
-Q0tNTUFQKSkgew0KKwkgICAgc3RyY21wKG5hbWUsIFhBVFRSX05BTUVfU01BQ0tNTUFQKSA9
-PSAwKSB7DQogCQlpZiAoIXNtYWNrX3ByaXZpbGVnZWQoQ0FQX01BQ19BRE1JTikpDQogCQkJ
-cmMgPSAtRVBFUk07DQogCX0gZWxzZQ0KQEAgLTIwODksNyArMjA4OSw3IEBAIHN0YXRpYyBp
-bnQgc21hY2tfaW5vZGVfc2V0c2VjdXJpdHkoc3RydWN0IGlub2RlICppbm9kZSwgY29uc3Qg
-Y2hhciAqbmFtZSwNCiAJaW50IHJjID0gMDsNCiANCiAJaWYgKHZhbHVlID09IE5VTEwgfHwg
-c2l6ZSA+IFNNS19MT05HTEFCRUwgfHwgc2l6ZSA9PSAwKQ0KLQkJcmV0dXJuIC1FQUNDRVM7
-DQorCQlyZXR1cm4gLUVJTlZBTDsNCiANCiAJc2twID0gc21rX2ltcG9ydF9lbnRyeSh2YWx1
-ZSwgc2l6ZSk7DQogCWlmIChza3AgPT0gTlVMTCkNCi0tIA0KMS44LjEuMg0KDQo=
+> +- hog-as-input or hog-as-output: a boolean property specifying the GPIO
+> +  direction.
+> +- hog-init-high or hog-init-low: a boolean property specifying the GPIO
+> +  value in case the GPIO is hogged as output.
 
+What about just having these three:
 
-------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY--
+hog-as-input
+hog-as-output-high
+hog-as-output-low
+
+> +Optional properties:
+> +- open-drain-line: GPIO is configured as an open drain pin.
+> +- open-source-line: GPIO is configured as an open source pin.
+
+Can you not simply us the flags in the second cell for the gpios
+property for this, normally?
+
+> +- export-line or export-line-fixed: the GPIO is exported to userspace via
+> +  sysfs.
+
+Move this feature to a separate patch. It is much more controversial
+than the hog concept as such.
+
+> +- line-name: the GPIO label name.
+
+OK.
+
+> @@ -66,6 +95,19 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
+>                 compatible = "fsl,qe-pario-bank-a", "fsl,qe-pario-bank";
+>                 reg = <0x1400 0x18>;
+>                 gpio-controller;
+> +               gpio-hogs = <&exported_gpio>;
+> +
+> +               line_a: line-a {
+> +                       gpio = <5 0>;
+> +                       hog-as-input;
+> +                       line-name = "line-a";
+> +               };
+> +
+> +               exported_gpio: exported-gpio {
+> +                       gpio = <6 0>;
+> +                       hog-as-output;
+> +                       line-name = "exported-gpio";
+> +               };
+
+This looks pretty straight-forward to use, but need the DT maintainers
+to provide input on this.
+
+>         };
+>
+>         qe_pio_e: gpio-controller@1460 {
+> @@ -75,6 +117,11 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
+>                 gpio-controller;
+>         };
+>
+> +       pio_consumer {
+> +               gpio-hogs = <&line_a>;
+> +               gpio-hog-names = "my-line-a";
+> +       };
+
+No. No way. That is not what hogs is about. It is not to make consumers
+get their GPIOs grabbed automatically when probing. It is *only* about
+making it possible for the core to set up a few GPIO lines *not* belonging
+to any particular in-kernel device when probing the GPIO chip.
+
+For providing GPIOs to consumers, use the existing OF bindings and
+add code to the drivers to handle them. A device needs to keep track
+of its resources.
+
+In any case, such concepts would be a totally separate patch.
+
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+
+NAK on this, hogs shall be a GPIO-intrinsic.
+
+> @@ -142,6 +175,9 @@ int devm_gpio_request(struct device *dev, unsigned gpio, const char *label)
+>         if (!dr)
+>                 return -ENOMEM;
+>
+> +       if (gpio_is_hogged(dev, gpio))
+> +               return 0;
+> +
+>         rc = gpio_request(gpio, label);
+>         if (rc) {
+>                 devres_free(dr);
+> @@ -172,6 +208,9 @@ int devm_gpio_request_one(struct device *dev, unsigned gpio,
+>         if (!dr)
+>                 return -ENOMEM;
+>
+> +       if (gpio_is_hogged(dev, gpio))
+> +               return 0;
+> +
+
+This just makes it impossible to release these resources. Don't do this.
+
+Hogs should be tied to a certain GPIO chip, get hogged when the
+chip is added and get removed when the chip is removed.
+
+> + * of_gpio_hog_count() - Count a GPIO hogs on a specific device node
+> + * @np:                device node to get GPIO from
+> + *
+> + * Returns the number of GPIO hogs requested by this device node.
+> + */
+> +int of_gpio_hog_count(struct device_node *np)
+> +{
+> +       int size;
+> +
+> +       if (!of_get_property(np, "gpio-hogs", &size))
+> +               return 0;
+> +
+> +       return size / sizeof(phandle);
+> +}
+> +EXPORT_SYMBOL(of_gpio_hog_count);
+
+There is no reason to export this, it should be static, gpiolib-internal.
+
+> +EXPORT_SYMBOL(of_get_gpio_hog);
+
+Dito.
+
+> @@ -1214,6 +1216,17 @@ int gpiochip_add(struct gpio_chip *chip)
+>
+>         of_gpiochip_add(chip);
+>
+> +       /* Instantiate missing GPIO hogs */
+> +       if (chip->dev->gpios) {
+> +               for (i = 0; i < chip->dev->gpios->ngpios; i++) {
+> +                       if (chip->dev->gpios->gpios[i])
+> +                               continue;
+> +                       desc = devm_gpiod_get_hog_index(chip->dev, i);
+> +                       if (!IS_ERR(desc))
+> +                               chip->dev->gpios->gpios[i] = desc;
+> +               }
+> +       }
+
+This is the only thing you should be doing.
+
+> @@ -2421,6 +2434,7 @@ struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
+>         struct gpio_desc *desc = NULL;
+>         int status;
+>         enum gpio_lookup_flags flags = 0;
+> +       int i;
+>
+>         dev_dbg(dev, "GPIO lookup for consumer %s\n", con_id);
+>
+> @@ -2451,6 +2465,13 @@ struct gpio_desc *__must_check gpiod_get_index(struct device *dev,
+>                 return desc;
+>         }
+>
+> +       if (dev->gpios) {
+> +               for (i = 0; i < dev->gpios->ngpios; i++) {
+> +                       if (dev->gpios->gpios[i] == desc)
+> +                               return desc;
+> +               }
+> +       }
+
+Don't do this. We already have explicit gpio resource management.
+Don't attempt to make it implicit.
+
+> +EXPORT_SYMBOL_GPL(gpiod_get_hog_index);
+
+I don't understand this function at all.
+
+> +bool gpio_is_hogged(struct device *dev, unsigned gpio)
+> +{
+> +       return gpiod_is_hogged(dev, gpio_to_desc(gpio));
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_is_hogged);
+
+This should not be exported.
+
+> +/**
+> + * gpio_hog_count - count number of GPIO hogs requested by a specific device
+> + * @dev:       GPIO consumer
+> + *
+> + * Return the number of GPIO hogs.
+> + */
+> +int gpio_hog_count(struct device *dev)
+> +{
+> +       /* Using device tree? */
+> +       if (IS_ENABLED(CONFIG_OF) && dev && dev->of_node)
+> +               return of_gpio_hog_count(dev->of_node);
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(gpio_hog_count);
+
+Get rid of this.
+
+> +++ b/include/linux/device.h
+> @@ -22,6 +22,7 @@
+>  #include <linux/types.h>
+>  #include <linux/mutex.h>
+>  #include <linux/pinctrl/devinfo.h>
+> +#include <linux/gpio/devinfo.h>
+>  #include <linux/pm.h>
+>  #include <linux/atomic.h>
+>  #include <linux/ratelimit.h>
+> @@ -744,6 +745,10 @@ struct device {
+>         struct dev_pin_info     *pins;
+>  #endif
+>
+> +#ifdef CONFIG_GPIOLIB
+> +       struct dev_gpio_info    *gpios;
+> +#endif
+
+Don't do this.
+
+Overall it appears you try to make the device core grab all GPIOs automatically
+when devices are probed, this is not what GPIO hogs are about, and we already
+have a resource management model for GPIOs using the descriptors explicitly
+in the drivers, I see no reason to try to push that over to the device core.
+
+Yours,
+Linus Walleij
