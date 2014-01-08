@@ -1,133 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765AbaAHNm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:42:26 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42525 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045AbaAHNmW convert rfc822-to-8bit (ORCPT
+	id S1756771AbaAHNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:44:09 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50084 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756013AbaAHNoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:42:22 -0500
-Date: Wed, 8 Jan 2014 14:42:13 +0100
-From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-To: Jianguo Wu <wujianguo@huawei.com>
-Cc: <akpm@linux-foundation.org>, <jiang.liu@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <iamjoonsoo.kim@lge.com>, <hannes@cmpxchg.org>,
-        <tangchen@cn.fujitsu.com>, <tj@kernel.org>, <toshi.kani@hp.com>
-Subject: Re: [PATCH 2/2] mm: free memblock.memory in free_all_bootmem
-Message-ID: <20140108144213.4c1995b2@lilie>
-In-Reply-To: <52CCCF24.4080300@huawei.com>
-References: <1389107774-54978-1-git-send-email-phacht@linux.vnet.ibm.com>
-	<1389107774-54978-3-git-send-email-phacht@linux.vnet.ibm.com>
-	<52CCCF24.4080300@huawei.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010813-8372-0000-0000-000008465E17
+	Wed, 8 Jan 2014 08:44:06 -0500
+Date: Wed, 8 Jan 2014 13:43:47 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Felipe Balbi <balbi@ti.com>, Robert Baldyga <r.baldyga@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "software@gaisler.com" <software@gaisler.com>
+Subject: Re: [PATCH v6] usb: gadget: Add UDC driver for Aeroflex Gaisler
+ GRUSBDC
+Message-ID: <20140108134347.GI6701@e106331-lin.cambridge.arm.com>
+References: <1387830349-12241-1-git-send-email-andreas@gaisler.com>
+ <20140106162218.GF24664@e106331-lin.cambridge.arm.com>
+ <52CD5138.1040601@gaisler.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CD5138.1040601@gaisler.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Wed, 8 Jan 2014 12:08:04 +0800
-schrieb Jianguo Wu <wujianguo@huawei.com>:
+On Wed, Jan 08, 2014 at 01:23:04PM +0000, Andreas Larsson wrote:
+> On 2014-01-06 17:22, Mark Rutland wrote:
+> > Hi,
+> >
+> > Apologies for the late reply, I wasn't able to access my mail much over
+> > the Christmas break.
+> 
+> The patch is already applied to both the next branch of Felipe Balbi's 
+> usb/next branch and merged from there into Greg Kroah-Hartman's 
+> usb/usb-next branch, so it might be too late for including in the 
+> initial patch.
+> 
+> I'll be happy to send a patch series to improve things as indicated 
+> inline below. There are no functional bugs running on SPARC which is the 
+> ordinary environment for this core, so adding patches to do these 
+> improvements should work fine.
+> 
+> >
+> > On Mon, Dec 23, 2013 at 08:25:49PM +0000, Andreas Larsson wrote:
+> >> This adds an UDC driver for GRUSBDC USB Device Controller cores available in the
+> >> GRLIB VHDL IP core library. The driver only supports DMA mode.
+> >>
+> >> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> >> ---
+> >>
+> >> Differences since v1:
+> >> - Use hexprint for debug printoutes instead of homemade equivalent
+> >> - Use the dev_* printk variants over the board
+> >> - Get rid of unnecessary casts and includes
+> >> - Use USB_STATE_NOTATTACHED instead of USB_STATE_ATTACHED for clarity
+> >> - Get rid of commented out VERBOSE_DEBUG definition
+> >> - Do not devm-allocate any requests
+> >> - Get rid of unnecessary resqueduling of the workqueue handler
+> >> - Make sure that gadget setup function is called with interrupts disabled
+> >> Differences since v2:
+> >> - Fixed an error printout
+> >> - Got rid of the work queue in favor of threaded interrupts
+> >> Differences since v3:
+> >> - Disable interrupts when locking spinlocks instead of using
+> >>    local_irq_save deeper within critical section
+> >> Differences since v4:
+> >> - Set quirk_ep_out_aligned_size
+> >> - Use usb_ep_set_maxpacket_limit
+> >> - Add devicetree documentation
+> >> Differences since v5:
+> >> - Declare unexpected spin_unlock and spin_lock for sparse
+> >> - Fix a bad comment
+> >> - Use ACCESS_ONCE instead of gr_read32 when checking for update of dma descriptor
+> >>
+> >>   Documentation/devicetree/bindings/usb/gr-udc.txt |   28 +
+> >>   drivers/usb/gadget/Kconfig                       |    7 +
+> >>   drivers/usb/gadget/Makefile                      |    1 +
+> >>   drivers/usb/gadget/gr_udc.c                      | 2242 ++++++++++++++++++++++
+> >>   drivers/usb/gadget/gr_udc.h                      |  220 +++
+> >>   5 files changed, 2498 insertions(+)
+> >>   create mode 100644 Documentation/devicetree/bindings/usb/gr-udc.txt
+> >>   create mode 100644 drivers/usb/gadget/gr_udc.c
+> >>   create mode 100644 drivers/usb/gadget/gr_udc.h
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/usb/gr-udc.txt b/Documentation/devicetree/bindings/usb/gr-udc.txt
+> >> new file mode 100644
+> >> index 0000000..0c5118f
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/usb/gr-udc.txt
+> >> @@ -0,0 +1,28 @@
+> >> +USB Peripheral Controller driver for Aeroflex Gaisler GRUSBDC.
+> >> +
+> >> +The GRUSBDC USB Device Controller core is available in the GRLIB VHDL
+> >> +IP core library.
+> >> +
+> >> +Note: In the ordinary environment for the core, a Leon SPARC system,
+> >> +these properties are built from information in the AMBA plug&play.
+> >> +
+> >> +Required properties:
+> >> +
+> >> +- name : Should be "GAISLER_USBDC" or "01_021"
+> >
+> > What's this for?
+> >
+> > Why is this not matched using a compatible string?
+> >
+> > What does "01_021" mean?
+> 
+> Regarding using name, this is standard for SPARC. The names in the
+> device tree originates from the PROM.
+> 
+> The name field is the actually the first field checked for a match in
+> of_match_node, followed by type then compatible. See
+> http://lxr.free-electrons.com/source/drivers/of/base.c?v=3.12#L723
+> 
+> Examples can be found among others in:
+> - drivers/watchdog/riowd.c
+> - drivers/watchdog/cpwd.c
+> - drivers/mtd/maps/sun_uflash.c
+> - drivers/input/misc/sparcspkr.c
+> - drivers/input/serio/i8042-sparcio.h
+> - drivers/hwmon/ultra45_env.c
+> 
+> As for the "01_021", the LEON SPARC systems uses a plug&play to identify
+> different IP cores in the system. When the PROM is unaware of the name
+> of a certain core, the name field presented from the PROM will be on
+> this form. This is standard handling for LEON SPARC drivers.
+> Examples of this can be found in:
+> - drivers/gpio/gpio-grgpio.c
+> - drivers/usb/host/uhci-grlib.c
+> - drivers/usb/host/ehci-grlib.c
+> - drivers/video/grvga.c
+> - drivers/net/can/grcan.c
+> - drivers/net/ethernet/aeroflex/greth.c
+> - drivers/tty/serial/apbuart.c
+> - drivers/gpio/gpio-grgpio.c
 
-> For some archs, like arm64, would use memblock.memory after system
-> booting, so we can not simply released to the buddy allocator, maybe
-> need !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
+OK. Sorry for the confusion there.
 
-Oh, I see. I have added some ifdefs to prevent memblock.memory from
-being freed when CONFIG_ARCH_DISCARD_MEMBLOCK is not set.
+> 
+> 
+> >> +
+> >> +- reg : Address and length of the register set for the device
+> >> +
+> >> +- interrupts : Interrupt numbers for this device
+> >
+> > How many, and what do they correspond to?
+> 
+> I'll add text on that
+> 
+> >
+> >> +
+> >> +Optional properties:
+> >> +
+> >> +- epobufsizes : An array of buffer sizes for OUT endpoints. If the property is
+> >> +       not present, or for endpoints outside of the array, 1024 is assumed by
+> >> +       the driver.
+> >> +
+> >> +- epibufsizes : An array of buffer sizes for IN endpoints. If the property is
+> >> +       not present, or for endpoints outside of the array, 1024 is assumed by
+> >> +       the driver.
+> >
+> > These names are rather opaque. Something like {input,output}-buf-lens
+> > would be far clearer.
+> 
+> Unless Felipe wants to merge with the original patch I don't think it is 
+> a good idea to have the property name change from one version of the 
+> driver to another - especially if the change does not makes it into 
+> 3.14. There are no dts files for SPARC.
 
-Here is a replacement for the patch.
+Given this is already out there, let's leave it as-is.
 
-Kind regards
+> 
+> 
+> >
+> > How many entries are expected?
+> 
+> I'll add text on that.
+> 
+> > A specific driver should have no relevance to the binding. Just say "if
+> > not 1024".
+> 
+> Sure!
+> 
+> > [...]
+> >
+> >> +/* Must be called with dev->lock held */
+> >> +static int gr_udc_init(struct gr_udc *dev)
+> >> +{
+> >> +       struct device_node *np = dev->dev->of_node;
+> >> +       u32 epctrl_val;
+> >> +       u32 dmactrl_val;
+> >> +       int i;
+> >> +       int ret = 0;
+> >> +       u32 *bufsizes;
+> >> +       u32 bufsize;
+> >> +       int len;
+> >> +
+> >> +       gr_set_address(dev, 0);
+> >> +
+> >> +       INIT_LIST_HEAD(&dev->gadget.ep_list);
+> >> +       dev->gadget.speed = USB_SPEED_UNKNOWN;
+> >> +       dev->gadget.ep0 = &dev->epi[0].ep;
+> >> +
+> >> +       INIT_LIST_HEAD(&dev->ep_list);
+> >> +       gr_set_ep0state(dev, GR_EP0_DISCONNECT);
+> >> +
+> >> +       bufsizes = (u32 *)of_get_property(np, "epobufsizes", &len);
+> >
+> > of_get_property gives you the raw property value bye string, which is
+> > _not_ a u32 pointer -- it's not necessarily the same endianness as the
+> > kernel. Please use an appropriate accessor.
+> 
+> Sure, it makes for better looking code in general as well.
+> 
+> >
+> >> +       len /= sizeof(u32);
+> >> +       for (i = 0; i < dev->nepo; i++) {
+> >> +               bufsize = (bufsizes && i < len) ? bufsizes[i] : 1024;
+> >
+> > You can use of_property_read_u32_index within the loop for this:
+> >
+> >                  if (of_property_read_u32_index(np, "epobufsizes", &bufsize)
+> >                          bufsize = 1024;
+> >
+> >> +               ret = gr_ep_init(dev, i, 0, bufsize);
+> >> +               if (ret)
+> >> +                       return ret;
+> >> +       }
+> >> +
+> >> +       bufsizes = (u32 *)of_get_property(np, "epibufsizes", &len);
+> >> +       len /= sizeof(u32);
+> >> +       for (i = 0; i < dev->nepi; i++) {
+> >> +               bufsize = (bufsizes && i < len) ? bufsizes[i] : 1024;
+> >
+> > Likewise here.
+> >
+> > [...]
+> >
+> >> +static int gr_probe(struct platform_device *ofdev)
+> >> +{
+> >> +       struct gr_udc *dev;
+> >> +       struct resource *res;
+> >> +       struct gr_regs __iomem *regs;
+> >> +       int retval;
+> >> +       u32 status;
+> >> +
+> >> +       dev = devm_kzalloc(&ofdev->dev, sizeof(*dev), GFP_KERNEL);
+> >> +       if (!dev)
+> >> +               return -ENOMEM;
+> >> +       dev->dev = &ofdev->dev;
+> >> +
+> >> +       res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
+> >> +       regs = devm_ioremap_resource(dev->dev, res);
+> >> +       if (IS_ERR(regs))
+> >> +               return PTR_ERR(regs);
+> >> +
+> >> +       dev->irq = irq_of_parse_and_map(dev->dev->of_node, 0);
+> >> +       if (!dev->irq) {
+> >> +               dev_err(dev->dev, "No irq found\n");
+> >> +               return -ENODEV;
+> >> +       }
+> >
+> > The platform_device probing code will have parsed and mapped the irq
+> > already. You can use platform_get_irq(ofdev->dev, 0) here.
+> 
+> Sure
+> 
+> > Also, naming the platform_device ofdev is confusing. It has nothing to
+> > do with OF, and the more common pdev name would be far clearer.
+> 
+> Sure
+> 
+> >> +
+> >> +       /* Some core configurations has separate irqs for IN and OUT events */
+> >> +       dev->irqi = irq_of_parse_and_map(dev->dev->of_node, 1);
+> >> +       if (dev->irqi) {
+> >> +               dev->irqo = irq_of_parse_and_map(dev->dev->of_node, 2);
+> >> +               if (!dev->irqo) {
+> >> +                       dev_err(dev->dev, "Found irqi but not irqo\n");
+> >> +                       return -ENODEV;
+> >> +               }
+> >> +       }
+> >
+> > Likewise here you can use platform_get_irq.
+> >
+> > [...]
+> >
+> >> +static struct of_device_id gr_match[] = {
+> >> +       {.name = "GAISLER_USBDC"},
+> >> +       {.name = "01_021"},
+> >> +       {},
+> >
+> > This seems extremely odd to me. I think a compatible string would be far
+> > preferable.
+> 
+> As explained above it is the standard method of matching for SPARC.
 
-Philipp
+Ok.
 
->From aca95bcb9d79388b68bf18e7bae4353259b6758f Mon Sep 17 00:00:00 2001
-From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-Date: Thu, 19 Dec 2013 15:53:46 +0100
-Subject: [PATCH 2/2] mm: free memblock.memory in free_all_bootmem
-
-When calling free_all_bootmem() the free areas under memblock's
-control are released to the buddy allocator. Additionally the
-reserved list is freed if it was reallocated by memblock.
-The same should apply for the memory list.
-
-Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
----
- include/linux/memblock.h |  1 +
- mm/memblock.c            | 16 ++++++++++++++++
- mm/nobootmem.c           | 10 +++++++++-
- 3 files changed, 26 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 77c60e5..d174922 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -52,6 +52,7 @@ phys_addr_t memblock_find_in_range_node(phys_addr_t start, phys_addr_t end,
- phys_addr_t memblock_find_in_range(phys_addr_t start, phys_addr_t end,
- 				   phys_addr_t size, phys_addr_t align);
- phys_addr_t get_allocated_memblock_reserved_regions_info(phys_addr_t *addr);
-+phys_addr_t get_allocated_memblock_memory_regions_info(phys_addr_t *addr);
- void memblock_allow_resize(void);
- int memblock_add_node(phys_addr_t base, phys_addr_t size, int nid);
- int memblock_add(phys_addr_t base, phys_addr_t size);
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 53e477b..a78b2e9 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -271,6 +271,22 @@ phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
- 			  memblock.reserved.max);
- }
- 
-+#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-+
-+phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
-+					phys_addr_t *addr)
-+{
-+	if (memblock.memory.regions == memblock_memory_init_regions)
-+		return 0;
-+
-+	*addr = __pa(memblock.memory.regions);
-+
-+	return PAGE_ALIGN(sizeof(struct memblock_region) *
-+			  memblock.memory.max);
-+}
-+
-+#endif
-+
- /**
-  * memblock_double_array - double the size of the memblock regions array
-  * @type: memblock type of the regions array being doubled
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 3a7e14d..63ff3f6 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -122,11 +122,19 @@ static unsigned long __init free_low_memory_core_early(void)
- 	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
- 		count += __free_memory_core(start, end);
- 
--	/* free range that is used for reserved array if we allocate it */
-+	/* Free memblock.reserved array if it was allocated */
- 	size = get_allocated_memblock_reserved_regions_info(&start);
- 	if (size)
- 		count += __free_memory_core(start, start + size);
- 
-+#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-+
-+	/* Free memblock.memory array if it was allocated */
-+	size = get_allocated_memblock_memory_regions_info(&start);
-+	if (size)
-+		count += __free_memory_core(start, start + size);
-+#endif
-+
- 	return count;
- }
- 
--- 
-1.8.4.5
-
+Thanks,
+Mark.
