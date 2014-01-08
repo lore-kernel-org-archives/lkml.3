@@ -1,32 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342AbaAHSAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:00:00 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48835 "EHLO
+	id S1756337AbaAHSAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:00:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48838 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaAHR74 (ORCPT
+	with ESMTP id S1750793AbaAHSAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:59:56 -0500
-Date: Wed, 8 Jan 2014 17:59:40 +0000
+	Wed, 8 Jan 2014 13:00:44 -0500
+Date: Wed, 8 Jan 2014 18:00:30 +0000
 From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        kuninori.morimoto.gx@renesas.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Message-ID: <20140108175940.GQ31886@sirena.org.uk>
-References: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Message-ID: <20140108180030.GR31886@sirena.org.uk>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+ <1387815830-8794-8-git-send-email-pawel.moll@arm.com>
+ <20131224121912.GX30815@sirena.org.uk>
+ <1389202297.23721.33.camel@hornet>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3XlXNak/7C2Q/aUj"
+	protocol="application/pgp-signature"; boundary="rbg6pv1WwQpmCPiZ"
 Content-Disposition: inline
-In-Reply-To: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1389202297.23721.33.camel@hornet>
 X-Cookie: Go climb a gravity well!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] ASoC: simple-card: add simple audio card widgets
- support
+Subject: Re: [RFC 07/18] regmap: debugfs: Always create "registers" &
+ "access" files
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,58 +40,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---3XlXNak/7C2Q/aUj
+--rbg6pv1WwQpmCPiZ
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jan 08, 2014 at 03:02:33PM +0800, Xiubo Li wrote:
-> For many audio cards there need to add some off-CODEC widgets, and this
-> is hard to be supported by dts only, because maybe some widgets need one
-> or more call backs, such as wevent.
+On Wed, Jan 08, 2014 at 05:31:37PM +0000, Pawel Moll wrote:
+> On Tue, 2013-12-24 at 12:19 +0000, Mark Brown wrote:
 
-The big question here would be why these widgets need to be added - the
-default thing is that all inputs and outputs are enabled so it can't be
-that and as you say callbacks are going to need to be added.
+> > No, we need to find a better way of doing this such as checking to see
+> > if register zero is accessible in some way.  We want to avoid having
+> > those files if there's no way of populating them since this is useful
+> > information for tooling.
 
-If this is used then it probably makes sense for the card to set the
-fully routed flag since one possible use is to disable unconnected pins
-on the CODEC.
+> Something like this then?
 
-> +- simple-sudio-card,widgets		: The name of the audio card off-CODEC widgets.
+> diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/r=
+egmap-debugfs.c
+> index c5471cd..45d812c 100644
+> --- a/drivers/base/regmap/regmap-debugfs.c
+> +++ b/drivers/base/regmap/regmap-debugfs.c
+> @@ -511,7 +511,7 @@ void regmap_debugfs_init(struct regmap *map, const ch=
+ar *name)
+>  	debugfs_create_file("range", 0400, map->debugfs,
+>  			    map, &regmap_reg_ranges_fops);
+> =20
+> -	if (map->max_register) {
+> +	if (map->max_register || regmap_readable(map, 0)) {
 
-simple-audio-card.  This also needs more documentation about what is
-supposed to be filled in here.
+Yes.
 
-> +void
-> +asoc_simple_card_widgets_unregister(struct asoc_simple_card_widgets *comp)
-
-We always use snd_soc.
-
-One interesting thing here is that this is done separately to the card
-itself.  Is there any actual dependency on the simple card, could this
-be made into a generic library that any machine driver could use?  I can
-see other machines being able to make use of this.
-
---3XlXNak/7C2Q/aUj
+--rbg6pv1WwQpmCPiZ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSzZIJAAoJELSic+t+oim9B0MP/0R6JhO85Yq4UDoigkixJwi6
-IvZMzdY3ixWnBsLYPmoCVAkqunlwBzwVbWXiqmXFGpmP8iKAmyEnUx/UjARCzGHz
-JdLpwU+VTA/S2FZz0fUdoYnY8sEqc3Pr0jp1b2OoPdwkBTatTY66yAmB/Bfp8/nv
-wWHaWB41uDwarEL5VGugyG8Z+oW3zQLCTDrrAUBfwX9MgHWMhdIWDDfXN5Q0XcLL
-JNTuKgsdA9e9f0mRIS8gaVWy/kUCBCCptFGZHnVw6cUtEyk02LIMzEwzx12VuFyc
-5inoKwaswQvGpp8UOIEAIO8wJ33pdkhCy5+A/wRIToVS2n1Oz4gFeuo9LLIe2840
-h+Za8wKdidhhu1YAdiTggw9rPGaQ+Q3xlZFcV0sRz7xnLqRZ5oXWV9JGkR5W6ihZ
-sibU+7GtGUcwXT6itNCGO/jeSMqQRzn3XYiUawtB6MBDQr6lkahdeB04XA/RNPs3
-f5LwDDUE4TY1Cf01ZHB1iBZfTAT0KplOq9pyMqXNZLv0fsk7hqeNT8U0MHFYt/XM
-kSMmghqIFQ/L2fbu9RaDRHemoLlCHWuYNzOwRHPOxNoke8NKvru3qB8skey6oTZZ
-eXU5FVL3jM5jm1S74Znf0MUrCnsTmRL220ysi1rsBgJD7knhn8l04npbo3Z4ZUdC
-auuGVvwYozw1FfcCtq1f
-=WYdF
+iQIbBAEBAgAGBQJSzZI7AAoJELSic+t+oim9fU8P+K9OFpFDhPFobb1/9JrobIaY
+tPnWUBD76fpRs+A+wnzgFh3xqNQ2ItaSs/+x7QpizbTGfADz8jTpJ1lNjCQUcH8/
+gfmcJmKWYSCeql9RBij5wY+8Uvl25oJM8AgVUzjXqxfjbyumWTJ6urIFYAotAwEz
+jN1G20fepdBak6nkZOj/1VDZy/VAoX7dMjW1lKWvn63iwUqrHax2i3asW1DReDBA
+8y1ZXL7PqDrCyvOab1PUaut4lEPojObTgV25ldLxCMQEN6y0noGNkYm+w3OIoOX1
+UlwLvkui2iO8D52wSLtKXZ8gHNJJuBJUQo+KjMDVo5docIo68a4fcsTAwuc94yrt
+1w3Nn1Aw+XfD+zmOItEkHgcRzRbUtQw0xG8ciD4wZFuWPYjUKnL0+2F/LRqN95DP
+DCGc97OtPB1wRqp2MRAUAJ2vh8YTYfZlI3xgOjXkt/3YzX+8k5bD5SnoF2xOfsmT
+6LzX01mc2UeKdY/ZSUXGDxy63rc9EQTRmgg0v15nwS3k+9GD/R/oqMqMyWtc4FsS
+yetxM3CPBJwgKNkb8kMxB3Dq79CLXvjAYaOrS9dPLYXy69fgfipNOMYTCZuiaDJ9
+0DAOGZ01Zq5qe6+HDgjSBnJGILPpJSsneqOpGiZ+yaRQrk+fIyqDnZwBHWbsM8oC
+gq4QFDNF/4t5avC068Q=
+=Mp25
 -----END PGP SIGNATURE-----
 
---3XlXNak/7C2Q/aUj--
+--rbg6pv1WwQpmCPiZ--
