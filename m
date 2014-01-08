@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757348AbaAHUEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:04:05 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:51055 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753591AbaAHUED (ORCPT
+	id S1757268AbaAHUFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:05:21 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:60823 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750861AbaAHUFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:04:03 -0500
-X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jan 2014 15:04:03 EST
-Date: Wed, 8 Jan 2014 21:03:46 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] watchdog: s3c2410_wdt: Handle rounding a little better for timeout
-Message-ID: <20140108200346.GA30951@spo001.leaseweb.com>
-References: <1385490637-10306-1-git-send-email-dianders@chromium.org> <1385513839-17181-1-git-send-email-dianders@chromium.org>
+	Wed, 8 Jan 2014 15:05:17 -0500
+Message-ID: <1389211514.14754.10.camel@x220>
+Subject: Re: [PATCH] [SCSI] advansys: change buildtime warning into runtime
+ error
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 08 Jan 2014 21:05:14 +0100
+In-Reply-To: <1359454842.1345.40.camel@x61.thuisdomein>
+References: <1352113082.1434.31.camel@x61.thuisdomein>
+	 <1359454842.1345.40.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1385513839-17181-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jan 2014 20:05:14.0795 (UTC) FILETIME=[F1D107B0:01CF0CAC]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On Tue, 2013-01-29 at 11:20 +0100, Paul Bolle wrote:
+> On Mon, 2012-11-05 at 11:58 +0100, Paul Bolle wrote:
+> > Building advansys.o triggers this warning:
+> >     drivers/scsi/advansys.c:71:2: warning: #warning this driver is still not properly converted to the DMA API [-Wcpp]
+> > 
+> > This warning can be traced back to a patch called "advansys: add warning
+> > and convert #includes" which was included in v2.6.10. That patch also
+> > marked the driver as BROKEN.
+> > 
+> > Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
+> > driver: limp along on x86") enabled this driver for x86-32. And commit
+> > 9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
+> > work on parisc") enabled this driver for all architectures. But the
+> > commit explanation stated:
+> >     I haven't removed the #warning yet because virt_to_bus/bus_to_virt are
+> >     only eliminated for narrow boards.  Wide boards need more work.
+> > 
+> > Five years have passed and, apparently, those wide boards still need
+> > more work. So let's change the buildtime warning into a runtime error,
+> > only printed for those wide boards. Perhaps that might push the people
+> > using those wide boards to convert this driver. And for all others
+> > there's now one less buildtime warning to ignore.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Compile tested only. I don't have any AdvanSys SCSI boards (neither
+> > narrow nor wide).
+> 
+> The date of this message suggests I submitted this patch for a warning
+> seen while building v3.7-rc4. An identical warning can be seen while
+> building v3.8-rc5. What's the status of my patch? Did anyone find some
+> time to have a look at it?
 
-> The existing watchdog timeout worked OK but didn't deal with
-> rounding in an ideal way when dividing out all of its clocks.
-> 
-> Specifically if you had a timeout of 32 seconds and an input clock of
-> 66666666, you'd end up setting a timeout of 31.9998 seconds and
-> reporting a timeout of 31 seconds.
-> 
-> Specifically DBG printouts showed:
->   s3c2410wdt_set_heartbeat: count=16666656, timeout=32, freq=520833
->   s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666656 (0000ff4f)
-> and the final timeout reported to the user was:
->   ((count / divisor) * divisor) / freq
->   (0xff4f * 255) / 520833 = 31 (truncated from 31.9998)
-> the technically "correct" value is:
->   (0xff4f * 255) / (66666666.0 / 128) = 31.9998
-> 
-> By using "DIV_ROUND_UP" we can be a little more correct.
->   s3c2410wdt_set_heartbeat: count=16666688, timeout=32, freq=520834
->   s3c2410wdt_set_heartbeat: timeout=32, divisor=255, count=16666688 (0000ff50)
-> and the final timeout reported to the user:
->   (0xff50 * 255) / 520834 = 32
-> the technically "correct" value is:
->   (0xff50 * 255) / (66666666.0 / 128) = 32.0003
-> 
-> We'll use a DIV_ROUND_UP to solve this, generally erroring on the side
-> of reporting shorter values to the user and setting the watchdog to
-> slightly longer than requested:
-> * Round input frequency up to assume watchdog is counting faster.
-> * Round divisions by divisor up to give us extra time.
-> 
-> At the same time we can avoid a for loop by just doing the right math.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v2:
-> - Avoid a for loop as per Guenter.
+I've been carrying this patch locally for over a year. Is there any
+chance of someone trying to remove this buildtime warning?
 
-Patch added to linux-watchdog-next.
+I'm inclined to submit a path to Fedora - my local builds use
+their .config as a base - to just disable this driver. It seems that
+would increase my chances of finally shutting down this warning.
 
-Kind regards,
-Wim.
+
+Paul Bolle
 
