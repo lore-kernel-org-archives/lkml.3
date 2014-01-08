@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925AbaAHR1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:27:24 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:41549 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756868AbaAHR1X (ORCPT
+	id S1756989AbaAHR2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:28:05 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:36114 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756557AbaAHR2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:27:23 -0500
-From: Laszlo Papp <lpapp@kde.org>
-To: broonie@kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laszlo Papp <lpapp@kde.org>
-Subject: [PATCH] include/linux/regmap.h: fix a couple of typos
-Date: Wed,  8 Jan 2014 17:22:18 +0000
-Message-Id: <1389201738-31406-1-git-send-email-lpapp@kde.org>
-X-Mailer: git-send-email 1.8.5.1
+	Wed, 8 Jan 2014 12:28:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <1387815830-8794-5-git-send-email-pawel.moll@arm.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	<1387815830-8794-5-git-send-email-pawel.moll@arm.com>
+Date: Wed, 8 Jan 2014 11:28:01 -0600
+Message-ID: <CAL_JsqJGQFstgFu=tpho91C0iv4eH9XSCAVKfXXQO4Z+yD-0tw@mail.gmail.com>
+Subject: Re: [RFC 04/18] driver core & of: Mark of_nodes of added device as populated
+From: Rob Herring <robherring2@gmail.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These sentences are not proper English due to the typos. I had initially caught
-one of them while trying to understand the regmap feature, and then I just ran
-the vim spell checker, and went through all the items that would need to be
-fixed for this header file.
+On Mon, Dec 23, 2013 at 10:23 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> In "Device Tree powered" systems, platform devices are usually
+> massively populated with of_platform_populate() call, executed
+> at some level of initcalls, either by generic architecture
+> or by platform-specific code.
+>
+> There are situations though where certain devices must be
+> created (and bound with drivers) before all the others.
+> This presents small challenge in DT-driven systems, as
+> devices explicitly created in early code would be created
+> again by of_platform_populate().
 
-Signed-off-by: Laszlo Papp <lpapp@kde.org>
----
- include/linux/regmap.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Isn't this already at least partially solved with the aux data
+support? I'm guessing the difference here is how the early device is
+created.
 
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index e559078..6305657 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -122,9 +122,9 @@ typedef void (*regmap_unlock)(void *);
-  *		  volatile_table (see below) is not, the check is performed on
-  *                such table (a register is volatile if it belongs to one of
-  *                the ranges specified by volatile_table).
-- * @precious_reg: Optional callback returning true if the rgister
-+ * @precious_reg: Optional callback returning true if the register
-  *		  should not be read outside of a call from the driver
-- *		  (eg, a clear on read interrupt status register). If this
-+ *		  (e.g. a clear on read interrupt status register). If this
-  *                field is NULL but precious_table (see below) is not, the
-  *                check is performed on such table (a register is precious if
-  *                it belongs to one of the ranges specified by precious_table).
-@@ -136,9 +136,9 @@ typedef void (*regmap_unlock)(void *);
-  *		  are not overridden).
-  * @reg_read:	  Optional callback that if filled will be used to perform
-  *           	  all the reads from the registers. Should only be provided for
-- *		  devices whos read operation cannot be represented as a simple read
-- *		  operation on a bus such as SPI, I2C, etc. Most of the devices do
-- * 		  not need this.
-+ *		  devices whose read operation cannot be represented as a simple
-+ *		  read operation on a bus such as SPI, I2C, etc. Most of the
-+ *		  devices do not need this.
-  * @reg_write:	  Same as above for writing.
-  * @fast_io:	  Register IO is fast. Use a spinlock instead of a mutex
-  *	     	  to perform locking. This field is ignored if custom lock/unlock
--- 
-1.8.5.1
+> This patch tries to solve that issue in a generic way,
+> adding a "populated" flag which is set in the device_node
+> structure when a device is being created in the core.
+> Later, of_platform_populate() skips such nodes (and
+> its children) in a similar way to the non-available ones.
 
+Couldn't you store a struct device ptr in struct device_node instead?
+
+In any case I'd like to see this contained within the DT code. I don't
+see why the driver core needs to be modified for a DT specific
+problem.
+
+Rob
