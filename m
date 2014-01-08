@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249AbaAHNy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:54:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54122 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756225AbaAHNyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:54:23 -0500
-Date: Wed, 8 Jan 2014 14:54:22 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Bob Liu <lliubbo@gmail.com>
-Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
-Message-ID: <20140108135422.GJ27937@dhcp22.suse.cz>
-References: <CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
- <20140106141827.GB27602@dhcp22.suse.cz>
- <CAA_GA1csMEhSYmeS7qgDj7h=Xh2WrsYvirkS55W4Jj3LTHy87A@mail.gmail.com>
- <20140107102212.GC8756@dhcp22.suse.cz>
- <20140107173034.GE8756@dhcp22.suse.cz>
- <CAA_GA1fN5p3-m40Mf3nqFzRrGcJ9ni9Cjs_q4fm1PCLnzW1cEw@mail.gmail.com>
- <20140108100859.GC27937@dhcp22.suse.cz>
- <CAA_GA1emcHt+9zOqAKHPoXLd-ofyfYyuQn9fcdLOox5k7BLgww@mail.gmail.com>
- <20140108124240.GH27937@dhcp22.suse.cz>
- <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932068AbaAHNzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:55:14 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62318 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932283AbaAHNsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:48:55 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, angus.clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v4 20/37] mtd: st_spi_fsm: Provide a method to put the chip into 32bit addressing mode
+Date: Wed,  8 Jan 2014 13:47:03 +0000
+Message-Id: <1389188840-14306-21-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-the whole thread started here: http://lkml.org/lkml/2014/1/6/217
-I guess it makes sense to revert part of the already merged commit with
-the following patch. If the BUG_ON triggers again then we should rather
-find out why page_address_in_vma fails on anon_vma or f_mapping checks
-and not simply paper over it.
+Most Serial Flash chips support 24bit addressing as a default but more
+recent incarnations can support 32bit. Based on information provided
+though platform specific data and capabilities we can determine whether
+or not our current chip can. This patch provides a means to setup the
+FSM message sequence to put the chip into 32bit mode.
+
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
->From 805035f35e8865f6233f88c78e7063512042afea Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 8 Jan 2014 10:57:41 +0100
-Subject: [PATCH] mm: new_vma_page cannot see NULL vma for hugetlb pages
+ drivers/mtd/devices/st_spi_fsm.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-11c731e81bb0 (mm/mempolicy: fix !vma in new_vma_page()) has removed
-BUG_ON(!vma) from new_vma_page which is partially correct because
-page_address_in_vma will return EFAULT for non-linear mappings and at
-least shared shmem might be mapped this way.
-
-The patch also tried to prevent NULL ptr for hugetlb pages which is not
-correct AFAICS because hugetlb pages cannot be mapped as VM_NONLINEAR
-and other conditions in page_address_in_vma seem to be legit and catch
-real bugs.
-
-This patch restores BUG_ON for PageHuge to catch potential issues when
-the to-be-migrated page is not setup properly.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
----
- mm/mempolicy.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 9e8d2d86978a..1a368cd925ed 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1199,10 +1199,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
- 	}
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index b21929b..e74513d 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -411,6 +411,8 @@ static struct flash_info flash_types[] = {
+ 	{ NULL, 0x000000, 0, 0, 0, 0, 0, NULL },
+ };
  
- 	if (PageHuge(page)) {
--		if (vma)
--			return alloc_huge_page_noerr(vma, address, 1);
--		else
--			return NULL;
-+		BUG_ON(!vma);
-+		return alloc_huge_page_noerr(vma, address, 1);
++static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
++
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+ 	.data_size = TRANSFER_SIZE(8),
+ 	.seq_opc[0] = (SEQ_OPC_PADS_1 |
+@@ -554,6 +556,23 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
  	}
- 	/*
- 	 * if !vma, alloc_page_vma() will use task or system default policy
+ }
+ 
++static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
++{
++	struct stfsm_seq *seq = &stfsm_seq_en_32bit_addr;
++	uint32_t cmd = enter ? FLASH_CMD_EN4B_ADDR : FLASH_CMD_EX4B_ADDR;
++
++	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
++			   SEQ_OPC_CYCLES(8) |
++			   SEQ_OPC_OPCODE(cmd) |
++			   SEQ_OPC_CSDEASSERT);
++
++	stfsm_load_seq(fsm, seq);
++
++	stfsm_wait_seq(fsm);
++
++	return 0;
++}
++
+ /*
+  * SoC reset on 'boot-from-spi' systems
+  *
 -- 
-1.8.5.2
+1.8.3.2
 
--- 
-Michal Hocko
-SUSE Labs
