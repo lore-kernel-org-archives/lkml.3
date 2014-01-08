@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761AbaAHShJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:37:09 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:35642 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbaAHShF (ORCPT
+	id S1757008AbaAHSh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:37:57 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60452 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaAHShx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:37:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20131210193947.GU5429@obsidianresearch.com>
-References: <20131210193947.GU5429@obsidianresearch.com>
-Date: Wed, 8 Jan 2014 12:37:03 -0600
-Message-ID: <CAL_JsqLpWSXd44ErAs=+xYS8ESaBSY6EJEneZFYqtbpfyM4iPQ@mail.gmail.com>
-Subject: Re: [PATCH] dt: Document a compatible entry for MDIO ethernet Phys
-From: Rob Herring <robherring2@gmail.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Jan 2014 13:37:53 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/7] Modernize pm8921 with irqdomains, regmap, DT
+Date: Wed,  8 Jan 2014 10:37:43 -0800
+Message-Id: <1389206270-3728-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 10, 2013 at 1:39 PM, Jason Gunthorpe
-<jgunthorpe@obsidianresearch.com> wrote:
-> This describes a compatible entry of the form:
->   ethernet-phy-idAAAA,BBBB
-> Which is modelled after the PCI structured compatible entry
-> (pciVVVV,DDDD.SSSS.ssss.RR)
->
-> If present the OF core will be able to use this information to
-> directly create the correct phy without auto probing the bus.
->
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> ---
->  Documentation/devicetree/bindings/net/phy.txt | 10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
->
-> Patch to parse this compatible string to follow if this binding is
-> acceptable.
+These patches lay the groundwork for converting the pm8921 sub-devices
+to devicetree as well as simplify the API by migrating the core code
+to use the regmap API instead of the custom pm8xxx read/write wrapper.
 
-One minor comment below, otherwise:
+Changes since v2:
+ * Picked up reviewed-by tags
+ * Fixed irqdomain teardown in driver remove
+ * No magical 256 constant
+ * Renamed domain to irqdomain
+ * Clarified kzalloc call
+ * Pushed ssbi regmap helpers into header file
+ * Fixed whitespace noise in patch 6
 
-Acked-by: Rob Herring <robh@kernel.org>
+Changes since v1:
+ * First 3 cleanup patches dropped because they're applied upstream
+ * New regmap read/write helpers
+ * New patch for DT match table
+ * New binding document
 
-> Please see
->
-> http://www.spinics.net/lists/devicetree/msg13175.html
->
-> For discussion and a conceptual parsing patch.
->
-> diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-> index 7cd18fb..d70b535 100644
-> --- a/Documentation/devicetree/bindings/net/phy.txt
-> +++ b/Documentation/devicetree/bindings/net/phy.txt
-> @@ -23,10 +23,18 @@ Optional Properties:
->    assume clause 22. The compatible list may also contain other
->    elements.
->
-> +  If the phy's identifier is known then the list may contain an entry
-> +  of the form: "ethernet-phy-idAAAA,BBBB" where
+Stephen Boyd (7):
+  mfd: Move pm8xxx-irq.c contents into only driver that uses it
+  mfd: pm8921: Update for genirq changes
+  mfd: pm8921: Migrate to irqdomains
+  mfd: ssbi: Add regmap read/write helpers
+  mfd: pm8921: Use ssbi regmap
+  mfd: pm8921: Add DT match table
+  devicetree: bindings: Document PM8921/8058 PMICs
 
-I think this should be a period rather than a comma as we are not
-separating a vendor ID from product ID.
+ .../devicetree/bindings/mfd/qcom,pm8xxx.txt        |  63 +++
+ drivers/mfd/Kconfig                                |  12 +-
+ drivers/mfd/pm8921-core.c                          | 427 ++++++++++++++++++---
+ drivers/mfd/pm8xxx-irq.c                           | 371 ------------------
+ include/linux/mfd/pm8xxx/irq.h                     |  59 ---
+ include/linux/mfd/pm8xxx/pm8921.h                  |  30 --
+ include/linux/ssbi.h                               |  13 +
+ 7 files changed, 451 insertions(+), 524 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/qcom,pm8xxx.txt
+ delete mode 100644 drivers/mfd/pm8xxx-irq.c
+ delete mode 100644 include/linux/mfd/pm8xxx/irq.h
+ delete mode 100644 include/linux/mfd/pm8xxx/pm8921.h
 
-Rob
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
