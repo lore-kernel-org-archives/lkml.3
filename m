@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaAHDEu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 22:04:50 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:52227 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753994AbaAHDEi (ORCPT
+	id S1754817AbaAHDJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 22:09:57 -0500
+Received: from sindamanoy.udenar.edu.co ([200.21.87.163]:46343 "EHLO
+	sindamanoy.udenar.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749AbaAHDJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 22:04:38 -0500
-From: Bing Zhao <bzhao@marvell.com>
-To: Ding Tianhong <dingtianhong@huawei.com>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 7 Jan 2014 19:04:15 -0800
-Subject: RE: [PATCH v3.6 17/19] mwifiex: slight optimization of addr compare
-Thread-Topic: [PATCH v3.6 17/19] mwifiex: slight optimization of addr compare
-Thread-Index: Ac8MHQa83mjO/JfWR4O47h5pAsgAzgAALu9w
-Message-ID: <477F20668A386D41ADCC57781B1F70430F534B5550@SC-VEXCH1.marvell.com>
-References: <52CCBDDC.1050503@huawei.com>
-In-Reply-To: <52CCBDDC.1050503@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
+	Tue, 7 Jan 2014 22:09:51 -0500
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Jan 2014 22:09:51 EST
+From: =?utf-8?B?SUlJIFNlbWluYXJpbyBJbnRlcm5hY2lvbmFsIGRlIEFjdHVhbGl6YWNpw7Nu?=
+	 =?utf-8?Q?_en_Agroindustria?= <biorefinerias@udenar.edu.co>
+Subject: YOU HAVE RECEIVED A DONATION
+Thread-Topic: YOU HAVE RECEIVED A DONATION
+Thread-Index: Ac8MHiVc5G1bGdTsT8qNaOZtVJIMSA==
+Date: Wed, 8 Jan 2014 03:03:03 +0000
+Message-ID: <FF1C8F6502D04448B871F7A763BAA41525ED74B2@MAIL.udenar.edu.co>
+Accept-Language: en-GB, es-CO, en-US
+Content-Language: en-GB
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+x-originating-ip: [197.210.248.29]
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-08_01:2014-01-07,2014-01-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1401070202
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s08351ca023184
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s083A1CG023197
 
-Hi Ding,
 
-> -	if (memcmp(priv->curr_bss_params.bss_descriptor.mac_address,
-> -		   ibss_coal_resp->bssid, ETH_ALEN)) {
-> +	if (!ether_addr_equal(priv->curr_bss_params.bss_descriptor.mac_address, ibss_coal_resp->bssid))
 
-Still wrong... ;)
 
-Have you actually run the checkpatch.pl script?
+Hello,
 
-By the way, your subject prefix "PATCH v3.6" is confusing. It ought to be "PATCH v6", I guess.
+This message is to inform you that you have just received a cash
+donation
+of $460,000 from us. You are advised to write us an email once you get
+this message through the following Email: dawesdavee@hotmail.com for
+more
+information on how you can redeem your donated sum.
 
-Thanks,
-Bing
+Best of luck.
 
+Dave & Angela Dawes.
+Email: dawesdavee@gmail.com
+
+________________________________
+Correo ElectrÃ³nico - Universidad de NariÃ±o
+Pasto - NariÃ±o - Colombia
+www.udenar.edu.co
 ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
