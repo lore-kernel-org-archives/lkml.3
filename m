@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750AbaAHRWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:22:48 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34233 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410AbaAHRWp (ORCPT
+	id S1756850AbaAHR0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:26:31 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:36466 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756115AbaAHR01 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:22:45 -0500
-Date: Wed, 8 Jan 2014 17:22:40 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Add GPIO support for the MAX6650/6651 ICs
-Message-ID: <20140108172240.GD14575@lee--X1>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
- <20140107090938.GF3182@lee--X1>
- <CAOMwXhMqwC9zx6GKY+QXzy7s+u4ZapyPyLBz-ANgS8qMTDNyhg@mail.gmail.com>
- <CAOMwXhN7JzCZZVtNTHPAhrdFkM4z10J634ctBPR2u+tRUOtSqw@mail.gmail.com>
+	Wed, 8 Jan 2014 12:26:27 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, walt <w41ter@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Index: AQHPDAsx5d97FnYUxUSD3GhphkgfRJp7CFoAgAABzdCAAAfrgIAAApgg
+Date: Wed, 8 Jan 2014 17:24:42 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45567F@AcuExch.aculab.com>
+References: <063D6719AE5E284EB5DD2968C1650D6D455602@AcuExch.aculab.com>
+ <Pine.LNX.4.44L0.1401081210140.1659-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1401081210140.1659-100000@iolanthe.rowland.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhN7JzCZZVtNTHPAhrdFkM4z10J634ctBPR2u+tRUOtSqw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Jan 2014, Laszlo Papp wrote:
-
-> In other words, I really do not know what format you prefer for design review.
+> From: Alan Stern
+> On Wed, 8 Jan 2014, David Laight wrote:
 > 
-> Apparently, not as previously requested, so please tell me what format
-> one _should_ submit design reviews in.
+> > > From: Alan Stern
+> > >
+> > > This may be a foolish question, but why is xhci-hcd using no-op TRBs in
+> > > the first place?
+> >
+> > Because it can't write in a link TRB because other parts of the
+> > code use link TRBs to detect the end of the ring.
+> >
+> > The problem is that it can't put a link TRB in the middle of
+> > a chain of data fragments unless it is at a 'suitable' offset
+> > from the start of the data TD. Given arbitrary input fragmentation
+> > this means that you can't put a link TRB in the middle of a TD.
+> > (The documented alignment might be as high as 16kB.)
+> >
+> > If the rest of the code used a 'ring end pointer' then a link TRB
+> > could be used instead.
 > 
-> I personally still think that submitting "pseudo-code" is a good way
-> of it if it is clearly marked so like in my case, so that it does not
-> mislead anyone that I accidentally submit a clearly broken change for
-> an integration candidate.
-> 
-> I hope it is understood that I am asking about design reviews before
-> the lengthy implementation to potentially avoid a lot of additional
-> work on both sides with writing and reviewing an implementation with a
-> "wrong" approach...
+> I see.  Sounds like a poor design decision in hindsight.  Can it be
+> changed?
 
-The correct way to do this is to submit RFC patches. If you start your
-$SUBJECT line with [PATCH RFC x/x], then we know that they're
-development patches and we can treat them as such.
+Anything can be changed :-)
+But it is a bit pervasive.
+Padding out with nops isolated the change.
 
-If you're submitting code, in form, which are you in this case, they
-should still abide by the submission rules. I you'd like us to review
-them, then they need to be in an easy to read format. Submitting
-patches with lots of whitespace variation is off-putting and hard to
-review. If you want people to put aside their time to help you, then
-the least you can do is make it easy for them to read. Conforming to
-the 3 documentation files (I know how much you love documentation)
-will ensure you're giving yourself a snowball's chance in Hell of
-'winning' the response you desire.
+	David
 
-All this toing and froing is wasting everyone's time. Just submit
-nice patches for us to review and you will receive the help you
-crave.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
