@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034AbaAHQZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:25:32 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:61701 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115AbaAHQZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:25:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Subject: Re: [PATCH] driver-core: platform: Resolve DT interrupt references late
-Date: Wed, 8 Jan 2014 17:25:17 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Paul Walmsley <paul@pwsan.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, linux-omap@vger.kernel.org
-References: <20140108011957.GK5074@atomide.com> <6734073.GzLvMSsKrR@wuerfel> <20140108155855.GA22984@ulmo.nvidia.com>
-In-Reply-To: <20140108155855.GA22984@ulmo.nvidia.com>
+	id S1757143AbaAHQ0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:26:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755750AbaAHQ0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 11:26:19 -0500
+Date: Wed, 8 Jan 2014 17:26:16 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: input: fix input sysfs path for hid devices
+In-Reply-To: <CANq1E4R4H5U6Hqv4ZWWj8cznf6gAbnScs9Cd61BGnH=Mtg1kpA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1401081724440.31628@pobox.suse.cz>
+References: <1387469113-4129-1-git-send-email-benjamin.tissoires@redhat.com> <CANq1E4QrPAJ7zNdN51PGQD5tkD_gTYfRoHOg7=zwVvnu-xOR0g@mail.gmail.com> <alpine.LNX.2.00.1312202335300.11949@pobox.suse.cz>
+ <CANq1E4R4H5U6Hqv4ZWWj8cznf6gAbnScs9Cd61BGnH=Mtg1kpA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401081725.17876.arnd@arndb.de>
-X-Provags-ID: V02:K0:pr10d4dKNUfXDUu+h8mCSatcHpxauECVVdNSrpGmsfl
- awZoAmSzVGdN9GHKbejTxdYRfbZM4WtMVZ0kx7iE8yKvR4KUOr
- IM2NjZ3ubCSSTX3WCYddHdupsXcxToAuyLQxNAwuKiOb3tJH8r
- /6RyckIVS2xPubhTiHA66zIHIQGWYxfUwPPG4CYVdLqGY7mEf/
- WMhojklp6iefqlA5x8t8wRdQYXBb5XT2e7OoXtE5Kk6SxTfWCK
- sUw3CpC3TJgq99omTU2jTPOObIX45Ryjs2EjHcHekJeXP4mYfX
- U3fFclwF+44BproB8UN6OJIUskoXwYXz8oQ8jcJ+KwxTW4MGaQ
- y4lGjMxJH987W4qeHvVI=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014, Thierry Reding wrote:
-> On Wed, Jan 08, 2014 at 04:11:08PM +0100, Arnd Bergmann wrote:
-> > On Wednesday 08 January 2014 15:55:27 Thierry Reding wrote:
-> > > It stands to reason that if they push back on the IOMMU variant of what
-> > > is essentially the same thing, they will push back on the IRQ variant as
-> > > well. One alternative I proposed was to, just as you suggested earlier,
-> > > move the code into platform_drv_probe() or rather a function called from
-> > > it. That proposal never got any replies, though.
-> > > 
-> > > 	https://lkml.org/lkml/2013/12/14/39
-> > 
-> > I guess putting it into the platform_drv_probe function seems reasonable,
-> > I would be more scared of the implications of a notifier based method.
-> 
-> I fully agree. Of course if we decide against moving things into the
-> core and in favour of a more generic API that drivers should use, then
-> this issue goes away silently at least for resources that the driver
-> needs to use explicitly (memory-mapped regions, interrupts, ...).
-> 
-> The issue remains for IOMMU which is meant to be used transparently
-> through the DMA API. Perhaps a good compromise would be to have some
-> sort of generic helper that can be called to initialize IOMMU support
-> for a particular device and support probe deferral on error. Something
-> like this perhaps:
-> 
-> 	int iommu_attach(struct device *dev);
-> 	int iommu_detach(struct device *dev);
-> 
-> I still don't like very much how that needs to be done in each driver
-> explicitly, but if we can't do it in the core, then the only other clean
-> way to handle it would be to treat it like any other sort of resource
-> and handle it explicitly. Perhaps handing out some sort of cookie would
-> be preferable to just an error code?
+On Wed, 8 Jan 2014, David Herrmann wrote:
 
-The more I think about the iommu case, the more I am convinced that it
-does belong into the core, in whatever form we can find. As far as I
-can tell from the little reliable information I have on the topic, I
-would assume that we can keep it in the DT probing code, as there won't
-be a need for multiple arbitrary IOMMUs with ACPI or with board files.
-
-> > > One downside of that approach is that, while it maps well to platform
-> > > devices or generic devices that have some sort of firmware interface
-> > > such as OF or ACPI, I don't see how it can be made to work with an I2C
-> > > client that's registered from board setup code for example. Well, I
-> > > suppose that problem could be solved by throwing another lookup table at
-> > > it, just like we do for clocks, regulators, PWMs and GPIOs.
-> > 
-> > Wouldn't you still be able to attach resources in the traditional
-> > way for those, but use the same new interface to get at them?
+> >> > I think this is valuable because it will give a better understanding of the
+> >> > actual mapping hardware/inputs. Like a touchscreen with pen + touch will have
+> >> > the same hid parent, and I expect X/Wayland to be able to detect this at some
+> >> > point to keep the mapping correctly between the two input devices and the screen.
+> >> >
+> >> > I also need that for hid-replay, so that I can be sure which input is attached
+> >> > to which uhid device, and give up the heuristics I currently use.
+> >>
+> >> I was just wondering where we have multiple HID devices on a single
+> >> parent, but yeah, uhid is a good example. I actually have no
+> >> objections to this patch and it looks fine. But I cannot tell whether
+> >> anyone relies on this.
+> >>
+> >> I'd say we should give it a try.
+> >
+> > Agreed, let's take it for 3.14, and if anyone complains about breakage
+> > caused by this (which I don't expect), we'll revert to the previous state.
 > 
-> I wouldn't know how. For instance platform devices store the IRQ number
-> within a struct resource of type IORESOURCE_IRQ, whereas I2C clients
-> store them in the struct i2c_client's .irq field.
-
-Good point, I forgot about the special case for i2c_client->irq.
-I looked now and noticed that very few i2c devices actually use this
-field, but larger number uses platform_data, which has a similar
-problem.
-
-> So without actually introspecting the struct device (possibly using the
-> .bus field for example) and upcasting you won't know how to get at the
-> resources. One possibility to remedy that would be to try and unify the
-> resources within struct device. But that doesn't feel right.
+> You dropped the "Reviewed-by:" part in your commit-msg:
+> http://git.kernel.org/cgit/linux/kernel/git/jikos/hid.git/commit/?h=for-next&id=bbe3175408cde792fbaa5bd1e41e430ea9e4fb4f
 > 
-> One other thing I had considered at one point was to extend the bus_type
-> structure and give it a way to obtain resources in a bus-specific way,
-> but that feel even more wrong.
-> 
-> Perhaps I'm missing something obvious, though, and this is actually much
-> more trivial to solve.
+> Not sure, whether you sometimes rebase your tree. If you do, you might
+> wanna fix it, otherwise, I don't care. Just wanted to point it out.
 
-No trivial solution that I can see. I think we can deal with the case
-where platform code uses platform_device->resources, and everything else
-comes down to having multiple code branches in the driver, as we already
-have to deal with platform_data and DT properties describing stuff that
-doesn't fit in the resources.
+Gah, sorry for that. No idea what in my process ate the tag.
 
-	Arnd
+I am really trying to make the tree non-rebasing. If you don't mind, I 
+wouldn't take this as a reson to rebase.
+
+I can put you twice to some patch later to balance this out :p
+
+Thanks for understanding,
+
+-- 
+Jiri Kosina
+SUSE Labs
