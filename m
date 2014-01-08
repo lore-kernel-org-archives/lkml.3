@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850AbaAHR0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:26:31 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:36466 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756115AbaAHR01 convert rfc822-to-8bit (ORCPT
+	id S1756925AbaAHR1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:27:24 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:41549 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868AbaAHR1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:26:27 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, walt <w41ter@gmail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-Thread-Index: AQHPDAsx5d97FnYUxUSD3GhphkgfRJp7CFoAgAABzdCAAAfrgIAAApgg
-Date: Wed, 8 Jan 2014 17:24:42 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45567F@AcuExch.aculab.com>
-References: <063D6719AE5E284EB5DD2968C1650D6D455602@AcuExch.aculab.com>
- <Pine.LNX.4.44L0.1401081210140.1659-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1401081210140.1659-100000@iolanthe.rowland.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 8 Jan 2014 12:27:23 -0500
+From: Laszlo Papp <lpapp@kde.org>
+To: broonie@kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laszlo Papp <lpapp@kde.org>
+Subject: [PATCH] include/linux/regmap.h: fix a couple of typos
+Date: Wed,  8 Jan 2014 17:22:18 +0000
+Message-Id: <1389201738-31406-1-git-send-email-lpapp@kde.org>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Alan Stern
-> On Wed, 8 Jan 2014, David Laight wrote:
-> 
-> > > From: Alan Stern
-> > >
-> > > This may be a foolish question, but why is xhci-hcd using no-op TRBs in
-> > > the first place?
-> >
-> > Because it can't write in a link TRB because other parts of the
-> > code use link TRBs to detect the end of the ring.
-> >
-> > The problem is that it can't put a link TRB in the middle of
-> > a chain of data fragments unless it is at a 'suitable' offset
-> > from the start of the data TD. Given arbitrary input fragmentation
-> > this means that you can't put a link TRB in the middle of a TD.
-> > (The documented alignment might be as high as 16kB.)
-> >
-> > If the rest of the code used a 'ring end pointer' then a link TRB
-> > could be used instead.
-> 
-> I see.  Sounds like a poor design decision in hindsight.  Can it be
-> changed?
+These sentences are not proper English due to the typos. I had initially caught
+one of them while trying to understand the regmap feature, and then I just ran
+the vim spell checker, and went through all the items that would need to be
+fixed for this header file.
 
-Anything can be changed :-)
-But it is a bit pervasive.
-Padding out with nops isolated the change.
+Signed-off-by: Laszlo Papp <lpapp@kde.org>
+---
+ include/linux/regmap.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-	David
-
-
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index e559078..6305657 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -122,9 +122,9 @@ typedef void (*regmap_unlock)(void *);
+  *		  volatile_table (see below) is not, the check is performed on
+  *                such table (a register is volatile if it belongs to one of
+  *                the ranges specified by volatile_table).
+- * @precious_reg: Optional callback returning true if the rgister
++ * @precious_reg: Optional callback returning true if the register
+  *		  should not be read outside of a call from the driver
+- *		  (eg, a clear on read interrupt status register). If this
++ *		  (e.g. a clear on read interrupt status register). If this
+  *                field is NULL but precious_table (see below) is not, the
+  *                check is performed on such table (a register is precious if
+  *                it belongs to one of the ranges specified by precious_table).
+@@ -136,9 +136,9 @@ typedef void (*regmap_unlock)(void *);
+  *		  are not overridden).
+  * @reg_read:	  Optional callback that if filled will be used to perform
+  *           	  all the reads from the registers. Should only be provided for
+- *		  devices whos read operation cannot be represented as a simple read
+- *		  operation on a bus such as SPI, I2C, etc. Most of the devices do
+- * 		  not need this.
++ *		  devices whose read operation cannot be represented as a simple
++ *		  read operation on a bus such as SPI, I2C, etc. Most of the
++ *		  devices do not need this.
+  * @reg_write:	  Same as above for writing.
+  * @fast_io:	  Register IO is fast. Use a spinlock instead of a mutex
+  *	     	  to perform locking. This field is ignored if custom lock/unlock
+-- 
+1.8.5.1
 
