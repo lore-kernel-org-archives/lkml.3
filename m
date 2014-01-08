@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066AbaAHLaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:30:52 -0500
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:3942 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078AbaAHLau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:30:50 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,7311"; a="57495426"
-X-IronPort-AV: E=McAfee;i="5400,1158,7311"; a="24979538"
-From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <wil6210@qca.qualcomm.com>, <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 7/7] wil6210: Use new interfaces for MSI enablement
-Date: Wed, 8 Jan 2014 13:30:45 +0200
-Message-ID: <1649789.pNiBbZVqTd@lx-vladimir>
-Organization: Qualcomm Atheros
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <a5774459cb8eebfc95156b8cd3b249d896e04400.1389103215.git.agordeev@redhat.com>
-References: <cover.1389103215.git.agordeev@redhat.com> <a5774459cb8eebfc95156b8cd3b249d896e04400.1389103215.git.agordeev@redhat.com>
+	id S1756115AbaAHLdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:33:24 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34619 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111AbaAHLdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:33:22 -0500
+Message-ID: <52CD3774.3060701@ti.com>
+Date: Wed, 8 Jan 2014 17:03:08 +0530
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.39.5]
+To: Arnd Bergmann <arnd@arndb.de>, Kishon Vijay Abraham I <kishon@ti.com>
+CC: <tj@kernel.org>, <sergei.shtylyov@cogentembedded.com>,
+        <b.zolnierkie@samsung.com>, <hdegoede@redhat.com>,
+        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH v3 2/3] ata: ahci_platform: Manage SATA PHY
+References: <1389174428-31414-1-git-send-email-rogerq@ti.com> <1389174428-31414-3-git-send-email-rogerq@ti.com> <52CD2176.6050102@ti.com> <6214646.nAF6lzWV79@wuerfel> <52CD364F.4060104@ti.com>
+In-Reply-To: <52CD364F.4060104@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 07, 2014 07:05:42 PM Alexander Gordeev wrote:
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> ---
->  drivers/net/wireless/ath/wil6210/pcie_bus.c |   36 ++++++++++++++------------
->  1 files changed, 19 insertions(+), 17 deletions(-)
+On 01/08/2014 04:58 PM, Roger Quadros wrote:
+> On 01/08/2014 03:35 PM, Arnd Bergmann wrote:
+>> On Wednesday 08 January 2014 15:29:18 Kishon Vijay Abraham I wrote:
+>>>> +     hpriv->phy = devm_phy_get(dev, "sata-phy");
+>>>> +     if (IS_ERR(hpriv->phy)) {
+>>>> +             dev_dbg(dev, "can't get sata-phy\n");
+>>>> +             /* return only if -EPROBE_DEFER */
+>>>> +             if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
+>>>> +                     rc = -EPROBE_DEFER;
+>>>> +                     goto disable_unprepare_clk;
+>>>> +             }
+>>>> +     }
+>>
+>> This should probably check for all errors except "not present"
+>> rather than checking for -EPROBE_DEFER. We want to abort the
+>> probe function for deferred probe as well as the case where we
+>> a PHY was listed but isn't working properly.
+> 
+> OK.
+> 
+>>
+>>>> +     if (!IS_ERR(hpriv->phy)) {
+>>>> +             phy_init(hpriv->phy);
+>>>
+>>> Don't we have to check the return values of phy_init and phy_power_on? Is it
+>>> not needed because it is an optional phy?
+>>
+>> Right. I think we should set hpriv->phy to NULL if it's not there and
+>> then call the functions only if it's actually present but bail out on
+>> an error.
+> 
+> OK. How does this look?
+> 
+> hpriv->phy = devm_phy_get(dev, "sata-phy");
+> if (IS_ERR(hpriv->phy)) {
+> 	if (PTR_ERR(hpriv->phy) == -ENODEV)
+> 		goto continue;
+
+yikes :P
+		goto phyinit;
+> 
+> 	dev_err(dev, "couldn't get sata-phy\n");
+> 	rc = PTR_ERR(hpriv->phy);
+> 	goto disable_unprepare_clk;
+> }
+> 
+> continue:
+phyinit:
+
+> 
+> if (!IS_ERR(hpriv->phy)) {
+> 	rc = phy_init(hpriv->phy);
+> 	if (rc)
+> 		goto disable_unprepare_clk;
+> 
+> 	rc = phy_power_on(hpriv->phy);
+> 	if (rc) {
+> 		phy_exit(hpriv->phy);
+> 		goto disable_unprepare_clk;
+> 	}
+> }
+> 
+> cheers,
+> -roger
 > 
 
-Patch looks fine, but I can't validate it as I can't find patch introducing
-pci_enable_msi_range(). Where this patch landed on?
-
-I am working with:
-git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git
-
-I also checked
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-and, of course
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-
-Thanks, Vladimir
