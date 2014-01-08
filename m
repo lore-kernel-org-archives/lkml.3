@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbaAHUlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:41:00 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41959 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653AbaAHUkz (ORCPT
+	id S1757244AbaAHUnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:43:08 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:60632 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaAHUnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:40:55 -0500
+	Wed, 8 Jan 2014 15:43:04 -0500
+Date: Wed, 8 Jan 2014 21:43:02 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org,
+        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Subject: Re: snd-usb: "delay: estimated 0, actual 352"
+Message-ID: <20140108204302.GA1556@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-In-Reply-To: <1389212231.23310.33.camel@ret.masoncoding.com>
-References: <20140102053101.GA29352@localhost>
-	<CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
-	<20140106221036.GE9037@kmo>
-	<CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
-	<20140107055318.GA19016@localhost>
-	<CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
-	<1389126617.23310.19.camel@ret.masoncoding.com>
-	<CAFR8ueezG4U5ULcp0ayhY690RUE7280UL68d55+tGCqDW9A1Kg@mail.gmail.com>
-	<1389210102.23310.31.camel@ret.masoncoding.com>
-	<CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
-	<1389212231.23310.33.camel@ret.masoncoding.com>
-Date: Wed, 8 Jan 2014 12:40:54 -0800
-Message-ID: <CAFR8uec00zThzs5Q21ySG90shQHVxbRZDGrYBPrdn1KbNCQ_vw@mail.gmail.com>
-Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Chris Mason <clm@fb.com>
-Cc: "kmo@daterainc.com" <kmo@daterainc.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lkp@linux.intel.com" <lkp@linux.intel.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hharbxlxf.wl%tiwai@suse.de>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 12:16 PM, Chris Mason <clm@fb.com> wrote:
-> On Wed, 2014-01-08 at 11:54 -0800, Muthu Kumar wrote:
->> Chris,
->>
->> [    8.336061] WARNING: CPU: 0 PID: 0 at fs/bio.c:1778 bio_endio+0xbe/0x100()
->> [    8.336062] bio_endio: bio for (unknown) without endio
->>
->> This is my recent change to avoid memory leak in bio_endio. But I
->> think the problem is higher up, most likely bio_endio is called twice
->> on the same bio (which was freed before).
->>
->
-> I think these are just two separate problems.  Lets ignore the WARN_ON
-> for now.
->
+Hi,
 
-Not really... the BUG that is triggered:
+I can very well believe that bogus triggering of this spewing message
+is now fixed by your patch (thanks!), but:
 
-kernel BUG at fs/bio.c:523!
+I get the very same message here on OpenWrt's 3.10.24
+(verified to be properly containing your patch!),
+when playing usb-audio on TL-WDR3600 MIPS via MPD mp3 streaming, *and then*:
 
-It is in bio_put() (added to bio_endio() as part of recent change)
-which gets an already freed bio.
+Execute
 
->> Are you running the unmodified for-3.14/core or do you have local patches?
->>
->
-> It's for-3.14/core with my btrfs branch.  Basically rc7 instead of rc6
-> but no changes to the block layer.  I hadn't mounted btrfs yet.
->
-> -chris
->
+    modprobe zram num_devices=4
+
+    # Set disksize of 16MB for /dev/zram0
+    echo $((16*1024*1024)) > /sys/block/zram0/disksize
+
+    mkswap /dev/zram0
+
+    # For zram, use higher prio than for traditional swap devices.
+    swapon -p 100 /dev/zram0
+
+Executing these commands will cause the status/error message to
+loop again (when doing so manually, it's directly after having executed
+the swapon command).
+
+IOW: messages did not appear, then mkswap, then infinite loop, then run
+    mpd stop
+then they're gone again.
+
+Sample:
+
+[183532.990000] delay: estimated 240, actual 0
+[183533.000000] delay: estimated 240, actual 0
+[183533.010000] delay: estimated 432, actual 288
+[183533.020000] delay: estimated 528, actual 288
+[183533.020000] delay: estimated 528, actual 288
+[183533.030000] delay: estimated 288, actual 48
+[183533.040000] delay: estimated 288, actual 48
+[183533.050000] delay: estimated 432, actual 288
+[183533.050000] delay: estimated 576, actual 288
+[183533.060000] delay: estimated 528, actual 288
+
+
+My running theory is that that mkswap causes a rather insurmountable
+temporary lockup of relevant system processing resources,
+which causes audio handling to get out of lock-step, infinitely
+(*that* one really shouldn't happen, right!?),
+not to be resolved until finally playback gets stopped again.
+
+That message is discussed at
+"MPD filling kern.log with "delay: estimated 0, actual xxx""
+  http://www.raspberrypi.org/phpBB3/viewtopic.php?f=28&t=15204
+as well, but I don't know whether that one is pre- or post-patch ;)
+(as opposed to my case, which definitely is post-patch)
+
+
+Note also that I'm experiencing rather weirdly crackling sound when using
+    aplay /usr/share/sounds/alsa/Front_Center.wav
+, but only *every other time* that I'm executing this command.
+But in this aplay case this delay message does *not* get produced,
+so I suspect that that crackling is a different issue.
+
+Wellll... perhaps not quite:
+snd-usb-audio param nrpacks=1 (as favourably mentioned by the URL above)
+does solve both the mkswap looping error
+and the aplay crackling (and solves arec crackling / echoes / corruption, too!).
+However I guess that nrpacks=1 is not something that you would want to
+have in an optimally performing system...
+
+
+usb-audio running on a bus-powered USB2 hub connected to USB2 router port,
+with certain other devices producing activity (FTDI RS232, X10 lirc remote).
+
+Hmmmm (any interesting thoughts?),
+
+Andreas Mohr
+
+-- 
+GNU/Linux. It's not the software that's free, it's you.
