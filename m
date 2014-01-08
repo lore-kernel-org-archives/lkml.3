@@ -1,35 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbaAHVSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:18:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56558 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757480AbaAHVSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:18:34 -0500
-Date: Wed, 8 Jan 2014 19:10:10 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Chen Fan <chen.fan.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@redhat.com,
-        pbonzini@redhat.com
-Subject: Re: [PATCH] kvm: x86: Fix debug typo error in lapic
-Message-ID: <20140108211009.GD20624@amt.cnet>
-References: <1388654051-5968-1-git-send-email-chen.fan.fnst@cn.fujitsu.com>
+	id S1757566AbaAHVSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:18:55 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:34289 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192AbaAHVSr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 16:18:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388654051-5968-1-git-send-email-chen.fan.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140108211454.GC7291@kmo-pixel>
+References: <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
+	<1389126617.23310.19.camel@ret.masoncoding.com>
+	<CAFR8ueezG4U5ULcp0ayhY690RUE7280UL68d55+tGCqDW9A1Kg@mail.gmail.com>
+	<1389210102.23310.31.camel@ret.masoncoding.com>
+	<CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
+	<1389212231.23310.33.camel@ret.masoncoding.com>
+	<CAFR8uec00zThzs5Q21ySG90shQHVxbRZDGrYBPrdn1KbNCQ_vw@mail.gmail.com>
+	<1389214325.23310.34.camel@ret.masoncoding.com>
+	<CAFR8uefj7=x149nAQOwX5pw-5OCXnS6oYYF8xZkQVrdmPJBD6g@mail.gmail.com>
+	<1389215536.23310.37.camel@ret.masoncoding.com>
+	<20140108211454.GC7291@kmo-pixel>
+Date: Wed, 8 Jan 2014 13:18:46 -0800
+Message-ID: <CAFR8uecBvvxYL8x29Aqq47Lez5vz=wUO5+Ac=SBB+i9mwEXbAg@mail.gmail.com>
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Chris Mason <clm@fb.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lkp@linux.intel.com" <lkp@linux.intel.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 05:14:11PM +0800, Chen Fan wrote:
-> fix the 'vcpi' typos when apic_debug is enabled.
-> 
-> Signed-off-by: Chen Fan <chen.fan.fnst@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/lapic.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+On Wed, Jan 8, 2014 at 1:14 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> On Wed, Jan 08, 2014 at 09:11:49PM +0000, Chris Mason wrote:
+>> On Wed, 2014-01-08 at 13:01 -0800, Muthu Kumar wrote:
+>> > On Wed, Jan 8, 2014 at 12:51 PM, Chris Mason <clm@fb.com> wrote:
+>> > > On Wed, 2014-01-08 at 12:40 -0800, Muthu Kumar wrote:
+>> > >> On Wed, Jan 8, 2014 at 12:16 PM, Chris Mason <clm@fb.com> wrote:
+>> > >> > On Wed, 2014-01-08 at 11:54 -0800, Muthu Kumar wrote:
+>> > >> >> Chris,
+>> > >> >>
+>> > >> >> [    8.336061] WARNING: CPU: 0 PID: 0 at fs/bio.c:1778 bio_endio+0xbe/0x100()
+>> > >> >> [    8.336062] bio_endio: bio for (unknown) without endio
+>> > >> >>
+>> > >> >> This is my recent change to avoid memory leak in bio_endio. But I
+>> > >> >> think the problem is higher up, most likely bio_endio is called twice
+>> > >> >> on the same bio (which was freed before).
+>> > >> >>
+>> > >> >
+>> > >> > I think these are just two separate problems.  Lets ignore the WARN_ON
+>> > >> > for now.
+>> > >> >
+>> > >>
+>> > >> Not really... the BUG that is triggered:
+>> > >>
+>> > >> kernel BUG at fs/bio.c:523!
+>> > >>
+>> > >> It is in bio_put() (added to bio_endio() as part of recent change)
+>> > >> which gets an already freed bio.
+>> > >>
+>> > >
+>> > > Oh! I see.  Let me try with that one reverted.  Thanks!
+>> > >
+>> > > -chris
+>> > >
+>> >
+>> > But, like I said, problem is in different place. I am running a "dd"
+>> > on ext4 fs for a while now, but didn't hit the problem. Any idea to
+>> > repro locally? I would also suggest running just the for-3.1/core to
+>> > isolate the issue.
+>>
+>> Just reverting that change fixes it for me.  Jens mentioned it was
+>> broken for on-stack bios.
+>
+> On-stack bios? I don't recall ever coming across such a thing, who what
+> where why?
+>
+> i would expect on stack bios to work though, i'm really curious how it
+> was broken
 
-Applied, thanks.
+New change added a bio_put() which might not work if the bio is on stack.
 
+I don't remember seeing a on-stack-bio either, any help to jog my memory?
