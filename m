@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaAHJJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 04:09:38 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:65216 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171AbaAHJJb (ORCPT
+	id S1755441AbaAHJMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 04:12:45 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:33008 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919AbaAHJMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 04:09:31 -0500
+	Wed, 8 Jan 2014 04:12:43 -0500
+Date: Wed, 8 Jan 2014 09:12:37 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: sameo@linux.intel.com, balbi@ti.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2] mfd: omap-usb-tll: Don't hold lock during
+ pm_runtime_get/put_sync()
+Message-ID: <20140108091237.GE19974@lee--X1>
+References: <1389165333-7573-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomKH=vQiMKBuDOPyg3+djmG+4chkjruihMQChz5gJ+yzw@mail.gmail.com>
-References: <CAKohpom5JmFamPpOsyPRqXNAqXu6VF_t0zXXhT90MCMutp5FgQ@mail.gmail.com>
-	<20131224084801.57439ca2@gandalf.local.home>
-	<CAKohpom3haZ+LSdOtAjCM7x2C4YOC_a31OMPeE05ung4MAR68g@mail.gmail.com>
-	<20131226152913.GB15303@localhost.localdomain>
-	<CAKohpokMJWoOmqVZ2hp0AfvTerxqenXM=AFrFz5cJLJaFNcGqw@mail.gmail.com>
-	<CAKohpomKH=vQiMKBuDOPyg3+djmG+4chkjruihMQChz5gJ+yzw@mail.gmail.com>
-Date: Wed, 8 Jan 2014 14:39:30 +0530
-Message-ID: <CAKohpo=LoJFLS93FEW1XZW5qWmSZTmBjS5GauOkaw+GW02PseA@mail.gmail.com>
-Subject: Re: [Query]: trace-cmd crashing with '-e syscalls' on 3.13-rc1
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Networking <linaro-networking@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389165333-7573-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 January 2014 13:20, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Ping!!
+> pm_runtime_get/put_sync() can sleep so don't hold spinlock while
+> calling them.
+> 
+> This patch prevents a BUG() during system suspend when
+> CONFIG_DEBUG_ATOMIC_SLEEP is enabled.
+> 
+> Bug is present in Kernel versions v3.9 onwards.
+> 
+> Reported-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> Cc: <stable@vger.kernel.org> # 3.9+
+> ---
+>  drivers/mfd/omap-usb-tll.c | 36 ++++++++++++------------------------
+>  1 file changed, 12 insertions(+), 24 deletions(-)
 
-Two things:
-- I didn't had CONFIG_FTRACE_SYSCALLS enabled earlier
-- On latest linux,
+Patch looks good to me now.
 
-b4a839b Add linux-next specific files for 20140106
+Applied, thanks.
 
-I don't see that crash anymore with our without
-CONFIG_FTRACE_SYSCALLS enabled.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
