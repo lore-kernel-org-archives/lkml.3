@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268AbaAHUFV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:05:21 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:60823 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750861AbaAHUFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:05:17 -0500
-Message-ID: <1389211514.14754.10.camel@x220>
-Subject: Re: [PATCH] [SCSI] advansys: change buildtime warning into runtime
- error
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 08 Jan 2014 21:05:14 +0100
-In-Reply-To: <1359454842.1345.40.camel@x61.thuisdomein>
-References: <1352113082.1434.31.camel@x61.thuisdomein>
-	 <1359454842.1345.40.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jan 2014 20:05:14.0795 (UTC) FILETIME=[F1D107B0:01CF0CAC]
-X-RcptDomain: vger.kernel.org
+	id S932162AbaAHUHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:07:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49858 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932119AbaAHUHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:07:00 -0500
+Date: Wed, 8 Jan 2014 15:06:52 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, dsaxena@linaro.org,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [PATCH] audit: correct a type mismatch in audit_syscall_exit()
+Message-ID: <20140108200652.GA23577@madcap2.tricolour.ca>
+References: <1387938953-15667-1-git-send-email-takahiro.akashi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1387938953-15667-1-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-29 at 11:20 +0100, Paul Bolle wrote:
-> On Mon, 2012-11-05 at 11:58 +0100, Paul Bolle wrote:
-> > Building advansys.o triggers this warning:
-> >     drivers/scsi/advansys.c:71:2: warning: #warning this driver is still not properly converted to the DMA API [-Wcpp]
-> > 
-> > This warning can be traced back to a patch called "advansys: add warning
-> > and convert #includes" which was included in v2.6.10. That patch also
-> > marked the driver as BROKEN.
-> > 
-> > Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
-> > driver: limp along on x86") enabled this driver for x86-32. And commit
-> > 9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
-> > work on parisc") enabled this driver for all architectures. But the
-> > commit explanation stated:
-> >     I haven't removed the #warning yet because virt_to_bus/bus_to_virt are
-> >     only eliminated for narrow boards.  Wide boards need more work.
-> > 
-> > Five years have passed and, apparently, those wide boards still need
-> > more work. So let's change the buildtime warning into a runtime error,
-> > only printed for those wide boards. Perhaps that might push the people
-> > using those wide boards to convert this driver. And for all others
-> > there's now one less buildtime warning to ignore.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Compile tested only. I don't have any AdvanSys SCSI boards (neither
-> > narrow nor wide).
+On 13/12/25, AKASHI Takahiro wrote:
+> audit_syscall_exit() saves a result of regs_return_value() in intermediate
+> "int" variable and passes it to __audit_syscall_exit(), which expects its
+> second argument as a "long" value.
+> This will result in truncating the value returned by a system call and
+> making a wrong audit record.
+> I don't know why gcc compiler doesn't complain about this, but anyway it
+> causes a problem at runtime on arm64 (and probably most 64-bit archs).
 > 
-> The date of this message suggests I submitted this patch for a warning
-> seen while building v3.7-rc4. An identical warning can be seen while
-> building v3.8-rc5. What's the status of my patch? Did anyone find some
-> time to have a look at it?
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-I've been carrying this patch locally for over a year. Is there any
-chance of someone trying to remove this buildtime warning?
+Thanks for catching this, Takakiro.
 
-I'm inclined to submit a path to Fedora - my local builds use
-their .config as a base - to just disable this driver. It seems that
-would increase my chances of finally shutting down this warning.
+> ---
+>  include/linux/audit.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/audit.h b/include/linux/audit.h
+> index c49a312..3dcb3f0 100644
+> --- a/include/linux/audit.h
+> +++ b/include/linux/audit.h
+> @@ -144,7 +144,7 @@ static inline void audit_syscall_exit(void *pt_regs)
+>  {
+>  	if (unlikely(current->audit_context)) {
+>  		int success = is_syscall_success(pt_regs);
+> -		int return_code = regs_return_value(pt_regs);
+> +		long return_code = regs_return_value(pt_regs);
+>  
+>  		__audit_syscall_exit(success, return_code);
+>  	}
 
+- RGB
 
-Paul Bolle
-
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
