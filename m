@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160AbaAHHz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:55:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25773 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919AbaAHHzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:55:53 -0500
-Date: Wed, 8 Jan 2014 08:57:58 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 5/7] vfio: Use new interfaces for MSI/MSI-X enablement
-Message-ID: <20140108075757.GB20157@dhcp-26-207.brq.redhat.com>
-References: <cover.1389103215.git.agordeev@redhat.com>
- <1c2ab7cdd9f18f98ee86c73b182f4ee0697f7495.1389103215.git.agordeev@redhat.com>
- <1389119653.3209.124.camel@bling.home>
- <20140108074224.GA20157@dhcp-26-207.brq.redhat.com>
+	id S1755380AbaAHH4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:56:39 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:54249 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754957AbaAHH4b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 02:56:31 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s087u5pi007468, This message is accepted by code: ctloc85258
+From: Roger Tseng <rogerable@realtek.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wei_wang <wei_wang@realsil.com.cn>
+Date: Wed, 8 Jan 2014 15:56:05 +0800
+Subject: RE: [PATCH 1/3] mfd: Add realtek USB card reader driver
+Thread-Topic: [PATCH 1/3] mfd: Add realtek USB card reader driver
+Thread-Index: Ac8Hn7x98MWTBFq9ThKLX7hyJeTgiwEoLdpK
+Message-ID: <1121E117AD4ECE49880A389A396215BB939A5BD715@rtitmbs7.realtek.com.tw>
+References: <1387792327-2511-1-git-send-email-rogerable@realtek.com>
+ <1387792327-2511-2-git-send-email-rogerable@realtek.com>,<20140102094750.GZ28413@mwanda>
+In-Reply-To: <20140102094750.GZ28413@mwanda>
+Accept-Language: en-US, zh-TW
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, zh-TW
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108074224.GA20157@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/vfio/pci/vfio_pci_intrs.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Hi Dan,
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index 641bc87..66d1746 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -482,15 +482,15 @@ static int vfio_msi_enable(struct vfio_pci_device *vdev, int nvec, bool msix)
- 		for (i = 0; i < nvec; i++)
- 			vdev->msix[i].entry = i;
- 
--		ret = pci_enable_msix(pdev, vdev->msix, nvec);
--		if (ret) {
-+		ret = pci_enable_msix_range(pdev, vdev->msix, nvec, nvec);
-+		if (ret < 0) {
- 			kfree(vdev->msix);
- 			kfree(vdev->ctx);
- 			return ret;
- 		}
- 	} else {
--		ret = pci_enable_msi_block(pdev, nvec);
--		if (ret) {
-+		ret = pci_enable_msi_range(pdev, nvec, nvec);
-+		if (ret < 0) {
- 			kfree(vdev->ctx);
- 			return ret;
- 		}
--- 
-1.7.7.6
+>> +int rtsx_usb_ep0_write_register(struct rtsx_ucr *ucr, u16 addr,
+>> +             u8 mask, u8 data)
+>> +{
+>> +     u16 value = 0, index = 0;
+>> +
+>> +     value |= (u16)(3 & 0x03) << 14;
+>> +     value |= (u16)(addr & 0x3FFF);
+>
+>Don't do pointless things:
+>
+>        value |= 0x03 << 14;
+>        value |= addr & 0x3FFF;
+>
+>> +     value = ((value << 8) & 0xFF00) | ((value >> 8) & 0x00FF);
+>
+>This is an endian conversion?  It is buggy.  Use the kernel endian
+>conversion functions cpu_to_le16().
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+This is not a conversion for endianess with respect to CPU but for command format  of the device. It should always be performed regardless of platform.
+
+In other words, it could be equivalent to:
+        value |= 0x03 << 6; // lower byte
+        value |= (addr & 0x3F00) >> 8; // lower byte
+        value |= (addr & 0xFF) << 8; //higher byte
+
+We think the previous form is easier to read. Should we keep it or change to the later one?
