@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaAHUWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:22:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57968 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757375AbaAHUWi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757371AbaAHUWi (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 8 Jan 2014 15:22:38 -0500
-From: "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-CC: Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH v3 2/2] memory: ti-aemif: add bindings for AEMIF driver
-Thread-Topic: [PATCH v3 2/2] memory: ti-aemif: add bindings for AEMIF driver
-Thread-Index: AQHO9mBJCGmJsh87d0OGlsUMzvEuZ5pUBDMAgCdrkWc=
-Date: Wed, 8 Jan 2014 20:21:24 +0000
-Message-ID: <4F5844B3A985794BA902E12C070812370BBD90C2@DNCE04.ent.ti.com>
-References: <1386759570-29671-1-git-send-email-ivan.khoronzhuk@ti.com>
- <1386759570-29671-3-git-send-email-ivan.khoronzhuk@ti.com>,<52ACAE54.2060007@ti.com>
-In-Reply-To: <52ACAE54.2060007@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.92]
-x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41975 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaAHUWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:22:35 -0500
+Date: Wed, 8 Jan 2014 12:23:05 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frank =?iso-8859-1?Q?Sch=E4fer?= <fschaefer.oss@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: sysfs warnings since kernel 3.13-rc1:  "WARNING: ... at
+ fs/sysfs/group.c:214 sysfs_remove_group"
+Message-ID: <20140108202305.GA8417@kroah.com>
+References: <52CC3D1A.9050109@googlemail.com>
+ <20140107175925.GC3231@htj.dyndns.org>
+ <52CDAEA2.2000801@googlemail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52CDAEA2.2000801@googlemail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kumar,
+On Wed, Jan 08, 2014 at 09:01:38PM +0100, Frank Schäfer wrote:
+> Am 07.01.2014 18:59, schrieb Tejun Heo:
+> > Hello,
+> >
+> > cc'ing Mauro and quoting whole body for him.
+> >
+> > So, ummm, the sysfs rule was that any group below a device should be
+> > removed before the device itself is removed; however, nothing really
+> > checked whether this actually was the case.  We didn't care whether
+> > the order was reversed and if somebody forgot to remove the group
+> > afterwards, we just leaked it.  After this commit, sysfs now whines if
+> > the order is reversed, so the warning.
+> >
+> > While this should probably be fixed from the v4l side, I'm really
+> > skeptical we're gaining anything by requiring users to explicitly
+> > remove groups during device removal.  In most cases, this is a
+> > completely unnecessary task.  Maybe we should just hunt down all
+> > remove_group calls and remove all the unnecessary ones.
+> >
+> > Thanks.
+> What about the USB mass storage devices ?
+> Is it just a coincidence that this happens with two completely different
+> types of USB devices ?
 
-Do you have any comments on this patch?
+Yes it is, there's a big long thread on the linux-usb and scsi mailing
+lists about this, and the fix should be final soon.
+
+thanks,
+
+greg k-h
