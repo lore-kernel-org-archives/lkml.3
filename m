@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067AbaAHOk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:40:29 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:34741 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988AbaAHOkZ (ORCPT
+	id S1757052AbaAHOkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:40:46 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52046 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755435AbaAHOkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:40:25 -0500
-Message-ID: <52CD6358.7010706@gmail.com>
-Date: Wed, 08 Jan 2014 22:40:24 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 8 Jan 2014 09:40:42 -0500
+Date: Wed, 8 Jan 2014 09:40:25 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
+ l2 forwarding
+Message-ID: <20140108144025.GA17802@neilslaptop.think-freely.org>
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com>
+ <1388978467-2075-2-git-send-email-jasowang@redhat.com>
+ <20140106124248.GB24280@hmsreliant.think-freely.org>
+ <52CB77A0.3030106@redhat.com>
+ <20140107131730.GA12366@hmsreliant.think-freely.org>
+ <52CCC431.3060403@redhat.com>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Hogan <james.hogan@imgtec.com>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
- instead of operator '%' for u64
-References: <52B4F837.1010403@gmail.com>  <1387680997.5567.91.camel@haakon3.risingtidesystems.com>  <52B6AE19.80401@gmail.com> <1387781487.5567.147.camel@haakon3.risingtidesystems.com> <52B90111.5050203@gmail.com> <52CCFF0C.7070704@suse.de>
-In-Reply-To: <52CCFF0C.7070704@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CCC431.3060403@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 03:32 PM, Hannes Reinecke wrote:
-> On 12/24/2013 04:35 AM, Chen Gang wrote:
->> On 12/23/2013 02:51 PM, Nicholas A. Bellinger wrote:
->>> On Sun, 2013-12-22 at 17:17 +0800, Chen Gang wrote:
->>>> On 12/22/2013 10:56 AM, Nicholas A. Bellinger wrote:
->>>>> Hi Chen,
->>>>>
->>>>> On Sat, 2013-12-21 at 10:08 +0800, Chen Gang wrote:
->>>>>> In kernel, need use div64_u64_rem() instead of operator '%' for u64, or
->>>>>> can not pass compiling (with allmodconfig under metag):
->>>>>>
->>>>>>     MODPOST 2909 modules
->>>>>>   ERROR: "__umoddi3" [drivers/target/target_core_mod.ko] undefined!
->>>>>>
->>>>>> Also need u64 type cast for u32 variable multiply u32 variable, or will
->>>>>> cause type overflow issue.
->>>>>>
->>>>>>
->>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->>>>>> ---
->>>>>>  drivers/target/target_core_alua.c | 3 ++-
->>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>>>
->>>>>
->>>>> FYI, this unsigned long long division in core_alua_state_lba_dependent()
->>>>> was fixed for 32-bit in linux-next >= 12192013 code.
->>>>>
->>>>
->>>> OK, thanks.
->>>>
->>>> The related fix patch changed "start_lba = lba % ..." to "start_lba =
->>>> lba / ...", and also assumed "segment_size * segment_mult" is still
->>>> within u32 (can not cause type over flow).
->>>>
->>>> I guess the original author already knew about them, and intended to do
->>>> like that (if not, please let me know, thanks).
->>>>
->>>
->>> Sorry, your correct that the original code is using modulo division to
->>> calculate start_lba.
->>>
->>
->> Oh, that's all right, (in fact, don't need sorry), I am not quite
->> familiar with the details, so need related member help check it.  :-)
->>
->>> Hannes, can you please double check this below..?
->>>
->>
->> Please help check when have time, thanks.
->>
-> I would even convert segment_size and segment_mult to u64,
-> to ensure no overflows occur:
+On Wed, Jan 08, 2014 at 11:21:21AM +0800, Jason Wang wrote:
+> On 01/07/2014 09:17 PM, Neil Horman wrote:
+> > On Tue, Jan 07, 2014 at 11:42:24AM +0800, Jason Wang wrote:
+> >> On 01/06/2014 08:42 PM, Neil Horman wrote:
+> >>> On Mon, Jan 06, 2014 at 11:21:07AM +0800, Jason Wang wrote:
+> >>>> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
+> >>>> will cause several issues:
+> >>>>
+> >>>> - NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
+> >>>>   contention.
+> >>>> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
+> >>>>   watchdog
+> >>>> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
+> >>>>   when tso is disabled for lower device.
+> >>>>
+> >>>> Fix this by explicitly introducing a select queue method just for l2 forwarding
+> >>>> offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
+> >>>> queue selecting and transmitting for l2 forwarding.
+> >>>>
+> >>>> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
+> >>>> to check txq against NULL in dev_hard_start_xmit().
+> >>>>
+> >>>> In the future, it was also required for macvtap l2 forwarding support since it
+> >>>> provides a necessary synchronization method.
+> >>>>
+> >>>> Cc: John Fastabend <john.r.fastabend@intel.com>
+> >>>> Cc: Neil Horman <nhorman@tuxdriver.com>
+> >>>> Cc: e1000-devel@lists.sourceforge.net
+> >>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >>> Instead of creating another operation here to do special queue selection, why
+> >>> not just have ndo_dfwd_start_xmit include a pointer to a pointer in its argument
+> >>> list, so it can pass the txq it used back to the caller (dev_hard_start_xmit)?
+> >>> ndo_dfwd_start_xmit already knows which queue set to pick from (since their
+> >>> reserved for the device doing the transmitting).  It seems more clear to me than
+> >>> creating a new netdevice operation.  
+> >> See commit 8ffab51b3dfc54876f145f15b351c41f3f703195 ("macvlan: lockless
+> >> tx path"). The point is keep the tx path lockless to be efficient and
+> >> simplicity for management. And macvtap multiqueue was also implemented
+> >> with this assumption. The real contention should be done in the txq of
+> >> lower device instead of macvlan itself. This is also needed for
+> >> multiqueue macvtap.
+> > Ok, I see how you're preserving LLTX here, and thats great, but it doesn't
+> > really buy us anything that I can see.  If a macvlan is using hardware
+> > acceleration, it needs to arbitrate access to that hardware.  Weather thats done
+> > by locking the lowerdev's tx queue lock or by enforcing locking on the macvlan
+> > itself is equivalent.  The decision to use dfwd hardware acceleration is made on
+> > open, so its not like theres any traffic that can avoid the lock, as it all goes
+> > through the hardware.  All I see that this has bought us is an extra net_device
+> > method (which isn't a big deal, but not necessecary as I see it).
 > 
-> diff --git a/drivers/target/target_core_alua.c
-> b/drivers/target/target_core_alua
-> .c
-> index 9b1856d..54b1e52 100644
-> --- a/drivers/target/target_core_alua.c
-> +++ b/drivers/target/target_core_alua.c
-> @@ -477,8 +477,7 @@ static inline int core_alua_state_lba_dependent(
->         u8 *alua_ascq)
->  {
->         struct se_device *dev = cmd->se_dev;
-> -       u32 segment_size, segment_mult, sectors;
-> -       u64 lba;
-> +       u64 segment_size, segment_mult, sectors, lba;
-> 
->         /* Only need to check for cdb actually containing LBAs */
->         if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB))
-> 
+> As I replied to patch 1/2, looking at the code itself again. The locking
+> on the lowerdev's tx queue is really need since we need synchronize with
+> other control path. Two examples are dev watchdog and ixgbe_down() both
+> of which will try to hold tx lock to synchronize the with transmission.
+> Without holding the lowerdev tx lock, we may have more serious issues.
+> Also, it's a little strange for a net device has two modes. Future
+> developers need to care about two different tx lock paths which is sub
+> optimal.
 > 
 
-OK, thanks.
+Ok, having looked at this for a few hours, I agree, locking in the lowerdev has
+some definiate advantages in plugging the holes you've pointed out.
 
-> Other than that the sector_div() patch is correct.
-> 
+> For the issue of an extra net_device method,  if you don't like we can
+> reuse the ndo_select_queue by also passing the accel_priv to that method.
+I do, that actually simplifies things, since it lets us use the entire
+dev_hard_start_xmit path unmodified, which gives us the locking your looking for
+without having to create a new slimmed down variant of dev_hard_start_xmit.
 
-So we really need use '/' instead of original '%'?
-
-
-Thanks
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Regards
+Neil
