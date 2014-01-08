@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152AbaAHKlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 05:41:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:61281 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867AbaAHKls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 05:41:48 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Roger Quadros <rogerq@ti.com>, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, tony@atomide.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        "Kristo, Tero" <t-kristo@ti.com>, bcousson@baylibre.com,
-        linux-omap@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH v4 1/5] mfd: omap-usb-host: Update DT clock binding information
-Date: Wed, 08 Jan 2014 11:40:14 +0100
-Message-ID: <4840680.vVGZYBJBID@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <52CD2807.9000200@ti.com>
-References: <1389161742-10533-1-git-send-email-rogerq@ti.com> <4812867.NuB3hNkV9d@wuerfel> <52CD2807.9000200@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Y36a8yKh9ciBG+ZX6pI1MzPi5wJKo8csDJapl4q01BF
- h1QL9IrMYktMSnTPKEASNn917E4K/qsyZgN0bIJ1FKr1vkLQtl
- t0WIblAOVHYVL4ihMOXicUXjNCKfLXIKwIEt3Lbt5ssof4cV9Y
- I/k/cduidfoNcsS+1oCHmMgAgeBTMo+jmyZytkZqM9VtqHzpf3
- JQC9wdksjHaCQU7ZIDf/4EWC58rwfUC0xlRA3C8whLBteTrMgP
- oYCyBkN2NAKluyRjsM8H/hc4EFElASPstDLriv8xpOUx63W4YC
- YzbzkSeCmDyyaF7Nc+hr5byy9bQGFFRCwF3ImmGDzaOfWlSOsR
- bmMUFmD6kUqr+SmfGbJs=
+	id S1755850AbaAHKlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 05:41:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44975 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069AbaAHKlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 05:41:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,623,1384329600"; 
+   d="scan'208";a="463415671"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 4/4] Documentation / ACPI: update to GPIO descriptor API
+Date: Wed,  8 Jan 2014 12:40:57 +0200
+Message-Id: <1389177657-29266-5-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389177657-29266-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1389177657-29266-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014 15:57:19 Roger Quadros wrote:
-> It is a clock gate defined like so in the DT clock data
-> 
-> on OMAP4
->         init_60m_fclk: init_60m_fclk {
->                 #clock-cells = <0>;
->                 compatible = "ti,divider-clock";
->                 clocks = <&dpll_usb_m2_ck>;
->                 reg = <0x0104>;
->                 ti,dividers = <1>, <8>;
->         };
-> 
-> on OMAP5
->         l3init_60m_fclk: l3init_60m_fclk {
->                 #clock-cells = <0>;
->                 compatible = "ti,divider-clock";
->                 clocks = <&dpll_usb_m2_ck>;
->                 reg = <0x0104>;
->                 ti,dividers = <1>, <8>;
->         };
-> 
-> So you can see that it is the same thing with a different name.
+Update the documentation also to reflect the fact that there are no ACPI
+specific GPIO interfaces anymore but drivers should instead use the
+descriptor based GPIO APIs.
 
-Right, but init_60m_fclk is the name of the clock output of the
-divider here, which is /not/ what you should put in the "clock-names"
-property of the consumer. The clock input name should reflect what
-the clock is used for instead.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ Documentation/acpi/enumeration.txt | 36 +++++++-----------------------------
+ 1 file changed, 7 insertions(+), 29 deletions(-)
 
-	Arnd
+diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+index b994bcb32b92..2a1519b87177 100644
+--- a/Documentation/acpi/enumeration.txt
++++ b/Documentation/acpi/enumeration.txt
+@@ -293,36 +293,13 @@ the device to the driver. For example:
+ 
+ These GPIO numbers are controller relative and path "\\_SB.PCI0.GPI0"
+ specifies the path to the controller. In order to use these GPIOs in Linux
+-we need to translate them to the Linux GPIO numbers.
++we need to translate them to the corresponding Linux GPIO descriptors.
+ 
+-In a simple case of just getting the Linux GPIO number from device
+-resources one can use acpi_get_gpio_by_index() helper function. It takes
+-pointer to the device and index of the GpioIo/GpioInt descriptor in the
+-device resources list. For example:
++There is a standard GPIO API for that and is documented in
++Documentation/gpio.txt.
+ 
+-	int gpio_irq, gpio_power;
+-	int ret;
+-
+-	gpio_irq = acpi_get_gpio_by_index(dev, 1, NULL);
+-	if (gpio_irq < 0)
+-		/* handle error */
+-
+-	gpio_power = acpi_get_gpio_by_index(dev, 0, NULL);
+-	if (gpio_power < 0)
+-		/* handle error */
+-
+-	/* Now we can use the GPIO numbers */
+-
+-Other GpioIo parameters must be converted first by the driver to be
+-suitable to the gpiolib before passing them.
+-
+-In case of GpioInt resource an additional call to gpio_to_irq() must be
+-done before calling request_irq().
+-
+-Note that the above API is ACPI specific and not recommended for drivers
+-that need to support non-ACPI systems. The recommended way is to use
+-the descriptor based GPIO interfaces. The above example looks like this
+-when converted to the GPIO desc:
++In the above example we can get the corresponding two GPIO descriptors with
++a code like this:
+ 
+ 	#include <linux/gpio/consumer.h>
+ 	...
+@@ -339,4 +316,5 @@ when converted to the GPIO desc:
+ 
+ 	/* Now we can use the GPIO descriptors */
+ 
+-See also Documentation/gpio.txt.
++There are also devm_* versions of these functions which release the
++descriptors once the device is released.
+-- 
+1.8.5.2
+
