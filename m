@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684AbaAHICh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:02:37 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:62836 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636AbaAHIC2 (ORCPT
+	id S1755339AbaAHIEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:04:42 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:36407 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121AbaAHIEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:02:28 -0500
+	Wed, 8 Jan 2014 03:04:34 -0500
+Date: Wed, 8 Jan 2014 00:03:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: am335x: IIO/ADC fixes if used together with TSC, v2
+Message-ID: <20140108080359.GA16527@core.coreip.homeip.net>
+References: <1387466911-3732-1-git-send-email-bigeasy@linutronix.de>
+ <20140107085456.GD3182@lee--X1>
 MIME-Version: 1.0
-In-Reply-To: <20140108151459.d4743129d9cae88865774073@canb.auug.org.au>
-References: <20140108151459.d4743129d9cae88865774073@canb.auug.org.au>
-Date: Wed, 8 Jan 2014 09:02:27 +0100
-Message-ID: <CACRpkdaGArKx2WXkxrakFQ4vaJtytsbSW8mpA+FdyJxEROURvg@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the gpio tree with the xtensa tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Chris Zankel <chris@zankel.net>,
-        Max Filippov <jcmvbkbc@gmail.com>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140107085456.GD3182@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 5:14 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Tue, Jan 07, 2014 at 08:54:56AM +0000, Lee Jones wrote:
+> Dmitry, Jonathan,
+> 
+> This is for you.
+> 
+> The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+> 
+>   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.linaro.org/people/ljones/mfd.git tags/ib-iio-input-3.13-1
+> 
+> for you to fetch changes up to 7ca6740cd1cd410828a01151a044b51910d06eff:
+> 
+>   mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization (2014-01-07 08:45:00 +0000)
+> 
+> ----------------------------------------------------------------
+> Immutable branch for IIO and Input
+> 
+> ----------------------------------------------------------------
+> Sebastian Andrzej Siewior (5):
+>       iio: ti_am335x_adc: Adjust the closing bracket in tiadc_read_raw()
+>       mfd: ti_am335x_tscadc: Make am335x_tsc_se_update() local
+>       mfd: ti_am335x_tscadc: Don't read back REG_SE
+>       mfd: ti_am335x: Drop am335x_tsc_se_update() from resume path
+>       mfd: input: iio: ti_amm335x: Rework TSC/ADC synchronization
+> 
+>  drivers/iio/adc/ti_am335x_adc.c           | 68 +++++++++++++++++++++++++++++++++++++++++++++++++-------------------
+>  drivers/input/touchscreen/ti_am335x_tsc.c |  4 ++--
+>  drivers/mfd/ti_am335x_tscadc.c            | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------
+>  include/linux/mfd/ti_am335x_tscadc.h      |  8 ++++++--
+>  4 files changed, 117 insertions(+), 34 deletions(-)
 
-> Hi Linus,
->
-> Today's linux-next merge of the gpio tree got a conflict in
-> arch/xtensa/Kconfig between commit dbacef090841 ("xtensa: add SMP
-> support") from the xtensa tree and commit a1a2bdec4772 ("gpio: xtensa:
-> depend on HAVE_XTENSA_GPIO32") from the gpio tree.
+I do not have any pending changes to ti_am335x_tsc.c so it can all go
+through Jonathan's tree.
 
-Looks correct, thanks!
+Thanks.
 
-Yours,
-Linus Walleij
+-- 
+Dmitry
