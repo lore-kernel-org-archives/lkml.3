@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757692AbaAHUil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:38:41 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49881 "EHLO
+	id S1757505AbaAHUgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:36:24 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49834 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757444AbaAHUg2 (ORCPT
+	with ESMTP id S1752511AbaAHUgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:36:28 -0500
+	Wed, 8 Jan 2014 15:36:18 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 09/14] target/configfs: Expose protection device attributes
-Date: Wed,  8 Jan 2014 20:15:52 +0000
-Message-Id: <1389212157-14540-10-git-send-email-nab@daterainc.com>
+Subject: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception cases
+Date: Wed,  8 Jan 2014 20:15:45 +0000
+Message-Id: <1389212157-14540-3-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com>
 References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
@@ -27,15 +27,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for exposing DIF protection device
-attributes via configfs.  This includes:
+This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
+exception cases into transport_send_check_condition_and_sense().
 
-   pi_prot_type: Protection Type (0, 1, 3 currently support)
-   pi_prot_version: Protection Version (DIF v1 currently supported)
-   pi_guard_type: Guard Type (1=DIF CRC, 2=IP CRC)
+This includes:
 
-Within se_dev_set_pi_prot_type() it also adds the se_subsystem_api
-device callbacks to setup per device protection information.
+  LOGICAL BLOCK GUARD CHECK FAILED
+  LOGICAL BLOCK APPLICATION TAG CHECK FAILED
+  LOGICAL BLOCK REFERENCE TAG CHECK FAILED
+
+that used by DIF TYPE1 and TYPE3 failure cases.
 
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -44,144 +45,65 @@ Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_configfs.c |   12 ++++++
- drivers/target/target_core_device.c   |   65 +++++++++++++++++++++++++++++++++
- drivers/target/target_core_internal.h |    2 +
- 3 files changed, 79 insertions(+)
+ drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+ include/target/target_core_base.h      |    3 +++
+ 2 files changed, 33 insertions(+)
 
-diff --git a/drivers/target/target_core_configfs.c b/drivers/target/target_core_configfs.c
-index 272755d..0f1101c 100644
---- a/drivers/target/target_core_configfs.c
-+++ b/drivers/target/target_core_configfs.c
-@@ -643,6 +643,15 @@ SE_DEV_ATTR(emulate_caw, S_IRUGO | S_IWUSR);
- DEF_DEV_ATTRIB(emulate_3pc);
- SE_DEV_ATTR(emulate_3pc, S_IRUGO | S_IWUSR);
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 91953da..707ee17 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
+ 		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
+ 		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
+ 		break;
++	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
++		/* CURRENT ERROR */
++		buffer[0] = 0x70;
++		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
++		/* ILLEGAL REQUEST */
++		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
++		/* LOGICAL BLOCK GUARD CHECK FAILED */
++		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
++		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
++		break;
++	case TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED:
++		/* CURRENT ERROR */
++		buffer[0] = 0x70;
++		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
++		/* ILLEGAL REQUEST */
++		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
++		/* LOGICAL BLOCK APPLICATION TAG CHECK FAILED */
++		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
++		buffer[SPC_ASCQ_KEY_OFFSET] = 0x02;
++		break;
++	case TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED:
++		/* CURRENT ERROR */
++		buffer[0] = 0x70;
++		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
++		/* ILLEGAL REQUEST */
++		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
++		/* LOGICAL BLOCK REFERENCE TAG CHECK FAILED */
++		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
++		buffer[SPC_ASCQ_KEY_OFFSET] = 0x03;
++		break;
+ 	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
+ 	default:
+ 		/* CURRENT ERROR */
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index 15f402c..9a6e091 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -206,6 +206,9 @@ enum tcm_sense_reason_table {
+ 	TCM_OUT_OF_RESOURCES			= R(0x12),
+ 	TCM_PARAMETER_LIST_LENGTH_ERROR		= R(0x13),
+ 	TCM_MISCOMPARE_VERIFY			= R(0x14),
++	TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED	= R(0x15),
++	TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED	= R(0x16),
++	TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED	= R(0x17),
+ #undef R
+ };
  
-+DEF_DEV_ATTRIB(pi_prot_type);
-+SE_DEV_ATTR(pi_prot_type, S_IRUGO | S_IWUSR);
-+
-+DEF_DEV_ATTRIB_RO(pi_prot_version);
-+SE_DEV_ATTR_RO(pi_prot_version);
-+
-+DEF_DEV_ATTRIB(pi_guard_type);
-+SE_DEV_ATTR(pi_guard_type, S_IRUGO | S_IWUSR);
-+
- DEF_DEV_ATTRIB(enforce_pr_isids);
- SE_DEV_ATTR(enforce_pr_isids, S_IRUGO | S_IWUSR);
- 
-@@ -702,6 +711,9 @@ static struct configfs_attribute *target_core_dev_attrib_attrs[] = {
- 	&target_core_dev_attrib_emulate_tpws.attr,
- 	&target_core_dev_attrib_emulate_caw.attr,
- 	&target_core_dev_attrib_emulate_3pc.attr,
-+	&target_core_dev_attrib_pi_prot_type.attr,
-+	&target_core_dev_attrib_pi_prot_version.attr,
-+	&target_core_dev_attrib_pi_guard_type.attr,
- 	&target_core_dev_attrib_enforce_pr_isids.attr,
- 	&target_core_dev_attrib_is_nonrot.attr,
- 	&target_core_dev_attrib_emulate_rest_reord.attr,
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 207b340..2b59beb 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -918,6 +918,67 @@ int se_dev_set_emulate_3pc(struct se_device *dev, int flag)
- 	return 0;
- }
- 
-+int se_dev_set_pi_prot_type(struct se_device *dev, int flag)
-+{
-+	int rc, old_prot = dev->dev_attrib.pi_prot_type;
-+
-+	if (flag != 0 && flag != 1 && flag != 2 && flag != 3) {
-+		pr_err("Illegal value %d for pi_prot_type\n", flag);
-+		return -EINVAL;
-+	}
-+	if (flag == 2) {
-+		pr_err("DIF TYPE2 protection currently not supported\n");
-+		return -ENOSYS;
-+	}
-+	if (!dev->transport->init_prot || !dev->transport->free_prot) {
-+		pr_err("DIF protection not supported by backend: %s\n",
-+		       dev->transport->name);
-+		return -ENOSYS;
-+	}
-+	if (!(dev->dev_flags & DF_CONFIGURED)) {
-+		pr_err("DIF protection requires device to be configured\n");
-+		return -ENODEV;
-+	}
-+	if (dev->export_count) {
-+		pr_err("dev[%p]: Unable to change SE Device PROT type while"
-+		       " export_count is %d\n", dev, dev->export_count);
-+		return -EINVAL;
-+	}
-+
-+	dev->dev_attrib.pi_prot_type = flag;
-+
-+	if (flag && !old_prot) {
-+		rc = dev->transport->init_prot(dev);
-+		if (rc) {
-+			dev->dev_attrib.pi_prot_type = old_prot;
-+			return rc;
-+		}
-+	} else if (!flag && old_prot) {
-+		dev->transport->free_prot(dev);
-+	}
-+	pr_debug("dev[%p]: SE Device Protection Type: %d\n", dev, flag);
-+
-+	return 0;
-+}
-+
-+int se_dev_set_pi_guard_type(struct se_device *dev, int flag)
-+{
-+	if (flag != 1 && flag != 2) {
-+		pr_err("Illegal value %d for pi_guard_type\n", flag);
-+		return -EINVAL;
-+	}
-+	if (dev->export_count) {
-+		pr_err("dev[%p]: Unable to change SE Device GUARD type while"
-+		       " export_count is %d\n", dev, dev->export_count);
-+		return -EINVAL;
-+	}
-+
-+	dev->dev_attrib.pi_guard_type = flag;
-+	pr_debug("dev[%p]: SE Device Guard Type: %d\n", dev, flag);
-+
-+	return 0;
-+}
-+
- int se_dev_set_enforce_pr_isids(struct se_device *dev, int flag)
- {
- 	if ((flag != 0) && (flag != 1)) {
-@@ -1415,6 +1476,7 @@ struct se_device *target_alloc_device(struct se_hba *hba, const char *name)
- 	dev->dev_link_magic = SE_DEV_LINK_MAGIC;
- 	dev->se_hba = hba;
- 	dev->transport = hba->transport;
-+	dev->prot_length = sizeof(struct se_dif_v1_tuple);
- 
- 	INIT_LIST_HEAD(&dev->dev_list);
- 	INIT_LIST_HEAD(&dev->dev_sep_list);
-@@ -1455,6 +1517,9 @@ struct se_device *target_alloc_device(struct se_hba *hba, const char *name)
- 	dev->dev_attrib.emulate_tpws = DA_EMULATE_TPWS;
- 	dev->dev_attrib.emulate_caw = DA_EMULATE_CAW;
- 	dev->dev_attrib.emulate_3pc = DA_EMULATE_3PC;
-+	dev->dev_attrib.pi_prot_type = TARGET_DIF_TYPE0_PROT;
-+	dev->dev_attrib.pi_prot_version = TARGET_DIF_V1;
-+	dev->dev_attrib.pi_guard_type = TARGET_DIX_GUARD_CRC;
- 	dev->dev_attrib.enforce_pr_isids = DA_ENFORCE_PR_ISIDS;
- 	dev->dev_attrib.is_nonrot = DA_IS_NONROT;
- 	dev->dev_attrib.emulate_rest_reord = DA_EMULATE_REST_REORD;
-diff --git a/drivers/target/target_core_internal.h b/drivers/target/target_core_internal.h
-index 47b63b0..79d3bc3 100644
---- a/drivers/target/target_core_internal.h
-+++ b/drivers/target/target_core_internal.h
-@@ -35,6 +35,8 @@ int	se_dev_set_emulate_tpu(struct se_device *, int);
- int	se_dev_set_emulate_tpws(struct se_device *, int);
- int	se_dev_set_emulate_caw(struct se_device *, int);
- int	se_dev_set_emulate_3pc(struct se_device *, int);
-+int	se_dev_set_pi_prot_type(struct se_device *, int);
-+int	se_dev_set_pi_guard_type(struct se_device *, int);
- int	se_dev_set_enforce_pr_isids(struct se_device *, int);
- int	se_dev_set_is_nonrot(struct se_device *, int);
- int	se_dev_set_emulate_rest_reord(struct se_device *dev, int);
 -- 
 1.7.10.4
 
