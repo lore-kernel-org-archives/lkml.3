@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaAHKT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 05:19:58 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:60111 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaAHKTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 05:19:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roger Quadros <rogerq@ti.com>
-Cc: bcousson@baylibre.com, tony@atomide.com, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, "Kristo, Tero" <t-kristo@ti.com>
-Subject: Re: [PATCH v4 1/5] mfd: omap-usb-host: Update DT clock binding information
-Date: Wed, 08 Jan 2014 11:19:28 +0100
-Message-ID: <4812867.NuB3hNkV9d@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <52CD23E0.8030400@ti.com>
-References: <1389161742-10533-1-git-send-email-rogerq@ti.com> <20140108090808.GB16313@earth.universe> <52CD23E0.8030400@ti.com>
+	id S1755866AbaAHKUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 05:20:55 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754994AbaAHKUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 05:20:52 -0500
+From: Richard Weinberger <richard@nod.at>
+To: x86@kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, seiji.aguchi@hds.com,
+        rientjes@google.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org, bp@alien8.de
+Subject: Re: [PATCH] APIC: Read Error Status Register correctly
+Date: Wed, 08 Jan 2014 11:20:40 +0100
+Message-ID: <2193321.5PpjVl4PAc@sandpuppy>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <1387823250-27218-1-git-send-email-richard@nod.at>
+References: <1387823250-27218-1-git-send-email-richard@nod.at>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:2S8FDdu/Uo0PSLHB14BgNZIqY144Rr13rbwmDesHX0U
- Fm/7TELq22krCMLr7Q060vW97eT50j1dGW2qhLlfGzWQbeBj+j
- l6PzADqT6UZJI7m83+mBPGFwerAF3oph9TMDYJmy9SzzoC8jxE
- iWSGW2sh3qjbdnG6PDIBOk5BZahm1ED5T4HZQ6CA9Ql767W5ew
- niqEZCnHzFSG679HQPPFMYaDSAESU5RIC04NCipDg3BetXwaaC
- LFqCTOJQAmo6aJVrXCNNei7U+RrKAmf+R/QhuHa/DQteFgqyBF
- 8qnSOQRXaedBOnq33AzuoVMWkmt4WuyLu92MGf4gUvA2rNxbpK
- s3/+ivaqDshFB5XiiFXQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014 15:39:36 Roger Quadros wrote:
-> > What about the other clocks acquired in drivers/mfd/omap-usb-host.c? Shouldn't
-> > all of those be provided by via the DT phandle?
-> > 
+Am Montag, 23. Dezember 2013, 19:27:30 schrieb Richard Weinberger:
+> Currently we do a read, a dummy write and a final read to fetch the error
+> code. The value from the final read is taken.
+> This is not the recommended way and leads to corrupted/lost ESR values.
 > 
-> All those clocks are identically named across the OMAP SoCs and are unique for each
-> SoC, so providing DT phandle for all of them is not required.
+> Intel(c) 64 and IA-32 Architectures Software Developer's Manual,
 > 
-> The init_60m_fclk was renamed to l3init_60m_fclk in OMAP5, and hence the need for
-> this binding.
-
-What do you mean it was renamed? Is it a different version of the omap-usb-host
-device then?
-
-> > Should the clk_get be changed to of_clk_get()/of_clk_get_by_name() in the
-> > driver? This would potentially remove the need of the init_60m_fclk name.
-> > 
+> Combined Volumes 1, 2ABC, 3ABC, Section 10.5.3 states:
+> >>Before attempt to read from the ESR, software should first write to it.
 > 
-> If we use of_clk_xxx() then we'll need to update DT nodes for OMAP4 and OMAP3 as
-> well to explicitly provide the clock phandle. For now we make use of the fact that
-> SoC clock data names the clock rightly i.e. "init_60m_fclk".
+> (The value written does not affect the values read subsequently;
+> only zero may be written in x2APIC mode.) This write clears
+> any previously logged errors and updates the ESR with any errors
+> detected since the last write to the ESR.
+> This write also rearms the APIC error interrupt triggering mechanism.<<
+> 
+> This patch removes the first read such that we are conform with the manual.
+> 
+> On my (very old) Pentium MMX SMP system this patch fixes the issue that
+> APIC errors a) are not always reported and b) are reported with false
+> error numbers.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/x86/kernel/apic/apic.c | 17 ++++++++---------
+>  1 file changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index d278736..4ec1dd6 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -1968,7 +1968,7 @@ __visible void smp_trace_spurious_interrupt(struct
+> pt_regs *regs) */
+>  static inline void __smp_error_interrupt(struct pt_regs *regs)
+>  {
+> -	u32 v0, v1;
+> +	u32 v;
+>  	u32 i = 0;
+>  	static const char * const error_interrupt_reason[] = {
+>  		"Send CS error",		/* APIC Error Bit 0 */
+> @@ -1982,21 +1982,20 @@ static inline void __smp_error_interrupt(struct
+> pt_regs *regs) };
+> 
+>  	/* First tickle the hardware, only then report what went on. -- REW */
+> -	v0 = apic_read(APIC_ESR);
+>  	apic_write(APIC_ESR, 0);
+> -	v1 = apic_read(APIC_ESR);
+> +	v = apic_read(APIC_ESR);
+>  	ack_APIC_irq();
+>  	atomic_inc(&irq_err_count);
+> 
+> -	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
+> -		    smp_processor_id(), v0 , v1);
+> +	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x",
+> +		    smp_processor_id(), v);
+> 
+> -	v1 = v1 & 0xff;
+> -	while (v1) {
+> -		if (v1 & 0x1)
+> +	v &= 0xff;
+> +	while (v) {
+> +		if (v & 0x1)
+>  			apic_printk(APIC_DEBUG, KERN_CONT " : %s", 
+error_interrupt_reason[i]);
+>  		i++;
+> -		v1 >>= 1;
+> +		v >>= 1;
+>  	}
+> 
+>  	apic_printk(APIC_DEBUG, KERN_CONT "\n");
 
-I'm getting the feeling that init_60m_fclk is not the name of the clock input
-of the omap-usb-host device at all, but rather the name of a signal on the
-omap soc, which would not be an appropriate identifier for the binding.
+Any comments on this?
 
-	Arnd
+Thanks,
+//richard
+
