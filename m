@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594AbaAHRrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:47:47 -0500
-Received: from smtprelay0018.hostedemail.com ([216.40.44.18]:43524 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751070AbaAHRrp (ORCPT
+	id S1754654AbaAHRuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:50:00 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59188 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750839AbaAHRt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:47:45 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:355:379:541:599:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:7652:7875:7903:9025:10004:10400:10848:11026:11232:11658:11854:11914:12043:12291:12296:12517:12519:12683:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: food11_263b6dcee8912
-X-Filterd-Recvd-Size: 1683
-Message-ID: <1389203262.24222.3.camel@joe-AO722>
-Subject: Re: [PATCH -next 0/4] fs: Use seq_is_buf_full
-From: Joe Perches <joe@perches.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org
-Date: Wed, 08 Jan 2014 09:47:42 -0800
-In-Reply-To: <cover.1386891757.git.joe@perches.com>
-References: <cover.1386819513.git.joe@perches.com>
-	 <cover.1386891757.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Jan 2014 12:49:58 -0500
+Date: Wed, 8 Jan 2014 12:49:57 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <gregkh@linuxfoundation.org>
+cc: Shen Guang <shenguang10@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb:hub set hub->change_bits when over-current happens
+In-Reply-To: <20140108171548.GA16878@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1401081249370.1659-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-12-12 at 15:47 -0800, Joe Perches wrote:
-> Convert the fs uses and misuses of seq_printf to void
+On Wed, 8 Jan 2014, Greg KH wrote:
+
+> On Wed, Jan 08, 2014 at 02:45:42PM +0800, Shen Guang wrote:
+> > When we are doing compliance test with xHCI, we found that if we
+> > enable CONFIG_USB_SUSPEND and plug in a bad device which causes
+> > over-current condition to the root port, software will not be noticed.
+> > The reason is that current code don't set hub->change_bits in
+> > hub_activate() when over-current happens, and then hub_events() will
+> > not check the port status because it thinks nothing changed.
+> > If CONFIG_USB_SUSPEND is disabled, the interrupt pipe of the hub will
+> > report the change and set hub->event_bits, and then hub_events() will
+> > check what events happened.In this case over-current can be detected.
+> > 
+> > Signed-off-by: Shen Guang <shenguang10@gmail.com>
+> > ---
+> >  drivers/usb/core/hub.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> > index bd9dc35..98b5679 100644
+> > --- a/drivers/usb/core/hub.c
+> > +++ b/drivers/usb/core/hub.c
+> > @@ -1154,7 +1154,8 @@ static void hub_activate(struct usb_hub *hub,
+> > enum hub_activation_type type)
+> >                         /* Tell khubd to disconnect the device or
+> >                          * check for a new connection
+> >                          */
+> > -                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
+> > +                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION) ||
+> > +                               (portstatus & USB_PORT_STAT_OVERCURRENT))
+> >                                 set_bit(port1, hub->change_bits);
+> > 
+> >                 } else if (portstatus & USB_PORT_STAT_ENABLE) {
+> > --
+> > 1.7.9.5
 > 
-> These patches depend on https://lkml.org/lkml/2013/12/11/714
-> 
-> Joe Perches (4):
->   dlm: Use seq_is_buf_full - remove seq_printf returns
->   dlm: Use seq_puts, remove unnecessary trailing spaces
->   fs: Convert show_fdinfo functions to void
->   debugfs: Fix misuse of seq_printf return value
+> Alan and Sarah, any objection to this patch?
 
-Ping?
+It seems okay to me.
 
->  fs/debugfs/file.c  |  14 +--
->  fs/dlm/debug_fs.c  | 274 +++++++++++++++++++++++++----------------------------
->  fs/eventfd.c       |  15 +--
->  fs/eventpoll.c     |  19 ++--
->  fs/notify/fdinfo.c |  68 ++++++-------
->  fs/notify/fdinfo.h |   4 +-
->  fs/proc/fd.c       |   2 +-
->  fs/signalfd.c      |  10 +-
->  include/linux/fs.h |   2 +-
->  9 files changed, 184 insertions(+), 224 deletions(-)
-> 
-
-
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
