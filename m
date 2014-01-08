@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539AbaAHUgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:36:32 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49828 "EHLO
+	id S1757584AbaAHUhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:37:08 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49910 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116AbaAHUgR (ORCPT
+	with ESMTP id S1757540AbaAHUgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:36:17 -0500
+	Wed, 8 Jan 2014 15:36:33 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 01/14] target: Add DIF related base definitions
-Date: Wed,  8 Jan 2014 20:15:44 +0000
-Message-Id: <1389212157-14540-2-git-send-email-nab@daterainc.com>
+Subject: [PATCH 14/14] tcm_loop: Enable DIF/DIX modes in SCSI host LLD
+Date: Wed,  8 Jan 2014 20:15:57 +0000
+Message-Id: <1389212157-14540-15-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com>
 References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
@@ -27,18 +27,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds DIF related definitions to target_core_base.h
-that includes enums for target_prot_op + target_prot_type +
-target_prot_version + target_guard_type + target_pi_error.
+This patch updates tcm_loop_driver_probe() to set protection
+information using scsi_host_set_prot() and scsi_host_set_guard(),
+which currently enabled all modes of DIF/DIX protection, minus
+DIF TYPE0.
 
-Also included is struct se_dif_v1_tuple, along with changes
-to struct se_cmd, struct se_dev_attrib, and struct se_device.
-
-Also, add new se_subsystem_api->[init,free]_prot() callers
-used by target core code to setup backend specific protection
-information after the device has been configured.
-
-Enums taken from Sagi Grimberg's original patch.
+Also, update tcm_loop_submission_work() to pass struct scsi_cmnd
+related protection into target_submit_cmd_map_sgls() during CDB
+dispatch.
 
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -46,126 +42,47 @@ Cc: Hannes Reinecke <hare@suse.de>
 Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-
-target: more defs
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- include/target/target_core_backend.h |    2 ++
- include/target/target_core_base.h    |   59 ++++++++++++++++++++++++++++++++++
- 2 files changed, 61 insertions(+)
+ drivers/target/loopback/tcm_loop.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
-index 39e0114..930f30d 100644
---- a/include/target/target_core_backend.h
-+++ b/include/target/target_core_backend.h
-@@ -41,6 +41,8 @@ struct se_subsystem_api {
- 	unsigned int (*get_io_opt)(struct se_device *);
- 	unsigned char *(*get_sense_buffer)(struct se_cmd *);
- 	bool (*get_write_cache)(struct se_device *);
-+	int (*init_prot)(struct se_device *);
-+	void (*free_prot)(struct se_device *);
- };
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index c6f1427..8d3355f 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -217,7 +217,8 @@ static void tcm_loop_submission_work(struct work_struct *work)
+ 			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
+ 			sc->sc_data_direction, 0,
+ 			scsi_sglist(sc), scsi_sg_count(sc),
+-			sgl_bidi, sgl_bidi_count, NULL, 0);
++			sgl_bidi, sgl_bidi_count,
++			scsi_prot_sglist(sc), scsi_prot_sg_count(sc));
+ 	if (rc < 0) {
+ 		set_host_byte(sc, DID_NO_CONNECT);
+ 		goto out_done;
+@@ -462,7 +463,7 @@ static int tcm_loop_driver_probe(struct device *dev)
+ {
+ 	struct tcm_loop_hba *tl_hba;
+ 	struct Scsi_Host *sh;
+-	int error;
++	int error, host_prot;
  
- struct sbc_ops {
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 45412a6..15f402c 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -166,6 +166,7 @@ enum se_cmd_flags_table {
- 	SCF_COMPARE_AND_WRITE		= 0x00080000,
- 	SCF_COMPARE_AND_WRITE_POST	= 0x00100000,
- 	SCF_CMD_XCOPY_PASSTHROUGH	= 0x00200000,
-+	SCF_PROT			= 0x00400000,
- };
+ 	tl_hba = to_tcm_loop_hba(dev);
  
- /* struct se_dev_entry->lun_flags and struct se_lun->lun_access */
-@@ -414,6 +415,45 @@ struct se_tmr_req {
- 	struct list_head	tmr_list;
- };
+@@ -486,6 +487,13 @@ static int tcm_loop_driver_probe(struct device *dev)
+ 	sh->max_channel = 0;
+ 	sh->max_cmd_len = TL_SCSI_MAX_CMD_LEN;
  
-+enum target_prot_op {
-+	TARGET_PROT_NORMAL,
-+	TARGET_PROT_READ_INSERT,
-+	TARGET_PROT_WRITE_INSERT,
-+	TARGET_PROT_READ_STRIP,
-+	TARGET_PROT_WRITE_STRIP,
-+	TARGET_PROT_READ_PASS,
-+	TARGET_PROT_WRITE_PASS,
-+};
++	host_prot = SHOST_DIF_TYPE1_PROTECTION | SHOST_DIF_TYPE2_PROTECTION |
++		    SHOST_DIF_TYPE3_PROTECTION | SHOST_DIX_TYPE1_PROTECTION |
++		    SHOST_DIX_TYPE2_PROTECTION | SHOST_DIX_TYPE3_PROTECTION;
 +
-+enum target_prot_type {
-+	TARGET_DIF_TYPE0_PROT,
-+	TARGET_DIF_TYPE1_PROT,
-+	TARGET_DIF_TYPE2_PROT,
-+	TARGET_DIF_TYPE3_PROT,
-+};
++	scsi_host_set_prot(sh, host_prot);
++	scsi_host_set_guard(sh, SHOST_DIX_GUARD_CRC);
 +
-+enum target_prot_version {
-+	TARGET_DIF_V1 = 1,
-+	TARGET_DIF_V2 = 2,
-+};
-+
-+enum target_guard_type {
-+	TARGET_DIX_GUARD_CRC = 1,
-+	TARGET_DIX_GUARD_IP = 2,
-+};
-+
-+enum target_pi_error {
-+	TARGET_GUARD_CHECK_FAILED = 0x1,
-+	TARGET_APPTAG_CHECK_FAILED = 0x2,
-+	TARGET_REFTAG_CHECK_FAILED = 0x3,
-+};
-+
-+struct se_dif_v1_tuple {
-+	__be16			guard_tag;
-+	__be16			app_tag;
-+	__be32			ref_tag;
-+};
-+
- struct se_cmd {
- 	/* SAM response code being sent to initiator */
- 	u8			scsi_status;
-@@ -498,6 +538,20 @@ struct se_cmd {
- 
- 	/* Used for lun->lun_ref counting */
- 	bool			lun_ref_active;
-+
-+	/* DIF related members */
-+	enum target_prot_op	prot_op;
-+	enum target_prot_type	prot_type;
-+	enum target_guard_type	bg_type;
-+	u16			bg_seed;
-+	u16			reftag_seed;
-+	u32			apptag_seed;
-+	u32			prot_length;
-+	struct scatterlist	*t_prot_sg;
-+	unsigned int		t_prot_nents;
-+	bool			prot_interleaved;
-+	enum target_pi_error	pi_err;
-+	u32			block_num;
- };
- 
- struct se_ua {
-@@ -609,6 +663,9 @@ struct se_dev_attrib {
- 	int		emulate_tpws;
- 	int		emulate_caw;
- 	int		emulate_3pc;
-+	enum target_prot_type pi_prot_type;
-+	enum target_prot_version pi_prot_version;
-+	enum target_guard_type pi_guard_type;
- 	int		enforce_pr_isids;
- 	int		is_nonrot;
- 	int		emulate_rest_reord;
-@@ -739,6 +796,8 @@ struct se_device {
- 	/* Linked list for struct se_hba struct se_device list */
- 	struct list_head	dev_list;
- 	struct se_lun		xcopy_lun;
-+	/* Protection Information */
-+	int			prot_length;
- };
- 
- struct se_hba {
+ 	error = scsi_add_host(sh, &tl_hba->dev);
+ 	if (error) {
+ 		pr_err("%s: scsi_add_host failed\n", __func__);
 -- 
 1.7.10.4
 
