@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844AbaAHNt1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:49:27 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:41327 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373AbaAHNtP (ORCPT
+	id S1756888AbaAHNuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:50:06 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:43864 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610AbaAHNuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:49:15 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, angus.clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v4 32/37] mtd: st_spi_fsm: Add the ability to write to FSM's status register
-Date: Wed,  8 Jan 2014 13:47:15 +0000
-Message-Id: <1389188840-14306-33-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
-References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+	Wed, 8 Jan 2014 08:50:00 -0500
+X-IronPort-AV: E=Sophos;i="4.95,624,1384300800"; 
+   d="scan'208";a="88712747"
+Message-ID: <52CD5785.4050402@citrix.com>
+Date: Wed, 8 Jan 2014 13:49:57 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v3 6/9] xen-netback: Handle guests with too many
+ frags
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>	 <1389139818-24458-7-git-send-email-zoltan.kiss@citrix.com> <1389147141.26646.74.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1389147141.26646.74.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+On 08/01/14 02:12, Eric Dumazet wrote:
+> On Wed, 2014-01-08 at 00:10 +0000, Zoltan Kiss wrote:
+>
+>>
+>> +		if (skb_shinfo(skb)->frag_list) {
+>> +			nskb = skb_shinfo(skb)->frag_list;
+>> +			xenvif_fill_frags(vif, nskb, INVALID_PENDING_IDX);
+>> +			skb->len += nskb->len;
+>> +			skb->data_len += nskb->len;
+>> +			skb->truesize += nskb->truesize;
+>> +			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+>> +			skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+>> +			vif->tx_zerocopy_sent += 2;
+>> +			nskb = skb;
+>> +
+>> +			skb = skb_copy_expand(skb,
+>> +					0,
+>> +					0,
+>> +					GFP_ATOMIC | __GFP_NOWARN);
+>
+> skb can be NULL here
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 5f291dc..1b0fa67 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -586,6 +586,23 @@ static struct stfsm_seq stfsm_seq_erase_chip = {
- 		    SEQ_CFG_STARTSEQ),
- };
- 
-+static struct stfsm_seq stfsm_seq_write_status = {
-+	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-+	.seq_opc[1] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		       SEQ_OPC_OPCODE(FLASH_CMD_WRSR)),
-+	.seq = {
-+		STFSM_INST_CMD1,
-+		STFSM_INST_CMD2,
-+		STFSM_INST_STA_WR1,
-+		STFSM_INST_STOP,
-+	},
-+	.seq_cfg = (SEQ_CFG_PADS_1 |
-+		    SEQ_CFG_READNOTWRITE |
-+		    SEQ_CFG_CSDEASSERT |
-+		    SEQ_CFG_STARTSEQ),
-+};
-+
- static struct stfsm_seq stfsm_seq_wrvcr = {
- 	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
- 		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-@@ -802,6 +819,25 @@ static int stfsm_read_status(struct stfsm *fsm, uint8_t cmd,
- 	return 0;
- }
- 
-+static int stfsm_write_status(struct stfsm *fsm, uint16_t status,
-+			       int sta_bytes)
-+{
-+	struct stfsm_seq *seq = &stfsm_seq_write_status;
-+
-+	dev_dbg(fsm->dev, "writing STA[%s] 0x%04x\n",
-+		(sta_bytes == 1) ? "1" : "1+2", status);
-+
-+	seq->status = (uint32_t)status | STA_PADS_1 | STA_CSDEASSERT;
-+	seq->seq[2] = (sta_bytes == 1) ?
-+		STFSM_INST_STA_WR1 : STFSM_INST_STA_WR1_2;
-+
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return 0;
-+};
-+
- static int stfsm_wrvcr(struct stfsm *fsm, uint8_t data)
- {
- 	struct stfsm_seq *seq = &stfsm_seq_wrvcr;
--- 
-1.8.3.2
+Thanks, fixed that.
+
+Zoli
+
 
