@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaAHXA2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 18:00:28 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:54853 "EHLO
+	id S932236AbaAHXAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 18:00:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:54850 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757479AbaAHW7w (ORCPT
+	with ESMTP id S1757429AbaAHW7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 17:59:52 -0500
+	Wed, 8 Jan 2014 17:59:51 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Will Deacon <will.deacon@arm.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, <devicetree@vger.kernel.org>
-Subject: [PATCH 6/7] devicetree: bindings: Document Krait performance monitor units (PMU)
-Date: Wed,  8 Jan 2014 14:59:43 -0800
-Message-Id: <1389221984-10973-7-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 7/7] ARM: dts: msm: Add krait-pmu to platforms with Krait CPUs
+Date: Wed,  8 Jan 2014 14:59:44 -0800
+Message-Id: <1389221984-10973-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 In-Reply-To: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
 References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
@@ -21,26 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the Krait PMU compatible string.
+Allows us to probe the performance counters on Krait CPUs.
 
-Cc: <devicetree@vger.kernel.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- Documentation/devicetree/bindings/arm/pmu.txt | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/pmu.txt b/Documentation/devicetree/bindings/arm/pmu.txt
-index 3e1e498fea96..ce7cccb99d87 100644
---- a/Documentation/devicetree/bindings/arm/pmu.txt
-+++ b/Documentation/devicetree/bindings/arm/pmu.txt
-@@ -16,6 +16,7 @@ Required properties:
- 	"arm,arm11mpcore-pmu"
- 	"arm,arm1176-pmu"
- 	"arm,arm1136-pmu"
-+	"qcom,krait-pmu"
- - interrupts : 1 combined interrupt or 1 per core.
+This one is piled on top of the SMP patches I sent a few weeks ago. Applying
+it directly on -next should cause minor conflicts.
+
+ arch/arm/boot/dts/qcom-msm8960-cdp.dts | 5 +++++
+ arch/arm/boot/dts/qcom-msm8974.dtsi    | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom-msm8960-cdp.dts b/arch/arm/boot/dts/qcom-msm8960-cdp.dts
+index ea24fdfbdd06..138d4760ece6 100644
+--- a/arch/arm/boot/dts/qcom-msm8960-cdp.dts
++++ b/arch/arm/boot/dts/qcom-msm8960-cdp.dts
+@@ -39,6 +39,11 @@
+ 		};
+ 	};
  
- Example:
++	cpu-pmu {
++		compatible = "qcom,krait-pmu";
++		interrupts = <1 10 0x304>;
++	};
++
+ 	intc: interrupt-controller@2000000 {
+ 		compatible = "qcom,msm-qgic2";
+ 		interrupt-controller;
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index f607cf4a11d9..24d63c82a15a 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -52,6 +52,11 @@
+ 		};
+ 	};
+ 
++	cpu-pmu {
++		compatible = "qcom,krait-pmu";
++		interrupts = <1 7 0xf04>;
++	};
++
+ 	soc: soc {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
