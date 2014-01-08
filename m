@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115AbaAHNOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:14:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53373 "EHLO mx2.suse.de"
+	id S1756405AbaAHNOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:14:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37067 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075AbaAHNO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:14:29 -0500
-Date: Wed, 8 Jan 2014 13:14:24 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
- prep_new_page() race
-Message-ID: <20140108131424.GE27046@suse.de>
-References: <20131216183618.GA28252@redhat.com>
- <20131216201952.GE21218@redhat.com>
- <20131219190846.GA24566@redhat.com>
- <20131219190920.GB24566@redhat.com>
- <20131223114300.GC727@redhat.com>
- <20140103195519.GA26555@redhat.com>
- <20140103195547.GB26555@redhat.com>
- <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org>
- <20140104164347.GA31359@redhat.com>
- <20140108115400.GD27046@suse.de>
+	id S1755075AbaAHNOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:14:34 -0500
+Message-ID: <52CD4F2A.9080301@redhat.com>
+Date: Wed, 08 Jan 2014 14:14:18 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140108115400.GD27046@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+CC: tj@kernel.org, sergei.shtylyov@cogentembedded.com,
+        b.zolnierkie@samsung.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH v3 2/3] ata: ahci_platform: Manage SATA PHY
+References: <1389174428-31414-1-git-send-email-rogerq@ti.com> <1389174428-31414-3-git-send-email-rogerq@ti.com> <52CD2176.6050102@ti.com> <6214646.nAF6lzWV79@wuerfel> <52CD364F.4060104@ti.com>
+In-Reply-To: <52CD364F.4060104@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 11:54:00AM +0000, Mel Gorman wrote:
-> On Sat, Jan 04, 2014 at 05:43:47PM +0100, Oleg Nesterov wrote:
-> > On 01/03, Andrew Morton wrote:
-> > >
-> > > On Fri, 3 Jan 2014 20:55:47 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
-> > >
-> > > > get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
-> > > > compound_lock(). In theory this page_head can be already freed and
-> > > > reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
-> > > > get_page_unless_zero() can succeed right after set_page_refcounted(),
-> > > > and compound_lock() can race with the non-atomic __SetPageHead().
-> > >
-> > > Would be useful to mention that these things are happening inside
-> > > prep_compound_opage() (yes?).
-> > 
-> > Agreed. Added "in prep_compound_opage()" into the changelog:
-> > 
-> > 	get/put_page(thp_tail) paths do get_page_unless_zero(page_head) +
-> > 	compound_lock(). In theory this page_head can be already freed and
-> > 	reallocated as alloc_pages(__GFP_COMP, smaller_order). In this case
-> > 	get_page_unless_zero() can succeed right after set_page_refcounted(),
-> > 	and compound_lock() can race with the non-atomic __SetPageHead() in
-> > 	prep_compound_page().
-> > 
-> > 	Perhaps we should rework the thp locking (under discussion), but
-> > 	until then this patch moves set_page_refcounted() and adds wmb()
-> > 	to ensure that page->_count != 0 comes as a last change.
-> > 
-> > 	I am not sure about other callers of set_page_refcounted(), but at
-> > 	first glance they look fine to me.
-> > 
-> > or should I send v3?
-> > 
-> 
-> This patch is putting a write barrier in the page allocator fast path and
-> that is going to be a leading cause of Sad Face.
+Hi,
 
-Peter Zijlstra correctly pointed out to me that on x86 that we generally
-would not care/notice a write barrier as it almost always is a no-op.
-X86 (which is all I test any more) can execute an sfence for a smp_wmb
-but not in any configuration that matters. The previous barrier damage in
-page_alloc.c was due to full barriers but I generally assume barriers have a
-cost in core code when I see them regardless of the underlying architecture
-details. So 99% of the time, we will not care and I won't be making Sad
-Face but eventually someone using an affected architecture will whinge --
-ppc64 probably as write barriers on sparc are compile barriers.
+On 01/08/2014 12:28 PM, Roger Quadros wrote:
+> On 01/08/2014 03:35 PM, Arnd Bergmann wrote:
+>> On Wednesday 08 January 2014 15:29:18 Kishon Vijay Abraham I wrote:
+>>>> +     hpriv->phy = devm_phy_get(dev, "sata-phy");
+>>>> +     if (IS_ERR(hpriv->phy)) {
+>>>> +             dev_dbg(dev, "can't get sata-phy\n");
+>>>> +             /* return only if -EPROBE_DEFER */
+>>>> +             if (PTR_ERR(hpriv->phy) == -EPROBE_DEFER) {
+>>>> +                     rc = -EPROBE_DEFER;
+>>>> +                     goto disable_unprepare_clk;
+>>>> +             }
+>>>> +     }
+>>
+>> This should probably check for all errors except "not present"
+>> rather than checking for -EPROBE_DEFER. We want to abort the
+>> probe function for deferred probe as well as the case where we
+>> a PHY was listed but isn't working properly.
+>
+> OK.
+>
+>>
+>>>> +     if (!IS_ERR(hpriv->phy)) {
+>>>> +             phy_init(hpriv->phy);
+>>>
+>>> Don't we have to check the return values of phy_init and phy_power_on? Is it
+>>> not needed because it is an optional phy?
+>>
+>> Right. I think we should set hpriv->phy to NULL if it's not there and
+>> then call the functions only if it's actually present but bail out on
+>> an error.
+>
+> OK. How does this look?
+>
+> hpriv->phy = devm_phy_get(dev, "sata-phy");
+> if (IS_ERR(hpriv->phy)) {
+> 	if (PTR_ERR(hpriv->phy) == -ENODEV)
+> 		goto continue;
 
--- 
-Mel Gorman
-SUSE Labs
+-ENODEV is not the right errno to check for,
+if there is no phy specified in the dt then
+you will get -EINVAL (no phy-names property) or
+-ENODATA (phy-names property is there but name
+not found).
+
+Also you don't want to log an error on
+PROBE_DEFERRAL.
+
+Here is what I've for similar code I'm working on
+for ehci-platform.c and ohci-platform.c :
+
+                 priv->phy = devm_phy_get(&dev->dev, "phy0");
+                 if (IS_ERR(priv->phy)) {
+                         err = PTR_ERR(priv->phy);
+                         if (err != -EINVAL && err != -ENODATA) {
+                                 if (err != -EPROBE_DEFER)
+                                         dev_err(&dev->dev,
+                                                 "Error getting phy\n");
+                                 goto err_put_hcd;
+                         }
+                         priv->phy = NULL;
+                 }
+
+And from then on I simply use "if (priv->phy)" checks, and of course
+check phy_init and phy_power_on return values.
+
+Regards,
+
+Hans
