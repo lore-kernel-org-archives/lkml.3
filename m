@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaAHCwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 21:52:20 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63873 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749AbaAHCwO (ORCPT
+	id S1754957AbaAHCxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 21:53:41 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56591 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889AbaAHCxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 21:52:14 -0500
-X-AuditID: 9c930179-b7c89ae000006438-17-52ccbd5cf7a0
-Date: Wed, 8 Jan 2014 11:52:33 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Dave Hansen <dave@sr71.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kmpark@infradead.org>, linux-mm@kvack.org,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCHv3 00/11] Intermix Lowmem and vmalloc
-Message-ID: <20140108025233.GA1992@bbox>
-References: <1388699609-18214-1-git-send-email-lauraa@codeaurora.org>
- <52C70024.1060605@sr71.net>
- <52C734F4.5020602@codeaurora.org>
- <20140104073143.GA5594@gmail.com>
- <52CAFF2A.5060407@codeaurora.org>
+	Tue, 7 Jan 2014 21:53:24 -0500
+Message-ID: <52CCBD9C.7040105@huawei.com>
+Date: Wed, 8 Jan 2014 10:53:16 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CAFF2A.5060407@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Don Fry <pcnet32@frontier.com>, Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3.6 02/19] net: pcnet: slight optimization of addr compare
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Use possibly more efficient ether_addr_equal
+to instead of memcmp.
 
-On Mon, Jan 06, 2014 at 11:08:26AM -0800, Laura Abbott wrote:
-> On 1/3/2014 11:31 PM, Minchan Kim wrote:
-> >Hello,
-> >
-> >On Fri, Jan 03, 2014 at 02:08:52PM -0800, Laura Abbott wrote:
-> >>On 1/3/2014 10:23 AM, Dave Hansen wrote:
-> >>>On 01/02/2014 01:53 PM, Laura Abbott wrote:
-> >>>>The goal here is to allow as much lowmem to be mapped as if the block of memory
-> >>>>was not reserved from the physical lowmem region. Previously, we had been
-> >>>>hacking up the direct virt <-> phys translation to ignore a large region of
-> >>>>memory. This did not scale for multiple holes of memory however.
-> >>>
-> >>>How much lowmem do these holes end up eating up in practice, ballpark?
-> >>>I'm curious how painful this is going to get.
-> >>>
-> >>
-> >>In total, the worst case can be close to 100M with an average case
-> >>around 70M-80M. The split and number of holes vary with the layout
-> >>but end up with 60M-80M one hole and the rest in the other.
-> >
-> >One more thing I'd like to know is how bad direct virt <->phys tranlsation
-> >in scale POV and how often virt<->phys tranlsation is called in your worload
-> >so what's the gain from this patch?
-> >
-> >Thanks.
-> >
-> 
-> With one hole we did
-> 
-> #define __phys_to_virt(phys)
-> 	phys >= mem_hole_end ? mem_hole : normal
-> 
-> We had a single global variable to check for the bounds and to do
-> something similar with multiple holes the worst case would be
-> O(number of holes). This would also all need to be macroized.
-> Detection and accounting for these holes in other data structures
-> (e.g. ARM meminfo) would be increasingly complex and lead to delays
-> in bootup. The error/sanity checking for bad memory configurations
-> would also be messier. Non-linear lowmem mappings also make
-> debugging more difficult.
-> 
-> virt <-> phys translation is used on hot paths in IOMMU mapping so
-> we want to keep virt <-> phys as fast as possible and not have to
-> walk an array of addresses every time.
+Cc: Don Fry <pcnet32@frontier.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/net/ethernet/amd/pcnet32.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-When you send formal patch, please include things you mentioned
-in the description rather than simple "This did not scale for multiple
-holes of memory however" to justify your motivation and please include
-number you got from this patch because it's mainly performance enhance
-patch but doesn't include any number(yeb, you sent it as RFC so
-I don't care now) so that it could make easy to judge that we need
-this patch or not compared to adding complexity.
-
-Thanks.
-
-
-> 
-> Thanks,
-> Laura
-> 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
+index 38492e0..9339ccc 100644
+--- a/drivers/net/ethernet/amd/pcnet32.c
++++ b/drivers/net/ethernet/amd/pcnet32.c
+@@ -1668,7 +1668,7 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
+ 	for (i = 0; i < ETH_ALEN; i++)
+ 		promaddr[i] = inb(ioaddr + i);
+ 
+-	if (memcmp(promaddr, dev->dev_addr, ETH_ALEN) ||
++	if (!ether_addr_equal(promaddr, dev->dev_addr) ||
+ 	    !is_valid_ether_addr(dev->dev_addr)) {
+ 		if (is_valid_ether_addr(promaddr)) {
+ 			if (pcnet32_debug & NETIF_MSG_PROBE) {
 -- 
-Kind regards,
-Minchan Kim
+1.8.0
+
+
