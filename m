@@ -1,127 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035AbaAHQhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:37:12 -0500
-Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:35637 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755435AbaAHQhK (ORCPT
+	id S1757191AbaAHQiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:38:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48950 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360AbaAHQis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:37:10 -0500
-Message-ID: <52CD7E92.3070903@overkiz.com>
-Date: Wed, 08 Jan 2014 17:36:34 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 8 Jan 2014 11:38:48 -0500
+Message-ID: <52CD7F0F.9030209@canonical.com>
+Date: Wed, 08 Jan 2014 11:38:39 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        dev@linux-sunxi.org,
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>	<1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <CAL_Jsq+PT9MzEpHwuiSU2oeqzzqajGdBKgdxCZ8S+9W2mPN+tA@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+PT9MzEpHwuiSU2oeqzzqajGdBKgdxCZ8S+9W2mPN+tA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
+ mmio
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com> <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+In-Reply-To: <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 9130203821552400604
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 17:30, Rob Herring wrote:
-> On Wed, Jan 8, 2014 at 8:21 AM, Boris BREZILLON <b.brezillon@overkiz.com> wrote:
->> Add a function to retrieve NAND timings from a given DT node.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   drivers/of/of_mtd.c    |   47 +++++++++++++++++++++++++++++++++++++++++++++++
->>   include/linux/of_mtd.h |    9 +++++++++
->>   2 files changed, 56 insertions(+)
->>
->> diff --git a/drivers/of/of_mtd.c b/drivers/of/of_mtd.c
->> index a27ec94..52e07fd 100644
->> --- a/drivers/of/of_mtd.c
->> +++ b/drivers/of/of_mtd.c
->> @@ -83,3 +83,50 @@ bool of_get_nand_on_flash_bbt(struct device_node *np)
->>          return of_property_read_bool(np, "nand-on-flash-bbt");
->>   }
->>   EXPORT_SYMBOL_GPL(of_get_nand_on_flash_bbt);
->> +
->> +/**
->> + * of_get_nand_timings - Get nand timings for the given device_node
->> + * @np:        Pointer to the given device_node
->> + *
->> + * return 0 on success errno other wise
->> + */
->> +int of_get_nand_timings(struct device_node *np, struct nand_timings *timings)
->> +{
->> +       memset(timings, 0, sizeof(*timings));
->> +
->> +       of_property_read_u32(np, "tCLS-min", &timings->tCLS_min);
->> +       of_property_read_u32(np, "tCLH-min", &timings->tCLH_min);
->> +       of_property_read_u32(np, "tCS-min", &timings->tCS_min);
->> +       of_property_read_u32(np, "tCH-min", &timings->tCH_min);
->> +       of_property_read_u32(np, "tWP-min", &timings->tWP_min);
->> +       of_property_read_u32(np, "tALS-min", &timings->tALS_min);
->> +       of_property_read_u32(np, "tALH-min", &timings->tALH_min);
->> +       of_property_read_u32(np, "tDS-min", &timings->tDS_min);
->> +       of_property_read_u32(np, "tDH-min", &timings->tDH_min);
->> +       of_property_read_u32(np, "tWC-min", &timings->tWC_min);
->> +       of_property_read_u32(np, "tWH-min", &timings->tWH_min);
->> +       of_property_read_u32(np, "tR-max", &timings->tR_max);
->> +       of_property_read_u32(np, "tAR-min", &timings->tAR_min);
->> +       of_property_read_u32(np, "tCLR-min", &timings->tCLR_min);
->> +       of_property_read_u32(np, "tRR-min", &timings->tRR_min);
->> +       of_property_read_u32(np, "tRP-min", &timings->tRP_min);
->> +       of_property_read_u32(np, "tWB-max", &timings->tWB_max);
->> +       of_property_read_u32(np, "tRC-min", &timings->tRC_min);
->> +       of_property_read_u32(np, "tREA-max", &timings->tREA_max);
->> +       of_property_read_u32(np, "tRHZ-max", &timings->tRHZ_max);
->> +       of_property_read_u32(np, "tCHZ-max", &timings->tCHZ_max);
->> +       of_property_read_u32(np, "tRHOH-min", &timings->tRHOH_min);
->> +       of_property_read_u32(np, "tRLOH-min", &timings->tRLOH_min);
->> +       of_property_read_u32(np, "tCOH-min", &timings->tCOH_min);
->> +       of_property_read_u32(np, "tREH-min", &timings->tREH_min);
->> +       of_property_read_u32(np, "tWHR-min", &timings->tWHR_min);
->> +       of_property_read_u32(np, "tRHW-min", &timings->tRHW_min);
->> +       of_property_read_u32(np, "tIR-min", &timings->tIR_min);
->> +       of_property_read_u32(np, "tCR-min", &timings->tCR_min);
->> +       of_property_read_u32(np, "tADL-min", &timings->tADL_min);
->> +       of_property_read_u32(np, "tRST-max", &timings->tRST_max);
->> +       of_property_read_u32(np, "tWW-min", &timings->tWW_min);
-> These all need to be documented.
-They're document in PATCH 4/9 (but the description might be a bit
-light).
-> These apply to which compatible
-> strings?
-Actually this could apply to any nand chips.
-The NAND Flash Controller driver is then responsible for converting
-these values to use it.
-> They should also be suffixed with the unit the property is in
-> (i.e. -ms, -us, -ns).
-
-Sure, I'll add the unit (which is -ns BTW).
-
-Thanks.
-
-Best Regards,
-
-Boris
+On 12/11/2013 02:55 PM, Yinghai Lu wrote:
+> On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
+> <joseph.salisbury@canonical.com> wrote:
+>> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
+>>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>> That doesn't answer my question at all.
+>>>>
+>>>> I understand that this change makes it so Joseph doesn't have to use
+>>>> "pci=realloc=off".  But why should auto-reallocation be limited to
+>>>> buses that have resources above 4GB?  That doesn't make any sense.
+>>>>
+>>>> We should fix the reallocation code so it can deal with this case.  If
+>>>> there's not enough space for everything, obviously we have to leave
+>>>> something unassigned.  A ROM BAR is a good candidate for leaving
+>>>> unassigned, because most of the time we can get along without it.
+>>> Yes, that is ideal and not that simple.
+>>> but that would be hard to backport to old kernels.
+>>>
+>>> BTW, Joseph, can you try
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>>> for-pci-3.14
+>>> with pci=realloc=on
+>>>
+>>> on that system?
+>>>
+>>> Thanks
+>>>
+>>> Yinghai
+>> I noticed there was some back and forth on this thread.  Do you still
+>> want me to test this version, Yinghai?
+> Yes, if that works, we would not need to put the patch in upstream for limiting
+> realloc auto scope.
 >
-> Rob
+> Thanks
+>
+> Yinghai
+Hi Yinghai,
+
+Sorry for the delay.  The bug reporter was finally able to test your
+patch.  He reports that this version of the patch does in fact fix the
+bug.  See comment #72 here:
+
+http://pad.lv/1245938
+
+Thanks again for all your help!
+
+Joe
 
