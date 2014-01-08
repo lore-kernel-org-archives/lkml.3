@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974AbaAHNvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:51:53 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47633 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932368AbaAHNtO (ORCPT
+	id S932363AbaAHNtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:49:12 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:47744 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932342AbaAHNtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:49:14 -0500
+	Wed, 8 Jan 2014 08:49:07 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: computersforpeace@gmail.com, angus.clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v4 31/37] mtd: st_spi_fsm: Add the ability to read the FSM's status
-Date: Wed,  8 Jan 2014 13:47:14 +0000
-Message-Id: <1389188840-14306-32-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v4 27/37] mtd: st_spi_fsm: Write to Flash via the FSM FIFO
+Date: Wed,  8 Jan 2014 13:47:10 +0000
+Message-Id: <1389188840-14306-28-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
@@ -21,46 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When we write data to the FIFO the FSM Controller subsequently writes
+that data out to the Serial Flash chip.
+
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index eac23df..5f291dc 100644
+index b43fed1..c64f741 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -778,6 +778,30 @@ static uint8_t stfsm_wait_busy(struct stfsm *fsm)
- 	return -EIO;
+@@ -661,6 +661,20 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
+ 	}
  }
  
-+static int stfsm_read_status(struct stfsm *fsm, uint8_t cmd,
-+			   uint8_t *status)
++static int stfsm_write_fifo(struct stfsm *fsm,
++			    const uint32_t *buf, const uint32_t size)
 +{
-+	struct stfsm_seq *seq = &stfsm_seq_read_status_fifo;
-+	uint32_t tmp;
++	uint32_t words = size >> 2;
 +
-+	dev_dbg(fsm->dev, "reading STA[%s]\n",
-+		(cmd == FLASH_CMD_RDSR) ? "1" : "2");
++	dev_dbg(fsm->dev, "writing %d bytes to FIFO\n", size);
 +
-+	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			   SEQ_OPC_CYCLES(8) |
-+			   SEQ_OPC_OPCODE(cmd)),
++	BUG_ON((((uint32_t)buf) & 0x3) || (size & 0x3));
 +
-+	stfsm_load_seq(fsm, seq);
++	writesl(fsm->base + SPI_FAST_SEQ_DATA_REG, buf, words);
 +
-+	stfsm_read_fifo(fsm, &tmp, 4);
-+
-+	*status = (uint8_t)(tmp >> 24);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return 0;
++	return size;
 +}
 +
- static int stfsm_wrvcr(struct stfsm *fsm, uint8_t data)
+ static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
  {
- 	struct stfsm_seq *seq = &stfsm_seq_wrvcr;
+ 	struct stfsm_seq *seq = &stfsm_seq_en_32bit_addr;
 -- 
 1.8.3.2
 
