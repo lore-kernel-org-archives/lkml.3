@@ -1,246 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaAHIwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:52:30 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42210 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846AbaAHIqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:46:42 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-06-52cd106e34ec
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 07/28] perf hists: Check if accumulated when adding a hist entry
-Date: Wed,  8 Jan 2014 17:46:12 +0900
-Message-Id: <1389170793-21926-8-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	id S1756720AbaAHIxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:53:11 -0500
+Received: from mga14.intel.com ([143.182.124.37]:23106 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756623AbaAHIwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 03:52:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,623,1384329600"; 
+   d="scan'208";a="401946959"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] iommu/vt-d: fix compilation error when CONFIG_INTEL_IOMMU is unset
+Date: Wed,  8 Jan 2014 16:53:31 +0800
+Message-Id: <1389171212-26054-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1388989107-4795-3-git-send-email-jiang.liu@linux.intel.com>
+References: <1388989107-4795-3-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support callchain accumulation, @entry should be recognized if it's
-accumulated or not when add_hist_entry() called.  The period of an
-accumulated entry should be added to ->stat_acc but not ->stat. Add
-@sample_self arg for that.
+commit: 3b3dc052f79731f4a7389b760060928da18823c0 [6/22] iommu/vt-d: fix
+PCI device reference leakage on error recovery path
+config: x86_64-randconfig-r0-01080757 (attached as .config)
 
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+All error/warnings:
+   drivers/iommu/dmar.c: In function 'dmar_parse_dev_scope':
+>> drivers/iommu/dmar.c:153:5: error: implicit declaration of function
+'dmar_free_dev_scope' [-Werror=implicit-function-declaration]
+        dmar_free_dev_scope(devices, cnt);
+        ^
+   drivers/iommu/dmar.c: At top level:
+>> drivers/iommu/dmar.c:164:6: warning: conflicting types for
+'dmar_free_dev_scope' [enabled by default]
+    void dmar_free_dev_scope(struct pci_dev ***devices, int *cnt)
+         ^
+   drivers/iommu/dmar.c:153:5: note: previous implicit declaration of
+'dmar_free_dev_scope' was here
+        dmar_free_dev_scope(devices, cnt);
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- tools/perf/builtin-annotate.c |  3 ++-
- tools/perf/builtin-diff.c     |  2 +-
- tools/perf/builtin-report.c   |  6 +++---
- tools/perf/builtin-top.c      |  2 +-
- tools/perf/tests/hists_link.c |  4 ++--
- tools/perf/util/hist.c        | 23 +++++++++++++++--------
- tools/perf/util/hist.h        |  3 ++-
- 7 files changed, 26 insertions(+), 17 deletions(-)
+Hi Joerg,
+	Could you please help to fold this into "[6/22] iommu/vt-d: fix
+PCI device reference leakage on error recovery path"?
+	This issue has been fixed in part2 of the patch series. But I
+have only done compilation tests with part1 and part2 all together,
+so this issue hasn't been revealed.
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index ab65057a0317..adf4bb3a9414 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -65,7 +65,8 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
- 		return 0;
- 	}
+Thanks!
+Gerry
+---
+ include/linux/dmar.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index bd5026b..30162f9 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -67,6 +67,9 @@ extern struct list_head dmar_drhd_units;
  
--	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0);
-+	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL, 1, 1, 0,
-+				true);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index e6a0844bc2f0..2aa1cbbe4f2d 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -308,7 +308,7 @@ static int hists__add_entry(struct hists *hists,
- 			    u64 weight, u64 transaction)
- {
- 	if (__hists__add_entry(hists, al, NULL, NULL, NULL, period, weight,
--			       transaction) != NULL)
-+			       transaction, true) != NULL)
- 		return 0;
- 	return -ENOMEM;
- }
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index c11c4e8493da..80c50f243f34 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -166,7 +166,7 @@ iter_add_single_mem_entry(struct hist_entry_iter *iter, struct addr_location *al
- 	 * and the he_stat__add_period() function.
- 	 */
- 	he = __hists__add_entry(&iter->evsel->hists, al, iter->parent, NULL, mi,
--				cost, cost, 0);
-+				cost, cost, 0, true);
- 	if (!he)
- 		return -ENOMEM;
- 
-@@ -278,7 +278,7 @@ iter_add_next_branch_entry(struct hist_entry_iter *iter, struct addr_location *a
- 	 * and not events sampled. Thus we use a pseudo period of 1.
- 	 */
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, &bi[i], NULL,
--				1, 1, 0);
-+				1, 1, 0, true);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-@@ -324,7 +324,7 @@ iter_add_single_normal_entry(struct hist_entry_iter *iter, struct addr_location
- 
- 	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
- 				sample->period, sample->weight,
--				sample->transaction);
-+				sample->transaction, true);
- 	if (he == NULL)
- 		return -ENOMEM;
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index e0fd0aa57f06..6d721bccdd26 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -245,7 +245,7 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	pthread_mutex_lock(&evsel->hists.lock);
- 	he = __hists__add_entry(&evsel->hists, al, NULL, NULL, NULL,
- 				sample->period, sample->weight,
--				sample->transaction);
-+				sample->transaction, true);
- 	pthread_mutex_unlock(&evsel->hists.lock);
- 	if (he == NULL)
- 		return NULL;
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 173bf42cc03e..b829c2a1a598 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -223,7 +223,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 				goto out;
- 
- 			he = __hists__add_entry(&evsel->hists, &al, NULL,
--						NULL, NULL, 1, 1, 0);
-+						NULL, NULL, 1, 1, 0, true);
- 			if (he == NULL)
- 				goto out;
- 
-@@ -246,7 +246,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
- 				goto out;
- 
- 			he = __hists__add_entry(&evsel->hists, &al, NULL,
--						NULL, NULL, 1, 1, 0);
-+						NULL, NULL, 1, 1, 0, true);
- 			if (he == NULL)
- 				goto out;
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 50de02c478b4..a6bb3e329857 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -271,7 +271,8 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
-  * histogram, sorted on item, collects periods
-  */
- 
--static struct hist_entry *hist_entry__new(struct hist_entry *template)
-+static struct hist_entry *hist_entry__new(struct hist_entry *template,
-+					  bool sample_self)
- {
- 	size_t callchain_size = 0;
- 	struct hist_entry *he;
-@@ -291,6 +292,8 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 				return NULL;
- 			}
- 			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+			if (!sample_self)
-+				memset(&he->stat, 0, sizeof(he->stat));
- 		}
- 
- 		if (he->ms.map)
-@@ -352,7 +355,8 @@ static u8 symbol__parent_filter(const struct symbol *parent)
- 
- static struct hist_entry *add_hist_entry(struct hists *hists,
- 					 struct hist_entry *entry,
--					 struct addr_location *al)
-+					 struct addr_location *al,
-+					 bool sample_self)
- {
- 	struct rb_node **p;
- 	struct rb_node *parent = NULL;
-@@ -376,7 +380,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 		cmp = hist_entry__cmp(he, entry);
- 
- 		if (!cmp) {
--			he_stat__add_period(&he->stat, period, weight);
-+			if (sample_self)
-+				he_stat__add_period(&he->stat, period, weight);
- 			if (symbol_conf.cumulate_callchain)
- 				he_stat__add_period(he->stat_acc, period, weight);
- 
-@@ -406,7 +411,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 			p = &(*p)->rb_right;
- 	}
- 
--	he = hist_entry__new(entry);
-+	he = hist_entry__new(entry, sample_self);
- 	if (!he)
- 		return NULL;
- 
-@@ -414,7 +419,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
--	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (sample_self)
-+		he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
- 	if (symbol_conf.cumulate_callchain)
- 		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
- 	return he;
-@@ -425,7 +431,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct symbol *sym_parent,
- 				      struct branch_info *bi,
- 				      struct mem_info *mi,
--				      u64 period, u64 weight, u64 transaction)
-+				      u64 period, u64 weight, u64 transaction,
-+				      bool sample_self)
- {
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
-@@ -450,7 +457,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 		.transaction = transaction,
- 	};
- 
--	return add_hist_entry(hists, &entry, al);
-+	return add_hist_entry(hists, &entry, al, sample_self);
- }
- 
- int64_t
-@@ -864,7 +871,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
- 			p = &(*p)->rb_right;
- 	}
- 
--	he = hist_entry__new(pair);
-+	he = hist_entry__new(pair, true);
- 	if (he) {
- 		memset(&he->stat, 0, sizeof(he->stat));
- 		he->hists = hists;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 7d1d973d9a39..212aec21735f 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -96,7 +96,8 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct symbol *parent,
- 				      struct branch_info *bi,
- 				      struct mem_info *mi, u64 period,
--				      u64 weight, u64 transaction);
-+				      u64 weight, u64 transaction,
-+				      bool sample_self);
- int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
- int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
- int hist_entry__transaction_len(void);
+ extern int dmar_table_init(void);
+ extern int dmar_dev_scope_init(void);
++extern int dmar_parse_dev_scope(void *start, void *end, int *cnt,
++				struct pci_dev ***devices, u16 segment);
++extern void dmar_free_dev_scope(struct pci_dev ***devices, int *cnt);
+ extern int enable_drhd_fault_handling(void);
+ #else
+ static inline int dmar_table_init(void)
+@@ -151,9 +154,6 @@ struct dmar_atsr_unit {
+ int dmar_parse_rmrr_atsr_dev(void);
+ extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
+ extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
+-extern int dmar_parse_dev_scope(void *start, void *end, int *cnt,
+-				struct pci_dev ***devices, u16 segment);
+-extern void dmar_free_dev_scope(struct pci_dev ***devices, int *cnt);
+ extern int intel_iommu_init(void);
+ #else /* !CONFIG_INTEL_IOMMU: */
+ static inline int intel_iommu_init(void) { return -ENODEV; }
 -- 
-1.7.11.7
+1.7.10.4
 
