@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784AbaAHNpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:45:21 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:42091 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752039AbaAHNpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:45:16 -0500
-Date: Wed, 8 Jan 2014 13:45:16 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
-Subject: Re: [RFC] sched: CPU topology try
-Message-ID: <20140108134516.GM2936@e103034-lin>
-References: <20140106163123.GN31570@twins.programming.kicks-ass.net>
- <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
- <20140107132220.GZ31570@twins.programming.kicks-ass.net>
- <20140107141059.GY3694@twins.programming.kicks-ass.net>
- <20140107154154.GH2936@e103034-lin>
- <20140107204951.GD2480@laptop.programming.kicks-ass.net>
- <20140108123534.GI2936@e103034-lin>
- <20140108124534.GD31570@twins.programming.kicks-ass.net>
- <20140108132739.GK2936@e103034-lin>
- <20140108133257.GF31570@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108133257.GF31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756815AbaAHNp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:45:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755903AbaAHNpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:45:54 -0500
+Message-ID: <1389188753.3209.156.camel@bling.home>
+Subject: Re: [PATCH v2 5/7] vfio: Use new interfaces for MSI/MSI-X enablement
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Date: Wed, 08 Jan 2014 06:45:53 -0700
+In-Reply-To: <20140108075757.GB20157@dhcp-26-207.brq.redhat.com>
+References: <cover.1389103215.git.agordeev@redhat.com>
+	 <1c2ab7cdd9f18f98ee86c73b182f4ee0697f7495.1389103215.git.agordeev@redhat.com>
+	 <1389119653.3209.124.camel@bling.home>
+	 <20140108074224.GA20157@dhcp-26-207.brq.redhat.com>
+	 <20140108075757.GB20157@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 01:32:57PM +0000, Peter Zijlstra wrote:
-> On Wed, Jan 08, 2014 at 01:27:39PM +0000, Morten Rasmussen wrote:
-> > On Wed, Jan 08, 2014 at 12:45:34PM +0000, Peter Zijlstra wrote:
-> > > On Wed, Jan 08, 2014 at 12:35:34PM +0000, Morten Rasmussen wrote:
-> > > > > Currently we detect overload by sg.nr_running >= sg.capacity, which can
-> > > > > be very misleading because while a cpu might have a task running 'now'
-> > > > > it might be 99% idle.
-> > > > > 
-> > > > > At which point I argued we should change the capacity thing anyhow. Ever
-> > > > > since the runnable_avg patch set I've been arguing to change that into
-> > > > > an actual utilization test.
-> > > > > 
-> > > > > So I think that if we measure overload by something like >95% utilization
-> > > > > on the entire group the load scaling again makes perfect sense.
-> > > > 
-> > > > I agree that it make more sense to change the overload test to be based
-> > > > on some tracked load. How about the non-overloaded case? Load balancing
-> > > > would have to be based on unweighted task loads in that case?
-> > > 
-> > > Yeah, until we're overloaded our goal is to minimize idle time.
-> > 
-> > I would say, make the most of the available cpu cycles. Minimizing idle
-> > time is not always the right thing to do when considering power
-> > awareness.
-> > 
-> > If we know the actual load of the tasks, we may be able to consolidate
+On Wed, 2014-01-08 at 08:57 +0100, Alexander Gordeev wrote:
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  drivers/vfio/pci/vfio_pci_intrs.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> I think we must start to be careful with the word load, I think you
-> meant to say utilization.
+> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+> index 641bc87..66d1746 100644
+> --- a/drivers/vfio/pci/vfio_pci_intrs.c
+> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
+> @@ -482,15 +482,15 @@ static int vfio_msi_enable(struct vfio_pci_device *vdev, int nvec, bool msix)
+>  		for (i = 0; i < nvec; i++)
+>  			vdev->msix[i].entry = i;
+>  
+> -		ret = pci_enable_msix(pdev, vdev->msix, nvec);
+> -		if (ret) {
+> +		ret = pci_enable_msix_range(pdev, vdev->msix, nvec, nvec);
+> +		if (ret < 0) {
+>  			kfree(vdev->msix);
+>  			kfree(vdev->ctx);
+>  			return ret;
+>  		}
+>  	} else {
+> -		ret = pci_enable_msi_block(pdev, nvec);
+> -		if (ret) {
+> +		ret = pci_enable_msi_range(pdev, nvec, nvec);
+> +		if (ret < 0) {
+>  			kfree(vdev->ctx);
+>  			return ret;
+>  		}
 
-Indeed, I meant utilization.
+Based on your description, this is a user visible API change.  We now
+return success so long as we allocated at least a single vector and the
+user has no way to know that they didn't get all the vectors they
+requested.  That's unacceptable, userspace expects the old API - setup
+the requested vectors or setup none and tell me how many to retry with.
+To maintain the same API exposed to userspace, I'd think we need
+something like:
 
-> 
-> > them on fewer cpus and save power by idling cpus. In that case the idle
-> > time (total) is unchanged (unless the P-state is changed). Somewhat
-> > similar to the video use-case running on 1, 2, and 4 cpu that I reposted
-> > yesterday.
-> 
-> But fair enough.. Its idle time when you consider CPUs to always run at
-> max frequency, but clearly I must stop thinking about CPUs like that :-)
+if (ret != nvec) {
+	if (ret > 0)
+		pci_disable...
+	kfree(...
+	kfree(...
+	return ret;
+}
 
-Yes, it opens a whole new world of problems to be solved :-)
+Thanks,
+Alex
+
