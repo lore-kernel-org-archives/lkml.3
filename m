@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaAHOaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:30:11 -0500
-Received: from 15.mo3.mail-out.ovh.net ([87.98.150.177]:53622 "EHLO
+	id S932114AbaAHOaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:30:07 -0500
+Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:34477 "EHLO
 	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756867AbaAHOaF (ORCPT
+	with ESMTP id S1756862AbaAHOaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Jan 2014 09:30:05 -0500
 From: Boris BREZILLON <b.brezillon@overkiz.com>
@@ -16,13 +16,11 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-mtd@lists.infradead.org, dev@linux-sunxi.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [RFC PATCH 2/9] mtd: nand: define struct nand_timings
-Date: Wed,  8 Jan 2014 15:21:57 +0100
-Message-Id: <1389190924-26226-3-git-send-email-b.brezillon@overkiz.com>
+Subject: [RFC PATCH 0/9] mtd: nand: add sunxi NAND Flash Controller support
+Date: Wed,  8 Jan 2014 15:21:55 +0100
+Message-Id: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 6882063181093959871
+X-Ovh-Tracer-Id: 6859263707980396733
 X-Ovh-Remote: 80.245.18.66 ()
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -36,67 +34,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a struct containing the standard NAND timings as described in NAND
-datasheets.
+Hello,
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- include/linux/mtd/nand.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+This series add the sunxi NFC support with up to 8 NAND chip connected.
+I'm still in the early stages drivers development and some key features are
+missing, but it's usable (I tested it on the cubietruck board).
 
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 9e6c8f9..3dda312 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -805,4 +805,48 @@ static inline bool nand_is_slc(struct nand_chip *chip)
- {
- 	return chip->bits_per_cell == 1;
- }
-+
-+/**
-+ * struct nand_timings - NAND chip timing definitions
-+ *
-+ * This struct defines the timing requirements of a NAND chip.
-+ * These informations can be found in every NAND datasheets.
-+ *
-+ * All fields are optional and depend on the hardware driver requirements
-+ */
-+struct nand_timings {
-+	u32 tCLS_min;
-+	u32 tCLH_min;
-+	u32 tCS_min;
-+	u32 tCH_min;
-+	u32 tWP_min;
-+	u32 tALS_min;
-+	u32 tALH_min;
-+	u32 tDS_min;
-+	u32 tDH_min;
-+	u32 tWC_min;
-+	u32 tWH_min;
-+	u32 tR_max;
-+	u32 tAR_min;
-+	u32 tCLR_min;
-+	u32 tRR_min;
-+	u32 tRP_min;
-+	u32 tWB_max;
-+	u32 tRC_min;
-+	u32 tREA_max;
-+	u32 tRHZ_max;
-+	u32 tCHZ_max;
-+	u32 tRHOH_min;
-+	u32 tRLOH_min;
-+	u32 tCOH_min;
-+	u32 tREH_min;
-+	u32 tWHR_min;
-+	u32 tRHW_min;
-+	u32 tIR_min;
-+	u32 tCR_min;
-+	u32 tADL_min;
-+	u32 tRST_max;
-+	u32 tWW_min;
-+};
-+
- #endif /* __LINUX_MTD_NAND_H */
+Here's what's missing:
+ - HW ECC support
+ - DMA support
+ - HW randomization support
+ - many more improvements
+
+This series depends on Emilio's patch series implementing mod0 clks
+(http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/185478.html)
++ an other patch not yet posted
+(http://git.elopez.com.ar/linux/commits/5b4eb3ac406b9c98965714d40e8dd6da943d1ab0)
+
+
+Best Regards,
+
+Boris
+
+Boris BREZILLON (9):
+  mtd: nand: retrieve ECC requirements from Hynix READ ID byte 4
+  mtd: nand: define struct nand_timings
+  of: mtd: add NAND timings retrieval support
+  of: mtd: add NAND timings bindings documentation
+  mtd: nand: add sunxi NFC support
+  mtd: nand: add sunxi NFC dt bindings doc
+  ARM: dt/sunxi: add NFC node to Allwinner A20 SoC
+  ARM: dt/sunxi: add NFC pinctrl pin definitions
+  ARM: sunxi/dt: enable NAND on cubietruck board
+
+ Documentation/devicetree/bindings/mtd/nand.txt     |   34 +
+ .../devicetree/bindings/mtd/sunxi-nand.txt         |   71 ++
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   33 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |   35 +
+ drivers/mtd/nand/Kconfig                           |    6 +
+ drivers/mtd/nand/Makefile                          |    1 +
+ drivers/mtd/nand/nand_base.c                       |   37 ++
+ drivers/mtd/nand/sunxi_nfc.c                       |  700 ++++++++++++++++++++
+ drivers/of/of_mtd.c                                |   47 ++
+ include/linux/mtd/nand.h                           |   44 ++
+ include/linux/of_mtd.h                             |    9 +
+ 11 files changed, 1017 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+ create mode 100644 drivers/mtd/nand/sunxi_nfc.c
+
 -- 
 1.7.9.5
 
