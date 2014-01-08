@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaAHEG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 23:06:58 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55188 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550AbaAHEGv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 23:06:51 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-28-52ccced84686
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] tools lib traceevent: Add state member to struct trace_seq
-References: <1389063612-18173-1-git-send-email-namhyung@kernel.org>
-	<1389063612-18173-3-git-send-email-namhyung@kernel.org>
-	<20140107130558.GB2919@krava.brq.redhat.com>
-Date: Wed, 08 Jan 2014 13:06:48 +0900
-In-Reply-To: <20140107130558.GB2919@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Tue, 7 Jan 2014 14:05:58 +0100")
-Message-ID: <87lhyrce1z.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754936AbaAHEIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 23:08:19 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46889 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754197AbaAHEIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 23:08:07 -0500
+Message-ID: <52CCCEB6.9050006@ti.com>
+Date: Wed, 8 Jan 2014 09:36:14 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, <prabhakar.csengg@gmail.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH v3 0/2] gpio: davinci: reuse for keystone arch
+References: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com> <52CC3EDC.7070404@ti.com>
+In-Reply-To: <52CC3EDC.7070404@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Tuesday 07 January 2014 11:22 PM, Santosh Shilimkar wrote:
+> Sekhar,
+> 
+> On Tuesday 24 December 2013 06:41 AM, Grygorii Strashko wrote:
+>> This series is intended to update Davinci GPIO driver and reuse
+>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>> Keystone GPIO IP: supports:
+>> - up to 32 GPIO lines;
+>> - only unbanked irqs;
+>>
+>> See Documentation:
+>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>
+>> This series based on:
+>> https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.14/gpio
+>>
+>> Changes in v3:
+>> - fixed code, changed by mistake; fixed sparse warning 
+>> Changes in v2:
+>> - minor comments applied, no functional changes
+>>
+>> v2: https://lkml.org/lkml/2013/12/18/135
+>> v1: https://lkml.org/lkml/2013/12/12/366
+>>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Alexandre Courbot <gnurou@gmail.com>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+>> Grygorii Strashko (2):
+>>   gpio: davinci: don't create irq_domain in case of unbanked irqs
+>>   gpio: davinci: reuse for Keystone SoC
+>>
+>>  .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+>>  drivers/gpio/gpio-davinci.c                        |   82 ++++++++++++++------
+>>  2 files changed, 61 insertions(+), 25 deletions(-)
+>>
+> Have you picked up the $subject series in your queue ?
 
-On Tue, 7 Jan 2014 14:05:58 +0100, Jiri Olsa wrote:
-> On Tue, Jan 07, 2014 at 12:00:09PM +0900, Namhyung Kim wrote:
->
-> SNIP
->
->>  void trace_seq_init(struct trace_seq *s);
->> diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
->> index d7f2e68bc5b9..1747aa50ecb0 100644
->> --- a/tools/lib/traceevent/trace-seq.c
->> +++ b/tools/lib/traceevent/trace-seq.c
->> @@ -32,8 +32,9 @@
->>  #define TRACE_SEQ_POISON	((void *)0xdeadbeef)
->>  #define TRACE_SEQ_CHECK(s)						\
->>  do {									\
->> -	if ((s)->buffer == TRACE_SEQ_POISON)			\
->> -		die("Usage of trace_seq after it was destroyed");	\
->> +	if (WARN_ONCE((s)->buffer == TRACE_SEQ_POISON,			\
->> +		      "Usage of trace_seq after it was destroyed"))	\
->> +		(s)->state = TRACE_SEQ__BUFFER_POISONED;		\
->>  } while (0)
->>  
->>  /**
->> @@ -46,6 +47,7 @@ void trace_seq_init(struct trace_seq *s)
->>  	s->readpos = 0;
->>  	s->buffer_size = TRACE_SEQ_BUF_SIZE;
->>  	s->buffer = malloc_or_die(s->buffer_size);
->> +	s->state = TRACE_SEQ__GOOD;
->>  }
->>  
->>  /**
->> @@ -81,7 +83,7 @@ static void expand_buffer(struct trace_seq *s)
->>  	s->buffer_size += TRACE_SEQ_BUF_SIZE;
->>  	s->buffer = realloc(s->buffer, s->buffer_size);
->>  	if (!s->buffer)
->> -		die("Can't allocate trace_seq buffer memory");
->> +		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
->
-> and also here?
->
-> 	if (WARN_ONCE(!s->buffer))
-> 		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
+Not yet, at least on the new compatible introduction, I need an ack from
+DT folks.
 
-Ah, will fix.
+I am happy with the patches though and have tested them as well, In case
+I do not get an ack from 2/2 in time, I can at least send 1/2 for
+inclusion after my first gpio pull request to ARM-SoC gets pulled.
 
->
-> otherwise the whole series seems ok,
+Thanks,
+Sekhar
 
-Thanks for your review!
-Namhyung
