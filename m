@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360AbaAHObB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:31:01 -0500
-Received: from 10.mo3.mail-out.ovh.net ([87.98.165.232]:47258 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756868AbaAHOaG (ORCPT
+	id S1756825AbaAHOdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:33:10 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51448 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751086AbaAHOdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:30:06 -0500
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jan 2014 09:30:06 EST
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mtd@lists.infradead.org, dev@linux-sunxi.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [RFC PATCH 1/9] mtd: nand: retrieve ECC requirements from Hynix READ ID byte 4
-Date: Wed,  8 Jan 2014 15:21:56 +0100
-Message-Id: <1389190924-26226-2-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 6872774506862508222
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.500001/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Wed, 8 Jan 2014 09:33:07 -0500
+Date: Wed, 8 Jan 2014 14:32:35 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v2 2/9] devicetree: bindings: Document qcom,kpss-acc
+Message-ID: <20140108143235.GA11753@e106331-lin.cambridge.arm.com>
+References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org>
+ <1387845593-10050-3-git-send-email-sboyd@codeaurora.org>
+ <20140108142541.GK6701@e106331-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140108142541.GK6701@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hynix nand flashes store their ECC requirements in byte 4 of its id
-(returned on READ ID command).
+On Wed, Jan 08, 2014 at 02:25:41PM +0000, Mark Rutland wrote:
+> On Tue, Dec 24, 2013 at 12:39:46AM +0000, Stephen Boyd wrote:
+> > The kpss acc binding describes the clock, reset, and power domain
+> > controller for a Krait CPU.
+> > 
+> > Cc: <devicetree@vger.kernel.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  .../devicetree/bindings/arm/msm/qcom,kpss-acc.txt  | 30 ++++++++++++++++++++++
+> >  1 file changed, 30 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt b/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+> > new file mode 100644
+> > index 0000000..1333db9
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/arm/msm/qcom,kpss-acc.txt
+> > @@ -0,0 +1,30 @@
+> > +Krait Processor Sub-system (KPSS) Application Clock Controller (ACC)
+> > +
+> > +The KPSS ACC provides clock, power domain, and reset control to a Krait CPU.
+> > +There is one ACC register region per CPU within the KPSS remapped region as
+> > +well as an alias register region that remaps accesses to the ACC associated
+> > +with the CPU accessing the region.
+> 
+> Is the mapping of ACC register to a specific processor well-defined? I
+> assume it's just in order of MPIDR.Aff0.
+> 
+> To maintain our collective sanity in the face of possible future
+> implementations, do you have an idea as to whether this might need to be
+> extended in future for multiple clusters / reordered IDs and so on?
+> 
+> I assume we'd just allocate a new compatible string if those get a
+> little crazy.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/mtd/nand/nand_base.c |   37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+Actually, I'm getting too hung-up on future-proofing. Assuming the
+mapping is well-defined for current implementations we can always add an
+additional property later if required.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index bd39f7b..15069ec 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -3202,6 +3202,43 @@ static void nand_decode_ext_id(struct mtd_info *mtd, struct nand_chip *chip,
- 		else
- 			mtd->erasesize = (64 * 1024) << tmp;
- 		*busw = 0;
-+
-+		/* Retrieve ECC infos */
-+		switch ((id_data[4] >> 4) & 0x7) {
-+		case 1:
-+			chip->ecc_step_ds = 512;
-+			chip->ecc_strength_ds = 1;
-+			break;
-+		case 2:
-+			chip->ecc_step_ds = 512;
-+			chip->ecc_strength_ds = 2;
-+			break;
-+		case 3:
-+			chip->ecc_step_ds = 512;
-+			chip->ecc_strength_ds = 4;
-+			break;
-+		case 4:
-+			chip->ecc_step_ds = 512;
-+			chip->ecc_strength_ds = 8;
-+			break;
-+		case 5:
-+			chip->ecc_step_ds = 1024;
-+			chip->ecc_strength_ds = 24;
-+			break;
-+		case 6:
-+			chip->ecc_step_ds = 1024;
-+			chip->ecc_strength_ds = 32;
-+			break;
-+		case 7:
-+			chip->ecc_step_ds = 1024;
-+			chip->ecc_strength_ds = 40;
-+			break;
-+		case 0:
-+		default:
-+			chip->ecc_step_ds = 0;
-+			chip->ecc_strength_ds = 0;
-+			break;
-+		}
- 	} else {
- 		/* Calc pagesize */
- 		mtd->writesize = 1024 << (extid & 0x03);
--- 
-1.7.9.5
+Acked-by: Mark Rutland <mark.rutland@arm.com>
 
+Thanks,
+Mark.
