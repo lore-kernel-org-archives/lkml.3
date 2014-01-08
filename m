@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886AbaAHCxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 21:53:30 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42819 "EHLO
+	id S1755744AbaAHC57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 21:57:59 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44597 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749AbaAHCxY (ORCPT
+	with ESMTP id S1754933AbaAHC5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 21:53:24 -0500
-Message-ID: <52CCBD96.90605@huawei.com>
-Date: Wed, 8 Jan 2014 10:53:10 +0800
+	Tue, 7 Jan 2014 21:57:48 -0500
+Message-ID: <52CCBDC0.1010100@huawei.com>
+Date: Wed, 8 Jan 2014 10:53:52 +0800
 From: Ding Tianhong <dingtianhong@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        "Alexander Duyck" <alexander.h.duyck@intel.com>,
-        Antonio Quartulli <antonio@meshcoding.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>
-Subject: [PATCH v3.6 00/19] slight optimization of addr compare for some modules
+To: Chas Williams <chas@cmf.nrl.navy.mil>,
+        <linux-atm-general@lists.sourceforge.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3.6 11/19] atm: slight optimization of addr compare
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.22.246]
@@ -28,107 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches add ether_addr_equal_unaligned to test if
-possibly unaligned to u16 Ethernet addresses are equal.
+Use possibly more efficient ether_addr_equal
+instead of memcmp.
 
-If CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is set, this uses
-the slightly faster generic routine ether_addr_equal,
-otherwise this uses memcmp.
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ drivers/atm/nicstar.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So I use the recently added and possibly more efficient
-ether_addr_equal_unaligned to instead of memcmp for slight
-optimization.
-
-v2: Because a lot of places are already using 16b aligned MAC
-    address for both operands, so use the ether_addr_equal to
-    instead of ether_addr_equal_unaligned.Thanks for Joe, Alex
-    and Antonio's opinions.
-    Also remove the patch for bridge.
-
-v3: According Joe's suggestion, the patch
-    (net: slight optimization of addr compare for some modules)
-    should be broken into several patches, and it will be good
-    to review for maintainers. So I will send rest of the patches
-    for first step, and next step, I will seperate the netdev patch
-    and send them by another patchset for net-next.
-    also fix some changelog.
-
-v3.5 Change some style for patch 8 and patch 13. Thanks for
-     Sergei's suggestion.
-
-v3.6 Change some style for patch 13 and add 
-     Acked-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-    
-Best Regards
-Ding 
-     
-Ding Tianhong (5):
-  net: freescale: remove unused compare_addr()
-  net: pcnet: slight optimization of addr compare
-  net: atl1: slight optimization of addr compare
-  hamradio: slight optimization of addr compare
-  ppp: slight optimization of addr compare
-
-Tan Xiaojun (3):
-  batman-adv: use batadv_compare_eth for concise
-  zd1211rw: slight optimization of addr compare
-  ozwpan: slight optimization of addr compare
-
-Wang Weidong (2):
-  infiniband: slight optimization of addr compare
-  mac8011: slight optimization of addr compare
-
-Weilong Chen (6):
-  hostap: slight optimization of addr compare
-  cw1200: slight optimization of addr compare
-  ipw2x00: slight optimization of addr compare
-  mwifiex: slight optimization of addr compare
-  rtlwifi: slight optimization of addr compare
-  wireless: slight optimization of addr compare
-
-Yang Yingliang (3):
-  atm: slight optimization of addr compare
-  isdn: slight optimization of addr compare
-  media: dvb_core: slight optimization of addr compare
-
- drivers/atm/nicstar.c                         |  4 ++--
- drivers/infiniband/hw/nes/nes_cm.c            |  3 +--
- drivers/isdn/i4l/isdn_net.c                   |  4 ++--
- drivers/media/dvb-core/dvb_net.c              |  8 +++----
- drivers/net/ethernet/amd/pcnet32.c            |  2 +-
- drivers/net/ethernet/atheros/atlx/atl1.c      |  3 ++-
- drivers/net/ethernet/freescale/ucc_geth.c     |  5 ----
- drivers/net/hamradio/bpqether.c               |  2 +-
- drivers/net/ppp/pppoe.c                       |  4 ++--
- drivers/net/wireless/adm8211.c                |  2 +-
- drivers/net/wireless/brcm80211/brcmfmac/p2p.c |  7 +++---
- drivers/net/wireless/cw1200/sta.c             |  5 ++--
- drivers/net/wireless/cw1200/txrx.c            |  3 +--
- drivers/net/wireless/hostap/hostap_80211_rx.c |  8 +++----
- drivers/net/wireless/hostap/hostap_80211_tx.c |  4 ++--
- drivers/net/wireless/hostap/hostap_ap.c       | 28 +++++++++++-----------
- drivers/net/wireless/hostap/hostap_hw.c       |  2 +-
- drivers/net/wireless/hostap/hostap_ioctl.c    |  4 ++--
- drivers/net/wireless/hostap/hostap_main.c     |  8 +++----
- drivers/net/wireless/ipw2x00/ipw2200.c        | 34 +++++++++++++--------------
- drivers/net/wireless/ipw2x00/libipw_rx.c      | 10 ++++----
- drivers/net/wireless/mwifiex/11n.c            |  2 +-
- drivers/net/wireless/mwifiex/sta_cmdresp.c    |  3 +--
- drivers/net/wireless/mwifiex/sta_rx.c         |  2 +-
- drivers/net/wireless/prism54/isl_ioctl.c      |  3 ++-
- drivers/net/wireless/rtlwifi/cam.c            |  4 ++--
- drivers/net/wireless/ti/wl1251/main.c         |  2 +-
- drivers/net/wireless/wl3501_cs.c              |  4 ++--
- drivers/net/wireless/zd1211rw/zd_mac.c        |  5 ++--
- drivers/staging/ozwpan/ozcdev.c               |  2 +-
- drivers/staging/ozwpan/ozproto.c              |  5 ++--
- net/batman-adv/originator.c                   |  2 +-
- net/batman-adv/translation-table.c            |  2 +-
- net/mac80211/iface.c                          |  7 +++---
- 34 files changed, 92 insertions(+), 101 deletions(-)
-
+diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
+index 5aca5f4..9587e95 100644
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -52,6 +52,7 @@
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+ #include <linux/atomic.h>
++#include <linux/etherdevice.h>
+ #include "nicstar.h"
+ #ifdef CONFIG_ATM_NICSTAR_USE_SUNI
+ #include "suni.h"
+@@ -781,8 +782,7 @@ static int ns_init_card(int i, struct pci_dev *pcidev)
+ 	if (mac[i] == NULL || !mac_pton(mac[i], card->atmdev->esi)) {
+ 		nicstar_read_eprom(card->membase, NICSTAR_EPROM_MAC_ADDR_OFFSET,
+ 				   card->atmdev->esi, 6);
+-		if (memcmp(card->atmdev->esi, "\x00\x00\x00\x00\x00\x00", 6) ==
+-		    0) {
++		if (ether_addr_equal(card->atmdev->esi, "\x00\x00\x00\x00\x00\x00")) {
+ 			nicstar_read_eprom(card->membase,
+ 					   NICSTAR_EPROM_MAC_ADDR_OFFSET_ALT,
+ 					   card->atmdev->esi, 6);
 -- 
 1.8.0
-
 
 
