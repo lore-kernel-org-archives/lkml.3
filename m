@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaAHWU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 17:20:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177AbaAHWUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 17:20:22 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <adlr@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] HID: logitech-dj: Fix USB 3.0 issue
-Date: Wed,  8 Jan 2014 17:18:45 -0500
-Message-Id: <1389219529-29671-2-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1757702AbaAHWXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 17:23:18 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:36866 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325AbaAHWXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 17:23:14 -0500
+MIME-Version: 1.0
+Reply-To: eranian@gmail.com
+In-Reply-To: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu>
+Date: Wed, 8 Jan 2014 23:23:13 +0100
+Message-ID: <CAMsRxf+1Wng7MxWmBp57J3XS8jQsXtsgNuC1nu-v8MRu_R-vEA@mail.gmail.com>
+Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
+From: Stephane Eranian <eranian@googlemail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Tisssoires <benjamin.tissoires@redhat.com>
+Vince,
 
-This fix (not very clean though) should fix the long time USB3
-issue that was spotted last year. The rational has been given by
-Hans de Goede:
+I ran into the same problem myself on my Raspberry PI. In fact,
+I am really frustrated by ARM platforms not having that IRQ handled
+properly. It is pretty common for manufacturers not to provide the code
+to route the IRQ, even though the HW does support it. Sometimes the
+specs on how to do this are not even public it seems.
 
- ----
+Having the PMU IRQ setup properly would make using the PMU on ARM
+a lot more attractive.
 
-I think the most likely cause for this is a firmware bug
-in the unifying receiver, likely a race condition.
 
-The most prominent difference between having a USB-2 device
-plugged into an EHCI (so USB-2 only) port versus an XHCI
-port will be inter packet timing. Specifically if you
-send packets (ie hid reports) one at a time, then with
-the EHCI controller their will be a significant pause
-between them, where with XHCI they will be very close
-together in time.
 
-The reason for this is the difference in EHCI / XHCI
-controller OS <-> driver interfaces.
-
-For non periodic endpoints (control, bulk) the EHCI uses a
-circular linked-list of commands in dma-memory, which it
-follows to execute commands, if the list is empty, it
-will go into an idle state and re-check periodically.
-
-The XHCI uses a ring of commands per endpoint, and if the OS
-places anything new on the ring it will do an ioport write,
-waking up the XHCI making it send the new packet immediately.
-
-For periodic transfers (isoc, interrupt) the delay between
-packets when sending one at a time (rather then queuing them
-up) will be even larger, because they need to be inserted into
-the EHCI schedule 2 ms in the future so the OS driver can be
-sure that the EHCI driver does not try to start executing the
-time slot in question before the insertion has completed.
-
-So a possible fix may be to insert a delay between packets
-being send to the receiver.
-
- ----
-
-I tested this on a buggy Haswell USB 3.0 motherboard, and I always
-get the notification after adding the msleep.
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-logitech-dj.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index a7947d8..f45279c 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -516,6 +516,14 @@ static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
- 	dj_report->report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
- 	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
- 	kfree(dj_report);
-+
-+	/*
-+	 * Ugly sleep to work around a USB 3.0 bug when the receiver is still
-+	 * processing the "switch-to-dj" command while we send an other command.
-+	 * 50 msec should gives enough time to the receiver to be ready.
-+	 */
-+	msleep(50);
-+
- 	return retval;
- }
- 
--- 
-1.8.4.2
-
+On Wed, Jan 8, 2014 at 10:28 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
+>
+>
+> I'm working on getting the hardware performance counters working on a
+> Raspberry-Pi (BCM2835/ARM/1176).
+>
+> The counters are there, but the overflow interrupt is not hooked up so the
+> init code disables perf_event.
+>
+> The following patch enables perf_event and it works fine for simple
+> "perf stat" type workloads.  perf record and anything requiring sampling
+> doesn't work (as expected).
+>
+> I thought I would have to add a periodic timer to catch counter overflows,
+> but it turns out that's unnecessary.  From what I can tell even though the
+> nPMUIRQ interrupt is not hooked up, the overflows are marked in the status
+> register and this is noticed and handled at context-switch time.  So as
+> long as the counters overflow less frequently than the context switch
+> interval the registers don't overflow.
+>
+> So my question, is a patch like this acceptable?
+>
+> Should the perf_event interface handle setups like this better and work
+> fine in aggregate mode but return ENOTSUP if a sampled or overflow event
+> is attempted?
+>
+> Vince
+>
+>
+> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+>
+> diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+> index d85055c..ff1a752 100644
+> --- a/arch/arm/kernel/perf_event_cpu.c
+> +++ b/arch/arm/kernel/perf_event_cpu.c
+> @@ -97,8 +97,8 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+>
+>         irqs = min(pmu_device->num_resources, num_possible_cpus());
+>         if (irqs < 1) {
+> -               pr_err("no irqs for PMUs defined\n");
+> -               return -ENODEV;
+> +               printk_once("no irqs for PMUs defined, enabling anyway\n");
+> +               return 0;
+>         }
+>
+>         for (i = 0; i < irqs; ++i) {
