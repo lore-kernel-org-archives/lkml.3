@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaAHI3q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:29:46 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37737 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033AbaAHI3n (ORCPT
+	id S1755443AbaAHIb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:31:58 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:8437 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033AbaAHIbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:29:43 -0500
-Message-ID: <52CD0E2F.8000903@linux.vnet.ibm.com>
-Date: Wed, 08 Jan 2014 14:07:03 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 8 Jan 2014 03:31:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 08 Jan 2014 00:32:12 -0800
+Date: Wed, 8 Jan 2014 10:31:33 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "Alex Courbot" <acourbot@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Danny Huang <dahuang@nvidia.com>
+Subject: Re: [PATCH v2 4/6] ARM: tegra: rework fuse.c
+Message-ID: <20140108083133.GK26588@tbergstrom-lnx.Nvidia.com>
+References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com>
+ <1387891931-9854-5-git-send-email-pdeschrijver@nvidia.com>
+ <52CB1722.70306@wwwdotorg.org>
+ <20140107141004.GF26588@tbergstrom-lnx.Nvidia.com>
+ <52CC67C9.9000704@wwwdotorg.org>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>,
-        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH V3] mm readahead: Fix the readahead fail in case of
- empty numa node
-References: <1389003715-29733-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140106105620.GC3312@quack.suse.cz>
-In-Reply-To: <20140106105620.GC3312@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010808-0260-0000-0000-000004311429
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52CC67C9.9000704@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2014 04:26 PM, Jan Kara wrote:
-> On Mon 06-01-14 15:51:55, Raghavendra K T wrote:
->> Currently, max_sane_readahead returns zero on the cpu with empty numa node,
->> fix this by checking for potential empty numa node case during calculation.
->> We also limit the number of readahead pages to 4k.
->>
->> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->> ---
->> The current patch limits the readahead into 4k pages (16MB was suggested
->> by Linus).  and also handles the case of memoryless cpu issuing readahead
->> failures.  We still do not consider [fm]advise() specific calculations
->> here.  I have dropped the iterating over numa node to calculate free page
->> idea.  I do not have much idea whether there is any impact on big
->> streaming apps..  Comments/suggestions ?
->    As you say I would be also interested what impact this has on a streaming
-> application. It should be rather easy to check - create 1 GB file, drop
-> caches. Then measure how long does it take to open the file, call fadvise
-> FADV_WILLNEED, read the whole file (for a kernel with and without your
-> patch). Do several measurements so that we get some meaningful statistics.
-> Resulting numbers can then be part of the changelog. Thanks!
->
+On Tue, Jan 07, 2014 at 09:47:05PM +0100, Stephen Warren wrote:
+> On 01/07/2014 07:10 AM, Peter De Schrijver wrote:
+> > On Mon, Jan 06, 2014 at 09:50:42PM +0100, Stephen Warren wrote:
+> >> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
+> >>> Reduce fuse.c to the minimum functionality required for the early bootstages.
+> >>>
+> >>> Also export tegra_read_straps() for use by the fuse driver.
+> 
+> >>> diff --git a/arch/arm/mach-tegra/fuse.c b/arch/arm/mach-tegra/fuse.c
+> 
+> >>> -int tegra_sku_id;
+> >>> -int tegra_cpu_process_id;
+> >>> -int tegra_core_process_id;
+> >>>  int tegra_chip_id;
+> >>> -int tegra_cpu_speedo_id;		/* only exist in Tegra30 and later */
+> >>> -int tegra_soc_speedo_id;
+> >>>  enum tegra_revision tegra_revision;
+> >>
+> >> It's a bit odd to remove most of this, but leave a few parts hanging
+> >> around. Wouldn't it be better to the drivers/misc/fuse code to export
+> >> this, so that /all/ the fuse logic was there, rather than part of it
+> >> being left over in arch/arm/? We'll need to fix that up anyway when we
+> >> start using these globals on ARMv8, so may as well get it right now.
+> >> Also, I rather think that the new drivers/misc/fuse code shouldn't be a
+> >> module or driver, so that we can guarantee it's always there to provide
+> >> the globals and that they are initialized early enough...
+> > 
+> > tegra_revision is used in tegra_dt_init() to initialize soc_dev_attr->revision
+> > Hence this needs to be available before the fuse driver is initialized.
+> 
+> Yes, the same for tegra_chip_id too.
+> 
+> My point is: Why not move all the globals into the fuse driver, and make
+> an early call to that fuse driver to initialize all these globals.
+> Basically, rework this patch series to simply move the code to
+> drivers/misc/fuse/, and keep initializing it by function call rather
+> than as a driver probe(). The code can still scan DT to get the required
+> reg/clock/... resources, in a similar fashion to e.g. the Tegra timer or
+> cpufreq drivers IIRC. Perhaps the sysfs exports could be associated with
+> a driver still though - just initialize the globals early?
 
-Hi Honza,
+That's probably better indeed... Will look into that.
 
-Thanks for the idea. (sorry for the delay, spent my own time to do some
-fadvise and other benchmarking). Here is the result on my x240 machine
-with 32 cpu (w/ HT) 128GB ram.
+Cheers,
 
-Below test was for 1gb test file as per suggestion.
-
-x base_result
-+ patched_result
-     N           Min           Max        Median           Avg        Stddev
-x  12         7.217         7.444        7.2345     7.2603333    0.06442802
-+  12          7.24         7.431         7.243     7.2684167   0.059649672
-
- From the result we could see that there is not much impact with the
-patch.
-I shall include the result in changelog when I resend/next version
-depending on the others' comment.
-
----
-test file looked something like this:
-
-char buf[4096];
-
-int main()
-{
-int fd = open("testfile", O_RDONLY);
-unsigned long read_bytes = 0;
-int sz;
-posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
-
-do {
-	sz = read(fd, buf, 4096);
-	read_bytes += sz;
-} while (sz > 0);
-
-close(fd);
-printf (" Total bytes read = %lu \n", read_bytes);
-return 0;
-}
-
-
-
-
-
+Peter.
