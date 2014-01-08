@@ -1,117 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262AbaAHGW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 01:22:57 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:60120 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028AbaAHGWf (ORCPT
+	id S1754910AbaAHG2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 01:28:08 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:58169 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaAHG15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 01:22:35 -0500
-From: "wenlin.kang" <wenlin.kang@windriver.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] usb/gadget: fix printer memory leak
-Date: Wed, 8 Jan 2014 14:22:12 +0800
-Message-ID: <1389162132-17857-2-git-send-email-wenlin.kang@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389162132-17857-1-git-send-email-wenlin.kang@windriver.com>
-References: <1389162132-17857-1-git-send-email-wenlin.kang@windriver.com>
+	Wed, 8 Jan 2014 01:27:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <52CCEE80.20001@linux.intel.com>
+References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com>
+	<1389085234-22296-15-git-send-email-jiang.liu@linux.intel.com>
+	<CAOtp4Kqn5e_51hwrRMgRmam7jXaVC=md7BAuwnG3gJGETj9iQA@mail.gmail.com>
+	<52CCE9CD.5060404@linux.intel.com>
+	<CAOtp4KqvzrJr=Z5xj-vZnnL--W6R2CjZ=m0rFgR9DzxVKjfwSQ@mail.gmail.com>
+	<52CCEE80.20001@linux.intel.com>
+Date: Wed, 8 Jan 2014 14:27:56 +0800
+Message-ID: <CAOtp4KptOrCEoO8uc6gH=c+t1qJccE=yDFYXcZcCBTRy6LJc3g@mail.gmail.com>
+Subject: Re: [RFC Patch Part2 V1 14/14] iommu/vt-d: update IOMMU state when
+ memory hotplug happens
+From: Kai Huang <dev.kai.huang@gmail.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Luck <tony.luck@intel.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, iommu@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "wenlin.kang" <wenlin.kang@windriver.com>
+On Wed, Jan 8, 2014 at 2:21 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>
+>
+> On 2014/1/8 14:14, Kai Huang wrote:
+>> On Wed, Jan 8, 2014 at 2:01 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>>>
+>>>
+>>> On 2014/1/8 13:07, Kai Huang wrote:
+>>>> On Tue, Jan 7, 2014 at 5:00 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>>>>> If static identity domain is created, IOMMU driver needs to update
+>>>>> si_domain page table when memory hotplug event happens. Otherwise
+>>>>> PCI device DMA operations can't access the hot-added memory regions.
+>>>>>
+>>>>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>>>>> ---
+>>>>>  drivers/iommu/intel-iommu.c |   52 ++++++++++++++++++++++++++++++++++++++++++-
+>>>>>  1 file changed, 51 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+>>>>> index 83e3ed4..35a987d 100644
+>>>>> --- a/drivers/iommu/intel-iommu.c
+>>>>> +++ b/drivers/iommu/intel-iommu.c
+>>>>> @@ -33,6 +33,7 @@
+>>>>>  #include <linux/dmar.h>
+>>>>>  #include <linux/dma-mapping.h>
+>>>>>  #include <linux/mempool.h>
+>>>>> +#include <linux/memory.h>
+>>>>>  #include <linux/timer.h>
+>>>>>  #include <linux/iova.h>
+>>>>>  #include <linux/iommu.h>
+>>>>> @@ -3689,6 +3690,54 @@ static struct notifier_block device_nb = {
+>>>>>         .notifier_call = device_notifier,
+>>>>>  };
+>>>>>
+>>>>> +static int intel_iommu_memory_notifier(struct notifier_block *nb,
+>>>>> +                                      unsigned long val, void *v)
+>>>>> +{
+>>>>> +       struct memory_notify *mhp = v;
+>>>>> +       unsigned long long start, end;
+>>>>> +       struct iova *iova;
+>>>>> +
+>>>>> +       switch (val) {
+>>>>> +       case MEM_GOING_ONLINE:
+>>>>> +               start = mhp->start_pfn << PAGE_SHIFT;
+>>>>> +               end = ((mhp->start_pfn + mhp->nr_pages) << PAGE_SHIFT) - 1;
+>>>>> +               if (iommu_domain_identity_map(si_domain, start, end)) {
+>>>>> +                       pr_warn("dmar: failed to build identity map for [%llx-%llx]\n",
+>>>>> +                               start, end);
+>>>>> +                       return NOTIFY_BAD;
+>>>>> +               }
+>>>>
+>>>> Better to use iommu_prepare_identity_map? For si_domain, if
+>>>> hw_pass_through is used, there's no page table.
+>>> Hi Kai,
+>>>         Good catch!
+>>> Seems function iommu_prepare_identity_map() is designed to handle
+>>> RMRRs. So how about avoiding of registering memory hotplug notifier
+>>> if hw_pass_through is true?
+>>
+>> I think that's also fine :)
+>>
+>> Btw, I have a related question to memory hotplug but not related to
+>> intel IOMMU specifically. For the devices use DMA remapping, suppose
+>> the device is already using the memory that we are trying to remove,
+>> is this case, looks we need to change the existing iova <-> pa
+>> mappings for the pa that is in the memory range about to be removed,
+>> and reset the mapping to different pa (iova remains the same). Does
+>> existing code have this covered? Is there a generic IOMMU layer memory
+>> hotplug notifier to handle memory removal?
+> That's a big issue about how to reclaim memory in use. Current rule
+> is that memory used by DMA won't be removed until released.
+>
 
-When read data from g_printer, we see a Segmentation fault. eg:
+Understood. Thanks.
 
-Unable to handle kernel paging request at virtual address bf048000 pgd
-= cf038000 [bf048000] *pgd=8e8cf811, *pte=00000000, *ppte=00000000
-Internal error: Oops: 7 [#1] PREEMPT ARM Modules linked in: bluetooth
-rfcomm g_printer
-CPU: 0    Not tainted  (3.4.43-WR5.0.1.9_standard #1)
-PC is at __copy_to_user_std+0x310/0x3a8 LR is at 0x4c808010
-pc : [<c036e990>]    lr : [<4c808010>]    psr: 20000013
-sp : cf883ea8  ip : 80801018  fp : cf883f24
-r10: bf04706c  r9 : 18a21205  r8 : 21953888
-r7 : 201588aa  r6 : 5109aa16  r5 : 0705aaa2  r4 : 5140aa8a
-r3 : 0000004c  r2 : 00000fdc  r1 : bf048000  r0 : bef5fc3c
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c5387d  Table: 8f038019  DAC: 00000015 Process
-g_printer_test. (pid: 661, stack limit = 0xcf8822e8)
-Stack: (0xcf883ea8 to 0xcf884000)
-3ea0:                   bf047068 00001fff bef5ecb9 cf882000 00001fff bef5ecb9
-3ec0: 00001fff 00000000 cf2e8724 bf044d3c 80000013 80000013 00000001
-bf04706c
-3ee0: cf883f24 cf883ef0 c012e5ac c0324388 c007c8ac c0046298 00008180
-cf29b900
-3f00: 00002000 bef5ecb8 cf883f68 00000003 cf882000 cf29b900 cf883f54
-cf883f28
-3f20: c012ea08 bf044b0c c000eb88 00000000 cf883f7c 00000000 00000000
-00002000
-3f40: bef5ecb8 00000003 cf883fa4 cf883f58 c012eae8 c012e960 00000001
-bef60cb8
-3f60: 000000a8 c000eb88 00000000 00000000 cf883fa4 00000000 c014329c
-00000000
-3f80: 000000d4 41af63f0 00000003 c000eb88 cf882000 00000000 00000000
-cf883fa8
-3fa0: c000e920 c012eaa4 00000000 000000d4 00000003 bef5ecb8 00002000
-bef5ecb8
-3fc0: 00000000 000000d4 41af63f0 00000003 b6f534c0 00000000 419f9000
-00000000
-3fe0: 00000000 bef5ecac 000086d9 41a986bc 60000010 00000003 0109608a
-0088828a
-Code: f5d1f07c e8b100f0 e1a03c2e e2522020 (e8b15300) ---[ end trace
-97e2618e250e3377 ]--- Segmentation fault
-
-The root cause is the dev->rx_buffers list has been broken.
-When we call printer_read(), the following call tree is triggered:
-
-printer_read()
-	|
-	+---setup_rx_reqs(req)
-	|	|
-	|	+---usb_ep_queue(req)
-	|	|	|
-	|	|	+---...
-	|	|		|
-	|	|		+---rx_complete(req).
-	|	|
-	|	+---add the req to dev->rx_reqs_active
-	|
-	+---while(!list_empty(&dev->rx_buffers)))
-
-The route happens when we don't use DMA or fail to start DMA in USB
-driver. We can see: in the case, in rx_complete() it will add the req
-to dev->rx_buffers. meanwhile we see that we will also add the req to
-dev->rx_reqs_active after usb_ep_queue() return, so this adding will
-break the dev->rx_buffers out.
-
-After, when we call list_empty() to check dev->rx_buffers in while(),
-due to can't check correctly dev->rx_buffers, so the Segmentation fault 
-occurs when copy_to_user() is called.
-
-Signed-off-by: wenlin.kang <wenlin.kang@windriver.com>
----
- drivers/usb/gadget/printer.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
-index f4b4fa8..1f15ad0 100644
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -534,7 +534,9 @@ setup_rx_reqs(struct printer_dev *dev)
- 			DBG(dev, "rx submit --> %d\n", error);
- 			list_add(&req->list, &dev->rx_reqs);
- 			break;
--		} else {
-+		}
-+		/* if the req is empty, then add it into dev->rx_reqs_active. */
-+		else if (list_empty(&req->list)) {
- 			list_add(&req->list, &dev->rx_reqs_active);
- 		}
- 	}
--- 
-1.7.9.5
-
+-Kai
+>>
+>> -Kai
+>>>
+>>> Thanks!
+>>> Gerry
+>>>
+>>>>
+>>>>> +               break;
+>>>>> +       case MEM_OFFLINE:
+>>>>> +       case MEM_CANCEL_ONLINE:
+>>>>> +               /* TODO: enhance RB-tree and IOVA code to support of splitting iova */
+>>>>> +               iova = find_iova(&si_domain->iovad, mhp->start_pfn);
+>>>>> +               if (iova) {
+>>>>> +                       unsigned long start_pfn, last_pfn;
+>>>>> +                       struct dmar_drhd_unit *drhd;
+>>>>> +                       struct intel_iommu *iommu;
+>>>>> +
+>>>>> +                       start_pfn = mm_to_dma_pfn(iova->pfn_lo);
+>>>>> +                       last_pfn = mm_to_dma_pfn(iova->pfn_hi + 1) - 1;
+>>>>> +                       dma_pte_clear_range(si_domain, start_pfn, last_pfn);
+>>>>> +                       dma_pte_free_pagetable(si_domain, start_pfn, last_pfn);
+>>>>> +                       rcu_read_lock();
+>>>>> +                       for_each_active_iommu(iommu, drhd)
+>>>>> +                               iommu_flush_iotlb_psi(iommu, si_domain->id,
+>>>>> +                                       start_pfn, last_pfn - start_pfn + 1, 0);
+>>>>> +                       rcu_read_unlock();
+>>>>> +                       __free_iova(&si_domain->iovad, iova);
+>>>>> +               }
+>>>>
+>>>> The same as above. Looks we need to consider hw_pass_through for the si_domain.
+>>>>
+>>>> -Kai
+>>>>
+>>>>> +               break;
+>>>>> +       }
+>>>>> +
+>>>>> +       return NOTIFY_OK;
+>>>>> +}
+>>>>> +
+>>>>> +static struct notifier_block intel_iommu_memory_nb = {
+>>>>> +       .notifier_call = intel_iommu_memory_notifier,
+>>>>> +       .priority = 0
+>>>>> +};
+>>>>> +
+>>>>>  int __init intel_iommu_init(void)
+>>>>>  {
+>>>>>         int ret = -ENODEV;
+>>>>> @@ -3761,8 +3810,9 @@ int __init intel_iommu_init(void)
+>>>>>         init_iommu_pm_ops();
+>>>>>
+>>>>>         bus_set_iommu(&pci_bus_type, &intel_iommu_ops);
+>>>>> -
+>>>>>         bus_register_notifier(&pci_bus_type, &device_nb);
+>>>>> +       if (si_domain)
+>>>>> +               register_memory_notifier(&intel_iommu_memory_nb);
+>>>>>
+>>>>>         intel_iommu_enabled = 1;
+>>>>>
+>>>>> --
+>>>>> 1.7.10.4
+>>>>>
+>>>>> _______________________________________________
+>>>>> iommu mailing list
+>>>>> iommu@lists.linux-foundation.org
+>>>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
