@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622AbaAHN0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:26:39 -0500
-Received: from [85.220.129.32] ([85.220.129.32]:45504 "EHLO smtp1-3.goneo.de"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224AbaAHN0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:26:37 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.78
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        linux-kernel@vger.kernel.org, xiaojin <jin.xiao@intel.com>,
-        Ken Mills <ken.k.mills@intel.com>,
-        Dirkjan Bussink <d.bussink@gmail.com>
-Subject: Re: [RFC DO NOT MERGE] tty: n_gsm: support buggy modem
-Date: Wed, 08 Jan 2014 14:26:03 +0100
-Message-ID: <1599574.bGW69LnCZ1@lem-wkst-02>
-User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389113497.2735.142.camel@acox1-desk.ger.corp.intel.com>
-References: <4386658.RncifLMAGy@lem-wkst-02> <20140107142050.GB32491@kroah.com> <1389113497.2735.142.camel@acox1-desk.ger.corp.intel.com>
+	id S1756360AbaAHN1l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:27:41 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32083 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755717AbaAHN1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:27:39 -0500
+Date: Wed, 8 Jan 2014 13:27:39 +0000
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "alex.shi@linaro.org" <alex.shi@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140108132739.GK2936@e103034-lin>
+References: <52B87149.4010801@arm.com>
+ <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
+ <20140106163123.GN31570@twins.programming.kicks-ass.net>
+ <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
+ <20140107132220.GZ31570@twins.programming.kicks-ass.net>
+ <20140107141059.GY3694@twins.programming.kicks-ass.net>
+ <20140107154154.GH2936@e103034-lin>
+ <20140107204951.GD2480@laptop.programming.kicks-ass.net>
+ <20140108123534.GI2936@e103034-lin>
+ <20140108124534.GD31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140108124534.GD31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 7. Januar 2014, 16:51:37 schrieb Alan Cox:
-> > > modem status command, but this DV bit is not set. With this patch the
-> > > modem
-> > > and the whole mux is working fine. Another way makeing all this work is
-> > > setting the carrier_raised function to NULL. The tty code assumes that
-> > > everything is alright then.
+On Wed, Jan 08, 2014 at 12:45:34PM +0000, Peter Zijlstra wrote:
+> On Wed, Jan 08, 2014 at 12:35:34PM +0000, Morten Rasmussen wrote:
+> > > Currently we detect overload by sg.nr_running >= sg.capacity, which can
+> > > be very misleading because while a cpu might have a task running 'now'
+> > > it might be 99% idle.
+> > > 
+> > > At which point I argued we should change the capacity thing anyhow. Ever
+> > > since the runnable_avg patch set I've been arguing to change that into
+> > > an actual utilization test.
+> > > 
+> > > So I think that if we measure overload by something like >95% utilization
+> > > on the entire group the load scaling again makes perfect sense.
+> > 
+> > I agree that it make more sense to change the overload test to be based
+> > on some tracked load. How about the non-overloaded case? Load balancing
+> > would have to be based on unweighted task loads in that case?
 > 
-> Which means your modem has decided it doesn't yet have a carrier. Do you
-> get a carrier after ATD completes with a CONNECTED message ?
-> 
-> (you can open with O_NDELAY to avoid blocking on the open)
+> Yeah, until we're overloaded our goal is to minimize idle time.
 
-Oh! Thank you! This does indeed bring up the channel. After opening 
-nonblocking and writing ATD *99***1# to a muxed channel the modem sends a 
-modem status command message with DV bit set.
-This does in fact mean, I can only use the mux in nonblocking mode. Does this 
-make sense ? Why can't I use a muxed channel with blocking IO ? I could do AT 
-commands over the mux channel and the DV bit is not set (and thus TIOCM_CD is 
-not set) and the modem (and the mux line discipline) is fine with it.
+I would say, make the most of the available cpu cycles. Minimizing idle
+time is not always the right thing to do when considering power
+awareness.
 
+If we know the actual load of the tasks, we may be able to consolidate
+them on fewer cpus and save power by idling cpus. In that case the idle
+time (total) is unchanged (unless the P-state is changed). Somewhat
+similar to the video use-case running on 1, 2, and 4 cpu that I reposted
+yesterday.
