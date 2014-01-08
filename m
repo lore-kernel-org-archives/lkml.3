@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415AbaAHWKz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 17:10:55 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:65271 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283AbaAHWJ6 (ORCPT
+	id S932377AbaAHWKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 17:10:47 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:37797 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307AbaAHWKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 17:09:58 -0500
+	Wed, 8 Jan 2014 17:10:01 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, hch@infradead.org,
         akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
         jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
-Subject: [PATCH 09/11] ext4: rename: move EMLINK check up
-Date: Wed,  8 Jan 2014 23:10:13 +0100
-Message-Id: <1389219015-10980-10-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 11/11] ext4: add cross rename support
+Date: Wed,  8 Jan 2014 23:10:15 +0100
+Message-Id: <1389219015-10980-12-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
 References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
@@ -25,42 +25,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Move checking i_nlink from after ext4_get_first_dir_block() to before.  The
-check doesn't rely on the result of that function and the function only
-fails on fs corruption, so the order shouldn't matter.
+Implement RENAME_EXCHANGE flag in renameat2 syscall.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/ext4/namei.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/ext4/namei.c | 121 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 87 insertions(+), 34 deletions(-)
 
 diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index bb3e2b4614dc..7f40f2ea2f4a 100644
+index 7147d08a43a2..e4513ba7ed99 100644
 --- a/fs/ext4/namei.c
 +++ b/fs/ext4/namei.c
-@@ -3089,6 +3089,10 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+@@ -3005,6 +3005,8 @@ struct ext4_renament {
+ 	struct inode *dir;
+ 	struct dentry *dentry;
+ 	struct inode *inode;
++	bool is_dir;
++	int dir_nlink_delta;
+ 
+ 	/* entry for "dentry" */
+ 	struct buffer_head *bh;
+@@ -3136,6 +3138,14 @@ static void ext4_rename_delete(handle_t *handle, struct ext4_renament *ent)
+ 	}
+ }
+ 
++static void ext4_update_dir_count(handle_t *handle, struct ext4_renament *ent)
++{
++	if (ent->dir_nlink_delta == -1)
++		ext4_dec_count(handle, ent->dir);
++	else if (ent->dir_nlink_delta == 1)
++		ext4_inc_count(handle, ent->dir);
++}
++
+ /*
+  * Anybody can rename anything with this: the permission checks are left to the
+  * higher-level routines.
+@@ -3161,7 +3171,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	};
+ 	int retval;
+ 
+-	if (flags & ~RENAME_NOREPLACE)
++	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE))
+ 		return -EOPNOTSUPP;
+ 
+ 	dquot_initialize(old.dir);
+@@ -3169,10 +3179,11 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 
+ 	/* Initialize quotas before so that eventual writes go
+ 	 * in separate transaction */
+-	if (new.inode)
++	if (!(flags & RENAME_EXCHANGE) && new.inode)
+ 		dquot_initialize(new.inode);
+ 
+-	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name, &old.de, NULL);
++	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name,
++				 &old.de, &old.inlined);
+ 	/*
+ 	 *  Check for inode number is _not_ due to possible IO errors.
+ 	 *  We might rmdir the source, keep it as pwd of some process
+@@ -3185,18 +3196,22 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 
+ 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
+ 				 &new.de, &new.inlined);
+-	if (new.bh) {
+-		if (!new.inode) {
+-			brelse(new.bh);
+-			new.bh = NULL;
++	if (!(flags & RENAME_EXCHANGE)) {
++		if (new.bh) {
++			if (!new.inode) {
++				brelse(new.bh);
++				new.bh = NULL;
++			}
+ 		}
++		if (new.inode && !test_opt(new.dir->i_sb, NO_AUTO_DA_ALLOC))
++			ext4_alloc_da_blocks(old.inode);
++	} else if (!new.bh || le32_to_cpu(new.de->inode) != new.inode->i_ino) {
++		goto end_rename;
+ 	}
+-	if (new.inode && !test_opt(new.dir->i_sb, NO_AUTO_DA_ALLOC))
+-		ext4_alloc_da_blocks(old.inode);
+ 
+ 	handle = ext4_journal_start(old.dir, EXT4_HT_DIR,
+ 		(2 * EXT4_DATA_TRANS_BLOCKS(old.dir->i_sb) +
+-		 EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2));
++		 2 * EXT4_INDEX_EXTRA_TRANS_BLOCKS + 2));
+ 	if (IS_ERR(handle))
+ 		return PTR_ERR(handle);
+ 
+@@ -3204,28 +3219,61 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 		ext4_handle_sync(handle);
+ 
+ 	if (S_ISDIR(old.inode->i_mode)) {
+-		if (new.inode) {
++		old.is_dir = true;
++		if (!(flags & RENAME_EXCHANGE) && new.inode) {
  			retval = -ENOTEMPTY;
  			if (!empty_dir(new.inode))
  				goto end_rename;
-+		} else {
-+			retval = -EMLINK;
-+			if (new.dir != old.dir && EXT4_DIR_LINK_MAX(new.dir))
-+				goto end_rename;
+-		} else {
+-			retval = -EMLINK;
+-			if (new.dir != old.dir && EXT4_DIR_LINK_MAX(new.dir))
+-				goto end_rename;
++
++			/*
++			 * Overwriting a directory needs to decrement nlink of
++			 * old parent (even if not cross directory rename).
++			 */
++			old.dir_nlink_delta = -1;
  		}
- 		retval = -EIO;
- 		old.dir_bh = ext4_get_first_dir_block(handle, old.inode,
-@@ -3098,10 +3102,6 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
- 			goto end_rename;
- 		if (le32_to_cpu(old.parent_de->inode) != old.dir->i_ino)
- 			goto end_rename;
--		retval = -EMLINK;
--		if (!new.inode && new.dir != old.dir &&
--		    EXT4_DIR_LINK_MAX(new.dir))
--			goto end_rename;
- 		BUFFER_TRACE(old.dir_bh, "get_write_access");
- 		retval = ext4_journal_get_write_access(handle, old.dir_bh);
+ 		retval = ext4_rename_dir_prepare(handle, &old);
  		if (retval)
+ 			goto end_rename;
+ 	}
++	if (new.inode && S_ISDIR(new.inode->i_mode)) {
++		new.is_dir = true;
++		if (flags & RENAME_EXCHANGE) {
++			retval = ext4_rename_dir_prepare(handle, &new);
++			if (retval)
++				goto end_rename;
++		}
++	}
++
++	/*
++	 * Other than the special case of overwring a directory, parents' nlink
++	 * only needs to be modified if this is a cross directory rename.
++	 */
++	if (old.dir != new.dir && old.is_dir != new.is_dir) {
++		old.dir_nlink_delta = old.is_dir ? -1 : 1;
++		new.dir_nlink_delta = -old.dir_nlink_delta;
++		retval = -EMLINK;
++		if ((old.dir_nlink_delta > 0 && EXT4_DIR_LINK_MAX(old.dir)) ||
++		    (new.dir_nlink_delta > 0 && EXT4_DIR_LINK_MAX(new.dir)))
++			goto end_rename;
++	}
++
+ 	if (!new.bh) {
+ 		retval = ext4_add_entry(handle, new.dentry, old.inode);
+ 		if (retval)
+ 			goto end_rename;
+ 	} else {
++		u8 new_file_type = new.de->file_type;
+ 		retval = ext4_setent(handle, &new,
+ 				     old.inode->i_ino, old.de->file_type);
+ 		if (retval)
+ 			goto end_rename;
++
++		if (flags & RENAME_EXCHANGE) {
++			retval = ext4_setent(handle, &old,
++					     new.inode->i_ino, new_file_type);
++			if (retval)
++				goto end_rename;
++		}
+ 	}
+ 
+ 	/*
+@@ -3235,35 +3283,40 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	old.inode->i_ctime = ext4_current_time(old.inode);
+ 	ext4_mark_inode_dirty(handle, old.inode);
+ 
+-	/*
+-	 * ok, that's it
+-	 */
+-	ext4_rename_delete(handle, &old);
++	if (!(flags & RENAME_EXCHANGE)) {
++		/*
++		 * ok, that's it
++		 */
++		ext4_rename_delete(handle, &old);
+ 
+-	if (new.inode) {
+-		ext4_dec_count(handle, new.inode);
+-		new.inode->i_ctime = ext4_current_time(new.inode);
++		old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
++		ext4_update_dx_flag(old.dir);
+ 	}
+-	old.dir->i_ctime = old.dir->i_mtime = ext4_current_time(old.dir);
+-	ext4_update_dx_flag(old.dir);
+ 	if (old.dir_bh) {
+ 		retval = ext4_rename_dir_finish(handle, &old, new.dir->i_ino);
+ 		if (retval)
+ 			goto end_rename;
+-
+-		ext4_dec_count(handle, old.dir);
+-		if (new.inode) {
++	}
++	if (new.dir_bh) {
++		retval = ext4_rename_dir_finish(handle, &new, old.dir->i_ino);
++		if (retval)
++			goto end_rename;
++	}
++	ext4_update_dir_count(handle, &old);
++	ext4_update_dir_count(handle, &new);
++	if (!new.inode)
++		ext4_update_dx_flag(new.dir);
++	if (new.dir_nlink_delta || !new.inode)
++		ext4_mark_inode_dirty(handle, new.dir);
++	ext4_mark_inode_dirty(handle, old.dir);
++	if (!(flags & RENAME_EXCHANGE) && new.inode) {
++		ext4_dec_count(handle, new.inode);
++		new.inode->i_ctime = ext4_current_time(new.inode);
++		if (S_ISDIR(old.inode->i_mode)) {
+ 			/* checked empty_dir above, can't have another parent,
+ 			 * ext4_dec_count() won't work for many-linked dirs */
+ 			clear_nlink(new.inode);
+-		} else {
+-			ext4_inc_count(handle, new.dir);
+-			ext4_update_dx_flag(new.dir);
+-			ext4_mark_inode_dirty(handle, new.dir);
+ 		}
+-	}
+-	ext4_mark_inode_dirty(handle, old.dir);
+-	if (new.inode) {
+ 		ext4_mark_inode_dirty(handle, new.inode);
+ 		if (!new.inode->i_nlink)
+ 			ext4_orphan_add(handle, new.inode);
 -- 
 1.8.1.4
 
