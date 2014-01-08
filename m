@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaAHNtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:49:00 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59202 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185AbaAHNss (ORCPT
+	id S932344AbaAHNtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:49:06 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:58543 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314AbaAHNtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:48:48 -0500
+	Wed, 8 Jan 2014 08:49:00 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: computersforpeace@gmail.com, angus.clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v4 15/37] mtd: st_spi_fsm: Fetch boot-device from mode pins
-Date: Wed,  8 Jan 2014 13:46:58 +0000
-Message-Id: <1389188840-14306-16-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v4 23/37] mtd: st_spi_fsm: Supply the N25Qxxx specific read configurations
+Date: Wed,  8 Jan 2014 13:47:06 +0000
+Message-Id: <1389188840-14306-24-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
@@ -21,88 +21,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's important for us to determine which device was used to boot from in
-order to make some correct decisions surrounding Power Management. On
-each of the platforms which support the FSM this is communicated via
-a set of mode pins held in the system configuration area. This patch
-determine the boot device and stores the result.
+The N25Qxxx Serial Flash devices required different sequence
+configurations depending on whether they're running in 24bit (3Byte)
+or 32bit (4Byte) mode. We provide those here.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 41 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 53 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 961abfd..94840b5 100644
+index 5582df0..3b56b6e 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -14,7 +14,9 @@
-  */
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/regmap.h>
- #include <linux/platform_device.h>
-+#include <linux/mfd/syscon.h>
- #include <linux/mtd/mtd.h>
- #include <linux/sched.h>
- #include <linux/delay.h>
-@@ -243,6 +245,7 @@ struct stfsm {
+@@ -236,6 +236,15 @@
+ #define FLASH_CMD_READ4_1_1_4  0x6c
+ #define FLASH_CMD_READ4_1_4_4  0xec
+ 
++/*
++ * Flags to tweak operation of default read/write/erase routines
++ */
++#define CFG_READ_TOGGLE_32BIT_ADDR     0x00000001
++#define CFG_WRITE_TOGGLE_32BIT_ADDR    0x00000002
++#define CFG_WRITE_EX_32BIT_ADDR_DELAY  0x00000004
++#define CFG_ERASESEC_TOGGLE_32BIT_ADDR 0x00000008
++#define CFG_S25FL_CHECK_ERROR_FLAGS    0x00000010
++
+ struct stfsm {
+ 	struct device		*dev;
+ 	void __iomem		*base;
+@@ -244,6 +253,7 @@ struct stfsm {
+ 	struct mutex		lock;
  	struct flash_info       *info;
  
++	uint32_t                configuration;
  	uint32_t                fifo_dir_delay;
-+	bool                    booted_from_spi;
+ 	bool                    booted_from_spi;
+ 	bool                    reset_signal;
+@@ -438,6 +448,49 @@ static struct seq_rw_config default_write_configs[] = {
+ 	{0x00,			 0,			0, 0, 0, 0x00, 0, 0},
  };
  
- struct stfsm_seq {
-@@ -727,10 +730,48 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
- {
- 	struct stfsm *fsm = platform_get_drvdata(pdev);
- 	struct flash_info *info = fsm->info;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct regmap *regmap;
-+	uint32_t boot_device_reg;
-+	uint32_t boot_device_spi;
-+	uint32_t boot_device;     /* Value we read from *boot_device_reg */
-+	int ret;
++/*
++ * [N25Qxxx] Configuration
++ */
++#define N25Q_VCR_DUMMY_CYCLES(x)	(((x) & 0xf) << 4)
++#define N25Q_VCR_XIP_DISABLED		((uint8_t)0x1 << 3)
++#define N25Q_VCR_WRAP_CONT		0x3
 +
-+	/* Booting from SPI NOR Flash is the default */
-+	fsm->booted_from_spi = true;
++/* N25Q 3-byte Address READ configurations
++ *	- 'FAST' variants configured for 8 dummy cycles.
++ *
++ * Note, the number of dummy cycles used for 'FAST' READ operations is
++ * configurable and would normally be tuned according to the READ command and
++ * operating frequency.  However, this applies universally to all 'FAST' READ
++ * commands, including those used by the SPIBoot controller, and remains in
++ * force until the device is power-cycled.  Since the SPIBoot controller is
++ * hard-wired to use 8 dummy cycles, we must configure the device to also use 8
++ * cycles.
++ */
++static struct seq_rw_config n25q_read3_configs[] = {
++	{FLASH_FLAG_READ_1_4_4, FLASH_CMD_READ_1_4_4,	0, 4, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_4, FLASH_CMD_READ_1_1_4,	0, 1, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_2_2, FLASH_CMD_READ_1_2_2,	0, 2, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_2, FLASH_CMD_READ_1_1_2,	0, 1, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_FAST,	FLASH_CMD_READ_FAST,	0, 1, 1, 0x00, 0, 8},
++	{FLASH_FLAG_READ_WRITE, FLASH_CMD_READ,	        0, 1, 1, 0x00, 0, 0},
++	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
++};
++
++/* N25Q 4-byte Address READ configurations
++ *	- use special 4-byte address READ commands (reduces overheads, and
++ *        reduces risk of hitting watchdog reset issues).
++ *	- 'FAST' variants configured for 8 dummy cycles (see note above.)
++ */
++static struct seq_rw_config n25q_read4_configs[] = {
++	{FLASH_FLAG_READ_1_4_4, FLASH_CMD_READ4_1_4_4,	0, 4, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_4, FLASH_CMD_READ4_1_1_4,	0, 1, 4, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_2_2, FLASH_CMD_READ4_1_2_2,	0, 2, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_1_1_2, FLASH_CMD_READ4_1_1_2,	0, 1, 2, 0x00, 0, 8},
++	{FLASH_FLAG_READ_FAST,	FLASH_CMD_READ4_FAST,	0, 1, 1, 0x00, 0, 8},
++	{FLASH_FLAG_READ_WRITE, FLASH_CMD_READ4,	0, 1, 1, 0x00, 0, 0},
++	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
++};
++
+ static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
  
- 	/* Use device size to determine address width */
- 	if (info->sector_size * info->n_sectors > 0xFFFFFF)
- 		info->flags |= FLASH_FLAG_32BIT_ADDR;
-+
-+	regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
-+	if (!IS_ERR(regmap)) {
-+		ret = PTR_ERR(regmap);
-+		goto boot_device_fail;
-+	}
-+
-+	/* Where in the syscon the boot device information lives */
-+	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
-+	if (ret)
-+		goto boot_device_fail;
-+
-+	/* Boot device value when booted from SPI NOR */
-+	ret = of_property_read_u32(np, "st,boot-device-spi", &boot_device_spi);
-+	if (ret)
-+		goto boot_device_fail;
-+
-+	ret = regmap_read(regmap, boot_device_reg, &boot_device);
-+	if (ret)
-+		goto boot_device_fail;
-+
-+	if (boot_device != boot_device_spi)
-+		fsm->booted_from_spi = false;
-+
-+	return;
-+
-+boot_device_fail:
-+	dev_warn(&pdev->dev,
-+		 "failed to fetch boot device, assuming boot from SPI\n");
- }
- 
- static int stfsm_probe(struct platform_device *pdev)
+ static struct stfsm_seq stfsm_seq_read_jedec = {
 -- 
 1.8.3.2
 
