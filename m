@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449AbaAHVFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:05:30 -0500
-Received: from mout.gmx.net ([212.227.15.18]:63821 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565AbaAHVF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:05:28 -0500
-Message-ID: <52CDBD94.9090808@gmx.de>
-Date: Wed, 08 Jan 2014 22:05:24 +0100
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-CC: Andi Kleen <ak@linux.intel.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@iki.fi>, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH] fix crash when using XFS on loopback
-References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com> <20140106073549.GA25771@lge.com> <alpine.LRH.2.02.1401061237120.6190@file01.intranet.prod.int.rdu2.redhat.com> <20140107014159.GA26726@lge.com>
-In-Reply-To: <20140107014159.GA26726@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Y6OZSFfvhfs29SwvSOPfiZivBEUhfacd5xtrCpJmdvzbiALdIoJ
- Gwtl0UgQ0FiyLl+vcakZcxuf+QNO+/GrSZZ7ogVFaQA+b0NziXYq5VdUDfTC+6K7CTFDmNX
- p8dgkWdV8d68tnchlHE5YiI2guPInKIxChUKvePtsOxUiBvBDHtZVx5mNBRAhs4vOHo8caN
- CLhJ671XwX9xQeV6DJPhw==
+	id S1757444AbaAHVIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:08:45 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:17997 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaAHVIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 16:08:43 -0500
+X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Wed, 08 Jan 2014 16:08:43 EST
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Wed, 08 Jan 2014 16:08:42 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        David Garbett <David.Garbett@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "gregory.clement@free-electrons.com" 
+	<gregory.clement@free-electrons.com>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] arm: Add Arm Erratum 773769 for Large data RAM latency.
+In-reply-to: <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
+Message-id: <alpine.LFD.2.10.1401081600370.1851@knanqh.ubzr>
+References: <1389187991-26446-1-git-send-email-gautam.vivek@samsung.com>
+ <20140108143529.GB14122@mudshark.cambridge.arm.com>
+ <CAD=FV=WYe7Qk_XPs=FCeB7pbDz8AnG0txFcDyAQWWAU60vd-Sw@mail.gmail.com>
+ <20140108192028.GM27432@n2100.arm.linux.org.uk>
+ <CAD=FV=Ui8kec5vYA1jRT3EGNaUeWX-Ua5sUs+u3wdRz1oFnTzw@mail.gmail.com>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 02:41 AM, Joonsoo Kim wrote:
-> On Mon, Jan 06, 2014 at 12:54:22PM -0500, Mikulas Patocka wrote:
->> Hi
->>
->> On Mon, 6 Jan 2014, Joonsoo Kim wrote:
->>
->>> Hello,
->>>
->>> I'm surprised that this VM_BUG_ON() has not been triggered until now. It was
->>> introduced in 2007 by commit (b5fab14). Maybe there is no person who test
->>> with CONFIG_DEBUG_VM.
->> Last time I tried it, PS-RISC didn't work with CONFIG_DEBUG_VM at all.
->>
->>> There is one more bug report same as this.
->>> * possible regression on 3.13 when calling flush_dcache_page
->>>    (lkml.org/lkml/2013/12/12/255)
->> That link doesn't show anything.
->>
->>> As mentioned in the description of commit (b5fab14), slab object may not be
->>> properly aligned and use of page oriented function to this object can be
->>> dangerous. I searched the XFS code and found that they only try to allocate
->>> multiple of 512 bytes, so there is no problem for now. But, IMHO, it is better
->>> not to use slab objects for this purpose.
->> If slab debugging is enabled, kmalloc memory is not aligned.
->>
->> In XFS in xfs_buf_allocate_memory they test if the kmalloc memory crosses
->> page boundary - if it does, they free the kmalloc memory and allocate a
->> full page. Maybe this approach could still run into problems with some
->> bus-master adapters that assume alignment in hardware...
->>
->>
->> dm-bufio also does I/O to slab-allocated buffers, but it allocates the
->> object from slab (not kmalloc) with proper alignment.
-> Hello,
->
-> Okay. I see.
-> Thanks for good explanation.
->
->>> And I rapidly searched every callsites of page_mapping() and, IMHO, this
->>> patch would work correctly. But possibly reverting original commit is
->>> better solution.
->> Reverting the original commit wouldn't fix that VM_BUG_ON.
-> Initially, I thought that VM_BUG_ON() isn't wrong and it was better to remove
-> the callsites where do I/O with slab-allocated buffers, because doing I/O
-> with slab-allocated buffers needs a great care. So I didn't fully agreed with
-> your patch and recommended to revert original commit yesterday. After reverting
-> that, I would attempt to remove the callsites.
->
-> But, now, I change my thought, because of your explanation. There are already
-> some users to do I/O with slab-allocated buffers and they already did it with
-> some cares, so I guess that admitting this usage is more beneficial than
-> forbidding it.
->
-> Reviewed-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Wed, 8 Jan 2014, Doug Anderson wrote:
 
-I can queue up this patch in my next pull-request for the parisc-tree 
-which I plan to
-send tomorrow, unless people want this patch to go via mm-tree or 
-similiar...
-Please let me know.
+> Hi,
+> 
+> On Wed, Jan 8, 2014 at 11:20 AM, Russell King - ARM Linux
+> > No, we're saying to put the work-around in the boot loader, not the kernel.
+> 
+> Unfortunately the resume path of the firmware runs from Read Only 
+> firmware code (yes, it sucks), so it's not totally trivial to fix. It 
+> would be possible for someone to unscrew their write protect switch 
+> and update their RO firmware, but that doesn't help the average user.
 
-Helge
+[...]
+
+> I'd guess that the way forward is:
+> 
+> * Land kernel workaround locally in Chromium tree
+> 
+> * I'll try to land FW change locally in at least one Chromium branch.
+> If we were to get a new RO build ever (seems unlikely at this point)
+> it would be fixed for upstream kernels.  If we were to get a new RW
+> build (seems unlikely, but at least less unlikely) it would be fixed
+> if someone landed a kernel patch to save/restore this register across
+> suspend/resume.
+> 
+> * If Joe Upstream wants to run an upstream kernel on some type of
+> exynos5250 product (Samsung ARM Chromebook, HP Chromebook 11, Nexus 10
+> are the ones I know of) then he will deal with the small number of
+> crashes or figure out a solution.
+
+If Joe Upstream wants to run an upstream kernel, doesn't he have to 
+unscrew his write protect switch first, at which point the RO firmware 
+can be updated as well?
+
+
+Nicolas
