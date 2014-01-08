@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171AbaAHKVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 05:21:18 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755152AbaAHKVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 05:21:16 -0500
-From: Richard Weinberger <richard@nod.at>
-To: viro@zeniv.linux.org.uk
-Cc: dchinner@redhat.com, hch@lst.de, eric.dumazet@gmail.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/inode: No need to take ->i_lock right after alloc_inode()
-Date: Wed, 08 Jan 2014 11:21:13 +0100
-Message-ID: <1524545.iNFYXWHlaf@sandpuppy>
-User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <1387054495-31498-1-git-send-email-richard@nod.at>
-References: <1387054495-31498-1-git-send-email-richard@nod.at>
+	id S1755351AbaAHKZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 05:25:40 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:54635 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172AbaAHKZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 05:25:38 -0500
+Message-ID: <52CD279B.6020203@gmail.com>
+Date: Wed, 08 Jan 2014 11:25:31 +0100
+From: Richard Genoud <richard.genoud@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Wenyou Yang <wenyou.yang@atmel.com>
+CC: broonie@kernel.org, nicolas.ferre@atmel.com, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] spi: atmel: Refactor spi-atmel to use SPI framework queue
+References: <1389160188-4030-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1389160188-4030-1-git-send-email-wenyou.yang@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 14. Dezember 2013, 21:54:55 schrieb Richard Weinberger:
-> In all three cases, new_inode_pseudo(), iget_locked() and iget5_locked(),
-> we own the new inode exclusively at this point and therefore taking
-> ->i_lock to protect ->i_state/->i_hash against concurrent access is
-> superfluous.
+On 08/01/2014 06:49, Wenyou Yang wrote:
+> Replace the deprecated master->transfer with transfer_one_message()
+> and allow the SPI subsystem handle all the queuing of messages.
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 > ---
->  fs/inode.c | 6 ------
->  1 file changed, 6 deletions(-)
+> Hi Mark,
 > 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 4bcdad3..5f2a735 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -869,9 +869,7 @@ struct inode *new_inode_pseudo(struct super_block *sb)
->  	struct inode *inode = alloc_inode(sb);
+> The patch is based on for-next branch of
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git
 > 
->  	if (inode) {
-> -		spin_lock(&inode->i_lock);
->  		inode->i_state = 0;
-> -		spin_unlock(&inode->i_lock);
->  		INIT_LIST_HEAD(&inode->i_sb_list);
->  	}
->  	return inode;
-> @@ -1025,10 +1023,8 @@ struct inode *iget5_locked(struct super_block *sb,
-> unsigned long hashval, if (set(inode, data))
->  				goto set_failed;
-> 
-> -			spin_lock(&inode->i_lock);
->  			inode->i_state = I_NEW;
->  			hlist_add_head(&inode->i_hash, head);
-> -			spin_unlock(&inode->i_lock);
->  			inode_sb_list_add(inode);
->  			spin_unlock(&inode_hash_lock);
-> 
-> @@ -1092,10 +1088,8 @@ struct inode *iget_locked(struct super_block *sb,
-> unsigned long ino) old = find_inode_fast(sb, head, ino);
->  		if (!old) {
->  			inode->i_ino = ino;
-> -			spin_lock(&inode->i_lock);
->  			inode->i_state = I_NEW;
->  			hlist_add_head(&inode->i_hash, head);
-> -			spin_unlock(&inode->i_lock);
->  			inode_sb_list_add(inode);
->  			spin_unlock(&inode_hash_lock);
+> It is tested on sama5d3xek and at91sam9m10g45ek board.
 
-Any comments on this?
+And the bug I was seeing with SPI_IOC_MESSAGE (cf https://lkml.org/lkml/2013/10/8/269 )
+is now gone !
 
-Thanks,
-//richard
+Tested on at91sam9g35-ek
+
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
+
+
