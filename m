@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505AbaAHUgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:36:24 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49834 "EHLO
+	id S1757759AbaAHUjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:39:05 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:49870 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511AbaAHUgS (ORCPT
+	with ESMTP id S1752511AbaAHUg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:36:18 -0500
+	Wed, 8 Jan 2014 15:36:26 -0500
 From: "Nicholas A. Bellinger" <nab@daterainc.com>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-scsi <linux-scsi@vger.kernel.org>,
         Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception cases
-Date: Wed,  8 Jan 2014 20:15:45 +0000
-Message-Id: <1389212157-14540-3-git-send-email-nab@daterainc.com>
+Subject: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+Date: Wed,  8 Jan 2014 20:15:50 +0000
+Message-Id: <1389212157-14540-8-git-send-email-nab@daterainc.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com>
 References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
@@ -27,16 +27,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
-exception cases into transport_send_check_condition_and_sense().
-
-This includes:
-
-  LOGICAL BLOCK GUARD CHECK FAILED
-  LOGICAL BLOCK APPLICATION TAG CHECK FAILED
-  LOGICAL BLOCK REFERENCE TAG CHECK FAILED
-
-that used by DIF TYPE1 and TYPE3 failure cases.
+This patch updates sbc_emulate_readcapacity_16() to set
+P_TYPE and PROT_EN bits when DIF emulation is enabled by
+the backend device.
 
 Cc: Martin K. Petersen <martin.petersen@oracle.com>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -45,65 +38,25 @@ Cc: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
- include/target/target_core_base.h      |    3 +++
- 2 files changed, 33 insertions(+)
+ drivers/target/target_core_sbc.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 91953da..707ee17 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
- 		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
- 		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
- 		break;
-+	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
-+		/* CURRENT ERROR */
-+		buffer[0] = 0x70;
-+		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-+		/* ILLEGAL REQUEST */
-+		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-+		/* LOGICAL BLOCK GUARD CHECK FAILED */
-+		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-+		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
-+		break;
-+	case TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED:
-+		/* CURRENT ERROR */
-+		buffer[0] = 0x70;
-+		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-+		/* ILLEGAL REQUEST */
-+		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-+		/* LOGICAL BLOCK APPLICATION TAG CHECK FAILED */
-+		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-+		buffer[SPC_ASCQ_KEY_OFFSET] = 0x02;
-+		break;
-+	case TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED:
-+		/* CURRENT ERROR */
-+		buffer[0] = 0x70;
-+		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-+		/* ILLEGAL REQUEST */
-+		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-+		/* LOGICAL BLOCK REFERENCE TAG CHECK FAILED */
-+		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-+		buffer[SPC_ASCQ_KEY_OFFSET] = 0x03;
-+		break;
- 	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
- 	default:
- 		/* CURRENT ERROR */
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 15f402c..9a6e091 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -206,6 +206,9 @@ enum tcm_sense_reason_table {
- 	TCM_OUT_OF_RESOURCES			= R(0x12),
- 	TCM_PARAMETER_LIST_LENGTH_ERROR		= R(0x13),
- 	TCM_MISCOMPARE_VERIFY			= R(0x14),
-+	TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED	= R(0x15),
-+	TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED	= R(0x16),
-+	TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED	= R(0x17),
- #undef R
- };
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index 366b9bb..22599e8 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -106,6 +106,11 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
+ 	buf[9] = (dev->dev_attrib.block_size >> 16) & 0xff;
+ 	buf[10] = (dev->dev_attrib.block_size >> 8) & 0xff;
+ 	buf[11] = dev->dev_attrib.block_size & 0xff;
++	/*
++	 * Set P_TYPE and PROT_EN bits for DIF support
++	 */
++	if (dev->dev_attrib.pi_prot_type)
++		buf[12] = (dev->dev_attrib.pi_prot_type - 1) << 1 | 0x1;
  
+ 	if (dev->transport->get_lbppbe)
+ 		buf[13] = dev->transport->get_lbppbe(dev) & 0x0f;
 -- 
 1.7.10.4
 
