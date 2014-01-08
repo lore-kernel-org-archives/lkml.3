@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681AbaAHBlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 20:41:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44345 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097AbaAHBk5 (ORCPT
+	id S1754596AbaAHBoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 20:44:46 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37352 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627AbaAHBoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 20:40:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <52C80AA4.7070008@acm.org>
-References: <52C80A50.3000602@acm.org>
-	<52C80AA4.7070008@acm.org>
-Date: Wed, 8 Jan 2014 09:40:56 +0800
-Message-ID: <CACVXFVNfu6JigB4-PXxjFF=GEUOuPK8wNY-20uS5d5hEWxURpg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] firmware loader: Add sparse annotation
-From: Ming Lei <ming.lei@canonical.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Jan 2014 20:44:37 -0500
+From: John Tobias <john.tobias.ph@gmail.com>
+To: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: John Tobias <john.tobias.ph@gmail.com>
+Subject: [PATCH] ARM: imx: select ARCH_HAS_CPUFREQ for iMX6SL
+Date: Tue,  7 Jan 2014 17:44:04 -0800
+Message-Id: <1389145444-61816-1-git-send-email-john.tobias.ph@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 4, 2014 at 9:20 PM, Bart Van Assche <bvanassche@acm.org> wrote:
-> Avoid that sparse reports the following warning on __fw_free_buf():
->
-> drivers/base/firmware_class.c:230:9: warning: context imbalance in '__fw_free_buf' - unexpected unlock
->
-> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-> Cc: Ming Lei <ming.lei@canonical.com>
+iMX6SL now supported the cpufreq scaling by re-using the imx6q-cpufreq driver.
+By adding it, the user has the capability to select the said driver without
+depending it to SOC_IMX6Q.
 
-Bart, thanks.
+Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
+---
+ arch/arm/mach-imx/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Acked-by: Ming Lei <ming.lei@canonical.com>
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 7a6e6f7..704e5ae 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -808,6 +808,7 @@ config SOC_IMX6Q
+ 
+ config SOC_IMX6SL
+ 	bool "i.MX6 SoloLite support"
++	select ARCH_HAS_CPUFREQ
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_775420
+ 	select ARM_GIC
+-- 
+1.8.3.2
 
-
-Thanks,
---
-Ming Lei
