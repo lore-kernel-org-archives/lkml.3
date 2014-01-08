@@ -1,145 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242AbaAHNJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:09:58 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:48118 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbaAHNJy (ORCPT
+	id S1756308AbaAHNKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:10:32 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:64820 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200AbaAHNKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:09:54 -0500
+	Wed, 8 Jan 2014 08:10:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <2078358.4WniMksEuS@amdc1032>
-References: <1388408823-4963-1-git-send-email-yuvaraj.cd@samsung.com>
-	<11600750.UKZ7EpemHS@amdc1032>
-	<CAKuRcOJVQ9U_4rpUf-6+=nbO=UoNkkTU5ttmRqfWxi4_nh7fag@mail.gmail.com>
-	<2078358.4WniMksEuS@amdc1032>
-Date: Wed, 8 Jan 2014 18:39:52 +0530
-Message-ID: <CAKuRcOK73rpH_qJu-tNRjsBNA20B0_w7EiA-Xw6vVTc-arygkA@mail.gmail.com>
-Subject: Re: [PATCH V4 1/2] Phy: Exynos: Add Exynos5250 sata phy driver
-From: Yuvaraj Kumar <yuvaraj.cd@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Jingoo Han <jg1.han@samsung.com>, sunil joshi <joshi@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>, linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140108124240.GH27937@dhcp22.suse.cz>
+References: <20140106112422.GA27602@dhcp22.suse.cz>
+	<CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
+	<20140106141827.GB27602@dhcp22.suse.cz>
+	<CAA_GA1csMEhSYmeS7qgDj7h=Xh2WrsYvirkS55W4Jj3LTHy87A@mail.gmail.com>
+	<20140107102212.GC8756@dhcp22.suse.cz>
+	<20140107173034.GE8756@dhcp22.suse.cz>
+	<CAA_GA1fN5p3-m40Mf3nqFzRrGcJ9ni9Cjs_q4fm1PCLnzW1cEw@mail.gmail.com>
+	<20140108100859.GC27937@dhcp22.suse.cz>
+	<CAA_GA1emcHt+9zOqAKHPoXLd-ofyfYyuQn9fcdLOox5k7BLgww@mail.gmail.com>
+	<20140108124240.GH27937@dhcp22.suse.cz>
+Date: Wed, 8 Jan 2014 21:10:29 +0800
+Message-ID: <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
+Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
+From: Bob Liu <lliubbo@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 7, 2014 at 7:52 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
->
-> Hi,
->
-> On Thursday, January 02, 2014 07:03:23 PM Yuvaraj Kumar wrote:
->> On Tue, Dec 31, 2013 at 9:00 PM, Bartlomiej Zolnierkiewicz
->> <b.zolnierkie@samsung.com> wrote:
->
->> >> @@ -8,3 +8,4 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)   += phy-exynos-mipi-video.o
->> >>  obj-$(CONFIG_PHY_MVEBU_SATA)         += phy-mvebu-sata.o
->> >>  obj-$(CONFIG_OMAP_USB2)                      += phy-omap-usb2.o
->> >>  obj-$(CONFIG_TWL4030_USB)            += phy-twl4030-usb.o
->> >> +obj-$(CONFIG_EXYNOS5250_SATA_PHY)    += sata_phy_exynos5250.o exynos5250_phy_i2c.o
+On Wed, Jan 8, 2014 at 8:42 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Wed 08-01-14 20:09:30, Bob Liu wrote:
+>> On Wed, Jan 8, 2014 at 6:08 PM, Michal Hocko <mhocko@suse.cz> wrote:
+>>
 >> >
->> > Will this compile/work without I2C support?
->> No.I missed this.It will not compile without I2C support.
->> How about  below change in drivers/phy/Kconfig ?
->> config EXYNOS5250_SATA_PHY
->> select I2C
->> select I2C_S3C2410
->
-> Fine with me.
->
->> > CONFIG_EXYNOS5250_SATA_PHY doesn't require it currently.
->> I didnt get this. what it doesn't require?
->
-> It doesn't require I2C.  If you add above I2C selects it will be OK.
->
->> >> +struct i2c_driver sataphy_i2c_driver = {
+>> > If I was debugging this I would simply add printk into page_address_in_vma
+>> > error paths.
 >> >
->> > Keeping it global together with sataphy_attach_i2c_client() is not very
->> > nice.  I've talked with our local device tree guru (a.k.a. Tomasz Figa)
->> > about this and it may be that this i2c driver is not even necessary.
->> Can you elaborate more on this?
+>> > Anyway, I think that at least hugetlbfs part should be reverted because
+>> > it might paper over real bugs. Although the migration would fail for
+>> > such hugetlb page we should catch that a weird page was tried to be
+>> > migrated. What about the patch below?
+>>
+>> Looks good to me. But we need to confirm whether our assumption is right.
 >
-> The usage of the global i2c driver is not a proper solution.
+> Which assumption you have in mind? non-linear mapping or failing on
+> anon_vma or f_mapping checks?
 >
-> i2c driver should register itself in the driver init function
-do you mean i2c-s3c2410.c driver?
-> (which is not present currently) instead of being registered by
-> the SATA PHY driver.
+
+The assumption that the original BUG_ON(!vma) was triggered by
+non-linear mapping.
+
+>> Sasha, could you please have a test with Michal's patch?
 >
-> The SATA PHY driver should find i2c client device using DT.
->
-> sataphy_attach_i2c_client() should then be removed.
->
->> > If you manage to extract i2c adapter and address data from the device
->> > tree (using proper of_* methods) they can be used instead of i2c client
->> > data in the SATA PHY driver.
->> I think the above is true, if the complete SATA PHY controller sits on
->> the i2c adapter.
->> But in Exynos5250 case,only the few configurations ( CMU and TRSV
->> blocks ) SATA PHY
->> are done through I2C(channel 9). Correct me if i am wrong.
->
-> Well, it shouldn't matter if all or only some of the configuration of
-> the SATA PHY controller is done through i2c.
->
-> Anyway, how about another idea -> adding a new phandle of i2c client
-> device to SATA PHY DT entry and using DT in the SATA PHY driver to
-> find i2c client device?
->
-> i.e. "samsung,exynos-sataphy-i2c-phandle" property in SATA PHY
-> controller DT entry can point at existing "sata-phy@38" sataphy i2c
-> client DT entry (by adding new label to it, i.e. "sata_phy_i2c").
->
-> Such new phandle can be used first to find the DT device node of i2c
-> device (by using of_parse_phandle(), if it returns NULL the error
-> should be returned) and then later to find proper i2c client device
-> (by using of_find_i2c_device_by_node(), if it returns NULL deferred
-> probing should be requested by returning -EPROBE_DEFER).
-I can get the i2c_client structure,but how the client driver binding
-happens to registered device?
-Currently with this approach i2c client device is being registered but
-cleint driver could not able to bind with the device.
-[    0.082680] i2c i2c-9: adapter [s3c2410-i2c] registered
-[    0.082691] i2c i2c-9: of_i2c: walking child nodes
-[    0.082696] i2c i2c-9: of_i2c: register /i2c@121D0000/sata-phy@38
-[    0.082794] i2c 9-0038: uevent
-[    0.082845] i2c i2c-9: client [exynos-sataphy-i2c] registered with
-bus id 9-0038
-[    0.082851] s3c-i2c 121d0000.i2c: i2c-9: S3C I2C adapter
->
-> i2c@121D0000 {
->         ...
->         sata_phy_i2c: sata-phy@38 {
->                 ...
->         };
->         ...
-> };
->
-> sata_phy: sata-phy@12170000 {
->         ...
->         samsung,exynos-sataphy-i2c-phandle = <&sata_phy_i2c>;
->         ...
-> };
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
+> I obviously doesn't have anything against testing but we should really
+> focus on the original issue. This patch simply restores hugetlb code
+
+Oh, I see your point.
+Yes, I agree that your patch should be merged and if the BUG_ON() is
+triggered(which is unlikely) again.
+We can open another thread and analysis the root cause.
+
+>> > ---
+>> > From 2d61421f26a3b63b4670d71b7adc67e2191b6157 Mon Sep 17 00:00:00 2001
+>> > From: Michal Hocko <mhocko@suse.cz>
+>> > Date: Wed, 8 Jan 2014 10:57:41 +0100
+>> > Subject: [PATCH] mm: new_vma_page cannot see NULL vma for hugetlb pages
+>> >
+>> > 11c731e81bb0 (mm/mempolicy: fix !vma in new_vma_page()) has removed
+>> > BUG_ON(!vma) from new_vma_page which is partially correct because
+>> > page_address_in_vma will return EFAULT for non-linear mappings and at
+>> > least shared shmem might be mapped this way.
+>> >
+>> > The patch also tried to prevent NULL ptr for hugetlb pages which is not
+>> > correct AFAICS because hugetlb pages cannot be mapped as VM_NONLINEAR
+>> > and other conditions in page_address_in_vma seem to be legit and catch
+>> > real bugs.
+>> >
+>> > This patch restores BUG_ON for PageHuge to catch potential issues when
+>> > the to-be-migrated page is not setup properly.
+>> >
+>> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
+
+>> > ---
+>> >  mm/mempolicy.c | 6 ++----
+>> >  1 file changed, 2 insertions(+), 4 deletions(-)
+>> >
+>> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+>> > index 9e8d2d86978a..f3f51464a23b 100644
+>> > --- a/mm/mempolicy.c
+>> > +++ b/mm/mempolicy.c
+>> > @@ -1199,10 +1199,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
+>> >         }
+>> >
+>> >         if (PageHuge(page)) {
+>> > -               if (vma)
+>> > -                       return alloc_huge_page_noerr(vma, address, 1);
+>> > -               else
+>> > -                       return NULL;
+>> > +               BUG_ON(vma)
+>> > +               return alloc_huge_page_noerr(vma, address, 1);
+>> >         }
+>> >         /*
+>> >          * if !vma, alloc_page_vma() will use task or system default policy
+>> > --
+>> > 1.8.5.2
+>> >
+
+-- 
+Regards,
+--Bob
