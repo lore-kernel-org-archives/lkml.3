@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885AbaAHKP2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 05:15:28 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39686 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224AbaAHKPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 05:15:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,623,1384329600"; 
-   d="scan'208";a="463406326"
-Date: Wed, 8 Jan 2014 12:22:24 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Chris Ball <cjb@laptop.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Rob Landley <rob@landley.net>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 4/6] gpio / ACPI: register to ACPI events automatically
-Message-ID: <20140108102224.GO2494@intel.com>
-References: <1385460350-17543-1-git-send-email-mika.westerberg@linux.intel.com>
- <1385460350-17543-5-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdZhw5At_X-mNkb3TmQ2n1hXc0FGWYAbkAVgxvzCw=xgtw@mail.gmail.com>
+	id S1755950AbaAHKPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 05:15:43 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:37344 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224AbaAHKPh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 05:15:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZhw5At_X-mNkb3TmQ2n1hXc0FGWYAbkAVgxvzCw=xgtw@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20131108111152.GL2493@sirena.org.uk>
+References: <1383816846-10561-1-git-send-email-richard.genoud@gmail.com> <20131108111152.GL2493@sirena.org.uk>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 8 Jan 2014 11:15:13 +0100
+Message-ID: <CACQ1gAhsKeQUB_vN9iJDbBsJ+7CiOZH8O=ZPg96pP8qRDHf15g@mail.gmail.com>
+Subject: Re: [PATCH] spi: atmel: add support for changing message transfer speed
+To: Mark Brown <broonie@kernel.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Wenyou Yang <Wenyou.Yang@atmel.com>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 06:50:00PM +0100, Linus Walleij wrote:
-> On Tue, Nov 26, 2013 at 11:05 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> 
-> > Instead of asking each driver to register to ACPI events we can just call
-> > acpi_gpiochip_register_interrupts() for each chip that has an ACPI handle.
-> > The function checks chip->to_irq and if it is set to NULL (a GPIO driver
-> > that doesn't do interrupts) the function does nothing.
-> >
-> > We also add the a new header drivers/gpio/gpiolib.h that is used for
-> > functions internal to gpiolib and add ACPI GPIO chip registering functions
-> > to that header.
-> >
-> > Once that is done we can remove call to acpi_gpiochip_register_interrupts()
-> > from its only user, pinctrl-baytrail.c
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Two questions:
-> 
-> - Can you please rebase patches 3-6 on my GPIO tree "devel" branch?
+2013/11/8 Mark Brown <broonie@kernel.org>:
+> On Thu, Nov 07, 2013 at 10:34:06AM +0100, Richard Genoud wrote:
+>> The only speed available was max_speed (the maximum speed declared for a
+>> device).
+>> This patch adds the support for spi_tranfer->speed_hz parameter.
+>> We can now set a different speed for each spi message.
+>
+> Applied, thanks.
 
-Yes.
-
-> - Can this patch be placed first? It does not seem to depend on the
->   others, to to push dependent patches to the end of the series.
-
-Sure - I'll post a rebased version in a moment.
+It seems that this patch got lost (or I missed something).
+As it will now conflict with Wenyou patch "Refactor spi-atmel to use
+SPI framework queue",
+should I resent it based on wenyou's path ?
+or on broonie/spi.git for-next and wenyou will rebase his patch on mine ?
