@@ -1,127 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040AbaAHNwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:52:25 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:58935 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932314AbaAHNtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:49:08 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, angus.clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v4 28/37] mtd: st_spi_fsm: Supply a busy wait for post-write status
-Date: Wed,  8 Jan 2014 13:47:11 +0000
-Message-Id: <1389188840-14306-29-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
-References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+	id S1757104AbaAHNww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:52:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53994 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932252AbaAHNtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:49:04 -0500
+Date: Wed, 8 Jan 2014 14:49:03 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
+Message-ID: <20140108134903.GI27937@dhcp22.suse.cz>
+References: <CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
+ <20140106141827.GB27602@dhcp22.suse.cz>
+ <CAA_GA1csMEhSYmeS7qgDj7h=Xh2WrsYvirkS55W4Jj3LTHy87A@mail.gmail.com>
+ <20140107102212.GC8756@dhcp22.suse.cz>
+ <20140107173034.GE8756@dhcp22.suse.cz>
+ <CAA_GA1fN5p3-m40Mf3nqFzRrGcJ9ni9Cjs_q4fm1PCLnzW1cEw@mail.gmail.com>
+ <20140108100859.GC27937@dhcp22.suse.cz>
+ <CAA_GA1emcHt+9zOqAKHPoXLd-ofyfYyuQn9fcdLOox5k7BLgww@mail.gmail.com>
+ <20140108124240.GH27937@dhcp22.suse.cz>
+ <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we write data to the Serial Flash chip we'll wait a predetermined
-period of time before giving up. During that period of time we poll the
-status register until completion.
+On Wed 08-01-14 21:10:29, Bob Liu wrote:
+[...]
+> >> > From 2d61421f26a3b63b4670d71b7adc67e2191b6157 Mon Sep 17 00:00:00 2001
+> >> > From: Michal Hocko <mhocko@suse.cz>
+> >> > Date: Wed, 8 Jan 2014 10:57:41 +0100
+> >> > Subject: [PATCH] mm: new_vma_page cannot see NULL vma for hugetlb pages
+> >> >
+> >> > 11c731e81bb0 (mm/mempolicy: fix !vma in new_vma_page()) has removed
+> >> > BUG_ON(!vma) from new_vma_page which is partially correct because
+> >> > page_address_in_vma will return EFAULT for non-linear mappings and at
+> >> > least shared shmem might be mapped this way.
+> >> >
+> >> > The patch also tried to prevent NULL ptr for hugetlb pages which is not
+> >> > correct AFAICS because hugetlb pages cannot be mapped as VM_NONLINEAR
+> >> > and other conditions in page_address_in_vma seem to be legit and catch
+> >> > real bugs.
+> >> >
+> >> > This patch restores BUG_ON for PageHuge to catch potential issues when
+> >> > the to-be-migrated page is not setup properly.
+> >> >
+> >> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Reviewed-by: Bob Liu <bob.liu@oracle.com>
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 65 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
+Thanks!
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index c64f741..c2ee7e3 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -236,8 +236,18 @@
- #define FLASH_CMD_READ4_1_1_4  0x6c
- #define FLASH_CMD_READ4_1_4_4  0xec
- 
-+/* Status register */
-+#define FLASH_STATUS_BUSY      0x01
-+#define FLASH_STATUS_WEL       0x02
-+#define FLASH_STATUS_BP0       0x04
-+#define FLASH_STATUS_BP1       0x08
-+#define FLASH_STATUS_BP2       0x10
-+#define FLASH_STATUS_SRWP0     0x80
-+#define FLASH_STATUS_TIMEOUT   0xff
-+
- #define FLASH_PAGESIZE         256			/* In Bytes    */
- #define FLASH_PAGESIZE_32      (FLASH_PAGESIZE / 4)	/* In uint32_t */
-+#define FLASH_MAX_BUSY_WAIT    (300 * HZ)	/* Maximum 'CHIPERASE' time */
- 
- /*
-  * Flags to tweak operation of default read/write/erase routines
-@@ -517,6 +527,22 @@ static struct stfsm_seq stfsm_seq_read_jedec = {
- 		    SEQ_CFG_STARTSEQ),
- };
- 
-+static struct stfsm_seq stfsm_seq_read_status_fifo = {
-+	.data_size = TRANSFER_SIZE(4),
-+	.seq_opc[0] = (SEQ_OPC_PADS_1 |
-+		       SEQ_OPC_CYCLES(8) |
-+		       SEQ_OPC_OPCODE(FLASH_CMD_RDSR)),
-+	.seq = {
-+		STFSM_INST_CMD1,
-+		STFSM_INST_DATA_READ,
-+		STFSM_INST_STOP,
-+	},
-+	.seq_cfg = (SEQ_CFG_PADS_1 |
-+		    SEQ_CFG_READNOTWRITE |
-+		    SEQ_CFG_CSDEASSERT |
-+		    SEQ_CFG_STARTSEQ),
-+};
-+
- static struct stfsm_seq stfsm_seq_erase_sector = {
- 	/* 'addr_cfg' configured during initialisation */
- 	.seq_opc = {
-@@ -692,6 +718,45 @@ static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
- 	return 0;
- }
- 
-+static uint8_t stfsm_wait_busy(struct stfsm *fsm)
-+{
-+	struct stfsm_seq *seq = &stfsm_seq_read_status_fifo;
-+	unsigned long deadline;
-+	uint32_t status;
-+
-+	/* Use RDRS1 */
-+	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			   SEQ_OPC_CYCLES(8) |
-+			   SEQ_OPC_OPCODE(FLASH_CMD_RDSR));
-+
-+	/* Load read_status sequence */
-+	stfsm_load_seq(fsm, seq);
-+
-+	/* Repeat until busy bit is deasserted, or timeout */
-+	deadline = jiffies + FLASH_MAX_BUSY_WAIT;
-+	do {
-+		cond_resched();
-+
-+		stfsm_wait_seq(fsm);
-+
-+		stfsm_read_fifo(fsm, &status, 4);
-+		if ((status & FLASH_STATUS_BUSY) == 0)
-+			return 0;
-+
-+		/* Restart */
-+		writel(seq->seq_cfg, fsm->base + SPI_FAST_SEQ_CFG);
-+
-+	} while (!time_after_eq(jiffies, deadline));
-+
-+	stfsm_read_fifo(fsm, &status, 4);
-+	if ((status & FLASH_STATUS_BUSY) == 0)
-+		return 0;
-+
-+	dev_err(fsm->dev, "timeout on wait_busy\n");
-+
-+	return -EIO;
-+}
-+
- static int stfsm_wrvcr(struct stfsm *fsm, uint8_t data)
- {
- 	struct stfsm_seq *seq = &stfsm_seq_wrvcr;
+> >> > ---
+> >> >  mm/mempolicy.c | 6 ++----
+> >> >  1 file changed, 2 insertions(+), 4 deletions(-)
+> >> >
+> >> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> >> > index 9e8d2d86978a..f3f51464a23b 100644
+> >> > --- a/mm/mempolicy.c
+> >> > +++ b/mm/mempolicy.c
+> >> > @@ -1199,10 +1199,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
+> >> >         }
+> >> >
+> >> >         if (PageHuge(page)) {
+> >> > -               if (vma)
+> >> > -                       return alloc_huge_page_noerr(vma, address, 1);
+> >> > -               else
+> >> > -                       return NULL;
+> >> > +               BUG_ON(vma)
+
+That was meant to say BUG_ON(!vma) of course ;) but I guess your
+reviewed-by still applies so I will post it to Andrew.
+
+> >> > +               return alloc_huge_page_noerr(vma, address, 1);
+> >> >         }
+> >> >         /*
+> >> >          * if !vma, alloc_page_vma() will use task or system default policy
+> >> > --
+> >> > 1.8.5.2
+> >> >
+> 
+> -- 
+> Regards,
+> --Bob
+
 -- 
-1.8.3.2
-
+Michal Hocko
+SUSE Labs
