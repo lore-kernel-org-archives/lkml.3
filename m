@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395AbaAHLzt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:55:49 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:47282 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279AbaAHLzq (ORCPT
+	id S1756454AbaAHL4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:56:19 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:56121 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982AbaAHL4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:55:46 -0500
+	Wed, 8 Jan 2014 06:56:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <1389177657-29266-2-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1389177657-29266-4-git-send-email-mika.westerberg@linux.intel.com>
 References: <1389177657-29266-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1389177657-29266-2-git-send-email-mika.westerberg@linux.intel.com>
-Date: Wed, 8 Jan 2014 12:55:46 +0100
-Message-ID: <CACRpkdZPh70Q_dX-MRmp=a3b8wvUpc66+ZAfnf4+Ox_tDKvx9w@mail.gmail.com>
-Subject: Re: [PATCH v4 1/4] gpio / ACPI: register to ACPI events automatically
+	<1389177657-29266-4-git-send-email-mika.westerberg@linux.intel.com>
+Date: Wed, 8 Jan 2014 12:56:15 +0100
+Message-ID: <CACRpkdbvpJN9FaUF9HQtaA0Kjn9FbCYVTyQegOW9DM-rKVq9ag@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] gpio / ACPI: get rid of acpi_gpio.h
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Mika Westerberg <mika.westerberg@linux.intel.com>
 Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
@@ -36,20 +36,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Wed, Jan 8, 2014 at 11:40 AM, Mika Westerberg
 <mika.westerberg@linux.intel.com> wrote:
 
-> Instead of asking each driver to register to ACPI events we can just call
-> acpi_gpiochip_register_interrupts() for each chip that has an ACPI handle.
-> The function checks chip->to_irq and if it is set to NULL (a GPIO driver
-> that doesn't do interrupts) the function does nothing.
+> Now that all users of acpi_gpio.h have been moved to use either the GPIO
+> descriptor interface or to the internal gpiolib.h we can get rid of
+> acpi_gpio.h entirely.
 >
-> We also add the a new header drivers/gpio/gpiolib.h that is used for
-> functions internal to gpiolib and add ACPI GPIO chip registering functions
-> to that header.
->
-> Once that is done we can remove call to acpi_gpiochip_register_interrupts()
-> from its only user, pinctrl-baytrail.c
+> Once this is done the only interface to get GPIOs to drivers enumerated
+> from ACPI namespace is the descriptor based interface.
 >
 > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
 Patch applied.
 
