@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006AbaAHEJK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 23:09:10 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11823 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852AbaAHEJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 23:09:06 -0500
-Message-ID: <52CCCF24.4080300@huawei.com>
-Date: Wed, 8 Jan 2014 12:08:04 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-CC: <akpm@linux-foundation.org>, <jiang.liu@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <iamjoonsoo.kim@lge.com>, <hannes@cmpxchg.org>,
-        <tangchen@cn.fujitsu.com>, <tj@kernel.org>, <toshi.kani@hp.com>
-Subject: Re: [PATCH 2/2] mm: free memblock.memory in free_all_bootmem
-References: <1389107774-54978-1-git-send-email-phacht@linux.vnet.ibm.com> <1389107774-54978-3-git-send-email-phacht@linux.vnet.ibm.com>
-In-Reply-To: <1389107774-54978-3-git-send-email-phacht@linux.vnet.ibm.com>
+	id S1755085AbaAHEKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 23:10:02 -0500
+Received: from ozlabs.org ([203.10.76.45]:48301 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755011AbaAHEJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Jan 2014 23:09:53 -0500
+Message-ID: <1389154189.2076.5.camel@concordia>
+Subject: Re: [PATCH] powerpc: Fix alignment of secondary cpu spin vars
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Olof Johansson <olof@lixom.net>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, chzigotzky@xenosoft.de,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anton Blanchard <anton@samba.org>
+Date: Wed, 08 Jan 2014 15:09:49 +1100
+In-Reply-To: <20140103081219.GA10233@quad.lixom.net>
+References: <1388264507-5100-1-git-send-email-olof@lixom.net>
+	 <CAOesGMhHw-G-T7ZfNsVU92ftOucCNe9shNJtA7SWzqX=dQBQng@mail.gmail.com>
+	 <CAOesGMgsY0R6KBXXH_ibTBYb1i_auWESwnoDkvi-esb58Pc+2A@mail.gmail.com>
+	 <20140103081219.GA10233@quad.lixom.net>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/7 23:16, Philipp Hachtmann wrote:
-
-> When calling free_all_bootmem() the free areas under memblock's
-> control are released to the buddy allocator. Additionally the
-> reserved list is freed if it was reallocated by memblock.
-> The same should apply for the memory list.
+On Fri, 2014-01-03 at 00:12 -0800, Olof Johansson wrote:
+> On Thu, Jan 02, 2014 at 11:56:04PM -0800, Olof Johansson wrote:
 > 
-> Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-> ---
->  include/linux/memblock.h |  1 +
->  mm/memblock.c            | 12 ++++++++++++
->  mm/nobootmem.c           |  7 ++++++-
->  3 files changed, 19 insertions(+), 1 deletion(-)
+> > This makes things interesting though. The BE/LE trampoline code
+> > assumes at least 3 consecutive instructions. What was the reasoning
+> > behind entering the kernel LE instead of keeping the old boot protocol
+> > and just switching to LE once kernel is loaded? Is it actually used on
+> > some platforms or is this just a theoretical thing?
 > 
-> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-> index 77c60e5..d174922 100644
-> --- a/include/linux/memblock.h
-> +++ b/include/linux/memblock.h
-> @@ -52,6 +52,7 @@ phys_addr_t memblock_find_in_range_node(phys_addr_t start, phys_addr_t end,
->  phys_addr_t memblock_find_in_range(phys_addr_t start, phys_addr_t end,
->  				   phys_addr_t size, phys_addr_t align);
->  phys_addr_t get_allocated_memblock_reserved_regions_info(phys_addr_t *addr);
-> +phys_addr_t get_allocated_memblock_memory_regions_info(phys_addr_t *addr);
->  void memblock_allow_resize(void);
->  int memblock_add_node(phys_addr_t base, phys_addr_t size, int nid);
->  int memblock_add(phys_addr_t base, phys_addr_t size);
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 53e477b..1a11d04 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -271,6 +271,18 @@ phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
->  			  memblock.reserved.max);
->  }
->  
-> +phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
-> +					phys_addr_t *addr)
-> +{
-> +	if (memblock.memory.regions == memblock_memory_init_regions)
-> +		return 0;
-> +
-> +	*addr = __pa(memblock.memory.regions);
-> +
-> +	return PAGE_ALIGN(sizeof(struct memblock_region) *
-> +			  memblock.memory.max);
-> +}
-> +
->  /**
->   * memblock_double_array - double the size of the memblock regions array
->   * @type: memblock type of the regions array being doubled
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 3a7e14d..83f36d3 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -122,11 +122,16 @@ static unsigned long __init free_low_memory_core_early(void)
->  	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
->  		count += __free_memory_core(start, end);
->  
-> -	/* free range that is used for reserved array if we allocate it */
-> +	/* Free memblock.reserved array if it was allocated */
->  	size = get_allocated_memblock_reserved_regions_info(&start);
->  	if (size)
->  		count += __free_memory_core(start, start + size);
->  
-> +	/* Free memblock.memory array if it was allocated */
-> +	size = get_allocated_memblock_memory_regions_info(&start);
-> +	if (size)
-> +		count += __free_memory_core(start, start + size);
-> +
+> Actually, adding a little hack that zeroes out the memory once we're done
+> executing it will work just fine too. I know this is sort of icky, but maybe
+> it'll be good enough for now?
+> 
+> Of course, main worry is that this is just hiding some latent NULL deref in
+> the kernel now... :-/
 
-Hi Philipp,
+Wow, that would have to come close to winning the grossest-hack-in-arch-powerpc
+award :)
 
-For some archs, like arm64, would use memblock.memory after system booting,
-so we can not simply released to the buddy allocator, maybe need !defined(CONFIG_ARCH_DISCARD_MEMBLOCK).
+Have you tried changing the value at 8 to point to a reserved page?
 
-#ifdef CONFIG_HAVE_ARCH_PFN_VALID
-int pfn_valid(unsigned long pfn)
-{
-	return memblock_is_memory(pfn << PAGE_SHIFT);
-}
-EXPORT_SYMBOL(pfn_valid);
+Some other possibilities:
 
-Thanks,
-Jianguo Wu
+ * Change the #define so FIXUP_ENDIAN is empty for PASEMI, that would mean
+   you'd only be able to boot pasemi_defconfig.
+ * Move the hack into FIXUP_ENDIAN
 
->  	return count;
->  }
->  
-
+cheers
 
 
