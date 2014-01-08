@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300AbaAHM2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 07:28:09 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:36286 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755684AbaAHM2G (ORCPT
+	id S1756373AbaAHMaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 07:30:12 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48664 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755290AbaAHMaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 07:28:06 -0500
-Message-ID: <52CD4451.9010409@vmware.com>
-Date: Wed, 08 Jan 2014 13:28:01 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 8 Jan 2014 07:30:08 -0500
+Date: Wed, 8 Jan 2014 12:30:02 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        lee.jones@linaro.org, robh+dt@kernel.org, lgirdwood@gmail.com,
+        sameo@linux.intel.com, sbkim73@samsung.com, patches@linaro.org
+Message-ID: <20140108123002.GY31886@sirena.org.uk>
+References: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
+ <1389162390-4582-2-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: Rashika Kheria <rashika.kheria@gmail.com>
-CC: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        josh@joshtriplett.org, dri-devel@lists.freedesktop.org,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: Re: [PATCH 78/85] drivers: gpu: Mark function as static in ttm_bo.c
-References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com> <8e6973505071300c3d011272d5498597fd24a387.1389018325.git.rashika.kheria@gmail.com>
-In-Reply-To: <8e6973505071300c3d011272d5498597fd24a387.1389018325.git.rashika.kheria@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pt/BdA48mw0ySYRj"
+Content-Disposition: inline
+In-Reply-To: <1389162390-4582-2-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] regulator: Add support for S2MPA01 regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 78-80/85
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
 
-Queued for ttm-next.
-Thanks.
+--Pt/BdA48mw0ySYRj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thomas
+On Wed, Jan 08, 2014 at 11:56:29AM +0530, Sachin Kamat wrote:
 
-On 01/06/2014 05:42 PM, Rashika Kheria wrote:
-> Mark function as static because it is not used outside file
-> drm/ttm/ttm_bo.c.
->
-> This eliminates the following warning in drm/ttm/ttm_bo.c:
-> drivers/gpu/drm/ttm/ttm_bo.c:960:5: warning: no previous prototype for ‘ttm_bo_move_buffer’ [-Wmissing-prototypes]
->
-> Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  drivers/gpu/drm/ttm/ttm_bo.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-> index 07e02c4..a066513 100644
-> --- a/drivers/gpu/drm/ttm/ttm_bo.c
-> +++ b/drivers/gpu/drm/ttm/ttm_bo.c
-> @@ -957,7 +957,7 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
->  }
->  EXPORT_SYMBOL(ttm_bo_mem_space);
->  
-> -int ttm_bo_move_buffer(struct ttm_buffer_object *bo,
-> +static int ttm_bo_move_buffer(struct ttm_buffer_object *bo,
->  			struct ttm_placement *placement,
->  			bool interruptible,
->  			bool no_wait_gpu)
+> +	if (!iodev->dev->of_node) {
+> +		if (pdata) {
+> +			goto common_reg;
+> +		} else {
+> +			dev_err(pdev->dev.parent,
+> +				"Platform data or DT node not supplied\n");
+> +			return -ENODEV;
+> +		}
+> +	}
+
+The driver shouldn't need these to probe, it should be able to start in
+read only mode with no configuration.
+
+> +static int __init s2mpa01_pmic_init(void)
+> +{
+> +	return platform_driver_register(&s2mpa01_pmic_driver);
+> +}
+> +subsys_initcall(s2mpa01_pmic_init);
+
+module_platform_driver().
+
+--Pt/BdA48mw0ySYRj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSzUTGAAoJELSic+t+oim9F7oQAIMU9mZu44894P1CKlL/x3io
+1kRJBv20T76gg/CIge4Y9m0Bq7I3ztbUT+Muv/tmfUZZ3E5nPLgePZXYEFhkxjRD
+jEdKkRVUJ4LkQkbakU9cT1nVikBRcbNgC/AWvFZwUlQCZXTcKZNfKrcv/ml1Lk4n
+5hbvN2W4LGYJjIqE/PQaMI/yMPkBvt8fBqQSwxQqJ/Uibqw172VUCBrzdkV9GcTG
+6hPy5bDC43Ws/ZHQNKgzouAw+5/i04EdJ8c7cNzGmXUVVScXV5kN5zMpTf2bb+bY
+e8TWRsqMTTRZSgdyVk0V/4z3Q3+z48GXVA50TLcsZ5+AGWSebHcPHUkLqhzXArEJ
+mF7ApjFtvklhiL1c+yVBHEC8Oj1Rx4gSkgc6QvuWdFdfnh38GuTwiDsBRvLSpSu0
+/wuTen3PEHw3C5wU+62rMmS/ktJBt4Xmn/cW6OsvnF+zsc1zhT3j63j6fbUzJS8d
+Y8d31RcjZxgawnHtlhp3VINiDwGGE4xKA+l8nZ5PzZZftCo+x7qP2/DjK8ebk4pP
+Lq+4IdInRXyF8F3k078kLm2xEk6y+mLrDGHOJM24nOV5SzmjDrQgkFrbK4gGLWr9
+BvsPfW1lgtpV/gkf9uYngpbcFd/H6qwVKJGXM/jSB7T/W/rs1SnRw9RuBdQgATnX
+2c0mzd7NP5Mm/aLc9N/Y
+=31zK
+-----END PGP SIGNATURE-----
+
+--Pt/BdA48mw0ySYRj--
