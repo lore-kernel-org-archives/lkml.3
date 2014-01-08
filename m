@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405AbaAHUzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:55:38 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54343 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101AbaAHUzf (ORCPT
+	id S1757428AbaAHU6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:58:15 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59558 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750839AbaAHU6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:55:35 -0500
+	Wed, 8 Jan 2014 15:58:13 -0500
+Date: Wed, 8 Jan 2014 20:57:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: x86@kernel.org, linuxppc-dev@lists.ozlabs.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robh@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ashok Raj <ashok.raj@intel.com>
+Subject: Re: [PATCH RFC 2/3] ARM: kernel: add support for cpu cache
+	information
+Message-ID: <20140108205754.GN27432@n2100.arm.linux.org.uk>
+References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com> <1389209168-17189-3-git-send-email-sudeep.holla@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <CACUGKYPZefRPr73Wq+700qeFiDYHmLr4kSFCvkYRojHoE4ZxxA@mail.gmail.com>
-References: <1389210991-23688-1-git-send-email-john.tobias.ph@gmail.com>
-	<1389211403.678513817@f123.i.mail.ru>
-	<CAOMZO5DR0YGc=V5PJ6xy5PNwa9LCVfnS9gbRh1yW9wLo_oTEtw@mail.gmail.com>
-	<CACUGKYPZefRPr73Wq+700qeFiDYHmLr4kSFCvkYRojHoE4ZxxA@mail.gmail.com>
-Date: Wed, 8 Jan 2014 12:55:33 -0800
-Message-ID: <CACUGKYNLZzy+Pc+LLYmRrdgBUaOJV+wnEtT7qJH6aZyVBXYSJA@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: imx: add select on ARCH_MXC for cpufreq support
-From: John Tobias <john.tobias.ph@gmail.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Alexander Shiyan <shc_work@mail.ru>, Shawn Guo <shawn.guo@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389209168-17189-3-git-send-email-sudeep.holla@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I recompiled the kernel using the said config and it works. But, if
-you have any other suggestion it would be great.
+On Wed, Jan 08, 2014 at 07:26:07PM +0000, Sudeep Holla wrote:
+> +#if __LINUX_ARM_ARCH__ < 7 /* pre ARMv7 */
+> +
+> +#define MAX_CACHE_LEVEL		1	/* Only 1 level supported */
+> +#define CTR_CTYPE_SHIFT		24
+> +#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
+> +
+> +static inline unsigned int get_ctr(void)
+> +{
+> +	unsigned int ctr;
+> +	asm volatile ("mrc p15, 0, %0, c0, c0, 1" : "=r" (ctr));
+> +	return ctr;
+> +}
+> +
+> +static enum cache_type get_cache_type(int level)
+> +{
+> +	if (level > MAX_CACHE_LEVEL)
+> +		return CACHE_TYPE_NOCACHE;
+> +	return get_ctr() & CTR_CTYPE_MASK ?
+> +		CACHE_TYPE_SEPARATE : CACHE_TYPE_UNIFIED;
 
-Regards,
+So, what do we do for CPUs that don't implement the CTR?  Just return
+random rubbish based on decoding the CPU Identity register as if it
+were the cache type register?
 
-john
-
-On Wed, Jan 8, 2014 at 12:45 PM, John Tobias <john.tobias.ph@gmail.com> wrote:
-> Hi Fabio,
->
-> How about select HAVE_IMX_ANATOP if SOC_IMX6Q || SOC_IMX6SL
->
-> Regards,
->
-> john
->
-> On Wed, Jan 8, 2014 at 12:33 PM, Fabio Estevam <festevam@gmail.com> wrote:
->> On Wed, Jan 8, 2014 at 6:03 PM, Alexander Shiyan <shc_work@mail.ru> wrote:
->>
->>> Maybe better:
->>> select HAVE_IMX_ANATOP if ARCH_MULTI_V6_V7
->>
->> mx31, mx35, mx51 and mx53 do not have this ANATOP block.
->>
->> Regards,
->>
->> Fabio Estevam
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
