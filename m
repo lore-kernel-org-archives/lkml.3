@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588AbaAHIfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:35:46 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:59698 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033AbaAHIfj (ORCPT
+	id S1755639AbaAHIhk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:37:40 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52208 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050AbaAHIhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:35:39 -0500
-Message-ID: <1389170133.10763.6.camel@umadbro>
-Subject: Re: [PATCH] comedi: Humusoft MF634 and MF624 DAQ cards driver
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        pisa@cmp.felk.cvut.cz
-Date: Wed, 08 Jan 2014 09:35:33 +0100
-In-Reply-To: <20140108074701.GP5443@mwanda>
-References: <1389133497-10149-1-git-send-email-lisovy@gmail.com>
-	 <1389133497-10149-2-git-send-email-lisovy@gmail.com>
-	 <20140108074701.GP5443@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Jan 2014 03:37:34 -0500
+Date: Wed, 8 Jan 2014 09:37:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>
+Subject: Re: [RFC] sched: CPU topology try
+Message-ID: <20140108083716.GA7572@laptop.programming.kicks-ass.net>
+References: <1387372431-2644-1-git-send-email-vincent.guittot@linaro.org>
+ <52B87149.4010801@arm.com>
+ <CAKfTPtDmb1fa8PUcrqEGaoQLxoPBddu-Yn_oS8KwsCJJWJzQug@mail.gmail.com>
+ <20140106163123.GN31570@twins.programming.kicks-ass.net>
+ <CAKfTPtDind8HGJwu0odSnNdRpaxp3VB3JWw3eADAp4bL4Ex-Mw@mail.gmail.com>
+ <20140107132220.GZ31570@twins.programming.kicks-ass.net>
+ <20140107141059.GY3694@twins.programming.kicks-ass.net>
+ <20140107154154.GH2936@e103034-lin>
+ <20140107204951.GD2480@laptop.programming.kicks-ass.net>
+ <52CD0D12.6020108@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CD0D12.6020108@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan;
+On Wed, Jan 08, 2014 at 04:32:18PM +0800, Alex Shi wrote:
+> In my old power aware scheduling patchset, I had tried the 95 to 99. But
+> all those values will lead imbalance when we test while(1) like cases.
+> like in a 24LCPUs groups, 24*5% > 1. So, finally use 100% as overload
+> indicator. And in testing 100% works well to find overload since few
+> system service involved. :)
 
-On Wed, 2014-01-08 at 10:47 +0300, Dan Carpenter wrote:
-> On Tue, Jan 07, 2014 at 11:24:57PM +0100, Rostislav Lisovy wrote:
-> > This patch adds Comedi driver for Humusoft MF634 (PCIe) and
-> > MF624 (PCI) data acquisition cards. The legacy card Humusoft
-> > MF614 is not supported. More info about the cards may be found
-> > at http://humusoft.cz/produkty/datacq/
-> > The driver was tested with both cards. Everything seems to work
-> > properly. Just the basic functionality of the card (DIO, ADC, DAC)
-> > is supported by this driver.
-> > 
-> > Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
-> > 
-> >  create mode 100644 drivers/staging/comedi/drivers/mf6x4.c
-> > 
-> 
-> There should be a "---" after the Signed-off-by line and before the
-> diffstat "create mode 100644 drivers/staging/comedi/drivers/mf6x4.c"
-> line.  Otherwise, the diffstat gets included in the changelog.
-> 
-> Signed-off-by: Rostislav Lisovy <lisovy@gmail.com>
-> ---
-> create mode 100644 drivers/staging/comedi/drivers/mf6x4.c
-> 
-
-You are right, my mistake. But even though there should be v3 patch
-because I just realized there is an unnecessary comment in
-mf6x4_detach() and MF6X4_DAC_CHANN_CNT constant is no more used.
-
-Regards;
-Rostislav Lisovy
-
-
+Ah indeed, so 100% it is ;-)
