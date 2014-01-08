@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaAHVMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 16:12:41 -0500
-Received: from mail-we0-f195.google.com ([74.125.82.195]:41008 "EHLO
-	mail-we0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaAHVMj (ORCPT
+	id S932249AbaAHVNj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 16:13:39 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:39355 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219AbaAHVNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:12:39 -0500
+	Wed, 8 Jan 2014 16:13:37 -0500
+Date: Wed, 8 Jan 2014 13:14:54 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Chris Mason <clm@fb.com>
+Cc: "muthu.lkml@gmail.com" <muthu.lkml@gmail.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lkp@linux.intel.com" <lkp@linux.intel.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Message-ID: <20140108211454.GC7291@kmo-pixel>
+References: <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
+ <1389126617.23310.19.camel@ret.masoncoding.com>
+ <CAFR8ueezG4U5ULcp0ayhY690RUE7280UL68d55+tGCqDW9A1Kg@mail.gmail.com>
+ <1389210102.23310.31.camel@ret.masoncoding.com>
+ <CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
+ <1389212231.23310.33.camel@ret.masoncoding.com>
+ <CAFR8uec00zThzs5Q21ySG90shQHVxbRZDGrYBPrdn1KbNCQ_vw@mail.gmail.com>
+ <1389214325.23310.34.camel@ret.masoncoding.com>
+ <CAFR8uefj7=x149nAQOwX5pw-5OCXnS6oYYF8xZkQVrdmPJBD6g@mail.gmail.com>
+ <1389215536.23310.37.camel@ret.masoncoding.com>
 MIME-Version: 1.0
-Date: Wed, 8 Jan 2014 21:47:31 +0100
-Message-ID: <CALS90i9nMs6jMoH2O5S68sPF=juYOV2sfMAwaBekL8ccz3eSOQ@mail.gmail.com>
-Subject: I have a very lucrative Business
-From: "Dr. Musa Hamed" <drmusahamed01@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389215536.23310.37.camel@ret.masoncoding.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATTN: Dear,
+On Wed, Jan 08, 2014 at 09:11:49PM +0000, Chris Mason wrote:
+> On Wed, 2014-01-08 at 13:01 -0800, Muthu Kumar wrote:
+> > On Wed, Jan 8, 2014 at 12:51 PM, Chris Mason <clm@fb.com> wrote:
+> > > On Wed, 2014-01-08 at 12:40 -0800, Muthu Kumar wrote:
+> > >> On Wed, Jan 8, 2014 at 12:16 PM, Chris Mason <clm@fb.com> wrote:
+> > >> > On Wed, 2014-01-08 at 11:54 -0800, Muthu Kumar wrote:
+> > >> >> Chris,
+> > >> >>
+> > >> >> [    8.336061] WARNING: CPU: 0 PID: 0 at fs/bio.c:1778 bio_endio+0xbe/0x100()
+> > >> >> [    8.336062] bio_endio: bio for (unknown) without endio
+> > >> >>
+> > >> >> This is my recent change to avoid memory leak in bio_endio. But I
+> > >> >> think the problem is higher up, most likely bio_endio is called twice
+> > >> >> on the same bio (which was freed before).
+> > >> >>
+> > >> >
+> > >> > I think these are just two separate problems.  Lets ignore the WARN_ON
+> > >> > for now.
+> > >> >
+> > >>
+> > >> Not really... the BUG that is triggered:
+> > >>
+> > >> kernel BUG at fs/bio.c:523!
+> > >>
+> > >> It is in bio_put() (added to bio_endio() as part of recent change)
+> > >> which gets an already freed bio.
+> > >>
+> > >
+> > > Oh! I see.  Let me try with that one reverted.  Thanks!
+> > >
+> > > -chris
+> > >
+> > 
+> > But, like I said, problem is in different place. I am running a "dd"
+> > on ext4 fs for a while now, but didn't hit the problem. Any idea to
+> > repro locally? I would also suggest running just the for-3.1/core to
+> > isolate the issue.
+> 
+> Just reverting that change fixes it for me.  Jens mentioned it was
+> broken for on-stack bios.
 
-I am Dr. Musa Hamed Executive Director of the Bank of Africa
-Plc B.O.A,Cotonou Benin Rep. I have a very lucrative Business proposal
-worth of 21,500,000.00 USD.
+On-stack bios? I don't recall ever coming across such a thing, who what
+where why?
 
-An Iraqi named Hamadi Hashem a business man made a fixed deposit of
-21,500,000.00 USD . Upon maturity several notices was sent to him,
-even during the war,eleven years ago (2003) up till this date. Again
-after the war another notification was sent and still no response came
-from him. it has been found out that Hamadi Hashem and his family had
-been killed during the war in bomb blast that hit their home at
-Mukaradeeb where his personal oil well was. I am prepared to split the
-funds with you 50%:50%.By placing you as the NEXT OF KIN to his
-deposit.
-
-Should you be interested in doing this deal with me, please send me
-the following information:
-
-(1) Your Name
-(2) Resident Address
-(3) Your Occupation
-(4) Your Phone Number
-(5) Date of Birth
-(6) Resident Country
-
-And I will prefer you to reach me privately and securely on my personal
-email address: dr.musahamed30@yahoo.fr
-Tel: +229-988-400-97
-
-I will provide you with further information as soon as I hear
-positively from you.
-
-Regards,
-Dr. Musa Hamed
+i would expect on stack bios to work though, i'm really curious how it
+was broken
