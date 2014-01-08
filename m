@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253AbaAHRH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:07:28 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:48651 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828AbaAHRHZ (ORCPT
+	id S1757260AbaAHRKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:10:04 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:25677 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756531AbaAHRJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:07:25 -0500
+	Wed, 8 Jan 2014 12:09:58 -0500
+X-Env-Sender: anthony.olech.opensource@diasemi.com
+X-Msg-Ref: server-2.tower-180.messagelabs.com!1389200994!28356548!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.16; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201401081709.s08H9nMr038265@swsrvapps-02.lan>
+From: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Date: Wed, 8 Jan 2014 16:58:10 +0000
+Subject: [PATCH V1] input: fix memory leak in da9052 touchscreen driver
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Huqiu Liu <liuhq11@mails.tsinghua.edu.cn>,
+        David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhMqwC9zx6GKY+QXzy7s+u4ZapyPyLBz-ANgS8qMTDNyhg@mail.gmail.com>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<20140107090938.GF3182@lee--X1>
-	<CAOMwXhMqwC9zx6GKY+QXzy7s+u4ZapyPyLBz-ANgS8qMTDNyhg@mail.gmail.com>
-Date: Wed, 8 Jan 2014 17:07:24 +0000
-X-Google-Sender-Auth: f4WJdlNYHHTAaNOFcT5rbXVpVvQ
-Message-ID: <CAOMwXhN7JzCZZVtNTHPAhrdFkM4z10J634ctBPR2u+tRUOtSqw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Add GPIO support for the MAX6650/6651 ICs
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In other words, I really do not know what format you prefer for design review.
+The touchscreen component driver for the da9052/3 Dialog PMICs
+leaks memory by not freeing the input device in the remove call.
 
-Apparently, not as previously requested, so please tell me what format
-one _should_ submit design reviews in.
+This patch matches the existing call to input_alloc_device()
+in da9052_ts_probe() to a new call to input_free_device() in
+da9052_ts_remove()
 
-I personally still think that submitting "pseudo-code" is a good way
-of it if it is clearly marked so like in my case, so that it does not
-mislead anyone that I accidentally submit a clearly broken change for
-an integration candidate.
+Suggested-by: Huqiu Liu <liuhq11@mails.tsinghua.edu.cn>
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+---
+This patch is relative to linux-next repository tag next-20140108
 
-I hope it is understood that I am asking about design reviews before
-the lengthy implementation to potentially avoid a lot of additional
-work on both sides with writing and reviewing an implementation with a
-"wrong" approach...
+Many thanks to Huqiu Liu who found the bug.
 
-Cheers ...
+ drivers/input/touchscreen/da9052_tsi.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
+index ab64d58..43a69d1 100644
+--- a/drivers/input/touchscreen/da9052_tsi.c
++++ b/drivers/input/touchscreen/da9052_tsi.c
+@@ -320,6 +320,7 @@ err_free_mem:
+ static int  da9052_ts_remove(struct platform_device *pdev)
+ {
+ 	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
++	struct input_dev *input_dev = tsi->dev;
+ 
+ 	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
+ 
+@@ -328,6 +329,7 @@ static int  da9052_ts_remove(struct platform_device *pdev)
+ 
+ 	input_unregister_device(tsi->dev);
+ 	kfree(tsi);
++	input_free_device(input_dev);
+ 
+ 	return 0;
+ }
+-- 
+end-of-patch for input: fix memory leak in da9052 touchscreen driver V1
+
