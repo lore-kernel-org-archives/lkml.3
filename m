@@ -1,87 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960AbaAHHaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:30:03 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46544 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbaAHH3z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:29:55 -0500
+	id S1755099AbaAHHci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:32:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48023 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753753AbaAHHca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 02:32:30 -0500
+Message-ID: <52CCFF0C.7070704@suse.de>
+Date: Wed, 08 Jan 2014 08:32:28 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <52CB1EB2.60705@wwwdotorg.org>
-References: <CAGHPBZogJzOUTM=WooJmNd92=QCivWa9W+c9Co1NJd-sgRTB1A@mail.gmail.com>
-	<52CB1EB2.60705@wwwdotorg.org>
-Date: Wed, 8 Jan 2014 15:29:54 +0800
-Message-ID: <CAGHPBZq7T_467p+8srLFL5Mj9zvdsK1HVXuJT1tFgKCyfK5hug@mail.gmail.com>
-Subject: Re: Confusion about Pinctrl and GPIO
-From: Rongrong Cao <caorr1980@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org
+To: Chen Gang <gang.chen.5i5j@gmail.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: James Hogan <james.hogan@imgtec.com>, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
+ instead of operator '%' for u64
+References: <52B4F837.1010403@gmail.com>  <1387680997.5567.91.camel@haakon3.risingtidesystems.com>  <52B6AE19.80401@gmail.com> <1387781487.5567.147.camel@haakon3.risingtidesystems.com> <52B90111.5050203@gmail.com>
+In-Reply-To: <52B90111.5050203@gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-Thank you very much!
-I understood now!
+On 12/24/2013 04:35 AM, Chen Gang wrote:
+> On 12/23/2013 02:51 PM, Nicholas A. Bellinger wrote:
+>> On Sun, 2013-12-22 at 17:17 +0800, Chen Gang wrote:
+>>> On 12/22/2013 10:56 AM, Nicholas A. Bellinger wrote:
+>>>> Hi Chen,
+>>>>
+>>>> On Sat, 2013-12-21 at 10:08 +0800, Chen Gang wrote:
+>>>>> In kernel, need use div64_u64_rem() instead of operator '%' for u64, or
+>>>>> can not pass compiling (with allmodconfig under metag):
+>>>>>
+>>>>>     MODPOST 2909 modules
+>>>>>   ERROR: "__umoddi3" [drivers/target/target_core_mod.ko] undefined!
+>>>>>
+>>>>> Also need u64 type cast for u32 variable multiply u32 variable, or will
+>>>>> cause type overflow issue.
+>>>>>
+>>>>>
+>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>> ---
+>>>>>  drivers/target/target_core_alua.c | 3 ++-
+>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>>
+>>>>
+>>>> FYI, this unsigned long long division in core_alua_state_lba_dependent()
+>>>> was fixed for 32-bit in linux-next >= 12192013 code.
+>>>>
+>>>
+>>> OK, thanks.
+>>>
+>>> The related fix patch changed "start_lba = lba % ..." to "start_lba =
+>>> lba / ...", and also assumed "segment_size * segment_mult" is still
+>>> within u32 (can not cause type over flow).
+>>>
+>>> I guess the original author already knew about them, and intended to do
+>>> like that (if not, please let me know, thanks).
+>>>
+>>
+>> Sorry, your correct that the original code is using modulo division to
+>> calculate start_lba.
+>>
+> 
+> Oh, that's all right, (in fact, don't need sorry), I am not quite
+> familiar with the details, so need related member help check it.  :-)
+> 
+>> Hannes, can you please double check this below..?
+>>
+> 
+> Please help check when have time, thanks.
+> 
+I would even convert segment_size and segment_mult to u64,
+to ensure no overflows occur:
 
-2014/1/7 Stephen Warren <swarren@wwwdotorg.org>:
-> On 12/25/2013 10:18 PM, 曹荣荣 wrote:
->
->> I noticed that Stephen<swarren@nvidia.com> submitted a patch for pinctrl:
->> http://www.gossamer-threads.com/lists/linux/kernel/1500890?do=post_view_threaded
->>
->> In this patch, Stephen said, "When an SoC muxes pins in a group, it's
->> quite possible for the group to contain e.g. 6 pins, but only 4 of
->> them actually be needed by the HW module that's mux'd to them. In this
->> case, the other 2 pins could be used as GPIOs. However, pinctrl marks
->> all the pins within the group as in-use by the selected mux function.
->> To allow the expected gpiolib interaction, separate the concepts of
->> pin ownership into two parts: One for the mux function and one for
->> GPIO usage. Finally, allow those two ownerships to exist in parallel.
->> "
->>
->> I agree that gpiolib should be able to use the two idle pins as GPIO,
->> but after apply this patch, gpiolib can also request the 4 pins used
->> by HW module succesfully, and this will override the settings of the 4
->> pins for HW module.
->
-> Yes, that's true.
->
-> The solution is: don't do that.
->
->> Let me talk again about the example described by Stephen. If actually
->> only 4 pins of the group which contains 6 pins are needed by HW
->> module, then why does the group be defined to contain 6 pins? I think
->> the group should be defined only containing 4 pins rather than 6 pins,
->> then the other 2 idle pins can be used for any other purpose.
->
-> It all depends on what you mean by group...
->
-> A lot of HW has a mux setting per pin. In this case, it would make sense
-> for the pinctrl driver to expose a separate group for each pin, and for
-> the pinctrl mapping table (or DT content) to contain an entry for each
-> individual pin setting that pin to whatever mux function was relevant.
->
-> So in this case, yes, it'd make sense in most cases to disallow pins
-> with a defined/selected mux setting from being used as a GPIO. However,
-> even in this case, we can't ban dual mux/GPIO usage completely, since
-> e.g. an I2C driver might want the I2C HW module to drive the pins most
-> of the time, but still need to acquire the pins as GPIO to implement
-> some kind of manual bit-banging e.g. to implement a "bus unstick" algorithm.
->
-> Some other HW has mux settings that affect multiple pins at once. Tegra
-> is an example. In this case, there's a single register bit that defines
-> the mux functions for e.g. 6 pins. In this case, there *must* be a
-> single pinctrl group definition that encompasses all those 6 pins, since
-> that's how the HW works. However, the GPIO-vs-non-GPIO setting on Tegra
-> at least is still per pin, hence the need for the patch of mine that you
-> mentioned above.
->
-> Finally, some people want to use pinctrl groups to represent something
-> higher level than HW that has a mux bit for a group of pins rather than
-> per-pin. In that case, you also may need GPIO/mux sharing of a pin, for
-> similar reasons to the case where the HW muxing really does operate in
-> groups.
+diff --git a/drivers/target/target_core_alua.c
+b/drivers/target/target_core_alua
+.c
+index 9b1856d..54b1e52 100644
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -477,8 +477,7 @@ static inline int core_alua_state_lba_dependent(
+        u8 *alua_ascq)
+ {
+        struct se_device *dev = cmd->se_dev;
+-       u32 segment_size, segment_mult, sectors;
+-       u64 lba;
++       u64 segment_size, segment_mult, sectors, lba;
+
+        /* Only need to check for cdb actually containing LBAs */
+        if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB))
+
+
+Other than that the sector_div() patch is correct.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
