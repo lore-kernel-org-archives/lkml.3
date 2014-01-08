@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795AbaAHSFw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 13:05:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51054 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaAHSFt (ORCPT
+	id S1756008AbaAHSGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 13:06:52 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48857 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaAHSGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 13:05:49 -0500
-Message-ID: <52CD9366.2090200@ti.com>
-Date: Wed, 8 Jan 2014 13:05:26 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 8 Jan 2014 13:06:50 -0500
+Date: Wed, 8 Jan 2014 18:06:38 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        kuninori.morimoto.gx@renesas.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Message-ID: <20140108180638.GS31886@sirena.org.uk>
+References: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
+ <1389164556-2728-3-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86/mm: memblock: switch to use NUMA_NO_NODE
-References: <20140107022559.GE14055@localhost> <1389198198-31027-1-git-send-email-grygorii.strashko@ti.com> <52CD8A9A.3010608@ti.com>
-In-Reply-To: <52CD8A9A.3010608@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fxRVKzQA1vU7LXPu"
+Content-Disposition: inline
+In-Reply-To: <1389164556-2728-3-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/4] ASoC: fsl: Add VF610 simple audio card widgets
+ driver.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014 12:27 PM, Grygorii Strashko wrote:
-> Hi,
-> 
-> On 01/08/2014 06:23 PM, Grygorii Strashko wrote:
->> Update X86 code to use NUMA_NO_NODE instead of MAX_NUMNODES while
->> calling memblock APIs, because memblock API is changed to use NUMA_NO_NODE and
->> will produce warning during boot otherwise.
->>
->> See:
->>   https://lkml.org/lkml/2013/12/9/898
->>
-> [...]
-> 
-> or, there are other 3 patches from Sergey Senozhatsky, which actually fix the same warnings:
->  https://lkml.org/lkml/2014/1/6/277 - [PATCH -next] x86 memtest: use NUMA_NO_NODE in do_one_pass()
->  https://lkml.org/lkml/2014/1/6/280 - [PATCH -next] e820: use NUMA_NO_NODE in memblock_find_dma_reserve()
->  http://comments.gmane.org/gmane.linux.kernel/1623429 - [PATCH -next] check: use NUMA_NO_NODE in setup_bios_corruption_check()
-> 
-Either one should be fine though $subject patch would be my personal preference.
 
-Andrew,
-This should kill at least 3 known memblock users with MAX_NUMNODES. Feel
-free to pick the patch(s) as per your preference.
+--fxRVKzQA1vU7LXPu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Santosh
+On Wed, Jan 08, 2014 at 03:02:35PM +0800, Xiubo Li wrote:
+> This is the SGTL5000 codec based off-CODEC widgets supports.
+>=20
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  sound/soc/fsl/Kconfig                     | 25 ++++++++++++++++++
+>  sound/soc/fsl/Makefile                    |  3 +++
+>  sound/soc/fsl/snd-soc-simple-card-vf610.c | 44 +++++++++++++++++++++++++=
+++++++
 
+If we're needing to add explict code for a simple audio card that seems
+to defeat the point of using the simple audio card - we may as well just
+have an explicit machine driver.
 
+--fxRVKzQA1vU7LXPu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSzZOqAAoJELSic+t+oim9AMEP+gOTno/3kRg86B9X/GutOMiZ
+tM3hIh61ss2mkgIIDrqrtwKEvNWUziaHF/Pb0fdf1mT2zASdc2iq18ziYgnijUUG
+9EK1RyEMmsWs7EDfXSDGw8W9rBvWd+GtGvnJzQfmA5WHpwLYbgJSjEYHU/MvZdGp
+T1ZedJ6hpW/Vud4FsM/2MV0DD/Z2+ioZAYzuasaiSGiBebSVYBa/FhNRaclSQfGh
+iD8j7xBSoVfW0bLHMq/KKe4GH6Lu+FF0KFgNoNuzDClpOBhHb/i9x7eHWKJSsfSU
+qwgD2t1/fFnjMZ1HhMlxvlUGJrjmP3ev+ZWZyzHI5lruHj0uEP9z8F9TGq3hubCg
+VsiLFPL1azTFa+8LzGNv+AlZodq6+gpl9xnXDps3FvyoxiXrzxwOme7nv4iByS1P
+1chJgFWyk7QYp671VhWUtAo9lJzSlwH4vn66tVWeCaZZO//MWUFaTVq9koH1y8Ek
+7bUKTpD2ZI5XnVULy0lLdkcQEF74E6OmOYW585OLG0qZ4NW2vH6PPBjQOnq/shpp
+yfOd/g0/J1yY/JltSMgTeH+a0NwBVXEauSfp97/QTrKplOj8dziH5/wUd9UKIdnO
+rR/VqAnIqnv/Ud6aYdPwUY3jL9gycjEVUlC9n3qUeekkUNrQO2Ndyv1IkRSZNPG8
+LhbDaGdmWSyhsmoqP2vN
+=XK6P
+-----END PGP SIGNATURE-----
+
+--fxRVKzQA1vU7LXPu--
