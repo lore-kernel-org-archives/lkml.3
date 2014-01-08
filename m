@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597AbaAHLlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 06:41:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755106AbaAHLlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:41:12 -0500
-Date: Wed, 8 Jan 2014 19:41:37 +0800
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: README: update about .tar.xz format
-Message-ID: <20140108114137.GA19456@dhcp-16-126.nay.redhat.com>
+	id S1755717AbaAHLmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 06:42:39 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:35894 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaAHLmh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 06:42:37 -0500
+Date: Wed, 8 Jan 2014 11:42:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] ASoC/MFD: twl4030 codec local register cache
+ removal
+Message-ID: <20140108114232.GI19974@lee--X1>
+References: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1388755676-16036-1-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel.org do not provide .bz2 for downloading, see below:
-https://www.kernel.org/happy-new-year-and-good-bye-bzip2.html
+Mark,
 
-Thus update README about using xz format.
+Enjoy!
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- README |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
 
---- linux.orig/README
-+++ linux/README
-@@ -66,7 +66,7 @@ INSTALLING the kernel source:
- 
-    or
- 
--     bzip2 -dc linux-3.X.tar.bz2 | tar xvf -
-+     xz -dc linux-3.X.tar.xz | tar xvf -
- 
-    Replace "X" with the version number of the latest kernel.
- 
-@@ -76,7 +76,7 @@ INSTALLING the kernel source:
-    whatever the kernel-du-jour happens to be.
- 
-  - You can also upgrade between 3.x releases by patching.  Patches are
--   distributed in the traditional gzip and the newer bzip2 format.  To
-+   distributed in the traditional gzip and the newer xz format.  To
-    install by patching, get all the newer patch files, enter the
-    top level directory of the kernel source (linux-3.X) and execute:
- 
-@@ -84,7 +84,7 @@ INSTALLING the kernel source:
- 
-    or
- 
--     bzip2 -dc ../patch-3.x.bz2 | patch -p1
-+     xz -dc ../patch-3.x.xz | patch -p1
- 
-    Replace "x" for all versions bigger than the version "X" of your current
-    source tree, _in_order_, and you should be ok.  You may want to remove
+  Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/ljones/mfd.git tags/ib-asoc-3.14.2
+
+for you to fetch changes up to 9146070089cca0fa5c396f1a4d0b96d675004c04:
+
+  mfd: twl-core: Enable regcache for audio registers (2014-01-08 11:37:52 +0000)
+
+----------------------------------------------------------------
+Immutable branch between MFD and ASoC due for the v3.14 merge window
+
+----------------------------------------------------------------
+Peter Ujfalusi (4):
+      mfd: twl6040: reg_defaults support for regmap
+      mfd: twl-core: Simplify IO wrapper functions by moving common code out
+      mfd: twl-core: API to set the regcache bypass for a given regmap in twl
+      mfd: twl-core: Enable regcache for audio registers
+
+ drivers/mfd/twl-core.c  | 190 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------
+ drivers/mfd/twl6040.c   |  92 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/i2c/twl.h |   3 ++
+ 3 files changed, 255 insertions(+), 30 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
