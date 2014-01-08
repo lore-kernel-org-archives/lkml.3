@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109AbaAHUQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:16:07 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:58703 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaAHUQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:16:03 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH] [SCSI] advansys: change buildtime warning into runtime error
-Date: Wed, 8 Jan 2014 21:15:28 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Matthew Wilcox <matthew@wil.cx>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1352113082.1434.31.camel@x61.thuisdomein> <1359454842.1345.40.camel@x61.thuisdomein> <1389211514.14754.10.camel@x220>
-In-Reply-To: <1389211514.14754.10.camel@x220>
-X-KMail-QuotePrefix: > 
+	id S1757299AbaAHUQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:16:59 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:35675 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751273AbaAHUQz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:16:55 -0500
+From: Chris Mason <clm@fb.com>
+To: "muthu.lkml@gmail.com" <muthu.lkml@gmail.com>
+CC: "kmo@daterainc.com" <kmo@daterainc.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lkp@linux.intel.com" <lkp@linux.intel.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Thread-Topic: [block:for-3.14/core] kernel BUG at fs/bio.c:1748
+Thread-Index: AQHPCL03PcXQz/ImsUiAzg3MZ0ORWpp4zOEAgAAr4ACAAFVnAIAA8PCAgAAEF4CAAA6/AIABdgMAgAADfgCAAAZsgA==
+Date: Wed, 8 Jan 2014 20:16:43 +0000
+Message-ID: <1389212231.23310.33.camel@ret.masoncoding.com>
+References: <20140102053101.GA29352@localhost>
+	 <CAFR8uee-WTy6cj8bB4aMuGP1B0sZkc70sq1Drg7uhHS49EqHcg@mail.gmail.com>
+	 <20140106221036.GE9037@kmo>
+	 <CAFR8uef3XUEsHUvfnkAbzsXict8qD_28fTgUQyA7gjUk03OUsw@mail.gmail.com>
+	 <20140107055318.GA19016@localhost>
+	 <CAFR8ueeC_fqpN+M5YOr8AT_o3BDgr+o1ELQQJQSW7s8uDm2y5Q@mail.gmail.com>
+	 <1389126617.23310.19.camel@ret.masoncoding.com>
+	 <CAFR8ueezG4U5ULcp0ayhY690RUE7280UL68d55+tGCqDW9A1Kg@mail.gmail.com>
+	 <1389210102.23310.31.camel@ret.masoncoding.com>
+	 <CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
+In-Reply-To: <CAFR8uefXjN_nzHWsTF=-PxNPDMWMj5Hw+ueFYQwa8-qBEGMGTw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.16.4]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <027F44E7846408448DABB2418E715E36@fb.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201401082115.28472.linux@rainbow-software.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-08_08:2014-01-07,2014-01-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=184.135548313533
+ compositescore=0.324642340081358 urlsuspect_oldscore=0.324642340081358
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=122 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401080119
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 January 2014 21:05:14 Paul Bolle wrote:
-> On Tue, 2013-01-29 at 11:20 +0100, Paul Bolle wrote:
-> > On Mon, 2012-11-05 at 11:58 +0100, Paul Bolle wrote:
-> > > Building advansys.o triggers this warning:
-> > >     drivers/scsi/advansys.c:71:2: warning: #warning this driver is
-> > > still not properly converted to the DMA API [-Wcpp]
-> > >
-> > > This warning can be traced back to a patch called "advansys: add
-> > > warning and convert #includes" which was included in v2.6.10. That
-> > > patch also marked the driver as BROKEN.
-> > >
-> > > Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
-> > > driver: limp along on x86") enabled this driver for x86-32. And commit
-> > > 9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
-> > > work on parisc") enabled this driver for all architectures. But the
-> > > commit explanation stated:
-> > >     I haven't removed the #warning yet because virt_to_bus/bus_to_virt
-> > > are only eliminated for narrow boards.  Wide boards need more work.
-> > >
-> > > Five years have passed and, apparently, those wide boards still need
-> > > more work. So let's change the buildtime warning into a runtime error,
-> > > only printed for those wide boards. Perhaps that might push the people
-> > > using those wide boards to convert this driver. And for all others
-> > > there's now one less buildtime warning to ignore.
-> > >
-> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > > ---
-> > > Compile tested only. I don't have any AdvanSys SCSI boards (neither
-> > > narrow nor wide).
-> >
-> > The date of this message suggests I submitted this patch for a warning
-> > seen while building v3.7-rc4. An identical warning can be seen while
-> > building v3.8-rc5. What's the status of my patch? Did anyone find some
-> > time to have a look at it?
->
-> I've been carrying this patch locally for over a year. Is there any
-> chance of someone trying to remove this buildtime warning?
->
-> I'm inclined to submit a path to Fedora - my local builds use
-> their .config as a base - to just disable this driver. It seems that
-> would increase my chances of finally shutting down this warning.
->
->
-> Paul Bolle
+On Wed, 2014-01-08 at 11:54 -0800, Muthu Kumar wrote:
++AD4- Chris,
++AD4- 
++AD4- +AFs-    8.336061+AF0- WARNING: CPU: 0 PID: 0 at fs/bio.c:1778 bio+AF8-endio+-0xbe/0x100()
++AD4- +AFs-    8.336062+AF0- bio+AF8-endio: bio for (unknown) without endio
++AD4- 
++AD4- This is my recent change to avoid memory leak in bio+AF8-endio. But I
++AD4- think the problem is higher up, most likely bio+AF8-endio is called twice
++AD4- on the same bio (which was freed before).
++AD4- 
 
-The driver works fine with narrow boards. Please don't break working drivers 
-because of some stupid warning.
+I think these are just two separate problems.  Lets ignore the WARN+AF8-ON
+for now.
 
--- 
-Ondrej Zary
++AD4- Are you running the unmodified for-3.14/core or do you have local patches?
++AD4- 
+
+It's for-3.14/core with my btrfs branch.  Basically rc7 instead of rc6
+but no changes to the block layer.  I hadn't mounted btrfs yet.
+
+-chris
+
