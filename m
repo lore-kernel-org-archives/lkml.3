@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813AbaAHUju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:39:50 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49854 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502AbaAHUgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:36:24 -0500
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 05/14] target/spc: Add protection bit to standard INQUIRY output
-Date: Wed,  8 Jan 2014 20:15:48 +0000
-Message-Id: <1389212157-14540-6-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	id S1757791AbaAHUjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:39:45 -0500
+Received: from mout2.freenet.de ([195.4.92.92]:33830 "EHLO mout2.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757397AbaAHUjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 15:39:41 -0500
+Message-ID: <52CDB6CB.8080803@01019freenet.de>
+Date: Wed, 08 Jan 2014 21:36:27 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0 SeaMonkey/2.23
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Cong Wang <amwang@redhat.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Out of the box (ootb) multicast broken since Linux 3.5 until min.
+ 3.12.
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Originated-At: 79.222.9.3!49772
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Hello!
 
-This patch updates spc_emulate_inquiry_std() to set the
-PROTECT bit when DIF emulation is enabled by the backend
-device.
+This patch:
 
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_spc.c |    5 +++++
- 1 file changed, 5 insertions(+)
+commit c5c23260594c5701af66ef754916775ba6a46bbc
+Author: Herbert Xu <herbert@gondor.apana.org.au>
+Date:   Fri Apr 13 02:37:42 2012 +0000
 
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index 021c3f4..6b06f01 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -100,6 +100,11 @@ spc_emulate_inquiry_std(struct se_cmd *cmd, unsigned char *buf)
- 	 */
- 	if (dev->dev_attrib.emulate_3pc)
- 		buf[5] |= 0x8;
-+	/*
-+	 * Set Protection (PROTECT) bit when DIF has been enabled.
-+	 */
-+	if (dev->dev_attrib.pi_prot_type)
-+		buf[5] |= 0x1;
- 
- 	buf[7] = 0x2; /* CmdQue=1 */
- 
--- 
-1.7.10.4
+    bridge: Add multicast_querier toggle and disable queries by default
 
+    Sending general queries was implemented as an optimisation to speed
+    up convergence on start-up.  In order to prevent interference with
+    multicast routers a zero source address has to be used.
+
+    Unfortunately these packets appear to cause some multicast-aware
+    switches to misbehave, e.g., by disrupting multicast packets to us.
+
+    Since the multicast snooping feature still functions without sending
+    our own queries, this patch will change the default to not send
+    queries.
+
+    For those that need queries in order to speed up convergence on
+    start-up, a toggle is provided to restore the previous behaviour.
+
+    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+incompatibly broke ootb multicast in Linux until 3.12 or even higher
+(didn't test) for this use case:
+
+http://thread.gmane.org/gmane.linux.kernel/1622550
+
+
+It is necessary to manually add this switch
+
+echo "1" > /sys/devices/virtual/net/br0/bridge/multicast_querier
+
+to get multicast working again.
+
+
+Would be nice to get the old behaviour (= working multicast ootb) back
+again. This would have saved a lot of time, probably not only in my case
+here (e.g. see https://bugzilla.redhat.com/show_bug.cgi?id=880035).
+
+
+Regards,
+Andreas
