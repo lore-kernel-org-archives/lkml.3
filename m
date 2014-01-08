@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371AbaAHUWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:22:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41975 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaAHUWf (ORCPT
+	id S1757390AbaAHUXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:23:49 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60985 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751273AbaAHUXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:22:35 -0500
-Date: Wed, 8 Jan 2014 12:23:05 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Frank =?iso-8859-1?Q?Sch=E4fer?= <fschaefer.oss@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: sysfs warnings since kernel 3.13-rc1:  "WARNING: ... at
- fs/sysfs/group.c:214 sysfs_remove_group"
-Message-ID: <20140108202305.GA8417@kroah.com>
-References: <52CC3D1A.9050109@googlemail.com>
- <20140107175925.GC3231@htj.dyndns.org>
- <52CDAEA2.2000801@googlemail.com>
+	Wed, 8 Jan 2014 15:23:44 -0500
+Date: Wed, 8 Jan 2014 21:23:43 +0100
+From: Florian Westphal <fw@strlen.de>
+To: Florian Westphal <fw@strlen.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andrey Vagin <avagin@openvz.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+Message-ID: <20140108202343.GJ9894@breakpoint.cc>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+ <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140107152520.GF9894@breakpoint.cc>
+ <1389188536.26646.84.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140108140444.GH9894@breakpoint.cc>
+ <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140108201838.GI9894@breakpoint.cc>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52CDAEA2.2000801@googlemail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140108201838.GI9894@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 09:01:38PM +0100, Frank Schäfer wrote:
-> Am 07.01.2014 18:59, schrieb Tejun Heo:
-> > Hello,
-> >
-> > cc'ing Mauro and quoting whole body for him.
-> >
-> > So, ummm, the sysfs rule was that any group below a device should be
-> > removed before the device itself is removed; however, nothing really
-> > checked whether this actually was the case.  We didn't care whether
-> > the order was reversed and if somebody forgot to remove the group
-> > afterwards, we just leaked it.  After this commit, sysfs now whines if
-> > the order is reversed, so the warning.
-> >
-> > While this should probably be fixed from the v4l side, I'm really
-> > skeptical we're gaining anything by requiring users to explicitly
-> > remove groups during device removal.  In most cases, this is a
-> > completely unnecessary task.  Maybe we should just hunt down all
-> > remove_group calls and remove all the unnecessary ones.
-> >
-> > Thanks.
-> What about the USB mass storage devices ?
-> Is it just a coincidence that this happens with two completely different
-> types of USB devices ?
+Florian Westphal <fw@strlen.de> wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > The confirmed bit should always be set here.
+> > 
+> > So why are you testing it ?
+> 
+> To detect ct object recycling when tuple is identical.
+> 
+> This is my understanding of how we can end up with two
+> cpus thinking they have exclusive ownership of the same ct:
+> 
+> A cpu0: starts lookup: find ct for tuple t
+> B cpu1: starts lookup: find ct for tuple t
+> C cpu0: finds ct c for tuple t, no refcnt taken yet
+>   cpu1: finds ct c for tuple t, no refcnt taken yet
+>    cpu2: destroys ct c, removes from hash table, calls ->destroy function
+> D cpu0: tries to increment refcnt; fails since its 0: lookup ends
+> E cpu0: allocates a new ct object since no acceptable ct was found for t
+> F cpu0: allocator gives us just-freed ct c
+> G cpu0: initialises ct, sets refcnt to 1
+> H cpu0: adds extensions, ct object is put on unconfirmed list and
+>         assigned to skb->nfct
+> I cpu0: skb continues through network stack
+> J cpu1: tries to increment refcnt, ok
+> K cpu1: checks if ct matches requested tuple t: it does
+> L cpu0: sets refcnt conntrack tuple, allocates extensions, etc.
+    ^^^^
+>   cpu1: sets skb->nfct to ct, skb continues through network stack
 
-Yes it is, there's a big long thread on the linux-usb and scsi mailing
-lists about this, and the fix should be final soon.
-
-thanks,
-
-greg k-h
+sorry, for that brain fart  This should only say
+  L cpu1: sets skb->nfct to ct, skb continues...
