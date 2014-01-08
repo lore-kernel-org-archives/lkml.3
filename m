@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927AbaAHOjd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 09:39:33 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:62903 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069AbaAHOja (ORCPT
+	id S1756959AbaAHOkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 09:40:14 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:2462 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755029AbaAHOkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 09:39:30 -0500
+	Wed, 8 Jan 2014 09:40:10 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zcb8kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 8 Jan 2014 22:40:57 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: John Tobias <john.tobias.ph@gmail.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: imx: select ARCH_HAS_CPUFREQ for iMX6SL
+Message-ID: <20140108144056.GD10725@S2101-09.ap.freescale.net>
+References: <1389148163-5243-1-git-send-email-john.tobias.ph@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZVDYgLSW9vbauptb0p_nnhUfrgtVkSx_wMRbpP1XPybQ@mail.gmail.com>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-2-git-send-email-lpapp@kde.org>
-	<CACRpkdZVDYgLSW9vbauptb0p_nnhUfrgtVkSx_wMRbpP1XPybQ@mail.gmail.com>
-Date: Wed, 8 Jan 2014 14:39:28 +0000
-X-Google-Sender-Auth: ABQJRODsLfMc4Cyuk1ZNo3Lc7Ks
-Message-ID: <CAOMwXhOhWScR0PpewNdTXqDCWpHZWC9a6u-vNAK0cO0gk6Xm=g@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1389148163-5243-1-git-send-email-john.tobias.ph@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 7, 2014 at 2:11 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Dec 23, 2013 at 5:08 PM, Laszlo Papp <lpapp@kde.org> wrote:
->
->> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
->> chip includes fan-speed regulators and monitors, GPIO, and alarm.
->>
->> This patch is an initial release of a MAX6650/6651 MFD driver that
->> supports to enable the chip with its primary I2C bus that will connect
->> the hwmon, and then the gpio devices for now.
->>
->> Signed-off-by: Laszlo Papp <lpapp@kde.org>
-> (...)
->> +++ b/include/linux/mfd/max6651-private.h
->> +struct max6651_dev {
->> +    struct device *dev;
->> +    struct mutex iolock;
->> +
->> +    struct i2c_client *i2c;
->> +
->> +       int type;
->> +};
->> +
->> +enum max6651_types {
->> +       TYPE_MAX6650,
->> +       TYPE_MAX6651,
->> +};
->> +
->> +extern int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
->> +extern int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
->
-> It looks like you're reinventing regmap.
->
-> - In the Kconfig entry for the MFD device:
->   select REGMAP_I2C
->
-> - Look in drivers/mfd/stw481x.c for an example using
->   <linux/regmap.h>
->
-> - Look into
->   drivers/regulator/stw481x-vmmc.c
->   for an example regmap MFD spawned child cell.
+On Tue, Jan 07, 2014 at 06:29:23PM -0800, John Tobias wrote:
+> iMX6SL now supports the cpufreq scaling by re-using the imx6q-cpufreq driver.
+> By adding it, the user has the capability to select the said driver without
+> depending it to SOC_IMX6Q.
+> 
+> Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
+> ---
+> Changes since v1:
+> - Fix typo in commit log
+> - Added Shawn Guo on Cc
+> 
+>  arch/arm/mach-imx/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index 7a6e6f7..704e5ae 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -808,6 +808,7 @@ config SOC_IMX6Q
+>  
+>  config SOC_IMX6SL
+>  	bool "i.MX6 SoloLite support"
+> +	select ARCH_HAS_CPUFREQ
 
-Oh, thanks, Linus!
+Since we will eventually enable CPUFREQ and OPP for most of the
+platforms, maybe we should just move selection of ARCH_HAS_CPUFREQ,
+ARCH_HAS_OPP and PM_OPP into 'config ARCH_MXC'?
 
-I will have a look.
+Shawn
+
+>  	select ARM_ERRATA_754322
+>  	select ARM_ERRATA_775420
+>  	select ARM_GIC
+> -- 
+> 1.8.3.2
+> 
+
