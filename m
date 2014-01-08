@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaAHB4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Jan 2014 20:56:45 -0500
-Received: from mail.windriver.com ([147.11.1.11]:51363 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753755AbaAHB4i (ORCPT
+	id S1754738AbaAHB5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Jan 2014 20:57:30 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:61304 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750AbaAHB5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Jan 2014 20:56:38 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <daniel.vetter@ffwll.ch>
-CC: <linux-kernel@vger.kernel.org>, <ying.xue@windriver.com>
-Subject: [PATCH] drm/i915: silence compiler warning
-Date: Wed, 8 Jan 2014 09:56:31 +0800
-Message-ID: <1389146191-2096-1-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 7 Jan 2014 20:57:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Date: Tue, 7 Jan 2014 17:57:23 -0800
+Message-ID: <CAFR8uecjVRQg5S9RKKjZQ+t+7jFVed_T1BhhdXJFO60EK=9XGw@mail.gmail.com>
+Subject: [block:for-3.14/core]: bio_endio: Warn and free bio if bi_end_io is
+ not set.
+From: Muthu Kumar <muthu.lkml@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/gpu/drm/i915/i915_debugfs.c: In function ‘display_crc_ctl_write’:
-drivers/gpu/drm/i915/i915_debugfs.c:2393:2: warning: ‘val’ may be used uninitialized in this function [-Wuninitialized]
-drivers/gpu/drm/i915/i915_debugfs.c:2350:6: note: ‘val’ was declared here
+Jens,
+In bio_endio if bio doesn't have bi_end_io (should be an error case),
+we set bio to NULL and continue silently without freeing the bio. It
+would be good to have a WARN and free the bio to avoid memory leak.
 
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
----
- drivers/gpu/drm/i915/i915_debugfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+If you agree, here is the patch.
 
-diff --git a/drivers/gpu/drm/i915/i915_debugfs.c b/drivers/gpu/drm/i915/i915_debugfs.c
-index 6ed45a9..7963ba5 100644
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -2347,7 +2347,7 @@ static int pipe_crc_set_source(struct drm_device *dev, enum pipe pipe,
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_pipe_crc *pipe_crc = &dev_priv->pipe_crc[pipe];
--	u32 val;
-+	u32 val = 0;
- 	int ret;
- 
- 	if (pipe_crc->source == source)
--- 
-1.7.9.5
+---------
+bio_endio: Warn and free bio if bi_end_io is not set
 
+Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
+--------
+ fs/bio.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/fs/bio.c b/fs/bio.c
+index 75c49a3..581806d 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1768,8 +1768,15 @@ void bio_endio(struct bio *bio, int error)
+             bio_put(bio);
+             bio = parent;
+         } else {
+-            if (bio->bi_end_io)
++            if (likely(bio->bi_end_io)) {
+                 bio->bi_end_io(bio, error);
++            } else {
++                char dev_name[BDEVNAME_SIZE];
++                WARN(1, "bio_endio: bio for device %s without endio\n",
++                        bio->bi_bdev ? bdevname(bio->bi_bdev,
+dev_name) : "(unknown)");
++                bio_put(bio);
++            }
++
+             bio = NULL;
+         }
+     }
+
+---------------
