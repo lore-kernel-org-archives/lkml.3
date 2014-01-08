@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953AbaAHQEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:04:55 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:36855 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755750AbaAHQEx (ORCPT
+	id S1756989AbaAHQGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:06:18 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32794 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755750AbaAHQGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:04:53 -0500
-Message-ID: <52CD771B.4030201@atmel.com>
-Date: Wed, 8 Jan 2014 16:04:43 +0000
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Ding Tianhong <dingtianhong@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3.6 08/19] ozwpan: slight optimization of addr compare
-References: <52CCBDB0.9060709@huawei.com>
-In-Reply-To: <52CCBDB0.9060709@huawei.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Wed, 8 Jan 2014 11:06:16 -0500
+Message-ID: <1389197175.23721.24.camel@hornet>
+Subject: Re: [RFC 12/18] clk: versatile: Split config options for sp810 and
+ vexpress_osc
+From: Pawel Moll <pawel.moll@arm.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Date: Wed, 08 Jan 2014 16:06:15 +0000
+In-Reply-To: <20131223200538.25490.67340@quantum>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	 <1387815830-8794-13-git-send-email-pawel.moll@arm.com>
+	 <20131223200538.25490.67340@quantum>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 02:53, Ding Tianhong wrote:
-> Use possibly more efficient ether_addr_equal
-> instead of memcmp.
+On Mon, 2013-12-23 at 20:05 +0000, Mike Turquette wrote:
+> Quoting Pawel Moll (2013-12-23 08:23:44)
+> > Move the Kconfig entry for Versatile (& Express) clock drivers
+> > into a separate file and add individual options for sp810
+> > and vexpress_osc drivers, as they are optional in some
+> > configurations and may have separate dependencies.
+> > 
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> 
+> Is there a reason to continue to expose these as user-visible config
+> options? I guess that with Device Tree we can just include clock nodes
+> (or not) for boards that use these clocks (or do not use them).
 >
-> Cc: Rupesh Gujare <rupesh.gujare@atmel.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: devel@driverdev.osuosl.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Tan Xiaojun <tanxiaojun@huawei.com>
-> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> ---
->   drivers/staging/ozwpan/ozcdev.c  | 2 +-
->   drivers/staging/ozwpan/ozproto.c | 5 +++--
->   2 files changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-> index 6ce0af9..c363f66 100644
-> --- a/drivers/staging/ozwpan/ozcdev.c
-> +++ b/drivers/staging/ozwpan/ozcdev.c
-> @@ -448,7 +448,7 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
->   	}
->   	spin_lock(&g_cdev.lock);
->   	if ((g_cdev.active_pd == NULL) &&
-> -		(memcmp(pd->mac_addr, g_cdev.active_addr, ETH_ALEN) == 0)) {
-> +		ether_addr_equal(pd->mac_addr, g_cdev.active_addr)) {
->   		oz_pd_get(pd);
->   		g_cdev.active_pd = pd;
->   		oz_dbg(ON, "Active PD arrived\n");
-> diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-> index 88714ec..19a2521 100644
-> --- a/drivers/staging/ozwpan/ozproto.c
-> +++ b/drivers/staging/ozwpan/ozproto.c
-> @@ -9,6 +9,7 @@
->   #include <linux/timer.h>
->   #include <linux/sched.h>
->   #include <linux/netdevice.h>
-> +#include <linux/etherdevice.h>
->   #include <linux/errno.h>
->   #include <linux/ieee80211.h>
->   #include "ozdbg.h"
-> @@ -180,7 +181,7 @@ static struct oz_pd *oz_connect_req(struct oz_pd *cur_pd, struct oz_elt *elt,
->   		spin_lock_bh(&g_polling_lock);
->   		list_for_each(e, &g_pd_list) {
->   			pd2 = container_of(e, struct oz_pd, link);
-> -			if (memcmp(pd2->mac_addr, pd_addr, ETH_ALEN) == 0) {
-> +			if (ether_addr_equal(pd2->mac_addr, pd_addr)) {
->   				free_pd = pd;
->   				pd = pd2;
->   				break;
-> @@ -597,7 +598,7 @@ struct oz_pd *oz_pd_find(const u8 *mac_addr)
->   	spin_lock_bh(&g_polling_lock);
->   	list_for_each(e, &g_pd_list) {
->   		pd = container_of(e, struct oz_pd, link);
-> -		if (memcmp(pd->mac_addr, mac_addr, ETH_ALEN) == 0) {
-> +		if (ether_addr_equal(pd->mac_addr, mac_addr)) {
->   			atomic_inc(&pd->ref_count);
->   			spin_unlock_bh(&g_polling_lock);
->   			return pd;
+> And it seems for many configurations COMMON_CLK_VERSATILE is always
+> selected, so what is the point of the other two sub-options?
 
-Acked-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+It's mostly for arm64, where all the bits and pieces are individually
+selected (and SP810 is not present in some vexpress configurations).
 
-Thanks,
-
--- 
-Regards,
-Rupesh Gujare
+Paweł
 
