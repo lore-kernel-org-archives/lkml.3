@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104AbaAHNww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:52:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53994 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932252AbaAHNtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:49:04 -0500
-Date: Wed, 8 Jan 2014 14:49:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: could you clarify mm/mempolicy: fix !vma in new_vma_page()
-Message-ID: <20140108134903.GI27937@dhcp22.suse.cz>
-References: <CAA_GA1dNdrG9aQ3UKDA0O=BY721rvseORVkc2+RxUpzysp3rYw@mail.gmail.com>
- <20140106141827.GB27602@dhcp22.suse.cz>
- <CAA_GA1csMEhSYmeS7qgDj7h=Xh2WrsYvirkS55W4Jj3LTHy87A@mail.gmail.com>
- <20140107102212.GC8756@dhcp22.suse.cz>
- <20140107173034.GE8756@dhcp22.suse.cz>
- <CAA_GA1fN5p3-m40Mf3nqFzRrGcJ9ni9Cjs_q4fm1PCLnzW1cEw@mail.gmail.com>
- <20140108100859.GC27937@dhcp22.suse.cz>
- <CAA_GA1emcHt+9zOqAKHPoXLd-ofyfYyuQn9fcdLOox5k7BLgww@mail.gmail.com>
- <20140108124240.GH27937@dhcp22.suse.cz>
- <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA_GA1dh3TtzGnK0HgAb_Sy6ww5JBaFqmf_YViPKpMCEpzFh4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757129AbaAHNw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:52:56 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:54966 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322AbaAHNtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 08:49:03 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, angus.clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v4 25/37] mtd: st_spi_fsm: Prepare default sequences for read/write/erase
+Date: Wed,  8 Jan 2014 13:47:08 +0000
+Message-Id: <1389188840-14306-26-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 08-01-14 21:10:29, Bob Liu wrote:
-[...]
-> >> > From 2d61421f26a3b63b4670d71b7adc67e2191b6157 Mon Sep 17 00:00:00 2001
-> >> > From: Michal Hocko <mhocko@suse.cz>
-> >> > Date: Wed, 8 Jan 2014 10:57:41 +0100
-> >> > Subject: [PATCH] mm: new_vma_page cannot see NULL vma for hugetlb pages
-> >> >
-> >> > 11c731e81bb0 (mm/mempolicy: fix !vma in new_vma_page()) has removed
-> >> > BUG_ON(!vma) from new_vma_page which is partially correct because
-> >> > page_address_in_vma will return EFAULT for non-linear mappings and at
-> >> > least shared shmem might be mapped this way.
-> >> >
-> >> > The patch also tried to prevent NULL ptr for hugetlb pages which is not
-> >> > correct AFAICS because hugetlb pages cannot be mapped as VM_NONLINEAR
-> >> > and other conditions in page_address_in_vma seem to be legit and catch
-> >> > real bugs.
-> >> >
-> >> > This patch restores BUG_ON for PageHuge to catch potential issues when
-> >> > the to-be-migrated page is not setup properly.
-> >> >
-> >> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+Most chips require a predefined set of FSM message sequences for read,
+write and erase operations. This patch provides a way to set them up,
+which it will do so if a chip specific initialisation routine isn't
+been provided.
 
-Thanks!
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
-> >> > ---
-> >> >  mm/mempolicy.c | 6 ++----
-> >> >  1 file changed, 2 insertions(+), 4 deletions(-)
-> >> >
-> >> > diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> >> > index 9e8d2d86978a..f3f51464a23b 100644
-> >> > --- a/mm/mempolicy.c
-> >> > +++ b/mm/mempolicy.c
-> >> > @@ -1199,10 +1199,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
-> >> >         }
-> >> >
-> >> >         if (PageHuge(page)) {
-> >> > -               if (vma)
-> >> > -                       return alloc_huge_page_noerr(vma, address, 1);
-> >> > -               else
-> >> > -                       return NULL;
-> >> > +               BUG_ON(vma)
-
-That was meant to say BUG_ON(!vma) of course ;) but I guess your
-reviewed-by still applies so I will post it to Andrew.
-
-> >> > +               return alloc_huge_page_noerr(vma, address, 1);
-> >> >         }
-> >> >         /*
-> >> >          * if !vma, alloc_page_vma() will use task or system default policy
-> >> > --
-> >> > 1.8.5.2
-> >> >
-> 
-> -- 
-> Regards,
-> --Bob
-
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 28d8ac0..a5b9d67 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -838,6 +838,38 @@ static int stfsm_search_prepare_rw_seq(struct stfsm *fsm,
+ 	return 0;
+ }
+ 
++/* Prepare a READ/WRITE/ERASE 'default' sequences */
++static int stfsm_prepare_rwe_seqs_default(struct stfsm *fsm)
++{
++	uint32_t flags = fsm->info->flags;
++	int ret;
++
++	/* Configure 'READ' sequence */
++	ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_read,
++					  default_read_configs);
++	if (ret) {
++		dev_err(fsm->dev,
++			"failed to prep READ sequence with flags [0x%08x]\n",
++			flags);
++		return ret;
++	}
++
++	/* Configure 'WRITE' sequence */
++	ret = stfsm_search_prepare_rw_seq(fsm, &stfsm_seq_write,
++					  default_write_configs);
++	if (ret) {
++		dev_err(fsm->dev,
++			"failed to prep WRITE sequence with flags [0x%08x]\n",
++			flags);
++		return ret;
++	}
++
++	/* Configure 'ERASE_SECTOR' sequence */
++	stfsm_prepare_erasesec_seq(fsm, &stfsm_seq_erase_sector);
++
++	return 0;
++}
++
+ static int stfsm_n25q_config(struct stfsm *fsm)
+ {
+ 	uint32_t flags = fsm->info->flags;
+@@ -1153,6 +1185,10 @@ static int stfsm_probe(struct platform_device *pdev)
+ 		ret = info->config(fsm);
+ 		if (ret)
+ 			return ret;
++	} else {
++		ret = stfsm_prepare_rwe_seqs_default(fsm);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, fsm);
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.2
+
