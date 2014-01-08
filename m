@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260AbaAHRKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:10:04 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:25677 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756531AbaAHRJ6 (ORCPT
+	id S1757287AbaAHRLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:11:14 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:45888 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756654AbaAHRLK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:09:58 -0500
-X-Env-Sender: anthony.olech.opensource@diasemi.com
-X-Msg-Ref: server-2.tower-180.messagelabs.com!1389200994!28356548!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.16; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201401081709.s08H9nMr038265@swsrvapps-02.lan>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Wed, 8 Jan 2014 16:58:10 +0000
-Subject: [PATCH V1] input: fix memory leak in da9052 touchscreen driver
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Huqiu Liu <liuhq11@mails.tsinghua.edu.cn>,
-        David Dajun Chen <david.chen@diasemi.com>
+	Wed, 8 Jan 2014 12:11:10 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+To: Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1965675.1ZOPt5drrV@flatron>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Sachin Kamat" <sachin.kamat@linaro.org>,
+        "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
+        "Kukjin Kim" <kgene.kim@samsung.com>,
+        "Tomasz Figa" <t.figa@samsung.com>
+References: <1383963454-2749-1-git-send-email-tomasz.figa@gmail.com>
+ <1965675.1ZOPt5drrV@flatron>
+Message-ID: <20140108171059.27803.44729@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] MAINTAINERS: Add entry for Samsung SoC clock drivers
+Date: Wed, 08 Jan 2014 09:10:59 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The touchscreen component driver for the da9052/3 Dialog PMICs
-leaks memory by not freeing the input device in the remove call.
+Quoting Tomasz Figa (2013-12-05 02:09:10)
+> Hi,
+> 
+> On Saturday 09 of November 2013 03:17:34 Tomasz Figa wrote:
+> > From: Tomasz Figa <t.figa@samsung.com>
+> > 
+> > This patch adds an entry for Samsung SoC clock drivers located under
+> > drivers/clk/samsung/ directory, with me taking the maintainer role.
+> > 
+> > Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > Acked-by: Mike Turquette <mturquette@linaro.org>
+> > Acked-by: Sachin Kamat <sachin.kamat@linaro.org>
+> > Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> > ---
+> >  MAINTAINERS | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 61b8757..df7e1bf 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -7319,6 +7319,12 @@ L:     linux-media@vger.kernel.org
+> >  S:   Supported
+> >  F:   drivers/media/i2c/s5c73m3/*
+> >  
+> > +SAMSUNG SOC CLOCK DRIVERS
+> > +M:   Tomasz Figa <t.figa@samsung.com>
+> > +S:   Supported
+> > +L:   linux-samsung-soc@vger.kernel.org (moderated for non-subscribers)
+> > +F:   drivers/clk/samsung/
+> > +
+> >  SERIAL DRIVERS
+> >  M:   Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >  L:   linux-serial@vger.kernel.org
+> > 
+> 
+> I don't see this patch applied anywhere. Mike, should it go through your
+> tree?
 
-This patch matches the existing call to input_alloc_device()
-in da9052_ts_probe() to a new call to input_free_device() in
-da9052_ts_remove()
+Taken into clk-next.
 
-Suggested-by: Huqiu Liu <liuhq11@mails.tsinghua.edu.cn>
-Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
----
-This patch is relative to linux-next repository tag next-20140108
+Regards,
+Mike
 
-Many thanks to Huqiu Liu who found the bug.
-
- drivers/input/touchscreen/da9052_tsi.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
-index ab64d58..43a69d1 100644
---- a/drivers/input/touchscreen/da9052_tsi.c
-+++ b/drivers/input/touchscreen/da9052_tsi.c
-@@ -320,6 +320,7 @@ err_free_mem:
- static int  da9052_ts_remove(struct platform_device *pdev)
- {
- 	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
-+	struct input_dev *input_dev = tsi->dev;
- 
- 	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
- 
-@@ -328,6 +329,7 @@ static int  da9052_ts_remove(struct platform_device *pdev)
- 
- 	input_unregister_device(tsi->dev);
- 	kfree(tsi);
-+	input_free_device(input_dev);
- 
- 	return 0;
- }
--- 
-end-of-patch for input: fix memory leak in da9052 touchscreen driver V1
-
+> 
+> Best regards,
+> Tomasz
+> 
