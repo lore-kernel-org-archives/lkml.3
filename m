@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089AbaAHIsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:48:15 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42210 "EHLO
+	id S1756119AbaAHIsX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:48:23 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:61879 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885AbaAHIqr (ORCPT
+	with ESMTP id S1755859AbaAHIqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:46:47 -0500
-X-AuditID: 9c93017d-b7b66ae000006a2a-17-52cd106f81e0
+	Wed, 8 Jan 2014 03:46:42 -0500
+X-AuditID: 9c93017d-b7b66ae000006a2a-09-52cd106e9ce9
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 13/28] perf hists: Sort hist entries by accumulated period
-Date: Wed,  8 Jan 2014 17:46:18 +0900
-Message-Id: <1389170793-21926-14-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/28] perf hists: Accumulate hist entry stat based on the callchain
+Date: Wed,  8 Jan 2014 17:46:13 +0900
+Message-Id: <1389170793-21926-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
 References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
@@ -26,42 +26,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When callchain accumulation is requested, we need to sort the entries
-by accumulated period value.  When accumulated periods of two entries
-are same (i.e. single path callchain) put the caller above since
-accumulation tends to put callers on higher position for obvious
-reason.
+Call __hists__add_entry() for each callchain node to get an
+accumulated stat for an entry.  Introduce new cumulative_iter ops to
+process them properly.
 
 Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ tools/perf/builtin-report.c | 95 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 94 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a6bb3e329857..daf39fc8fe33 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -624,6 +624,18 @@ static int hist_entry__sort_on_period(struct hist_entry *a,
- 	struct hist_entry *pair;
- 	u64 *periods_a, *periods_b;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 80c50f243f34..27e477df0730 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -79,7 +79,11 @@ static int report__resolve_callchain(struct report *rep, struct symbol **parent,
+ 				     struct perf_evsel *evsel, struct addr_location *al,
+ 				     struct perf_sample *sample)
+ {
+-	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
++	if (sample->callchain == NULL)
++		return 0;
++
++	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
++	    sort__has_parent) {
+ 		return machine__resolve_callchain(al->machine, evsel, al->thread, sample,
+ 						  parent, al, rep->max_stack);
+ 	}
+@@ -355,6 +359,85 @@ iter_finish_normal_entry(struct hist_entry_iter *iter, struct addr_location *al)
+ 	return hist_entry__append_callchain(he, sample);
+ }
  
-+	if (symbol_conf.cumulate_callchain) {
-+		/*
-+		 * Put caller above callee when they have equal period.
-+		 */
-+		if (a->stat_acc->period != b->stat_acc->period)
-+			return a->stat_acc->period > b->stat_acc->period ? 1 : -1;
++static int
++iter_prepare_cumulative_entry(struct hist_entry_iter *iter __maybe_unused,
++			      struct addr_location *al __maybe_unused)
++{
++	callchain_cursor_commit(&callchain_cursor);
++	return 0;
++}
 +
-+		if (a->callchain->max_depth != b->callchain->max_depth)
-+			return a->callchain->max_depth < b->callchain->max_depth ?
-+				1 : -1;
-+	}
++static int
++iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
++				 struct addr_location *al)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++	struct hist_entry *he;
 +
- 	ret = period_cmp(a->stat.period, b->stat.period);
- 	if (ret || !symbol_conf.event_group)
- 		return ret;
++	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
++				sample->period, sample->weight,
++				sample->transaction, true);
++	if (he == NULL)
++		return -ENOMEM;
++
++	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++}
++
++static int
++iter_next_cumulative_entry(struct hist_entry_iter *iter,
++			   struct addr_location *al)
++{
++	struct callchain_cursor_node *node;
++
++	node = callchain_cursor_current(&callchain_cursor);
++	if (node == NULL)
++		return 0;
++
++	al->map = node->map;
++	al->sym = node->sym;
++	if (node->map)
++		al->addr = node->map->map_ip(node->map, node->ip);
++	else
++		al->addr = node->ip;
++
++	if (iter->rep->hide_unresolved && al->sym == NULL)
++		return 0;
++
++	callchain_cursor_advance(&callchain_cursor);
++	return 1;
++}
++
++static int
++iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
++			       struct addr_location *al)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++	struct hist_entry *he;
++
++	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
++				sample->period, sample->weight,
++				sample->transaction, false);
++	if (he == NULL)
++		return -ENOMEM;
++
++	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++}
++
++static int
++iter_finish_cumulative_entry(struct hist_entry_iter *iter,
++			     struct addr_location *al __maybe_unused)
++{
++	struct perf_evsel *evsel = iter->evsel;
++	struct perf_sample *sample = iter->sample;
++
++	evsel->hists.stats.total_period += sample->period;
++	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++
++	return 0;
++}
++
+ static struct hist_entry_iter mem_iter = {
+ 	.prepare_entry 		= iter_prepare_mem_entry,
+ 	.add_single_entry 	= iter_add_single_mem_entry,
+@@ -379,6 +462,14 @@ static struct hist_entry_iter normal_iter = {
+ 	.finish_entry 		= iter_finish_normal_entry,
+ };
+ 
++static struct hist_entry_iter cumulative_iter = {
++	.prepare_entry 		= iter_prepare_cumulative_entry,
++	.add_single_entry 	= iter_add_single_cumulative_entry,
++	.next_entry 		= iter_next_cumulative_entry,
++	.add_next_entry 	= iter_add_next_cumulative_entry,
++	.finish_entry 		= iter_finish_cumulative_entry,
++};
++
+ static int
+ iter_add_entry(struct hist_entry_iter *iter, struct addr_location *al)
+ {
+@@ -438,6 +529,8 @@ static int process_sample_event(struct perf_tool *tool,
+ 		iter = &branch_iter;
+ 	else if (rep->mem_mode == 1)
+ 		iter = &mem_iter;
++	else if (symbol_conf.cumulate_callchain)
++		iter = &cumulative_iter;
+ 	else
+ 		iter = &normal_iter;
+ 
 -- 
 1.7.11.7
 
