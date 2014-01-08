@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaAHUSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:18:48 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60960 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750839AbaAHUSn (ORCPT
+	id S1757344AbaAHUTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:19:54 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:54929 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaAHUTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:18:43 -0500
-Date: Wed, 8 Jan 2014 21:18:38 +0100
-From: Florian Westphal <fw@strlen.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Florian Westphal <fw@strlen.de>, Andrey Vagin <avagin@openvz.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get
-Message-ID: <20140108201838.GI9894@breakpoint.cc>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
- <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140107152520.GF9894@breakpoint.cc>
- <1389188536.26646.84.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140108140444.GH9894@breakpoint.cc>
- <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
+	Wed, 8 Jan 2014 15:19:52 -0500
+Date: Wed, 8 Jan 2014 21:21:08 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Excessive WARN()s in Intel 915 driver
+Message-ID: <20140108202108.GV4770@phenom.ffwll.local>
+Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Kernel development list <linux-kernel@vger.kernel.org>
+References: <20140108161713.GT4770@phenom.ffwll.local>
+ <Pine.LNX.4.44L0.1401081331140.1659-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <Pine.LNX.4.44L0.1401081331140.1659-100000@iolanthe.rowland.org>
+X-Operating-System: Linux phenom 3.12.0+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > The confirmed bit should always be set here.
+On Wed, Jan 08, 2014 at 01:34:02PM -0500, Alan Stern wrote:
+> On Wed, 8 Jan 2014, Daniel Vetter wrote:
 > 
-> So why are you testing it ?
+> > On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
+> > > On Tue, 7 Jan 2014, Daniel Vetter wrote:
+> > > 
+> > > > I really want users to report these issues, and excessive WARNs seems
+> > > > to be the only way to get those reports. Please boot with
+> > > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
+> > > > Also, which precise kernel are you running? Testing latest -rc is
+> > > > always recommended, this state checker code is fairly new and gets
+> > > > constantly extended and bugs fixed ...
+> > > 
+> > > Here you go.  This is the dmesg output after booting with
+> > > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
+> > > string; this is pristine 3.13-rc7.
+> > 
+> > That's strange, I've thought we've fixed the last struggling mismatch in
+> > the lvds borber bits stuff. Can you please try latest drm-intel-nightly
+> > from
+> > 
+> > http://cgit.freedesktop.org/~danvet/drm-intel/
+> 
+> I prefer not to clone 1.7 GB of git data if at all possible.  Can you
+> post (or send to me directly) a patch containing the differences with
+> respect to 3.13-rc7?  It should end up being fairly small.
 
-To detect ct object recycling when tuple is identical.
-
-This is my understanding of how we can end up with two
-cpus thinking they have exclusive ownership of the same ct:
-
-A cpu0: starts lookup: find ct for tuple t
-B cpu1: starts lookup: find ct for tuple t
-C cpu0: finds ct c for tuple t, no refcnt taken yet
-  cpu1: finds ct c for tuple t, no refcnt taken yet
-   cpu2: destroys ct c, removes from hash table, calls ->destroy function
-D cpu0: tries to increment refcnt; fails since its 0: lookup ends
-E cpu0: allocates a new ct object since no acceptable ct was found for t
-F cpu0: allocator gives us just-freed ct c
-G cpu0: initialises ct, sets refcnt to 1
-H cpu0: adds extensions, ct object is put on unconfirmed list and
-        assigned to skb->nfct
-I cpu0: skb continues through network stack
-J cpu1: tries to increment refcnt, ok
-K cpu1: checks if ct matches requested tuple t: it does
-L cpu0: sets refcnt conntrack tuple, allocates extensions, etc.
-  cpu1: sets skb->nfct to ct, skb continues through network stack
-
--> both cpu0 and cpu1 reference a ct object that was not in hash table
-
-cpu0 and cpu1 will then race, for example in
-net/ipv4/netfilter/iptable_nat.c:nf_nat_rule_find():
-
-        if (!nf_nat_initialized(ct, HOOK2MANIP(hooknum)))
-              ret = alloc_null_binding(ct, hooknum);
-
-[ Its possible that I misunderstand and that there is something that
-  precents this from happening.  Usually its the 'tuple equal' test
-  that is performed post-atomic-inc-not-zero that detects the recycling,
-  so step K above would fail ]
-
-The idea of the 'confirmed bit test' is that when its not set then the
-conntrack was recycled and should not be used before the cpu that
-currently 'owns' that entry has put it into the hash table again.
-
-> I did this RCU conversion, so I think I know what I am talking about.
-
-Yes, I know.  If you have any suggestions on how to fix it, I'd be very
-interested to hear about them.
-
-> The entry should not be put into hash table (or refcnt set to 1),
-> if its not ready. It is that simple.
-
-I understand what you're saying, but I don't see how we can do it.
-
-I think the assumption that we have a refcnt on skb->nfct is everywhere.
-
-If I understand you correctly we'd have to differentiate between
-'can be used fully (e.g. nf_nat_setup_info done for both directions)'
-and 'a new conntrack was created (extensions may not be ready yet)'.
-
-But currently in both cases the ct is assigned to the skb, and in both
-cases a refcnt is taken.  I am out of ideas, except perhaps using
-ct->lock to serialize the nat setup (but I don't like that since
-I'm not sure that the nat race is the only one).
-
-> We need to address this problem without adding an extra test and
-> possible loop for the lookups.
-
-Agreed.  I don't like the extra test either.
-
-Many thanks for looking into this Eric!
+Shallow clones should reduce the data tremendously, see git help clone.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
