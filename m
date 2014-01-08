@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390AbaAHUXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:23:49 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60985 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751273AbaAHUXo (ORCPT
+	id S1757400AbaAHUYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:24:39 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64432 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752653AbaAHUYg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:23:44 -0500
-Date: Wed, 8 Jan 2014 21:23:43 +0100
-From: Florian Westphal <fw@strlen.de>
-To: Florian Westphal <fw@strlen.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Andrey Vagin <avagin@openvz.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get
-Message-ID: <20140108202343.GJ9894@breakpoint.cc>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
- <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140107152520.GF9894@breakpoint.cc>
- <1389188536.26646.84.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140108140444.GH9894@breakpoint.cc>
- <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140108201838.GI9894@breakpoint.cc>
+	Wed, 8 Jan 2014 15:24:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108201838.GI9894@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389211403.678513817@f123.i.mail.ru>
+References: <1389210991-23688-1-git-send-email-john.tobias.ph@gmail.com>
+	<1389211403.678513817@f123.i.mail.ru>
+Date: Wed, 8 Jan 2014 12:24:34 -0800
+Message-ID: <CACUGKYNnbQQAkw2=NxBhyrgvrwsOoTCqS4qzP1SYev+tXaMGDQ@mail.gmail.com>
+Subject: Re: [PATCH v3] ARM: imx: add select on ARCH_MXC for cpufreq support
+From: John Tobias <john.tobias.ph@gmail.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: "<kernel@pengutronix.de>" <kernel@pengutronix.de>,
+        "<linux@arm.linux.org.uk>" <linux@arm.linux.org.uk>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Florian Westphal <fw@strlen.de> wrote:
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > > The confirmed bit should always be set here.
-> > 
-> > So why are you testing it ?
-> 
-> To detect ct object recycling when tuple is identical.
-> 
-> This is my understanding of how we can end up with two
-> cpus thinking they have exclusive ownership of the same ct:
-> 
-> A cpu0: starts lookup: find ct for tuple t
-> B cpu1: starts lookup: find ct for tuple t
-> C cpu0: finds ct c for tuple t, no refcnt taken yet
->   cpu1: finds ct c for tuple t, no refcnt taken yet
->    cpu2: destroys ct c, removes from hash table, calls ->destroy function
-> D cpu0: tries to increment refcnt; fails since its 0: lookup ends
-> E cpu0: allocates a new ct object since no acceptable ct was found for t
-> F cpu0: allocator gives us just-freed ct c
-> G cpu0: initialises ct, sets refcnt to 1
-> H cpu0: adds extensions, ct object is put on unconfirmed list and
->         assigned to skb->nfct
-> I cpu0: skb continues through network stack
-> J cpu1: tries to increment refcnt, ok
-> K cpu1: checks if ct matches requested tuple t: it does
-> L cpu0: sets refcnt conntrack tuple, allocates extensions, etc.
-    ^^^^
->   cpu1: sets skb->nfct to ct, skb continues through network stack
+thanks for the info. Will fix it.
 
-sorry, for that brain fart  This should only say
-  L cpu1: sets skb->nfct to ct, skb continues...
+On Wed, Jan 8, 2014 at 12:03 PM, Alexander Shiyan <shc_work@mail.ru> wrote:
+> Hello.
+>
+> Среда,  8 января 2014, 11:56 -08:00 от John Tobias <john.tobias.ph@gmail.com>:
+>> Moved ARCH_HAS_CPUFREQ, HAVE_IMX_ANATOP and PM_OPP on ARCH_MXC so that
+>> the user can enable the cpufreq support for iMX6Q and/or iMX6SL.
+>>
+>> Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
+>> ---
+>>  arch/arm/mach-imx/Kconfig | 13 ++++++-------
+>>  1 file changed, 6 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+>> index 7a6e6f7..3c326be 100644
+>> --- a/arch/arm/mach-imx/Kconfig
+>> +++ b/arch/arm/mach-imx/Kconfig
+>> @@ -1,5 +1,6 @@
+>>  config ARCH_MXC
+>>       bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7
+>> +     select ARCH_HAS_CPUFREQ
+>>       select ARCH_REQUIRE_GPIOLIB
+>>       select ARM_CPU_SUSPEND if PM
+>>       select ARM_PATCH_PHYS_VIRT
+>> @@ -9,8 +10,10 @@ config ARCH_MXC
+>>       select GENERIC_ALLOCATOR
+>>       select GENERIC_CLOCKEVENTS
+>>       select GENERIC_IRQ_CHIP
+>> +     select HAVE_IMX_ANATOP
+>
+> Maybe better:
+> select HAVE_IMX_ANATOP if ARCH_MULTI_V6_V7
+>
+> ---
