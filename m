@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020AbaAHQAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 11:00:50 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47133 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769AbaAHQAr (ORCPT
+	id S1757056AbaAHQBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 11:01:05 -0500
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:19135 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755769AbaAHQBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 11:00:47 -0500
-Message-ID: <52CD762B.7020600@oracle.com>
-Date: Wed, 08 Jan 2014 11:00:43 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: fs: gpf in simple_setattr
-References: <52B23CEA.7090405@oracle.com>
-In-Reply-To: <52B23CEA.7090405@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 8 Jan 2014 11:01:03 -0500
+Message-ID: <1389196863.23721.20.camel@hornet>
+Subject: Re: [RFC 02/18] power/reset: vexpress: Use sched_clock as the time
+ source
+From: Pawel Moll <pawel.moll@arm.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Anton Vorontsov <anton@enomsg.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Date: Wed, 08 Jan 2014 16:01:03 +0000
+In-Reply-To: <CANcMJZALQ0khcqkdQA5Tnr6_9kfWK=UUmrUB4mCv2MEkmLv0sg@mail.gmail.com>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	 <1387815830-8794-3-git-send-email-pawel.moll@arm.com>
+	 <CANcMJZALQ0khcqkdQA5Tnr6_9kfWK=UUmrUB4mCv2MEkmLv0sg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping? still happening in -next.
+On Mon, 2013-12-23 at 19:28 +0000, John Stultz wrote:
+> On Mon, Dec 23, 2013 at 8:23 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > At this stage of system shutdown procedure the jiffies may
+> > not be updated anymore, so have to base on raw sched_clock
+> > values.
+> >
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > Cc: Anton Vorontsov <anton@enomsg.org>
+> > Cc: David Woodhouse <dwmw2@infradead.org>
+> > ---
+> >  drivers/power/reset/vexpress-poweroff.c | 7 ++++---
+> >  1 file changed, 4 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
+> > index 476aa49..d752233 100644
+> > --- a/drivers/power/reset/vexpress-poweroff.c
+> > +++ b/drivers/power/reset/vexpress-poweroff.c
+> > @@ -15,6 +15,7 @@
+> >  #include <linux/of.h>
+> >  #include <linux/of_device.h>
+> >  #include <linux/platform_device.h>
+> > +#include <linux/sched.h>
+> >  #include <linux/stat.h>
+> >  #include <linux/vexpress.h>
+> >
+> > @@ -27,12 +28,12 @@ static void vexpress_reset_do(struct device *dev, const char *what)
+> >                         vexpress_config_func_get_by_dev(dev);
+> >
+> >         if (func) {
+> > -               unsigned long timeout;
+> > +               unsigned long long timeout_ns;
+> >
+> >                 err = vexpress_config_write(func, 0, 0);
+> >
+> > -               timeout = jiffies + HZ;
+> > -               while (time_before(jiffies, timeout))
+> > +               timeout_ns = sched_clock() + 50000000;
+> > +               while (!err && time_before64(sched_clock(), timeout_ns))
+> >                         cpu_relax();
+> >         }
+> 
+> So this may not be a problem in this particular case, but sched_clock
+> could be backed by jiffies on some hardware, causing the same problem
+> to appear.
 
-On 12/18/2013 07:25 PM, Sasha Levin wrote:
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel, I've stumbled on
-> the following spew.
->
-> This happens when sb is dereferenced in __mark_inode_dirty():
->
->                  if (sb->s_op->dirty_inode) <--- HERE
->                          sb->s_op->dirty_inode(inode, flags);
->
-> 'sb' is pointing to a memory full of poisoned memory (6b6b6b6b6b6b6b6b).
->
-> [  590.469520] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  590.470737] Dumping ftrace buffer:
-> [  590.471331]    (ftrace buffer empty)
-> [  590.471903] Modules linked in:
-> [  590.472349] CPU: 3 PID: 9685 Comm: trinity-child97 Tainted: G        W
-> 3.13.0-rc4-next-20131218-sasha-00013-g2cebb9b-dirty #4156
-> [  590.472396] task: ffff8800bc520000 ti: ffff8800bc4fa000 task.ti: ffff8800bc4fa000
-> [  590.472396] RIP: 0010:[<ffffffff81302d34>]  [<ffffffff81302d34>] __mark_inode_dirty+0xd4/0x360
-> [  590.475691] RSP: 0018:ffff8800bc4fbda8  EFLAGS: 00010246
-> [  590.475691] RAX: 6b6b6b6b6b6b6b6b RBX: ffff8802f9002530 RCX: 000000006b6b6b6b
-> [  590.475691] RDX: 0000000000000000 RSI: 0000000000000007 RDI: ffff8802f9002530
-> [  590.475691] RBP: ffff8800bc4fbdc8 R08: 0000000000000000 R09: 0000000000000000
-> [  590.475691] R10: 0000000000000001 R11: 0000000000000002 R12: 0000000000000007
-> [  590.475691] R13: 0000000000000000 R14: ffff8802f8795668 R15: ffff8802f9002530
-> [  590.475691] FS:  00007f9bba1b7700(0000) GS:ffff8801c8000000(0000) knlGS:0000000000000000
-> [  590.475691] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  590.475691] CR2: 00007f9bba17da44 CR3: 00000000bc4e6000 CR4: 00000000000006e0
-> [  590.475691] Stack:
-> [  590.475691]  ffff8802f9002530 ffff8800bc4fbe98 0000000000000000 ffff880161244000
-> [  590.475691]  ffff8800bc4fbdf8 ffffffff8130001b ffff8800bc4fbde8 0000000000001846
-> [  590.475691]  ffff8800bc4fbe98 0000000000000000 ffff8800bc4fbe78 ffffffff812f3016
-> [  590.475691] Call Trace:
-> [  590.475691]  [<ffffffff8130001b>] simple_setattr+0x5b/0x70
-> [  590.475691]  [<ffffffff812f3016>] notify_change+0x216/0x300
-> [  590.475691]  [<ffffffff812d0180>] ? zs_malloc+0x1b0/0x200
-> [  590.475691]  [<ffffffff812d0b15>] chown_common+0x135/0x1c0
-> [  590.475691]  [<ffffffff812d0c20>] SyS_fchown+0x80/0xd0
-> [  590.475691]  [<ffffffff843a6d50>] tracesys+0xdd/0xe2
-> [  590.494436] VFS: Warning: trinity-child15 using old stat() call. Recompile your binary.
-> [  590.475691] Code: c5 10 48 89 de ff d0 49 8b 45 00 48 85 c0 75 e7 65 ff 0c 25 5c da 00 00 0f 94
-> c0 84 c0 74 08 e8 b3 33 d7 ff 0f 1f 00 49 8b 46 30 <48> 8b 40 10 48 85 c0 74 08 44 89 e6 48 89 df ff
-> d0 8b 05 bd 6b
-> [  590.475691] RIP  [<ffffffff81302d34>] __mark_inode_dirty+0xd4/0x360
-> [  590.475691]  RSP <ffff8800bc4fbda8>
->
->
-> Thanks,
-> Sasha
+Uh, right. As you guessed, on vexpress sched_clock, once registered, is
+always available. But of course I shouldn't fully rely on this.
+
+> Might udelay/mdelay be a better fit for this sort of case (since
+> udelay may be counter backed, but may also be loop backed on hardware
+> without continuous counters)?
+
+I'm sure I though about udelay, but for some reason decided against it.
+The reason may be already invalid, so I'll check it again :-)
+
+Thanks!
+
+Paweł
 
