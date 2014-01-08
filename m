@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873AbaAHRbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 12:31:03 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:42909 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008AbaAHRbA (ORCPT
+	id S1757110AbaAHRbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 12:31:24 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:43810 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757034AbaAHRbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 12:31:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140108152610.GA5863@infradead.org>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz> <20140107155830.GA28395@infradead.org>
- <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
- <20140108140307.GA588@infradead.org> <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
- <20140108152610.GA5863@infradead.org>
-From: Sergey Meirovich <rathamahata@gmail.com>
-Date: Wed, 8 Jan 2014 19:30:38 +0200
-Message-ID: <CA+QCeVRXAXAk2Zv2gtdvT+c80hbpcvezz_dvk9aUjwPbVp7pnQ@mail.gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 8 Jan 2014 12:31:21 -0500
+Message-ID: <1389202287.26646.95.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Florian Westphal <fw@strlen.de>
+Cc: Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Wed, 08 Jan 2014 09:31:27 -0800
+In-Reply-To: <20140108140444.GH9894@breakpoint.cc>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+	 <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140107152520.GF9894@breakpoint.cc>
+	 <1389188536.26646.84.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140108140444.GH9894@breakpoint.cc>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 January 2014 17:26, Christoph Hellwig <hch@infradead.org> wrote:
->
-> On my laptop SSD I get the following results (sometimes up to 200MB/s,
-> sometimes down to 100MB/s, always in the 40k to 50k IOps range):
->
-> time elapsed (sec.):    5
-> bandwidth (MiB/s):      160.00
-> IOps:                   40960.00
+On Wed, 2014-01-08 at 15:04 +0100, Florian Westphal wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > This will also set up a null-binding when no matching SNAT/DNAT/MASQERUADE
+> > > rule existed.
+> > > 
+> > > The manipulations of the skb->nfct->ext nat area are performed without
+> > > a lock.  Concurrent access is supposedly impossible as the conntrack
+> > > should not (yet) be in the hash table.
+> > > 
+> > > The confirmed bit is set right before we insert the conntrack into
+> > > the hash table (after we traversed rules, ct is ready to be
+> > > 'published').
+> > > 
+> > > i.e. when the confirmed bit is NOT set we should not be 'seeing' the nf_conn
+> > > struct when we perform the lookup, as it should still be sitting on the
+> > > 'unconfirmed' list, being invisible to readers.
+> > > 
+> > > Does that explanation make sense to you?
+> > > 
+> > > Thanks for looking into this.
+> > 
+> > Still, this patch adds a loop. And maybe an infinite one if confirmed
+> > bit is set from an context that was interrupted by this one.
+> 
+> Hmm.  There should be at most one retry.
+> 
+> The confirmed bit should always be set here.
 
-Any direct attached storage I've tried was faster for me as well,
-indeed. I have already posted IIRC
-"06:00.0 RAID bus controller: LSI Logic / Symbios Logic MegaRAID SAS
-2208 [Thunderbolt] (rev 05)"   - 1Gb BBU RAM
-sysbench seqwr aio 4k:                     326.24Mb/sec 20879.56 Requests/sec
+So why are you testing it ?
 
-That is good that you mentioned SSD. I've tried fnic HBA zoned to EMC
-XtremIO (SSD only based storage)
-     14.43Mb/sec 3693.65 Requests/sec for sequential 4k.
+> If it isn't then this conntrack shouldn't be in the hash table, i.e.
+> when we re-try we should find the same conntrack again with the bit set.
 
-So far I've seen so massive degradation only in SAN environment. I
-started my investigation with RHEL6.5 kernel so below table is from it
-but the trend is the same as for mainline it seems.
+Where is this guaranteed ? The invariant is the refcnt being taken.
 
-Chunk size Bandwidth MiB/s
-================================
-64M                512
-32M                510
-16M                492
-8M                  451
-4M                  436
-2M                  350
-1M                  256
-512K               191
-256K               165
-128K               142
-64K                 101
-32K                 65
-16K                 39
-8K                   20
-4K                   11
-
-
->
-> The IOps are more than the hardware is physically capable of, but given
-> that you didn't specify O_SYNC this seems sensible given that we never
-> have to flush the disk cache.
->
-> Could it be that your array has WCE=0?  In Linux we'll never enable the
-> cache automatically, but Solaris does at least when using ZFS.  Try
-> running:
->
->    sdparm --set=WCE /dev/sdX
->
-> and try again.
-
-ZFS is not supporting direct IO so that was UFS. I tried to do sdparm
---set=WCE /dev/sdX on the same fnic/XtremIO however this is multipath
-and for second half of 4 LUNs that failed (probably this is normal)
-Results have not changed much: 13.317Mb/sec 3409.26 Requests/sec
+> 
+> Asuming the other cpu git interrupted after setting confirmed
+> bit but before inserting it into the hash table, then our re-try
+> should not be able find a matching entry.
+> 
+> Maybe I am missing something, but I don't see how we could (upon
+> retry) find the very same entry again with the bit still not set.
+> 
+> > If you need to test the confirmed bit, then you also need to test it
+> > before taking the refcount.
+> 
+> I don't think that would make sense, because it should always be
+> set (inserting conntrack into hash table without confirmed set is
+> illegal, and it is never unset again).
+> 
+> [ when allocating a new conntrack, ct->status is zeroed, which also
+>   clears the flag.  This happens just before we set the new objects
+>   refcount to 1 ]
 
 
-[root@dca-poc-gtsxdb3 mnt]# multipath -ll
-mpathb (3514f0c5c11a0002d) dm-0 XtremIO,XtremApp
-size=50G features='0' hwhandler='0' wp=rw
-`-+- policy='round-robin 0' prio=1 status=active
-  |- 0:0:4:1 sdg 8:96  active ready running
-  |- 0:0:5:1 sdh 8:112 active ready running
-  |- 1:0:4:1 sdo 8:224 active ready running
-  `- 1:0:5:1 sdp 8:240 active ready running
+I did this RCU conversion, so I think I know what I am talking about.
 
-[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdg
-    /dev/sdg: XtremIO   XtremApp          1.05
-[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdh
-    /dev/sdh: XtremIO   XtremApp          1.05
-[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdo
-    /dev/sdo: XtremIO   XtremApp          1.05
-mode sense command failed, unit attention
-change_mode_page: failed fetching page: Caching (SBC)
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-[root@dca-poc-gtsxdb3 mnt]# sdparm --set=WCE /dev/sdp
-    /dev/sdp: XtremIO   XtremApp          1.05
-mode sense command failed, unit attention
-change_mode_page: failed fetching page: Caching (SBC)
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-[root@dca-poc-gtsxdb3 mnt]#
+The entry should not be put into hash table (or refcnt set to 1),
+if its not ready. It is that simple.
+
+We need to address this problem without adding an extra test and
+possible loop for the lookups.
+
+Whole point of RCU is to make lookups fast, by possibly making the
+writers doing all the needed logic.
+
+
+
