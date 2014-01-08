@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbaAHHiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 02:38:15 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:64467 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbaAHHiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 02:38:08 -0500
-X-AuditID: 9c93017e-b7cd8ae000002ce9-fc-52cd005eeefc
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 1/5] tools lib traceevent: Add WARN and WARN_ONCE macros
-References: <1389063612-18173-1-git-send-email-namhyung@kernel.org>
-	<1389063612-18173-2-git-send-email-namhyung@kernel.org>
-	<20140107140747.GA3845@ghostprotocols.net>
-Date: Wed, 08 Jan 2014 16:38:05 +0900
-In-Reply-To: <20140107140747.GA3845@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Tue, 7 Jan 2014 11:07:47 -0300")
-Message-ID: <87eh4idiua.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755398AbaAHHkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 02:40:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5865 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755284AbaAHHkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 02:40:21 -0500
+Date: Wed, 8 Jan 2014 08:42:25 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 5/7] vfio: Use new interfaces for MSI/MSI-X enablement
+Message-ID: <20140108074224.GA20157@dhcp-26-207.brq.redhat.com>
+References: <cover.1389103215.git.agordeev@redhat.com>
+ <1c2ab7cdd9f18f98ee86c73b182f4ee0697f7495.1389103215.git.agordeev@redhat.com>
+ <1389119653.3209.124.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389119653.3209.124.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Tue, Jan 07, 2014 at 11:34:13AM -0700, Alex Williamson wrote:
+> On Tue, 2014-01-07 at 19:05 +0100, Alexander Gordeev wrote:
+> > This update also fixes a bug when deprecated pci_enable_msix()
+> > and pci_enable_msi_block() functions return a positive return
+> > value which indicats the number of interrupts that could have
+> > been allocated rather than a successful allocation. The driver
+> > misinterpreted this value and assumed MSI-X/MSIs are enabled,
+> > although in fact it were not.
+> 
+> No, the driver interpreted it correctly, which is why anything other
+> than zero is handled as an error.  This patch looks incorrect if the new
+> interfaces follow the same return convention.  Thanks,
 
-On Tue, 7 Jan 2014 11:07:47 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Jan 07, 2014 at 12:00:08PM +0900, Namhyung Kim escreveu:
->> They're copied from the perf code and will be used to print error
->> message during trace_seq_printf() and friends.
->> 
->> Suggested-by: Jiri Olsa <jolsa@redhat.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->
-> We could take this opportunity and come up with
-> tools/lib/{bug,compiler}.h, matching the files in include/linux/ where
-> those helpers come from, no?
+The new interfaces differ wrt the return value - it is eigher a negative
+error code or a positive number of successfuly allocated vectors. 
 
-Hmm.. maybe under tools/include/ ?
+If the user level makes use of a number of vectors that could have been
+allocated then it should cease doing it, since only 0 or a negative error
+code is returned after this update.
 
->
-> Then make both tools/perf/ and tools/lib/traceevent/ use it, instead of
-> creating the third copy (kernel proper, perf, libtraceevent).
+The changelog is incorrect as the driver indeed bailes out on positive
+return values. I will send a updated version.
 
-Okay.
+> Alex
 
->
-> Then, does anybody know why likely/unlikely is guarded inside __KERNEL__
-> in include/linux/compiler.h?
-
-IIUC it's because of BRANCH_PROFILING..
-
-
-> I think the best thing would be for us to just use:
->
-> #include <linux/compiler.h> 
->
-> just like kernel code and be done with it :-\
-
-Yeah, but it seems to require some modifications.
-
-Thanks,
-Namhyung
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
