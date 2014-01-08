@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaAHNz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:55:56 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33358 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932278AbaAHNsy (ORCPT
+	id S932407AbaAHN42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:56:28 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:50681 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391AbaAHN4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:48:54 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, angus.clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v4 19/37] mtd: st_spi_fsm: Add a check to if the chip can handle an SoC reset
-Date: Wed,  8 Jan 2014 13:47:02 +0000
-Message-Id: <1389188840-14306-20-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
-References: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+	Wed, 8 Jan 2014 08:56:24 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52CD5905.7030203@roeck-us.net>
+Date: Wed, 08 Jan 2014 05:56:21 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: shuah.kh@samsung.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.12 000/144] 3.12.7-stable review
+References: <20140106223745.326293132@linuxfoundation.org> <52CC5062.3080708@samsung.com> <20140107191639.GA2825@kroah.com> <52CC78EC.3000806@samsung.com>
+In-Reply-To: <52CC78EC.3000806@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on information we can obtain though platform specific data and/or
-chip capabilities we are able to determine whether or not we can handle
-a SoC reset or not. To find out why this is important please read the
-comment provided in the patch.
+On 01/07/2014 02:00 PM, Shuah Khan wrote:
+> On 01/07/2014 12:16 PM, Greg Kroah-Hartman wrote:
+>> On Tue, Jan 07, 2014 at 12:07:14PM -0700, Shuah Khan wrote:
+>>> On 01/06/2014 03:36 PM, Greg Kroah-Hartman wrote:
+>>>> This is the start of the stable review cycle for the 3.12.7 release.
+>>>> There are 144 patches in this series, all will be posted as a response
+>>>> to this one.  If anyone has any issues with these being applied, please
+>>>> let me know.
+>>>>
+>>>> Responses should be made by Wed Jan  8 22:37:25 UTC 2014.
+>>>> Anything received after that time might be too late.
+>>>>
+>>>> The whole patch series can be found in one patch at:
+>>>>     kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.7-rc1.gz
+>>>> and the diffstat can be found below.
+>>>>
+>>>> thanks,
+>>>>
+>>>> greg k-h
+>>>
+>>> Patches testing - passed
+>>> Compile testing - passed
+>>> Boot testing - passed
+>>> dmesg regression testing - passed
+>>>
+>>> Test systems
+>>>
+>>>      Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+>>>      HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+>>>      Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
+>>>
+>>> Detailed test status
+>>>
+>>> Patches applied cleanly
+>>> dmesgs look good. No regressions compared to the previous dmesgs for this
+>>> release. dmesg emerg, crit, alert, err are clean. No regressions in warn.
+>>
+>> Just in time for me to do a -rc2 release for this, and the 3.10 -rc1
+>> announcement, sorry :)
+>>
+>
+> 3.10.26-rc2 and 3.12.7-rc2 are looking good on all my 3 test systems. No dmesg regressions.
+>
+Same here.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+Guenter
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index fc23354..b21929b 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -246,6 +246,8 @@ struct stfsm {
- 
- 	uint32_t                fifo_dir_delay;
- 	bool                    booted_from_spi;
-+	bool                    reset_signal;
-+	bool                    reset_por;
- };
- 
- struct stfsm_seq {
-@@ -552,6 +554,40 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
- 	}
- }
- 
-+/*
-+ * SoC reset on 'boot-from-spi' systems
-+ *
-+ * Certain modes of operation cause the Flash device to enter a particular state
-+ * for a period of time (e.g. 'Erase Sector', 'Quad Enable', and 'Enter 32-bit
-+ * Addr' commands).  On boot-from-spi systems, it is important to consider what
-+ * happens if a warm reset occurs during this period.  The SPIBoot controller
-+ * assumes that Flash device is in its default reset state, 24-bit address mode,
-+ * and ready to accept commands.  This can be achieved using some form of
-+ * on-board logic/controller to force a device POR in response to a SoC-level
-+ * reset or by making use of the device reset signal if available (limited
-+ * number of devices only).
-+ *
-+ * Failure to take such precautions can cause problems following a warm reset.
-+ * For some operations (e.g. ERASE), there is little that can be done.  For
-+ * other modes of operation (e.g. 32-bit addressing), options are often
-+ * available that can help minimise the window in which a reset could cause a
-+ * problem.
-+ *
-+ */
-+static bool stfsm_can_handle_soc_reset(struct stfsm *fsm)
-+{
-+	/* Reset signal is available on the board and supported by the device */
-+	if (fsm->reset_signal && fsm->info->flags & FLASH_FLAG_RESET)
-+		return true;
-+
-+	/* Board-level logic forces a power-on-reset */
-+	if (fsm->reset_por)
-+		return true;
-+
-+	/* Reset is not properly handled and may result in failure to reboot */
-+	return false;
-+}
-+
- /* Configure 'addr_cfg' according to addressing mode */
- static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
- 				       struct stfsm_seq *seq)
-@@ -824,6 +860,10 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
- 		goto boot_device_fail;
- 	}
- 
-+	fsm->reset_signal = of_property_read_bool(np, "st,reset-signal");
-+
-+	fsm->reset_por = of_property_read_bool(np, "st,reset-por");
-+
- 	/* Where in the syscon the boot device information lives */
- 	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
- 	if (ret)
--- 
-1.8.3.2
 
