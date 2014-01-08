@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194AbaAHUHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 15:07:19 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:63998 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaAHUHP (ORCPT
+	id S1757265AbaAHUJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 15:09:27 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63257 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757098AbaAHUJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 15:07:15 -0500
-Date: Wed, 8 Jan 2014 21:05:05 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] ARM: tegra: Add efuse bindings
-Message-ID: <20140108200504.GD1298@ulmo.nvidia.com>
-References: <1387891931-9854-1-git-send-email-pdeschrijver@nvidia.com>
- <1387891931-9854-4-git-send-email-pdeschrijver@nvidia.com>
- <52CB14D3.2060904@wwwdotorg.org>
- <20140108133951.GD1592@ulmo.nvidia.com>
- <52CD9DFB.9010007@wwwdotorg.org>
+	Wed, 8 Jan 2014 15:09:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Paul Walmsley <paul@pwsan.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] driver-core: platform: Resolve DT interrupt references late
+Date: Wed, 08 Jan 2014 21:09:17 +0100
+Message-ID: <14122609.M29raBct1E@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20140108195909.GB1298@ulmo.nvidia.com>
+References: <20140108011957.GK5074@atomide.com> <201401081725.17876.arnd@arndb.de> <20140108195909.GB1298@ulmo.nvidia.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u65IjBhB3TIa72Vp"
-Content-Disposition: inline
-In-Reply-To: <52CD9DFB.9010007@wwwdotorg.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:HHc8/BBtGU8DjmMN/5wDY0AzYwYrDqghmJobaaRjgxm
+ e/mikTdKMecVWLfh/t74Y3reDiBmvwUbqepViQEGvLctSEq8ai
+ 0rrs0xtw5/GuWS0V6EyFk535fN0IW8vQOEFszucZf8HUNXQ85Y
+ +q6qJTCI/W6HtQdAXyhHD62UYRRivuuvwGxvhqGcyakOCG4Y66
+ qV/IOnaxwe8+0kdbDiX/FfhxN7SrnkWSCtiG9pS0hcJkzf5wy/
+ aWGS1zcOyyhvYfMx8aZ9ZmXHsq6IsxlasembpSkwixNKXZWi1D
+ syb9Bz8d4SOd24ObCijKaGZu8SyzJ3DtgK7qm30ACZnSoC6kKO
+ iFgioPa20qAm9KU/UGTY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 08 January 2014 20:59:10 Thierry Reding wrote:
+> On Wed, Jan 08, 2014 at 05:25:17PM +0100, Arnd Bergmann wrote:
+> > On Wednesday 08 January 2014, Thierry Reding wrote:
+> > > On Wed, Jan 08, 2014 at 04:11:08PM +0100, Arnd Bergmann wrote:
+> > The more I think about the iommu case, the more I am convinced that it
+> > does belong into the core, in whatever form we can find. As far as I
+> > can tell from the little reliable information I have on the topic, I
+> > would assume that we can keep it in the DT probing code, as there won't
+> > be a need for multiple arbitrary IOMMUs with ACPI or with board files.
+> 
+> I think part of the problem is that we don't have any DT probing code
+> yet. of_platform_probe() would have been that code. Perhaps if you weigh
+> in Grant and Greg will reconsider.
 
---u65IjBhB3TIa72Vp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For all I know, we don't even have a binding proposal, but I may
+have missed that.
 
-On Wed, Jan 08, 2014 at 11:50:35AM -0700, Stephen Warren wrote:
-> On 01/08/2014 06:39 AM, Thierry Reding wrote:
-> > On Mon, Jan 06, 2014 at 01:40:51PM -0700, Stephen Warren wrote:
-> >> On 12/24/2013 06:32 AM, Peter De Schrijver wrote:
-> > [...]
-> >>> diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra=
-20.dtsi
-> >>
-> >>> +	efuse@7000F800 {
-> >>
-> >> "fuse" might be a better node name; "efuse" is presumably the name of
-> >> the instance, not the type of object.
-> >=20
-> > There's another occurrence I noticed recently where we haven't followed
-> > that rule. The PMIC node on Venice2 for instance is called as3722.
-> > Perhaps that should also be renamed.
->=20
-> Yes, we should fix that. Care to send a patch?
+> > Good point, I forgot about the special case for i2c_client->irq.
+> > I looked now and noticed that very few i2c devices actually use this
+> > field, but larger number uses platform_data, which has a similar
+> > problem.
+> 
+> Yeah. It's kind of messy. The more I think about it, the more I begin to
+> like the lookup table option. One big advantage of that is that we could
+> actually unify much of the lookup code, much like we do for other types
+> of resources. It's a pattern that has worked fairly well in a number of
+> cases, so it seems natural to use it for interrupts as well.
+> 
+> An even more extreme option would be to go all the way and introduce
+> struct irq, along the same lines of the new struct gpiod. That would
+> allow nice things such as storing trigger types and such within the IRQ
+> handle and propagate them automatically.
 
-Will do.
+We already have struct irq_desc, and I believe everybody who works
+with interrupts supports migrating from irq number interfaces to
+irq descriptors as soon as we can find someone willing to do that
+work.
+ 
+> > No trivial solution that I can see. I think we can deal with the case
+> > where platform code uses platform_device->resources, and everything else
+> > comes down to having multiple code branches in the driver, as we already
+> > have to deal with platform_data and DT properties describing stuff that
+> > doesn't fit in the resources.
+> 
+> That would be another argument in favour of the lookup table. It would
+> provide a unified mechanism to define static interrupts if no firmware
+> interface is available *independent* of the device type. You could have
+> something like:
+> 
+> 	static const struct irq_lookup board_irq_lookup[] = {
+> 		IRQ_LOOKUP("gpio", 0, "0-0040", NULL), /* I2C client via GPIO expander */
+> 		IRQ_LOOKUP("intc", 0, "ehci.1", NULL), /* platform device via INTC */
+> 	};
+> 
+> Along with:
+> 
+> 	struct irq *irq_get(struct device *dev, const char *con_id);
+> 
+> To look it up via DT, ACPI, lookup table. That obviously means a more or
+> less complete change in how interrupts are handled in the kernel, and it
+> may not be worth it in the end.
 
-Thierry
+It would certainly need a long migration period, and a plan for how to
+get there without breaking things in the meantime. Rather than a lookup
+table like the kind we have for clocks, I'd prefer a general way to
+attach named properties to devices. My feeling is that building upon
+devres would be a good plan, since it already provides a way to attach
+arbitrary data to a device.
 
---u65IjBhB3TIa72Vp
-Content-Type: application/pgp-signature
+	Arnd
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSza9wAAoJEN0jrNd/PrOhB84QAK1ZPKj6gFYAJFaabDtwZz9y
-yWMnI+N0c3Sz/6Ps/1hGgzJAZLm4x4DUOy6k4UjP8j6azfIKhGSUMfk7NewLOIUr
-7OwNvRqFlIB9n3rKEXiAp18zIhpO8OK5KpKDYeDKCw7JdfHdQz+HhkQmd3Q45a+r
-ZYVXjCRbeaR641XcjfDiipscn1xyRnOXEviDBeUVh6d5T2JpwOynT5yNU/MPtPZI
-CTp+r8WuGmiHjavjh3bG3b1oTw2U/be9v7AV5B55f5uU7sxdsCAmA4feakZhPEdG
-TKPT9B8D0WYFymras9sqZTEM+FlFR9FYu27kqGPbvnADH+lRX9d3N/GkHzxc6Vi0
-c/NDKBW3GUqa8JHcNp8ZDwsnSoS/Z77vlD7sBmuWDKOfvt0F9S5EXDYhjXw/Y7qL
-Zv3Q2BLozL92BeJ2oQBFiPYldxEu6sf9GwBfSp+ZWWCosABT4vwuppYfwrvzT4rx
-YQy3MIMO+yJ5e0nMYY/YN9qeu+GC+IhZDvOYpaeUVx1WdxLmkRou6V9BPNd40OCz
-NigIAJsoi8eyG8QvjGbRRe33gf8o9VqhG50V4mlGfZSk8fW+TCiZlxlNz/9Qc/Er
-CRKnXTDTCB/98UGYsFXDG3/MCkwNYwKVNV3pFE9SLsmNat+BpjxfpP6ckz5tcY6X
-AxepF0hrfInZ5Cx5DXSv
-=SWyH
------END PGP SIGNATURE-----
-
---u65IjBhB3TIa72Vp--
