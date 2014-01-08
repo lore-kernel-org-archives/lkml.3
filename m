@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaAHTNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 14:13:23 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36616 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaAHTNV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 14:13:21 -0500
-Message-ID: <52CDA34C.2030605@codeaurora.org>
-Date: Wed, 08 Jan 2014 14:13:16 -0500
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: xen-devel@lists.xensource.com, linux@arm.linux.org.uk,
-        Ian.Campbell@citrix.com, arnd@arndb.de, marc.zyngier@arm.com,
-        Catalin.Marinas@arm.com, konrad.wilk@oracle.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, nico@linaro.org, olof@lixom.net,
+	id S1757017AbaAHTNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 14:13:54 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:55091 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755902AbaAHTNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 14:13:49 -0500
+Date: Wed, 8 Jan 2014 12:13:39 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: boris brezillon <b.brezillon@overkiz.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 4/6] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING
- and pv_time_ops
-References: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com> <1389206998-27875-4-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1389206998-27875-4-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
+Message-ID: <20140108191339.GB12358@obsidianresearch.com>
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com>
+ <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com>
+ <20140108183418.GA12358@obsidianresearch.com>
+ <52CDA032.3010804@overkiz.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CDA032.3010804@overkiz.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
-
-On 01/08/2014 01:49 PM, Stefano Stabellini wrote:
-> Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
-> Necessary duplication of paravirt.h and paravirt.c with ARM.
+On Wed, Jan 08, 2014 at 08:00:02PM +0100, boris brezillon wrote:
+> Hello Jason,
 > 
-> The only paravirt interface supported is pv_time_ops.steal_clock, so no
-> runtime pvops patching needed.
+> Le 08/01/2014 19:34, Jason Gunthorpe a ?crit :
+> >On Wed, Jan 08, 2014 at 03:21:58PM +0100, Boris BREZILLON wrote:
+> >
+> >>+int of_get_nand_timings(struct device_node *np, struct nand_timings *timings)
+> >>+{
+> >>+	memset(timings, 0, sizeof(*timings));
+> >>+	of_property_read_u32(np, "tCLS-min", &timings->tCLS_min);
+> >>+	of_property_read_u32(np, "tCLH-min", &timings->tCLH_min);
+> >>+	of_property_read_u32(np, "tCS-min", &timings->tCS_min);
+> >[..]
+> >
+> >A while ago when discussing another controller it was pointed out
+> >these values are all auto-probable directly from the NAND via a ONFI
+> >defined GET FEATURE @0x01 query, and adding these timings to the DT
+> >was NAK'd..
+> >
+> >Basically you set the interface to the slowest ONFI timing mode, do
+> >the GET FEATURE to the NAND chip and then increase the interface speed
+> >to the highest mutually supported ONFI mode.
 > 
-> This allows us to make use of steal_account_process_tick for stolen
-> ticks accounting.
+> >Is there some reason you need to encode this in the DT?
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: will.deacon@arm.com
-> CC: nico@linaro.org
-> CC: marc.zyngier@arm.com
-> CC: cov@codeaurora.org
-> CC: arnd@arndb.de
-> CC: olof@lixom.net
-> CC: Catalin.Marinas@arm.com
+> What if the NAND does not support the ONFI interface (and this is
+> exactly the case for the NAND available on the cubietruck board:
+> H27UCG8T2ATR).
 
-Looks good to me.
+Sounds like a good reason to me! 
 
-Acked-by Christopher Covington <cov@codeaurora.org>
+You might want to check if you can boil down the DT timings from the
+huge list to just an ONFI mode number..
 
-While I don't think it should necessarily gate these changes, I wonder if at
-some point the config options could be consolidated across the various
-architectures using them.
+I'd echo Rob's comments, the property needs to include the units
+in the name, and I strongly recommend picoseconds for these
+values.
 
-Regards,
-Christopher
+Also, you might want to check that the ONFI names for these parameters
+are used, not a vendor specific name to try and avoid confusion.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Jason
