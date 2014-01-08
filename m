@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaAHNrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 08:47:21 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42236 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664AbaAHNrR (ORCPT
+	id S932128AbaAHNsX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 08:48:23 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:37049 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903AbaAHNsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 08:47:17 -0500
-Message-ID: <1389188841.26646.87.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get (v2)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Wed, 08 Jan 2014 05:47:21 -0800
-In-Reply-To: <1389187051-7794-1-git-send-email-avagin@openvz.org>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
-	 <1389187051-7794-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 8 Jan 2014 08:48:21 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, angus.clark@st.com
+Subject: [PATCH v4 00/36] mtd: st_spi_fsm: Add new driver
+Date: Wed,  8 Jan 2014 13:46:43 +0000
+Message-Id: <1389188840-14306-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-08 at 17:17 +0400, Andrey Vagin wrote:
-> Lets look at destroy_conntrack:
-> 
-> hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
-> ...
-> nf_conntrack_free(ct)
-> 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
-> 
-> net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
-> 
-> The hash is protected by rcu, so readers look up conntracks without
-> locks.
-> A conntrack is removed from the hash, but in this moment a few readers
-> still can use the conntrack. Then this conntrack is released and another
-> thread creates conntrack with the same address and the equal tuple.
-> After this a reader starts to validate the conntrack:
-> * It's not dying, because a new conntrack was created
-> * nf_ct_tuple_equal() returns true.
-> 
-> But this conntrack is not initialized yet, so it can not be used by two
-> threads concurrently. In this case BUG_ON may be triggered from
-> nf_nat_setup_info().
-> 
-> Florian Westphal suggested to check the confirm bit too. I think it's
-> right.
-> 
-> task 1			task 2			task 3
-> 			nf_conntrack_find_get
-> 			 ____nf_conntrack_find
-> destroy_conntrack
->  hlist_nulls_del_rcu
->  nf_conntrack_free
->  kmem_cache_free
-> 						__nf_conntrack_alloc
-> 						 kmem_cache_alloc
-> 						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
-> 			 if (nf_ct_is_dying(ct))
-> 			 if (!nf_ct_tuple_equal()
-> 
-> I'm not sure, that I have ever seen this race condition in a real life.
-> Currently we are investigating a bug, which is reproduced on a few node.
-> In our case one conntrack is initialized from a few tasks concurrently,
-> we don't have any other explanation for this.
-> 
-> <2>[46267.083061] kernel BUG at net/ipv4/netfilter/nf_nat_core.c:322!
-> ...
-> <4>[46267.083951] RIP: 0010:[<ffffffffa01e00a4>]  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590 [nf_nat]
-> ...
-> <4>[46267.085549] Call Trace:
-> <4>[46267.085622]  [<ffffffffa023421b>] alloc_null_binding+0x5b/0xa0 [iptable_nat]
-> <4>[46267.085697]  [<ffffffffa02342bc>] nf_nat_rule_find+0x5c/0x80 [iptable_nat]
-> <4>[46267.085770]  [<ffffffffa0234521>] nf_nat_fn+0x111/0x260 [iptable_nat]
-> <4>[46267.085843]  [<ffffffffa0234798>] nf_nat_out+0x48/0xd0 [iptable_nat]
-> <4>[46267.085919]  [<ffffffff814841b9>] nf_iterate+0x69/0xb0
-> <4>[46267.085991]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
-> <4>[46267.086063]  [<ffffffff81484374>] nf_hook_slow+0x74/0x110
-> <4>[46267.086133]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
-> <4>[46267.086207]  [<ffffffff814b5890>] ? dst_output+0x0/0x20
-> <4>[46267.086277]  [<ffffffff81495204>] ip_output+0xa4/0xc0
-> <4>[46267.086346]  [<ffffffff814b65a4>] raw_sendmsg+0x8b4/0x910
-> <4>[46267.086419]  [<ffffffff814c10fa>] inet_sendmsg+0x4a/0xb0
-> <4>[46267.086491]  [<ffffffff814459aa>] ? sock_update_classid+0x3a/0x50
-> <4>[46267.086562]  [<ffffffff81444d67>] sock_sendmsg+0x117/0x140
-> <4>[46267.086638]  [<ffffffff8151997b>] ? _spin_unlock_bh+0x1b/0x20
-> <4>[46267.086712]  [<ffffffff8109d370>] ? autoremove_wake_function+0x0/0x40
-> <4>[46267.086785]  [<ffffffff81495e80>] ? do_ip_setsockopt+0x90/0xd80
-> <4>[46267.086858]  [<ffffffff8100be0e>] ? call_function_interrupt+0xe/0x20
-> <4>[46267.086936]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
-> <4>[46267.087006]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
-> <4>[46267.087081]  [<ffffffff8118f2e8>] ? kmem_cache_alloc+0xd8/0x1e0
-> <4>[46267.087151]  [<ffffffff81445599>] sys_sendto+0x139/0x190
-> <4>[46267.087229]  [<ffffffff81448c0d>] ? sock_setsockopt+0x16d/0x6f0
-> <4>[46267.087303]  [<ffffffff810efa47>] ? audit_syscall_entry+0x1d7/0x200
-> <4>[46267.087378]  [<ffffffff810ef795>] ? __audit_syscall_exit+0x265/0x290
-> <4>[46267.087454]  [<ffffffff81474885>] ? compat_sys_setsockopt+0x75/0x210
-> <4>[46267.087531]  [<ffffffff81474b5f>] compat_sys_socketcall+0x13f/0x210
-> <4>[46267.087607]  [<ffffffff8104dea3>] ia32_sysret+0x0/0x5
-> <4>[46267.087676] Code: 91 20 e2 01 75 29 48 89 de 4c 89 f7 e8 56 fa ff ff 85 c0 0f 84 68 fc ff ff 0f b6 4d c6 41 8b 45 00 e9 4d fb ff ff e8 7c 19 e9 e0 <0f> 0b eb fe f6 05 17 91 20 e2 80 74 ce 80 3d 5f 2e 00 00 00 74
-> <1>[46267.088023] RIP  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590
-> 
-> v2: move nf_ct_is_confirmed into the unlikely() annotation
-> 
-> Cc: Florian Westphal <fw@strlen.de>
-> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  net/netfilter/nf_conntrack_core.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-> index 43549eb..403f634 100644
-> --- a/net/netfilter/nf_conntrack_core.c
-> +++ b/net/netfilter/nf_conntrack_core.c
-> @@ -387,8 +387,12 @@ begin:
->  			     !atomic_inc_not_zero(&ct->ct_general.use)))
->  			h = NULL;
->  		else {
-> +			/* A conntrack can be recreated with the equal tuple,
-> +			 * so we need to check that the conntrack is initialized
-> +			 */
->  			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
-> -				     nf_ct_zone(ct) != zone)) {
-> +				     nf_ct_zone(ct) != zone ||
-> +				     !nf_ct_is_confirmed(ct))) {
->  				nf_ct_put(ct);
->  				goto begin;
->  			}
+Version 4:
+  Tended to Brian's previous review comments
+    - Checkpatch acceptance
+    - MODULE_DEVICE_TABLE() name slip correction
+    - Timeout issue(s) resolved
+    - Potential infinite loop mitigated
+    - Code clarity suggests heeded
+    - Duplication with MTD core code removed
+    - Upgraded to using ROUND_UP() helper
+    - Moved non-shared header code into main driver
+    - Relocated dynamic msg sequence stores into main struct
+    - Averted adaption of static (table) data
+    - Basic whitespace/spelling/data type/dev_err suggestions accepted
 
+Version 3:
+  Okay, this thing should be fully functional now. Identify a chip
+  based on it's JEDEC ID, Read, Write, Erase (all or by sector).
+  Support for various chip quirks added too.
+ 
+Version 2:
+  The first bunch of these patches have been on the MLs before, but
+  didn't receive a great deal of attention for the most part. We are
+  a little more featureful this time however. We can now successfully
+  setup and configure the N25Q256. We still can't read/write/erase
+  it though. I'll start work on that next week and will provide it in
+  the next instalment.
+ 
+Version 1:
+  First stab at getting this thing Mainlined. It doesn't do a great deal
+  yet, but we are able to initialise the device and dynamically set it up
+  correctly based on an extracted JEDEC ID.
 
-I am still not convinced of this being the right fix.
-
-
-The key we test after taking the refcount should be the same key that we
-test before taking the refcount, otherwise we might add a loop here.
-
-Your patch did not change ____nf_conntrack_find(), so I find it
-confusing.
-
-
+ Documentation/devicetree/bindings/mtd/st-fsm.txt |   26 ++
+ arch/arm/boot/dts/stih416-b2105.dts              |   14 +
+ arch/arm/boot/dts/stih416-pinctrl.dtsi           |   12 +
+ drivers/mtd/devices/Kconfig                      |    8 +
+ drivers/mtd/devices/Makefile                     |    1 +
+ drivers/mtd/devices/serial_flash_cmds.h          |   81 ++++
+ drivers/mtd/devices/st_spi_fsm.c                 | 2124 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 2266 insertions(+)
 
