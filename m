@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaAHIm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 03:42:57 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:55844 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbaAHImu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 03:42:50 -0500
-Date: Wed, 8 Jan 2014 16:42:42 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, Michal Hocko <mhocko@suse.cz>,
-        Dave Hansen <dave.hansen@intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [RFC] mm: prevent set a value less than 0 to min_free_kbytes
-Message-ID: <20140108084242.GA10485@localhost.localdomain>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	Mel Gorman <mgorman@suse.de>,
-	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-	Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave.hansen@intel.com>,
-	David Rientjes <rientjes@google.com>
+	id S1755571AbaAHIoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 03:44:20 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13652 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755291AbaAHIoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 03:44:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,623,1384329600"; 
+   d="scan'208";a="455306442"
+Message-ID: <52CD0FD7.7040208@linux.intel.com>
+Date: Wed, 08 Jan 2014 16:44:07 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010808-1344-0000-0000-000004BF06DA
+To: Joerg Roedel <joro@8bytes.org>
+CC: David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: Re: [Patch Part1 V3 09/20] iommu/vt-d: mark internal functions as
+ static
+References: <1388989107-4795-1-git-send-email-jiang.liu@linux.intel.com> <1388989107-4795-10-git-send-email-jiang.liu@linux.intel.com> <20140107152523.GG2742@8bytes.org>
+In-Reply-To: <20140107152523.GG2742@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If echo -1 > /proc/vm/sys/min_free_kbytes, the system will hang.
-Changing proc_dointvec() to proc_dointvec_minmax() in the
-min_free_kbytes_sysctl_handler() can prevent this to happen.
+Hi Joerg,
+	Thanks for fix up this issue!
+I forgot to test the changes against IA64 platform. There's another
+issue related to IA64, I will send out the patch soon. I have setup
+cross compilation environment for IA64 and verified all changes
+passing compilation tests.
 
-Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
----
- mm/page_alloc.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Thanks!
+Gerry
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 77937e0..a9dcfd8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5692,7 +5692,12 @@ module_init(init_per_zone_wmark_min)
- int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
--	proc_dointvec(table, write, buffer, length, ppos);
-+	int rc;
-+
-+	rc = proc_dointvec_minmax(table, write, buffer, length, ppos);
-+	if (rc)
-+		return rc;
-+
- 	if (write) {
- 		user_min_free_kbytes = min_free_kbytes;
- 		setup_per_zone_wmarks();
--- 
-1.7.7.6
-
+On 2014/1/7 23:25, Joerg Roedel wrote:
+> On Mon, Jan 06, 2014 at 02:18:16PM +0800, Jiang Liu wrote:
+>> Function detect_intel_iommu()/alloc_iommu()/parse_ioapics_under_ir()
+>> are only used internally, so mark them as static.
+> 
+> Doesn't seem to be true for detect_intel_iommu which is used in ia64
+> setup code, no?
+> 
+> 
+> 	Joerg
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
