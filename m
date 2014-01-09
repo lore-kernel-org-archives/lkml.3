@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaAIRm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 12:42:29 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50299 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaAIRmT (ORCPT
+	id S1755293AbaAIRqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 12:46:54 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:17770 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaAIRqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 12:42:19 -0500
-Date: Thu, 9 Jan 2014 17:42:03 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, richard.genoud@gmail.com,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20140109174203.GJ12858@sirena.org.uk>
-References: <1389244755-16188-1-git-send-email-wenyou.yang@atmel.com>
+	Thu, 9 Jan 2014 12:46:47 -0500
+X-IronPort-AV: E=Sophos;i="4.95,632,1384300800"; 
+   d="scan'208";a="89234514"
+Message-ID: <52CEE084.5000409@citrix.com>
+Date: Thu, 9 Jan 2014 17:46:44 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5me2qT3T17SWzdxI"
-Content-Disposition: inline
-In-Reply-To: <1389244755-16188-1-git-send-email-wenyou.yang@atmel.com>
-X-Cookie: Gravity brings me down.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] spi: atmel: Refactor spi-atmel to use SPI framework
- queue
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, <jonathan.davies@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Zoltan Kiss <zoltan.kiss@citrix.com>,
+        <xen-devel@lists.xenproject.org>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH net-next v3 1/9] xen-netback: Introduce TX
+ grant map definitions
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com> <1389139818-24458-2-git-send-email-zoltan.kiss@citrix.com> <20140109153010.GE12164@zion.uk.xensource.com> <52CEC370.10503@citrix.com> <alpine.DEB.2.02.1401091722150.21510@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1401091722150.21510@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/01/14 17:28, Stefano Stabellini wrote:
+> On Thu, 9 Jan 2014, David Vrabel wrote:
+>> On 09/01/14 15:30, Wei Liu wrote:
+>>> On Wed, Jan 08, 2014 at 12:10:10AM +0000, Zoltan Kiss wrote:
+>>>> This patch contains the new definitions necessary for grant mapping.
+>>>>
+>>>> v2:
+>>>> - move unmapping to separate thread. The NAPI instance has to be scheduled
+>>>>   even from thread context, which can cause huge delays
+>>>> - that causes unfortunately bigger struct xenvif
+>>>> - store grant handle after checking validity
+>>>>
+>>>> v3:
+>>>> - fix comment in xenvif_tx_dealloc_action()
+>>>> - call unmap hypercall directly instead of gnttab_unmap_refs(), which does
+>>>>   unnecessary m2p_override. Also remove pages_to_[un]map members
+>>>
+>>> Is it worthy to have another function call
+>>> gnttab_unmap_refs_no_m2p_override in Xen core driver, or just add a
+>>> parameter to control wether we need to touch m2p_override? I *think* it
+>>> will benefit block driver as well?
+>>
+>> add_m2p_override and remove_m2p_override calls should be moved into the
+>> gntdev device as that should be the only user.
+> 
+> First of all the gntdev device is common code, while the m2p_override is
+> an x86 concept.
 
---5me2qT3T17SWzdxI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+m2p_add_override() and m2p_remove_override() are already called from
+common code and ARM already provides inline stubs.
 
-On Thu, Jan 09, 2014 at 01:19:15PM +0800, Wenyou Yang wrote:
-> Replace the deprecated master->transfer with transfer_one_message()
-> and allow the SPI subsystem handle all the queuing of messages.
+The m2p override mechanism is also broken by design (local PFN to
+foreign MFN may be many-to-one, but the m2p override only works if local
+PFN to foreign MFN is one-to-one). So I want the m2p override to be only
+used where it is /currently/ necessary.  I think there should be no new
+users of it nor should it be considered a fix for any other use case.
 
-Applied, thanks.
-
---5me2qT3T17SWzdxI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzt9oAAoJELSic+t+oim90DQP/RH6oIIOxqSRxPBljD+ZHyFN
-xMhJm5zf8HloQnMOPpV1g9ezBxYwXgjfiAzVVJ2Po/hc0wMf1HWXDru8Qzl1mc8T
-UYCOWa5WKliYSw0eoypiYB5/cYaAq8TXh3wbeQZmFBY9MQxvHLH/Xs2UL0CG+Cba
-IjdtAwktdpbFh0t+2YkHM8lMbQv16iqo2ZdZ2GA+hWGSbN2YL5AR/QoNJ0v+Ni54
-fuxktzjIHXLy5v6gpgAzEqs7h9ZQLE741idzmFefHneWrJ/19/WBczRur32KumEC
-BwPFVA8eVPzvXSEzTvy8H0n1qHJW4GEb/bFjoBupMPk2nTTvLdf43OXXI/9vC4Fs
-dLcEawghUfsGkiZfYshaqHV6jUs5AseaBn3azv0AVIhC1FHVikIT9Y3+wwWgqlnC
-dINPLmgnNi7UliJtaURkJO+I4GxPU4btx26T5zLGwsEc4Q2alyUYf3gmfPuSYPMR
-azoMhqs/w8hFUWBWYL1zuWeWkE9fifH634pqbgFJK2I5JfCpW52r6CTEo4EKzDHD
-7Ssjf4qkUrg0jfyXhqClScbIW5spjg2OAhBlwS+pyWvau5dDEK/7qpFtw9ls8ADB
-TreFYOJsqQNMm29r46hlbarGSzvs/P9Ybp2r3rMPR/XJGch/jYdqU1G+EOocC69I
-iByVhLPnzonpGJgTBJLF
-=5I5s
------END PGP SIGNATURE-----
-
---5me2qT3T17SWzdxI--
+David
