@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930AbaAIV6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:58:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23749 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaAIV6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:58:38 -0500
-Message-ID: <1389304708.3209.257.camel@bling.home>
-Subject: Re: [PATCH] pci/iov: VFs are never multifunction
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        sathya.perla@emulex.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ajit.khaparde@emulex.com, Don Dutile <ddutile@redhat.com>,
-        subbu.seetharaman@emulex.com, Myron Stowe <myron.stowe@redhat.com>
-Date: Thu, 09 Jan 2014 14:58:28 -0700
-In-Reply-To: <CAErSpo6vA=f1RSnpkWumYxs3tQ8uM8NKuWqck4GRb6gL5HvqiA@mail.gmail.com>
-References: <20140109153513.21446.31778.stgit@bling.home>
-	 <CAErSpo4Asnx4JiZvppZLUzxmVymz0t-fHXRFMr81-Qz31XyR+g@mail.gmail.com>
-	 <1389291911.3209.234.camel@bling.home>
-	 <CAErSpo6vA=f1RSnpkWumYxs3tQ8uM8NKuWqck4GRb6gL5HvqiA@mail.gmail.com>
+	id S1753165AbaAIWC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 17:02:26 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:33989 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaAIWCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 17:02:18 -0500
+X-Greylist: delayed 16318 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jan 2014 17:02:18 EST
+Message-ID: <1389304583.1792.139.camel@misato.fc.hp.com>
+Subject: Re: kdump failed because of hotplug memory adding in kdump kernel
+From: Toshi Kani <toshi.kani@hp.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Baoquan <bhe@redhat.com>,
+        linux-acpi@vger.kernel.org, zhangyanfei@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dyoung@redhat.com
+Date: Thu, 09 Jan 2014 14:56:23 -0700
+In-Reply-To: <20140109212705.GC12111@redhat.com>
+References: <52CD6E33.400@redhat.com> <20140108155829.GC13649@redhat.com>
+	 <8500545.JVNPnKcyD1@vostro.rjw.lan>
+	 <1389226308.1792.39.camel@misato.fc.hp.com>
+	 <20140109145035.GB25897@redhat.com>
+	 <1389283439.1792.66.camel@misato.fc.hp.com>
+	 <20140109162427.GF25897@redhat.com>
+	 <1389288265.1792.108.camel@misato.fc.hp.com>
+	 <20140109182310.GG25897@redhat.com>
+	 <1389292470.1792.109.camel@misato.fc.hp.com>
+	 <20140109212705.GC12111@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-09 at 14:39 -0700, Bjorn Helgaas wrote:
-> On Thu, Jan 9, 2014 at 11:25 AM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > On Thu, 2014-01-09 at 11:08 -0700, Bjorn Helgaas wrote:
-> >> On Thu, Jan 9, 2014 at 8:36 AM, Alex Williamson
-> >> <alex.williamson@redhat.com> wrote:
-> >> > Per the SR-IOV spec rev 1.1:
-> >> >
-> >> > 3.4.1.9 Header Type (Offset 0Eh)
-> >> >
-> >> > "... For VFs, this register must be RO Zero."
-> >> >
-> >> > Unfortunately some devices get this wrong, ex. Emulex OneConnect 10Gb
-> >> > NIC.  When they do it makes us handle ACS testing and therefore IOMMU
-> >> > groups as if they were actual multifunction devices and require ACS
-> >> > capabilities to make sure there's no peer-to-peer between functions.
-> >> > VFs are never traditional multifunction devices, so simply clear this
-> >> > bit before we get any further into setup.
-> >>
-> >> This seems reasonable.  Do you have "lspci -vvxxxx" output for this
-> >> device?  I'd like to save it for future reference.
-> >
-> > Sure, here's a VF:
-> >
-> > 09:04.0 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (be3) (rev 01)
-> >         Subsystem: Emulex Corporation Device e722
+On Thu, 2014-01-09 at 16:27 -0500, Vivek Goyal wrote:
+> On Thu, Jan 09, 2014 at 11:34:30AM -0700, Toshi Kani wrote:
+> > On Thu, 2014-01-09 at 13:23 -0500, Vivek Goyal wrote:
+> > > On Thu, Jan 09, 2014 at 10:24:25AM -0700, Toshi Kani wrote:
+> > > 
+> > > [..]
+> > > > > I think creating a new command line option is simpler as compared to
+> > > > > creating a new flag in bootparam which in turn disables memory hotplug.
+> > > > > More users can use that option. For example, if for some reason hotplug
+> > > > > code is crashing, one can just disable it on command line as work around
+> > > > > and move on.
+> > > > 
+> > > > I do not have a strong opinion about having such option.  However, I
+> > > > think it is more user friendly to keep the exactmap option works alone
+> > > > on any platforms.
+> > > 
+> > > I think we should create internally a variable which will disable memory
+> > > hotplug. And set that variable based on memmap=exactmap, mem=X and also
+> > > provide a way to disable memory hotplug directly using command line
+> > > option.
+> > > 
+> > > Current kexec-tools can use memmap=exactmap and be happy. I am writing
+> > > a new kexec syscall and will not be using memmap=exactmap and would need
+> > > to use that command line option to disable memory hotplug behavior.
+> > 
+> > Sounds good to me.
 > 
-> Thanks!  I put this in
-> https://bugzilla.kernel.org/show_bug.cgi?id=68431, and I'll add a
-> reference to the changelog.
+> Nobody responded to my other question, so I would ask it again.
 > 
-> But I wonder if we can make this slightly more generic by doing
-> something like this in pci_setup_device():
-> 
->   dev->multifunction = (PCI_FUNC(dev->devfn) == 0) && (hdr_type & 0x80);
-> 
-> That's basically what lspci does in pci_generic_scan_bus(), and
-> section 3.2.2.3.4 of the PCI 3.0 spec sort of implies that we should
-> only look at the bit 7 of the header type for function 0:
-> 
->   If a single function device is detected (i.e., bit 7 in the Header
->   Type register of function 0 is 0), no more functions for that
->   Device Number will be checked. If a multi-function device is
->   detected (i.e., bit 7 in the Header Type register of function 0
->   is 1), then all remaining Function Numbers will be checked.
+> Assume we have disabled hotplug memory in second kernel. First kernel
+> saw hotplug memory and assume crash kernel reserved region came from
+> there. We will pass this memory in bootparams to second kernel and it
+> will show up in E820 map. It should still be accessible in second kernel,
+> is that right?
 
-We could do that and rely only on pci_scan_slot() to set multifunction=1
-for the other functions, but that doesn't completely solve this problem.
-VFs can occupy function zero and the example device would still set
-multifunction with that test.  Thanks,
+Yes.
 
-Alex
+> Or there is some dependency on ACPI doing some magic before this memory
+> range is available in second kernel?
+
+No.  The 1st kernel reserves the crash kernel region, which cannot be
+hot-deleted.  So, this region continues to be accessible by the 2nd
+kernel without any operation.
+
+I am more curious to know how makedumpfile decides what memory ranges to
+dump.  The 1st kernel may have performed memory hot-add / delete
+operations before a crash, so it needs to know the valid physical
+address range at the time of crash, and may not rely on the E820 map
+from BIOS (which is stale).  Am I right to assume that makedumpfile gets
+it from the page tables of the 1st kernel?
+
+Thanks,
+-Toshi
 
