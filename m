@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaAIWbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 17:31:40 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39659 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaAIWbc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 17:31:32 -0500
-Date: Thu, 9 Jan 2014 22:31:27 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Matthew Wilcox <matthew@wil.cx>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Stephen Smalley <sds@tycho.nsa.gov>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Paris <eparis@parisplace.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Chinner <david@fromorbit.com>,
+	id S1752691AbaAIWpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 17:45:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1218 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291AbaAIWpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 17:45:33 -0500
+Message-ID: <1389307523.15209.89.camel@localhost>
+Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
+ selinux_inode_permission()
+From: Eric Paris <eparis@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
         James Morris <james.l.morris@oracle.com>,
         Paul Moore <paul@paul-moore.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
- inode_permission()
-Message-ID: <20140109223127.GM10323@ZenIV.linux.org.uk>
-References: <20140109162731.12500986@gandalf.local.home>
- <20140109214239.GD29910@parisc-linux.org>
- <20140109165012.391db81e@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140109165012.391db81e@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 09 Jan 2014 17:45:23 -0500
+In-Reply-To: <20140109221303.GI10323@ZenIV.linux.org.uk>
+References: <20140109101932.0508dec7@gandalf.local.home>
+	 <CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
+	 <20140109221303.GI10323@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 04:50:12PM -0500, Steven Rostedt wrote:
-
-> > We'd then have to get rid of all the call_rcu() invocations in individual
-> > filesystems' destroy_inode methods, but that doesn't sound like a bad
-> > thing to me.
-
-Check what e.g. XFS is doing...
-
-> Which is another reason that I didn't do it, as I didn't know all the
-> happenings inside the ->destroy_inode() calls. But yeah, I agree with
-> this.
+On Thu, 2014-01-09 at 22:13 +0000, Al Viro wrote:
+> On Thu, Jan 09, 2014 at 10:31:55AM -0500, Eric Paris wrote:
+> > Didn't Al find this/something very similar.  I really hate this
+> > solution.  Why should every LSM try to understand the intimate
+> > lifetime rules of the parent subsystems?  The real problem is that
+> > inode_free_security() is being called while the inode is still in use.
+> >  While I agree with the assessment, I disagree with the solution.  Let
+> > me try to find where Al and Christoph talked about this....
 > 
-> Also, can iput() sleep? If not then we are OK. Otherwise, we need to be
-> careful about any mutex being grabbed in those call backs, as the
-> rcu_callback can't sleep either.
+> Because LSM has stuck its fingers into the guts of those filesystems,
+> obviously.
+> 
+> Just RCU-delay freeing the damn thing and treat NULL ->i_security in
+> ->permission() (which can happen only with MAY_NOT_BLOCK in mask) as
+> "return -ECHILD and let the caller deal with that".
+> 
+> Modifying every ->destroy_inode() is obviously wrong - there's a lot more
+> filesystems than LSM buggers in the tree.
 
-iput() definitely can sleep (that's when actual truncation and inode
-freeing is done for opened-and-unlinked files - on the final iput() after
-close()), but that' irrelevant here - fsnotify_delete_inode() grabs
-a bunch of mutexes, which makes calling it from rcu callback no-go.
+I'll do it if I've got no other choice.  But it seems crazy that the LSM
+is guessing that kfree_rcu() is the right answer and will be the right
+answer forever.  But clearly even ease inode lifetime rules can't be
+counted on. fa0d7e3de6d6fc5004ad9dea0dd6b286af8f03e9 broke what was
+already a perfectly sane/true/reasonable assumption about inode
+lifetimes.  We put the 'free the security blob' with the 'free the
+inode' call.  The VFS moved the 'free the inode' call.  Are they going
+to do it again?  Will they realize that the LSM now has such intricate
+object lifetime knowledge built in?
+
+I really think the LSM function needs to, somehow, be synchronous.  I
+can expose a generic struct i_security with an rcu_head as the only
+member which all LSMs must implement as the first member of their blob.
+The VFS can do a call_rcu() on that blob...
+
+Like I said, I can do it all in security/ but it's just BEGGING for more
+of this in the future...
+
+-Eric
+
