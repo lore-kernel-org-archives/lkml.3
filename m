@@ -1,184 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbaAICLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 21:11:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38349 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaAICLm (ORCPT
+	id S1752430AbaAICPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 21:15:36 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:39535 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaAICPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 21:11:42 -0500
-Message-ID: <52CE055C.5030103@codeaurora.org>
-Date: Wed, 08 Jan 2014 18:11:40 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 8 Jan 2014 21:15:34 -0500
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH v4 02/15] clk: Allow drivers to pass in a regmap
-References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org> <1387847559-18330-3-git-send-email-sboyd@codeaurora.org> <20140109015158.7168.60274@quantum>
-In-Reply-To: <20140109015158.7168.60274@quantum>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140108223933.GD18611@lee--X1>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	<1387814889-16670-2-git-send-email-lpapp@kde.org>
+	<20140108223933.GD18611@lee--X1>
+Date: Thu, 9 Jan 2014 02:15:33 +0000
+X-Google-Sender-Auth: B-piPt4uSXxuKdEsf0MaeN_g_IY
+Message-ID: <CAOMwXhN5JStJgG5Q9cjuJByhyhz-XPb4ThkA45B+fA724Ucqog@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/14 17:51, Mike Turquette wrote:
-> Quoting Stephen Boyd (2013-12-23 17:12:26)
->> Add support to the clock core so that drivers can pass in a
->> regmap. If no regmap is specified try to query the device that's
->> registering the clock for its regmap. This should allow drivers
->> to use the core regmap helpers. This is based on a similar design
->> in the regulator framework.
+On Wed, Jan 8, 2014 at 10:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> MAX6650/MAX6651 chip is a multi-function device with I2C busses. The
+>> chip includes fan-speed regulators and monitors, GPIO, and alarm.
 >>
->> Cc: Mark Brown <broonie@kernel.org>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> This patch is an initial release of a MAX6650/6651 MFD driver that
+>> supports to enable the chip with its primary I2C bus that will connect
+>> the hwmon, and then the gpio devices for now.
+>>
+>> Signed-off-by: Laszlo Papp <lpapp@kde.org>
 >> ---
->>  drivers/clk/clk.c            | 8 ++++++++
->>  include/linux/clk-provider.h | 7 +++++++
->>  2 files changed, 15 insertions(+)
+>>  drivers/mfd/Kconfig                 |  11 +++
+>>  drivers/mfd/Makefile                |   1 +
+>>  drivers/mfd/max6651.c               | 132 ++++++++++++++++++++++++++++++++++++
+>>  include/linux/mfd/max6651-private.h |  53 +++++++++++++++
+>>  4 files changed, 197 insertions(+)
+>>  create mode 100644 drivers/mfd/max6651.c
+>>  create mode 100644 include/linux/mfd/max6651-private.h
 >>
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index 9ad7b71..5e71f5c 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -20,6 +20,7 @@
->>  #include <linux/device.h>
->>  #include <linux/init.h>
->>  #include <linux/sched.h>
->> +#include <linux/regmap.h>
->>  
->>  static DEFINE_SPINLOCK(enable_lock);
->>  static DEFINE_MUTEX(prepare_lock);
->> @@ -1834,6 +1835,13 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
->>         clk->num_parents = hw->init->num_parents;
->>         hw->clk = clk;
->>  
->> +       if (hw->init->regmap)
->> +               hw->regmap = hw->init->regmap;
-> Hi Stephen,
+>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>> index dd67158..706c4e5 100644
+>> --- a/drivers/mfd/Kconfig
+>> +++ b/drivers/mfd/Kconfig
+>> @@ -321,6 +321,17 @@ config MFD_88PM860X
+>>         select individual components like voltage regulators, RTC and
+>>         battery-charger under the corresponding menus.
+>>
+>> +config MFD_MAX6651
+>> +     bool "Maxim Semiconductor MAX6651 Support"
+>> +     depends on I2C=y
+>> +     select MFD_CORE
+>> +     select IRQ_DOMAIN
 >
-> The whole series looks good to me except for the placement of the regmap
-> details inside struct clk_hw. That structure exists only to hide struct
-> clk from the hardware-specific clock structure and I'd not like to set
-> the precedent of shoving per-clock data into it.
+> Why have you selected IRQ_DOMAIN?
+
+Initial consistency with other corresponding drivers, but I should
+have dropped it once I dropped the irq handling to be as simple as
+possible initially.
+
+>> +#include <linux/device.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/input.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/mfd/core.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/module.h>
+>> +#include <linux/i2c.h>
 >
-> As an alternative, how about finding a way to put these per-clock regmap
-> details into the hardware-specific clock structure? I understand that
-> you want to make these ops available to others, which is why they are in
-> the public struct clk_hw. I'm just wondering if that is the right way to
-> do it...
+> Are you sure all these are used? I'm pretty sure some of them are
+> not. Only add headers if you require them. Try not to copy and paste
+> stuff you don't need.
 
-The regulator framework has gone this way. It seemed like a similar
-approach in the clock framework would be the right way to go too.
+Yes, this was meant to be the "final clean up step". I aimed
+functionality and design first.
 
+>> +#include <linux/mfd/max6651-private.h>
+>> +
+>> +static struct mfd_cell max6651_devs[] = {
+>> +    { .name = "max6651-gpio", },
+>> +    { .name = "max6650", },
 >
-> Patch #3 illustrates the sort of struct-member-creep that worries me.
-> What is to stop someone from putting "unsigned int divider_reg" or
-> "unsigned int mux_reg", and then the thing just keeps growing.
+> It would be nice to have a comment here to indicate that this is a
+> hwmon driver. If you're planning to add support for the MAX6651 to
+> this existing driver,
+
+Actually, it is already renamed to max6650-hwmon in the next patch of
+this series.
+
+> also consider renaming it to "max665x".
+
+Hmm, I will consider.
+
+>> +};
+>> +
+>> +int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
+>> +{
 >
+> Probably best to use Regmap instead.
+>
+> regmap_i2c_read()
 
-I see two ways forward if you don't want these members in struct clk_hw.
+Yes, do not worry, this was already done after Linus' initial comment.
+Note that, it will be a bit hackish to get it working with 3.2 where
+the device regmap convenience wrapper was missing, but I guess
+backporting is my problem, not yours...
 
-1) Inheritance: struct clk_regmap wrapper struct and
-clk_register_regmap() and devm_clk_register_regmap() and then another
-wrapper struct around that.
+>> +    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
+>> +    int ret;
+>
+> Always use 8 char tabs for kernel code.
 
- example:
+As discussed, style stuff is not fixed for a design review. I am still
+intereted in having an automated fix-up like astyle in other projects?
+What is the recommended way? I really would not like to waste too much
+time with style clean up.
 
-struct clk_regmap {
-        struct clk_hw hw;
-        struct regmap *regmap;
-        unsigned int enable_reg;
-        unsigned int enable_mask;
-        bool enable_is_inverted;
-};
+>> +    mutex_lock(&max6651->iolock);
+>> +    ret = i2c_smbus_read_byte_data(i2c, reg);
+>> +    mutex_unlock(&max6651->iolock);
+>> +    if (ret < 0)
+>> +        return ret;
+>> +
+>> +    ret &= 0xff;
+>> +    *dest = ret;
+>
+> *dest = ret & 0xff is clear enough.
 
-struct clk_branch {
-        u32     hwcg_reg;
-        u32     halt_reg;
-        u8      hwcg_bit;
-        u8      halt_bit;
-        u8      halt_check;
+I think this function would be removed altogether instead.
 
-        struct clk_regmap       clkr;
-};
+>> +    return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(max6651_read_reg);
+>> +
+>> +int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
+>> +{
+>> +    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
+>> +    int ret;
+>
+> Same here.
+>
+> regmap_i2c_write()
 
-static struct clk_branch gsbi1_uart_clk = {
-        .halt_reg = 0x2fcc,
-        .halt_bit = 10,
-        .clkr = {
-                .enable_reg = 0x29d4,
-                .enable_mask = BIT(9),
-                .hw.init = &(struct clk_init_data){
-                        .name = "gsbi1_uart_clk",
-                        .parent_names = (const char *[]){
-                                "gsbi1_uart_src",
-                        },
-                        .num_parents = 1,
-                        .ops = &clk_branch_ops,
-                        .flags = CLK_SET_RATE_PARENT,
-                },
-        },
-};
+See above.
 
+>> +    mutex_lock(&max6651->iolock);
+>> +    ret = i2c_smbus_write_byte_data(i2c, reg, value);
+>> +    mutex_unlock(&max6651->iolock);
+>> +    return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(max6651_write_reg);
+>> +
+>> +static int max6651_i2c_probe(struct i2c_client *i2c,
+>> +                         const struct i2c_device_id *id)
+>> +{
+>> +     struct max6651_dev *max6651;
+>> +     int ret = 0;
+>
+> Why are you initialising ret?
 
-2) Interfaces: Add a void *data in struct clk_hw that can point to
-whatever I want and still have the same clk_regmap_register() and
-devm_clk_regmap_register()
+Habit for striving for good pratice, I think. It may have also been
+consitency. That being said, I already removed it when I took a look
+at the other driver based on Linus' suggestion. I was trying to be
+consistent with other maxim drivers.
 
-Example:
+The linux kernel drivers are inconsistent in general at large,
+unfortunately. It is hard to pick up the "right one" for consistency.
+I will do whatever asked as it really does not make any difference for
+me.
 
-struct clk_hw {
-        struct clk *clk;
-        const struct clk_init_data *init;
-        void *data;
-};
+>> +     max6651 = kzalloc(sizeof(struct max6651_dev), GFP_KERNEL);
+>
+> Use managed resources devm_*.
 
-struct clk_regmap {
-        struct regmap *regmap;
-        unsigned int enable_reg;
-        unsigned int enable_mask;
-        bool enable_is_inverted;
-};
+Yes, that was also done after Linus' suggestion.
 
-struct clk_branch {
-        u32     hwcg_reg;
-        u32     halt_reg;
-        u8      hwcg_bit;
-        u8      halt_bit;
-        u8      halt_check;
+> s/sizeof(struct max6651_dev)/sizeof(*max6651)/
+>
+>> +     if (max6651 == NULL)
+>
+> if (!max6651)
 
-        struct clk_hw;
-};
+Yes, that was also done after Linus' suggestion, although this is
+consistent with the other maxim drivers. I will refactor those
+later...
 
-static struct clk_branch gsbi1_uart_clk = {
-        .halt_reg = 0x2fcc,
-        .halt_bit = 10,
-        .hw = {
-                .data = &(struct clk_regmap){
-                        .enable_reg = 0x29d4,
-                        .enable_mask = BIT(9),
-                 };
-                .init = &(struct clk_init_data){
-                        .name = "gsbi1_uart_clk",
-                        .parent_names = (const char *[]){
-                                "gsbi1_uart_src",
-                        },
-                        .num_parents = 1,
-                        .ops = &clk_branch_ops,
-                        .flags = CLK_SET_RATE_PARENT,
-                },
-        },
-};
+>> +             return -ENOMEM;
+>> +
+>> +     i2c_set_clientdata(i2c, max6651);
+>> +     max6651->dev = &i2c->dev;
+>> +
+>> +     mutex_init(&max6651->iolock);
+>> +
+>> +     ret = mfd_add_devices(max6651->dev, -1, max6651_devs,
+>> +                     ARRAY_SIZE(max6651_devs),
+>> +                     NULL, 0, NULL);
+>> +
+>> +     if (ret < 0) {
+>> +        dev_err(max6651->dev, "cannot add mfd cells\n");
+>
+> Are you trying to add cells or register devices?
 
-I guess option 2 is less likely given your comment about clk_hw being
-nothing more than a traversal mechanism.
+I would not know the difference in this context. Care to elaborate?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+>> +             goto err_mfd;
+>> +    }
+>> +
+>> +     return ret;
+>> +
+>> +err_mfd:
+>> +     mfd_remove_devices(max6651->dev);
+>
+> If mfd_add_devices() failed, you don't need to remove them.
 
+Sure.
+
+>> +     kfree(max6651);
+>
+> If you use managed resources you don't need this.
+
+I am not sure what exactly you mean by managed resource here. I only
+used the malloc above as far as I can tell. Perhaps, the called
+function has some magic behind. I would need to double check...
+
+>> +     return ret;
+>> +}
+>> +
+>> +static int max6651_i2c_remove(struct i2c_client *i2c)
+>> +{
+>> +    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
+>> +
+>> +    mfd_remove_devices(max6651->dev);
+>
+> In this case you would normally need to kfree() here, but if you use
+> managed resources you won't have to.
+
+As above...
+
+>> +    return 0;
+>> +}
+>> +
+>> +static const struct i2c_device_id max6651_i2c_id[] = {
+>> +    { "max6650", TYPE_MAX6650 },
+>> +    { "max6651", TYPE_MAX6651 },
+>
+> So were're registering the max6650 from here too?
+
+Absolutely, that is the idea.
+
+> If so, then you need to change the name of the file.
+>
+>> +    { }
+>
+> {},
+
+Yep, tiring style stuff...
+
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, max6651_i2c_id);
+>> +
+>> +static struct i2c_driver max6651_i2c_driver = {
+>> +    .driver = {
+>> +           .name = "max6651",
+>> +           .owner = THIS_MODULE,
+>> +    },
+>> +    .probe = max6651_i2c_probe,
+>> +    .remove = max6651_i2c_remove,
+>> +    .id_table = max6651_i2c_id,
+>> +};
+>
+> Remove from here ------
+>
+>> +static int __init max6651_i2c_init(void)
+>> +{
+>> +    return i2c_add_driver(&max6651_i2c_driver);
+>> +}
+>> +/* init early so consumer devices can complete system boot */
+>
+> I don't think this is required.
+>
+>> +subsys_initcall(max6651_i2c_init);
+>> +
+>> +static void __exit max6651_i2c_exit(void)
+>> +{
+>> +    i2c_del_driver(&max6651_i2c_driver);
+>> +}
+>> +module_exit(max6651_i2c_exit);
+>
+> To here -----
+>
+>  and replace with one line:
+>
+>   module_i2c_driver()
+
+Yes, this was for consistency again, and modified after Linus' hint.
+The other maxim drivers need to be patched later....
+
+>> +#ifndef __LINUX_MFD_MAX6651_PRIVATE_H
+>> +#define __LINUX_MFD_MAX6651_PRIVATE_H
+>> +
+>> +#include <linux/i2c.h>
+>> +#include <linux/export.h>
+>
+> Why is this in here?
+
+Because this series was meant for a design review and overall
+direction as opposed to a completely fine tuned patch set. Naturally,
+I agree with the feedback of removing unnecessary header inclusion.
+
+>> +#include <linux/irqdomain.h>
+>
+> And this?
+
+Same stuff as above...
+
+>> +struct max6651_dev {
+>> +    struct device *dev;
+>> +    struct mutex iolock;
+>> +
+>> +    struct i2c_client *i2c;
+>
+> Is this used?
+
+Yes, heavily, for reading and writing the registers in the subdevice drivers.
+
+>> +     int type;
+>
+> Or this?
+
+Absolutely, this identifies the type, which is necessary for
+initializing some corresponding data.
+
+>> +};
+>> +
+>> +enum max6651_types {
+>> +     TYPE_MAX6650,
+>> +     TYPE_MAX6651,
+>> +};
+>
+> What are you using these for?
+
+See above.
+
+>> +extern int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
+>> +extern int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
+>
+> regmap_i2c_read()
+> regmap_i2c_write()
+
+Sure, that was done after Linus' hint.
+
+Thanks for the review...
+
+Cheers ...
