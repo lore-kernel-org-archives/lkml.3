@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219AbaAIO1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:27:52 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54399 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752454AbaAIO1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:27:48 -0500
-Date: Thu, 9 Jan 2014 14:27:45 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Daniel Matuschek <daniel@matuschek.net>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Dimitris.Papastamos@Wolfsonmicro.com, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [alsa-devel] [PATCH] ASoC: wm8804: Allow fine-grained control
-	of the PLL generation
-Message-ID: <20140109142745.GB6110@opensource.wolfsonmicro.com>
-References: <alpine.DEB.2.02.1401082231260.4025@parallels-Parallels-Virtual-Platform>
+	id S1753230AbaAIOaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:30:46 -0500
+Received: from mail.aswsp.com ([193.34.35.150]:24428 "EHLO mail.aswsp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751690AbaAIOai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 09:30:38 -0500
+X-Greylist: delayed 312 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jan 2014 09:30:38 EST
+From: Damien Riegel <damien.riegel.ext@parrot.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Damien Riegel <damien.riegel.ext@parrot.com>
+Subject: [PATCH] clk: clk-divider: round divider to a valid value when a table is used
+Date: Thu, 9 Jan 2014 15:25:15 +0100
+Message-ID: <1389277515-26444-1-git-send-email-damien.riegel.ext@parrot.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401082231260.4025@parallels-Parallels-Virtual-Platform>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain
+X-Originating-IP: [46.218.109.88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 10:36:53PM +0100, Daniel Matuschek wrote:
-> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
->
+clk_divider_bestdiv computes the bestdiv without taking into account if
+it is a valid value when CLK_SET_RATE_PARENT is not set, and it may not
+be if a table is used. round_rate then returns a rate that is not
+reachable by the clock, leading to a set_rate that does nothing but
+reports no error.
+This patch makes round_rate return a valid rate.
 
-<snip>
+Signed-off-by: Damien Riegel <damien.riegel.ext@parrot.com>
+---
+ drivers/clk/clk-divider.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
->  			pll_div->freqmode = post_table[i].freqmode;
-> -			pll_div->mclkdiv = post_table[i].mclkdiv;
-> -			target *= post_table[i].div;
-> -			break;
-> +			if ((mclk_div == WM8804_MCLKDIV_DONTCARE) ||
-> +			    ((post_table[i].mclkdiv == 1) &&
-> +				(mclk_div == WM8804_MCLKDIV_1)) ||
-> +			    ((post_table[i].mclkdiv == 0) &&
-> +				(mclk_div == WM8804_MCLKDIV_0))) {
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index 8d3009e..ab02881 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -144,6 +144,23 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+ 	return true;
+ }
+ 
++static int _round_to_valid_div(struct clk_divider *divider, int div)
++{
++	const struct clk_div_table *clkt = divider->table;
++	int bestdiv;
++
++	if (!clkt)
++		return div;
++
++	for (bestdiv = clkt->div; clkt->div; clkt++) {
++		if (clkt->div >= div &&
++		    bestdiv - div > clkt->div - div)
++			bestdiv = clkt->div;
++	}
++
++	return bestdiv;
++}
++
+ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+ 		unsigned long *best_parent_rate)
+ {
+@@ -161,7 +178,8 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+ 		parent_rate = *best_parent_rate;
+ 		bestdiv = DIV_ROUND_UP(parent_rate, rate);
+ 		bestdiv = bestdiv == 0 ? 1 : bestdiv;
+-		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
++		bestdiv = bestdiv > maxdiv ? maxdiv :
++			_round_to_valid_div(divider, bestdiv);
+ 		return bestdiv;
+ 	}
+ 
+-- 
+1.7.10.4
 
-Would probably be nicer to update the post_table to use the new
-defines and directly compare.
-
-> +				pll_div->mclkdiv = post_table[i].mclkdiv;
-> +				target *= post_table[i].div;
-> +				break;
-> +			}
->  		}
->  	}
->
-> @@ -388,7 +396,7 @@ static int wm8804_set_pll(struct snd_soc_dai *dai, int pll_id,
->  		int ret;
->  		struct pll_div pll_div;
->
-> -		ret = pll_factors(&pll_div, freq_out, freq_in);
-> +		ret = pll_factors(&pll_div, freq_out, freq_in, pll_id);
-
-This does feel like a slight abuse of pll_id, it feels to me that
-using the set_clkdiv callback would be a little more natural from
-a user perspective.
-
->  		if (ret)
->  			return ret;
->
-> diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
-> index 8ec14f5..0365177 100644
-> --- a/sound/soc/codecs/wm8804.h
-> +++ b/sound/soc/codecs/wm8804.h
-> @@ -58,4 +58,11 @@
->
->  #define WM8804_CLKOUT_DIV			1
->
-> +#define WM8804_MCLKDIV_DONTCARE			0
-> +#define WM8804_MCLKDIV_0			1
-> +#define WM8804_MCLKDIV_1			2
-> +#define WM8804_PLL_MCLKDIV_DONTCARE		WM8804_MCLKDIV_DONTCARE
-> +#define WM8804_PLL_MCLKDIV_0			WM8804_MCLKDIV_0
-> +#define WM8804_PLL_MCLKDIV_1			WM8804_MCLKDIV_1
-
-Do we really need two copies of these?
-
-Thanks,
-Charles
