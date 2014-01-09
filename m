@@ -1,122 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaAITaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:30:16 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45482 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755498AbaAIT37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:29:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,632,1384329600"; 
-   d="scan'208";a="464293717"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 2/2] perf, tools: Add --delay support to perf record v2
-Date: Thu,  9 Jan 2014 11:29:53 -0800
-Message-Id: <1389295793-24137-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1389295793-24137-1-git-send-email-andi@firstfloor.org>
-References: <1389295793-24137-1-git-send-email-andi@firstfloor.org>
+	id S932166AbaAITa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:30:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51772 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498AbaAITav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 14:30:51 -0500
+Date: Thu, 9 Jan 2014 11:31:21 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Holla <Sudeep.Holla@arm.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ashok Raj <ashok.raj@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH RFC 1/3] drivers: base: support cpu cache information
+ interface to userspace via sysfs
+Message-ID: <20140109193121.GA14991@kroah.com>
+References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com>
+ <1389209168-17189-2-git-send-email-sudeep.holla@arm.com>
+ <20140108202707.GE8417@kroah.com>
+ <52CEF624.9020702@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CEF624.9020702@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Jan 09, 2014 at 07:19:00PM +0000, Sudeep Holla wrote:
+> On 08/01/14 20:27, Greg Kroah-Hartman wrote:
+> > On Wed, Jan 08, 2014 at 07:26:06PM +0000, Sudeep Holla wrote:
+> >> From: Sudeep Holla <sudeep.holla@arm.com>
+> >>
+> >> This patch adds initial support for providing processor cache information
+> >> to userspace through sysfs interface. This is based on x86 implementation
+> >> and hence the interface is intended to be fully compatible.
+> >>
+> >> A per-cpu array of cache information maintained is used mainly for
+> >> sysfs-related book keeping.
+> >>
+> >> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+> >> ---
+> >>  drivers/base/Makefile     |   2 +-
+> >>  drivers/base/cacheinfo.c  | 296 ++++++++++++++++++++++++++++++++++++++++++++++
+> >>  include/linux/cacheinfo.h |  43 +++++++
+> >>  3 files changed, 340 insertions(+), 1 deletion(-)
+> >>  create mode 100644 drivers/base/cacheinfo.c
+> >>  create mode 100644 include/linux/cacheinfo.h
+> >>
+> >> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+> >> index 94e8a80..76f07c8 100644
+> >> --- a/drivers/base/Makefile
+> >> +++ b/drivers/base/Makefile
+> >> @@ -4,7 +4,7 @@ obj-y			:= core.o bus.o dd.o syscore.o \
+> >>  			   driver.o class.o platform.o \
+> >>  			   cpu.o firmware.o init.o map.o devres.o \
+> >>  			   attribute_container.o transport_class.o \
+> >> -			   topology.o
+> >> +			   topology.o cacheinfo.o
+> >>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+> >>  obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+> >>  obj-y			+= power/
+> >> diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
+> >> new file mode 100644
+> >> index 0000000..f436c31
+> >> --- /dev/null
+> >> +++ b/drivers/base/cacheinfo.c
+> >> @@ -0,0 +1,296 @@
+> >> +/*
+> >> + * cacheinfo support - processor cache information via sysfs
+> >> + *
+> >> + * Copyright (C) 2013 ARM Ltd.
+> >> + * All Rights Reserved
+> >> + *
+> >> + * Author: Sudeep Holla <sudeep.holla@arm.com>
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License version 2 as
+> >> + * published by the Free Software Foundation.
+> >> + *
+> >> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> >> + * kind, whether express or implied; without even the implied warranty
+> >> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >> + * GNU General Public License for more details.
+> >> + */
+> >> +#include <linux/bitops.h>
+> >> +#include <linux/cacheinfo.h>
+> >> +#include <linux/compiler.h>
+> >> +#include <linux/cpu.h>
+> >> +#include <linux/device.h>
+> >> +#include <linux/init.h>
+> >> +#include <linux/kobject.h>
+> >> +#include <linux/of.h>
+> >> +#include <linux/sched.h>
+> >> +#include <linux/slab.h>
+> >> +#include <linux/smp.h>
+> >> +#include <linux/sysfs.h>
+> >> +
+> >> +struct cache_attr {
+> >> +	struct attribute attr;
+> >> +	 ssize_t(*show) (unsigned int, unsigned short, char *);
+> >> +	 ssize_t(*store) (unsigned int, unsigned short, const char *, size_t);
+> >> +};
+> >> +
+> >> +/* pointer to kobject for cpuX/cache */
+> >> +static DEFINE_PER_CPU(struct kobject *, ci_cache_kobject);
+> >> +#define per_cpu_cache_kobject(cpu)     (per_cpu(ci_cache_kobject, cpu))
+> >> +
+> >> +struct index_kobject {
+> >> +	struct kobject kobj;
+> >> +	unsigned int cpu;
+> >> +	unsigned short index;
+> >> +};
+> >> +
+> >> +static cpumask_t cache_dev_map;
+> >> +
+> >> +/* pointer to array of kobjects for cpuX/cache/indexY */
+> > 
+> > Please don't use "raw" kobjects for this, use the device attribute
+> > groups, that's what they are there for.  Bonus is that your code should
+> > get a lot simpler when you do that.
+> > 
+> 
+> Yes I now understand device attribute group simplifies the code, but I think
+> kobjects are still needed as we need to track both cpu and cache index.
+> By reusing only cpu device kobject, we can track cpu only.
 
-perf stat has a --delay option to delay measuring the workload.
-This is useful to skip measuring the startup phase of the program, which
-is often very different from the main workload.
+I don't understand, you are putting things under the cpu device object,
+why do you care about a "cache" kobject?
 
-The same is useful for perf record when sampling. Add --delay to perf record too.
--D was already taken for record, so there is only a long option.
+> One thought I have is to make cache_info structure common to all architecture
+> (for now its ARM specific) and introduce kobject in that similar to ia64
+> implementation. That even eliminates lot of weak functions defined.
 
-v2: Don't disable group members (Namhyung Kim)
-Cc: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-record.txt | 4 ++++
- tools/perf/builtin-record.c              | 9 ++++++++-
- tools/perf/perf.h                        | 1 +
- tools/perf/util/evsel.c                  | 3 ++-
- 4 files changed, 15 insertions(+), 2 deletions(-)
+Please don't use raw kobjects if at all possible, it's not good for a
+variety of reasons (no userspace events, have to roll your own code,
+etc.)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 43b42c4..e349151 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -207,6 +207,10 @@ Force the use of per-cpu mmaps.  By default, when tasks are specified (i.e. -p,
- forces per-cpu mmaps.  A side-effect of that is that inheritance is
- automatically enabled.  Add the -i option also to disable inheritance.
- 
-+--delay msecs::
-+After starting the program, wait msecs before measuring. This is useful to
-+filter out the startup phase of the program, which is often very different.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 7c8020a..110158e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -506,7 +506,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	 * (apart from group members) have enable_on_exec=1 set,
- 	 * so don't spoil it by prematurely enabling them.
- 	 */
--	if (!target__none(&opts->target))
-+	if (!target__none(&opts->target) && !opts->initial_delay)
- 		perf_evlist__enable(evsel_list);
- 
- 	/*
-@@ -515,6 +515,11 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 	if (forks)
- 		perf_evlist__start_workload(evsel_list);
- 
-+	if (opts->initial_delay) {
-+		usleep(opts->initial_delay * 1000);
-+		perf_evlist__enable(evsel_list);
-+	}
-+
- 	for (;;) {
- 		int hits = rec->samples;
- 
-@@ -890,6 +895,8 @@ const struct option record_options[] = {
- 		    "sample transaction flags (special events only)"),
- 	OPT_BOOLEAN(0, "force-per-cpu", &record.opts.target.force_per_cpu,
- 		    "force the use of per-cpu mmaps"),
-+	OPT_UINTEGER(0, "delay", &record.opts.initial_delay,
-+		  "ms to wait before starting measurement after program start"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index b079304..d052f1d 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -268,6 +268,7 @@ struct perf_record_opts {
- 	u64	     user_interval;
- 	u16	     stack_dump_size;
- 	bool	     sample_transaction;
-+	unsigned     initial_delay;
- };
- 
- #endif
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 46dd4c2..539b014 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -696,7 +696,8 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	 * Setting enable_on_exec for independent events and
- 	 * group leaders for traced executed by perf.
- 	 */
--	if (target__none(&opts->target) && perf_evsel__is_group_leader(evsel))
-+	if (target__none(&opts->target) && perf_evsel__is_group_leader(evsel) &&
-+		!opts->initial_delay)
- 		attr->enable_on_exec = 1;
- }
- 
--- 
-1.8.3.1
+thanks,
 
+greg k-h
