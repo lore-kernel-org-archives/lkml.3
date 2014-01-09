@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaAIOS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:18:56 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:41227 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaAIOSu (ORCPT
+	id S1754969AbaAIOUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:20:04 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:54864 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608AbaAIOT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:18:50 -0500
-From: Laszlo Papp <lpapp@kde.org>
-To: broonie@kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laszlo Papp <lpapp@kde.org>
-Subject: [PATCH v2] include/linux/regmap.h: fix a couple of typos
-Date: Thu,  9 Jan 2014 14:13:41 +0000
-Message-Id: <1389276821-29894-1-git-send-email-lpapp@kde.org>
-X-Mailer: git-send-email 1.8.5.1
+	Thu, 9 Jan 2014 09:19:58 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 00/14] locks: implement "file-private" (aka UNPOSIX) locks
+Date: Thu,  9 Jan 2014 09:19:33 -0500
+Message-Id: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These sentences are not proper English due to the typos. I had initially caught
-one of them while trying to understand the regmap feature, and then I just ran
-the vim spell checker, and went through all the items that would need to be
-fixed for this header file.
+This patchset is the fifth posting of this set. The big change in this
+set is that it adds new fcntl cmd values instead of l_type values. I
+think that will make the interface cleaner for userland, but it does
+mean wading through the morass of arch-specific cmd definitions.
 
-Signed-off-by: Laszlo Papp <lpapp@kde.org>
----
- include/linux/regmap.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Here is a summary of the more notable changes:
 
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index e559078..1f6643c 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -122,9 +122,9 @@ typedef void (*regmap_unlock)(void *);
-  *		  volatile_table (see below) is not, the check is performed on
-  *                such table (a register is volatile if it belongs to one of
-  *                the ranges specified by volatile_table).
-- * @precious_reg: Optional callback returning true if the rgister
-+ * @precious_reg: Optional callback returning true if the register
-  *		  should not be read outside of a call from the driver
-- *		  (eg, a clear on read interrupt status register). If this
-+ *		  (e.g., a clear on read interrupt status register). If this
-  *                field is NULL but precious_table (see below) is not, the
-  *                check is performed on such table (a register is precious if
-  *                it belongs to one of the ranges specified by precious_table).
-@@ -136,9 +136,9 @@ typedef void (*regmap_unlock)(void *);
-  *		  are not overridden).
-  * @reg_read:	  Optional callback that if filled will be used to perform
-  *           	  all the reads from the registers. Should only be provided for
-- *		  devices whos read operation cannot be represented as a simple read
-- *		  operation on a bus such as SPI, I2C, etc. Most of the devices do
-- * 		  not need this.
-+ *		  devices whose read operation cannot be represented as a simple
-+ *		  read operation on a bus such as SPI, I2C, etc. Most of the
-+ *		  devices do not need this.
-  * @reg_write:	  Same as above for writing.
-  * @fast_io:	  Register IO is fast. Use a spinlock instead of a mutex
-  *	     	  to perform locking. This field is ignored if custom lock/unlock
+v5:
+- switch to adding new cmd values instead of new l_type values
+- corrected patch by Bruce to fix up range overflow handling
+- patch to add Bruce and I as maintainers for fs/locks.c
+- disable deadlock detection for file-private locks
+
+v4:
+- prefixed the set with the rest of the locks.c patches I have.
+- added patch to get rid of BUG() call in locks_remove_flock. I think
+  a WARN  + delete the lock is sufficient there.
+- added patches from Bruce to consolidate the struct flock/flock64
+  to file_lock conversion code
+- fixed locks_remove_file not to assume that filp-private locks won't
+  be added on filesystems that have a ->lock method.
+
+v3:
+- more consolidation of common code between flock_to_posix_lock and
+  flock_to_posix_lock64
+- better bisectability by reordering changes, such that partial
+  implementation won't be exposed
+- s/filp/file/ s/FILP/FILE/ in symbol names
+
+v2:
+- inheritance semantics have been change to be more BSD-lock like
+- patchset size has been reduced by changing how lock ownership
+  is handled
+- new F_UNLCKP l_type value has been added
+
+Note too that I've gone ahead and opened a request for the POSIX folks
+to consider adding this to the POSIX spec once we have something
+mergeable. They seem amenable to the idea but don't want to enshrine it
+into the standard until there's a real implementation of it:
+
+    http://austingroupbugs.net/view.php?id=768
+
+I also owe them a better writeup of the semantics for these new locks,
+but have been holding off on doing that until they're a little more
+settled.
+
+I have written a fcntl(2) manpage update for this that I will send to
+the list.
+
+J. Bruce Fields (1):
+  locks: fix posix lock range overflow handling
+
+Jeff Layton (13):
+  locks: close potential race between setlease and open
+  locks: clean up comment typo
+  locks: remove "inline" qualifier from fl_link manipulation functions
+  locks: add __acquires and __releases annotations to locks_start and
+    locks_stop
+  locks: eliminate BUG() call when there's an unexpected lock on file
+    close
+  locks: consolidate checks for compatible filp->f_mode values in setlk
+    handlers
+  MAINTAINERS: add Bruce and myself to list of maintainers for file
+    locking code
+  locks: rename locks_remove_flock to locks_remove_file
+  locks: make /proc/locks show IS_FILE_PVT locks with a P suffix
+  locks: report l_pid as -1 for FL_FILE_PVT locks
+  locks: pass the cmd value to fcntl_getlk/getlk64
+  locks: skip deadlock detection on FL_FILE_PVT locks
+  locks: add new fcntl cmd values for handling file private locks
+
+ MAINTAINERS                          |   2 +
+ arch/arm/kernel/sys_oabi-compat.c    |   6 +
+ arch/arm64/include/asm/compat.h      |   3 +
+ arch/mips/include/asm/compat.h       |   3 +
+ arch/mips/include/uapi/asm/fcntl.h   |   3 +
+ arch/parisc/include/uapi/asm/fcntl.h |   3 +
+ arch/powerpc/include/asm/compat.h    |   3 +
+ arch/s390/include/asm/compat.h       |   9 +-
+ arch/sparc/include/asm/compat.h      |   3 +
+ arch/tile/include/asm/compat.h       |   3 +
+ arch/x86/include/asm/compat.h        |   3 +
+ fs/compat.c                          |  48 ++++-
+ fs/fcntl.c                           |  30 +--
+ fs/file_table.c                      |   2 +-
+ fs/locks.c                           | 342 ++++++++++++++++++++---------------
+ include/linux/fs.h                   |  21 ++-
+ include/uapi/asm-generic/fcntl.h     |  27 ++-
+ security/selinux/hooks.c             |   6 +
+ 18 files changed, 345 insertions(+), 172 deletions(-)
+
 -- 
-1.8.5.1
+1.8.4.2
 
