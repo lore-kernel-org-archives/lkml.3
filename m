@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216AbaAILNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:13:38 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:43701 "EHLO smtp1-g21.free.fr"
+	id S1753706AbaAILOC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:14:02 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:44326 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152AbaAILNV convert rfc822-to-8bit (ORCPT
+	id S1755821AbaAILNc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:13:21 -0500
-Date: Thu, 9 Jan 2014 12:07:35 +0100
+	Thu, 9 Jan 2014 06:13:32 -0500
+Date: Thu, 9 Jan 2014 12:08:03 +0100
 From: Jean-Francois Moine <moinejf@free.fr>
 To: dri-devel@lists.freedesktop.org
 Cc: Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 27/28] drm/i2c: tda998x: adjust the audio clock divider
- for S/PDIF
-Message-ID: <20140109120735.7ee3d672@armhf>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: [PATCH v2 28/28] drm/i2c: tda998x: add a CODEC interface
+Message-ID: <20140109120803.6c26b401@armhf>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -23,37 +23,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The S/PDIF input asks for a greater audio clock divider.
+The TDA998x chips may get audio input from I2S or S/PDIF and this input
+is defined by the audio subsystem.
+
+In the other way, the audio subsystem may need to know if audio output
+may be done through the HDMI connector.
+
+This patch adds a CODEC interface for exchanges between the HDMI transmitter and the audio subsystem.
 
 Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/gpu/drm/i2c/tda998x_drv.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c  | 70 ++++++++++++++++++++--
+ 1 file changed, 65 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index d3b3f3a..67d7450 100644
+index 67d7450..5a186e4 100644
 --- a/drivers/gpu/drm/i2c/tda998x_drv.c
 +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -757,6 +757,10 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 					AIP_CNTRL_0_ACR_MAN);
- 	reg_write(priv, REG_CTS_N, cts_n);
+@@ -42,7 +42,8 @@ struct tda998x_priv {
+ 	u8 vip_cntrl_1;
+ 	u8 vip_cntrl_2;
  
-+	/* S/PDIF asks for a large divider */
-+	if (priv->audio_type == (AFMT_SPDIF | AUDIO_ACTIVE))
-+		adiv = AUDIO_DIV_SERCLK_32;
+-	u8 audio_type;		/* audio type */
++	u8 audio_type;		/* audio type and 'active' flag */
++#define AUDIO_ACTIVE 0x80
+ 	u8 audio_frame[6];
+ 	u32 audio_port;
+ 
+@@ -50,6 +51,9 @@ struct tda998x_priv {
+ 	wait_queue_head_t wq_edid;
+ 	volatile int wq_edid_wait;
+ 	struct drm_encoder *encoder;
 +
- 	/*
- 	 * Audio input somehow depends on HDMI line rate which is
- 	 * related to pixclk. Testing showed that modes with pixclk
-@@ -764,7 +768,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 	 * There is no detailed info in the datasheet, so we just
- 	 * assume 100MHz requires larger divider.
- 	 */
--	if (mode->clock > 100000)
-+	else if (mode->clock > 100000)
- 		adiv = AUDIO_DIV_SERCLK_16;
- 	else
- 		adiv = AUDIO_DIV_SERCLK_8;
++	struct snd_soc_codec *codec;
++	void (*event)(struct snd_soc_codec *codec, int activate);
+ };
+ 
+ #define to_tda998x_priv(x)  ((struct tda998x_priv *)to_encoder_slave(x)->slave_priv)
+@@ -731,14 +735,14 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ 
+ 	/* Set audio input source */
+ 	switch (priv->audio_type) {
+-	case AFMT_SPDIF:
++	case AFMT_SPDIF | AUDIO_ACTIVE:
+ 		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_SPDIF);
+ 		clksel_aip = AIP_CLKSEL_AIP(SEL_AIP_SPDIF);
+ 		clksel_fs = AIP_CLKSEL_FS(CTSREF_FS64SPDIF);
+ 		cts_n = CTS_N_M(3) | CTS_N_K(3);
+ 		break;
+ 
+-	case AFMT_I2S:
++	case AFMT_I2S | AUDIO_ACTIVE:
+ 		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
+ 		clksel_aip = AIP_CLKSEL_AIP(SEL_AIP_I2S);
+ 		clksel_fs = AIP_CLKSEL_FS(CTSREF_ACLK);
+@@ -813,6 +817,58 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ 	tda998x_write_aif(priv);
+ }
+ 
++/* tda998x codec interface */
++void tda998x_audio_register(struct i2c_client *client,
++			struct snd_soc_codec *codec,
++			void (*event)(struct snd_soc_codec *codec, int activate))
++{
++	struct tda998x_priv *priv = i2c_get_clientdata(client);
++
++	/* memorize the codec and the callback function */
++	priv->codec = codec;
++	priv->event = event;
++}
++EXPORT_SYMBOL_GPL(tda998x_audio_register);
++
++void tda998x_audio_update(struct i2c_client *client,
++			int type,
++			u32 port)
++{
++	struct tda998x_priv *priv = i2c_get_clientdata(client);
++
++	/* if the audio output is active, it may be a second start or a stop */
++	if (type == 0 || (priv->audio_type & AUDIO_ACTIVE)) {
++		if (type == 0) {
++			priv->audio_type &= ~AUDIO_ACTIVE;	/* stop */
++			reg_write(priv, REG_ENA_AP, 0);
++		}
++		return;
++	}
++
++	priv->audio_port = port;
++
++	/* don't restart audio if same input type */
++	if (type == priv->audio_type) {
++		priv->audio_type |= AUDIO_ACTIVE;
++		reg_write(priv, REG_ENA_AP, priv->audio_port);
++		return;
++	}
++
++	priv->audio_type = type | AUDIO_ACTIVE;
++
++	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode);
++}
++EXPORT_SYMBOL_GPL(tda998x_audio_update);
++
++/* send an audio event to the tda codec */
++static void send_audio_event(struct tda998x_priv *priv,
++				int event)
++{
++	if (!priv->event)
++		return;
++	priv->event(priv->codec, event);
++}
++
+ /* DRM encoder functions */
+ 
+ /* this function is not called when no info->platform (DT support) */
+@@ -840,7 +896,7 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
+ 
+ 	if (p->audio_cfg) {
+ 		priv->audio_port = p->audio_cfg;
+-		priv->audio_type = p->audio_format;
++		priv->audio_type = p->audio_format | AUDIO_ACTIVE;
+ 	}
+ }
+ 
+@@ -1105,9 +1161,10 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 
+ 		tda998x_write_avi(priv, mode);
+ 
+-		if (priv->audio_type)
++		if (priv->audio_type & AUDIO_ACTIVE)
+ 			tda998x_configure_audio(priv, mode);
+ 	}
++	send_audio_event(priv, priv->is_hdmi_sink);
+ 
+ 	/* must be last register set: */
+ 	reg_write(priv, REG_TBG_CNTRL_0, 0);
+@@ -1263,6 +1320,7 @@ tda998x_encoder_get_modes(struct drm_encoder *encoder,
+ 		drm_mode_connector_update_edid_property(connector, edid);
+ 		n = drm_add_edid_modes(connector, edid);
+ 		priv->is_hdmi_sink = drm_detect_hdmi_monitor(edid);
++		send_audio_event(priv, priv->is_hdmi_sink);
+ 		kfree(edid);
+ 	}
+ 
+@@ -1349,6 +1407,8 @@ tda998x_encoder_init(struct i2c_client *client,
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++	i2c_set_clientdata(client, priv);
++
+ 	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
+ 	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
+ 	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
 -- 
 Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
 Jef		|		http://moinejf.free.fr/
