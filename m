@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaAIWRU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 17:17:20 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39602 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaAIWRN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 17:17:13 -0500
-Date: Thu, 9 Jan 2014 22:17:11 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Eric Paris <eparis@parisplace.org>, LKML <linux-kernel@vger.kernel.org>,
+	id S1754477AbaAIWTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 17:19:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752041AbaAIWTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 17:19:18 -0500
+Message-ID: <1389305889.15209.75.camel@localhost>
+Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
+ selinux_inode_permission()
+From: Eric Paris <eparis@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
         Stephen Smalley <sds@tycho.nsa.gov>,
         James Morris <james.l.morris@oracle.com>,
         Paul Moore <paul@paul-moore.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
- selinux_inode_permission()
-Message-ID: <20140109221711.GJ10323@ZenIV.linux.org.uk>
+Date: Thu, 09 Jan 2014 17:18:09 -0500
+In-Reply-To: <20140109221303.GI10323@ZenIV.linux.org.uk>
 References: <20140109101932.0508dec7@gandalf.local.home>
- <CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
- <20140109105114.5c409fef@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140109105114.5c409fef@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	 <CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
+	 <20140109221303.GI10323@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 10:51:14AM -0500, Steven Rostedt wrote:
+On Thu, 2014-01-09 at 22:13 +0000, Al Viro wrote:
+> On Thu, Jan 09, 2014 at 10:31:55AM -0500, Eric Paris wrote:
+> > Didn't Al find this/something very similar.  I really hate this
+> > solution.  Why should every LSM try to understand the intimate
+> > lifetime rules of the parent subsystems?  The real problem is that
+> > inode_free_security() is being called while the inode is still in use.
+> >  While I agree with the assessment, I disagree with the solution.  Let
+> > me try to find where Al and Christoph talked about this....
+> 
+> Because LSM has stuck its fingers into the guts of those filesystems,
+> obviously.
+> 
+> Just RCU-delay freeing the damn thing and treat NULL ->i_security in
+> ->permission() (which can happen only with MAY_NOT_BLOCK in mask) as
+> "return -ECHILD and let the caller deal with that".
+> 
+> Modifying every ->destroy_inode() is obviously wrong - there's a lot more
+> filesystems than LSM buggers in the tree.
 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 4bcdad3..a8f3b88 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -252,16 +252,17 @@ EXPORT_SYMBOL(__destroy_inode);
->  static void i_callback(struct rcu_head *head)
->  {
->  	struct inode *inode = container_of(head, struct inode, i_rcu);
-> +	__destroy_inode(inode);
->  	kmem_cache_free(inode_cachep, inode);
->  }
->  
->  static void destroy_inode(struct inode *inode)
->  {
->  	BUG_ON(!list_empty(&inode->i_lru));
-> -	__destroy_inode(inode);
-> -	if (inode->i_sb->s_op->destroy_inode)
-> +	if (inode->i_sb->s_op->destroy_inode) {
-> +		__destroy_inode(inode);
->  		inode->i_sb->s_op->destroy_inode(inode);
-> -	else
-> +	} else
->  		call_rcu(&inode->i_rcu, i_callback);
->  }
->  
-No go - idiotify and friends grab mutexes from fsnotify_inode_delete().
-Can't do that from rcu callbacks.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+We just want the same lifetime as the inode.  Allocate the security blob
+when the inode is allocated and free the security blob when the inode is
+freed.
+
+If we -rcu delay the free'ing we shouldn't need the NULL check, right?
+
+-Eric
+
