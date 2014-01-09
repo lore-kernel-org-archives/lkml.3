@@ -1,98 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989AbaAITRy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:17:54 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:59367 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295AbaAITRl (ORCPT
+	id S1757139AbaAITTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:19:03 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46364 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316AbaAITS4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:17:41 -0500
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, jack@suse.cz,
-        Linus <torvalds@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: [RFC PATCH V4] mm readahead: Fix readahead fail for no local memory and limit readahead pages
-Date: Fri, 10 Jan 2014 00:54:50 +0530
-Message-Id: <1389295490-28707-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010919-1344-0000-0000-000004CB8C14
+	Thu, 9 Jan 2014 14:18:56 -0500
+Message-ID: <52CEF624.9020702@arm.com>
+Date: Thu, 09 Jan 2014 19:19:00 +0000
+From: Sudeep Holla <Sudeep.Holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Sudeep.Holla@arm.com, "x86@kernel.org" <x86@kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ashok Raj <ashok.raj@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH RFC 1/3] drivers: base: support cpu cache information
+ interface to userspace via sysfs
+References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com> <1389209168-17189-2-git-send-email-sudeep.holla@arm.com> <20140108202707.GE8417@kroah.com>
+In-Reply-To: <20140108202707.GE8417@kroah.com>
+X-OriginalArrivalTime: 09 Jan 2014 19:18:53.0182 (UTC) FILETIME=[A24251E0:01CF0D6F]
+X-MC-Unique: 114010919185500201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We limit the number of readahead pages to 4k.
+On 08/01/14 20:27, Greg Kroah-Hartman wrote:
+> On Wed, Jan 08, 2014 at 07:26:06PM +0000, Sudeep Holla wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch adds initial support for providing processor cache information
+>> to userspace through sysfs interface. This is based on x86 implementation
+>> and hence the interface is intended to be fully compatible.
+>>
+>> A per-cpu array of cache information maintained is used mainly for
+>> sysfs-related book keeping.
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> ---
+>>  drivers/base/Makefile     |   2 +-
+>>  drivers/base/cacheinfo.c  | 296 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/cacheinfo.h |  43 +++++++
+>>  3 files changed, 340 insertions(+), 1 deletion(-)
+>>  create mode 100644 drivers/base/cacheinfo.c
+>>  create mode 100644 include/linux/cacheinfo.h
+>>
+>> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+>> index 94e8a80..76f07c8 100644
+>> --- a/drivers/base/Makefile
+>> +++ b/drivers/base/Makefile
+>> @@ -4,7 +4,7 @@ obj-y			:= core.o bus.o dd.o syscore.o \
+>>  			   driver.o class.o platform.o \
+>>  			   cpu.o firmware.o init.o map.o devres.o \
+>>  			   attribute_container.o transport_class.o \
+>> -			   topology.o
+>> +			   topology.o cacheinfo.o
+>>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+>>  obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+>>  obj-y			+= power/
+>> diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
+>> new file mode 100644
+>> index 0000000..f436c31
+>> --- /dev/null
+>> +++ b/drivers/base/cacheinfo.c
+>> @@ -0,0 +1,296 @@
+>> +/*
+>> + * cacheinfo support - processor cache information via sysfs
+>> + *
+>> + * Copyright (C) 2013 ARM Ltd.
+>> + * All Rights Reserved
+>> + *
+>> + * Author: Sudeep Holla <sudeep.holla@arm.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+>> + * kind, whether express or implied; without even the implied warranty
+>> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + */
+>> +#include <linux/bitops.h>
+>> +#include <linux/cacheinfo.h>
+>> +#include <linux/compiler.h>
+>> +#include <linux/cpu.h>
+>> +#include <linux/device.h>
+>> +#include <linux/init.h>
+>> +#include <linux/kobject.h>
+>> +#include <linux/of.h>
+>> +#include <linux/sched.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/smp.h>
+>> +#include <linux/sysfs.h>
+>> +
+>> +struct cache_attr {
+>> +	struct attribute attr;
+>> +	 ssize_t(*show) (unsigned int, unsigned short, char *);
+>> +	 ssize_t(*store) (unsigned int, unsigned short, const char *, size_t);
+>> +};
+>> +
+>> +/* pointer to kobject for cpuX/cache */
+>> +static DEFINE_PER_CPU(struct kobject *, ci_cache_kobject);
+>> +#define per_cpu_cache_kobject(cpu)     (per_cpu(ci_cache_kobject, cpu))
+>> +
+>> +struct index_kobject {
+>> +	struct kobject kobj;
+>> +	unsigned int cpu;
+>> +	unsigned short index;
+>> +};
+>> +
+>> +static cpumask_t cache_dev_map;
+>> +
+>> +/* pointer to array of kobjects for cpuX/cache/indexY */
+> 
+> Please don't use "raw" kobjects for this, use the device attribute
+> groups, that's what they are there for.  Bonus is that your code should
+> get a lot simpler when you do that.
+> 
 
-max_sane_readahead returns zero on the cpu having no local memory
-node. Fix that by returning a sanitized number of pages viz.,
-minimum of (requested pages, 4k, number of local free pages)
+Yes I now understand device attribute group simplifies the code, but I think
+kobjects are still needed as we need to track both cpu and cache index.
+By reusing only cpu device kobject, we can track cpu only.
 
-Result:
-fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
-32GB* 4G RAM  numa machine ( 12 iterations) yielded
+Please correct me if I am missing to understand something here.
 
-kernel       Avg        Stddev
-base         7.264      0.56%
-patched      7.285      1.14%
+One thought I have is to make cache_info structure common to all architecture
+(for now its ARM specific) and introduce kobject in that similar to ia64
+implementation. That even eliminates lot of weak functions defined.
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- mm/readahead.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+Regards,
+Sudeep
 
-V4:  incorporated 16MB limit suggested by Linus for readahead and
-fixed transitioning to large readahead anomaly pointed by Andrew Morton with
-Honza's suggestion.
 
-Test results shows no significant overhead with the current changes.
-
-(Do I have to break patches into two??)
-
-Suggestions/Comments please let me know.
-
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 7cdbb44..2f561a0 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -237,14 +237,30 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
- 	return ret;
- }
- 
-+#define MAX_REMOTE_READAHEAD   4096UL
- /*
-  * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
-  * sensible upper limit.
-  */
- unsigned long max_sane_readahead(unsigned long nr)
- {
--	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
--		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
-+	unsigned long local_free_page;
-+	unsigned long sane_nr;
-+	int nid;
-+
-+	nid = numa_node_id();
-+	sane_nr = min(nr, MAX_REMOTE_READAHEAD);
-+
-+	local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
-+			  + node_page_state(nid, NR_FREE_PAGES);
-+
-+	/*
-+	 * Readahead onto remote memory is better than no readahead when local
-+	 * numa node does not have memory. We sanitize readahead size depending
-+	 * on free memory in the local node but limiting to 4k pages.
-+	 */
-+	return node_present_pages(nid) ?
-+				min(sane_nr, local_free_page / 2) : sane_nr;
- }
- 
- /*
--- 
-1.7.11.7
 
