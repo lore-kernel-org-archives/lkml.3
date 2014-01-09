@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249AbaAIIRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:17:36 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63544 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029AbaAIIR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:17:29 -0500
-X-AuditID: 9c930179-b7b3eae0000044f1-97-52ce5b18f208
-From: Namhyung Kim <namhyung@kernel.org>
-To: Vince Weaver <vincent.weaver@maine.edu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Chad Paradis <chad.paradis@umit.maine.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [patch] perf tools: perf list broken on ARM
-References: <alpine.DEB.2.10.1312301536150.28814@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
-Date: Thu, 09 Jan 2014 17:17:27 +0900
-In-Reply-To: <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
-	(Vince Weaver's message of "Wed, 8 Jan 2014 16:30:17 -0500 (EST)")
-Message-ID: <871u0hd0x4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754708AbaAII30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:29:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753067AbaAII3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 03:29:19 -0500
+Message-ID: <52CE5DC1.8070807@redhat.com>
+Date: Thu, 09 Jan 2014 16:28:49 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net 2/2] net: core: explicitly select a txq before doing
+ l2 forwarding
+References: <1388978467-2075-1-git-send-email-jasowang@redhat.com> <1388978467-2075-2-git-send-email-jasowang@redhat.com> <20140106124248.GB24280@hmsreliant.think-freely.org> <52CB77A0.3030106@redhat.com> <20140107131730.GA12366@hmsreliant.think-freely.org> <52CCC431.3060403@redhat.com> <20140108144025.GA17802@neilslaptop.think-freely.org>
+In-Reply-To: <20140108144025.GA17802@neilslaptop.think-freely.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vince,
-
-On Wed, 8 Jan 2014 16:30:17 -0500 (EST), Vince Weaver wrote:
-> just checking on the status of this patch.  Am I sending it to the wrong 
-> place?  Did it get lost in the post-holiday e-mail purges?  
+On 01/08/2014 10:40 PM, Neil Horman wrote:
+> On Wed, Jan 08, 2014 at 11:21:21AM +0800, Jason Wang wrote:
+>> On 01/07/2014 09:17 PM, Neil Horman wrote:
+>>> On Tue, Jan 07, 2014 at 11:42:24AM +0800, Jason Wang wrote:
+>>>> On 01/06/2014 08:42 PM, Neil Horman wrote:
+>>>>> On Mon, Jan 06, 2014 at 11:21:07AM +0800, Jason Wang wrote:
+>>>>>> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
+>>>>>> will cause several issues:
+>>>>>>
+>>>>>> - NETIF_F_LLTX was forced for macvlan device in this case which lead extra lock
+>>>>>>   contention.
+>>>>>> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
+>>>>>>   watchdog
+>>>>>> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
+>>>>>>   when tso is disabled for lower device.
+>>>>>>
+>>>>>> Fix this by explicitly introducing a select queue method just for l2 forwarding
+>>>>>> offload (ndo_dfwd_select_queue), and introducing dfwd_direct_xmit() to do the
+>>>>>> queue selecting and transmitting for l2 forwarding.
+>>>>>>
+>>>>>> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
+>>>>>> to check txq against NULL in dev_hard_start_xmit().
+>>>>>>
+>>>>>> In the future, it was also required for macvtap l2 forwarding support since it
+>>>>>> provides a necessary synchronization method.
+>>>>>>
+>>>>>> Cc: John Fastabend <john.r.fastabend@intel.com>
+>>>>>> Cc: Neil Horman <nhorman@tuxdriver.com>
+>>>>>> Cc: e1000-devel@lists.sourceforge.net
+>>>>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>>>> Instead of creating another operation here to do special queue selection, why
+>>>>> not just have ndo_dfwd_start_xmit include a pointer to a pointer in its argument
+>>>>> list, so it can pass the txq it used back to the caller (dev_hard_start_xmit)?
+>>>>> ndo_dfwd_start_xmit already knows which queue set to pick from (since their
+>>>>> reserved for the device doing the transmitting).  It seems more clear to me than
+>>>>> creating a new netdevice operation.  
+>>>> See commit 8ffab51b3dfc54876f145f15b351c41f3f703195 ("macvlan: lockless
+>>>> tx path"). The point is keep the tx path lockless to be efficient and
+>>>> simplicity for management. And macvtap multiqueue was also implemented
+>>>> with this assumption. The real contention should be done in the txq of
+>>>> lower device instead of macvlan itself. This is also needed for
+>>>> multiqueue macvtap.
+>>> Ok, I see how you're preserving LLTX here, and thats great, but it doesn't
+>>> really buy us anything that I can see.  If a macvlan is using hardware
+>>> acceleration, it needs to arbitrate access to that hardware.  Weather thats done
+>>> by locking the lowerdev's tx queue lock or by enforcing locking on the macvlan
+>>> itself is equivalent.  The decision to use dfwd hardware acceleration is made on
+>>> open, so its not like theres any traffic that can avoid the lock, as it all goes
+>>> through the hardware.  All I see that this has bought us is an extra net_device
+>>> method (which isn't a big deal, but not necessecary as I see it).
+>> As I replied to patch 1/2, looking at the code itself again. The locking
+>> on the lowerdev's tx queue is really need since we need synchronize with
+>> other control path. Two examples are dev watchdog and ixgbe_down() both
+>> of which will try to hold tx lock to synchronize the with transmission.
+>> Without holding the lowerdev tx lock, we may have more serious issues.
+>> Also, it's a little strange for a net device has two modes. Future
+>> developers need to care about two different tx lock paths which is sub
+>> optimal.
+>>
+> Ok, having looked at this for a few hours, I agree, locking in the lowerdev has
+> some definiate advantages in plugging the holes you've pointed out.
 >
-> The bug is annoying if you're trying to use perf on ARM systems.
-
-Right, acme, would you please merge this?
-
-Thanks,
-Namhyung
-
+>> For the issue of an extra net_device method,  if you don't like we can
+>> reuse the ndo_select_queue by also passing the accel_priv to that method.
+> I do, that actually simplifies things, since it lets us use the entire
+> dev_hard_start_xmit path unmodified, which gives us the locking your looking for
+> without having to create a new slimmed down variant of dev_hard_start_xmit.
 >
-> On Mon, 30 Dec 2013, Vince Weaver wrote:
->
->> 
->> "perf list" listing of hardware events doesn't work on older ARM devices.
->> The change enabling event detection:
->> 
->>  commit b41f1cec91c37eeea6fdb15effbfa24ea0a5536b
->>  Author: Namhyung Kim <namhyung.kim@lge.com>
->>  Date:   Tue Aug 27 11:41:53 2013 +0900
->> 
->>      perf list: Skip unsupported events
->> 
->> 
->> uses the following code in tools/perf/util/parse-events.c:
->> 
->>         struct perf_event_attr attr = {
->>                 .type = type,
->>                 .config = config,
->>                 .disabled = 1,
->>                 .exclude_kernel = 1,
->>         };
->> 
->> On ARM machines pre-dating the Cortex-A15 this doesn't work, as
->> these machines don't support .exclude_kernel.  So starting with 3.12
->> "perf list" does not report any hardware events at all on older
->> machines (seen on Rasp-Pi, Pandaboard, Beagleboard, etc).
->> 
->> This version of the patch makes changes suggested by Namhyung Kim
->> to check for EACCESS and retry (instead of just dropping
->> the exclude_kernel) so we can properly handle machines where 
->> /proc/sys/kernel/perf_event_paranoid is set to 2.
->> 
->> Reported-by: Chad Paradis <chad.paradis@umit.maine.edu>
->> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
->> Acked-by: Namhyung Kim <namhyung@kernel.org>
->> 
->> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
->> index 6de6f89..1fa98b9 100644
->> --- a/tools/perf/util/parse-events.c
->> +++ b/tools/perf/util/parse-events.c
->> @@ -1082,12 +1082,12 @@ int is_valid_tracepoint(const char *event_string)
->>  static bool is_event_supported(u8 type, unsigned config)
->>  {
->>  	bool ret = true;
->> +	int open_return;
->>  	struct perf_evsel *evsel;
->>  	struct perf_event_attr attr = {
->>  		.type = type,
->>  		.config = config,
->>  		.disabled = 1,
->> -		.exclude_kernel = 1,
->>  	};
->>  	struct {
->>  		struct thread_map map;
->> @@ -1099,7 +1099,20 @@ static bool is_event_supported(u8 type, unsigned config)
->>  
->>  	evsel = perf_evsel__new(&attr);
->>  	if (evsel) {
->> -		ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
->> +		open_return = perf_evsel__open(evsel, NULL, &tmap.map);
->> +		ret = open_return >= 0;
->> +
->> +		if (open_return == -EACCES) {
->> +			/*
->> +			 * This happens if the paranoid value
->> +			 * /proc/sys/kernel/perf_event_paranoid is set to 2
->> +			 * Re-run with exclude_kernel set; we don't do that
->> +			 * by default as some ARM machines do not support it.
->> +			 *
->> +			 */
->> +			evsel->attr.exclude_kernel = 1;
->> +			ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
->> +		}
->>  		perf_evsel__delete(evsel);
->>  	}
->>  
->> 
->
-> Vince Weaver
-> vincent.weaver@maine.edu
-> http://www.eece.maine.edu/~vweaver/
+> Regards
+> Neil
+
+Right, will post V2.
