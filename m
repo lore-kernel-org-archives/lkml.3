@@ -1,59 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaAILL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:11:56 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:37755 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808AbaAILLp convert rfc822-to-8bit (ORCPT
+	id S1755643AbaAILMI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:12:08 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:40527 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755670AbaAILLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:11:45 -0500
-Date: Thu, 9 Jan 2014 12:05:13 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: dri-devel@lists.freedesktop.org
-Cc: Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 17/28] drm/i2c: tda998x: set the repeat PLL value in
- range 0..3
-Message-ID: <20140109120513.0965ddad@armhf>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Thu, 9 Jan 2014 06:11:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140109110635.GB20699@lee--X1>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	<1387814889-16670-2-git-send-email-lpapp@kde.org>
+	<20140108223933.GD18611@lee--X1>
+	<CAOMwXhN5JStJgG5Q9cjuJByhyhz-XPb4ThkA45B+fA724Ucqog@mail.gmail.com>
+	<20140109094147.GA20699@lee--X1>
+	<CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
+	<20140109110635.GB20699@lee--X1>
+Date: Thu, 9 Jan 2014 11:11:45 +0000
+X-Google-Sender-Auth: 8zqNK9Kcaf25D4jBLhf5nVFmN0A
+Message-ID: <CAOMwXhMRtFnAy33v90rZ-Mpa+yksH0054Pwr9M_VqeoJQWnPbw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 9, 2014 at 11:06 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> > Styling i.e nice, neat, easily readable/maintainable code should be
+>> > your bread and butter. If styling tires you, perhaps a new career
+>> > might be in order. ;)
+>>
+>> or a new tool to be more professional ...
+>
+> Patches accepted.
+>
+>> >> >> +#include <linux/i2c.h>
+>> >> >> +#include <linux/export.h>
+>> >> >
+>> >> > Why is this in here?
+>> >>
+>> >> Because this series was meant for a design review and overall
+>> >> direction as opposed to a completely fine tuned patch set. Naturally,
+>> >> I agree with the feedback of removing unnecessary header inclusion.
+>> >
+>> > Don't do that.
+>>
+>> I will guess that you mean "unnecessary header inclusion is OK"...
+>
+> No, I mean don't send sub-standard patches which crap you don't need
+> or a copy and pasted mess contained within them.
+>
+>> >> >> +struct max6651_dev {
+>> >> >> +    struct device *dev;
+>> >> >> +    struct mutex iolock;
+>> >> >> +
+>> >> >> +    struct i2c_client *i2c;
+>> >> >
+>> >> > Is this used?
+>> >>
+>> >> Yes, heavily, for reading and writing the registers in the subdevice drivers.
+>> >
+>> > Can you show me where?
+>>
+>> Check the gpio driver or even the hwmon in this series. Look at the
+>> places where it is using the read/write_reg functions, or you can just
+>> check their signature in this patch. I am in the process of
+>> refactoring it into regmap as we speak, but it is not painless because
+>> I need to get it working for 3.2, too ...
+>
+> Can you show me the line where you initialise it?
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+max6651->dev = &i2c->dev;
+max6651->i2c = i2c;
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index f60aef9..8a7d8a2 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -220,7 +220,7 @@ struct tda998x_priv {
- # define PLL_SERIAL_1_SRL_IZ(x)   (((x) & 3) << 1)
- # define PLL_SERIAL_1_SRL_MAN_IZ  (1 << 6)
- #define REG_PLL_SERIAL_2          REG(0x02, 0x01)     /* read/write */
--# define PLL_SERIAL_2_SRL_NOSC(x) (((x) & 3) << 0)
-+# define PLL_SERIAL_2_SRL_NOSC(x) ((x) << 0)
- # define PLL_SERIAL_2_SRL_PR(x)   (((x) & 0xf) << 4)
- #define REG_PLL_SERIAL_3          REG(0x02, 0x02)     /* read/write */
- # define PLL_SERIAL_3_SRL_CCIR    (1 << 0)
-@@ -972,6 +972,11 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
- 	}
- 
- 	div = 148500 / mode->clock;
-+	if (div != 0) {
-+		div--;
-+		if (div > 3)
-+			div = 3;
-+	}
- 
- 	/* mute the audio FIFO: */
- 	reg_set(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_RST_FIFO);
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+The last line is missing from the patch submitted as I fixed that only
+last week while debugging it hard.
+
+>> >> >> +     int type;
+>> >> >
+>> >> > Or this?
+>> >>
+>> >> Absolutely, this identifies the type, which is necessary for
+>> >> initializing some corresponding data.
+>> >
+>> > Can you show me where?
+>>
+>> Well, you have different number of GPIO pins for starter ...
+>
+> Can you show me the line where this variable is used?
+
+It is not yet, as explained in my previous email.
+
+>> >> >> +};
+>> >> >> +
+>> >> >> +enum max6651_types {
+>> >> >> +     TYPE_MAX6650,
+>> >> >> +     TYPE_MAX6651,
+>> >> >> +};
+>> >> >
+>> >> > What are you using these for?
+>> >>
+>> >> See above.
+>> >
+>> > Can you show me where you are using them?
+>>
+>> Perhaps, I was not while submitting this change, but the upcoming
+>> changes should.
+>
+> Again, this adds confusion. Send your best, cleanest, most up-to-date
+> code, or all you're doing is wasting people's time.
+
+Well, that is the point why I was clarifying it.
+
+Note that it is not like I can pull off an update within such a short
+while after so many comments.... Especially since there are new
+concepts revealed like "regmap", etc. I also need to make sure it
+works with both latest and 3.2 where the regmap i2c init convenience
+resource manager is not present, etc. It is a time-consuming full-time
+job. :-)
+
+An update will be coming addressing all the points.
