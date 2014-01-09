@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaAIUIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 15:08:23 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60980 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932135AbaAIUIR (ORCPT
+	id S932300AbaAIUIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 15:08:38 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:60733 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135AbaAIUI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 15:08:17 -0500
-Date: Thu, 9 Jan 2014 20:08:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sudeep Holla <Sudeep.Holla@arm.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ashok Raj <ashok.raj@intel.com>
-Subject: Re: [PATCH RFC 2/3] ARM: kernel: add support for cpu cache
-	information
-Message-ID: <20140109200801.GF27432@n2100.arm.linux.org.uk>
-References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com> <1389209168-17189-3-git-send-email-sudeep.holla@arm.com> <20140108205754.GN27432@n2100.arm.linux.org.uk> <52CEF9E7.4070706@arm.com>
+	Thu, 9 Jan 2014 15:08:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CEF9E7.4070706@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140109184711.GB2309@amt.cnet>
+References: <1388654051-5968-1-git-send-email-chen.fan.fnst@cn.fujitsu.com>
+	<20140108211009.GD20624@amt.cnet>
+	<CAHqbYQt0ERa4kgK97D0NWZnZdF9TtdskaH0as7fZyO7N=5AzPw@mail.gmail.com>
+	<20140108232527.GA17874@amt.cnet>
+	<CAHqbYQu0rYfviVMJhgeEnBKYri5OVMA7XEp2ZCVGpvsiTYRJGg@mail.gmail.com>
+	<CAHqbYQs0f5bH1Sg1emeFfUzJ0SEQBoVUx3jXhH=wa7VJdeccMQ@mail.gmail.com>
+	<20140109184711.GB2309@amt.cnet>
+Date: Thu, 9 Jan 2014 15:08:25 -0500
+Message-ID: <CAHqbYQtUtLQ38zbycjhSz=WCt7x_panWHXWz5b8=ZwYnDFTXqw@mail.gmail.com>
+Subject: Re: [PATCH] kvm: x86: Fix debug typo error in lapic
+From: Hu Yaohui <loki2441@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chen Fan <chen.fan.fnst@cn.fujitsu.com>, gleb@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 07:35:03PM +0000, Sudeep Holla wrote:
-> I assume you referring to some particular CPUs which don't implement this.
-> I could not find it as optional or IMPLEMENTATION defined in ARM ARM.
-> I might be missing to find it or there may be exceptions.
-> Can you please provide more information on that ?
+Hi Marcelo,
+Thanks for your replying!
+I hope you have a good day! I am sorry that it's not that obvious to
+me after I checked that function.
+If the remote vcpu is not in the same pcpu as the sender which calls
+kvm_vpcu_kick.
+Before the remote vcpu received the Host-IPI, it could be in guest
+mode which could possibly access the stale tlb entry that have been
+modifed by the sender.
 
-This is where _not_ relying on the most up to date ARM architecture
-reference manual, but instead referring back to the ARM architecture
-manual revision appropriate to the architecture is a far better plan.
+For smp_call_function_wait, the wait parameter will only let the
+sender side wait until the function has been executed on all the
+target cpus, then return.
+For TLB Flush IPI, the sender has already invalidate one tlb entry,
+the received side should get the IPI ASAP to invalidate the specified
+tlb before it's accessed, or there should have some mechanisms to
+enusre that even the stale tlb entry is accessed, it's still ok. I am
+not sure what's the situation here after I reviewed all the source
+codes.
 
-For example, DDI0100E, Part B, 2.3.2:
+Thanks for your time!
 
-| 2.3.2 Cache Type register
-| If present, the Cache Type register supplies the following details about
-| the cache:
+Best Wishes,
+Yaohui Hu
 
-Note the "if present" - it's a fact that not all ARMv4 CPUs support this
-register.  2.3 also tells you how to detect when these registers are
-implemented:
 
-| ID registers other than the main ID register are defined so that when
-| implemented, their value cannot be equal to that of the main ID register.
-| Software can therefore determine whether they exist by reading both
-| the main ID register and the desired register and comparing their values.
-| If the two values are not equal, the desired register exists.
-
-I can go back further to one of the initial revisions of the ARM ARM,
-but that's a paper copy.
-
-I can also refer you to DDI0087E (ARM720T) section 4.3 - this is an
-ARMv4T CPU, and it has no cache type register.  StrongARM is another
-example where the CTR is not implemented.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+On Thu, Jan 9, 2014 at 1:47 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Thu, Jan 09, 2014 at 11:28:40AM -0500, Hu Yaohui wrote:
+>> Hi Macelo,
+>> I am sorry to bother you again. In your first possibility,
+>> kvm_vcpu_kick sends an host-IPI to the remote vcpu,
+>> and if that vcpu is in guest mode, a VM-exit will be triggered due to
+>> the host-IPI. My question is if the vcpu has
+>> accessed the stale tlb entry before the host-IPI arrives, what will
+>> happen?  Thanks for your time!
+>>
+>> Best Wishes,
+>> Yaohui Hu
+>
+> Yaohui Hu, the reply from a few seconds ago should clarify that (wait
+> parameter).
+>
