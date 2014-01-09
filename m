@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaAIHIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 02:08:38 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42714 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaAIHIf (ORCPT
+	id S1753705AbaAIHLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 02:11:07 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:41853 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaAIHLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 02:08:35 -0500
+	Thu, 9 Jan 2014 02:11:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAJjB1q+0cMqGRX8e5ssvvvo1pSw4KY7n38vWOh-PnE8GRC2Pug@mail.gmail.com>
-References: <CAJjB1qLBoXA_XeEV+qU6pi0JVS+==kVA7mEDuAufrYup3htU2g@mail.gmail.com>
- <1389176916-6114-1-git-send-email-nicolas.ferre@atmel.com> <CAJjB1q+0cMqGRX8e5ssvvvo1pSw4KY7n38vWOh-PnE8GRC2Pug@mail.gmail.com>
-From: Mark Roszko <mark.roszko@gmail.com>
-Date: Thu, 9 Jan 2014 02:08:14 -0500
-Message-ID: <CAJjB1qJez363RAaNg1bzE3QTsaGDFfAqOJux=VttNXCyaQTy3A@mail.gmail.com>
-Subject: Re: [RFC PATCH] tty/serial: at91: disable uart timer at start of shutdown
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "Zhao, Leilei" <leilei.zhao@atmel.com>,
-        Mark Deneen <mdeneen@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        stable <stable@vger.kernel.org>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20140106121317.bada4233ec3fec40f79735cc@canb.auug.org.au>
+References: <20140106121317.bada4233ec3fec40f79735cc@canb.auug.org.au>
+Date: Wed, 8 Jan 2014 23:11:03 -0800
+Message-ID: <CAOesGMgJe9KR2muA4F9EaXYpDFDLxVZsKOj-8qZFbDZTiRBuww@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the sh tree with the tree
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bastian Hecht <hechtb@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Horman <horms+renesas@verge.net.au>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just to sumarize the bug after poking before the patch:
-   systemd calls open/close on /dev/ttyS0 per line
-   atmel_shutdown executes on close
-   uart_timer_callback may fire during shutdown before timer is killed
-   tasklet gets scheduled after tasklet_kill
-   atmel_shutdown returns back to uart_close
-dice roll:
-   if the tasklet executes before uart_close kills the tty references,
-the kernel is fine           <--- I saw this happening more often than
-panics, around once every 3 resets
-   if the tasklet executes after uart_close kills the tty references, it panics
+On Sun, Jan 5, 2014 at 5:13 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Paul,
+>
+> Today's linux-next merge of the sh tree got conflicts in
+> drivers/tty/serial/sh-sci.c and include/linux/serial_sci.h between
+> commits 8fb9631c517b ("serial: sh-sci: Sort headers alphabetically"),
+> 20bdcab8268c ("serial: sh-sci: Add OF support") and probably others from
+> the arm-soc tree and commits ada80ee7fa60 ("serial: sh-sci: Add OF
+> support") and b19ef75c56e9 ("serial: sh-sci: OF definitions need
+> linux/of.h") from the sh tree.
+>
+> The arm-soc tree version is dated much more recently than
+> the sh tree version and conflicts badly, so for today I have just dropped
+> the sh tree (everything in there was committed before April 2013).  Please
+> figure this out.
 
-I tested the patch by old fashion way of manual board resets with a
-total of 70 resets each on two individual SAMA5D34-EK boards I have in
-my possession programmed with the same patched kernel image and
-rootfs. They did not panic once with the patch applied. Typically
-before the patch the panic would occur around once every 10 resets if
-not more often to the point it occured for 4 resets straight.
+The request to merge the sh code came through Simon with claimed
+agreement from SH maintainers to do so -- I didn't verify this since
+they have in the past been well-coordinated. Simon?
 
-I have been trying to automate the testing, even If I make sure
-nothing is using ttyS0 and then run a program that spams open()
-writev() and close() (systemd uses the syscalls) to print messages, it
-will never panic so I'm possibly misunderstanding how the driver
-startup/shutdown ops get triggered(which should just be open/close
-respectively) or variable length of messages from systemd and timing
-between messages contributes to being unlucky and having the timer
-fire at the wrong time.
 
-But from manual testing I'm pretty confident the bug is fixed.
+
+-Olof
