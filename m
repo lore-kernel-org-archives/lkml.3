@@ -1,126 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639AbaAIOa4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:30:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54721 "EHLO mx2.suse.de"
+	id S1752917AbaAIOfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:35:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54866 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690AbaAIOav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:30:51 -0500
-Date: Thu, 9 Jan 2014 15:30:48 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
- access to memory reserves
-Message-ID: <20140109143048.GE27538@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
- <20131212103159.GB2630@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
- <20131217162342.GG28991@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com>
- <20131218200434.GA4161@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz>
- <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
- <20140108103319.GF27937@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140108103319.GF27937@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750882AbaAIOfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 09:35:02 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 0/5] Fix ebizzy performance regression due to X86 TLB range flush v3
+Date: Thu,  9 Jan 2014 14:34:53 +0000
+Message-Id: <1389278098-27154-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 08-01-14 11:33:19, Michal Hocko wrote:
-> On Tue 07-01-14 16:25:03, Andrew Morton wrote:
-> [...]
-> > > OK, so can we at least agree on the patch posted here:
-> > > https://lkml.org/lkml/2013/12/12/129. This is a real bug and definitely
-> > > worth fixing.
-> > 
-> > Yes, can we please get Eric's bug fixed?  I don't believe that Eric has
-> > tested either https://lkml.org/lkml/2013/12/12/129 or
-> > http://ozlabs.org/~akpm/mmots/broken-out/mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch.
-> > Is he the only person who can reproduce this?
-> 
-> I have gathered 3 patches from all the discussion and plan to post them
-> today or tomorrow as the time permits. https://lkml.org/lkml/2013/12/12/129
-> will be a part of it.
+Changelog since v2
+o Rebase to v3.13-rc7 to pick up scheduler-related fixes
+o Describe methodology in changelog
+o Reset tlb flush shift for all models except Ivybridge
 
-OK, I've decided to post the oom notification parts later because they
-will likely generate some discussion which might distract from the
-actual fix so here it goes (can be applied on both mmotm and the current
-Linus' tree):
----
->From 6185aaf3cd429b1ecf2d11d424e29b597feb7811 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 12 Dec 2013 11:37:27 +0100
-Subject: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
+Changelog since v1
+o Drop a pagetable walk that seems redundant
+o Account for TLB flushes only when debugging
+o Drop the patch that took number of CPUs to flush into account
 
-Eric has reported that he can see task(s) stuck in memcg OOM handler
-regularly. The only way out is to
-	echo 0 > $GROUP/memory.oom_controll
-His usecase is:
-- Setup a hierarchy with memory and the freezer
-  (disable kernel oom and have a process watch for oom).
-- In that memory cgroup add a process with one thread per cpu.
-- In one thread slowly allocate once per second I think it is 16M of ram
-  and mlock and dirty it (just to force the pages into ram and stay there).
-- When oom is achieved loop:
-  * attempt to freeze all of the tasks.
-  * if frozen send every task SIGKILL, unfreeze, remove the directory in
-    cgroupfs.
+ebizzy regressed between 3.4 and 3.10 while testing on a new
+machine. Bisection initially found at least three problems of which the
+first was commit 611ae8e3 (x86/tlb: enable tlb flush range support for
+x86). Second was related to TLB flush accounting. The third was related
+to ACPI cpufreq and so it was disabled for the purposes of this series.
 
-Eric has then pinpointed the issue to be memcg specific.
+The intent of the TLB range flush series was to preserve existing TLB
+entries by flushing a range one page at a time instead of flushing the
+address space. This makes a certain amount of sense if the address space
+being flushed was known to have existing hot entries.  The decision on
+whether to do a full mm flush or a number of single page flushes depends
+on the size of the relevant TLB and how many of these hot entries would
+be preserved by a targeted flush. This implicitly assumes a lot including
+the following examples
 
-All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
-Those that have received fatal signal will bypass the charge and should
-continue on their way out. The tricky part is that the exit path might
-trigger a page fault (e.g. exit_robust_list), thus the memcg charge,
-while its memcg is still under OOM because nobody has released any
-charges yet.
-Unlike with the in-kernel OOM handler the exiting task doesn't get
-TIF_MEMDIE set so it doesn't shortcut futher charges of the killed task
-and falls to the memcg OOM again without any way out of it as there are
-no fatal signals pending anymore.
+o That the full TLB is in use by the task being flushed
+o The TLB has hot entries that are going to be used in the near future
+o The TLB has entries for the range being cached
+o The cost of the per-page flushes is similar to a single mm flush
+o Large pages are unimportant and can always be globally flushed
+o Small flushes from workloads are very common
 
-This patch fixes the issue by checking PF_EXITING early in
-__mem_cgroup_try_charge and bypass the charge same as if it had fatal
-signal pending or TIF_MEMDIE set.
+The first three are completely unknowable but unfortunately it is something
+that is probably true of micro benchmarks designed to exercise these
+paths. The fourth one depends completely on the hardware. The large page
+check used to make sense but now the number of entries required to do
+a range flush is so small that it is a redundant check. The last one is
+the strangest because generally only a process that was mapping/unmapping
+very small regions would hit this. It's possible it is the common case
+for virtualised workloads that is managing the address space of its
+guests. Maybe this was the real original motivation of the TLB range flush
+support for x86.  If this is the case then the patches need to be revisited
+and clearly flagged as being of benefit to virtualisation.
 
-Normally exiting tasks (aka not killed) will bypass the charge now but
-this should be OK as the task is leaving and will release memory and
-increasing the memory pressure just to release it in a moment seems
-dubious wasting of cycles. Besides that charges after exit_signals
-should be rare.
+As things currently stand, Ebizzy sees very little benefit as it discards
+newly allocated memory very quickly and regressed badly on Ivybridge where
+it constantly flushes ranges of 128 pages one page at a time. Earlier
+machines may not have seen this problem as the balance point was at a
+different location. While I'm wary of optimising for such a benchmark,
+it's commonly tested and it's apparent that the worst case defaults for
+Ivybridge need to be re-examined.
 
-Reported-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+The following small series brings ebizzy closer to 3.4-era performance
+for the very limited set of machines tested. It does not bring
+performance fully back in line but the recent idle power regression
+fix has already been identified as regressing ebizzy performance
+(http://www.spinics.net/lists/stable/msg31352.html) and would need to be
+addressed first. Benchmark results are included in the relevant patch's
+changelog.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b8dfed1b9d87..b86fbb04b7c6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2685,7 +2685,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
- 	 * MEMDIE process.
- 	 */
- 	if (unlikely(test_thread_flag(TIF_MEMDIE)
--		     || fatal_signal_pending(current)))
-+		     || fatal_signal_pending(current))
-+		     || current->flags & PF_EXITING)
- 		goto bypass;
- 
- 	if (unlikely(task_in_memcg_oom(current)))
--- 
-1.8.5.2
+ arch/x86/include/asm/tlbflush.h    |  6 ++---
+ arch/x86/kernel/cpu/amd.c          |  5 +---
+ arch/x86/kernel/cpu/intel.c        | 10 +++-----
+ arch/x86/kernel/cpu/mtrr/generic.c |  4 +--
+ arch/x86/mm/tlb.c                  | 52 ++++++++++----------------------------
+ include/linux/vm_event_item.h      |  4 +--
+ include/linux/vmstat.h             |  8 ++++++
+ 7 files changed, 32 insertions(+), 57 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+1.8.4
+
