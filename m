@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaAIF6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 00:58:42 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59477 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751040AbaAIF6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 00:58:41 -0500
-Message-ID: <52CE3A8D.408@ti.com>
-Date: Thu, 9 Jan 2014 11:28:37 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL 0/4] PHY: for 3.14
-References: <1388076440-7620-1-git-send-email-kishon@ti.com> <52CCE0FD.80305@ti.com> <20140109033617.GA351@kroah.com>
-In-Reply-To: <20140109033617.GA351@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752263AbaAIGUJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 01:20:09 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:35184 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaAIGUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 01:20:06 -0500
+From: panchaxari <panchaxari.prasannamurthy@linaro.org>
+To: tixy@linaro.org
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        panchaxari.prasannamurthy@linaro.org,
+        Will Deacon <will.deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <robh@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH CFT] ARM:VERSATILE: Enable ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR by default
+Date: Thu,  9 Jan 2014 11:49:42 +0530
+Message-Id: <1389248382-5262-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 January 2014 09:06 AM, Greg KH wrote:
-> On Wed, Jan 08, 2014 at 10:54:13AM +0530, Kishon Vijay Abraham I wrote:
->> Hi Greg,
->>
->> On Thursday 26 December 2013 10:17 PM, Kishon Vijay Abraham I wrote:
->>> Hi Greg,
->>>
->>> here's the patches for 3.14. It contains few fixes on phy-core and added a new
->>> PHY driver used by SATA in Marvell SoCs.
->>>
->>> Let me know if you need any changes.
->>>
->>> Thanks
->>> Kishon
->>>
->>> The following changes since commit 413541dd66d51f791a0b169d9b9014e4f56be13c:
->>>
->>>   Linux 3.13-rc5 (2013-12-22 13:08:32 -0800)
->>>
->>> are available in the git repository at:
->>>
->>>   git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for_3.14
->>>
->>> for you to fetch changes up to e3eae85773ebd2165d19ca8661cca3b9c60b2ba1:
->>>
->>>   Phy: Add a PHY driver for Marvell MVEBU SATA PHY. (2013-12-24 23:52:58 +0530)
->>>
->>> ----------------------------------------------------------------
->>> Pull request for PHY subsystem contains few fixes in PHY-CORE mostly
->>> w.r.t PM and reference counting and also a new PHY driver used by SATA
->>> in Marvell SoC.
->>>
->>> ----------------------------------------------------------------
->>> Andrew Lunn (1):
->>>       Phy: Add a PHY driver for Marvell MVEBU SATA PHY.
->>>
->>> Felipe Balbi (1):
->>>       phy: core: properly handle failure of pm_runtime_get functions
->>>
->>> Kishon Vijay Abraham I (2):
->>>       phy: phy-core: increment refcounting variables only on 'success'
->>>       phy: phy-core.c: remove unnecessary initialization of local variables\
->>
->>
->> Will you be taking these patches?
-> 
-> Yes, sorry, catching up from my vacation backlog...
+This patch enables ARM_PATCH_PHYS_VIRT and AUTO_ZRELADDR as default configs
+to versatile platform.
 
-no problem, thanks.
+Introduction of PHYS_VIRT config as default enables phy-to-virt and virt-to-phy
+translation functions at boot and module loading time, and enforce dynamic
+reallocation of memory. PHYS_VIRT config is mutually exclusive to XIP_KERNEL,
+XIP_KERNEL is used in systems with NOR flash devices.
 
--Kishon
-> 
-> greg k-h
-> 
+AUTO_ZRELADDR config enables auto calculation of the decompressed kernel image
+address. AUTO_ZRELADDR config is mutually exclusive to ZBOOT_ROM, and also
+assumes zImage to be loaded in the first 128MiB from start of memory.
+
+CFT::Call For Testing
+
+Requesting maintainers of Versatile platform to evaluate the changes on the
+board and comment, as I dont have the board for testing and also requesting
+an ACK.
+
+Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
+Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Pawel Moll <Pawel.Moll@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rob Herring <robh@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Peter Maydell <peter.maydell@linaro.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 7f316c0..077ef9d 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -348,8 +348,10 @@ config ARCH_VERSATILE
+ 	bool "ARM Ltd. Versatile family"
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
+ 	select ARM_AMBA
++	select ARM_PATCH_PHYS_VIRT
+ 	select ARM_TIMER_SP804
+ 	select ARM_VIC
++	select AUTO_ZRELADDR
+ 	select CLKDEV_LOOKUP
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_MACH_CLKDEV
+-- 
+1.7.10.4
 
