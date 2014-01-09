@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaAIX7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 18:59:49 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:42840 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaAIX72 (ORCPT
+	id S1756464AbaAJAA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:00:27 -0500
+Received: from forward19.mail.yandex.net ([95.108.253.144]:36085 "EHLO
+	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755977AbaAJAAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 18:59:28 -0500
-Message-ID: <52CF37DF.4000309@codeaurora.org>
-Date: Thu, 09 Jan 2014 15:59:27 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Thu, 9 Jan 2014 19:00:24 -0500
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jan 2014 19:00:24 EST
+From: Victor Porton <porton@narod.ru>
+Envelope-From: porton@yandex.ru
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: A feature suggestion for sandboxing processes
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/7] ARM: perf_event: Silence sparse warning
-References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org> <1389221984-10973-2-git-send-email-sboyd@codeaurora.org> <20140109104519.GA17838@mudshark.cambridge.arm.com>
-In-Reply-To: <20140109104519.GA17838@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <223151389311706@web9g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 10 Jan 2014 01:55:06 +0200
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/14 02:45, Will Deacon wrote:
-> Hi Stephen,
->
-> On Wed, Jan 08, 2014 at 10:59:38PM +0000, Stephen Boyd wrote:
->> arch/arm/kernel/perf_event_cpu.c:274:25: warning: incorrect type in assignment (different modifiers)
->> arch/arm/kernel/perf_event_cpu.c:274:25: expected int ( *init_fn )( ... )
->> arch/arm/kernel/perf_event_cpu.c:274:25: got void const *const data
->>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
-> Given that the rest of the series depends on the change to the percpu IRQ
-> stuff, I think you can just send this patch to Russell's patch system with
-> my ack:
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
->
+In Fedora there is bin/sandbox command which runs a specified command in so called 'sandbox'. Program running in sandbox cannot open new files (it is commonly used with preopen stdin and stdout) and possibly its access to network is limited. It is intended to run potentially malicious software safely.
 
-Thanks. It's 7937/1.
+This Fedora sandbox is not perfect however.
+
+One problem is:
+
+Suppose the sandboxed program spawned some child processes and exited itself.
+
+Suppose we want to kill the sandboxed program after 30 second, if it has not exited voluntarily.
+
+The trouble is that the software cannot figure out which processes have appeared from the sandboxed binary. So we are unable to kill these processes automatically. This means that a hacker can in this way create thousands (or more) processes which would overload the system.
+
+Also note that the sandboxed program may run setsid() and thus its identity may be lost completely.
+
+I propose to add parameter sandbox_id to each process in the kernel. It would be 0 for normal processes and allocated like PID or GID for processes we create in sandbox. Children inherit sandbox_id. There should be an API call using which a process makes it sandboxed_id non-zero (which returns EPERM if it is already non-zero).
+
+Then there should be API to enumerate all processes with given sandbox_id, so that we would be able to kill them (-TERM or -KILL). Or maybe we should also have the function which sends the given signal to all processes with given sandbox_id (otherwise we would war with a hacker which could possibly create new children faster than we kill them).
+
+Please add me in CC: (I am not subscribed for this mailing list.)
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Victor Porton - http://portonvictor.org
