@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaAIMsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:48:24 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:51091 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaAIMsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:48:18 -0500
-X-IronPort-AV: E=Sophos;i="4.95,630,1384300800"; 
-   d="scan'208";a="91255114"
-Date: Thu, 9 Jan 2014 12:47:24 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gang.chen@asianux.com" <gang.chen@asianux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
-Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
- dependencies for XEN
-In-Reply-To: <201401091204.17932.arnd@arndb.de>
-Message-ID: <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com>
-References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140109103004.GB11089@mudshark.cambridge.arm.com> <201401091204.17932.arnd@arndb.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753166AbaAIMtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:49:03 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:46107 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388AbaAIMsx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 07:48:53 -0500
+Date: Thu, 9 Jan 2014 09:48:45 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [patch] perf tools: perf list broken on ARM
+Message-ID: <20140109124845.GB30069@ghostprotocols.net>
+References: <alpine.DEB.2.10.1312301536150.28814@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
+ <871u0hd0x4.fsf@sejong.aot.lge.com>
+ <20140109121206.GA30069@ghostprotocols.net>
+ <1389271023.1722.4.camel@leonhard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389271023.1722.4.camel@leonhard>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014, Arnd Bergmann wrote:
-> On Thursday 09 January 2014, Will Deacon wrote:
-> > On Wed, Jan 08, 2014 at 06:00:23PM +0000, Stefano Stabellini wrote:
-> > > Remove !GENERIC_ATOMIC64 build dependency:
-> > > - rename atomic64_xchg to armv7_atomic64_xchg and define it even ifdef
-> > >   GENERIC_ATOMIC64;
-> > > - call armv7_atomic64_xchg directly from xen/events.h.
+Em Thu, Jan 09, 2014 at 09:37:03PM +0900, Namhyung Kim escreveu:
+> 2014-01-09 (목), 09:12 -0300, Arnaldo Carvalho de Melo:
+> > Em Thu, Jan 09, 2014 at 05:17:27PM +0900, Namhyung Kim escreveu:
+> > > Hi Vince,
 > > > 
-> > > Remove !CPU_V6 build dependency:
-> > > - introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
-> > >   CONFIG_CPU_V6;
-> > > - implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16.
+> > > On Wed, 8 Jan 2014 16:30:17 -0500 (EST), Vince Weaver wrote:
+> > > > just checking on the status of this patch.  Am I sending it to the wrong 
+> > > > place?  Did it get lost in the post-holiday e-mail purges?  
+> > > >
+> > > > The bug is annoying if you're trying to use perf on ARM systems.
 > > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > CC: arnd@arndb.de
-> > > CC: linux@arm.linux.org.uk
-> > > CC: will.deacon@arm.com
-> > > CC: gang.chen@asianux.com
-> > > CC: catalin.marinas@arm.com
-> > > CC: jaccon.bastiaansen@gmail.com
-> > > CC: linux-arm-kernel@lists.infradead.org
-> > > CC: linux-kernel@vger.kernel.org
-> > > 
+> > > Right, acme, would you please merge this?
 > > 
-> > I'm confused here. It looks like you want to call armv7 code in a v6 kernel.
-> > What am I missing?
+> > I will, but having a patch authored by someone and Acked-by that same
+> > person looks weird, so, to clarify, this was written by Vince, acked by
+> > you, right?
 > 
-> This is about being able to build a kernel that runs on ARMv6 and ARMv7
-> and also includes Xen. Because of obvious hardware limitations, Xen
-> will only run on v7, but currently you cannot even build it once you
-> enable (pre-v6K) ARMv6 support, since the combined v6+v7 kernel can't
-> do atomic accesses in a generic way on non-32bit variables.
+> You seemed to be confused - it's not authored by me.  He was just
+> referring a problematic commit b41f1cec91c3 which was written by me.  So
+> yeah, this commit was written by Vince.
 
-Yep, that's right.
+You are right, I saw that Author: line in the changeset comment, close
+to the start of the message and got confused, thanks for clarifying.
+
+- Arnaldo
