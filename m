@@ -1,67 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaAIM1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:27:24 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60385 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751060AbaAIM1Q (ORCPT
+	id S1752106AbaAIMcC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:32:02 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:37845 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaAIMbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:27:16 -0500
-Date: Thu, 9 Jan 2014 12:27:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 24/28] drm/i2c: tda998x: adjust the audio CTS to the
-	mode clock
-Message-ID: <20140109122708.GB27432@n2100.arm.linux.org.uk>
-References: <20140109120702.492c58d8@armhf>
+	Thu, 9 Jan 2014 07:31:51 -0500
+Date: Thu, 9 Jan 2014 07:31:44 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
+        e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net V2 2/2] net: core: explicitly select a txq before
+ doing l2 forwarding
+Message-ID: <20140109123144.GC16701@hmsreliant.think-freely.org>
+References: <1389260252-48591-1-git-send-email-jasowang@redhat.com>
+ <1389260252-48591-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109120702.492c58d8@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1389260252-48591-2-git-send-email-jasowang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 12:07:02PM +0100, Jean-Francois Moine wrote:
+On Thu, Jan 09, 2014 at 05:37:32PM +0800, Jason Wang wrote:
+> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
+> will cause several issues:
 > 
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> - NETIF_F_LLTX were removed for macvlan, so txq lock were done for macvlan
+>   instead of lower device which misses the necessary txq synchronization for
+>   lower device such as txq stopping or frozen required by dev watchdog or
+>   control path.
+> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
+>   watchdog.
+> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
+>   when tso is disabled for lower device.
+> 
+> Fix this by explicitly introducing a new param for .ndo_select_queue() for just
+> selecting queues in the case of l2 forwarding offload. And also introducing
+> dfwd_direct_xmit() to do the queue selecting, txq holding and transmitting for
+> l2 forwarding.
+> 
+> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
+> to check txq against NULL in dev_hard_start_xmit(). Also there's no need to keep
+> a dedicated ndo_dfwd_start_xmit().
+> 
+> In the future, it was also required for macvtap l2 forwarding support since it
+> provides a necessary synchronization method.
+> 
+> Cc: John Fastabend <john.r.fastabend@intel.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: e1000-devel@lists.sourceforge.net
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> 
 > ---
->  drivers/gpu/drm/i2c/tda998x_drv.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-> index 68630b8..c2163f4 100644
-> --- a/drivers/gpu/drm/i2c/tda998x_drv.c
-> +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-> @@ -723,7 +723,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
->  		struct drm_display_mode *mode)
->  {
->  	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv;
-> -	uint32_t n;
-> +	uint32_t n, cts;
->  
->  	/* Enable audio ports */
->  	reg_write(priv, REG_ENA_AP, priv->audio_port);
-> @@ -777,9 +777,10 @@ tda998x_configure_audio(struct tda998x_priv *priv,
->  	n = 128 * AUDIO_SAMPLE;		/* acr_n = 128 * sample_rate / 1000 */
->  
->  	/* Write the CTS and N values */
-> -	buf[0] = 0x44;
-> -	buf[1] = 0x42;
-> -	buf[2] = 0x01;
-> +	cts = mode->clock;
-> +	buf[0] = cts;
-> +	buf[1] = cts >> 8;
-> +	buf[2] = cts >> 16;
+> Changes from V1:
+> - Adding a new parameter to ndo_select_queue instead of a new method to select
+>   queue for l2 forwarding.
+> - Remove the unnecessary ndo_dfwd_start_xmit() since txq was selected
+>   explicitly.
+> - Keep NETIF_F_LLTX when netdev feature is changed.
+> - Shape the commit log
 
-NAK.  We use auto-CTS mode, so the actual programmed CTS value is
-entirely irrelevant.
+A few minor nits inline.
+><snip>
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+>  }
+> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+> index 5360f73..7eb4c82 100644
+> --- a/drivers/net/macvlan.c
+> +++ b/drivers/net/macvlan.c
+> @@ -299,7 +299,7 @@ netdev_tx_t macvlan_start_xmit(struct sk_buff *skb,
+>  
+>  	if (vlan->fwd_priv) {
+>  		skb->dev = vlan->lowerdev;
+> -		ret = dev_hard_start_xmit(skb, skb->dev, NULL, vlan->fwd_priv);
+> +		ret = dfwd_direct_xmit(skb, skb->dev, vlan->fwd_priv);
+>  	} else {
+>  		ret = macvlan_queue_xmit(skb, dev);
+>  	}
+> @@ -366,7 +366,6 @@ static int macvlan_open(struct net_device *dev)
+>  		if (IS_ERR_OR_NULL(vlan->fwd_priv)) {
+>  			vlan->fwd_priv = NULL;
+>  		} else {
+> -			dev->features &= ~NETIF_F_LLTX;
+>  			return 0;
+>  		}
+After removing the features flag operation here, you don't need the braces
+around the else statement either.
+
+><snip>
+> +int dfwd_direct_xmit(struct sk_buff *skb, struct net_device *dev,
+> +		     void *accel_priv)
+> +{
+> +	struct netdev_queue *txq;
+> +	int ret = NETDEV_TX_BUSY;
+> +	int index;
+> +
+> +	BUG_ON(!dev->netdev_ops->ndo_select_queue);
+> +	index =	dev->netdev_ops->ndo_select_queue(dev, skb, accel_priv);
+> +
+> +	local_bh_disable();
+> +
+> +	skb_set_queue_mapping(skb, index);
+> +	txq = netdev_get_tx_queue(dev, index);
+> +
+> +	HARD_TX_LOCK(dev, txq, smp_processor_id());
+> +	if (!netif_xmit_frozen_or_stopped(txq))
+> +		ret = dev_hard_start_xmit(skb, dev, txq);
+> +	HARD_TX_UNLOCK(dev, txq);
+> +
+> +	local_bh_enable();
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(dfwd_direct_xmit);
+> +
+Now that we're using the common path to select a queue, can we just use
+dev_queue_xmit here instead of creating our own transmit function?  The txq we
+select from the ixgbe card will just have a pfifo_fast queue on it (if not a
+noop queue), so dev_queue_xmit should just fall into the dev_hard_start_xmit
+path, and save us this extra coding.
+
+Neil
+
