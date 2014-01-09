@@ -1,113 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaAILGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:06:46 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:61892 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaAILGj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:06:39 -0500
-Date: Thu, 9 Jan 2014 11:06:35 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
-Message-ID: <20140109110635.GB20699@lee--X1>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
- <1387814889-16670-2-git-send-email-lpapp@kde.org>
- <20140108223933.GD18611@lee--X1>
- <CAOMwXhN5JStJgG5Q9cjuJByhyhz-XPb4ThkA45B+fA724Ucqog@mail.gmail.com>
- <20140109094147.GA20699@lee--X1>
- <CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
+	id S1752801AbaAILIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:08:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:41991 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912AbaAILIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 06:08:31 -0500
+Message-ID: <52CE8314.2000000@ti.com>
+Date: Thu, 9 Jan 2014 16:38:04 +0530
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michele Paolino <m.paolino@virtualopensystems.com>
+CC: <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/5] USB Host support for OMAP5 uEVM (for 3.14)
+References: <1389161742-10533-1-git-send-email-rogerq@ti.com> <52CE824D.2090905@virtualopensystems.com>
+In-Reply-To: <52CE824D.2090905@virtualopensystems.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Styling i.e nice, neat, easily readable/maintainable code should be
-> > your bread and butter. If styling tires you, perhaps a new career
-> > might be in order. ;)
+Hi Michele,
+
+Did you enable CONFIG_USB_EHCI_HCD_OMAP in the kernel config?
+It is not enabled by default in omap2plus_defconfig.
+
+cheers,
+-roger
+
+On 01/09/2014 04:34 PM, Michele Paolino wrote:
+> Hello Roger,
 > 
-> or a new tool to be more professional ...
-
-Patches accepted.
-
-> >> >> +#include <linux/i2c.h>
-> >> >> +#include <linux/export.h>
-> >> >
-> >> > Why is this in here?
-> >>
-> >> Because this series was meant for a design review and overall
-> >> direction as opposed to a completely fine tuned patch set. Naturally,
-> >> I agree with the feedback of removing unnecessary header inclusion.
-> >
-> > Don't do that.
+> I'm testing your patch on an OMAP5430 EVM board. The ethernet is not working in my case. The kernel I'm using is (Tero Kristo's repo - branch 3.13-rc7-dt-clks-v13). Is there something that I'm missing?
 > 
-> I will guess that you mean "unnecessary header inclusion is OK"...
-
-No, I mean don't send sub-standard patches which crap you don't need
-or a copy and pasted mess contained within them.
-
-> >> >> +struct max6651_dev {
-> >> >> +    struct device *dev;
-> >> >> +    struct mutex iolock;
-> >> >> +
-> >> >> +    struct i2c_client *i2c;
-> >> >
-> >> > Is this used?
-> >>
-> >> Yes, heavily, for reading and writing the registers in the subdevice drivers.
-> >
-> > Can you show me where?
+> Here below you can find more info about my configuration:
 > 
-> Check the gpio driver or even the hwmon in this series. Look at the
-> places where it is using the read/write_reg functions, or you can just
-> check their signature in this patch. I am in the process of
-> refactoring it into regmap as we speak, but it is not painless because
-> I need to get it working for 3.2, too ...
-
-Can you show me the line where you initialise it?
-
-> >> >> +     int type;
-> >> >
-> >> > Or this?
-> >>
-> >> Absolutely, this identifies the type, which is necessary for
-> >> initializing some corresponding data.
-> >
-> > Can you show me where?
+> boot error messages:
+> eth0: ERROR while getting interface flags: No such device
+> SIOCSIFADDR: No such device
+> eth0: ERROR while getting interface flags: No such device
+> SIOCADDRT: Network is unreachable
 > 
-> Well, you have different number of GPIO pins for starter ...
-
-Can you show me the line where this variable is used?
-
-> >> >> +};
-> >> >> +
-> >> >> +enum max6651_types {
-> >> >> +     TYPE_MAX6650,
-> >> >> +     TYPE_MAX6651,
-> >> >> +};
-> >> >
-> >> > What are you using these for?
-> >>
-> >> See above.
-> >
-> > Can you show me where you are using them?
+> root@OMAP5:~# /usr/lib/klibc/bin/ipconfig eth0              
+> ipconfig: eth0: SIOCGIFINDEX: No such device
+> /usr/lib/klibc/bin/ipconfig: no devices to configure
 > 
-> Perhaps, I was not while submitting this change, but the upcoming
-> changes should.
+> root@OMAP5:~# uname -a
+> Linux OMAP5 3.13.0-rc7-g2a4526d-dirty #0 SMP Wed Jan 8 10:41:48 CET 2014x
+> 
+> root@OMAP5:~# dmesg | grep eth
+> [    1.661434] usbcore: registered new interface driver cdc_ether
+> 
+> Regards,
+> 
+> 
+> On 08/01/2014 07:15, Roger Quadros wrote:
+>> Hi Benoit & Tony,
+>>
+>> This patchset brings up USB Host ports and Ethernet port on
+>> the OMAP5 uEVM board.
+>>
+>> It depends on the TI Clock DT conversion patches [1] and is based
+>> on 3.13-rc7
+>>
+>> [1] - http://article.gmane.org/gmane.linux.ports.arm.kernel/289895
+>>
+>> Changelog:
+>>
+>> v4:
+>> - Updated DT binding document for clock binding
+>>
+>> v3:
+>> - Rebased on top of 3.13-rc7
+>>
+>> cheers,
+>> -roger
+>>
+>> Roger Quadros (5):
+>>   mfd: omap-usb-host: Update DT clock binding information
+>>   ARM: dts: OMAP5: Add 60MHz clock reference to USB Host module
+>>   ARM: dts: omap4-panda: Provide USB PHY clock
+>>   ARM: dts: omap5-uevm: Provide USB PHY clock
+>>   ARM: OMAP2+: Remove legacy_init_ehci_clk()
+>>
+>>  Documentation/devicetree/bindings/mfd/omap-usb-host.txt |  4 ++++
+>>  arch/arm/boot/dts/omap4-panda-common.dtsi               |  8 ++------
+>>  arch/arm/boot/dts/omap5-uevm.dts                        |  8 ++------
+>>  arch/arm/boot/dts/omap5.dtsi                            |  2 ++
+>>  arch/arm/mach-omap2/pdata-quirks.c                      | 16 ----------------
+>>  5 files changed, 10 insertions(+), 28 deletions(-)
+>>
+> 
+> 
+> -- 
+> *Michele Paolino*, Virtualization R&D Engineer
+> Virtual Open Systems
+> /Open Source  KVM  Virtualization  Developments/
+> /Multicore Systems Virtualization Porting Services/
+> Web/:/ www.virtualopensystems. <http://www.virtualopensystems.com/>com <http://www.virtualopensystems.com/>
+> 
+> 
 
-Again, this adds confusion. Send your best, cleanest, most up-to-date
-code, or all you're doing is wasting people's time.
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
