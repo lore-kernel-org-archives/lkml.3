@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaAIPgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:36:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55343 "EHLO mx1.redhat.com"
+	id S1753613AbaAIPmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:42:51 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:46791 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaAIPgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:36:12 -0500
-Subject: [PATCH] pci/iov: VFs are never multifunction
-From: Alex Williamson <alex.williamson@redhat.com>
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-Cc: sathya.perla@emulex.com, linux-kernel@vger.kernel.org,
-        ajit.khaparde@emulex.com, ddutile@redhat.com,
-        subbu.seetharaman@emulex.com, myron.stowe@redhat.com
-Date: Thu, 09 Jan 2014 08:36:08 -0700
-Message-ID: <20140109153513.21446.31778.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1752862AbaAIPmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 10:42:44 -0500
+X-IronPort-AV: E=Sophos;i="4.95,631,1384300800"; 
+   d="scan'208";a="91322742"
+Message-ID: <52CEC370.10503@citrix.com>
+Date: Thu, 9 Jan 2014 15:42:40 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Wei Liu <wei.liu2@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+Subject: Re: [PATCH net-next v3 1/9] xen-netback: Introduce TX grant map definitions
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com> <1389139818-24458-2-git-send-email-zoltan.kiss@citrix.com> <20140109153010.GE12164@zion.uk.xensource.com>
+In-Reply-To: <20140109153010.GE12164@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per the SR-IOV spec rev 1.1:
+On 09/01/14 15:30, Wei Liu wrote:
+> On Wed, Jan 08, 2014 at 12:10:10AM +0000, Zoltan Kiss wrote:
+>> This patch contains the new definitions necessary for grant mapping.
+>>
+>> v2:
+>> - move unmapping to separate thread. The NAPI instance has to be scheduled
+>>   even from thread context, which can cause huge delays
+>> - that causes unfortunately bigger struct xenvif
+>> - store grant handle after checking validity
+>>
+>> v3:
+>> - fix comment in xenvif_tx_dealloc_action()
+>> - call unmap hypercall directly instead of gnttab_unmap_refs(), which does
+>>   unnecessary m2p_override. Also remove pages_to_[un]map members
+> 
+> Is it worthy to have another function call
+> gnttab_unmap_refs_no_m2p_override in Xen core driver, or just add a
+> parameter to control wether we need to touch m2p_override? I *think* it
+> will benefit block driver as well?
 
-3.4.1.9 Header Type (Offset 0Eh)
+add_m2p_override and remove_m2p_override calls should be moved into the
+gntdev device as that should be the only user.
 
-"... For VFs, this register must be RO Zero."
-
-Unfortunately some devices get this wrong, ex. Emulex OneConnect 10Gb
-NIC.  When they do it makes us handle ACS testing and therefore IOMMU
-groups as if they were actual multifunction devices and require ACS
-capabilities to make sure there's no peer-to-peer between functions.
-VFs are never traditional multifunction devices, so simply clear this
-bit before we get any further into setup.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/iov.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index 1fe2d6f..e2fbb67 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -84,6 +84,7 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 	virtfn->dev.parent = dev->dev.parent;
- 	virtfn->physfn = pci_dev_get(dev);
- 	virtfn->is_virtfn = 1;
-+	virtfn->multifunction = 0;
- 
- 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
- 		res = dev->resource + PCI_IOV_RESOURCES + i;
-
+David
