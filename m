@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562AbaAITM6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:12:58 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:47096 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaAITMr (ORCPT
+	id S1756777AbaAITOx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:14:53 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:44929 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295AbaAITOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:12:47 -0500
-Date: Thu, 9 Jan 2014 11:12:36 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Huqiu Liu <liuhq11@mails.tsinghua.edu.cn>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [PATCH V1] input: use device managed memory in da9052
- touchscreen driver
-Message-ID: <20140109191236.GA28020@core.coreip.homeip.net>
-References: <201401091252.s09CqsOr042762@swsrvapps-02.lan>
+	Thu, 9 Jan 2014 14:14:44 -0500
+Message-ID: <52CEF521.90009@lwfinger.net>
+Date: Thu, 09 Jan 2014 13:14:41 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201401091252.s09CqsOr042762@swsrvapps-02.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Lockdep problem
+References: <52CC474A.7090207@lwfinger.net> <20140109162414.GA1719@redhat.com>
+In-Reply-To: <20140109162414.GA1719@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anthony,
+On 01/09/2014 10:24 AM, Stanislaw Gruszka wrote:
+> On Tue, Jan 07, 2014 at 12:28:26PM -0600, Larry Finger wrote:
+>>    rtnl_mutex --> misc_mtx --> rfkill_global_mutex
+>>
+>>    Possible unsafe locking scenario:
+>>
+>>          CPU0                    CPU1
+>>          ----                    ----
+>>     lock(rfkill_global_mutex);
+>>                                  lock(misc_mtx);
+>>                                  lock(rfkill_global_mutex);
+>>     lock(rtnl_mutex);
+>>
+>>   *** DEADLOCK ***
+>
+> There are 3 mutexes dependency. The deadlock can happen if on another
+> cpu, let say CPU2, there will be sequence:
+>
+> lock(rtnl_mutex);
+> lock(misc_mtx);
+>
+> Then on deadlock scenario:
+> CPU0 waits for rtnl_mutex to unlock, keep rfkill_global_mutex locked
+> CPU1 waits for rfkill_global_mutex to unlock, keep misc_mtx locked
+> CPU2 waits for misc_mtx to unlock, keep rtnl_mutex locked.
+>
+> This dependency can be broken by moving b43_rng_init() outside from
+> rtnl_mutex scope, like on below patch. IIUC b43 random number generator
+> works only if we already started network connection, but this should
+> not be a problem, as b43_rng_read() do not return any data if device
+> is not prepared.
+>
+> You could also remove whole b43 rnd. Everyone know, that HW vendors
+> are influenced by NSA and they random generators do not provide truly
+> random numbers (just kidding ;-)
 
-On Thu, Jan 09, 2014 at 12:51:37PM +0000, Anthony Olech wrote:
-> The touchscreen component driver for the da9052/3 Dialog PMICs
-> is changed to use device managed memory allocation.
-> 
-> This results in simpler error paths as failures in the probe()
-> function do not require explicit calls to free the devm_...
-> allocated memory.
-> The allocation functions used in this driver are:
->     devm_kzalloc()
->     devm_input_allocate_device()
->     devm_request_threaded_irq()
-> 
-> Suggested-by: Huqiu Liu <liuhq11@mails.tsinghua.edu.cn>
-> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> ---
-> This patch is relative to linux-next repository tag next-20140109
-> 
-> Many thanks to Huqiu Liu who instigated this patch.
-> 
->  drivers/input/touchscreen/da9052_tsi.c |   62 ++++++++++++++++----------------
->  1 file changed, 30 insertions(+), 32 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
-> index ab64d58..dcc4cf1 100644
-> --- a/drivers/input/touchscreen/da9052_tsi.c
-> +++ b/drivers/input/touchscreen/da9052_tsi.c
-> @@ -233,18 +233,30 @@ static int da9052_ts_probe(struct platform_device *pdev)
->  	struct da9052_tsi *tsi;
->  	struct input_dev *input_dev;
->  	int error;
-> +	int pdown_irq;
-> +	int ready_irq;
->  
->  	da9052 = dev_get_drvdata(pdev->dev.parent);
->  	if (!da9052)
->  		return -EINVAL;
->  
-> -	tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
-> -	input_dev = input_allocate_device();
-> -	if (!tsi || !input_dev) {
-> -		error = -ENOMEM;
-> -		goto err_free_mem;
-> -	}
-> +	pdown_irq = regmap_irq_get_virq(da9052->irq_data, DA9052_IRQ_PENDOWN);
-> +	if (pdown_irq < 0)
-> +		return pdown_irq;
-...
->  
-> -	error = da9052_request_irq(tsi->da9052, DA9052_IRQ_PENDOWN,
-> -				"pendown-irq", da9052_ts_pendwn_irq, tsi);
-> +	error = devm_request_threaded_irq(&pdev->dev, pdown_irq,
-> +				NULL, da9052_ts_pendwn_irq,
-> +				IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +				"pendown-irq", tsi);
+Well, I have no idea to what extent NSA affects the RNGs in computers; however, 
+I do like having that additional source of entropy. :)
 
-I am uncomfortable with the touchscreen portion of this driver ignoring
-the framework of it's MFD core and mixing native IRQ management with the
-ones done through the core.
+Your analysis was spot on, and I will be submitting a patch shortly with you as 
+author. I'll give the reporter on b.k.o a chance to test it, but it removed the 
+splat here.
 
-What would happen if somebody changes da9052_request_irq() to do some
-thing more than it is doing now so that your open-coded duplicate of the
-same in da9052_ts_probe() is no longer equivalent? Or
-da9052_disable_irq() no longer works correctly with IRQs allocated by
-this sub-module?
+Thanks,
 
-Thanks.
+Larry
 
--- 
-Dmitry
+
