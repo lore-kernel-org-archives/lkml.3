@@ -1,130 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaAIMcC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:32:02 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:37845 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaAIMbv (ORCPT
+	id S1752927AbaAIMfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:35:03 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:55163 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaAIMey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:31:51 -0500
-Date: Thu, 9 Jan 2014 07:31:44 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net V2 2/2] net: core: explicitly select a txq before
- doing l2 forwarding
-Message-ID: <20140109123144.GC16701@hmsreliant.think-freely.org>
-References: <1389260252-48591-1-git-send-email-jasowang@redhat.com>
- <1389260252-48591-2-git-send-email-jasowang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389260252-48591-2-git-send-email-jasowang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Thu, 9 Jan 2014 07:34:54 -0500
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: nicolas.ferre@atmel.com, b.brezillon@overkiz.com, arnd@arndb.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: [PATCH v2 00/12] Device Tree support for the at91sam9261ek
+Date: Thu,  9 Jan 2014 13:31:37 +0100
+Message-Id: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 05:37:32PM +0800, Jason Wang wrote:
-> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
-> will cause several issues:
-> 
-> - NETIF_F_LLTX were removed for macvlan, so txq lock were done for macvlan
->   instead of lower device which misses the necessary txq synchronization for
->   lower device such as txq stopping or frozen required by dev watchdog or
->   control path.
-> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
->   watchdog.
-> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
->   when tso is disabled for lower device.
-> 
-> Fix this by explicitly introducing a new param for .ndo_select_queue() for just
-> selecting queues in the case of l2 forwarding offload. And also introducing
-> dfwd_direct_xmit() to do the queue selecting, txq holding and transmitting for
-> l2 forwarding.
-> 
-> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
-> to check txq against NULL in dev_hard_start_xmit(). Also there's no need to keep
-> a dedicated ndo_dfwd_start_xmit().
-> 
-> In the future, it was also required for macvtap l2 forwarding support since it
-> provides a necessary synchronization method.
-> 
-> Cc: John Fastabend <john.r.fastabend@intel.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: e1000-devel@lists.sourceforge.net
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> 
-> ---
-> Changes from V1:
-> - Adding a new parameter to ndo_select_queue instead of a new method to select
->   queue for l2 forwarding.
-> - Remove the unnecessary ndo_dfwd_start_xmit() since txq was selected
->   explicitly.
-> - Keep NETIF_F_LLTX when netdev feature is changed.
-> - Shape the commit log
+This patch set aims at bringing a basic device tree support for the sam9261.
+It's mostly based on the sam9263 stuff.
+It introduces a new driver for the smc/ebi bus. It's used to configure the EBI
+from the DT. I haven't documented its DT bindings yet. Timings can be provided
+as raw values or nanoseconds.
 
-A few minor nits inline.
-><snip>
+Change since V1:
+* changed the DT representation to use address translation and separate the
+  timings' configuration from the device properties by adding a "simple-bus"
+  inetrmediate node.
+* moved the smc driver from drivers/bus to drivers/memmory
+* smc driver now accepts timings in nanoseconds as well as raw register values
+* smc driver can clip the timings if they're out of bound and dump them to the
+  console
+* DM9000 timings are now described in nanosecs (for the virtue of example)
 
->  }
-> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-> index 5360f73..7eb4c82 100644
-> --- a/drivers/net/macvlan.c
-> +++ b/drivers/net/macvlan.c
-> @@ -299,7 +299,7 @@ netdev_tx_t macvlan_start_xmit(struct sk_buff *skb,
->  
->  	if (vlan->fwd_priv) {
->  		skb->dev = vlan->lowerdev;
-> -		ret = dev_hard_start_xmit(skb, skb->dev, NULL, vlan->fwd_priv);
-> +		ret = dfwd_direct_xmit(skb, skb->dev, vlan->fwd_priv);
->  	} else {
->  		ret = macvlan_queue_xmit(skb, dev);
->  	}
-> @@ -366,7 +366,6 @@ static int macvlan_open(struct net_device *dev)
->  		if (IS_ERR_OR_NULL(vlan->fwd_priv)) {
->  			vlan->fwd_priv = NULL;
->  		} else {
-> -			dev->features &= ~NETIF_F_LLTX;
->  			return 0;
->  		}
-After removing the features flag operation here, you don't need the braces
-around the else statement either.
+supported features:
+* dbgu
+* nand
+* lcd
+* ethernet
+* leds
 
-><snip>
-> +int dfwd_direct_xmit(struct sk_buff *skb, struct net_device *dev,
-> +		     void *accel_priv)
-> +{
-> +	struct netdev_queue *txq;
-> +	int ret = NETDEV_TX_BUSY;
-> +	int index;
-> +
-> +	BUG_ON(!dev->netdev_ops->ndo_select_queue);
-> +	index =	dev->netdev_ops->ndo_select_queue(dev, skb, accel_priv);
-> +
-> +	local_bh_disable();
-> +
-> +	skb_set_queue_mapping(skb, index);
-> +	txq = netdev_get_tx_queue(dev, index);
-> +
-> +	HARD_TX_LOCK(dev, txq, smp_processor_id());
-> +	if (!netif_xmit_frozen_or_stopped(txq))
-> +		ret = dev_hard_start_xmit(skb, dev, txq);
-> +	HARD_TX_UNLOCK(dev, txq);
-> +
-> +	local_bh_enable();
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(dfwd_direct_xmit);
-> +
-Now that we're using the common path to select a queue, can we just use
-dev_queue_xmit here instead of creating our own transmit function?  The txq we
-select from the ixgbe card will just have a pfifo_fast queue on it (if not a
-noop queue), so dev_queue_xmit should just fall into the dev_hard_start_xmit
-path, and save us this extra coding.
+Jean-Jacques
 
-Neil
+Jean-Jacques Hiblot (12):
+  at91: dt: Add at91sam9261 dt SoC support
+  at91: dt: sam9261: Basic Device Tree support for the at91sam9261ek
+  at91: dt: sam9261: Added support for the lcd display
+  at91: smc: export sam9_smc_cs_read and sam9_smc_cs_configure.
+  at91: smc: Increased the size of tdf_cycles in struct sam9_smc_config.
+  at91: smc: Adds helper functions to validate and clip the smc timings.
+  at91: dt: smc: Added smc bus driver
+  at91: sam9261: Add a clock definition for the smc
+  at91: dt: sam9261: Pinmux DT entries for the SMC/EBI interface
+  at91: dt: sam9261: Add an entry in the DT for the SMC/EBI bus driver.
+  at91: dt: sam9261: moved the NAND under the smc node
+  at91: dt: sam9261: Added DM9000 in the device tree
+
+ arch/arm/boot/dts/Makefile                     |   2 +
+ arch/arm/boot/dts/at91sam9261.dtsi             | 639 +++++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9261ek.dts            | 164 +++++++
+ arch/arm/mach-at91/at91sam9261.c               |  17 +
+ arch/arm/mach-at91/include/mach/at91sam9_smc.h |   6 +-
+ arch/arm/mach-at91/sam9_smc.c                  |  81 +++-
+ drivers/memory/Kconfig                         |  10 +
+ drivers/memory/Makefile                        |   1 +
+ drivers/memory/atmel-smc.c                     | 431 +++++++++++++++++
+ 9 files changed, 1348 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
+ create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+ create mode 100644 drivers/memory/atmel-smc.c
+
+-- 
+1.8.5.2
 
