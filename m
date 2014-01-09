@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927AbaAIVpE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:45:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756516AbaAIVow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:44:52 -0500
-Date: Thu, 9 Jan 2014 16:44:25 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Prarit Bhargava <prarit@redhat.com>, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dave Young <dyoung@redhat.com>,
-        Kexec Mailing List <kexec@lists.infradead.org>
-Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
- hotplug for kexec
-Message-ID: <20140109214425.GD12111@redhat.com>
-References: <1389220181-14474-1-git-send-email-prarit@redhat.com>
- <3476878.EqQiEtA2Ag@vostro.rjw.lan>
- <20140109150053.GD25897@redhat.com>
- <CAHGf_=oaPZNE8tVsZ1C1z3mHee8MK6CkuZ0YBTcJpRrTWgVn6g@mail.gmail.com>
+	id S1757930AbaAIVqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:46:17 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:51809 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756516AbaAIVqL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 16:46:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=oaPZNE8tVsZ1C1z3mHee8MK6CkuZ0YBTcJpRrTWgVn6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389281025.31367.35.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+	<1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140109052454.GA16743@gmail.com>
+	<1389281025.31367.35.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Fri, 10 Jan 2014 01:46:10 +0400
+Message-ID: <CANaxB-zmYUVZO=wb-FXZ52S-SqvFFhFUu2AnbUYHm4Zhg78eEg@mail.gmail.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in nf_conntrack_find_get
+From: Andrey Wagin <avagin@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Florian Westphal <fw@strlen.de>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        vvs@openvz.org, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 04:34:16PM -0500, KOSAKI Motohiro wrote:
-> On Thu, Jan 9, 2014 at 10:00 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Jan 09, 2014 at 12:00:29AM +0100, Rafael J. Wysocki wrote:
-> >
-> > [..]
-> >> > The system then panics and the kdump/kexec kernel boots.  During this boot
-> >> > ACPi is initialized and the kernel (as can be seen above)
-> >>
-> >> Which is a bug.  You're not supposed to initialize ACPI twice in a row.
-> >
-> > [CC lkml, kexec mailing list, dave young]
-> >
-> > It is a fresh instance of kernel booting and it is initializing its data
-> > structures fresh. It is *not* re-initializing ACPI in same kernel.
-> >
-> >> > This patchset resolves the problem by adding a kernel parameter,
-> >> > no_memory_hotplug, to disable ACPI memory hotplug.  It can be added by default
-> >> > as a parameter to the kexec/kdump kernel so the kernel boots correctly.
-> >>
-> >> This problem is specific to kexec/kdump, so please don't add *generic* command
-> >> line parameters to address this.
-> >>
-> >
-> > There are other command line options to solve kdump problems. In general
-> > one might want to disable memory hogplug on the fly even if it is compiled
-> > in the kernel. So it can act as a good debugging aid.
-> >
-> > Secondly, it can be specified with memmap=exactmap and mem=X paramters to
-> > make sure no memory is hot added in the system.
-> >
-> > So I can see other usages of this parameter. To me it makes sense to have
-> > a separate command line option to disable memory hotplug feature on the
-> > fly.
-> 
-> I'm ok this option. But note, even if this option is specified, SH,
-> Power and S390 still
-> be able to use memory hotplug because their firmware are totally
-> different from ACPI.
-> 
-> Maybe, adding acpi prefix provides good clarification.
+2014/1/9 Eric Dumazet <eric.dumazet@gmail.com>:
+> On Thu, 2014-01-09 at 09:24 +0400, Andrew Vagin wrote:
+>
+>> I have one more question. Looks like I found another problem.
+>>
+>> init_conntrack:
+>>         hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
+>>                       &net->ct.unconfirmed);
+>>
+>> __nf_conntrack_hash_insert:
+>>       hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
+>>                  &net->ct.hash[hash]);
+>>
+>> We use one hlist_nulls_node to add a conntrack into two different lists.
+>> As far as I understand, it's unacceptable in case of
+>> SLAB_DESTROY_BY_RCU.
+>
+> I guess you missed :
+>
+> net/netfilter/nf_conntrack_core.c:1598: INIT_HLIST_NULLS_HEAD(&net->ct.unconfirmed, UNCONFIRMED_NULLS_VAL);
 
-Makes sense. Something like "acpi_no_memhotplug" or "acpi_disable_memhotplug"
-or something else.
+but we can look up something suitable and return this value, but it
+will be unconfirmed. Ok, I see. This situation is fixed by this patch
+too.
 
-Thanks
-Vivek
+I don't understand the result of your discussion with Florian.  Here
+are a few states of conntracts: it can be used and it's initialized.
+The sign of the first state is non-zero refcnt and the sign of the
+second state is the confirmed bit.
 
+In the first state conntrack is attached to skb and inserted in the
+unconfirmed list. In this state the use count can be incremented in
+ctnetlink_dump_list() and skb_clone().
+
+In the second state conntrack may be attached to a few skb-s and
+inserted to net->ct.hash.
+
+I have read all emails again and I can't understand when this patch
+doesn't work.  Maybe you could give a sequence of actions? Thanks.
+
+>
+>
+>>
+>> Lets imagine that we have two threads. The first one enumerates objects
+>> from a first list, the second one recreates an object and insert it in a
+>> second list.  If a first thread in this moment stays on the object, it
+>> can read "next", when it's in the second list, so it will continue
+>> to enumerate objects from the second list. It is not what we want, isn't
+>> it?
+>>
+>> cpu1                          cpu2
+>>                               hlist_nulls_for_each_entry_rcu(ct)
+>> destroy_conntrack
+>>  kmem_cache_free
+>>
+>> init_conntrack
+>>  hlist_nulls_add_head_rcu
+>>                               ct = ct->next
+>>
+>
+> This will be fine.
+>
+> I think we even have a counter to count number of occurrence of this
+> rare event. (I personally never read a non null search_restart value)
+>
+>  NF_CT_STAT_INC(net, search_restart);
+
+Thank you for explanation.
