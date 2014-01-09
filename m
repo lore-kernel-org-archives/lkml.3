@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735AbaAIOFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:05:10 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:60071 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaAIOE6 (ORCPT
+	id S1756777AbaAIOFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:05:30 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:35993 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaAIOFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:04:58 -0500
+	Thu, 9 Jan 2014 09:05:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <1389202490-31506-1-git-send-email-lpapp@kde.org>
-References: <1389202490-31506-1-git-send-email-lpapp@kde.org>
-Date: Thu, 9 Jan 2014 15:04:56 +0100
-Message-ID: <CACRpkdbB_oaR_JFy1=_9gdCLTGwEh1CGiSx7ighg6U5Rb8PTAw@mail.gmail.com>
-Subject: Re: [PATCH] drivers/mfd/stw481x.c: fix a typo
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <xa1tha9dbk2t.fsf@mina86.com>
+References: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<xa1tha9dbk2t.fsf@mina86.com>
+Date: Thu, 9 Jan 2014 23:05:04 +0900
+Message-ID: <CAAmzW4PyCp1Hw1ThHGZV5i1wb9494vgpDhZ4h+Gr3Q=pLOojJA@mail.gmail.com>
+Subject: Re: [PATCH 0/7] improve robustness on handling migratetype
+From: Joonsoo Kim <js1304@gmail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 6:34 PM, Laszlo Papp <lpapp@kde.org> wrote:
-
-> The sentence is not proper English due to a minor typo of "addess". The 'r'
-> letter is missing which this change is now amending. This was caught while
-> reading the driver source for getting more information about it, and then I ran
-> the vim spellchecker to make sure there are no more typos in this file.
+2014/1/9 Michal Nazarewicz <mina86@mina86.com>:
+> On Thu, Jan 09 2014, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>> Third, there is the problem on buddy allocator. It doesn't consider
+>> migratetype when merging buddy, so pages from cma or isolate region can
+>> be moved to other migratetype freelist. It makes CMA failed over and over.
+>> To prevent it, the buddy allocator should consider migratetype if
+>> CMA/ISOLATE is enabled.
 >
-> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> There should never be situation where a CMA page shares a pageblock (or
+> a max-order page) with a non-CMA page though, so this should never be an
+> issue.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Right... It never happens.
+When I ported CMA region reservation code to my own code for testing,
+I made a mistake. Sorry for noise.
 
-Yours,
-Linus Walleij
+Thanks.
