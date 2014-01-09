@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562AbaAIVeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:34:06 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:47014 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979AbaAIVd7 (ORCPT
+	id S1757625AbaAIVei (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:34:38 -0500
+Received: from mail-gg0-f181.google.com ([209.85.161.181]:36035 "EHLO
+	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756089AbaAIVe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:33:59 -0500
+	Thu, 9 Jan 2014 16:34:28 -0500
+Date: Thu, 9 Jan 2014 13:34:24 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com>
+References: <20131210103827.GB20242@dhcp22.suse.cz> <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com> <20131217162342.GG28991@dhcp22.suse.cz> <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com> <20131218200434.GA4161@dhcp22.suse.cz> <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
+ <20131219144134.GH10855@dhcp22.suse.cz> <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <52CF0D85.7060905@bjorling.me>
-References: <CAFR8uedovPTT0562nZSAfatjqqhyi8WXRdHj5wa9oCkVbzrBag@mail.gmail.com>
-	<52CF0D85.7060905@bjorling.me>
-Date: Thu, 9 Jan 2014 13:33:59 -0800
-Message-ID: <CAFR8ueeDHLe51jm6JRU1r5Qm7trhfPaYgXkzG2c=gUXxU0oU0A@mail.gmail.com>
-Subject: Re: [block:for-3.14/core] blk-mq: Compile fix for null_blk
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Matias Bjorling <m@bjorling.me>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tom.leiming@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Matias. Yes, Ming Lei's 4th patch does make the function internal.
+On Tue, 7 Jan 2014, Andrew Morton wrote:
 
-So, which branch has the laest patches... i am checking for-3.14/core...
+> I just spent a happy half hour reliving this thread and ended up
+> deciding I agreed with everyone!  I appears that many more emails are
+> needed so I think I'll drop
+> http://ozlabs.org/~akpm/mmots/broken-out/mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch
+> for now.
+> 
+> The claim that
+> mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch
+> will impact existing userspace seems a bit dubious to me.
+> 
 
-Regards,
-Muthu
+I'm not sure why this was dropped since it's vitally needed for any sane 
+userspace oom handler to be effective.
 
+Without the patch, a userspace oom handler waiting on memory.oom_control 
+will be triggered when any process with a pending SIGKILL or in the exit() 
+path simply needs access to memory reserves to make forward progress.  The 
+kernel oom killer itself is preempted since nothing is actionable other 
+than giving current access to memory reserves by setting the TIF_MEMDIE 
+bit.  Userspace does not have the privilege to set this bit itself, so in 
+such cases there is absolutely nothing actionable for the userspace oom 
+handler.
 
-On Thu, Jan 9, 2014 at 12:58 PM, Matias Bjorling <m@bjorling.me> wrote:
-> On 01/09/2014 07:54 PM, Muthu Kumar wrote:
->>
->> Jens,
->>
->> Compiling null_blk.ko failed with error that blk_mq_free_queue() was
->> defined implicitly. So, moved the declaration from block/blk-mq.h to
->> include/linux/blk-mq.h and exported it.
->>
->
-> The patch from Ming Lei is missing in -rc6
->
-> 4af48694451676403188a62385dd1a2849fc05c5
-> block: null_blk: fix queue leak inside removing device
->
-> Its queued for -rc7. It removes the usage of blk_mq_free_queue in blk_null.
->
->
->> Signed-off-by: Muthukumar Ratty <muthur@gmail.com>
->>
->> ----------------------
->>
->>   block/blk-mq.c         |    1 +
->>   block/blk-mq.h         |    1 -
->>   include/linux/blk-mq.h |    1 +
->>   3 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/block/blk-mq.c b/block/blk-mq.c
->> index 57039fc..3e08b87 100644
->> --- a/block/blk-mq.c
->> +++ b/block/blk-mq.c
->> @@ -1422,6 +1422,7 @@ void blk_mq_free_queue(struct request_queue *q)
->>          list_del_init(&q->all_q_node);
->>          mutex_unlock(&all_q_mutex);
->>   }
->> +EXPORT_SYMBOL(blk_mq_free_queue);
->>
->>   /* Basically redo blk_mq_init_queue with queue frozen */
->>   static void blk_mq_queue_reinit(struct request_queue *q)
->> diff --git a/block/blk-mq.h b/block/blk-mq.h
->> index 5c39179..35ff4f7 100644
->> --- a/block/blk-mq.h
->> +++ b/block/blk-mq.h
->> @@ -28,7 +28,6 @@ void blk_mq_run_request(struct request *rq, bool
->> run_queue, bool async);
->>   void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async);
->>   void blk_mq_init_flush(struct request_queue *q);
->>   void blk_mq_drain_queue(struct request_queue *q);
->> -void blk_mq_free_queue(struct request_queue *q);
->>
->>   /*
->>    * CPU hotplug helpers
->> diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
->> index 851d34b..51109b8 100644
->> --- a/include/linux/blk-mq.h
->> +++ b/include/linux/blk-mq.h
->> @@ -113,6 +113,7 @@ enum {
->>   };
->>
->>   struct request_queue *blk_mq_init_queue(struct blk_mq_reg *, void *);
->> +void blk_mq_free_queue(struct request_queue *q);
->>   int blk_mq_register_disk(struct gendisk *);
->>   void blk_mq_unregister_disk(struct gendisk *);
->>   void blk_mq_init_commands(struct request_queue *, void (*init)(void
->> *data, struct blk_mq_hw_ctx *, struct request *, unsigned int), void
->> *data);
->>
->
+The problem is that the userspace oom handler doesn't know that.
+
+It would be ludicrous to require that a userspace oom handler must wait 
+for some arbitrary amount of time to determine if it is actionable or not; 
+what is a sane amount of time to wait?  Should we reliably expect that 
+multiple oom notifications will be sent over a period of time if we are in 
+a situation where current doesn't require memory reserves to make forward 
+progress?  How long should the userspace oom handler store this state to 
+determine how many times it has woken up?
+
+Userspace oom handling implementations are fragile enough as it is, they 
+should be made as trivial as possible to ensure they can do what is needed 
+to make memory available, have the smallest memory footprint possible, and 
+be as reliable as possible.  Requiring them to determine when a 
+notification is actionable is troublesome.
+
+Furthermore, Section 10 of Documentation/cgroups/memory.txt does not imply 
+that any of this checking needs to be done and lists possible actions that 
+a userspace oom handler can do upon being notified such as raising a limit 
+or killing a process itself.  This is what userspace _expects_ to do when 
+notified.
+
+Giving current access to memory reserves so that it may make forward 
+progress is something only the kernel can do and is a part of both the VM 
+and memcg implementations to allow forward progress to be made.  It is not 
+something userspace is involved in.
+
+Additionally, you're not losing any functionality by merging the patch, if 
+you really want to know simply when the limit has been reached and not 
+something actionable as stated by the memcg documentation, you can do so 
+with memory thresholds or VMPRESSURE_CRITICAL.
+
+Google relies on this behavior so that userspace oom handlers can be 
+implemented to respond to oom conditions and not cause unnecessary oom 
+killing.  We'd like to know why you refuse to provide such an interface in 
+a responsible and reliable way.
+
+Thanks.
