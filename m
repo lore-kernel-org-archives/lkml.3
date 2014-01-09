@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaAIRvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 12:51:46 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:1883 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142AbaAIRvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 12:51:39 -0500
-X-IronPort-AV: E=Sophos;i="4.95,632,1384300800"; 
-   d="scan'208";a="89235786"
-Date: Thu, 9 Jan 2014 17:50:44 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "olof@lixom.net" <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "cov@codeaurora.org" <cov@codeaurora.org>
-Subject: Re: [PATCH v8 4/6] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING
- and pv_time_ops
-In-Reply-To: <1389269716.27473.73.camel@kazak.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1401091750120.21510@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1401081845040.21510@kaball.uk.xensource.com>  <1389206998-27875-4-git-send-email-stefano.stabellini@eu.citrix.com>  <20140109121308.GH3081@arm.com> <1389269716.27473.73.camel@kazak.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755914AbaAIRv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 12:51:56 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:35167 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997AbaAIRvr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 12:51:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+In-Reply-To: <201401091524.53417@pali>
+References: <20140107204233.GA22413@amd.pavel.ucw.cz> <CAK5ve-Kk9BuH=56F98aZOgPS+w-=8iF0HtpOYWNjRN8am2Zqjg@mail.gmail.com>
+ <201401091524.53417@pali>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 9 Jan 2014 09:51:25 -0800
+Message-ID: <CAK5ve-K3oz+cY=g025gnjYzCTmUm2AVV8Tcc9Zg+Sb2jBu1fOw@mail.gmail.com>
+Subject: Re: Broken locking in leds-lp5523.c
+To: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, milo kim <milo.kim@ti.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014, Ian Campbell wrote:
-> On Thu, 2014-01-09 at 12:13 +0000, Catalin Marinas wrote:
-> > On Wed, Jan 08, 2014 at 06:49:56PM +0000, Stefano Stabellini wrote:
-> > >  arch/arm64/Kconfig         |   20 ++++++++++++++++++++
-> > >  arch/arm64/kernel/Makefile |    1 +
-> > >  2 files changed, 21 insertions(+)
-> > [...]
-> > > diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-> > > index 5ba2fd4..1dee735 100644
-> > > --- a/arch/arm64/kernel/Makefile
-> > > +++ b/arch/arm64/kernel/Makefile
-> > > @@ -18,6 +18,7 @@ arm64-obj-$(CONFIG_SMP)			+= smp.o smp_spin_table.o
-> > >  arm64-obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
-> > >  arm64-obj-$(CONFIG_HAVE_HW_BREAKPOINT)+= hw_breakpoint.o
-> > >  arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
-> > > +arm64-obj-$(CONFIG_PARAVIRT)		+= paravirt.o
-> > 
-> > Did you forget a git add?
-> 
-> I was just about to say the same thing for the previous arm patch too.
+On Thu, Jan 9, 2014 at 6:24 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> On Wednesday 08 January 2014 01:32:15 Bryan Wu wrote:
+>> On Tue, Jan 7, 2014 at 12:42 PM, Pavel Machek <pavel@ucw.cz>
+> wrote:
+>> > Hi!
+>> >
+>> > There's some locking weirdness, and few missing comments in
+>> > lp5523 driver.
+>> >
+>> > Now, this is untested patch from my reverse-engineering. I
+>> > hope I understood things right...
+>> >
+>> > In particular, there's unbalanced unlock in
+>> > lp5523_update_program_memory, and
+>> > lp5523_update_program_memory needs to be protected by the
+>> > lock.
+>> >
+>> > Comments? Does someone maintain this?
+>>
+>> Actually the locking issue was fixed in my for-next branch,
+>> http://git.kernel.org/cgit/linux/kernel/git/cooloney/linux-led
+>> s.git/commit/?h=for-next&id=0d70bdb957cde2c25a4b3e4c93d0d33403
+>> 795be9
+>>
+>> Thanks,
+>> -Bryan
+>>
+>
+> Now, with linus tree lp5523 driver does not work without above
+> commit on Nokia N900 device. I think that commit should go to
+> 3.13 and stable... What do you think?
+>
 
-That is what I get for still using patch queues :-/
+OK, can you just apply this fix on Linus tree and verify it on N900?
+If only this fix will make N900 LED work, I will send out to Linus as
+a critical fix for 3.13 as well as stable tree. Because there 2 more
+patches for LED comes from Milo also fixed something and this patch
+probably depends on them.
+
+Please help to verify.
+
+Thanks,
+-Bryan
