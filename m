@@ -1,99 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaAIP3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:29:22 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:54771 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaAIP3S convert rfc822-to-8bit (ORCPT
+	id S1751770AbaAIPaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:30:18 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:19525 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaAIPaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:29:18 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [alsa-devel] [PATCH] ASoC: wm8804: Allow fine-grained control of the PLL generation
-From: Daniel Matuschek <daniel@matuschek.net>
-In-Reply-To: <20140109142745.GB6110@opensource.wolfsonmicro.com>
-Date: Thu, 9 Jan 2014 16:29:13 +0100
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Dimitris.Papastamos@Wolfsonmicro.com, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9DF5D0F7-F5A7-4705-8ACB-286B49D668C1@matuschek.net>
-References: <alpine.DEB.2.02.1401082231260.4025@parallels-Parallels-Virtual-Platform> <20140109142745.GB6110@opensource.wolfsonmicro.com>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: Apple Mail (2.1827)
+	Thu, 9 Jan 2014 10:30:13 -0500
+X-IronPort-AV: E=Sophos;i="4.95,631,1384300800"; 
+   d="scan'208";a="89173435"
+Date: Thu, 9 Jan 2014 15:30:10 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH net-next v3 1/9] xen-netback: Introduce TX grant map
+ definitions
+Message-ID: <20140109153010.GE12164@zion.uk.xensource.com>
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+ <1389139818-24458-2-git-send-email-zoltan.kiss@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1389139818-24458-2-git-send-email-zoltan.kiss@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 09.01.2014, at 15:27, Charles Keepax <ckeepax@opensource.wolfsonmicro.com> wrote:
-
-> On Wed, Jan 08, 2014 at 10:36:53PM +0100, Daniel Matuschek wrote:
->> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
->> 
+On Wed, Jan 08, 2014 at 12:10:10AM +0000, Zoltan Kiss wrote:
+> This patch contains the new definitions necessary for grant mapping.
 > 
-> <snip>
+> v2:
+> - move unmapping to separate thread. The NAPI instance has to be scheduled
+>   even from thread context, which can cause huge delays
+> - that causes unfortunately bigger struct xenvif
+> - store grant handle after checking validity
 > 
->> 			pll_div->freqmode = post_table[i].freqmode;
->> -			pll_div->mclkdiv = post_table[i].mclkdiv;
->> -			target *= post_table[i].div;
->> -			break;
->> +			if ((mclk_div == WM8804_MCLKDIV_DONTCARE) ||
->> +			    ((post_table[i].mclkdiv == 1) &&
->> +				(mclk_div == WM8804_MCLKDIV_1)) ||
->> +			    ((post_table[i].mclkdiv == 0) &&
->> +				(mclk_div == WM8804_MCLKDIV_0))) {
-> 
-> Would probably be nicer to update the post_table to use the new
-> defines and directly compare.
+> v3:
+> - fix comment in xenvif_tx_dealloc_action()
+> - call unmap hypercall directly instead of gnttab_unmap_refs(), which does
+>   unnecessary m2p_override. Also remove pages_to_[un]map members
 
-Yes, this is an option.
+Is it worthy to have another function call
+gnttab_unmap_refs_no_m2p_override in Xen core driver, or just add a
+parameter to control wether we need to touch m2p_override? I *think* it
+will benefit block driver as well?
 
-> 
->> +				pll_div->mclkdiv = post_table[i].mclkdiv;
->> +				target *= post_table[i].div;
->> +				break;
->> +			}
->> 		}
->> 	}
->> 
->> @@ -388,7 +396,7 @@ static int wm8804_set_pll(struct snd_soc_dai *dai, int pll_id,
->> 		int ret;
->> 		struct pll_div pll_div;
->> 
->> -		ret = pll_factors(&pll_div, freq_out, freq_in);
->> +		ret = pll_factors(&pll_div, freq_out, freq_in, pll_id);
-> 
-> This does feel like a slight abuse of pll_id, it feels to me that
-> using the set_clkdiv callback would be a little more natural from
-> a user perspective.
+(CC Roger and David for input)
 
-Good idea, I will move it to set_clkdiv.
-
+> - BUG() if grant_tx_handle corrupted
 > 
->> 		if (ret)
->> 			return ret;
->> 
->> diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
->> index 8ec14f5..0365177 100644
->> --- a/sound/soc/codecs/wm8804.h
->> +++ b/sound/soc/codecs/wm8804.h
->> @@ -58,4 +58,11 @@
->> 
->> #define WM8804_CLKOUT_DIV			1
->> 
->> +#define WM8804_MCLKDIV_DONTCARE			0
->> +#define WM8804_MCLKDIV_0			1
->> +#define WM8804_MCLKDIV_1			2
->> +#define WM8804_PLL_MCLKDIV_DONTCARE		WM8804_MCLKDIV_DONTCARE
->> +#define WM8804_PLL_MCLKDIV_0			WM8804_MCLKDIV_0
->> +#define WM8804_PLL_MCLKDIV_1			WM8804_MCLKDIV_1
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 > 
-> Do we really need two copies of these?
+> ---
+[...]
+>  
+>  #define XENVIF_QUEUE_LENGTH 32
+>  #define XENVIF_NAPI_WEIGHT  64
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index addfe1d1..7c241f9 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -771,6 +771,19 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
+>  	return page;
+>  }
+>  
+> +static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
+> +	       struct xen_netif_tx_request *txp,
+> +	       struct gnttab_map_grant_ref *gop)
 
-Not really ;-) I will remove the duplicates.
+Indentation.
+
+> +{
+> +	gnttab_set_map_op(gop, idx_to_kaddr(vif, pending_idx),
+> +			  GNTMAP_host_map | GNTMAP_readonly,
+> +			  txp->gref, vif->domid);
+> +
+> +	memcpy(&vif->pending_tx_info[pending_idx].req, txp,
+> +	       sizeof(*txp));
+> +
+> +}
+> +
+[...]
+> +void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+> +{
+> +	unsigned long flags;
+> +	pending_ring_idx_t index;
+> +	u16 pending_idx = ubuf->desc;
+> +	struct pending_tx_info *temp =
+> +		container_of(ubuf, struct pending_tx_info, callback_struct);
+> +	struct xenvif *vif =
+> +		container_of(temp - pending_idx, struct xenvif,
+> +			pending_tx_info[0]);
+
+Indentation.
+
+> +
+> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
+> +	do {
+> +		pending_idx = ubuf->desc;
+> +		ubuf = (struct ubuf_info *) ubuf->ctx;
+> +		index = pending_index(vif->dealloc_prod);
+> +		vif->dealloc_ring[index] = pending_idx;
+> +		/* Sync with xenvif_tx_action_dealloc:
+
+xenvif_tx_dealloc_action I suppose.
+
+> +		 * insert idx then incr producer.
+> +		 */
+> +		smp_wmb();
+> +		vif->dealloc_prod++;
+> +	} while (ubuf);
+> +	wake_up(&vif->dealloc_wq);
+> +	spin_unlock_irqrestore(&vif->dealloc_lock, flags);
+> +}
+> +
+> +static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+> +{
+> +	struct gnttab_unmap_grant_ref *gop;
+> +	pending_ring_idx_t dc, dp;
+> +	u16 pending_idx, pending_idx_release[MAX_PENDING_REQS];
+> +	unsigned int i = 0;
+> +
+> +	dc = vif->dealloc_cons;
+> +	gop = vif->tx_unmap_ops;
+> +
+> +	/* Free up any grants we have finished using */
+> +	do {
+> +		dp = vif->dealloc_prod;
+> +
+> +		/* Ensure we see all indices enqueued by all
+> +		 * xenvif_zerocopy_callback().
+> +		 */
+> +		smp_rmb();
+> +
+> +		while (dc != dp) {
+> +			pending_idx =
+> +				vif->dealloc_ring[pending_index(dc++)];
+> +
+> +			/* Already unmapped? */
+> +			if (vif->grant_tx_handle[pending_idx] ==
+> +				NETBACK_INVALID_HANDLE) {
+> +				netdev_err(vif->dev,
+> +					"Trying to unmap invalid handle! "
+> +					"pending_idx: %x\n", pending_idx);
+> +				continue;
+
+You seemed to miss the BUG_ON we discussed?
+
+See thread starting <52AF1A84.3090304@citrix.com>.
+
+Wei.
+
+> +			}
+> +
+> +			pending_idx_release[gop-vif->tx_unmap_ops] =
+> +				pending_idx;
+> +			gnttab_set_unmap_op(gop,
+> +					idx_to_kaddr(vif, pending_idx),
+> +					GNTMAP_host_map,
+> +					vif->grant_tx_handle[pending_idx]);
+> +			vif->grant_tx_handle[pending_idx] =
+> +				NETBACK_INVALID_HANDLE;
+> +			++gop;
+> +		}
+> +
 
