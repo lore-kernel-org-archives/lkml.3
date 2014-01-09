@@ -1,232 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaAIDMt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 22:12:49 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:50585 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338AbaAIDMp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 22:12:45 -0500
-Message-ID: <52CE131A.3020103@huawei.com>
-Date: Thu, 9 Jan 2014 11:10:18 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753697AbaAIDWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 22:22:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3448 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751571AbaAIDWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 22:22:38 -0500
+Date: Thu, 9 Jan 2014 11:22:02 +0800
+From: Baoquan <bhe@redhat.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-acpi@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, tangchen@cn.fujitsu.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dyoung@redhat.com
+Subject: Re: kdump failed because of hotplug memory adding in kdump kernel
+Message-ID: <20140109032202.GA29272@dhcp-16-116.nay.redhat.com>
+References: <52CD6E33.400@redhat.com>
+ <20140108155829.GC13649@redhat.com>
+ <8500545.JVNPnKcyD1@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>
-CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
-        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <dmaengine@vger.kernel.org>
-Subject: Re: [Patch Part2 V1 07/14] iommu/vt-d: fix error in detect ATS capability
-References: <1389085234-22296-1-git-send-email-jiang.liu@linux.intel.com> <1389085234-22296-8-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1389085234-22296-8-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8500545.JVNPnKcyD1@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a issue, our BIOS also supports several ATSR which have the same segment.
-Good fix :)
+On 01/09/14 at 12:07am, Rafael J. Wysocki wrote:
+> On Wednesday, January 08, 2014 10:58:29 AM Vivek Goyal wrote:
+> > On Wed, Jan 08, 2014 at 11:26:43PM +0800, Baoquan wrote:
+> > 
+> > [..]
+> > > [    1.592222] acpi PNP0A03:03: fail to add MMCONFIG information, can't access extended PCI configuration space under this bridge.
+> > > [    1.605045] PCI host bridge to bus 0000:ff
+> > > [    1.609615] pci_bus 0000:ff: root bus resource [bus ff]
+> > > [    1.632117] System RAM resource [mem 0x01000000-0x7bffffff] cannot be added
+> > > [    1.639892] init_memory_mapping: [mem 0x100000000-0x87fffffff]
+> > > [    1.717793] swapper/0: page allocation failure: order:9, mode:0x84d0
+> > > [    1.724884] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-59.el7.x86_64 #1
+> > > [    1.732842] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S001.032520101647 03/25/2010
+> > > [    1.743224]  0000000000000000 ffff8800339878c8 ffffffff815b64ad ffff880033987950
+> > > [    1.751513]  ffffffff8113a980 ffff88003673ab28 00000000000001fe 0000000000000001
+> > > [    1.759804]  ffff880000000040 ffffffff810bc28a 0000000000000000 0000000000000200
+> > > [    1.768096] Call Trace:                                                                                                                                            [348/1928]
+> > > [    1.770834]  [<ffffffff815b64ad>] dump_stack+0x19/0x1b
+> > > [    1.776561]  [<ffffffff8113a980>] warn_alloc_failed+0xf0/0x160
+> > > [    1.783076]  [<ffffffff810bc28a>] ? on_each_cpu_mask+0x2a/0x60
+> > > [    1.789581]  [<ffffffff8113e92f>] __alloc_pages_nodemask+0x7ff/0xa00
+> > > [    1.796672]  [<ffffffff815ada2c>] vmemmap_alloc_block+0x62/0xba
+> > > [    1.803274]  [<ffffffff815ada99>] vmemmap_alloc_block_buf+0x15/0x3b
+> > > [    1.810263]  [<ffffffff815ab8a6>] vmemmap_populate+0xb4/0x21b
+> > > [    1.816673]  [<ffffffff815adecd>] sparse_mem_map_populate+0x27/0x35
+> > > [    1.823665]  [<ffffffff815ad8bf>] sparse_add_one_section+0x7a/0x185
+> > > [    1.830659]  [<ffffffff8159b74f>] __add_pages+0xaf/0x240
+> > > [    1.836588]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> > > [    1.842804]  [<ffffffff8159ba89>] add_memory+0xb9/0x1b0
+> > > [    1.848638]  [<ffffffff8132dd2c>] acpi_memory_device_add+0x18d/0x26d
+> > > [    1.855728]  [<ffffffff81303b91>] acpi_bus_device_attach+0x7d/0xcd
+> > > [    1.862625]  [<ffffffff8131d92d>] acpi_ns_walk_namespace+0xc8/0x17f
+> > > [    1.869616]  [<ffffffff81303b14>] ? acpi_bus_type_and_status+0x90/0x90
+> > > [    1.876896]  [<ffffffff81303b14>] ? acpi_bus_type_and_status+0x90/0x90
+> > > [    1.884177]  [<ffffffff8131de1c>] acpi_walk_namespace+0x95/0xc5
+> > > [    1.890780]  [<ffffffff81304866>] acpi_bus_scan+0x8b/0x9d
+> > > [    1.896805]  [<ffffffff81a14a15>] acpi_scan_init+0x63/0x160
+> > > [    1.903021]  [<ffffffff81a14830>] acpi_init+0x25d/0x2a6
+> > 
+> > So basically acpi thinks that some memory block is a hot plug memory
+> > and tries to add it. And that consumes lots of memory and we don't have
+> > that memory in second kernel.
+> 
+> That's not exactly the case.  What seems to happen is that there is an ACPI
+> memory object in the ACPI namespace and the ACPI memory hotplug driver
+> attempts to bind to it.  That driver attempts to find removable memory blocks
+> associated with that object and to add them to the memory map.
 
-On 2014/1/7 17:00, Jiang Liu wrote:
-> Current Intel IOMMU driver only matches a PCIe root port with the first
-> DRHD unit with the samge segment number. It will report false result
-> if there are multiple DRHD units with the same segment number, thus fail
-> to detect ATS capability for some PCIe devices.
-> 
-> This patch refines function dmar_find_matched_atsr_unit() to search all
-> DRHD units with the same segment number.
-> 
-> An example DMAR table entries as below:
-> [1D0h 0464  2]                Subtable Type : 0002 <Root Port ATS Capability>
-> [1D2h 0466  2]                       Length : 0028
-> [1D4h 0468  1]                        Flags : 00
-> [1D5h 0469  1]                     Reserved : 00
-> [1D6h 0470  2]           PCI Segment Number : 0000
-> 
-> [1D8h 0472  1]      Device Scope Entry Type : 02
-> [1D9h 0473  1]                 Entry Length : 08
-> [1DAh 0474  2]                     Reserved : 0000
-> [1DCh 0476  1]               Enumeration ID : 00
-> [1DDh 0477  1]               PCI Bus Number : 00
-> [1DEh 0478  2]                     PCI Path : [02, 00]
-> 
-> [1E0h 0480  1]      Device Scope Entry Type : 02
-> [1E1h 0481  1]                 Entry Length : 08
-> [1E2h 0482  2]                     Reserved : 0000
-> [1E4h 0484  1]               Enumeration ID : 00
-> [1E5h 0485  1]               PCI Bus Number : 00
-> [1E6h 0486  2]                     PCI Path : [03, 00]
-> 
-> [1E8h 0488  1]      Device Scope Entry Type : 02
-> [1E9h 0489  1]                 Entry Length : 08
-> [1EAh 0490  2]                     Reserved : 0000
-> [1ECh 0492  1]               Enumeration ID : 00
-> [1EDh 0493  1]               PCI Bus Number : 00
-> [1EEh 0494  2]                     PCI Path : [03, 02]
-> 
-> [1F0h 0496  1]      Device Scope Entry Type : 02
-> [1F1h 0497  1]                 Entry Length : 08
-> [1F2h 0498  2]                     Reserved : 0000
-> [1F4h 0500  1]               Enumeration ID : 00
-> [1F5h 0501  1]               PCI Bus Number : 00
-> [1F6h 0502  2]                     PCI Path : [03, 03]
-> 
-> [1F8h 0504  2]                Subtable Type : 0002 <Root Port ATS Capability>
-> [1FAh 0506  2]                       Length : 0020
-> [1FCh 0508  1]                        Flags : 00
-> [1FDh 0509  1]                     Reserved : 00
-> [1FEh 0510  2]           PCI Segment Number : 0000
-> 
-> [200h 0512  1]      Device Scope Entry Type : 02
-> [201h 0513  1]                 Entry Length : 08
-> [202h 0514  2]                     Reserved : 0000
-> [204h 0516  1]               Enumeration ID : 00
-> [205h 0517  1]               PCI Bus Number : 40
-> [206h 0518  2]                     PCI Path : [02, 00]
-> 
-> [208h 0520  1]      Device Scope Entry Type : 02
-> [209h 0521  1]                 Entry Length : 08
-> [20Ah 0522  2]                     Reserved : 0000
-> [20Ch 0524  1]               Enumeration ID : 00
-> [20Dh 0525  1]               PCI Bus Number : 40
-> [20Eh 0526  2]                     PCI Path : [02, 02]
-> 
-> [210h 0528  1]      Device Scope Entry Type : 02
-> [211h 0529  1]                 Entry Length : 08
-> [212h 0530  2]                     Reserved : 0000
-> [214h 0532  1]               Enumeration ID : 00
-> [215h 0533  1]               PCI Bus Number : 40
-> [216h 0534  2]                     PCI Path : [03, 00]
-> 
-> [218h 0536  2]                Subtable Type : 0002 <Root Port ATS Capability>
-> [21Ah 0538  2]                       Length : 0020
-> [21Ch 0540  1]                        Flags : 00
-> [21Dh 0541  1]                     Reserved : 00
-> [21Eh 0542  2]           PCI Segment Number : 0000
-> 
-> [220h 0544  1]      Device Scope Entry Type : 02
-> [221h 0545  1]                 Entry Length : 08
-> [222h 0546  2]                     Reserved : 0000
-> [224h 0548  1]               Enumeration ID : 00
-> [225h 0549  1]               PCI Bus Number : 80
-> [226h 0550  2]                     PCI Path : [02, 00]
-> 
-> [228h 0552  1]      Device Scope Entry Type : 02
-> [229h 0553  1]                 Entry Length : 08
-> [22Ah 0554  2]                     Reserved : 0000
-> [22Ch 0556  1]               Enumeration ID : 00
-> [22Dh 0557  1]               PCI Bus Number : 80
-> [22Eh 0558  2]                     PCI Path : [02, 02]
-> 
-> [230h 0560  1]      Device Scope Entry Type : 02
-> [231h 0561  1]                 Entry Length : 08
-> [232h 0562  2]                     Reserved : 0000
-> [234h 0564  1]               Enumeration ID : 00
-> [235h 0565  1]               PCI Bus Number : 80
-> [236h 0566  2]                     PCI Path : [03, 00]
-> 
-> [238h 0568  2]                Subtable Type : 0002 <Root Port ATS Capability>
-> [23Ah 0570  2]                       Length : 0020
-> [23Ch 0572  1]                        Flags : 00
-> [23Dh 0573  1]                     Reserved : 00
-> [23Eh 0574  2]           PCI Segment Number : 0000
-> 
-> [240h 0576  1]      Device Scope Entry Type : 02
-> [241h 0577  1]                 Entry Length : 08
-> [242h 0578  2]                     Reserved : 0000
-> [244h 0580  1]               Enumeration ID : 00
-> [245h 0581  1]               PCI Bus Number : C0
-> [246h 0582  2]                     PCI Path : [02, 00]
-> 
-> [248h 0584  1]      Device Scope Entry Type : 02
-> [249h 0585  1]                 Entry Length : 08
-> [24Ah 0586  2]                     Reserved : 0000
-> [24Ch 0588  1]               Enumeration ID : 00
-> [24Dh 0589  1]               PCI Bus Number : C0
-> [24Eh 0590  2]                     PCI Path : [02, 02]
-> 
-> [250h 0592  1]      Device Scope Entry Type : 02
-> [251h 0593  1]                 Entry Length : 08
-> [252h 0594  2]                     Reserved : 0000
-> [254h 0596  1]               Enumeration ID : 00
-> [255h 0597  1]               PCI Bus Number : C0
-> [256h 0598  2]                     PCI Path : [03, 00]
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  drivers/iommu/intel-iommu.c |   37 +++++++++++++++++--------------------
->  1 file changed, 17 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 7038b38..b0028e2 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -3556,37 +3556,34 @@ int dmar_find_matched_atsr_unit(struct pci_dev *dev)
->  {
->  	int i;
->  	struct pci_bus *bus;
-> +	struct pci_dev *bridge = NULL;
->  	struct acpi_dmar_atsr *atsr;
->  	struct dmar_atsr_unit *atsru;
->  
->  	dev = pci_physfn(dev);
-> -
-> -	list_for_each_entry(atsru, &dmar_atsr_units, list) {
-> -		atsr = container_of(atsru->hdr, struct acpi_dmar_atsr, header);
-> -		if (atsr->segment == pci_domain_nr(dev->bus))
-> -			goto found;
-> -	}
-> -
-> -	return 0;
-> -
-> -found:
->  	for (bus = dev->bus; bus; bus = bus->parent) {
-> -		struct pci_dev *bridge = bus->self;
-> -
-> +		bridge = bus->self;
->  		if (!bridge || !pci_is_pcie(bridge) ||
->  		    pci_pcie_type(bridge) == PCI_EXP_TYPE_PCI_BRIDGE)
->  			return 0;
-> -
-> -		if (pci_pcie_type(bridge) == PCI_EXP_TYPE_ROOT_PORT) {
-> -			for (i = 0; i < atsru->devices_cnt; i++)
-> -				if (atsru->devices[i] == bridge)
-> -					return 1;
-> +		if (pci_pcie_type(bridge) == PCI_EXP_TYPE_ROOT_PORT)
->  			break;
-> -		}
->  	}
-> +	if (!bridge)
-> +		return 0;
->  
-> -	if (atsru->include_all)
-> -		return 1;
-> +	list_for_each_entry_rcu(atsru, &dmar_atsr_units, list) {
-> +		atsr = container_of(atsru->hdr, struct acpi_dmar_atsr, header);
-> +		if (atsr->segment != pci_domain_nr(dev->bus))
-> +			continue;
-> +
-> +		for (i = 0; i < atsru->devices_cnt; i++)
-> +			if (atsru->devices[i] == bridge)
-> +				return 1;
-> +
-> +		if (atsru->include_all)
-> +			return 1;
-> +	}
->  
->  	return 0;
->  }
-> 
+Yeah, since kdump kernel will detect rsdp for legacy machine in the
+first 1K of the EBDA or between E0000 and FFFFF. 
 
+> 
+> Why don't you simply append acpi=off to the kexec command line?  That should
+> make the problem go away.
 
--- 
-Thanks!
-Yijing
+acpi=off doesn't work, kdump kernel hang immediately after crash is
+triggered. Because acpi information is needed by kdump kernel, we can't
+disable it.
 
