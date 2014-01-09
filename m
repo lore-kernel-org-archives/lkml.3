@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaAIKif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:38:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49369 "EHLO mx2.suse.de"
+	id S1752092AbaAIKlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:41:53 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60058 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038AbaAIKi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:38:28 -0500
-Message-ID: <52CE7C21.4060300@suse.cz>
-Date: Thu, 09 Jan 2014 11:38:25 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S1751060AbaAIKln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 05:41:43 -0500
+Message-ID: <52CE7C44.1000803@ti.com>
+Date: Thu, 9 Jan 2014 16:09:00 +0530
+From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:1440!
-References: <52B88F6E.8070909@oracle.com> <20131223200255.GA18521@node.dhcp.inet.fi> <52B8AAFD.5090401@oracle.com> <52C819E2.8090509@oracle.com>
-In-Reply-To: <52C819E2.8090509@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, <linux@arm.linux.org.uk>,
+        <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        <grygorii.strashko@ti.com>, <pawel.moll@arm.com>,
+        <swarren@wwwdotorg.org>, <ijc+devicetree@hellion.org.uk>,
+        <galak@kernel.crashing.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>, Rob Landley <rob@landley.net>
+Subject: Re: [PATCH v3] ARM: davinci: aemif: get rid of davinci-nand driver
+ dependency on aemif
+References: <1386267092-18615-1-git-send-email-ivan.khoronzhuk@ti.com> <52B18C44.2000305@ti.com> <52B1915A.7060309@ti.com> <52BC1BB8.2070007@ti.com>
+In-Reply-To: <52BC1BB8.2070007@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2014 03:25 PM, Sasha Levin wrote:
-> On 12/23/2013 04:28 PM, Sasha Levin wrote:
->> On 12/23/2013 03:02 PM, Kirill A. Shutemov wrote:
->>>> [  265.474585] kernel BUG at mm/huge_memory.c:1440!
->>> Could you dump_page() on the bug?
+On Thursday 26 December 2013 05:36 PM, ivan.khoronzhuk wrote:
+> On 12/18/2013 02:13 PM, Sekhar Nori wrote:
+>> On Wednesday 18 December 2013 05:21 PM, ivan.khoronzhuk wrote:
+>>> Hi, Sekhar
+>>>
+>>> This patch is based on "Reuse davinci-nand driver for Keystone arch"
+>>> series.
+>>> The series has passed review at https://lkml.org/lkml/2013/12/17/241
+>>> and can be found at http://git.infradead.org/l2-mtd.git
+>>>
+>>> This patch can be still applied on top of the series without conflicts.
+>>>
+>>> Can you please pick up the $subject patch if you are OK with it?
 >>
->> [  469.007946] page:ffffea0005bd8000 count:3 mapcount:0 mapping:ffff8800bcd3d171 index: 0x7fca81000
->> [  469.009362] page flags: 0x2afffff80090018(uptodate|dirty|swapcache|swapbacked)
->
-> Ping? It still shows up in 3.13-rc6.
+>> I have no problems with the patch and can pick it too, but need ack from
+>> MTD maintainer (David) as it touches drivers/mtd/ too.
+>>
+>> David,
+>>
+>> If you do not have the patch, we can resend it.
+>>
+>> Thanks,
+>> Sekhar
+>>
+> 
+> Hi Brian,
+> 
+> Do you agree if this patch will go through Davinci tree?
+> 
+> This is the last one we need to reuse Davinci Nand driver for Keystone.
 
-Could you verify if a version before split PMD locks is affected or not? 
-I.e. 3.12 (IIRC)? I've checked if there can be race with THP splitting 
-and it seems there shouldn't be thanks to pmd_lock() protection. So that 
-could be a candidate. Given the recent trinity improvements it would be 
-good to determine if it's a new bug or another years old one...
+Since we never got an ack from MTD folks, I am going and go ahead and
+try pushing this through ARM-SoC regardless. I will CC the MTD
+maintainers on the pull request so any objections could even be posted
+there.
 
 Thanks,
-Vlastimil
-
-> Thanks,
-> Sasha
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-
+Sekhar
