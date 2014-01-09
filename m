@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbaAIXQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 18:16:44 -0500
-Received: from ozlabs.org ([203.10.76.45]:52834 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472AbaAIXQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 18:16:40 -0500
-Date: Fri, 10 Jan 2014 10:16:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+	id S1753795AbaAIXVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 18:21:13 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:37044 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583AbaAIXVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 18:21:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <1389304708.3209.257.camel@bling.home>
+References: <20140109153513.21446.31778.stgit@bling.home> <CAErSpo4Asnx4JiZvppZLUzxmVymz0t-fHXRFMr81-Qz31XyR+g@mail.gmail.com>
+ <1389291911.3209.234.camel@bling.home> <CAErSpo6vA=f1RSnpkWumYxs3tQ8uM8NKuWqck4GRb6gL5HvqiA@mail.gmail.com>
+ <1389304708.3209.257.camel@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 9 Jan 2014 16:20:50 -0700
+Message-ID: <CAErSpo7xEKzWF8oetskQAcLcwJUw4VPByXgbMUkurVcK2caRgA@mail.gmail.com>
+Subject: Re: [PATCH] pci/iov: VFs are never multifunction
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Nishank Trivedi <nistrive@cisco.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        sathya.perla@emulex.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: please, remove UBI tree from linux-next
-Message-Id: <20140110101632.1e698592a51c7b533be8d129@canb.auug.org.au>
-In-Reply-To: <1389285200.2259.147.camel@sauron.fi.intel.com>
-References: <1389285200.2259.147.camel@sauron.fi.intel.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_Jan_2014_10_16_32_+1100_kl.QgDnaYOXpCq8K"
+        ajit.khaparde@emulex.com, Don Dutile <ddutile@redhat.com>,
+        subbu.seetharaman@emulex.com, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Jan_2014_10_16_32_+1100_kl.QgDnaYOXpCq8K
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[+to Nishank]
 
-Hi Artem,
-
-On Thu, 9 Jan 2014 16:33:21 +0000 "Bityutskiy, Artem" <artem.bityutskiy@int=
-el.com> wrote:
+On Thu, Jan 9, 2014 at 2:58 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Thu, 2014-01-09 at 14:39 -0700, Bjorn Helgaas wrote:
+>> On Thu, Jan 9, 2014 at 11:25 AM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>> > On Thu, 2014-01-09 at 11:08 -0700, Bjorn Helgaas wrote:
+>> >> On Thu, Jan 9, 2014 at 8:36 AM, Alex Williamson
+>> >> <alex.williamson@redhat.com> wrote:
+>> >> > Per the SR-IOV spec rev 1.1:
+>> >> >
+>> >> > 3.4.1.9 Header Type (Offset 0Eh)
+>> >> >
+>> >> > "... For VFs, this register must be RO Zero."
+>> >> >
+>> >> > Unfortunately some devices get this wrong, ex. Emulex OneConnect 10Gb
+>> >> > NIC.  When they do it makes us handle ACS testing and therefore IOMMU
+>> >> > groups as if they were actual multifunction devices and require ACS
+>> >> > capabilities to make sure there's no peer-to-peer between functions.
+>> >> > VFs are never traditional multifunction devices, so simply clear this
+>> >> > bit before we get any further into setup.
+>> >>
+>> >> This seems reasonable.  Do you have "lspci -vvxxxx" output for this
+>> >> device?  I'd like to save it for future reference.
+>> >
+>> > Sure, here's a VF:
+>> >
+>> > 09:04.0 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (be3) (rev 01)
+>> >         Subsystem: Emulex Corporation Device e722
+>>
+>> Thanks!  I put this in
+>> https://bugzilla.kernel.org/show_bug.cgi?id=68431, and I'll add a
+>> reference to the changelog.
+>>
+>> But I wonder if we can make this slightly more generic by doing
+>> something like this in pci_setup_device():
+>>
+>>   dev->multifunction = (PCI_FUNC(dev->devfn) == 0) && (hdr_type & 0x80);
+>>
+>> That's basically what lspci does in pci_generic_scan_bus(), and
+>> section 3.2.2.3.4 of the PCI 3.0 spec sort of implies that we should
+>> only look at the bit 7 of the header type for function 0:
+>>
+>>   If a single function device is detected (i.e., bit 7 in the Header
+>>   Type register of function 0 is 0), no more functions for that
+>>   Device Number will be checked. If a multi-function device is
+>>   detected (i.e., bit 7 in the Header Type register of function 0
+>>   is 1), then all remaining Function Numbers will be checked.
 >
-> could you please remove the UBI git tree from linux-next?
->=20
-> git://git.infradead.org/linux-ubi
->=20
-> I will use the UBIFS git tree for both UBI and UBIFS patches from now
-> on. The traffic became so low that it does not make sense to keep 2
-> separate trees for these very related subsystems.
->=20
-> The UBIFS git tree is also in linux-next, so both UBI and UBIFS will be
-> covered through the UBIFS git tree.
+> We could do that and rely only on pci_scan_slot() to set multifunction=1
+> for the other functions, but that doesn't completely solve this problem.
+> VFs can occupy function zero and the example device would still set
+> multifunction with that test.  Thanks,
 
-Done.
+Duh, it would help if I actually paid attention to your lspci output...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The reason I'm thinking about this is that virtfn_add() is only used
+when we enable SR-IOV.  If we clear dev->multifunction there, we only
+end up with the correct value if we start with SR-IOV disabled, and
+then enable it.
 
---Signature=_Fri__10_Jan_2014_10_16_32_+1100_kl.QgDnaYOXpCq8K
-Content-Type: application/pgp-signature
+If SR-IOV were enabled by the firmware before Linux boots, we wouldn't
+go through the virtfn_add() path, and dev->multifunction might still
+be wrong.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+I'm pretty sure Nishank said there were Cisco boxes that enable SR-IOV
+in the firmware, but I don't know how that works.  It looks like we
+would disable SR-IOV during enumeration in the path below:
 
-iQIcBAEBCAAGBQJSzy3UAAoJEMDTa8Ir7ZwVCeEP/1cWQnbN36XIllfTTkqNkFEg
-WACwm4uUjMWHgcnO5unqFYG40cVPm2cB31DJRJ9lz7sLjBR00Q4sqauyFDr+pQtX
-+J5K5jjvI0erT1w/oDZsgMbg2dLWmsaAn5EwaC7BQUN8txbgHg7z7UPVU69ZVHX/
-tHZ9en8ZyEwiw/ypgsRsptCGIkAg1Z4XPl0hGITadNPKw0YfBWuXsnRRvC678nKI
-ZP/hgwgkhNQ2iaw/txF7nGVvGo3hg/99VrCgkxggICGTRqRjQafvjNxlJR5EVWwQ
-ecJi7d9P8a3cJe4jCVSp/IaMkF4oaZd/b3fBt+NkhI33DFIW7dh0r5QHcuNh8aDf
-iZJHeD/mu2IzQTMQ2++W/XjJy+R/6bJEC3GrW+jTXbUEny2gbafMCVrBtjvQQ/cu
-91ht7hfl+EmRIvR62jpQP3Caut4yyHyiUTnMuv9OGAhSESGyNeyw7Ch12Xxq9RYB
-zlijY6EIcrz31PxLYI+veFIu6B0LvfJsSEHiHbRiSNIQMAzRPjjYZQsWGhqYMGgP
-v7+uQViLOZ1XoHr8YJSTOSICH+HrIDUHBqY/kOsgmjh/o2oQ4G9TJFO3CRhlNywW
-fwDt03Di7BhjPNoohuYxMN9YruFKixTZUVXkPCHR5qLR+HN4DV0MsZdx8fjzrFmx
-ImMLRh/afBQu3OqZEDSr
-=+jGa
------END PGP SIGNATURE-----
+  pci_scan_slot
+    pci_scan_single_device
+      pci_device_add
+        pci_init_capabilities
+          pci_iov_init
+            sriov_init
+              pci_read_config_word(dev, pos + PCI_SRIOV_CTRL, &ctrl)
+              if (ctrl & PCI_SRIOV_CTRL_VFE)
+                pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, 0)
 
---Signature=_Fri__10_Jan_2014_10_16_32_+1100_kl.QgDnaYOXpCq8K--
+>From that path, it *looks* like it doesn't really matter whether
+SR-IOV is enabled at handoff, because we disable it anyway.
+
+So I'm not sure if I misunderstood Nishank or what.  I think it would
+be cool if we could enumerate previously-enabled VFs, but maybe there
+are other issues that would make that impossible.
+
+Bjorn
