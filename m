@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641AbaAIByc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 20:54:32 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37271 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAIBya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 20:54:30 -0500
-Message-ID: <52CE0154.4030803@codeaurora.org>
-Date: Wed, 08 Jan 2014 17:54:28 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1753209AbaAIBzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 20:55:44 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53137 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109AbaAIBzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 20:55:42 -0500
+X-IronPort-AV: E=Sophos;i="4.95,627,1384272000"; 
+   d="scan'208";a="9393124"
+Message-ID: <52CEB7ED.9000502@cn.fujitsu.com>
+Date: Thu, 09 Jan 2014 09:53:33 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Borislav Petkov <bp@alien8.de>
-CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 3/6] ARM: Add Krait L2 accessor functions
-References: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org> <1388434457-4194-4-git-send-email-sboyd@codeaurora.org> <20140109005332.GB23276@sonymobile.com>
-In-Reply-To: <20140109005332.GB23276@sonymobile.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, dsahern@gmail.com,
+        artagnon@gmail.com
+Subject: Re: [PATCH 3/8] perf tools: free aliases[j] in pmu.c if name_only
+ is true.
+References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com> <f4427175be649aa6cdf477980051688c525b46ab.1388416837.git.yangds.fnst@cn.fujitsu.com> <20140108151233.GB2626@infradead.org>
+In-Reply-To: <20140108151233.GB2626@infradead.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/09 09:54:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/09 09:54:37,
+	Serialize complete at 2014/01/09 09:54:37
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/14 16:53, Courtney Cavin wrote:
-> On Mon, Dec 30, 2013 at 09:14:14PM +0100, Stephen Boyd wrote:
->> Krait CPUs have a handful of L2 cache controller registers that
->> live behind a cp15 based indirection register. First you program
->> the indirection register (l2cpselr) to point the L2 'window'
->> register (l2cpdr) at what you want to read/write.  Then you
->> read/write the 'window' register to do what you want. The
->> l2cpselr register is not banked per-cpu so we must lock around
->> accesses to it to prevent other CPUs from re-pointing l2cpdr
->> underneath us.
->>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  arch/arm/common/Kconfig                   |  3 ++
->>  arch/arm/common/Makefile                  |  1 +
->>  arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
->>  arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
->>  4 files changed, 82 insertions(+)
->>  create mode 100644 arch/arm/common/krait-l2-accessors.c
->>  create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
-> [...]
->> +
->> +extern void set_l2_indirect_reg(u32 addr, u32 val);
->> +extern u32 get_l2_indirect_reg(u32 addr);
-> As these are Krait specific, please rename the functions to reflect
-> this.
+On 01/08/2014 10:12 AM, Arnaldo Carvalho de Melo wrote:
+> What for? Please be clear in the changelogs, it helps with review.
 >
+> Now I'll have to follow the logic to figure this out, i.e. _why_ we
+> should free aliases[j] if name_only is true? Is it safe?
 
-Ok. Borislav, should I resend to add krait_ before these functions?
+Sorry for my lazy on the changelogs here :(.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+As aliases is a 2-D array malloced in function print_pmu_events(), we 
+should free it after printf. But we just did it when (!name_only).
+
+This patch fix the leak error in print_pmu_events() when name_only is true.
+
+I will update the commit message in next version.
+
+- Yang
+>
+> - Arnaldo
+>
+> Em Mon, Dec 30, 2013 at 10:26:38AM -0500, Dongsheng Yang escreveu:
+>> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+>> ---
+>>   tools/perf/util/pmu.c | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+>> index 331dc2c..169c480 100644
+>> --- a/tools/perf/util/pmu.c
+>> +++ b/tools/perf/util/pmu.c
+>> @@ -752,6 +752,7 @@ unsigned int print_pmu_events(const char *event_glob, bool name_only)
+>>   	for (j = 0; j < len; j++) {
+>>   		if (name_only) {
+>>   			printf("%s ", aliases[j]);
+>> +			zfree(&aliases[j]);
+>>   			count++;
+>>   			continue;
+>>   		}
+>> -- 
+>> 1.8.2.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
