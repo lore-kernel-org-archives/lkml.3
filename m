@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870AbaAITxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:53:19 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:63124 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982AbaAITxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:53:09 -0500
-X-IronPort-AV: E=Sophos;i="4.95,633,1384300800"; 
-   d="scan'208";a="89285057"
-Message-ID: <52CEFE21.8060608@citrix.com>
-Date: Thu, 9 Jan 2014 19:53:05 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
+	id S1757211AbaAITyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:54:47 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:60677 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755082AbaAITyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 14:54:37 -0500
+Message-ID: <52CEFE62.7070009@interlog.com>
+Date: Thu, 09 Jan 2014 14:54:10 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>,
-        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: Re: [PATCH net-next v3 1/9] xen-netback: Introduce TX grant map definitions
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com> <1389139818-24458-2-git-send-email-zoltan.kiss@citrix.com> <20140109153010.GE12164@zion.uk.xensource.com>
-In-Reply-To: <20140109153010.GE12164@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Sergey Meirovich <rathamahata@gmail.com>,
+        James Smart <james.smart@emulex.com>
+CC: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com> <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com> <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
+In-Reply-To: <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/14 15:30, Wei Liu wrote:
-> On Wed, Jan 08, 2014 at 12:10:10AM +0000, Zoltan Kiss wrote:
->> v3:
->> - fix comment in xenvif_tx_dealloc_action()
->> - call unmap hypercall directly instead of gnttab_unmap_refs(), which does
->>    unnecessary m2p_override. Also remove pages_to_[un]map members
+On 14-01-08 08:57 AM, Sergey Meirovich wrote:
+> Hi James,
 >
-> Is it worthy to have another function call
-> gnttab_unmap_refs_no_m2p_override in Xen core driver, or just add a
-> parameter to control wether we need to touch m2p_override? I *think* it
-> will benefit block driver as well?
->
-> (CC Roger and David for input)
-
-Yep, it worth, but let's make it a different patch
-
->> --- a/drivers/net/xen-netback/netback.c
->> +++ b/drivers/net/xen-netback/netback.c
->> @@ -771,6 +771,19 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
->>   	return page;
->>   }
+> On 7 January 2014 22:57, James Smart <james.smart@emulex.com> wrote:
+>> Sergey,
 >>
->> +static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
->> +	       struct xen_netif_tx_request *txp,
->> +	       struct gnttab_map_grant_ref *gop)
+>> The Thor chipset is a bit old - a 4Gig adapter.  Most of our performance
+>> improvements, including parallelization, have gone into the 8G and 16G
+>> adapters. But you still should have seen significantly beyond what you
+>> reported.
 >
-> Indentation.
-I fixed it and the later ones up, hopefully I haven't missed anything.
+> First of all - thanks a lot!
+>
+> I took Thor because we have exactly the same Thors in some of our
+> Solaris servers. I've also tried 6 different qlogics (mostly 8G) and
+> fnic (10G) as well. Surprisingly enough Thor was the fastest one for
+> seqwr 4k. Though in most of the cases machines were from our different
+> DCs and hence each one connected to yet another storage.
+>
+>>
+>> We did a sanity check some hardware we already had set up with a Thor
+>> adapter.  We saw 23555 iop/s and 92.1 MB/s without needing to do much, well
+>> beyond what you've reported, and still not up to what we know the card can
+>> do.  There are some inefficiencies from the linux kernel and some locking
+>> deltas between our solaris and linux drivers - but not enough to account for
+>> what you are seeing.
+>>
+>> I expect the Direct IO filesystem behavior is the root issue.
+>
+> The strangest thing to me that this is the problem with sequential
+> write. For example the fnic one machine is zoned to EMC XtremIO and
+> had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
+> same fnic machine perfrormed rather impressive for random 4k
+> 451.11Mb/sec 115485.02 Requests/sec
 
->
->> +
->> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
->> +	do {
->> +		pending_idx = ubuf->desc;
->> +		ubuf = (struct ubuf_info *) ubuf->ctx;
->> +		index = pending_index(vif->dealloc_prod);
->> +		vif->dealloc_ring[index] = pending_idx;
->> +		/* Sync with xenvif_tx_action_dealloc:
->
-> xenvif_tx_dealloc_action I suppose.
-Yes.
+You could bypass O_DIRECT and use ddpt together with
+a bsg pass-through (bsg is a little faster than sg
+for these purposes).
 
->> +			/* Already unmapped? */
->> +			if (vif->grant_tx_handle[pending_idx] ==
->> +				NETBACK_INVALID_HANDLE) {
->> +				netdev_err(vif->dev,
->> +					"Trying to unmap invalid handle! "
->> +					"pending_idx: %x\n", pending_idx);
->> +				continue;
->
-> You seemed to miss the BUG_ON we discussed?
->
-> See thread starting <52AF1A84.3090304@citrix.com>.
-Indeed, despite I wrote it in the version history :)
+For example:
 
+# lsscsi -g
+[0:0:0:0]    disk    ATA    INTEL SSDSC2CW12 400i  /dev/sda /dev/sg0
+[14:0:0:0]   disk    Linux  scsi_debug       0004  -        /dev/sg1
 
+# ddpt if=/dev/bsg/14:0:0:0 bs=512 bpt=128 count=1m
+Output file not specified so no copy, just reading input
+1048576+0 records in
+0+0 records out
+time to read data: 0.283566 secs at 1893.28 MB/sec
+
+bs= should match the block size of the storage device and
+the size of each SCSI READ is dictated by bpt= (so 64 KB
+in this case).
+
+Such a test should show you if your performance problem
+is in the block layer or below, or above the block layer
+(at least the point where pass-through commands are
+injected).
+
+Doug Gilbert
