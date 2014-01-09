@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaAIQWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 11:22:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaAIQWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 11:22:31 -0500
-Date: Thu, 9 Jan 2014 17:24:15 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Lockdep problem
-Message-ID: <20140109162414.GA1719@redhat.com>
-References: <52CC474A.7090207@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CC474A.7090207@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754536AbaAIQXE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 11:23:04 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:62582 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751137AbaAIQWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 11:22:55 -0500
+Date: Thu, 9 Jan 2014 11:22:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: Eric Paris <eparis@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        stable <stable@vger.kernel.org>, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
+ selinux_inode_permission()
+Message-ID: <20140109112249.30d457d8@gandalf.local.home>
+In-Reply-To: <52CEC9DD.4000901@tycho.nsa.gov>
+References: <20140109101932.0508dec7@gandalf.local.home>
+	<CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
+	<20140109105114.5c409fef@gandalf.local.home>
+	<1389283030.15209.56.camel@localhost>
+	<1389283545.15209.59.camel@localhost>
+	<52CEC9DD.4000901@tycho.nsa.gov>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 07, 2014 at 12:28:26PM -0600, Larry Finger wrote:
->   rtnl_mutex --> misc_mtx --> rfkill_global_mutex
-> 
->   Possible unsafe locking scenario:
-> 
->         CPU0                    CPU1
->         ----                    ----
->    lock(rfkill_global_mutex);
->                                 lock(misc_mtx);
->                                 lock(rfkill_global_mutex);
->    lock(rtnl_mutex);
-> 
->  *** DEADLOCK ***
+On Thu, 09 Jan 2014 11:10:05 -0500
+Stephen Smalley <sds@tycho.nsa.gov> wrote:
 
-There are 3 mutexes dependency. The deadlock can happen if on another
-cpu, let say CPU2, there will be sequence:
+> I didn't know that was the case; originally when we added the hook it
+> was not possible.   I have seen a Red Hat bugzilla report about it,
+> but no upstream discussion.
 
-lock(rtnl_mutex);
-lock(misc_mtx);
+Maybe not enough people use SELinux ;-)
 
-Then on deadlock scenario:
-CPU0 waits for rtnl_mutex to unlock, keep rfkill_global_mutex locked
-CPU1 waits for rfkill_global_mutex to unlock, keep misc_mtx locked
-CPU2 waits for misc_mtx to unlock, keep rtnl_mutex locked.
+Do you know what the Red Hat BZ # was?
 
-This dependency can be broken by moving b43_rng_init() outside from
-rtnl_mutex scope, like on below patch. IIUC b43 random number generator
-works only if we already started network connection, but this should
-not be a problem, as b43_rng_read() do not return any data if device
-is not prepared.
-
-You could also remove whole b43 rnd. Everyone know, that HW vendors
-are influenced by NSA and they random generators do not provide truly
-random numbers (just kidding ;-)
-
-Stanislaw
-
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index ccd24f0a..2c153f9 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -2475,6 +2475,10 @@ start_ieee80211:
- 		goto err_one_core_detach;
- 	wl->hw_registred = true;
- 	b43_leds_register(wl->current_dev);
-+
-+	/* Register HW RNG driver */
-+	b43_rng_init(wl);
-+
- 	goto out;
- 
- err_one_core_detach:
-@@ -4636,9 +4640,6 @@ static void b43_wireless_core_exit(struct b43_wldev *dev)
- 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
- 		return;
- 
--	/* Unregister HW RNG driver */
--	b43_rng_exit(dev->wl);
--
- 	b43_set_status(dev, B43_STAT_UNINIT);
- 
- 	/* Stop the microcode PSM. */
-@@ -4795,9 +4796,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
- 
- 	b43_set_status(dev, B43_STAT_INITIALIZED);
- 
--	/* Register HW RNG driver */
--	b43_rng_init(dev->wl);
--
- out:
- 	return err;
- 
-@@ -5464,6 +5462,9 @@ static void b43_bcma_remove(struct bcma_device *core)
- 
- 	b43_one_core_detach(wldev->dev);
- 
-+	/* Unregister HW RNG driver */
-+	b43_rng_exit(wl);
-+
- 	b43_leds_unregister(wl);
- 
- 	ieee80211_free_hw(wl->hw);
-
-
+-- Steve
