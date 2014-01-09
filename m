@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211AbaAITyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:54:47 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:60677 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755082AbaAITyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:54:37 -0500
-Message-ID: <52CEFE62.7070009@interlog.com>
-Date: Thu, 09 Jan 2014 14:54:10 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1757287AbaAIT5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:57:22 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:57852 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704AbaAIT5P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 14:57:15 -0500
+Message-ID: <52CEFF18.2070501@codeaurora.org>
+Date: Thu, 09 Jan 2014 11:57:12 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Sergey Meirovich <rathamahata@gmail.com>,
-        James Smart <james.smart@emulex.com>
-CC: Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com> <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com> <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
-In-Reply-To: <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Neil Leeder <nleeder@codeaurora.org>,
+        Ashwin Chaugule <ashwinc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/7] ARM: perf_event: Add basic support for Krait CPU
+ PMUs
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org> <1389221984-10973-4-git-send-email-sboyd@codeaurora.org> <20140109110440.GC17838@mudshark.cambridge.arm.com>
+In-Reply-To: <20140109110440.GC17838@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-08 08:57 AM, Sergey Meirovich wrote:
-> Hi James,
+(Adding DT reviewers)
+
+On 01/09/14 03:04, Will Deacon wrote:
+> On Wed, Jan 08, 2014 at 10:59:40PM +0000, Stephen Boyd wrote:
 >
-> On 7 January 2014 22:57, James Smart <james.smart@emulex.com> wrote:
->> Sergey,
->>
->> The Thor chipset is a bit old - a 4Gig adapter.  Most of our performance
->> improvements, including parallelization, have gone into the 8G and 16G
->> adapters. But you still should have seen significantly beyond what you
->> reported.
+>> +static int krait_pmu_init(struct arm_pmu *cpu_pmu)
+>> +{
+>> +	u32 id = read_cpuid_id() & 0xffffff00;
+>> +
+>> +	armv7pmu_init(cpu_pmu);
+>> +	cpu_pmu->name		= "ARMv7 Krait";
+>> +	/* Some early versions of Krait don't support PC write events */
+>> +	if (id == 0x511f0400 || id == 0x510f0600)
+>> +		cpu_pmu->map_event	= krait_map_event_no_branch;
+> Hmm, I'd really rather this information came via the DT. In fact, you could
+> just drop the branch event from your main map_event_function and keep things
+> simple. It depends how badly you want to advertise it in perf list :)
 >
-> First of all - thanks a lot!
->
-> I took Thor because we have exactly the same Thors in some of our
-> Solaris servers. I've also tried 6 different qlogics (mostly 8G) and
-> fnic (10G) as well. Surprisingly enough Thor was the fastest one for
-> seqwr 4k. Though in most of the cases machines were from our different
-> DCs and hence each one connected to yet another storage.
->
->>
->> We did a sanity check some hardware we already had set up with a Thor
->> adapter.  We saw 23555 iop/s and 92.1 MB/s without needing to do much, well
->> beyond what you've reported, and still not up to what we know the card can
->> do.  There are some inefficiencies from the linux kernel and some locking
->> deltas between our solaris and linux drivers - but not enough to account for
->> what you are seeing.
->>
->> I expect the Direct IO filesystem behavior is the root issue.
->
-> The strangest thing to me that this is the problem with sequential
-> write. For example the fnic one machine is zoned to EMC XtremIO and
-> had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
-> same fnic machine perfrormed rather impressive for random 4k
-> 451.11Mb/sec 115485.02 Requests/sec
 
-You could bypass O_DIRECT and use ddpt together with
-a bsg pass-through (bsg is a little faster than sg
-for these purposes).
+Not every version of Krait is missing support for this event, so I'd
+like to keep it so things like perf stat show branch counts. How about I
+add a bool property to the pmu node indicating that this PMU is missing
+support for the PC write events? Something like "no-pc-write"?
 
-For example:
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-# lsscsi -g
-[0:0:0:0]    disk    ATA    INTEL SSDSC2CW12 400i  /dev/sda /dev/sg0
-[14:0:0:0]   disk    Linux  scsi_debug       0004  -        /dev/sg1
-
-# ddpt if=/dev/bsg/14:0:0:0 bs=512 bpt=128 count=1m
-Output file not specified so no copy, just reading input
-1048576+0 records in
-0+0 records out
-time to read data: 0.283566 secs at 1893.28 MB/sec
-
-bs= should match the block size of the storage device and
-the size of each SCSI READ is dictated by bpt= (so 64 KB
-in this case).
-
-Such a test should show you if your performance problem
-is in the block layer or below, or above the block layer
-(at least the point where pass-through commands are
-injected).
-
-Doug Gilbert
