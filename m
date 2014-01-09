@@ -1,163 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaAIHUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 02:20:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:23766 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaAIHUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 02:20:06 -0500
-X-AuditID: cbfee61b-b7f456d000006dfd-29-52ce4da38d31
-Date: Thu, 09 Jan 2014 08:19:55 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
-        linux-samsung-soc@vger.kernel.org, rjw@sisk.pl
-Subject: Re: [PATCH v12 0/7] cpufreq:boost: CPU Boost mode support
-Message-id: <20140109081955.6324e08e@amdc2363>
-In-reply-to: <9268964.f27SUq68sj@vostro.rjw.lan>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1387549495-809-1-git-send-email-l.majewski@samsung.com>
- <20140107075824.59a1ed3c@amdc2363> <9268964.f27SUq68sj@vostro.rjw.lan>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jQd3FvueCDBpuKllsnLGe1eJp0w92
-	i76fV5gt1uz/yWTRefYJs8WbR9wWl3fNYbP43HuE0WLG+X1MFrcbV7BZnDl9idWif2Evk8WT
-	h31sFhu/ejjweSze85LJ4861PWwe66a9ZfbYcrWdxaNvyypGj0eLWxg9jt/YzuTxeZNcAEcU
-	l01Kak5mWWqRvl0CV8acrTNZC74rVRz5/o65gXG/VBcjB4eEgInE31nGXYycQKaYxIV769lA
-	bCGB6YwS2ye4Q9i/GCVa/yWC2CwCqhIPuqYzgdhsAnoSn+8+BbNFBKokPs1pZu9i5OJgFtjD
-	LPH3w0dGkISwgJPE5AWTmUF28QI1PD0aCxLmFDCQWHTjFCtIvZDASUaJp3/ugQ3iF5CUaP/3
-	gxniIDuJc582sIPYvAKCEj8m32MBsZkFtCQ2b2tihbDlJTavecs8gVFwFpKyWUjKZiEpW8DI
-	vIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOLaeSe9gXNVgcYhRgINRiYd3RfHZICHWxLLi
-	ytxDjBIczEoivHXe54KEeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2C
-	yTJxcEo1MM4Tynl3OPLGqX1CLHyG3+O7b8a+mq/9w8DzZ6y36qVNG5nDojSbRaZO2Ke/Q7Uw
-	LfWr9qOYqVmzdOXitpZ1fpgcOGFyuVfrD6EGtvVmJ4Rm9MVEarZ1dRgatrLq/Y6Sfbp2zurk
-	p/GdXY93bIheuURhTbyseLr4SYk3homxZ6r+ursdXx3Pr8RSnJFoqMVcVJwIAJ+uSgypAgAA
+	id S1752039AbaAIH3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 02:29:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:37051 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751183AbaAIH3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 02:29:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,629,1384329600"; 
+   d="scan'208";a="455923273"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: " Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        " H. Peter Anvin" <hpa@linux.intel.com>,
+        Len Brown <len.brown@intel.com>, Len Brown <lenb@kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Revert "intel_idle: mark states tables with __initdata tag"
+Date: Thu,  9 Jan 2014 15:30:26 +0800
+Message-Id: <1389252628-1033-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael, Zhang,
+This reverts commit 9d046ccb98085f1d437585f84748c783a04ba240.
 
-> On Tuesday, January 07, 2014 07:58:24 AM Lukasz Majewski wrote:
-> > Hi Rafael,
-> 
-> Hi,
-> 
-> > > This patch series introduces support for CPU overclocking
-> > > technique called Boost.
-> > > 
-> > > It is a follow up of a LAB governor proposal. Boost is a LAB
-> > > component:
-> > > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
-> > > 
-> > > Boost unifies hardware based solution (e.g. Intel Nehalem) with
-> > > software oriented one (like the one done at Exynos).
-> > > For this reason cpufreq/freq_table code has been reorganized to
-> > > include common code.
-> > > 
-> > > Important design decisions:
-> > > - Boost related code is compiled-in unconditionally to cpufreq
-> > > core and disabled by default. The cpufreq_driver is responsibile
-> > > for setting boost_supported flag and providing set_boost
-> > > callback(if HW support is needed). For software managed boost,
-> > > special Kconfig flag - CONFIG_CPU_FREQ_BOOST_SW has been defined.
-> > > It will be selected only when a target platform has thermal
-> > > framework properly configured.
-> > > 
-> > > - struct cpufreq_driver has been extended with boost related
-> > > fields: -- boost_supported - when driver supports boosting
-> > >         -- boost_enabled - boost state
-> > >         -- set_boost - callback to function, which is necessary to
-> > >            enable/disable boost
-> > > 
-> > > - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is
-> > > visible _only_ when cpufreq driver supports Boost.
-> > > 
-> > > - No special spin_lock for Boost was created. The one from cpufreq
-> > > core was reused.
-> > > 
-> > > - The Boost code doesn't rely on any policy. When boost state is
-> > > changed, then the policy list is iterated and proper adjustements
-> > > are done.
-> > > 
-> > > - To improve safety level, the thermal framework is also extended
-> > > to disable software boosting, when thermal trip point is reached.
-> > > After cooling down the boost can be enabled again. This emulates
-> > > behaviour similar to HW managed boost (like x86)
-> > > 
-> > > Tested at HW:
-> > >        Exynos 4412 3.13-rc4 Linux
-> > >        Intel Core i7-3770 3.13-rc4 Linux
-> > > 
-> > > Above patches were posted on top of kernel_pm/bleeding-edge
-> > > (SHA1: bd0f3a5d9dce48a917ce1f1047534d79c725149)
-> > > 
-> > > Lukasz Majewski (7):
-> > >   cpufreq: Add boost frequency support in core
-> > >   cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to work with
-> > > common boost solution
-> > >   cpufreq:boost:Kconfig: Provide support for software managed
-> > > BOOST cpufreq:exynos:Extend Exynos cpufreq driver to support boost
-> > >     framework
-> > >   Documentation:cpufreq:boost: Update BOOST documentation
-> > >   cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
-> > >   thermal:exynos:boost: Automatic enable/disable of BOOST feature
-> > > (at Exynos4412)
-> > > 
-> > >  Documentation/cpu-freq/boost.txt          |   26 +++----
-> > >  drivers/cpufreq/Kconfig                   |    4 +
-> > >  drivers/cpufreq/Kconfig.arm               |   15 ++++
-> > >  drivers/cpufreq/acpi-cpufreq.c            |   86
-> > > +++++++-------------- drivers/cpufreq/cpufreq.c                 |
-> > > 118 ++++++++++++++++++++++++++++-
-> > > drivers/cpufreq/exynos-cpufreq.c          |    3 +
-> > > drivers/cpufreq/exynos4x12-cpufreq.c      |    2 +-
-> > > drivers/cpufreq/freq_table.c              |   56 ++++++++++++--
-> > > drivers/thermal/samsung/exynos_tmu_data.c |   12 +--
-> > > include/linux/cpufreq.h                   |   24 ++++++ 10 files
-> > > changed, 261 insertions(+), 85 deletions(-)
-> > > 
-> > 
-> > A gentle ping about BOOST patches.
-> > 
-> > Its been already acked by Viresh and Eduardo.
-> > 
-> > It applies on kernel_pm/bleeding_edge SHA1:
-> > 4836deb72c5e2a9af0cb2129c1149783a26d99ab
-> 
-> It looks like Rui is still looking into this.
-> 
-> Rui, are you fine with this series?
+Commit 9d046ccb98085 marks all state tables with __initdata, but
+the state table may be accessed when doing CPU online, which then
+causing system crash as below:
 
-I'd really appreciate Ack from Rui on this patch series.
+[  204.188841] BUG: unable to handle kernel paging request at ffffffff8227cce8
+[  204.196844] IP: [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
+[  204.203996] PGD 1e11067 PUD 1e12063 PMD 455859063 PTE 800000000227c062
+[  204.211638] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[  204.216975] Modules linked in: x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul ghash_clmulni_intel aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd gpio_ich microcode joydev sb_edac edac_core ipmi_si lpc_ich ipmi_msghandler lp tpm_tis parport wmi mac_hid acpi_pad hid_generic ixgbe isci usbhid dca hid libsas ptp ahci libahci scsi_transport_sas megaraid_sas pps_core mdio
+[  204.262815] CPU: 11 PID: 1489 Comm: bash Not tainted 3.13.0-rc7+ #48
+[  204.269993] Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS BRIVTIN1.86B.0047.L09.1312061514 12/06/2013
+[  204.281646] task: ffff8804303a24a0 ti: ffff880440fac000 task.ti: ffff880440fac000
+[  204.290311] RIP: 0010:[<ffffffff814aa1c0>]  [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
+[  204.300184] RSP: 0018:ffff880440fadd28  EFLAGS: 00010286
+[  204.306192] RAX: ffffffff8227cca0 RBX: ffffe8fff1a03400 RCX: 0000000000000007
+[  204.314244] RDX: ffff88045f400000 RSI: 0000000000000009 RDI: 0000000000001120
+[  204.322296] RBP: ffff880440fadd38 R08: 0000000000000000 R09: 0000000000000001
+[  204.330411] R10: 0000000000000001 R11: 0000000000000000 R12: 000000000000001e
+[  204.338482] R13: 00000000ffffffdb R14: 0000000000000001 R15: 0000000000000000
+[  204.346743] FS:  00007f64f7b0c740(0000) GS:ffff88045ce00000(0000) knlGS:0000000000000000
+[  204.355919] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  204.362449] CR2: ffffffff8227cce8 CR3: 0000000444ab0000 CR4: 00000000001407e0
+[  204.370520] Stack:
+[  204.372853]  000000000000001e ffffffff81f10240 ffff880440fadd50 ffffffff814aa307
+[  204.381519]  ffffffff81ea80e0 ffff880440fadda0 ffffffff8185a230 0000000000000000
+[  204.390196]  000000000000001e 0000000000000002 0000000000000002 0000000000000000
+[  204.398856] Call Trace:
+[  204.401683]  [<ffffffff814aa307>] cpu_hotplug_notify+0x57/0x70
+[  204.408638]  [<ffffffff8185a230>] notifier_call_chain+0x100/0x150
+[  204.415553]  [<ffffffff810a7dae>] __raw_notifier_call_chain+0xe/0x10
+[  204.422772]  [<ffffffff81072163>] cpu_notify+0x23/0x50
+[  204.428616]  [<ffffffff810723b2>] _cpu_up+0x132/0x1a0
+[  204.434361]  [<ffffffff8107249d>] cpu_up+0x7d/0xa0
+[  204.439819]  [<ffffffff81836c9c>] cpu_subsys_online+0x3c/0x90
+[  204.446345]  [<ffffffff81554625>] device_online+0x45/0xa0
+[  204.452471]  [<ffffffff815546ce>] online_store+0x4e/0x80
+[  204.458511]  [<ffffffff815519a8>] dev_attr_store+0x18/0x30
+[  204.464744]  [<ffffffff812a68f1>] sysfs_write_file+0x151/0x1c0
+[  204.471681]  [<ffffffff81217ef1>] vfs_write+0xe1/0x160
+[  204.477524]  [<ffffffff8121889c>] SyS_write+0x4c/0x90
+[  204.483270]  [<ffffffff8185f2ed>] system_call_fastpath+0x1a/0x1f
+[  204.490081] Code: 41 54 41 89 fc 8b 3d 48 25 85 01 53 48 8b 1d 30 25 85 01 48 03 1c c5 40 90 fb 81 48 8b 05 19 25 85 01 c7 43 0c 01 00 00 00 66 90 <48> 83 78 48 00 74 4f 41 83 c0 01 41 39 f0 7e 10 48 c7 c7 38 79
+[  204.515723] RIP  [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
+[  204.522996]  RSP <ffff880440fadd28>
+[  204.526976] CR2: ffffffff8227cce8
+[  204.530766] ---[ end trace 336f56cc3d1cfc8c ]---
 
-However, after Rui's comments on v9, I've completely removed the BOOST
-code from thermal core.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: <stable@vger.kernel.org> # 3.12+
+---
+ drivers/idle/intel_idle.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Since the v10, I've only adjusted default data for Exynos SoC. This
-approach has been finally accepted by Eduardo (who is responsible for
-this part of the thermal subsystem) on the v12.
-
-
-> 
-> Rafael
-> 
-
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index f80b700..6f456f0 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -123,7 +123,7 @@ static struct cpuidle_state *cpuidle_state_table;
+  * which is also the index into the MWAIT hint array.
+  * Thus C0 is a dummy.
+  */
+-static struct cpuidle_state nehalem_cstates[] __initdata = {
++static struct cpuidle_state nehalem_cstates[] = {
+ 	{
+ 		.name = "C1-NHM",
+ 		.desc = "MWAIT 0x00",
+@@ -156,7 +156,7 @@ static struct cpuidle_state nehalem_cstates[] __initdata = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state snb_cstates[] __initdata = {
++static struct cpuidle_state snb_cstates[] = {
+ 	{
+ 		.name = "C1-SNB",
+ 		.desc = "MWAIT 0x00",
+@@ -196,7 +196,7 @@ static struct cpuidle_state snb_cstates[] __initdata = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state ivb_cstates[] __initdata = {
++static struct cpuidle_state ivb_cstates[] = {
+ 	{
+ 		.name = "C1-IVB",
+ 		.desc = "MWAIT 0x00",
+@@ -236,7 +236,7 @@ static struct cpuidle_state ivb_cstates[] __initdata = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state hsw_cstates[] __initdata = {
++static struct cpuidle_state hsw_cstates[] = {
+ 	{
+ 		.name = "C1-HSW",
+ 		.desc = "MWAIT 0x00",
+@@ -297,7 +297,7 @@ static struct cpuidle_state hsw_cstates[] __initdata = {
+ 		.enter = NULL }
+ };
+ 
+-static struct cpuidle_state atom_cstates[] __initdata = {
++static struct cpuidle_state atom_cstates[] = {
+ 	{
+ 		.name = "C1E-ATM",
+ 		.desc = "MWAIT 0x00",
 -- 
-Best regards,
+1.7.10.4
 
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
