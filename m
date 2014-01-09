@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798AbaAIOYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:24:16 -0500
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:59105 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755201AbaAIOUN (ORCPT
+	id S1755126AbaAIOYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:24:46 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:33124 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187AbaAIOUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:20:13 -0500
+	Thu, 9 Jan 2014 09:20:12 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 10/14] locks: make /proc/locks show IS_FILE_PVT locks with a P suffix
-Date: Thu,  9 Jan 2014 09:19:43 -0500
-Message-Id: <1389277187-18211-11-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v5 09/14] locks: rename locks_remove_flock to locks_remove_file
+Date: Thu,  9 Jan 2014 09:19:42 -0500
+Message-Id: <1389277187-18211-10-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
 References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
@@ -21,61 +21,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the check for FL_ACCESS when generating /proc/locks output. It's
-dead code as those locks never end up on the fl_hash or fl_block lists.
-
-In a later patch, we'll be adding a new type of lock that's owned by
-the struct file instead of the files_struct. Those sorts of locks
-will be flagged with a new IS_FILE_PVT flag.
-
-Add a "P" suffix to the POSIX lock output in /proc/locks for locks that
-have FL_FILE_PVT set.
+This function currently removes leases in addition to flock locks and in
+a later patch we'll have it deal with a new type of POSIX lock too.
+Rename it to locks_remove_file to indicate that it removes locks that
+are associated with a particular struct file, and not just flock locks.
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/locks.c         | 9 +++++++--
- include/linux/fs.h | 1 +
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ fs/file_table.c    | 2 +-
+ fs/locks.c         | 2 +-
+ include/linux/fs.h | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 5fff903..468543c 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -234,7 +234,7 @@ static void __fput(struct file *file)
+ 	 * in the file cleanup chain.
+ 	 */
+ 	eventpoll_release(file);
+-	locks_remove_flock(file);
++	locks_remove_file(file);
+ 
+ 	if (unlikely(file->f_flags & FASYNC)) {
+ 		if (file->f_op->fasync)
 diff --git a/fs/locks.c b/fs/locks.c
-index 4d4e790..f1b9b14 100644
+index 4cd2578..4d4e790 100644
 --- a/fs/locks.c
 +++ b/fs/locks.c
-@@ -135,6 +135,7 @@
- #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
- #define IS_FLOCK(fl)	(fl->fl_flags & FL_FLOCK)
- #define IS_LEASE(fl)	(fl->fl_flags & (FL_LEASE|FL_DELEG))
-+#define IS_FILE_PVT(fl)	(fl->fl_flags & FL_FILE_PVT)
- 
- static bool lease_breaking(struct file_lock *fl)
+@@ -2196,7 +2196,7 @@ EXPORT_SYMBOL(locks_remove_posix);
+ /*
+  * This function is called on the last close of an open file.
+  */
+-void locks_remove_flock(struct file *filp)
++void locks_remove_file(struct file *filp)
  {
-@@ -2313,8 +2314,12 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
- 
- 	seq_printf(f, "%lld:%s ", id, pfx);
- 	if (IS_POSIX(fl)) {
--		seq_printf(f, "%6s %s ",
--			     (fl->fl_flags & FL_ACCESS) ? "ACCESS" : "POSIX ",
-+		if (fl->fl_flags & FL_ACCESS)
-+			seq_printf(f, "ACCESS");
-+		else
-+			seq_printf(f, "POSIX%c", IS_FILE_PVT(fl) ? 'P' : ' ');
-+
-+		seq_printf(f, " %s ",
- 			     (inode == NULL) ? "*NOINODE*" :
- 			     mandatory_lock(inode) ? "MANDATORY" : "ADVISORY ");
- 	} else if (IS_FLOCK(fl)) {
+ 	struct inode * inode = file_inode(filp);
+ 	struct file_lock *fl;
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 51974e0..639a3b7 100644
+index 04be202..51974e0 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -888,6 +888,7 @@ static inline int file_check_writeable(struct file *filp)
- #define FL_SLEEP	128	/* A blocking lock */
- #define FL_DOWNGRADE_PENDING	256 /* Lease is being downgraded */
- #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
-+#define FL_FILE_PVT	1024	/* lock is private to the file */
+@@ -1012,7 +1012,7 @@ extern struct file_lock * locks_alloc_lock(void);
+ extern void locks_copy_lock(struct file_lock *, struct file_lock *);
+ extern void __locks_copy_lock(struct file_lock *, const struct file_lock *);
+ extern void locks_remove_posix(struct file *, fl_owner_t);
+-extern void locks_remove_flock(struct file *);
++extern void locks_remove_file(struct file *);
+ extern void locks_release_private(struct file_lock *);
+ extern void posix_test_lock(struct file *, struct file_lock *);
+ extern int posix_lock_file(struct file *, struct file_lock *, struct file_lock *);
+@@ -1083,7 +1083,7 @@ static inline void locks_remove_posix(struct file *filp, fl_owner_t owner)
+ 	return;
+ }
  
- /*
-  * Special return value from posix_lock_file() and vfs_lock_file() for
+-static inline void locks_remove_flock(struct file *filp)
++static inline void locks_remove_file(struct file *filp)
+ {
+ 	return;
+ }
 -- 
 1.8.4.2
 
