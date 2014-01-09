@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576AbaAIV1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:27:03 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:37131 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754979AbaAIV0x (ORCPT
+	id S1757617AbaAIV1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:27:15 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:47822 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757570AbaAIV1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:26:53 -0500
-Date: Thu, 9 Jan 2014 22:26:47 +0100
-From: Florian Westphal <fw@strlen.de>
-To: Andrew Vagin <avagin@parallels.com>
-Cc: Florian Westphal <fw@strlen.de>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrey Vagin <avagin@openvz.org>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get
-Message-ID: <20140109212647.GB29458@breakpoint.cc>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
- <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140107152520.GF9894@breakpoint.cc>
- <20140109203206.GA26348@paralelels.com>
- <20140109205622.GA29458@breakpoint.cc>
- <20140109210749.GA29440@paralelels.com>
+	Thu, 9 Jan 2014 16:27:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140109210749.GA29440@paralelels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52CEFE62.7070009@interlog.com>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com>
+ <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com> <52CEFE62.7070009@interlog.com>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Thu, 9 Jan 2014 23:26:40 +0200
+Message-ID: <CA+QCeVQXbZO4-G4E22hPwd8u62PEhT46mNw1GxmNYZNvd1+RFg@mail.gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+To: dgilbert@interlog.com
+Cc: James Smart <james.smart@emulex.com>, Jan Kara <jack@suse.cz>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Vagin <avagin@parallels.com> wrote:
-> On Thu, Jan 09, 2014 at 09:56:22PM +0100, Florian Westphal wrote:
-> > Andrew Vagin <avagin@parallels.com> wrote:
-> > > Can we allocate conntrack with zero ct_general.use and increment it at
-> > > the first time before inserting the conntrack into the hash table?
-> > > When conntrack is allocated it is attached exclusively to one skb.
-> > > It must be destroyed with skb, if it has not been confirmed, so we
-> > > don't need refcnt on this stage.
-> > > 
-> > > I found only one place, where a reference counter of unconfirmed
-> > > conntract can incremented. It's ctnetlink_dump_table().
-> > 
-> > What about skb_clone, etc?  They will also increment the refcnt
-> > if a conntrack entry is attached to the skb.
-> 
-> We can not attach an unconfirmed conntrack to a few skb, because
+Hi Duglas,
 
-s/few/new/?
+On 9 January 2014 21:54, Douglas Gilbert <dgilbert@interlog.com> wrote:
+> On 14-01-08 08:57 AM, Sergey Meirovich wrote:
+...
+>>
+>> The strangest thing to me that this is the problem with sequential
+>> write. For example the fnic one machine is zoned to EMC XtremIO and
+>> had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
+>> same fnic machine perfrormed rather impressive for random 4k
+>> 451.11Mb/sec 115485.02 Requests/sec
+>
+>
+> You could bypass O_DIRECT and use ddpt together with
+> a bsg pass-through (bsg is a little faster than sg
+> for these purposes).
+>
+> For example:
+>
+> # lsscsi -g
+> [0:0:0:0]    disk    ATA    INTEL SSDSC2CW12 400i  /dev/sda /dev/sg0
+> [14:0:0:0]   disk    Linux  scsi_debug       0004  -        /dev/sg1
+>
+> # ddpt if=/dev/bsg/14:0:0:0 bs=512 bpt=128 count=1m
+> Output file not specified so no copy, just reading input
+> 1048576+0 records in
+> 0+0 records out
+> time to read data: 0.283566 secs at 1893.28 MB/sec
+>
+> bs= should match the block size of the storage device and
+> the size of each SCSI READ is dictated by bpt= (so 64 KB
+> in this case).
+>
+> Such a test should show you if your performance problem
+> is in the block layer or below, or above the block layer
+> (at least the point where pass-through commands are
+> injected).
+>
+> Doug Gilbert
 
-> nf_nat_setup_info can be executed concurrently for the same conntrack.
-> 
-> How do we avoid this race condition for cloned skb-s?
+Thanks for an excellent idea!
 
-Simple, the assumption is that only one cpu owns the nfct, so it does
-not matter if the skb is cloned in between, as there are no parallel
-users.
+Seems like this is not Direct IO issue.Just tried it against
+fnic/XtremIO.   4k over via bsg is still 17.278 Mb/s for write.
+.
+[root@dca-poc-gtsxdb3 bsg]# /tmp/ddpt-0.91/src/ddpt if=/dev/zero
+of=/dev/bsg/0:0:4:1 bs=512 bpt=8 count=1m
+1048576+0 records in
+1048576+0 records out
+time to transfer data: 31.076487 secs at 17.28 MB/sec
 
-The only possibility (that I know of) to violate this is to create
-a bridge, enable call-iptables sysctl, add -j NFQUEUE rules and then
-wait for packets that need to be forwarded to several recipients,
-e.g. multicast traffic.
 
-see
-http://marc.info/?l=netfilter-devel&m=131471083501656&w=2
+[root@dca-poc-gtsxdb3 bsg]# /tmp/ddpt-0.91/src/ddpt if=/dev/zero
+of=/dev/bsg/0:0:4:1 bs=512 bpt=16 count=512k
+524288+0 records in
+524288+0 records out
+time to transfer data: 8.511421 secs at 31.54 MB/sec
 
-or search 'netfilter: nat: work around shared nfct struct in bridge
-case'
 
+[root@dca-poc-gtsxdb3 bsg]# /tmp/ddpt-0.91/src/ddpt if=/dev/zero
+of=/dev/bsg/0:0:4:1 bs=512 bpt=32 count=256k
+262144+0 records in
+262144+0 records out
+time to transfer data: 2.426037 secs at 55.32 MB/sec
+[root@dca-poc-gtsxdb3 bsg]#
