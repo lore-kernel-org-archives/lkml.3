@@ -1,38 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaAIC0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 21:26:30 -0500
-Received: from mail-gg0-f179.google.com ([209.85.161.179]:33904 "EHLO
-	mail-gg0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaAIC02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 21:26:28 -0500
-Date: Wed, 8 Jan 2014 18:26:24 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Han Pingtian <hanpt@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC] mm: prevent set a value less than 0 to min_free_kbytes
-In-Reply-To: <20140108084242.GA10485@localhost.localdomain>
-Message-ID: <alpine.DEB.2.02.1401081825470.15616@chino.kir.corp.google.com>
-References: <20140108084242.GA10485@localhost.localdomain>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751925AbaAIClZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 21:41:25 -0500
+Received: from ozlabs.org ([203.10.76.45]:38097 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952AbaAIClY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 21:41:24 -0500
+Date: Thu, 9 Jan 2014 13:41:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Weilong Chen <chenweilong@huawei.com>
+Subject: linux-next: manual merge of the ipsec-next tree with the net-next
+ tree
+Message-Id: <20140109134117.41611cbfb87052212da67f03@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__9_Jan_2014_13_41_17_+1100_dMnYdPS_pv+MHWlp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014, Han Pingtian wrote:
+--Signature=_Thu__9_Jan_2014_13_41_17_+1100_dMnYdPS_pv+MHWlp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> If echo -1 > /proc/vm/sys/min_free_kbytes, the system will hang.
-> Changing proc_dointvec() to proc_dointvec_minmax() in the
-> min_free_kbytes_sysctl_handler() can prevent this to happen.
-> 
-> Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
+Hi Steffen,
 
-Acked-by: David Rientjes <rientjes@google.com>
+Today's linux-next merge of the ipsec-next tree got a conflict in
+net/xfrm/xfrm_policy.c between commits be7928d20bab ("net: xfrm:
+xfrm_policy: fix inline not at beginning of declaration") and
+da7c224b1baa ("net: xfrm: xfrm_policy: silence compiler warning") from
+the net-next tree and commit 2f3ea9a95c58 ("xfrm: checkpatch erros with
+inline keyword position") from the ipsec-next tree.
 
-Nice catch!
+I fixed it up (I used the version from the net-next tree) and can carry
+the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__9_Jan_2014_13_41_17_+1100_dMnYdPS_pv+MHWlp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSzgxRAAoJEMDTa8Ir7ZwV0ngP+wZLfmLbO1ufZxotLK1oFtqw
+zeI2eM8f4We+8BicZSvseea/jBxjdvRAse8HKMioscet2v1HdcMgUY7NHaphsqRF
+P4alnURnk5J6NuFp5MaDB9S2AKKpqLWWQ7lq0sjfZ9eLS0XpTiQeIPoDmV8Rq6+F
+CfGCZCZSqy4ayF+t74QvoWYMuqL5fNA3PeRVNAT6GF2EQFD2bgI62vfK+HdaEMku
+RTGgpqwh4s2cpuBC72v6ar6fM3R4YWh+S5SGmFybtHcmHrpr7ucCKWYekwRPcZOL
+YGXt8DOPYvUGr7fmAwy4pOEyKf1eK3riX+ZMBG0QuUXlsZAC4SAtGPhh5ieVeyq6
+7VjuiuAKL7L7o7feZhMrXApakdOowSPjHSAu4uzNg2OMff1Fqae8OoXkl9ZqJYvX
+Jw8/rNcoseAk/B/OjhbnNF4aYTxOBDizv2ZjqXLAsg0utDOY8shRz0mjq+4nnr0v
+hjw1/nyq/fbPrZLBQsFtLg0UNcsq37JF5lOdKpasP8SoE9SADFYYei6dDPTYJn+H
+RjVUuwinWCpdNU8egDjf40g8Td+T5v+EfN24kSGfM88+zzlDLixZyDITGSIEWi7u
+6aJennljunJkfDUuN3oTqNM3T9vXXPjbJIkfR9qijme6oRONAv0clj3CcvCq6Jdm
+b4g02cENxUK4fxAzuayp
+=gEOF
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__9_Jan_2014_13_41_17_+1100_dMnYdPS_pv+MHWlp--
