@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaAIPUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:20:08 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:64988 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaAIPUA (ORCPT
+	id S1753165AbaAIPX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:23:56 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:61851 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaAIPXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:20:00 -0500
-Date: Thu, 9 Jan 2014 16:19:57 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-Message-ID: <20140109151955.GA9866@localhost.localdomain>
-References: <20131223131051.GB585@localhost.localdomain>
- <52B84C49.70001@gmail.com>
- <20131226151429.GA15303@localhost.localdomain>
- <52BC4A13.1090508@gmail.com>
- <20131226153033.GC15303@localhost.localdomain>
- <52C46083.9070605@gmail.com>
- <20140103220745.GB11061@localhost.localdomain>
- <52C73D90.3020904@gmail.com>
- <20140104150539.GA17617@localhost.localdomain>
- <52CDC7B5.6060704@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CDC7B5.6060704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Jan 2014 10:23:47 -0500
+Message-ID: <1389281025.31367.35.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Vagin <avagin@gmail.com>
+Cc: Florian Westphal <fw@strlen.de>, Andrey Vagin <avagin@openvz.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Thu, 09 Jan 2014 07:23:45 -0800
+In-Reply-To: <20140109052454.GA16743@gmail.com>
+References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
+	 <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140109052454.GA16743@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 02:48:37PM -0700, David Ahern wrote:
-> The existing code does not work. Your unstable tsc patch did not
-> work. I have not tried Joseph's patch. Are you proposing that one or
-> do you have something else in mind?
+On Thu, 2014-01-09 at 09:24 +0400, Andrew Vagin wrote:
 
-I think we should integrate Joseph's patch (or mine, or some mixup, I mean
-they do about the same IIRC) as it solves known and understood bugs in any case.
+> I have one more question. Looks like I found another problem.
+> 
+> init_conntrack:
+>         hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
+>                       &net->ct.unconfirmed);
+> 
+> __nf_conntrack_hash_insert:
+> 	hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
+> 		   &net->ct.hash[hash]);
+> 
+> We use one hlist_nulls_node to add a conntrack into two different lists.
+> As far as I understand, it's unacceptable in case of
+> SLAB_DESTROY_BY_RCU.
 
-Then we need to check what is the real issue in your case.
+I guess you missed :
+
+net/netfilter/nf_conntrack_core.c:1598: INIT_HLIST_NULLS_HEAD(&net->ct.unconfirmed, UNCONFIRMED_NULLS_VAL);
+
 
 > 
-> >Now there is still the problem of:
-> >
-> >1) local timestamps not moving forward (could it happen when events happen in storm,
-> >when they overflow multiple times in once for example, and clock is not granular
-> >enough?)
+> Lets imagine that we have two threads. The first one enumerates objects
+> from a first list, the second one recreates an object and insert it in a
+> second list.  If a first thread in this moment stays on the object, it
+> can read "next", when it's in the second list, so it will continue
+> to enumerate objects from the second list. It is not what we want, isn't
+> it?
 > 
-> Even at 650k events/sec I am not seeing this problem.
-
-Yeah it happens mostly when a single event, supposed to overflow on period of 1, trigger
-with a higher period. This is the case of sched stat runtime tracepoints for example
-because it is a weighted tracepoint (see perf_count). So it demux into gazillions of
-events all having very close timestamps. But normal tracepoints shouldn't have this problem.
-
+> cpu1				cpu2
+> 				hlist_nulls_for_each_entry_rcu(ct)
+> destroy_conntrack
+>  kmem_cache_free
 > 
-> >Anyway this should be solved with the patch that takes the earliest last event on all
-> >CPU buffer instead of the maximum of a round as a barrier.
-> >
-> >2) local timestamps not monotonic due to interrupting events. This could be fixed
-> >in the kernel with moving perf_clock() snapshot in perf_output_sample().
-> >
+> init_conntrack
+>  hlist_nulls_add_head_rcu
+> 				ct = ct->next
 > 
-> For perf-kvm the events are all tracepoints, so there should not be
-> a problem of overlap due to interruption.
 
-Nope, I'm curious what kind of issue happens with kvm events. Could you send me a perf.data
-that has this ordering problem?
+This will be fine.
 
-Thanks.
+I think we even have a counter to count number of occurrence of this
+rare event. (I personally never read a non null search_restart value)
+
+ NF_CT_STAT_INC(net, search_restart); 
+
+
+
