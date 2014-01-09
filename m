@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753795AbaAIXVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 18:21:13 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:37044 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaAIXVL (ORCPT
+	id S1754589AbaAIXZb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 18:25:31 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:48865 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751511AbaAIXZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 18:21:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <1389304708.3209.257.camel@bling.home>
-References: <20140109153513.21446.31778.stgit@bling.home> <CAErSpo4Asnx4JiZvppZLUzxmVymz0t-fHXRFMr81-Qz31XyR+g@mail.gmail.com>
- <1389291911.3209.234.camel@bling.home> <CAErSpo6vA=f1RSnpkWumYxs3tQ8uM8NKuWqck4GRb6gL5HvqiA@mail.gmail.com>
- <1389304708.3209.257.camel@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 9 Jan 2014 16:20:50 -0700
-Message-ID: <CAErSpo7xEKzWF8oetskQAcLcwJUw4VPByXgbMUkurVcK2caRgA@mail.gmail.com>
-Subject: Re: [PATCH] pci/iov: VFs are never multifunction
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Nishank Trivedi <nistrive@cisco.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        sathya.perla@emulex.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ajit.khaparde@emulex.com, Don Dutile <ddutile@redhat.com>,
-        subbu.seetharaman@emulex.com, Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 Jan 2014 18:25:27 -0500
+Date: Thu, 9 Jan 2014 18:25:23 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
+        Eric Paris <eparis@parisplace.org>, stable <stable@vger.kernel.org>,
+        Paul Moore <paul@paul-moore.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
+ inode_permission()
+Message-ID: <20140109182523.5b50131f@gandalf.local.home>
+In-Reply-To: <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+References: <20140109162731.12500986@gandalf.local.home>
+	<20140109214239.GD29910@parisc-linux.org>
+	<20140109165012.391db81e@gandalf.local.home>
+	<20140109223127.GM10323@ZenIV.linux.org.uk>
+	<CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+to Nishank]
+On Fri, 10 Jan 2014 06:41:03 +0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Thu, Jan 9, 2014 at 2:58 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Thu, 2014-01-09 at 14:39 -0700, Bjorn Helgaas wrote:
->> On Thu, Jan 9, 2014 at 11:25 AM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> > On Thu, 2014-01-09 at 11:08 -0700, Bjorn Helgaas wrote:
->> >> On Thu, Jan 9, 2014 at 8:36 AM, Alex Williamson
->> >> <alex.williamson@redhat.com> wrote:
->> >> > Per the SR-IOV spec rev 1.1:
->> >> >
->> >> > 3.4.1.9 Header Type (Offset 0Eh)
->> >> >
->> >> > "... For VFs, this register must be RO Zero."
->> >> >
->> >> > Unfortunately some devices get this wrong, ex. Emulex OneConnect 10Gb
->> >> > NIC.  When they do it makes us handle ACS testing and therefore IOMMU
->> >> > groups as if they were actual multifunction devices and require ACS
->> >> > capabilities to make sure there's no peer-to-peer between functions.
->> >> > VFs are never traditional multifunction devices, so simply clear this
->> >> > bit before we get any further into setup.
->> >>
->> >> This seems reasonable.  Do you have "lspci -vvxxxx" output for this
->> >> device?  I'd like to save it for future reference.
->> >
->> > Sure, here's a VF:
->> >
->> > 09:04.0 Ethernet controller: Emulex Corporation OneConnect 10Gb NIC (be3) (rev 01)
->> >         Subsystem: Emulex Corporation Device e722
->>
->> Thanks!  I put this in
->> https://bugzilla.kernel.org/show_bug.cgi?id=68431, and I'll add a
->> reference to the changelog.
->>
->> But I wonder if we can make this slightly more generic by doing
->> something like this in pci_setup_device():
->>
->>   dev->multifunction = (PCI_FUNC(dev->devfn) == 0) && (hdr_type & 0x80);
->>
->> That's basically what lspci does in pci_generic_scan_bus(), and
->> section 3.2.2.3.4 of the PCI 3.0 spec sort of implies that we should
->> only look at the bit 7 of the header type for function 0:
->>
->>   If a single function device is detected (i.e., bit 7 in the Header
->>   Type register of function 0 is 0), no more functions for that
->>   Device Number will be checked. If a multi-function device is
->>   detected (i.e., bit 7 in the Header Type register of function 0
->>   is 1), then all remaining Function Numbers will be checked.
->
-> We could do that and rely only on pci_scan_slot() to set multifunction=1
-> for the other functions, but that doesn't completely solve this problem.
-> VFs can occupy function zero and the example device would still set
-> multifunction with that test.  Thanks,
+> I think the sane short term fix is to make the kfree() of the i_security
+> member be a rcu free, and not clear the member.
 
-Duh, it would help if I actually paid attention to your lspci output...
+You mean my first patch?
 
-The reason I'm thinking about this is that virtfn_add() is only used
-when we enable SR-IOV.  If we clear dev->multifunction there, we only
-end up with the correct value if we start with SR-IOV disabled, and
-then enable it.
+https://lkml.org/lkml/2014/1/9/349
 
-If SR-IOV were enabled by the firmware before Linux boots, we wouldn't
-go through the virtfn_add() path, and dev->multifunction might still
-be wrong.
+-- Steve
 
-I'm pretty sure Nishank said there were Cisco boxes that enable SR-IOV
-in the firmware, but I don't know how that works.  It looks like we
-would disable SR-IOV during enumeration in the path below:
-
-  pci_scan_slot
-    pci_scan_single_device
-      pci_device_add
-        pci_init_capabilities
-          pci_iov_init
-            sriov_init
-              pci_read_config_word(dev, pos + PCI_SRIOV_CTRL, &ctrl)
-              if (ctrl & PCI_SRIOV_CTRL_VFE)
-                pci_write_config_word(dev, pos + PCI_SRIOV_CTRL, 0)
-
->From that path, it *looks* like it doesn't really matter whether
-SR-IOV is enabled at handoff, because we disable it anyway.
-
-So I'm not sure if I misunderstood Nishank or what.  I think it would
-be cool if we could enumerate previously-enabled VFs, but maybe there
-are other issues that would make that impossible.
-
-Bjorn
+> 
+> Not pretty, but should did this case..
+> 
