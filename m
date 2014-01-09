@@ -1,128 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaAIM5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:57:50 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:49233 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaAIM5m (ORCPT
+	id S1753378AbaAINAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 08:00:49 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:49853 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaAINAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:57:42 -0500
-Subject: Re: [PATCH 01/28] perf tools: Insert filtered entries to hists also
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-In-Reply-To: <20140108185934.GA8365@ghostprotocols.net>
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
-	 <1389170793-21926-2-git-send-email-namhyung@kernel.org>
-	 <20140108124113.GA15464@ghostprotocols.net>
-	 <20140108162253.GB21500@krava.brq.redhat.com>
-	 <20140108185934.GA8365@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 09 Jan 2014 21:57:35 +0900
-Message-ID: <1389272255.1722.24.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Thu, 9 Jan 2014 08:00:41 -0500
+Date: Thu, 9 Jan 2014 15:57:46 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH -next] zram: drop `init_done' zram member
+Message-ID: <20140109125746.GA2246@swordfish.minsk.epam.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-01-08 (수), 15:59 -0300, Arnaldo Carvalho de Melo:
-> Em Wed, Jan 08, 2014 at 05:22:53PM +0100, Jiri Olsa escreveu:
-> > On Wed, Jan 08, 2014 at 09:41:13AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Wed, Jan 08, 2014 at 05:46:06PM +0900, Namhyung Kim escreveu:
-> > > > Currently if a sample was filtered by command line option, it just
-> > > > dropped.  But this affects final output in that the percentage can be
-> > > > different since the filtered entries were not included to the total.
-> > > > 
-> > > > For example, if an original output looked like below:
-> > > 
-> > > Humm, if one says that he/she is interested on just samples for a and b,
-> > > the current behaviour will state how many of the filtered samples are
-> > > for a and b, which is valid.
-> > > 
-> > >  I bet the number of samples will reflect that as well, but you filtered
-> > > it out, yes, it stays there, so the percentages are relative to the
-> > > number of samples.
-> > > 
-> > > So I think this change in behaviour is wrong, no?
-> > > 
-> > hi,
-> > haven't checked the implementation yet, but it kind of does
-> > what I'd expect for symbol filtering:
-> > 
-> > perf report
-> > ...
-> >  22.00%  yes  libc-2.17.so       [.] __strlen_sse2
-> >  11.79%  yes  libc-2.17.so       [.] fputs_unlocked
-> >   9.65%  yes  libc-2.17.so       [.] __GI___mempcpy
-> >   1.91%  yes  yes                [.] fputs_unlocked@plt
-> > ...
-> > 
-> > search (press '/') for fputs_unlocked (with Namhyung's change):
-> >  11.79%  yes  libc-2.17.so  [.] fputs_unlocked
-> >   1.91%  yes  yes           [.] fputs_unlocked@plt
-> > 
-> > while the current one shows:
-> >  86.08%  yes  libc-2.17.so  [.] fputs_unlocked
-> >  13.92%  yes  yes           [.] fputs_unlocked@plt
-> > 
-> > which annoys me when searching for 'invisible' symbol
-> > within tons of others.. I had to do that grep thing
-> > you showed.
-> > 
-> > I'd like to have the Namhyung's change behaviour as default,
-> > but I'll be happy with some switch as well ;-)
-> 
-> I understand the desire for this different mode, looks indeed useful.
+Introduce init_done() helper function which allows us to drop
+`init_done' struct zram member. init_done() uses the fact that
+->init_done == 1 equals to ->meta != NULL.
 
-Yeah, the above is the reason why I wrote this firstly.  And then I
-thought it should be applied to the command line filter options too.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-> 
-> So I think that this is a new feature and as so we should provide it as
-> an option, that may (or not) become the default.
-> 
-> Some concerns I have are that when we go on filtering we have to have
-> all the things that are zeroed to then get accrued for each hist entry
-> that matches the filter being applied and now at least a nr_entries
-> field got out of the if (al.filtered) block, i.e. in the end we will
-> have the number of hist entries entries filtered but continue having the
-> total period for all (filtered or not) hist entries.
+---
 
-One thing related to it is when --children option is used.  Since total
-period is added only for a real sample, if the sample is filtered but
-the parents are not, the parents might have more than 100% overhead.
+ drivers/block/zram/zram_drv.c | 21 +++++++++++----------
+ drivers/block/zram/zram_drv.h | 12 +++++-------
+ 2 files changed, 16 insertions(+), 17 deletions(-)
 
-> 
-> Having it as a separate feature would allow to have both views:
-> 
-> 1. the percentages relative to the filtered samples
-> 2. the percentages relative to all (filtered or not) samples
-> 
-> Being selectable on the command line and also with a hotkey to provide
-> two columns: %total, %filtered.
-
-Hmm.. do you really want two columns instead of single column and a
-switch/option?  Then the (second) %filtered column will be shown up only
-if filtering is enabled.  Isn't it annoying for a dynamic filtering
-(i.e. '/' key on TUI)?
-
-> 
-> So we would have new field: hists->stats.total_filtered_period, and
-> hists->stats.nr_filtered_entries, for this, etc.
-> 
-> What do you think?
-
-I'm fine with it if we decide to support two columns at the same time.
-
-Thanks,
-Namhyung
-
-
-
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 108f273..833d24f 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -42,6 +42,11 @@ static struct zram *zram_devices;
+ /* Module params (documentation at end) */
+ static unsigned int num_devices = 1;
+ 
++static inline int init_done(struct zram *zram)
++{
++	return zram->meta != NULL;
++}
++
+ static inline struct zram *dev_to_zram(struct device *dev)
+ {
+ 	return (struct zram *)dev_to_disk(dev)->private_data;
+@@ -60,7 +65,7 @@ static ssize_t initstate_show(struct device *dev,
+ {
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	return sprintf(buf, "%u\n", zram->init_done);
++	return sprintf(buf, "%u\n", init_done(zram));
+ }
+ 
+ static ssize_t num_reads_show(struct device *dev,
+@@ -133,7 +138,7 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 	struct zram_meta *meta = zram->meta;
+ 
+ 	down_read(&zram->init_lock);
+-	if (zram->init_done)
++	if (init_done(zram))
+ 		val = zs_get_total_size_bytes(meta->mem_pool);
+ 	up_read(&zram->init_lock);
+ 
+@@ -556,14 +561,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	flush_work(&zram->free_work);
+ 
+ 	down_write(&zram->init_lock);
+-	if (!zram->init_done) {
++	if (!init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		return;
+ 	}
+ 
+ 	meta = zram->meta;
+-	zram->init_done = 0;
+-
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+ 		unsigned long handle = meta->table[index].handle;
+@@ -604,8 +607,6 @@ static void zram_init_device(struct zram *zram, struct zram_meta *meta)
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+ 
+ 	zram->meta = meta;
+-	zram->init_done = 1;
+-
+ 	pr_debug("Initialization done!\n");
+ }
+ 
+@@ -623,7 +624,7 @@ static ssize_t disksize_store(struct device *dev,
+ 	disksize = PAGE_ALIGN(disksize);
+ 	meta = zram_meta_alloc(disksize);
+ 	down_write(&zram->init_lock);
+-	if (zram->init_done) {
++	if (init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		zram_meta_free(meta);
+ 		pr_info("Cannot change disksize for initialized device\n");
+@@ -744,7 +745,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ 	struct zram *zram = queue->queuedata;
+ 
+ 	down_read(&zram->init_lock);
+-	if (unlikely(!zram->init_done))
++	if (unlikely(!init_done(zram)))
+ 		goto error;
+ 
+ 	if (!valid_io_request(zram, bio)) {
+@@ -893,7 +894,7 @@ static int create_device(struct zram *zram, int device_id)
+ 		goto out_free_disk;
+ 	}
+ 
+-	zram->init_done = 0;
++	zram->meta = NULL;
+ 	return 0;
+ 
+ out_free_disk:
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index d8f6596..1388bad 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -99,26 +99,24 @@ struct zram_slot_free {
+ };
+ 
+ struct zram {
++	/* Prevent concurrent execution of device init, reset and R/W request */
++	struct rw_semaphore init_lock;
+ 	struct zram_meta *meta;
++
+ 	struct rw_semaphore lock; /* protect compression buffers, table,
+ 				   * 32bit stat counters against concurrent
+ 				   * notifications, reads and writes */
+-
+-	struct work_struct free_work;  /* handle pending free request */
+ 	struct zram_slot_free *slot_free_rq; /* list head of free request */
++	spinlock_t slot_free_lock;
++	struct work_struct free_work;  /* handle pending free request */
+ 
+ 	struct request_queue *queue;
+ 	struct gendisk *disk;
+-	int init_done;
+-	/* Prevent concurrent execution of device init, reset and R/W request */
+-	struct rw_semaphore init_lock;
+ 	/*
+ 	 * This is the limit on amount of *uncompressed* worth of data
+ 	 * we can store in a disk.
+ 	 */
+ 	u64 disksize;	/* bytes */
+-	spinlock_t slot_free_lock;
+-
+ 	struct zram_stats stats;
+ };
+ #endif
