@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaAIOLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:11:06 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50083 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaAIOLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:11:00 -0500
-Date: Thu, 9 Jan 2014 14:10:53 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Message-ID: <20140109141053.GA24418@sirena.org.uk>
-References: <20140109054104.GH1265@elgon.mountain>
+	id S1754477AbaAIOLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:11:18 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38071 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010AbaAIOLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 09:11:08 -0500
+Message-ID: <52CEADD8.4070203@ti.com>
+Date: Thu, 9 Jan 2014 09:10:32 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <20140109054104.GH1265@elgon.mountain>
-X-Cookie: Many suitcases look alike.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [patch] regmap: fix a potential leak in regmap_bulk_write()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, <prabhakar.csengg@gmail.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH v3 0/2] gpio: davinci: reuse for keystone arch
+References: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com> <52CC3EDC.7070404@ti.com> <52CCCEB6.9050006@ti.com> <52CD5BD8.8090903@ti.com> <52CE7A9B.9000300@ti.com>
+In-Reply-To: <52CE7A9B.9000300@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 09 January 2014 05:31 AM, Sekhar Nori wrote:
+> On Wednesday 08 January 2014 07:38 PM, Santosh Shilimkar wrote:
+>> On Tuesday 07 January 2014 11:06 PM, Sekhar Nori wrote:
+>>> On Tuesday 07 January 2014 11:22 PM, Santosh Shilimkar wrote:
+>>>> Sekhar,
+>>>>
+>>>> On Tuesday 24 December 2013 06:41 AM, Grygorii Strashko wrote:
+>>>>> This series is intended to update Davinci GPIO driver and reuse
+>>>>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>>>>> Keystone GPIO IP: supports:
+>>>>> - up to 32 GPIO lines;
+>>>>> - only unbanked irqs;
+>>>>>
+>>>>> See Documentation:
+>>>>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>>>>
+>>>>> This series based on:
+>>>>> https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.14/gpio
+>>>>>
+>>>>> Changes in v3:
+>>>>> - fixed code, changed by mistake; fixed sparse warning 
+>>>>> Changes in v2:
+>>>>> - minor comments applied, no functional changes
+>>>>>
+>>>>> v2: https://lkml.org/lkml/2013/12/18/135
+>>>>> v1: https://lkml.org/lkml/2013/12/12/366
+>>>>>
+>>>>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>>>>> Cc: Alexandre Courbot <gnurou@gmail.com>
+>>>>> Cc: Sekhar Nori <nsekhar@ti.com>
+>>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>>
+>>>>> Grygorii Strashko (2):
+>>>>>   gpio: davinci: don't create irq_domain in case of unbanked irqs
+>>>>>   gpio: davinci: reuse for Keystone SoC
+>>>>>
+>>>>>  .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+>>>>>  drivers/gpio/gpio-davinci.c                        |   82 ++++++++++++++------
+>>>>>  2 files changed, 61 insertions(+), 25 deletions(-)
+>>>>>
+>>>> Have you picked up the $subject series in your queue ?
+>>>
+>>> Not yet, at least on the new compatible introduction, I need an ack from
+>>> DT folks.
+>>>
+>> I noticed that but the usual 2 weeks period to get ack is over I guess ;-)
+>> The DT part is really trivial as well but I let you decide.
+> 
+> I just realize that Rob's e-mail address bounces. I have added his
+> updated address now and hopefully he will see this to provide his ack.
+> 
+> Rob,
+> 
+> We need your ack on 2/2 of this series. If you do not have the patch, I
+> can forward it to you.
+> 
+>>
+>>> I am happy with the patches though and have tested them as well, In case
+>>> I do not get an ack from 2/2 in time, I can at least send 1/2 for
+>>> inclusion after my first gpio pull request to ARM-SoC gets pulled.
+>>>
+>> Would be great to get both of them but if not both at least 1/2.
+> 
+> I had already sent it with my first pull request. Hmph. Everything
+> except 2/2 of tis series should be in linux-next now.
+> 
+Thanks !!
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Jan 09, 2014 at 08:41:04AM +0300, Dan Carpenter wrote:
-> Static checkers complain that there is an error path where
-> _regmap_raw_write() fails and we goto out without freeing the "wval"
-> buffer.
-
-This doesn't apply against current code (these functions got rewritten),
-can you please check?
-
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzq3qAAoJELSic+t+oim9zfEP/Aq0UGql2MU6+w/g3W1zUy+E
-sE19Zxnirwx50KRI4hwGU8D+aAZ5JHuknfbQBkFrvyLtdPBAWvjPnb34/LBDiTsw
-c/u7kyv+PPBMxgMgmWpBF7d2thySF/y8T2dWMT9X8f75BWFNyMcdHlGjNkCYa1vI
-yU+hQNlzYGOx6jH8QcdVgRVccrc427P6cGuzQ6K3JI+Xl0DNPN7jpUYbFnr/QXpF
-IGm/6irUGN5JgacOPY50Ni5jadsGAZT/mpStWs7RAWEPL1f+GgJRvzLPKf6Rboea
-w7I/D7NksQIlUxIBjD7vSfIUsnkb6WM/MTzZkXgl4YRyrF22/AZSDXKb55gcmPeC
-9yBvBDsvowp+hURqVTAYtZfM8MSP3KzTwMG0wLOys7dx4WEqCJV3CYZWSEZG255S
-ZlN1hMJmCvjbN+JOg6wogO/ksNctgnpm0M14A52JkapJQpZFwlvP6Qs5vSB1r7Tw
-xbKLMcQSEc7iNdeNy/5ZdXvDFbJFRAATRgkG+se2cwNsKcS1THoePsA34mabM+jt
-H/4is3m++heHXN7J1ltkyX6GWBBq14vhpnlyv+MC2b+lKHW5hiB2oOjW0QUhPPRn
-Cfi70riXXmGpxXtTdRRRMwh9+zuvm3Z3v5N9XHBXL6Zy5qg8drno7yTCbjysmmf5
-hQGf6XwVcnHQTUWoo0Sk
-=6FtH
------END PGP SIGNATURE-----
-
---G4iJoqBmSsgzjUCe--
