@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaAIOIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:08:14 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:52194 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaAIOIG (ORCPT
+	id S1752636AbaAIOLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:11:06 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50083 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaAIOLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:08:06 -0500
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH] perf tools: Fix build error on zfree()
-Date: Thu,  9 Jan 2014 23:07:59 +0900
-Message-Id: <1389276479-9047-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
+	Thu, 9 Jan 2014 09:11:00 -0500
+Date: Thu, 9 Jan 2014 14:10:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Message-ID: <20140109141053.GA24418@sirena.org.uk>
+References: <20140109054104.GH1265@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <20140109054104.GH1265@elgon.mountain>
+X-Cookie: Many suitcases look alike.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [patch] regmap: fix a potential leak in regmap_bulk_write()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It failed to build perf on my ubuntu 10.04 box (gcc 4.4.3):
 
-    CC       util/strlist.o
-  cc1: warnings being treated as errors
-  util/strlist.c: In function ‘str_node__delete’:
-  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
-    CC       util/strfilter.o
-  make: *** [util/strlist.o] Error 1
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    CC       util/srcline.o
-  cc1: warnings being treated as errors
-  util/srcline.c: In function ‘addr2line_init’:
-  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/srcline.c: In function ‘addr2line_cleanup’:
-  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
-  make: *** [util/srcline.o] Error 1
+On Thu, Jan 09, 2014 at 08:41:04AM +0300, Dan Carpenter wrote:
+> Static checkers complain that there is an error path where
+> _regmap_raw_write() fails and we goto out without freeing the "wval"
+> buffer.
 
-It seems it only allows to remove 'const' qualifier.
+This doesn't apply against current code (these functions got rewritten),
+can you please check?
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/srcline.c |    4 ++--
- tools/perf/util/strlist.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 7e67879ebd25..f3e4bc5fe5d2 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -129,7 +129,7 @@ static struct a2l_data *addr2line_init(const char *path)
- 
- out:
- 	if (a2l) {
--		zfree((void **)&a2l->input);
-+		zfree((char **)&a2l->input);
- 		free(a2l);
- 	}
- 	bfd_close(abfd);
-@@ -140,7 +140,7 @@ static void addr2line_cleanup(struct a2l_data *a2l)
- {
- 	if (a2l->abfd)
- 		bfd_close(a2l->abfd);
--	zfree((void **)&a2l->input);
-+	zfree((char **)&a2l->input);
- 	zfree(&a2l->syms);
- 	free(a2l);
- }
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index 61a90bf24b4d..71f9d102b96f 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -39,7 +39,7 @@ out_delete:
- static void str_node__delete(struct str_node *snode, bool dupstr)
- {
- 	if (dupstr)
--		zfree((void **)&snode->s);
-+		zfree((char **)&snode->s);
- 	free(snode);
- }
- 
--- 
-1.7.9.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSzq3qAAoJELSic+t+oim9zfEP/Aq0UGql2MU6+w/g3W1zUy+E
+sE19Zxnirwx50KRI4hwGU8D+aAZ5JHuknfbQBkFrvyLtdPBAWvjPnb34/LBDiTsw
+c/u7kyv+PPBMxgMgmWpBF7d2thySF/y8T2dWMT9X8f75BWFNyMcdHlGjNkCYa1vI
+yU+hQNlzYGOx6jH8QcdVgRVccrc427P6cGuzQ6K3JI+Xl0DNPN7jpUYbFnr/QXpF
+IGm/6irUGN5JgacOPY50Ni5jadsGAZT/mpStWs7RAWEPL1f+GgJRvzLPKf6Rboea
+w7I/D7NksQIlUxIBjD7vSfIUsnkb6WM/MTzZkXgl4YRyrF22/AZSDXKb55gcmPeC
+9yBvBDsvowp+hURqVTAYtZfM8MSP3KzTwMG0wLOys7dx4WEqCJV3CYZWSEZG255S
+ZlN1hMJmCvjbN+JOg6wogO/ksNctgnpm0M14A52JkapJQpZFwlvP6Qs5vSB1r7Tw
+xbKLMcQSEc7iNdeNy/5ZdXvDFbJFRAATRgkG+se2cwNsKcS1THoePsA34mabM+jt
+H/4is3m++heHXN7J1ltkyX6GWBBq14vhpnlyv+MC2b+lKHW5hiB2oOjW0QUhPPRn
+Cfi70riXXmGpxXtTdRRRMwh9+zuvm3Z3v5N9XHBXL6Zy5qg8drno7yTCbjysmmf5
+hQGf6XwVcnHQTUWoo0Sk
+=6FtH
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
