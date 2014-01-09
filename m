@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaAIMKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:10:15 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34052 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754498AbaAIMJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:09:49 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <arnd@arndb.de>, <sre@debian.org>, <mark.rutland@arm.com>,
-        <m.paolino@virtualopensystems.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v5 9/9] ARM: OMAP2+: Remove legacy_init_ehci_clk()
-Date: Thu, 9 Jan 2014 17:38:23 +0530
-Message-ID: <1389269303-30465-10-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389269303-30465-1-git-send-email-rogerq@ti.com>
-References: <1389269303-30465-1-git-send-email-rogerq@ti.com>
+	id S1755165AbaAIMK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:10:26 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.221]:35373 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846AbaAIMKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 07:10:05 -0500
+X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jan 2014 07:10:05 EST
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/UwZ1qHk8=
+X-RZG-CLASS-ID: mo00
+Date: Thu, 9 Jan 2014 13:03:51 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com
+Subject: Re: [PATCH 1/1] Drivers: hv: Implement the file copy service
+Message-ID: <20140109120351.GA25423@aepfle.de>
+References: <1389224915-8737-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1389224915-8737-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The necessary clock phandle for the EHCI clock is now provided
-via device tree so we no longer need this legacy method.
+On Wed, Jan 08, K. Y. Srinivasan wrote:
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/mach-omap2/pdata-quirks.c | 16 ----------------
- 1 file changed, 16 deletions(-)
+> +++ b/tools/hv/hv_fcopy_daemon.c
 
-diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
-index 39f020c..6a4e2d1 100644
---- a/arch/arm/mach-omap2/pdata-quirks.c
-+++ b/arch/arm/mach-omap2/pdata-quirks.c
-@@ -26,20 +26,6 @@ struct pdata_init {
- 	void (*fn)(void);
- };
- 
--/*
-- * Create alias for USB host PHY clock.
-- * Remove this when clock phandle can be provided via DT
-- */
--static void __init __used legacy_init_ehci_clk(char *clkname)
--{
--	int ret;
--
--	ret = clk_add_alias("main_clk", NULL, clkname, NULL);
--	if (ret)
--		pr_err("%s:Failed to add main_clk alias to %s :%d\n",
--		       __func__, clkname, ret);
--}
--
- #if IS_ENABLED(CONFIG_WL12XX)
- 
- static struct wl12xx_platform_data wl12xx __initdata;
-@@ -105,7 +91,6 @@ static void __init omap4_sdp_legacy_init(void)
- static void __init omap4_panda_legacy_init(void)
- {
- 	omap4_panda_display_init_of();
--	legacy_init_ehci_clk("auxclk3_ck");
- 	legacy_init_wl12xx(WL12XX_REFCLOCK_38, 0, 53);
- }
- #endif
-@@ -113,7 +98,6 @@ static void __init omap4_panda_legacy_init(void)
- #ifdef CONFIG_SOC_OMAP5
- static void __init omap5_uevm_legacy_init(void)
- {
--	legacy_init_ehci_clk("auxclk1_ck");
- }
- #endif
- 
--- 
-1.8.3.2
+> +		len = pread(fcopy_fd, buffer, (4096 * 2), 0);
+> +
+> +		if (len <= 0) {
+> +			syslog(LOG_ERR, "Read error: %s\n", strerror(errno));
+> +			continue;
 
+This could flood syslog. I think the error should be logged just once.
+Maybe like this:
+
+        if (len <=0) {
+                if (!error) {
+                        syslog(...);
+                        error = HV_ERROR_NOT_SUPPORTED;
+                }
+                continue;
+        }
+
+> +		}
+> +		in_msg = (struct hv_fcopy_hdr *)buffer;
+> +
+> +		switch (in_msg->operation) {
+> +		case START_FILE_COPY:
+> +			error = hv_start_fcopy((struct hv_start_fcopy *)in_msg);
+
+Olaf
