@@ -1,127 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643AbaAILMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:12:08 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:40527 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670AbaAILLq (ORCPT
+	id S1755941AbaAILMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:12:20 -0500
+Received: from mail-pb0-f68.google.com ([209.85.160.68]:43124 "EHLO
+	mail-pb0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaAILL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:11:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140109110635.GB20699@lee--X1>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-2-git-send-email-lpapp@kde.org>
-	<20140108223933.GD18611@lee--X1>
-	<CAOMwXhN5JStJgG5Q9cjuJByhyhz-XPb4ThkA45B+fA724Ucqog@mail.gmail.com>
-	<20140109094147.GA20699@lee--X1>
-	<CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
-	<20140109110635.GB20699@lee--X1>
-Date: Thu, 9 Jan 2014 11:11:45 +0000
-X-Google-Sender-Auth: 8zqNK9Kcaf25D4jBLhf5nVFmN0A
-Message-ID: <CAOMwXhMRtFnAy33v90rZ-Mpa+yksH0054Pwr9M_VqeoJQWnPbw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 9 Jan 2014 06:11:59 -0500
+From: me@anmolsarma.in
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Anmol Sarma <me@anmolsarma.in>
+Subject: [PATCH 2/3] Staging: rtl8187se: r8180_wx.c: mark symbols as static
+Date: Thu,  9 Jan 2014 16:41:06 +0530
+Message-Id: <3ff9c480f9f0a885ca6d08b8a438be708ead3b96.1389263965.git.me@anmolsarma.in>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1389263965.git.me@anmolsarma.in>
+References: <cover.1389263965.git.me@anmolsarma.in>
+In-Reply-To: <cover.1389263965.git.me@anmolsarma.in>
+References: <cover.1389263965.git.me@anmolsarma.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 9, 2014 at 11:06 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> > Styling i.e nice, neat, easily readable/maintainable code should be
->> > your bread and butter. If styling tires you, perhaps a new career
->> > might be in order. ;)
->>
->> or a new tool to be more professional ...
->
-> Patches accepted.
->
->> >> >> +#include <linux/i2c.h>
->> >> >> +#include <linux/export.h>
->> >> >
->> >> > Why is this in here?
->> >>
->> >> Because this series was meant for a design review and overall
->> >> direction as opposed to a completely fine tuned patch set. Naturally,
->> >> I agree with the feedback of removing unnecessary header inclusion.
->> >
->> > Don't do that.
->>
->> I will guess that you mean "unnecessary header inclusion is OK"...
->
-> No, I mean don't send sub-standard patches which crap you don't need
-> or a copy and pasted mess contained within them.
->
->> >> >> +struct max6651_dev {
->> >> >> +    struct device *dev;
->> >> >> +    struct mutex iolock;
->> >> >> +
->> >> >> +    struct i2c_client *i2c;
->> >> >
->> >> > Is this used?
->> >>
->> >> Yes, heavily, for reading and writing the registers in the subdevice drivers.
->> >
->> > Can you show me where?
->>
->> Check the gpio driver or even the hwmon in this series. Look at the
->> places where it is using the read/write_reg functions, or you can just
->> check their signature in this patch. I am in the process of
->> refactoring it into regmap as we speak, but it is not painless because
->> I need to get it working for 3.2, too ...
->
-> Can you show me the line where you initialise it?
+From: Anmol Sarma <me@anmolsarma.in>
 
-max6651->dev = &i2c->dev;
-max6651->i2c = i2c;
+Fixes the following sparse warning:
+27:5: warning: symbol 'rtl8180_rates' was not declared. Should it be static?
 
-The last line is missing from the patch submitted as I fixed that only
-last week while debugging it hard.
+Signed-off-by: Anmol Sarma <me@anmolsarma.in>
+---
+ drivers/staging/rtl8187se/r8180_wx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->> >> >> +     int type;
->> >> >
->> >> > Or this?
->> >>
->> >> Absolutely, this identifies the type, which is necessary for
->> >> initializing some corresponding data.
->> >
->> > Can you show me where?
->>
->> Well, you have different number of GPIO pins for starter ...
->
-> Can you show me the line where this variable is used?
+diff --git a/drivers/staging/rtl8187se/r8180_wx.c b/drivers/staging/rtl8187se/r8180_wx.c
+index bae6875..85099bb 100644
+--- a/drivers/staging/rtl8187se/r8180_wx.c
++++ b/drivers/staging/rtl8187se/r8180_wx.c
+@@ -24,7 +24,7 @@
+ #include <net/iw_handler.h>
+ #include "ieee80211/dot11d.h"
+ 
+-u32 rtl8180_rates[] = {1000000, 2000000, 5500000, 11000000,
++static u32 rtl8180_rates[] = {1000000, 2000000, 5500000, 11000000,
+ 	6000000, 9000000, 12000000, 18000000, 24000000, 36000000, 48000000, 54000000};
+ 
+ #define RATE_COUNT ARRAY_SIZE(rtl8180_rates)
+-- 
+1.8.3.2
 
-It is not yet, as explained in my previous email.
-
->> >> >> +};
->> >> >> +
->> >> >> +enum max6651_types {
->> >> >> +     TYPE_MAX6650,
->> >> >> +     TYPE_MAX6651,
->> >> >> +};
->> >> >
->> >> > What are you using these for?
->> >>
->> >> See above.
->> >
->> > Can you show me where you are using them?
->>
->> Perhaps, I was not while submitting this change, but the upcoming
->> changes should.
->
-> Again, this adds confusion. Send your best, cleanest, most up-to-date
-> code, or all you're doing is wasting people's time.
-
-Well, that is the point why I was clarifying it.
-
-Note that it is not like I can pull off an update within such a short
-while after so many comments.... Especially since there are new
-concepts revealed like "regmap", etc. I also need to make sure it
-works with both latest and 3.2 where the regmap i2c init convenience
-resource manager is not present, etc. It is a time-consuming full-time
-job. :-)
-
-An update will be coming addressing all the points.
