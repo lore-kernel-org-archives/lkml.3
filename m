@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaAIKW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:22:29 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:45376 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaAIKWU (ORCPT
+	id S1751142AbaAIKZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:25:12 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:52844 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750806AbaAIKZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:22:20 -0500
+	Thu, 9 Jan 2014 05:25:05 -0500
+Message-ID: <52CE78EB.60108@mellanox.com>
+Date: Thu, 9 Jan 2014 12:24:43 +0200
+From: Sagi Grimberg <sagig@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <52CE0CC8.20500@infradead.org>
-References: <1389201738-31406-1-git-send-email-lpapp@kde.org>
-	<20140108180747.GT31886@sirena.org.uk>
-	<CAOMwXhN8x0xHstrwsrxqXoE+n19TP=r1HJDCFOHs2O024HaY1w@mail.gmail.com>
-	<20140108190758.GY31886@sirena.org.uk>
-	<CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
-	<CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
-	<20140108214906.GB31886@sirena.org.uk>
-	<CAOMwXhNsuG-s7z2xfZK9-qGPWNoyuE_1x3pSmz6CC2qyiituLA@mail.gmail.com>
-	<52CE0CC8.20500@infradead.org>
-Date: Thu, 9 Jan 2014 10:22:19 +0000
-X-Google-Sender-Auth: z46t4vlICU4ClWJkz_sUN2s7IXs
-Message-ID: <CAOMwXhOn=mxzNK5dE1kaH6bXnrCm9M-h1SuFhJ84yzE2DgG-GA@mail.gmail.com>
-Subject: Re: [PATCH] include/linux/regmap.h: fix a couple of typos
-From: Laszlo Papp <lpapp@kde.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Mark Brown <broonie@kernel.org>, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com> <1389212157-14540-8-git-send-email-nab@daterainc.com>
+In-Reply-To: <1389212157-14540-8-git-send-email-nab@daterainc.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.0.13.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 9, 2014 at 2:43 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 01/08/14 17:46, Laszlo Papp wrote:
->> On Wed, Jan 8, 2014 at 9:49 PM, Mark Brown <broonie@kernel.org> wrote:
->>> On Wed, Jan 08, 2014 at 09:08:44PM +0000, Laszlo Papp wrote:
->>>> On Wed, Jan 8, 2014 at 9:02 PM, Laszlo Papp <lpapp@kde.org> wrote:
->>>
->>>>> That being said, I will not have time, nor the motivation to argue
->>>>> over such a nuance, so feel free to reject the change.
->>>
->>>> Of course, this is just on top of the vim spell checker error as I
->>>> wrote in the commit message...
->>>
->>>> Oh yes, and one more factual data in here:
->>>
->>>> lpapp ~/Projects/linux-staging $ grep -rn "e\.g\." . | wc -l
->>>> 3447
->>>
->>>> lpapp ~/Projects/linux-staging $ grep -rn " eg," | wc -l
->>>> 18
->>>
->>> That's not the issue - it's dropping the comma.  It's either "e.g." or
->>> "eg", the comma is a separate thing providing a break between clauses.
->>> Strictly it should have the periods since it is an abbreviation but
->>> their use is more vauge in fixed point text since they look ugly, the
->>> thing that made me complain was that you dropped the comma as well as
->>> substituting in the expanded version.
->>
->> I still do not get what point you are trying to make. Could you please
->> provide evidence? Because really, this is the usage I have seen in
->> projects out there all around, including the majority of the linux
->> kernel.
->>
->> Here is some more data:
->>
->> grep -rn "e\.g\. " . | wc -l
->> 2553
->> lpapp ~/Projects/linux-staging $ grep -rn "e\.g\.," . | wc -l
->> 573
->> --
+On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 >
-> Hi,
+> This patch updates sbc_emulate_readcapacity_16() to set
+> P_TYPE and PROT_EN bits when DIF emulation is enabled by
+> the backend device.
 >
-> I am used to seeing e.g. and i.e. always followed by a comma when they are
-> used to begin a sentence.  However, I just checked and some online style
-> guides say to omit the comma and some say to use it, and we (Linux kernel)
-> don't really have a writing style guide to look at.  I think that makes it
-> up to the maintainer to decide what is acceptable.
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Sagi Grimberg <sagig@mellanox.com>
+> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>   drivers/target/target_core_sbc.c |    5 +++++
+>   1 file changed, 5 insertions(+)
+>
+> diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+> index 366b9bb..22599e8 100644
+> --- a/drivers/target/target_core_sbc.c
+> +++ b/drivers/target/target_core_sbc.c
+> @@ -106,6 +106,11 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
+>   	buf[9] = (dev->dev_attrib.block_size >> 16) & 0xff;
+>   	buf[10] = (dev->dev_attrib.block_size >> 8) & 0xff;
+>   	buf[11] = dev->dev_attrib.block_size & 0xff;
+> +	/*
+> +	 * Set P_TYPE and PROT_EN bits for DIF support
+> +	 */
+> +	if (dev->dev_attrib.pi_prot_type)
+> +		buf[12] = (dev->dev_attrib.pi_prot_type - 1) << 1 | 0x1;
+>   
+>   	if (dev->transport->get_lbppbe)
+>   		buf[13] = dev->transport->get_lbppbe(dev) & 0x0f;
 
-Who is the maintainer? Is it Mark, or I should wait for someone else?
+Hey Nic,
+
+What about FORMAT_UNIT emulation?
+The backstore protection configuration is done at the target side via 
+configfs/targetcli, if you publish DIF support in 
+INQUERY_EVPD/READ_CAPACITY you need to accept protection information format?
+Did I miss that one? or is it still under WIP?
+
+Sagi.
