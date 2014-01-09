@@ -1,68 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaAIKuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:50:19 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42778 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750766AbaAIKuO (ORCPT
+	id S1751935AbaAIKv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:51:26 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:38276 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766AbaAIKvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:50:14 -0500
-Date: Thu, 9 Jan 2014 10:49:43 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/7] ARM: perf_event: Support percpu irqs for the CPU PMU
-Message-ID: <20140109104943.GB17838@mudshark.cambridge.arm.com>
-References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
- <1389221984-10973-3-git-send-email-sboyd@codeaurora.org>
+	Thu, 9 Jan 2014 05:51:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389221984-10973-3-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1388660330-16781-1-git-send-email-artagnon@gmail.com>
+References: <1388660330-16781-1-git-send-email-artagnon@gmail.com>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Thu, 9 Jan 2014 16:20:36 +0530
+Message-ID: <CALkWK0nAt7vcuYHxW-Q4Co_jX-4diM_T6KMXYyXHtTFgWpT9Ng@mail.gmail.com>
+Subject: Re: [PATCH 0/5] perf tools: get --list-cmds for subcommands
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Ramkumar Ramachandra wrote:
+> Ramkumar Ramachandra (5):
+>   perf kvm: introduce --list-cmds for use by scripts
+>   perf kmem: introduce --list-cmds
+>   perf lock: introduce --list-cmds
+>   perf mem: introduce --list-cmds
+>   perf sched: introduce --list-cmds
 
-On Wed, Jan 08, 2014 at 10:59:39PM +0000, Stephen Boyd wrote:
-> Some CPU PMUs are wired up with one PPI for all the CPUs instead
-> of with a different SPI for each CPU. Add support for these
-> devices.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/kernel/perf_event_cpu.c | 107 +++++++++++++++++++++++++++++----------
->  1 file changed, 79 insertions(+), 28 deletions(-)
+Ping?
 
-[...]
-
-> +static irq_handler_t cpu_handler;
-> +
-> +static irqreturn_t cpu_pmu_dispatch_irq(int irq, void *dev)
-> +{
-> +	struct arm_pmu *arm_pmu = *(struct arm_pmu **)dev;
-> +	return cpu_handler(irq, arm_pmu);
-> +}
-
-I don't like this bit -- having a global cpu_handler field is going to
-interfere with the big.LITTLE work and casting the per-cpu dev token is also
-pretty hacky.
-
-However, you're forced down this route by the need to invoke the armpmu IRQ
-dispatcher. Now, that only exists as a workaround for the braindead
-interrupt routing on the u8500 (they OR'd all the PMU SPIs together) -- it's
-not a problem that will affect a system using PPIs. If you look, there is
-only one use of the thing in: arch/arm/mach-ux500/cpu-db8500.c.
-
-So, we could rename that callback to make it clear that it's not so much an
-IRQ handler wrapper as a specific hack to deal with broken SPIs. Then the
-cpu_pmu code can neglect to make the callback if it's using PPI.
-
-What do you think?
-
-Will
+Any comment on these, Arnaldo?
