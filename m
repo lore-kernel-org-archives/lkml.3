@@ -1,104 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaAIK4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:56:39 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:26773 "EHLO
-	vsp-authed-04-02.binero.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753469AbaAIKzY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:55:24 -0500
-From: Andreas Larsson <andreas@gaisler.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        software@gaisler.com
-Subject: [PATCH 1/6] usb: gadget: gr_udc: Make struct platform_device variable name clearer
-Date: Thu,  9 Jan 2014 11:54:13 +0100
-Message-Id: <1389264858-32664-2-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1389264858-32664-1-git-send-email-andreas@gaisler.com>
-References: <1389264858-32664-1-git-send-email-andreas@gaisler.com>
+	id S1754665AbaAIK4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:56:51 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60503 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754357AbaAIK42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 05:56:28 -0500
+From: Roger Quadros <rogerq@ti.com>
+To: <tj@kernel.org>
+CC: <sergei.shtylyov@cogentembedded.com>, <kishon@ti.com>,
+        <b.zolnierkie@samsung.com>, <hdegoede@redhat.com>, <arnd@arndb.de>,
+        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Balaji T K <balajitk@ti.com>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v4 2/3] ata: ahci_platform: Manage SATA PHY
+Date: Thu, 9 Jan 2014 16:26:01 +0530
+Message-ID: <1389264962-22858-3-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+References: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename struct platform_device pointers from ofdev to pdev for clarity.
-Suggested by Mark Rutland.
+From: Balaji T K <balajitk@ti.com>
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+Some platforms have a PHY hooked up to the
+SATA controller. The PHY needs to be initialized
+and powered up for SATA to work. We do that
+using the PHY framework.
+
+[Roger Q] Cleaned up.
+
+CC: Tejun Heo <tj@kernel.org>
+Signed-off-by: Balaji T K <balajitk@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/usb/gadget/gr_udc.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/ata/ahci.h          |  2 ++
+ drivers/ata/ahci_platform.c | 46 ++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 47 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/gr_udc.c b/drivers/usb/gadget/gr_udc.c
-index 914cbd8..e66dcf0 100644
---- a/drivers/usb/gadget/gr_udc.c
-+++ b/drivers/usb/gadget/gr_udc.c
-@@ -2071,9 +2071,9 @@ static int gr_udc_init(struct gr_udc *dev)
- 	return 0;
- }
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 2289efd..f9bbada 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -37,6 +37,7 @@
  
--static int gr_remove(struct platform_device *ofdev)
-+static int gr_remove(struct platform_device *pdev)
- {
--	struct gr_udc *dev = dev_get_drvdata(&ofdev->dev);
-+	struct gr_udc *dev = dev_get_drvdata(&pdev->dev);
+ #include <linux/clk.h>
+ #include <linux/libata.h>
++#include <linux/phy/phy.h>
  
- 	if (dev->added)
- 		usb_del_gadget_udc(&dev->gadget); /* Shuts everything down */
-@@ -2083,7 +2083,7 @@ static int gr_remove(struct platform_device *ofdev)
- 	gr_dfs_delete(dev);
- 	if (dev->desc_pool)
- 		dma_pool_destroy(dev->desc_pool);
--	dev_set_drvdata(&ofdev->dev, NULL);
-+	dev_set_drvdata(&pdev->dev, NULL);
+ /* Enclosure Management Control */
+ #define EM_CTRL_MSG_TYPE              0x000f0000
+@@ -322,6 +323,7 @@ struct ahci_host_priv {
+ 	u32			em_buf_sz;	/* EM buffer size in byte */
+ 	u32			em_msg_type;	/* EM message type */
+ 	struct clk		*clk;		/* Only for platforms supporting clk */
++	struct phy		*phy;		/* If platform uses phy */
+ 	void			*plat_data;	/* Other platform data */
+ };
  
- 	gr_free_request(&dev->epi[0].ep, &dev->ep0reqi->req);
- 	gr_free_request(&dev->epo[0].ep, &dev->ep0reqo->req);
-@@ -2096,7 +2096,7 @@ static int gr_request_irq(struct gr_udc *dev, int irq)
- 					 IRQF_SHARED, driver_name, dev);
- }
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index d5ced13..b476642 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -142,6 +142,39 @@ static int ahci_probe(struct platform_device *pdev)
+ 		}
+ 	}
  
--static int gr_probe(struct platform_device *ofdev)
-+static int gr_probe(struct platform_device *pdev)
- {
- 	struct gr_udc *dev;
- 	struct resource *res;
-@@ -2104,12 +2104,12 @@ static int gr_probe(struct platform_device *ofdev)
- 	int retval;
- 	u32 status;
++	hpriv->phy = devm_phy_get(dev, "sata-phy");
++	if (IS_ERR(hpriv->phy)) {
++		rc = PTR_ERR(hpriv->phy);
++		switch (rc) {
++		case -ENODEV:
++		case -ENOSYS:
++			/* continue normally */
++			hpriv->phy = NULL;
++			break;
++
++		case -EPROBE_DEFER:
++			goto disable_unprepare_clk;
++			break;
++
++		default:
++			dev_err(dev, "couldn't get sata-phy\n");
++			goto disable_unprepare_clk;
++			break;
++		}
++	}
++
++	if (hpriv->phy) {
++		rc = phy_init(hpriv->phy);
++		if (rc)
++			goto disable_unprepare_clk;
++
++		rc = phy_power_on(hpriv->phy);
++		if (rc) {
++			phy_exit(hpriv->phy);
++			goto disable_unprepare_clk;
++		}
++	}
++
+ 	/*
+ 	 * Some platforms might need to prepare for mmio region access,
+ 	 * which could be done in the following init call. So, the mmio
+@@ -151,7 +184,7 @@ static int ahci_probe(struct platform_device *pdev)
+ 	if (pdata && pdata->init) {
+ 		rc = pdata->init(dev, hpriv->mmio);
+ 		if (rc)
+-			goto disable_unprepare_clk;
++			goto disable_phy;
+ 	}
  
--	dev = devm_kzalloc(&ofdev->dev, sizeof(*dev), GFP_KERNEL);
-+	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
- 	if (!dev)
- 		return -ENOMEM;
--	dev->dev = &ofdev->dev;
-+	dev->dev = &pdev->dev;
+ 	ahci_save_initial_config(dev, hpriv,
+@@ -221,6 +254,12 @@ static int ahci_probe(struct platform_device *pdev)
+ pdata_exit:
+ 	if (pdata && pdata->exit)
+ 		pdata->exit(dev);
++disable_phy:
++	if (hpriv->phy) {
++		phy_power_off(hpriv->phy);
++		phy_exit(hpriv->phy);
++	}
++
+ disable_unprepare_clk:
+ 	if (!IS_ERR(hpriv->clk))
+ 		clk_disable_unprepare(hpriv->clk);
+@@ -239,6 +278,11 @@ static void ahci_host_stop(struct ata_host *host)
+ 	if (pdata && pdata->exit)
+ 		pdata->exit(dev);
  
--	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	regs = devm_ioremap_resource(dev->dev, res);
- 	if (IS_ERR(regs))
- 		return PTR_ERR(regs);
-@@ -2138,7 +2138,7 @@ static int gr_probe(struct platform_device *ofdev)
- 	spin_lock_init(&dev->lock);
- 	dev->regs = regs;
- 
--	dev_set_drvdata(&ofdev->dev, dev);
-+	dev_set_drvdata(&pdev->dev, dev);
- 
- 	/* Determine number of endpoints and data interface mode */
- 	status = gr_read32(&dev->regs->status);
-@@ -2210,7 +2210,7 @@ out:
- 	spin_unlock(&dev->lock);
- 
- 	if (retval)
--		gr_remove(ofdev);
-+		gr_remove(pdev);
- 
- 	return retval;
- }
++	if (hpriv->phy) {
++		phy_power_off(hpriv->phy);
++		phy_exit(hpriv->phy);
++	}
++
+ 	if (!IS_ERR(hpriv->clk)) {
+ 		clk_disable_unprepare(hpriv->clk);
+ 		clk_put(hpriv->clk);
 -- 
-1.7.10.4
+1.8.3.2
 
