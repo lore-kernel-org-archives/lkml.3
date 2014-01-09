@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913AbaAIVoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:44:20 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64536 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756516AbaAIVoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:44:12 -0500
+	id S1757927AbaAIVpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:45:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55055 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756516AbaAIVow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 16:44:52 -0500
+Date: Thu, 9 Jan 2014 16:44:25 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Prarit Bhargava <prarit@redhat.com>, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dave Young <dyoung@redhat.com>,
+        Kexec Mailing List <kexec@lists.infradead.org>
+Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
+ hotplug for kexec
+Message-ID: <20140109214425.GD12111@redhat.com>
+References: <1389220181-14474-1-git-send-email-prarit@redhat.com>
+ <3476878.EqQiEtA2Ag@vostro.rjw.lan>
+ <20140109150053.GD25897@redhat.com>
+ <CAHGf_=oaPZNE8tVsZ1C1z3mHee8MK6CkuZ0YBTcJpRrTWgVn6g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+QCeVQXbZO4-G4E22hPwd8u62PEhT46mNw1GxmNYZNvd1+RFg@mail.gmail.com>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com>
- <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
- <52CEFE62.7070009@interlog.com> <CA+QCeVQXbZO4-G4E22hPwd8u62PEhT46mNw1GxmNYZNvd1+RFg@mail.gmail.com>
-From: Sergey Meirovich <rathamahata@gmail.com>
-Date: Thu, 9 Jan 2014 23:43:49 +0200
-Message-ID: <CA+QCeVRCCaT2a28ky_Zc2UG8P3py1YUyg0VS-DPNvNH87R650g@mail.gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-To: dgilbert <dgilbert@interlog.com>
-Cc: James Smart <james.smart@emulex.com>, Jan Kara <jack@suse.cz>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=oaPZNE8tVsZ1C1z3mHee8MK6CkuZ0YBTcJpRrTWgVn6g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 09, 2014 at 04:34:16PM -0500, KOSAKI Motohiro wrote:
+> On Thu, Jan 9, 2014 at 10:00 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Thu, Jan 09, 2014 at 12:00:29AM +0100, Rafael J. Wysocki wrote:
+> >
+> > [..]
+> >> > The system then panics and the kdump/kexec kernel boots.  During this boot
+> >> > ACPi is initialized and the kernel (as can be seen above)
+> >>
+> >> Which is a bug.  You're not supposed to initialize ACPI twice in a row.
+> >
+> > [CC lkml, kexec mailing list, dave young]
+> >
+> > It is a fresh instance of kernel booting and it is initializing its data
+> > structures fresh. It is *not* re-initializing ACPI in same kernel.
+> >
+> >> > This patchset resolves the problem by adding a kernel parameter,
+> >> > no_memory_hotplug, to disable ACPI memory hotplug.  It can be added by default
+> >> > as a parameter to the kexec/kdump kernel so the kernel boots correctly.
+> >>
+> >> This problem is specific to kexec/kdump, so please don't add *generic* command
+> >> line parameters to address this.
+> >>
+> >
+> > There are other command line options to solve kdump problems. In general
+> > one might want to disable memory hogplug on the fly even if it is compiled
+> > in the kernel. So it can act as a good debugging aid.
+> >
+> > Secondly, it can be specified with memmap=exactmap and mem=X paramters to
+> > make sure no memory is hot added in the system.
+> >
+> > So I can see other usages of this parameter. To me it makes sense to have
+> > a separate command line option to disable memory hotplug feature on the
+> > fly.
+> 
+> I'm ok this option. But note, even if this option is specified, SH,
+> Power and S390 still
+> be able to use memory hotplug because their firmware are totally
+> different from ACPI.
+> 
+> Maybe, adding acpi prefix provides good clarification.
 
-On 9 January 2014 23:26, Sergey Meirovich <rathamahata@gmail.com> wrote:
-> Hi Duglas,
->
-> On 9 January 2014 21:54, Douglas Gilbert <dgilbert@interlog.com> wrote:
->> On 14-01-08 08:57 AM, Sergey Meirovich wrote:
-> ...
->>>
->>> The strangest thing to me that this is the problem with sequential
->>> write. For example the fnic one machine is zoned to EMC XtremIO and
->>> had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
->>> same fnic machine perfrormed rather impressive for random 4k
->>> 451.11Mb/sec 115485.02 Requests/sec
->>
->>
->> You could bypass O_DIRECT and use ddpt together with
->> a bsg pass-through (bsg is a little faster than sg
->> for these purposes).
->>
->> For example:
->>
->> # lsscsi -g
->> [0:0:0:0]    disk    ATA    INTEL SSDSC2CW12 400i  /dev/sda /dev/sg0
->> [14:0:0:0]   disk    Linux  scsi_debug       0004  -        /dev/sg1
->>
->> # ddpt if=/dev/bsg/14:0:0:0 bs=512 bpt=128 count=1m
->> Output file not specified so no copy, just reading input
->> 1048576+0 records in
->> 0+0 records out
->> time to read data: 0.283566 secs at 1893.28 MB/sec
->>
->> bs= should match the block size of the storage device and
->> the size of each SCSI READ is dictated by bpt= (so 64 KB
->> in this case).
->>
->> Such a test should show you if your performance problem
->> is in the block layer or below, or above the block layer
->> (at least the point where pass-through commands are
->> injected).
->>
->> Doug Gilbert
->
-> Thanks for an excellent idea!
->
-> Seems like this is not Direct IO issue.Just tried it against
-> fnic/XtremIO.   4k over via bsg is still 17.278 Mb/s for write.
+Makes sense. Something like "acpi_no_memhotplug" or "acpi_disable_memhotplug"
+or something else.
 
-At a second  glance seems to be natural ddpt - is suffering from the
-same SAN latencies for the small chunks.
+Thanks
+Vivek
+
