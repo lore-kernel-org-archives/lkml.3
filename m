@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbaAIMCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:02:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59696 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750702AbaAIMCF (ORCPT
+	id S1753596AbaAIMCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:02:39 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:65479 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753489AbaAIMCa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:02:05 -0500
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH] mfd: wm5110: Add register patch for rev D chip
-Date: Thu,  9 Jan 2014 11:53:54 +0000
-Message-Id: <1389268434-20334-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Thu, 9 Jan 2014 07:02:30 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: joeyli <jlee@suse.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC PATCH 04/14] ACPI: Add ACPI 5.0 Time and Alarm Device driver
+Date: Thu, 09 Jan 2014 13:16:21 +0100
+Message-ID: <2612691.m9rj3jIJ1M@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1389239259.24105.2.camel@linux-s257.site>
+References: <1387439515-8926-1-git-send-email-jlee@suse.com> <52CD9139.2070302@zytor.com> <1389239259.24105.2.camel@linux-s257.site>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Evaluation of revision D of WM5110 suggests updates to the register
-patch for optimal performance. For the sake of clarity rev C of the chip
-does not require a register patch.
+On Thursday, January 09, 2014 11:47:39 AM joeyli wrote:
+> 於 三，2014-01-08 於 09:56 -0800，H. Peter Anvin 提到：
+> [...]
+> > > Document of Windows XP:
+> > >
+> > http://www.freelists.org/post/windows_errors/what-error-messages-really-mean-WinXP-IO-Ports-Blocked-from-Bios-AML-on-Windows-XP
+> > > 
+> > > If just for ACPI TAD testing, we can remove the port protection
+> > check of
+> > > RTC ports in hwvalid.c. I have read 0x70/0x71 port success after
+> > removed
+> > > the checking in acpica/hwvalid.c.
+> > > 
+> > > I will try to write RTC port in AML after remove acpica check, maybe
+> > > have other unpredictable situation.
+> > > 
+> > 
+> > Now *THERE* is a good use of the "no RTC bit".  In the case that bit
+> > is
+> > set we should presumably remove these ports from the block list.
+> 
+> Thanks for your suggestion, I will put a testing patch on this.
+> 
+> > 
+> > Otherwise we should use the CMOS address space, not the I/O port
+> > address
+> > space.
+> > 
+> >         -hpa 
+> 
+> Unfortunately current acpica leaks the SystemCMOS handler:
+> 
+> ACPI Error: Region SystemCMOS (ID=5) has no handler (20131115/exfldio-299)
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5110-tables.c |   30 +++++++++++++++++++++++++++++-
- 1 files changed, 29 insertions(+), 1 deletions(-)
+This is not an ACPICA problem.  We have no CMOS address space handler in Linux
+and arguably there should be one.  So I'd suggest implementing that to start
+with or we risk conflicts between kernel code and AML accessing registers in
+that space.
 
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index 8dc49ec..24ec464 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -224,6 +224,31 @@ static const struct reg_default wm5110_revb_patch[] = {
- 	{ 0x80, 0x0 },
- };
- 
-+static const struct reg_default wm5110_revd_patch[] = {
-+	{ 0x80, 0x3 },
-+	{ 0x80, 0x3 },
-+	{ 0x393, 0x27 },
-+	{ 0x394, 0x27 },
-+	{ 0x395, 0x27 },
-+	{ 0x396, 0x27 },
-+	{ 0x397, 0x27 },
-+	{ 0x398, 0x26 },
-+	{ 0x221, 0x90 },
-+	{ 0x211, 0x8 },
-+	{ 0x36c, 0x1fb },
-+	{ 0x26e, 0x64 },
-+	{ 0x26f, 0xea },
-+	{ 0x270, 0x1f16 },
-+	{ 0x51b, 0x1 },
-+	{ 0x55b, 0x1 },
-+	{ 0x59b, 0x1 },
-+	{ 0x4f0, 0x633 },
-+	{ 0x441, 0xc059 },
-+	{ 0x209, 0x27 },
-+	{ 0x80, 0x0 },
-+	{ 0x80, 0x0 },
-+};
-+
- /* We use a function so we can use ARRAY_SIZE() */
- int wm5110_patch(struct arizona *arizona)
- {
-@@ -236,7 +261,10 @@ int wm5110_patch(struct arizona *arizona)
- 		return regmap_register_patch(arizona->regmap,
- 					     wm5110_revb_patch,
- 					     ARRAY_SIZE(wm5110_revb_patch));
--
-+	case 3:
-+		return regmap_register_patch(arizona->regmap,
-+					     wm5110_revd_patch,
-+					     ARRAY_SIZE(wm5110_revd_patch));
- 	default:
- 		return 0;
- 	}
+Thanks!
+
 -- 
-1.7.2.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
