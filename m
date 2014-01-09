@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532AbaAIUdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 15:33:41 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:35739 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089AbaAIUdc (ORCPT
+	id S1756943AbaAIUiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 15:38:18 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:41555 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704AbaAIUiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 15:33:32 -0500
+	Thu, 9 Jan 2014 15:38:07 -0500
+Date: Thu, 9 Jan 2014 21:37:09 +0100
+From: Tim Jester-Pfadt <t.jp@gmx.de>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Staging: rtl8188eu: checkpatch.pl error cleanups
+Message-ID: <cover.1389295303.git.t.jp@gmx.de>
 MIME-Version: 1.0
-In-Reply-To: <CADVnQy=Tk68y217cbw7O5apCJV+eOmKMqLNbgAZRa_cxUArdKg@mail.gmail.com>
-References: <20140109201157.28381.94057.stgit@viggo.jf.intel.com>
-	<20140109201642.28381.82141.stgit@viggo.jf.intel.com>
-	<CADVnQy=Tk68y217cbw7O5apCJV+eOmKMqLNbgAZRa_cxUArdKg@mail.gmail.com>
-Date: Thu, 9 Jan 2014 12:33:29 -0800
-Message-ID: <CAPcyv4hPnCud=MWpsCMNZmK_BwVV8WZHOs7=GQMhymgkv-gNkw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] net: make tcp_cleanup_rbuf private
-From: Dan Williams <dan.j.williams@intel.com>
-To: Neal Cardwell <ncardwell@google.com>
-Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Netdev <netdev@vger.kernel.org>, James Morris <jmorris@namei.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Patrick McHardy <kaber@trash.net>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 9, 2014 at 12:26 PM, Neal Cardwell <ncardwell@google.com> wrote:
-> On Thu, Jan 9, 2014 at 3:16 PM, Dan Williams <dan.j.williams@intel.com> wrote:
->> net_dma was the only external user so this can become local to tcp.c
->> again.
-> ...
->> -void tcp_cleanup_rbuf(struct sock *sk, int copied)
->> +static void cleanup_rbuf(struct sock *sk, int copied)
->
-> I would vote to keep the tcp_ prefix. In the TCP code base that is the
-> more common idiom, even for internal/static TCP functions, and
-> personally I find it easier to read and work with in stack traces,
-> etc. My 2 cents.
->
+This patchset fixes all occurrences of the "space required after ','"
+"space required around '='" aswell as "foo * bar" related checkpatch.pl errors in
+rtl8188eu.
 
-Ok.  It was cleanup_rbuf() in a former life, but one vote for leaving
-the name as is is enough for me.
+The patchset does not fix the remaining 80 character limit  warnings, since this might
+require more substantial code modifiction.
 
---
-Dan
+Tim Jester-Pfadt (2):
+  Staging: rtl8188eu: Fixed required spaces after ',' and around '=' and
+    '=='
+  Staging: rtl8188eu: Fixed "foo * bar" related coding style issues
+
+ drivers/staging/rtl8188eu/include/Hal8188EPwrSeq.h |  2 +-
+ drivers/staging/rtl8188eu/include/odm.h            |  2 +-
+ drivers/staging/rtl8188eu/include/odm_debug.h      |  2 +-
+ drivers/staging/rtl8188eu/include/odm_interface.h  |  2 +-
+ drivers/staging/rtl8188eu/include/osdep_service.h  | 24 +++++++--------
+ drivers/staging/rtl8188eu/include/rtl8188e_hal.h   |  4 +--
+ drivers/staging/rtl8188eu/include/rtl8188e_recv.h  |  6 ++--
+ drivers/staging/rtl8188eu/include/rtw_cmd.h        | 36 +++++++++++-----------
+ drivers/staging/rtl8188eu/include/rtw_eeprom.h     |  2 +-
+ drivers/staging/rtl8188eu/include/rtw_efuse.h      |  2 +-
+ drivers/staging/rtl8188eu/include/rtw_io.h         | 34 ++++++++++----------
+ drivers/staging/rtl8188eu/include/rtw_ioctl_set.h  |  4 +--
+ drivers/staging/rtl8188eu/include/rtw_iol.h        |  8 ++---
+ drivers/staging/rtl8188eu/include/rtw_led.h        |  6 ++--
+ drivers/staging/rtl8188eu/include/rtw_mlme.h       |  8 ++---
+ drivers/staging/rtl8188eu/include/rtw_mlme_ext.h   | 12 ++++----
+ drivers/staging/rtl8188eu/include/rtw_mp.h         | 10 +++---
+ drivers/staging/rtl8188eu/include/rtw_mp_ioctl.h   |  2 +-
+ drivers/staging/rtl8188eu/include/rtw_security.h   |  2 +-
+ drivers/staging/rtl8188eu/include/wifi.h           |  2 +-
+ 20 files changed, 85 insertions(+), 85 deletions(-)
+
+-- 
+1.8.5.2
+
