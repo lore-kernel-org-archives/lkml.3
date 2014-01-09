@@ -1,166 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776AbaAIXuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 18:50:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58365 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaAIXuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 18:50:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,634,1384329600"; 
-   d="scan'208,223";a="464404719"
-Date: Thu, 9 Jan 2014 15:50:45 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: walt <w41ter@gmail.com>, David Laight <David.Laight@ACULAB.COM>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within a
- USB payload burst
-Message-ID: <20140109235045.GA17660@xanatos>
+	id S1755514AbaAIXir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 18:38:47 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44217 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaAIXip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 18:38:45 -0500
+Date: Fri, 10 Jan 2014 00:38:43 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
+Message-ID: <20140109233843.GB19974@amd.pavel.ucw.cz>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <20140102161824.GA8204@amd.pavel.ucw.cz>
+ <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
+ <20140103001753.GA21023@amd.pavel.ucw.cz>
+ <20140103013640.GB27678@earth.universe>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="envbJBWh7q8WU6mo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D455431@AcuExch.aculab.com>
- <52CCA94D.5090700@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140103013640.GB27678@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Here are some cleanup suggestions for probe, removal & module
+> initialization functions.
 
-[Walt, please use reply-all to keep the list in the loop, thanks.]
+...and here's the patch implementing those suggestions. Thanks!
 
-On Wed, Jan 08, 2014 at 04:09:14PM +0000, David Laight wrote:
-> > From: Sarah Sharp
-> > On Tue, Jan 07, 2014 at 03:57:00PM -0800, walt wrote:
-> > > On 01/07/2014 01:21 PM, Sarah Sharp wrote:
-> > >
-> > > > Can you please try the attached patch, on top of the previous three
-> > > > patches, and send me dmesg?
-> > >
-> > > Hi Sarah, I just now finished running 0001-More-debugging.patch for the
-> > > first time.  The previous dmesg didn't include that patch, but this one
-> > > does.
-> > >
-> > > I read through this dmesg but I nodded off somewhere around line 500.
-> > > I hope you can stay awake :)
-> > 
-> > Well, it has all the info I need, but the results don't make me too
-> > happy.  Everything I've checked seems consistent, and I don't know why
-> > the host stopped.  The link TRBs are intact, the dequeue pointer for the
-> > endpoint was pointing to the transfer that timed out and it had the
-> > cycle bit set correctly, etc.  Perhaps the no-op TRBs are really the
-> > issue.
-> > 
-> > I'll have to take a look at the log again tomorrow.  I posted the dmesg
-> > on pastebin if David wants to check it out as well:
-> > http://pastebin.com/a4AUpsL1
-> 
-> I can't see anything obvious either.
-> However there is no response to the 'stop endpoint' command.
-> Section 4.6.9 (page 107 of rev1.0) states that the controller will complete
-> any USB IN or OUT transaction before raising the command completion event.
-> Possibly it is too 'stuck' to complete the transaction?
+Reported-by: Sebastian Reichel <sre@ring0.de>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-The host has to stop processing the transaction, it can't "wait" for the
-transaction to finish.  "The Stop Endpoint Command is expected to stop
-endpoint activity as soon as possible, which may mean that it stops in
-the middle of a TRB."
-
-Usually when hosts get into this kind of mode, something has seriously
-gone wrong, like bus error when it issues a bad memory access.
-
-> The endpoint status is also still '1' (running).
-> This also means that the 'TR dequeue pointer' is undefined - so the
-> controller could easily be processing a later TRB.
-> This field might even still contain the ring base address written by
-> the driver much earlier.
-> 
-> This might mean that something 'catastrophic' has happened earlier.
-> Maybe the controller isn't actually seeing any doorbell writes at all.
-> Maybe the base addresses it has for the rings have all got corrupted.
-> At least this looks like amd64 - so there aren't memory coherency issues.
-> 
-> Some hacks that might help isolate the problem:
-> 1) Request an interrupt from the last nop data TRB.
-> 2) Put a command nop (decimal 23) TRB into the command ring before
->    the 'stop endpoint'.
-> 3) Comment out the code that adds the nop data TRBs.
-> The first two might need code adding to handle the responses.
-> 
-> Do we know the actual xhci device?
-> I think it reports version 0x96.
-> (Sarah - it might be useful if that version were in one of the trace
-> messages that is output by default.)
-
-You mean print the PCI device and vendor ID?  Perhaps Subsystem vendor
-as well?
-
-On Tue, Jan 07, 2014 at 05:26:37PM -0800, walt wrote:
-> On 01/07/2014 04:47 PM, Sarah Sharp wrote:
->  
-> > Can you send me the output of `sudo lspci -vvv -n`?  Maybe we can just
-> > turn off scatter-gather for your host controller until we get a proper
-> > fix in that uses link TRBs instead of no-op TRBs.
-> 
-> The aftermarket usb3 adapter card and the usb3 outboard hard-drive docking
-> station are the only two usb3 devices I have.
-> 
-> I've wondered if my xhci problems might be caused by hardware quirks, and
-> wondering why I seem to be the only one who has this problem.
-> 
-> Maybe I could "take one for the team" by buying new hardware toys that I
-> don't really need but I could use to test the xhci driver?  (I do enjoy
-> buying new toys, necessary, or, um, maybe not :)
-
-It would be appreciated if you could see if your device causes other
-host controllers to fail.  Who am I to keep a geek from new toys? ;)
-
-In the meantime, try this patch, which is something of a long shot.
-
-Sarah Sharp
-
---envbJBWh7q8WU6mo
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-xhci-Enable-Link-TRB-quirk-for-0.96-ASMedia-host.patch"
-
->From 19e2ab85ac2cc0d84f56247dcf29bdce14bd70d5 Mon Sep 17 00:00:00 2001
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Date: Thu, 9 Jan 2014 15:46:04 -0800
-Subject: [PATCH] xhci: Enable Link TRB quirk for 0.96 ASMedia host.
-
-A recent bug fix commit causes an ASMedia host to stop responding to
-commands.  See if it needs the link TRB quirk.  This was generally only
-necessary for 0.95 hosts, but maybe this 0.96 host needs it.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
----
- drivers/usb/host/xhci-pci.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 3c898c12a06b..8196ac2289e4 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -92,6 +92,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
+index 5c7acad..d69362d 100644
+--- a/drivers/bluetooth/nokia_core.c
++++ b/drivers/bluetooth/nokia_core.c
+@@ -39,6 +39,7 @@
+ #include <linux/gpio.h>
+ #include <linux/timer.h>
+ #include <linux/kthread.h>
++#include <linux/io.h>
+ 
+ #include <net/bluetooth/bluetooth.h>
+ #include <net/bluetooth/hci_core.h>
+@@ -1079,7 +1080,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 	int err;
+ 
+ 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
+-	info = kzalloc(sizeof(struct hci_h4p_info), GFP_KERNEL);
++	info = devm_kzalloc(&pdev->dev, sizeof(struct hci_h4p_info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+@@ -1092,7 +1093,6 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 
+ 	if (pdev->dev.platform_data == NULL) {
+ 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
+-		kfree(info);
+ 		return -ENODATA;
  	}
  
-+	if (pdev->vendor == PCI_VENDOR_ID_ASMEDIA && pdev->device == 1042)
-+		xhci->quirks |= XHCI_LINK_TRB_QUIRK;
- 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
- 		xhci->quirks |= XHCI_NEC_HOST;
+@@ -1113,67 +1113,59 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 	complete_all(&info->test_completion);
  
+ 	if (!info->reset_gpio_shared) {
+-		err = gpio_request(info->reset_gpio, "bt_reset");
++		err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
++					    GPIOF_OUT_INIT_LOW, "bt_reset");
+ 		if (err < 0) {
+ 			dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
+ 				info->reset_gpio);
+-			goto cleanup_setup;
++			return err;
+ 		}
+ 	}
+ 
+-	err = gpio_request(info->bt_wakeup_gpio, "bt_wakeup");
++	err = devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
++				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
++
+ 	if (err < 0) {
+ 		dev_err(info->dev, "Cannot get GPIO line 0x%d",
+ 			info->bt_wakeup_gpio);
+-		if (!info->reset_gpio_shared)
+-			gpio_free(info->reset_gpio);
+-		goto cleanup_setup;
++		return err;
+ 	}
+ 
+-	err = gpio_request(info->host_wakeup_gpio, "host_wakeup");
++	err = devm_gpio_request_one(&pdev->dev, info->host_wakeup_gpio,
++				    GPIOF_DIR_IN, "host_wakeup");
+ 	if (err < 0) {
+ 		dev_err(info->dev, "Cannot get GPIO line %d",
+ 		       info->host_wakeup_gpio);
+-		if (!info->reset_gpio_shared)
+-			gpio_free(info->reset_gpio);
+-		gpio_free(info->bt_wakeup_gpio);
+-		goto cleanup_setup;
++		return err;
+ 	}
+ 
+-	gpio_direction_output(info->reset_gpio, 0);
+-	gpio_direction_output(info->bt_wakeup_gpio, 0);
+-	gpio_direction_input(info->host_wakeup_gpio);
+-
+ 	info->irq = bt_plat_data->uart_irq;
+-	info->uart_base = ioremap(bt_plat_data->uart_base, SZ_2K);
+-	info->uart_iclk = clk_get(NULL, bt_plat_data->uart_iclk);
+-	info->uart_fclk = clk_get(NULL, bt_plat_data->uart_fclk);
++	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base, SZ_2K);
++	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
++	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
+ 
+ 	err = request_irq(info->irq, hci_h4p_interrupt, IRQF_DISABLED, "hci_h4p",
+ 			  info);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "hci_h4p: unable to get IRQ %d\n", info->irq);
+-		goto cleanup;
++		return err;
+ 	}
+ 
+-	err = request_irq(gpio_to_irq(info->host_wakeup_gpio),
++	err = devm_request_irq(&pdev->dev, gpio_to_irq(info->host_wakeup_gpio),
+ 			  hci_h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
+ 			  IRQF_TRIGGER_RISING | IRQF_DISABLED,
+ 			  "hci_h4p_wkup", info);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "hci_h4p: unable to get wakeup IRQ %d\n",
+ 			  gpio_to_irq(info->host_wakeup_gpio));
+-		free_irq(info->irq, info);
+-		goto cleanup;
++		return err;
+ 	}
+ 
+ 	err = irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "hci_h4p: unable to set wakeup for IRQ %d\n",
+ 				gpio_to_irq(info->host_wakeup_gpio));
+-		free_irq(info->irq, info);
+-		free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+-		goto cleanup;
++		return err;
+ 	}
+ 
+ 	init_timer_deferrable(&info->lazy_release);
+@@ -1182,7 +1174,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
+ 	err = hci_h4p_reset_uart(info);
+ 	if (err < 0)
+-		goto cleanup_irq;
++		return err;
+ 	gpio_set_value(info->reset_gpio, 0);
+ 	hci_h4p_set_clk(info, &info->tx_clocks_en, 0);
+ 
+@@ -1190,23 +1182,10 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 
+ 	if (hci_h4p_register_hdev(info) < 0) {
+ 		dev_err(info->dev, "failed to register hci_h4p hci device\n");
+-		goto cleanup_irq;
++		return -EINVAL;
+ 	}
+ 
+ 	return 0;
+-
+-cleanup_irq:
+-	free_irq(info->irq, (void *)info);
+-	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+-cleanup:
+-	gpio_set_value(info->reset_gpio, 0);
+-	if (!info->reset_gpio_shared)
+-		gpio_free(info->reset_gpio);
+-	gpio_free(info->bt_wakeup_gpio);
+-	gpio_free(info->host_wakeup_gpio);
+-cleanup_setup:
+-	kfree(info);
+-	return err;
+ }
+ 
+ static int hci_h4p_remove(struct platform_device *pdev)
+@@ -1238,25 +1217,7 @@ static struct platform_driver hci_h4p_driver = {
+ 	},
+ };
+ 
+-static int __init hci_h4p_init(void)
+-{
+-	int err = 0;
+-
+-	/* Register the driver with LDM */
+-	err = platform_driver_register(&hci_h4p_driver);
+-	if (err < 0)
+-		printk(KERN_WARNING "failed to register hci_h4p driver\n");
+-
+-	return err;
+-}
+-
+-static void __exit hci_h4p_exit(void)
+-{
+-	platform_driver_unregister(&hci_h4p_driver);
+-}
+-
+-module_init(hci_h4p_init);
+-module_exit(hci_h4p_exit);
++module_platform_driver(hci_h4p_driver);
+ 
+ MODULE_ALIAS("platform:hci_h4p");
+ MODULE_DESCRIPTION("Bluetooth h4 driver with nokia extensions");
+
+
+
 -- 
-1.8.5.2
-
-
---envbJBWh7q8WU6mo--
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
