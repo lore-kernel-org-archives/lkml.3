@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbaAILFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:05:20 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43081 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753290AbaAILFL (ORCPT
+	id S1753990AbaAILFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:05:42 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56849 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaAILF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:05:11 -0500
-Date: Thu, 9 Jan 2014 11:04:40 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Neil Leeder <nleeder@codeaurora.org>,
-        Ashwin Chaugule <ashwinc@codeaurora.org>
-Subject: Re: [PATCH 3/7] ARM: perf_event: Add basic support for Krait CPU PMUs
-Message-ID: <20140109110440.GC17838@mudshark.cambridge.arm.com>
-References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
- <1389221984-10973-4-git-send-email-sboyd@codeaurora.org>
+	Thu, 9 Jan 2014 06:05:29 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roger Quadros <rogerq@ti.com>
+Subject: Re: [PATCH v4 0/3] ata: ahci_platform: Add PHY support and OMAP support
+Date: Thu, 9 Jan 2014 12:05:24 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: tj@kernel.org, sergei.shtylyov@cogentembedded.com, kishon@ti.com,
+        b.zolnierkie@samsung.com, hdegoede@redhat.com,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+References: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1389264962-22858-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389221984-10973-4-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401091205.24818.arnd@arndb.de>
+X-Provags-ID: V02:K0:K8HXdbjPdf6ZBFBplb1mr6POBe1fw88P161WEGzVJic
+ kGXERazh7EM9YVaeeFepN4SrBiMV7cznYqjtcC5F4GKwszejdf
+ quFDHh+kZqY0Cloz/gBROLRqno2fiGl2DyqvtUMENRkB7z9iaB
+ CZJHDx2G7rbpHP+oq4rs91VRoZbsDruwmww1kPwfvBkpPIz8fs
+ 7nxpvjfYg5DQDzBO5P4MjGX9RRwDrF8Y3ip0TABCUiZp/anG+x
+ j8XybOuFFXkYtPg/bwpWAbFxft/By40Pgopy99grR2HU6pwgHv
+ eK+44pp3m/GO/+thcsvgoo9r83wCljSZWh++f4Q9YBCEuT5o1v
+ EQaEZk/EWo9aAU1rVmj8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 10:59:40PM +0000, Stephen Boyd wrote:
-> Add basic support for the Krait CPU PMU. This allows us to use
-> the architected functionality of the PMU.
+On Thursday 09 January 2014, Roger Quadros wrote:
+> Hi,
 > 
-> This is based on code originally written by Ashwin Chaugule and
-> Neil Leeder [1].
+> Some platforms have a PHY hooked up to the SATA controller.
+> The PHY needs to be initialized and powered up for SATA to work.
+> We do that using the Generic PHY framework in PATCH 2.
 > 
-> [1] https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/arch/arm/kernel/perf_event_msm_krait.c?h=msm-3.4
+> In order to support SATA on the OMAP platforms we need to runtime
+> resume the device before use. PATCH 3 takes care of that.
 > 
-> Cc: Neil Leeder <nleeder@codeaurora.org>
-> Cc: Ashwin Chaugule <ashwinc@codeaurora.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/kernel/perf_event_cpu.c |   1 +
->  arch/arm/kernel/perf_event_v7.c  | 165 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 166 insertions(+)
+> PATCH 1 just updates the compatible list in the DT binding document.
+> 
 
-[...]
-
-> +static int krait_pmu_init(struct arm_pmu *cpu_pmu)
-> +{
-> +	u32 id = read_cpuid_id() & 0xffffff00;
-> +
-> +	armv7pmu_init(cpu_pmu);
-> +	cpu_pmu->name		= "ARMv7 Krait";
-> +	/* Some early versions of Krait don't support PC write events */
-> +	if (id == 0x511f0400 || id == 0x510f0600)
-> +		cpu_pmu->map_event	= krait_map_event_no_branch;
-
-Hmm, I'd really rather this information came via the DT. In fact, you could
-just drop the branch event from your main map_event_function and keep things
-simple. It depends how badly you want to advertise it in perf list :)
-
-Will
+Acked-by: Arnd Bergmann <arnd@arndb.de>
