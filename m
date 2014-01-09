@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaAIOBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:01:41 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:35559 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753199AbaAIOBT (ORCPT
+	id S1755097AbaAIOCC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:02:02 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:53224 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142AbaAIOBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:01:19 -0500
+	Thu, 9 Jan 2014 09:01:25 -0500
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>
 Cc: Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 3/8] tools include: Move perf's bug.h to a generic place
-Date: Thu,  9 Jan 2014 23:00:54 +0900
-Message-Id: <1389276059-8829-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/8] tools lib traceevent: Add state member to struct trace_seq
+Date: Thu,  9 Jan 2014 23:00:56 +0900
+Message-Id: <1389276059-8829-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1389276059-8829-1-git-send-email-namhyung@kernel.org>
 References: <1389276059-8829-1-git-send-email-namhyung@kernel.org>
@@ -23,87 +23,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that it can be shared with others like libtraceevent.
+The trace_seq->state is for tracking errors during the use of
+trace_seq APIs and getting rid of die() in it.
 
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/include/asm/bug.h           |   23 +++++++++++++++++++++++
- tools/perf/Makefile.perf          |    2 +-
- tools/perf/util/include/asm/bug.h |   22 ----------------------
- 3 files changed, 24 insertions(+), 23 deletions(-)
- create mode 100644 tools/include/asm/bug.h
- delete mode 100644 tools/perf/util/include/asm/bug.h
+ tools/lib/traceevent/Makefile      |    2 +-
+ tools/lib/traceevent/event-parse.h |    7 ++++++
+ tools/lib/traceevent/trace-seq.c   |   46 ++++++++++++++++++++++++++++++++----
+ 3 files changed, 49 insertions(+), 6 deletions(-)
 
-diff --git a/tools/include/asm/bug.h b/tools/include/asm/bug.h
-new file mode 100644
-index 000000000000..eca78df7b8f2
---- /dev/null
-+++ b/tools/include/asm/bug.h
-@@ -0,0 +1,23 @@
-+#ifndef _TOOLS_ASM_BUG_H
-+#define _TOOLS_ASM_BUG_H
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index f778d48ac609..56d52a33a3df 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -136,7 +136,7 @@ export Q VERBOSE
+ 
+ EVENT_PARSE_VERSION = $(EP_VERSION).$(EP_PATCHLEVEL).$(EP_EXTRAVERSION)
+ 
+-INCLUDES = -I. $(CONFIG_INCLUDES)
++INCLUDES = -I. -I $(srctree)/../../include $(CONFIG_INCLUDES)
+ 
+ # Set compile option CFLAGS if not set elsewhere
+ CFLAGS ?= -g -Wall
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index cf5db9013f2c..3c890cb28db7 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -58,6 +58,12 @@ struct pevent_record {
+ #endif
+ };
+ 
++enum trace_seq_fail {
++	TRACE_SEQ__GOOD,
++	TRACE_SEQ__BUFFER_POISONED,
++	TRACE_SEQ__MEM_ALLOC_FAILED,
++};
 +
-+#define __WARN_printf(arg...)	do { fprintf(stderr, arg); } while (0)
+ /*
+  * Trace sequences are used to allow a function to call several other functions
+  * to create a string of data to use (up to a max of PAGE_SIZE).
+@@ -68,6 +74,7 @@ struct trace_seq {
+ 	unsigned int		buffer_size;
+ 	unsigned int		len;
+ 	unsigned int		readpos;
++	enum trace_seq_fail	state;
+ };
+ 
+ void trace_seq_init(struct trace_seq *s);
+diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+index d7f2e68bc5b9..7f24e8989401 100644
+--- a/tools/lib/traceevent/trace-seq.c
++++ b/tools/lib/traceevent/trace-seq.c
+@@ -22,6 +22,7 @@
+ #include <string.h>
+ #include <stdarg.h>
+ 
++#include <asm/bug.h>
+ #include "event-parse.h"
+ #include "event-utils.h"
+ 
+@@ -32,8 +33,9 @@
+ #define TRACE_SEQ_POISON	((void *)0xdeadbeef)
+ #define TRACE_SEQ_CHECK(s)						\
+ do {									\
+-	if ((s)->buffer == TRACE_SEQ_POISON)			\
+-		die("Usage of trace_seq after it was destroyed");	\
++	if (WARN_ONCE((s)->buffer == TRACE_SEQ_POISON,			\
++		      "Usage of trace_seq after it was destroyed"))	\
++		(s)->state = TRACE_SEQ__BUFFER_POISONED;		\
+ } while (0)
+ 
+ /**
+@@ -46,6 +48,7 @@ void trace_seq_init(struct trace_seq *s)
+ 	s->readpos = 0;
+ 	s->buffer_size = TRACE_SEQ_BUF_SIZE;
+ 	s->buffer = malloc_or_die(s->buffer_size);
++	s->state = TRACE_SEQ__GOOD;
+ }
+ 
+ /**
+@@ -80,8 +83,9 @@ static void expand_buffer(struct trace_seq *s)
+ {
+ 	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+ 	s->buffer = realloc(s->buffer, s->buffer_size);
+-	if (!s->buffer)
+-		die("Can't allocate trace_seq buffer memory");
++	if (WARN_ONCE(!s->buffer,
++		      "Can't allocate trace_seq buffer memory"))
++		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
+ }
+ 
+ /**
+@@ -108,6 +112,9 @@ trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+ 	TRACE_SEQ_CHECK(s);
+ 
+  try_again:
++	if (s->state != TRACE_SEQ__GOOD)
++		return 0;
 +
-+#define WARN(condition, format...) ({		\
-+	int __ret_warn_on = !!(condition);	\
-+	if (unlikely(__ret_warn_on))		\
-+		__WARN_printf(format);		\
-+	unlikely(__ret_warn_on);		\
-+})
+ 	len = (s->buffer_size - 1) - s->len;
+ 
+ 	va_start(ap, fmt);
+@@ -144,6 +151,9 @@ trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
+ 	TRACE_SEQ_CHECK(s);
+ 
+  try_again:
++	if (s->state != TRACE_SEQ__GOOD)
++		return 0;
 +
-+#define WARN_ONCE(condition, format...)	({	\
-+	static int __warned;			\
-+	int __ret_warn_once = !!(condition);	\
-+						\
-+	if (unlikely(__ret_warn_once))		\
-+		if (WARN(!__warned, format)) 	\
-+			__warned = 1;		\
-+	unlikely(__ret_warn_once);		\
-+})
+ 	len = (s->buffer_size - 1) - s->len;
+ 
+ 	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
+@@ -174,11 +184,17 @@ int trace_seq_puts(struct trace_seq *s, const char *str)
+ 
+ 	TRACE_SEQ_CHECK(s);
+ 
++	if (s->state != TRACE_SEQ__GOOD)
++		return 0;
 +
-+#endif /* _TOOLS_ASM_BUG_H */
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 6be06767da7b..87d7726cee2d 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -226,7 +226,7 @@ LIB_H += util/include/linux/string.h
- LIB_H += util/include/linux/types.h
- LIB_H += util/include/linux/linkage.h
- LIB_H += util/include/asm/asm-offsets.h
--LIB_H += util/include/asm/bug.h
-+LIB_H += ../include/asm/bug.h
- LIB_H += util/include/asm/byteorder.h
- LIB_H += util/include/asm/hweight.h
- LIB_H += util/include/asm/swab.h
-diff --git a/tools/perf/util/include/asm/bug.h b/tools/perf/util/include/asm/bug.h
-deleted file mode 100644
-index 7fcc6810adc2..000000000000
---- a/tools/perf/util/include/asm/bug.h
-+++ /dev/null
-@@ -1,22 +0,0 @@
--#ifndef _PERF_ASM_GENERIC_BUG_H
--#define _PERF_ASM_GENERIC_BUG_H
--
--#define __WARN_printf(arg...)	do { fprintf(stderr, arg); } while (0)
--
--#define WARN(condition, format...) ({		\
--	int __ret_warn_on = !!(condition);	\
--	if (unlikely(__ret_warn_on))		\
--		__WARN_printf(format);		\
--	unlikely(__ret_warn_on);		\
--})
--
--#define WARN_ONCE(condition, format...)	({	\
--	static int __warned;			\
--	int __ret_warn_once = !!(condition);	\
--						\
--	if (unlikely(__ret_warn_once))		\
--		if (WARN(!__warned, format)) 	\
--			__warned = 1;		\
--	unlikely(__ret_warn_once);		\
--})
--#endif
+ 	len = strlen(str);
+ 
+ 	while (len > ((s->buffer_size - 1) - s->len))
+ 		expand_buffer(s);
+ 
++	if (s->state != TRACE_SEQ__GOOD)
++		return 0;
++
+ 	memcpy(s->buffer + s->len, str, len);
+ 	s->len += len;
+ 
+@@ -189,9 +205,15 @@ int trace_seq_putc(struct trace_seq *s, unsigned char c)
+ {
+ 	TRACE_SEQ_CHECK(s);
+ 
++	if (s->state != TRACE_SEQ__GOOD)
++		return 0;
++
+ 	while (s->len >= (s->buffer_size - 1))
+ 		expand_buffer(s);
+ 
++	if (s->state != TRACE_SEQ__GOOD)
++		return 0;
++
+ 	s->buffer[s->len++] = c;
+ 
+ 	return 1;
+@@ -201,6 +223,9 @@ void trace_seq_terminate(struct trace_seq *s)
+ {
+ 	TRACE_SEQ_CHECK(s);
+ 
++	if (s->state != TRACE_SEQ__GOOD)
++		return;
++
+ 	/* There's always one character left on the buffer */
+ 	s->buffer[s->len] = 0;
+ }
+@@ -208,5 +233,16 @@ void trace_seq_terminate(struct trace_seq *s)
+ int trace_seq_do_printf(struct trace_seq *s)
+ {
+ 	TRACE_SEQ_CHECK(s);
+-	return printf("%.*s", s->len, s->buffer);
++
++	switch (s->state) {
++	case TRACE_SEQ__GOOD:
++		return printf("%.*s", s->len, s->buffer);
++	case TRACE_SEQ__BUFFER_POISONED:
++		puts("Usage of trace_seq after it was destroyed");
++		break;
++	case TRACE_SEQ__MEM_ALLOC_FAILED:
++		puts("Can't allocate trace_seq buffer memory");
++		break;
++	}
++	return -1;
+ }
 -- 
 1.7.9.2
 
