@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaAIKqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:46:24 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:53702 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaAIKqL (ORCPT
+	id S1752153AbaAIKuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:50:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42778 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750766AbaAIKuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:46:11 -0500
-X-Auth-Info: IZhMQdR0LJVspQW61qUwLYXlGUgc0hHctULZEZQb07o=
-Date: Thu, 9 Jan 2014 11:46:04 +0100
-From: Gerhard Sittig <gsi@denx.de>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: linus.walleij@linaro.org, gnurou@gmail.com, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpio: pxa: fix bug when get gpio value
-Message-ID: <20140109104604.GT20094@book.gsilab.sittig.org>
-References: <1389259557-1731-1-git-send-email-zhangwm@marvell.com>
+	Thu, 9 Jan 2014 05:50:14 -0500
+Date: Thu, 9 Jan 2014 10:49:43 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/7] ARM: perf_event: Support percpu irqs for the CPU PMU
+Message-ID: <20140109104943.GB17838@mudshark.cambridge.arm.com>
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
+ <1389221984-10973-3-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389259557-1731-1-git-send-email-zhangwm@marvell.com>
-Organization: DENX Software Engineering GmbH
+In-Reply-To: <1389221984-10973-3-git-send-email-sboyd@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 17:25 +0800, Neil Zhang wrote:
+Hello,
+
+On Wed, Jan 08, 2014 at 10:59:39PM +0000, Stephen Boyd wrote:
+> Some CPU PMUs are wired up with one PPI for all the CPUs instead
+> of with a different SPI for each CPU. Add support for these
+> devices.
 > 
-> gpio_get_value should return 0 or 1.
-> 
-> I have checked mach-mmp / mach-pxa / plat-pxa / plat-orion / mach-orion5x.
-> It's OK for all of them to change this function to return 0 and 1.
-> 
-> [ ... ]
->  
->  static int pxa_gpio_get(struct gpio_chip *chip, unsigned offset)
->  {
-> -	return readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET) & (1 << offset);
-> +	u32 gplr = readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET);
-> +	return !!(gplr & (1 << offset));
->  }
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/kernel/perf_event_cpu.c | 107 +++++++++++++++++++++++++++++----------
+>  1 file changed, 79 insertions(+), 28 deletions(-)
 
-This may be a stupid question, but isn't the "!!value" syntax
-just replacing one kind of "zero or non-zero" with another kind
-of "zero or non-zero"?  This phrase is used to normalize
-booleans, but ISTR there is no guarantee that true needs to equal
-the value of 1.
+[...]
 
-Here is why I'm asking:  Is there a need from GPIO get_value()
-routines to return normalized values, and if so should not more
-drivers receive an update?  Or need get_value() routines just
-return the usual integer zero/non-zero values (as is the
-convention in the C programming language) and GPIO using callers
-should know that they are not exactly 0 and 1?
+> +static irq_handler_t cpu_handler;
+> +
+> +static irqreturn_t cpu_pmu_dispatch_irq(int irq, void *dev)
+> +{
+> +	struct arm_pmu *arm_pmu = *(struct arm_pmu **)dev;
+> +	return cpu_handler(irq, arm_pmu);
+> +}
 
-The latter would make this change for PXA unneeded (nice to have
-but not essential), and both the commit message as well as the
-subject line at least need to get re-phrased, as the "bug" is in
-the caller's expectation and not in the GPIO chip driver.
+I don't like this bit -- having a global cpu_handler field is going to
+interfere with the big.LITTLE work and casting the per-cpu dev token is also
+pretty hacky.
 
-Please note that I'm not questioning the patches' being
-applicable, but am trying to find out what else needs to be done
-which previously may have gone unnoticed.  A doc update maybe, to
-make GPIO users aware that the return value may not be exactly 1,
-and to clear up where such an assumption is wrongly made.
+However, you're forced down this route by the need to invoke the armpmu IRQ
+dispatcher. Now, that only exists as a workaround for the braindead
+interrupt routing on the u8500 (they OR'd all the PMU SPIs together) -- it's
+not a problem that will affect a system using PPIs. If you look, there is
+only one use of the thing in: arch/arm/mach-ux500/cpu-db8500.c.
 
-If the GPIO subsystem's API wants to guarantee values of 0 and 1
-(which I think it doesn't), then I feel the adjustment should be
-done in the gpio_get_value() routines (in all its public
-variants, or a common routine which all of them pass through),
-and certainly not in individual chip drivers.
+So, we could rename that callback to make it clear that it's not so much an
+IRQ handler wrapper as a specific hack to deal with broken SPIs. Then the
+cpu_pmu code can neglect to make the callback if it's using PPI.
 
+What do you think?
 
-virtually yours
-Gerhard Sittig
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+Will
