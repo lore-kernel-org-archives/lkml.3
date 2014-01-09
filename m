@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaAIKHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:07:07 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:46699 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752316AbaAIKG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:06:57 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst
-Thread-Index: AQHPBmhf5d97FnYUxUSD3GhphkgfRJpx0RcAgAFWX4CAAEcRgIAAGCMAgAAj0ICAB/sxgIAAkUsQ
-Date: Thu, 9 Jan 2014 10:05:11 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D455F92@AcuExch.aculab.com>
-References: <20131218211219.461663463@linuxfoundation.org>
- <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com>
- <20140102191510.GA9621@xanatos> <52C6D9F1.9000709@gmail.com>
- <20140103195455.GA4193@xanatos> <52C729CE.9050307@gmail.com>
- <20140103232929.GD4193@xanatos> <52CDF9CD.8010402@gmail.com>
-In-Reply-To: <52CDF9CD.8010402@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752610AbaAIKHX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:07:23 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58961 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556AbaAIKHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 05:07:03 -0500
+From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: mark.rutland@arm.com, jg1.han@samsung.com, b.zolnierkie@samsung.com,
+        joshi@samsung.com, t.figa@samsung.com, swarren@wwwdotorg.org,
+        rob.herring@calxeda.com, grant.likely@linaro.org,
+        christoffer.dall@linaro.org, linux-ide@vger.kernel.org,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: [PATCH V5 0/2] Exynos5250 SATA Support
+Date: Thu,  9 Jan 2014 15:36:43 +0530
+Message-Id: <1389262005-30399-1-git-send-email-yuvaraj.cd@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s09A7BKs000474
 
-> From: walt
-...
-> I'm still wondering if I'm suffering from hardware quirks.  From the
-> first day I installed my usb3 adapter card and the usb3 disk docking
-> station I've noticed some quirky behavior.
+This patch series enable the SATA support on Exynos5250 based boards.
+It incorporates the generic phy framework to deal with sata phy.
 
-Ah - this isn't an 'on chip' usb3 adapter.
-Some kind of PCIe card ?
+This patch depends on the below patches
+	[1]. drivers: phy: add generic PHY framework
+		by Kishon Vijay Abraham I<kishon@ti.com>
+	[2]. ata: ahci_platform: Manage SATA PHY
+		by Roger Quadros <rogerq@ti.com>
+	[3].ARM: dts: Add pmu sysreg node to exynos5250 and
+		exynos5420 dtsi files
+		by Leela Krishna Amudala <l.krishna@samsung.com>
+	[4]. i2c: s3c2410 : Add polling mode support
+		by Vasanth Ananthan <vasanth.a@samsung.com>
 
-> e.g. I boot the machine with the docking station powered-off, and then
-> later I power it on, the usb3 disk is not detected at all -- until I
-> reboot the machine with the docking station still powered on.
+Changes from V4:
+	1.Made Exynos5250 SATA PHY driver by default selects
+	CONFIG_I2C and CONFIG_I2C_S3C2410, as SATA PHY driver
+	depends on I2C.
+	2.Used the new phandle "sata_phy_i2c" in the DT entry. 
+	3.struct i2c_driver sataphy_i2c_driver made static which
+	was earlier global type. 
 
-That will be something completely different to failures when running.
+Changes from V3:
+	1.Moved the devicetree binding documentation
+	from /bindings/ata/ to bindings/phy/ .
+	2.Moved devm_phy_create call before to 
+	the devm_phy_provider_register. 
 
-	David
+Changes from V2:
+	1.Removed of_match_table
+	2.Moved to syscon interface for PMU handling.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Changes from V1:
+	1. Dropped the patch 
+	ahci: exynos: add ahci sata support on Exynos platform
+
+	2.Adapt to latest generic PHY framework available in 
+	git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git next
+
+Yuvaraj Kumar C D (2):
+  PHY: Exynos: Add Exynos5250 SATA PHY driver
+  ARM: dts: Enable ahci sata and sata phy
+
+ .../devicetree/bindings/ata/exynos-sata-phy.txt    |   14 --
+ .../devicetree/bindings/ata/exynos-sata.txt        |   25 +-
+ .../devicetree/bindings/phy/samsung-phy.txt        |   36 +++
+ arch/arm/boot/dts/exynos5250-arndale.dts           |   11 +
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |   17 +-
+ drivers/phy/Kconfig                                |   13 ++
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-exynos5250-sata-i2c.c              |   40 ++++
+ drivers/phy/phy-exynos5250-sata.c                  |  238 ++++++++++++++++++++
+ 10 files changed, 370 insertions(+), 33 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+ create mode 100644 drivers/phy/phy-exynos5250-sata-i2c.c
+ create mode 100644 drivers/phy/phy-exynos5250-sata.c
+
+-- 
+1.7.9.5
+
