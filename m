@@ -1,98 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557AbaAIXtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 18:49:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33998 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaAIXtm (ORCPT
+	id S1754911AbaAIXps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 18:45:48 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46954 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334AbaAIXpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 18:49:42 -0500
-Date: Thu, 9 Jan 2014 15:49:12 -0800
-From: tip-bot for Steven Rostedt <tipbot@zytor.com>
-Message-ID: <tip-1739f09e33d8f66bf48ddbc3eca615574da6c4f6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20131113152004.459787f9@gandalf.local.home>
-References: <20131113152004.459787f9@gandalf.local.home>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] ftrace/x86:
-  Load ftrace_ops in parameter not the variable holding it
-Git-Commit-ID: 1739f09e33d8f66bf48ddbc3eca615574da6c4f6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 9 Jan 2014 18:45:46 -0500
+Date: Thu, 9 Jan 2014 15:45:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
+        Eric Paris <eparis@parisplace.org>, stable <stable@vger.kernel.org>,
+        Paul Moore <paul@paul-moore.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
+ inode_permission()
+Message-ID: <20140109234537.GR10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140109162731.12500986@gandalf.local.home>
+ <20140109214239.GD29910@parisc-linux.org>
+ <20140109165012.391db81e@gandalf.local.home>
+ <20140109223127.GM10323@ZenIV.linux.org.uk>
+ <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+ <20140109182523.5b50131f@gandalf.local.home>
+ <20140109182756.17abaaa8@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Thu, 09 Jan 2014 15:49:19 -0800 (PST)
+In-Reply-To: <20140109182756.17abaaa8@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14010923-8236-0000-0000-000005E00297
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1739f09e33d8f66bf48ddbc3eca615574da6c4f6
-Gitweb:     http://git.kernel.org/tip/1739f09e33d8f66bf48ddbc3eca615574da6c4f6
-Author:     Steven Rostedt <rostedt@goodmis.org>
-AuthorDate: Wed, 13 Nov 2013 15:20:04 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 9 Jan 2014 13:24:29 -0800
+On Thu, Jan 09, 2014 at 06:27:56PM -0500, Steven Rostedt wrote:
+> On Thu, 9 Jan 2014 18:25:23 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > On Fri, 10 Jan 2014 06:41:03 +0800
+> > Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > 
+> > > I think the sane short term fix is to make the kfree() of the i_security
+> > > member be a rcu free, and not clear the member.
+> > 
+> > You mean my first patch?
+> > 
+> > https://lkml.org/lkml/2014/1/9/349
+> > 
+> 
+> Oh wait, you said not to clear the member. Thus, the patch would look
+> like this:
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Index: linux-trace.git/security/selinux/hooks.c
+> ===================================================================
+> --- linux-trace.git.orig/security/selinux/hooks.c
+> +++ linux-trace.git/security/selinux/hooks.c
+> @@ -234,6 +234,14 @@ static int inode_alloc_security(struct i
+>  	return 0;
+>  }
+> 
+> +static void inode_free_rcu(struct rcu_head *head)
+> +{
+> +	struct inode_security_struct *isec;
+> +
+> +	isec = container_of(head, struct inode_security_struct, rcu);
+> +	kmem_cache_free(sel_inode_cache, isec);
+> +}
+> +
+>  static void inode_free_security(struct inode *inode)
+>  {
+>  	struct inode_security_struct *isec = inode->i_security;
+> @@ -244,8 +252,7 @@ static void inode_free_security(struct i
+>  		list_del_init(&isec->list);
+>  	spin_unlock(&sbsec->isec_lock);
+> 
+> -	inode->i_security = NULL;
+> -	kmem_cache_free(sel_inode_cache, isec);
+> +	call_rcu(&isec->rcu, inode_free_rcu);
 
-ftrace/x86: Load ftrace_ops in parameter not the variable holding it
+Does not clearing ->i_security mean that RCU readers can traverse
+this pointer after the invocation of call_rcu()?  If so, this is
+problematic.  (If something else already prevents readers from getting
+here, no problem.)
 
-Function tracing callbacks expect to have the ftrace_ops that registered it
-passed to them, not the address of the variable that holds the ftrace_ops
-that registered it.
+							Thanx, Paul
 
-Use a mov instead of a lea to store the ftrace_ops into the parameter
-of the function tracing callback.
+>  }
+> 
+>  static int file_alloc_security(struct file *file)
+> Index: linux-trace.git/security/selinux/include/objsec.h
+> ===================================================================
+> --- linux-trace.git.orig/security/selinux/include/objsec.h
+> +++ linux-trace.git/security/selinux/include/objsec.h
+> @@ -38,7 +38,10 @@ struct task_security_struct {
+> 
+>  struct inode_security_struct {
+>  	struct inode *inode;	/* back pointer to inode object */
+> -	struct list_head list;	/* list of inode_security_struct */
+> +	union {
+> +		struct list_head list;	/* list of inode_security_struct */
+> +		struct rcu_head rcu;	/* for freeing the inode_security_struct */
+> +	};
+>  	u32 task_sid;		/* SID of creating task */
+>  	u32 sid;		/* SID of this object */
+>  	u16 sclass;		/* security class of this object */
+> 
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/20131113152004.459787f9@gandalf.local.home
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> # v3.8+
----
- arch/x86/kernel/entry_32.S | 4 ++--
- arch/x86/kernel/entry_64.S | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 51e2988..a2a4f46 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1082,7 +1082,7 @@ ENTRY(ftrace_caller)
- 	pushl $0	/* Pass NULL as regs pointer */
- 	movl 4*4(%esp), %eax
- 	movl 0x4(%ebp), %edx
--	leal function_trace_op, %ecx
-+	movl function_trace_op, %ecx
- 	subl $MCOUNT_INSN_SIZE, %eax
- 
- .globl ftrace_call
-@@ -1140,7 +1140,7 @@ ENTRY(ftrace_regs_caller)
- 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
- 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
- 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
--	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
-+	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
- 	pushl %esp		/* Save pt_regs as 4th parameter */
- 
- GLOBAL(ftrace_regs_call)
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index e21b078..1e96c36 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -88,7 +88,7 @@ END(function_hook)
- 	MCOUNT_SAVE_FRAME \skip
- 
- 	/* Load the ftrace_ops into the 3rd parameter */
--	leaq function_trace_op, %rdx
-+	movq function_trace_op(%rip), %rdx
- 
- 	/* Load ip into the first parameter */
- 	movq RIP(%rsp), %rdi
