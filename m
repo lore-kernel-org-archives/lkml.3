@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaAIICQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:02:16 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:51318
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751040AbaAIICL (ORCPT
+	id S1753166AbaAIINu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:13:50 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:39372 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaAIINo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:02:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(z579ehcb8kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdch70kd2izz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h20cfi1155h)
-Date: Thu, 9 Jan 2014 15:51:07 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>, <kernel@pengutronix.de>,
-        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <rob@landley.net>
-Subject: Re: [PATCH] ARM: imx6q: Add missing esai_ahb clock to current clock
- tree
-Message-ID: <20140109075106.GB14809@MrMyself>
-References: <1389236699-10387-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140109035810.GB21717@S2101-09.ap.freescale.net>
- <20140109034940.GA14480@MrMyself>
- <20140109065740.GD21717@S2101-09.ap.freescale.net>
- <20140109074137.GA14809@MrMyself>
- <20140109075827.GP6750@pengutronix.de>
+	Thu, 9 Jan 2014 03:13:44 -0500
+Date: Thu, 9 Jan 2014 00:11:42 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>, linux-arm-msm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        David Brown <davidb@codeaurora.org>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH v2 0/7] Allow MSM DT platforms to be built multi-platform
+Message-ID: <20140109081142.GH8285@quad.lixom.net>
+References: <1388438133-431-1-git-send-email-sboyd@codeaurora.org>
+ <201401021913.25920.arnd@arndb.de>
+ <52C70698.2030004@codeaurora.org>
+ <CAOesGMiFixweRT1R-y2Cxvx+p6tzf3Qr-TaAwqDBCgB=Ge8FfA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109075827.GP6750@pengutronix.de>
+In-Reply-To: <CAOesGMiFixweRT1R-y2Cxvx+p6tzf3Qr-TaAwqDBCgB=Ge8FfA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 08:58:28AM +0100, Sascha Hauer wrote:
-> On Thu, Jan 09, 2014 at 03:41:38PM +0800, Nicolin Chen wrote:
-> > On Thu, Jan 09, 2014 at 02:57:42PM +0800, Shawn Guo wrote:
-> > > On Thu, Jan 09, 2014 at 11:49:41AM +0800, Nicolin Chen wrote:
-> > > > On Thu, Jan 09, 2014 at 11:58:12AM +0800, Shawn Guo wrote:
-> > > > > >  static struct clk *clk[clk_max];
-> > > > > > @@ -355,6 +355,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
-> > > > > >  	clk[ecspi5]       = imx_clk_gate2("ecspi5",        "ecspi_root",        base + 0x6c, 8);
-> > > > > >  	clk[enet]         = imx_clk_gate2("enet",          "ipg",               base + 0x6c, 10);
-> > > > > >  	clk[esai]         = imx_clk_gate2("esai",          "esai_podf",         base + 0x6c, 16);
-> > > > > > +	clk[esai_ahb]     = imx_clk_gate2("esai_ahb",      "ahb",               base + 0x6c, 16);
-> > > > > 
-> > > > > Hmm, having two clocks operating on the same gate bit will get us
-> > > > > problem in clock disabling.  Clock enabling is fine, since either
-> > > > > one who calls clk_enable() first will just set the gate bit.  But in
-> > > > > case that clk_enable() is called on both clocks, and then when either
-> > > > > clock calls clk_disable(), the gate bit will be cleared and thus breaks
-> > > > > the other one that might still be in use.
-> > > > 
-> > > > Understood. But how could we handle this situation? The only way I can figure
-> > > > out is to make sure the driver open/close them at the same time, it's not a
-> > > > perfect way though.
-> > > 
-> > > Hmm, we generally leave the gate bit to the clock used to access
-> > > register, because usually it's the first one to be on and the last one
-> > > to be off.
-> > 
-> > Then we should attach CLK_IGNORE_UNUSED to clk[esai] since clk[esai_ahb] is
-> > the clock used to access memory, shouldn't we?
+On Fri, Jan 03, 2014 at 11:31:46AM -0800, Olof Johansson wrote:
+> On Fri, Jan 3, 2014 at 10:51 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > On 01/02/14 10:13, Arnd Bergmann wrote:
+> >> On Monday 30 December 2013, Stephen Boyd wrote:
+> >>> These patches allow the DT based MSM platforms to be built as part of the
+> >>> multi-platform kernel. I need acks from Chris Ball on the mmc patch and
+> >>> Rob/Dave on the drm patch. I dropped Arnd's ack on patch 6 because I've
+> >>> rebased that patch on top of the patchset David sent out (which this is in
+> >>> reply to). The rebase was fairly minor and the new patch for drm/msm is
+> >>> trivial. Please consider for v3.14.
+> >> Just for the record, I'm definitely happy with the way this is turning out,
+> >> don't see my question on the serial driver as a NAK. I assume we will apply
+> >> the patches for 3.14, but I first want to have a better understanding on
+> >> where we are with the stuff that is already queued up for 3.14.
+> >>
+> >
+> > It would be great if we could get these patches in for 3.14. Now that
+> > Olof has applied the collection of patches that David sent, these
+> > patches should apply cleanly on top of arm-soc.git qcom/soc. Can you
+> > apply them directly to the arm-soc tree?
 > 
-> Please wait for Mikes input or let's look how a proper solution can look
-> like. I've already seen the case that a single bit controls multiple
-> clocks. Hacking around this issue each time is not a solution.
+> Yeah, we'll get to it in a bit.
 
-Okay.
-
-Thank you, Sascha.
- 
+Ok, I've applied all but the DRM patch since Rob needed that respun. It should
+probably be merged through the DRM tree given the conflicts.
 
 
+-Olof
