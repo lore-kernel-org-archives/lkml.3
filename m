@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809AbaAIALZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 19:11:25 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:52292 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757725AbaAIALW (ORCPT
+	id S1757857AbaAIANS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 19:13:18 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:63272 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757266AbaAIANQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 19:11:22 -0500
-Date: Wed, 8 Jan 2014 19:11:18 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: [GIT PULL] libata fixes for 3.13-rc7
-Message-ID: <20140109001118.GA11420@htj.dyndns.org>
+	Wed, 8 Jan 2014 19:13:16 -0500
+X-AuditID: 9c93017d-b7be2ae0000020a5-06-52cde9984f8c
+Date: Thu, 9 Jan 2014 09:13:31 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>, Helge Deller <deller@gmx.de>,
+        Mikulas Patocka <mpatocka@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org
+Subject: Re: [PATCH] fix crash when using XFS on loopback
+Message-ID: <20140109001331.GA15738@lge.com>
+References: <alpine.LRH.2.02.1401041241590.4648@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140106073549.GA25771@lge.com>
+ <alpine.LRH.2.02.1401061237120.6190@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140107014159.GA26726@lge.com>
+ <52CDBD94.9090808@gmx.de>
+ <CAOJsxLGJbRrDOesdSFnYCt9GOyTGEF0TDWNux06C3OxJnuLFMg@mail.gmail.com>
+ <20140108135930.9fc1d3a63eeb9a45dcbbb2e8@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140108135930.9fc1d3a63eeb9a45dcbbb2e8@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On Wed, Jan 08, 2014 at 01:59:30PM -0800, Andrew Morton wrote:
+> On Wed, 8 Jan 2014 23:37:49 +0200 Pekka Enberg <penberg@kernel.org> wrote:
+> 
+> > The patch looks good to me but it probably should go through Andrew's tree.
+> 
+> yup.
+> 
+> page_mapping() will be called quite frequently, and adding a new
+> test-n-branch in there will be somewhat costly.  We might end up with a
+> better kernel if we were to instead revert 8456a648cf44f.  How useful
+> was that patch?
 
-Late fixes for libata.  Nothing too interesting.  Adding missing PM
-callbacks to satat_sis and an additional PCI ID for ahci.
+Hello,
 
-The commits are available in the git repository at:
+Performance effect of this patch was decribed in the cover-letter, but
+I missed to attach it to patch description. Sorry about that.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.13-fixes
+In summary, this patch saves some memory and decreases cache-footprint
+so that it increases performance.
 
-for you to fetch changes up to 55c82a6c2a513de1d8a20c3b3a769129a1a14d50:
+Here goes the description in cover-letter.
 
-  sata_sis: missing PM support (2014-01-01 15:14:40 -0500)
+Below is some numbers of 'cat /proc/slabinfo'.
+
+* Before *
+# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables [snip...]
+kmalloc-512          527    600    512    8    1 : tunables   54   27    0 : slabdata     75     75      0
+kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0
+kmalloc-192         1040   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0
+kmalloc-96           750    750    128   30    1 : tunables  120   60    0 : slabdata     25     25      0
+kmalloc-64          2773   2773     64   59    1 : tunables  120   60    0 : slabdata     47     47      0
+kmalloc-128          660    690    128   30    1 : tunables  120   60    0 : slabdata     23     23      0
+kmalloc-32         11200  11200     32  112    1 : tunables  120   60    0 : slabdata    100    100      0
+kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0
+
+* After *
+# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables [snip...]
+kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0
+kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0
+kmalloc-192         1016   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0
+kmalloc-96           560    620    128   31    1 : tunables  120   60    0 : slabdata     20     20      0
+kmalloc-64          2148   2280     64   60    1 : tunables  120   60    0 : slabdata     38     38      0
+kmalloc-128          647    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
+kmalloc-32         11360  11413     32  113    1 : tunables  120   60    0 : slabdata    101    101      0
+kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0
+
+kmem_caches consisting of objects less than or equal to 128 byte have one more
+objects in a slab. You can see it at objperslab.
+
+
+Here are the performance results on my 4 cpus machine.
+
+* Before *
+
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
+
+       238,309,671 cache-misses                                                  ( +-  0.40% )
+
+      12.010172090 seconds time elapsed                                          ( +-  0.21% )
+
+* After *
+
+ Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
+
+       229,945,138 cache-misses                                                  ( +-  0.23% )
+
+      11.627897174 seconds time elapsed                                          ( +-  0.14% )
+
+cache-misses are reduced by this patchset, roughly 5%.
+And elapsed times are also improved by 3.1% to baseline.
 
 Thanks.
-----------------------------------------------------------------
-Alan (1):
-      sata_sis: missing PM support
-
-Simon Guinot (1):
-      ahci: add PCI ID for Marvell 88SE9170 SATA controller
-
- drivers/ata/ahci.c     | 3 +++
- drivers/ata/sata_sis.c | 4 ++++
- 2 files changed, 7 insertions(+)
-
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index c0ed4f27..e3a92a6 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -427,6 +427,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9125),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_MARVELL_EXT, 0x9178,
-+			 PCI_VENDOR_ID_MARVELL_EXT, 0x9170),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9170 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
-diff --git a/drivers/ata/sata_sis.c b/drivers/ata/sata_sis.c
-index fe3ca09..1ad2f62 100644
---- a/drivers/ata/sata_sis.c
-+++ b/drivers/ata/sata_sis.c
-@@ -83,6 +83,10 @@ static struct pci_driver sis_pci_driver = {
- 	.id_table		= sis_pci_tbl,
- 	.probe			= sis_init_one,
- 	.remove			= ata_pci_remove_one,
-+#ifdef CONFIG_PM
-+	.suspend		= ata_pci_device_suspend,
-+	.resume			= ata_pci_device_resume,
-+#endif
- };
- 
- static struct scsi_host_template sis_sht = {
