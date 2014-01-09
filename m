@@ -1,94 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275AbaAIOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:37:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54892 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671AbaAIOfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:35:05 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/5] x86: mm: Eliminate redundant page table walk during TLB range flushing
-Date: Thu,  9 Jan 2014 14:34:56 +0000
-Message-Id: <1389278098-27154-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1389278098-27154-1-git-send-email-mgorman@suse.de>
-References: <1389278098-27154-1-git-send-email-mgorman@suse.de>
+	id S1756428AbaAIOhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:37:45 -0500
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:45853 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557AbaAIOhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 09:37:34 -0500
+Date: Thu, 9 Jan 2014 11:37:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 01/28] perf tools: Insert filtered entries to hists also
+Message-ID: <20140109143724.GE30069@ghostprotocols.net>
+References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
+ <1389170793-21926-2-git-send-email-namhyung@kernel.org>
+ <20140108124113.GA15464@ghostprotocols.net>
+ <20140108162253.GB21500@krava.brq.redhat.com>
+ <20140108185934.GA8365@ghostprotocols.net>
+ <1389272255.1722.24.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389272255.1722.24.camel@leonhard>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When choosing between doing an address space or ranged flush, the x86
-implementation of flush_tlb_mm_range takes into account whether there are
-any large pages in the range. A per-page flush typically requires fewer
-entries than would covered by a single large page and the check is redundant.
+Em Thu, Jan 09, 2014 at 09:57:35PM +0900, Namhyung Kim escreveu:
+> 2014-01-08 (수), 15:59 -0300, Arnaldo Carvalho de Melo:
+> > Em Wed, Jan 08, 2014 at 05:22:53PM +0100, Jiri Olsa escreveu:
+> > > On Wed, Jan 08, 2014 at 09:41:13AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Wed, Jan 08, 2014 at 05:46:06PM +0900, Namhyung Kim escreveu:
+> > > > > Currently if a sample was filtered by command line option, it just
+> > > > > dropped.  But this affects final output in that the percentage can be
+> > > > > different since the filtered entries were not included to the total.
+> > > > > 
+> > > > > For example, if an original output looked like below:
+> > > > 
+> > > > Humm, if one says that he/she is interested on just samples for a and b,
+> > > > the current behaviour will state how many of the filtered samples are
+> > > > for a and b, which is valid.
+> > > > 
+> > > >  I bet the number of samples will reflect that as well, but you filtered
+> > > > it out, yes, it stays there, so the percentages are relative to the
+> > > > number of samples.
+> > > > 
+> > > > So I think this change in behaviour is wrong, no?
 
-There is one potential exception. THP migration flushes single THP entries
-and it conceivably would benefit from flushing a single entry instead
-of the mm. However, this flush is after a THP allocation, copy and page
-table update potentially with any other threads serialised behind it. In
-comparison to that, the flush is noise. It makes more sense to optimise
-balancing to require fewer flushes than to optimise the flush itself.
+> > > haven't checked the implementation yet, but it kind of does
+> > > what I'd expect for symbol filtering:
 
-This patch deletes the redundant huge page check.
+> > > perf report
+> > > ...
+> > >  22.00%  yes  libc-2.17.so       [.] __strlen_sse2
+> > >  11.79%  yes  libc-2.17.so       [.] fputs_unlocked
+> > >   9.65%  yes  libc-2.17.so       [.] __GI___mempcpy
+> > >   1.91%  yes  yes                [.] fputs_unlocked@plt
+> > > ...
+> > > 
+> > > search (press '/') for fputs_unlocked (with Namhyung's change):
+> > >  11.79%  yes  libc-2.17.so  [.] fputs_unlocked
+> > >   1.91%  yes  yes           [.] fputs_unlocked@plt
+> > > 
+> > > while the current one shows:
+> > >  86.08%  yes  libc-2.17.so  [.] fputs_unlocked
+> > >  13.92%  yes  yes           [.] fputs_unlocked@plt
+> > > 
+> > > which annoys me when searching for 'invisible' symbol
+> > > within tons of others.. I had to do that grep thing
+> > > you showed.
+> > > 
+> > > I'd like to have the Namhyung's change behaviour as default,
+> > > but I'll be happy with some switch as well ;-)
+> > 
+> > I understand the desire for this different mode, looks indeed useful.
+> 
+> Yeah, the above is the reason why I wrote this firstly.  And then I
+> thought it should be applied to the command line filter options too.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/mm/tlb.c | 28 +---------------------------
- 1 file changed, 1 insertion(+), 27 deletions(-)
-
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 5176526..dd8dda1 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -158,32 +158,6 @@ void flush_tlb_current_task(void)
- 	preempt_enable();
- }
+I don't have a problem with providing a new option, but for those who
+think that when you filter samples based on some criteria the
+percentages that should appear should be relative to the new, filtered,
+total_period, that is a change in behaviour, so needs to be switchable.
  
--/*
-- * It can find out the THP large page, or
-- * HUGETLB page in tlb_flush when THP disabled
-- */
--static inline unsigned long has_large_page(struct mm_struct *mm,
--				 unsigned long start, unsigned long end)
--{
--	pgd_t *pgd;
--	pud_t *pud;
--	pmd_t *pmd;
--	unsigned long addr = ALIGN(start, HPAGE_SIZE);
--	for (; addr < end; addr += HPAGE_SIZE) {
--		pgd = pgd_offset(mm, addr);
--		if (likely(!pgd_none(*pgd))) {
--			pud = pud_offset(pgd, addr);
--			if (likely(!pud_none(*pud))) {
--				pmd = pmd_offset(pud, addr);
--				if (likely(!pmd_none(*pmd)))
--					if (pmd_large(*pmd))
--						return addr;
--			}
--		}
--	}
--	return 0;
--}
--
- void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag)
- {
-@@ -218,7 +192,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 	nr_base_pages = (end - start) >> PAGE_SHIFT;
+> > So I think that this is a new feature and as so we should provide it as
+> > an option, that may (or not) become the default.
+> > 
+> > Some concerns I have are that when we go on filtering we have to have
+> > all the things that are zeroed to then get accrued for each hist entry
+> > that matches the filter being applied and now at least a nr_entries
+> > field got out of the if (al.filtered) block, i.e. in the end we will
+> > have the number of hist entries entries filtered but continue having the
+> > total period for all (filtered or not) hist entries.
  
- 	/* tlb_flushall_shift is on balance point, details in commit log */
--	if (nr_base_pages > act_entries || has_large_page(mm, start, end)) {
-+	if (nr_base_pages > act_entries) {
- 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 		local_flush_tlb();
- 	} else {
--- 
-1.8.4
+> One thing related to it is when --children option is used.  Since total
+> period is added only for a real sample, if the sample is filtered but
+> the parents are not, the parents might have more than 100% overhead.
 
+So when implementing the new option this has to be taken into account,
+no problem (haven't really thought about the full implications here).
+ 
+> > Having it as a separate feature would allow to have both views:
+> > 
+> > 1. the percentages relative to the filtered samples
+> > 2. the percentages relative to all (filtered or not) samples
+> > 
+> > Being selectable on the command line and also with a hotkey to provide
+> > two columns: %total, %filtered.
+> 
+> Hmm.. do you really want two columns instead of single column and a
+> switch/option?  Then the (second) %filtered column will be shown up only
+> if filtering is enabled.  Isn't it annoying for a dynamic filtering
+> (i.e. '/' key on TUI)?
+
+Hey, I'm not the one to decide this :-)
+
+There _are_ two choices for how the percentage gets computed, if one
+wants one, the other, or both, well, the hard part here is to decide the
+default, but there are two options, showing one, the other or both
+should be left to the user, even if after one or two keystrokes :)
+ 
+> > So we would have new field: hists->stats.total_filtered_period, and
+> > hists->stats.nr_filtered_entries, for this, etc.
+> > 
+> > What do you think?
+> 
+> I'm fine with it if we decide to support two columns at the same time.
+
+See above, the difficult part is to figure out what should appear by
+default.
+
+- Arnaldo
