@@ -1,137 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaAIErD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 23:47:03 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:49470 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaAIErB (ORCPT
+	id S1753209AbaAIE6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 23:58:24 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:54532 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaAIE6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 23:47:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140108094104.GC6701@e106331-lin.cambridge.arm.com>
-References: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
-	<1389162390-4582-3-git-send-email-sachin.kamat@linaro.org>
-	<20140108094104.GC6701@e106331-lin.cambridge.arm.com>
-Date: Thu, 9 Jan 2014 10:17:00 +0530
-Message-ID: <CAK9yfHxvjacrqodCw+_WuGN1egg2==wwk7BdAL4JD8iJ1Sa7qA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Documentation: mfd: Add binding document for S2MPA01
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "sbkim73@samsung.com" <sbkim73@samsung.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Jan 2014 23:58:21 -0500
+X-AuditID: cbfee690-b7f266d00000287c-91-52ce2c6ba42b
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, tomasz.figa@gmail.com,
+        Naveen Krishna Ch <ch.naveen@samsung.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 1/6 v2] crypto:s5p-sss: Use platform_get_irq() instead of
+ _byname()
+Date: Thu, 09 Jan 2014 10:28:37 +0530
+Message-id: <1389243517-13033-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1389095509-14357-2-git-send-email-ch.naveen@samsung.com>
+References: <1389095509-14357-2-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSq5utcy7I4P1BQYu7zw8zWrw8pGkx
+	53wLi0X3KxmL+/d+Mllc3jWHzWLG+X1MFou2/We2WLXrD6PF2TmHmBy4PLasvMnksXPWXXaP
+	bQdUPfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugSvj/a8L7AXPRSr2vHjM2MA4UbCLkZNDQsBE
+	YtHLc4wQtpjEhXvr2boYuTiEBJYySvSuuMHcxcgBVrRzTxREfDqjxJetf1kgnH4midcn57OC
+	dLMJmEkcXLSaHcQWEXCW+N28hhWkiFngE6NEw/pVYEXCAqESJ69tZQaxWQRUJVouvmcDsXkF
+	XCUu3d7FArFNQWLOJBuQMKeAm8SB73uYQGwhoJLve46AXSchsI1dYvH9e2wQcwQkvk0+BNUr
+	K7HpADPEN5ISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmD4n/73bMIO
+	xnsHrA8xJgONm8gsJZqcD4yfvJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphak
+	FsUXleakFh9iZOLglGpg9P/J93xj/v9fzcGLC+/tKwjtDDyyo97pQtnFySfXrrk5/ba8/q+M
+	qW7u8/k6yu8YMc789sDzeY2a4reKCV5ntytFHFFXK/zZsWr+B45UB70lH/eynlZTvVt/6DLv
+	xuTPv17uX6sg/7O2kvMEs3bKtwLHe/oOspEbnbcJHfbdahnll5c2p51LQ4mlOCPRUIu5qDgR
+	AFHvV2+VAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t9jQd1snXNBBn9uslncfX6Y0eLlIU2L
+	OedbWCy6X8lY3L/3k8ni8q45bBYzzu9jsli07T+zxapdfxgtzs45xOTA5bFl5U0mj52z7rJ7
+	bDug6tG3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJ
+	uam2Si4+AbpumTlANykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM97/
+	usBe8FykYs+Lx4wNjBMFuxg5OCQETCR27onqYuQEMsUkLtxbz9bFyMUhJDCdUeLL1r8sEE4/
+	k8Trk/NZQarYBMwkDi5azQ5iiwg4S/xuXsMKUsQs8IlRomH9KrAiYYFQiZPXtjKD2CwCqhIt
+	F9+zgdi8Aq4Sl27vYoHYrCAxZ5INSJhTwE3iwPc9TCC2EFDJ9z1H2CYw8i5gZFjFKJpakFxQ
+	nJSea6hXnJhbXJqXrpecn7uJERxdz6R2MK5ssDjEKMDBqMTDu6L4bJAQa2JZcWXuIUYJDmYl
+	Ed6/queChHhTEiurUovy44tKc1KLDzEmAx01kVlKNDkfGPl5JfGGxibmpsamliYWJmaWpAkr
+	ifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cC4Nin06gWRTdnzWp7cUttfXZDm2fLJpTEqRTZ1
+	xYYC3YXiiTf+vSjN7klT47v99+Ij049bXi5/cEjh7mu/hr+7tu/UPOfy1Xe9TtcsvrKzS06e
+	b5IwfeCwozVS7ffXs34l9+4uirvBN29fRZDwlph7DzaVNO9rTy5z4bYJEH5yNdXZ8PbhuPvi
+	SizFGYmGWsxFxYkAyeO/0/ICAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 January 2014 15:11, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Wed, Jan 08, 2014 at 06:26:30AM +0000, Sachin Kamat wrote:
->> Added initial binding documentation for S2MPA01 MFD.
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> ---
->>  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   91 +++++++++++++++++++++
->>  1 file changed, 91 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
->>
->> diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
->> new file mode 100644
->> index 000000000000..ae750a28821b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
->> @@ -0,0 +1,91 @@
->> +
->> +* Samsung S2MPA01 Voltage and Current Regulator
->> +
->> +The Samsung S2MPA01 is a multi-function device which includes high
->> +efficiency buck converters including Dual-Phase buck converter, various LDOs,
->> +and an RTC. It is interfaced to the host controller using an I2C interface.
->> +Each sub-block is addressed by the host system using different I2C slave
->> +addresses.
->> +
->> +Required properties:
->> +- compatible: Should be "samsung,s2mpa01-pmic".
->> +- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
->> +
->> +Optional properties:
->> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
->> +  the interrupts from s2mpa01 are delivered to.
->> +- interrupts: Interrupt specifiers for interrupt sources.
->
-> That sounds a bit odd. How many interrupts might there be? What do they
-> signal?
+From: Naveen Krishna Ch <ch.naveen@samsung.com>
 
-Actually there is only one interrupt line for sending interrupts to
-the AP for conditons like sudden
-voltage drop, etc. I will make the above sentence singular.
+This patch uses the platform_get_irq() instead of the
+platform_get_irq_byname(). Making feeder control interrupt
+as resource "0" and hash interrupt as "1".
 
->> +
->> +Optional nodes:
->> +- regulators: The regulators of s2mpa01 that have to be instantiated should be
->> +included in a sub-node named 'regulators'. Regulator nodes included in this
->> +sub-node should be of the format as listed below.
->> +
->> +     regulator_name {
->> +             [standard regulator constraints....];
->> +     };
->> +
->
-> Why not just say that the regulators node contains regulators in the
-> usual format, with reference to the regulator binding?
+reasons for this change.
+1. Cannot find any Arch which is currently using this driver
+2. Samsung Exynos4 and 5 SoCs only use the feeder control interrupt
+3. Patches adding support for DT and H/W version are in pipeline
 
-OK. I will update this (as also suggested by your later comment).
+Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: David S. Miller <davem@davemloft.net>
+CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+TO: <linux-crypto@vger.kernel.org>
+CC: <linux-samsung-soc@vger.kernel.org>
+---
+Changes since v1:
+A typo fixed, from err "pdata->irq_hash;" to "pdata->irq_fc;"
 
->
->> + regulator-ramp-delay for BUCKs = [6250/12500(default)/25000/50000] uV/us
->> +
->> + BUCK[1/2/3/4] supports disabling ramp delay on hardware, so explictly
->> + regulator-ramp-delay = <0> can be used for them to disable ramp delay.
->> + In the absence of the regulator-ramp-delay property, the default ramp
->> + delay will be used.
->> +
->> +NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
->> +for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
->> +Grouping of BUCKs sharing ramp rate setting is as follow : BUCK[1, 6],
->> +BUCK[2, 4], and BUCK[8, 9, 10]
->
-> It would probably be better to have a heading like "Properties for BUCK
-> regulator nodes" for all of the above.
+ drivers/crypto/s5p-sss.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-OK.
-
->
->> +
->> +The regulator constraints inside the regulator nodes use the standard regulator
->> +bindings which are documented elsewhere.
->
-> As mentioned above, state this at the beginning and point to the
-> regulator bindings.
-
-OK.
-
->> +
->> +The following are the names of the regulators that the s2mpa01 PMIC block
->> +supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
->> +as per the datasheet of s2mpa01.
->
-> So these are what the nodes should be called? (rather than values for
-> regulator-name).
-
-Yes. That is the convention followed here.
-
->
-> Otherwise this looks ok to me.
->
-
-Thanks for reviewing.
-
+diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
+index cf149b1..93cddeb 100644
+--- a/drivers/crypto/s5p-sss.c
++++ b/drivers/crypto/s5p-sss.c
+@@ -592,29 +592,29 @@ static int s5p_aes_probe(struct platform_device *pdev)
+ 	pdata->ioaddr = devm_ioremap(dev, res->start,
+ 				     resource_size(res));
+ 
+-	pdata->irq_hash = platform_get_irq_byname(pdev, "hash");
+-	if (pdata->irq_hash < 0) {
+-		err = pdata->irq_hash;
+-		dev_warn(dev, "hash interrupt is not available.\n");
++	pdata->irq_fc = platform_get_irq(pdev, 0);
++	if (pdata->irq_fc < 0) {
++		err = pdata->irq_fc;
++		dev_warn(dev, "feed control interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+-	err = devm_request_irq(dev, pdata->irq_hash, s5p_aes_interrupt,
++	err = devm_request_irq(dev, pdata->irq_fc, s5p_aes_interrupt,
+ 			       IRQF_SHARED, pdev->name, pdev);
+ 	if (err < 0) {
+-		dev_warn(dev, "hash interrupt is not available.\n");
++		dev_warn(dev, "feed control interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+ 
+-	pdata->irq_fc = platform_get_irq_byname(pdev, "feed control");
+-	if (pdata->irq_fc < 0) {
+-		err = pdata->irq_fc;
+-		dev_warn(dev, "feed control interrupt is not available.\n");
++	pdata->irq_hash = platform_get_irq(pdev, 1);
++	if (pdata->irq_hash < 0) {
++		err = pdata->irq_hash;
++		dev_warn(dev, "hash interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+-	err = devm_request_irq(dev, pdata->irq_fc, s5p_aes_interrupt,
++	err = devm_request_irq(dev, pdata->irq_hash, s5p_aes_interrupt,
+ 			       IRQF_SHARED, pdev->name, pdev);
+ 	if (err < 0) {
+-		dev_warn(dev, "feed control interrupt is not available.\n");
++		dev_warn(dev, "hash interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+ 
 -- 
-With warm regards,
-Sachin
+1.7.9.5
+
