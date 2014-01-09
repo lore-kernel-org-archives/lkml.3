@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822AbaAIVmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:42:54 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:54027 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756516AbaAIVmn (ORCPT
+	id S1757913AbaAIVoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:44:20 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64536 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756516AbaAIVoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:42:43 -0500
-Date: Thu, 9 Jan 2014 14:42:39 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Paris <eparis@parisplace.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Chinner <david@fromorbit.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
-	inode_permission()
-Message-ID: <20140109214239.GD29910@parisc-linux.org>
-References: <20140109162731.12500986@gandalf.local.home>
+	Thu, 9 Jan 2014 16:44:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140109162731.12500986@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+QCeVQXbZO4-G4E22hPwd8u62PEhT46mNw1GxmNYZNvd1+RFg@mail.gmail.com>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz> <52CC6A53.9010508@emulex.com>
+ <CA+QCeVSruYZCQOGapU_y613ucaptkzQN34X83DmYiPXTkWFVzg@mail.gmail.com>
+ <52CEFE62.7070009@interlog.com> <CA+QCeVQXbZO4-G4E22hPwd8u62PEhT46mNw1GxmNYZNvd1+RFg@mail.gmail.com>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Thu, 9 Jan 2014 23:43:49 +0200
+Message-ID: <CA+QCeVRCCaT2a28ky_Zc2UG8P3py1YUyg0VS-DPNvNH87R650g@mail.gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+To: dgilbert <dgilbert@interlog.com>
+Cc: James Smart <james.smart@emulex.com>, Jan Kara <jack@suse.cz>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 04:27:31PM -0500, Steven Rostedt wrote:
-> Note, the crash came from stressing the deletion and reading of debugfs
-> files. I was not able to recreate this via normal files. But I'm not
-> sure they are safe. It may just be that the race window is much harder
-> to hit.
+Hi,
 
-But "normal" files have a 'destroy_inode' method.  So you've basically
-only fixed it for debugfs (and maybe a few other unusual filesystems).
-Why doesn't the code look like this:
+On 9 January 2014 23:26, Sergey Meirovich <rathamahata@gmail.com> wrote:
+> Hi Duglas,
+>
+> On 9 January 2014 21:54, Douglas Gilbert <dgilbert@interlog.com> wrote:
+>> On 14-01-08 08:57 AM, Sergey Meirovich wrote:
+> ...
+>>>
+>>> The strangest thing to me that this is the problem with sequential
+>>> write. For example the fnic one machine is zoned to EMC XtremIO and
+>>> had results: 14.43Mb/sec 3693.65 Requests/sec for sequential 4k. The
+>>> same fnic machine perfrormed rather impressive for random 4k
+>>> 451.11Mb/sec 115485.02 Requests/sec
+>>
+>>
+>> You could bypass O_DIRECT and use ddpt together with
+>> a bsg pass-through (bsg is a little faster than sg
+>> for these purposes).
+>>
+>> For example:
+>>
+>> # lsscsi -g
+>> [0:0:0:0]    disk    ATA    INTEL SSDSC2CW12 400i  /dev/sda /dev/sg0
+>> [14:0:0:0]   disk    Linux  scsi_debug       0004  -        /dev/sg1
+>>
+>> # ddpt if=/dev/bsg/14:0:0:0 bs=512 bpt=128 count=1m
+>> Output file not specified so no copy, just reading input
+>> 1048576+0 records in
+>> 0+0 records out
+>> time to read data: 0.283566 secs at 1893.28 MB/sec
+>>
+>> bs= should match the block size of the storage device and
+>> the size of each SCSI READ is dictated by bpt= (so 64 KB
+>> in this case).
+>>
+>> Such a test should show you if your performance problem
+>> is in the block layer or below, or above the block layer
+>> (at least the point where pass-through commands are
+>> injected).
+>>
+>> Doug Gilbert
+>
+> Thanks for an excellent idea!
+>
+> Seems like this is not Direct IO issue.Just tried it against
+> fnic/XtremIO.   4k over via bsg is still 17.278 Mb/s for write.
 
-static void i_callback(struct rcu_head *head)
-{
-	struct inode *inode = container_of(head, struct inode, i_rcu);
-	__destroy_inode(inode);
-	if (inode->i_sb->s_op->destroy_inode)
-		inode->i_sb->s_op->destroy_inode(inode);
-	else
-		kmem_cache_free(inode_cachep, inode);
-}
-
-static void destroy_inode(struct inode *inode)
-{
-	BUG_ON(!list_empty(&inode->i_lru));
-	call_rcu(&inode->i_rcu, i_callback);
-}
-
-We'd then have to get rid of all the call_rcu() invocations in individual
-filesystems' destroy_inode methods, but that doesn't sound like a bad
-thing to me.
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+At a second  glance seems to be natural ddpt - is suffering from the
+same SAN latencies for the small chunks.
