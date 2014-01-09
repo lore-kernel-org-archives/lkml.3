@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032AbaAIRIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 12:08:54 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39271 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857AbaAIRIr (ORCPT
+	id S1755859AbaAIROP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 12:14:15 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:54743 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512AbaAIROI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 12:08:47 -0500
-Date: Thu, 9 Jan 2014 18:08:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH] lockdep: Introduce wait-type checks
-Message-ID: <20140109170823.GF7572@laptop.programming.kicks-ass.net>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
- <20140109163120.GA8038@redhat.com>
+	Thu, 9 Jan 2014 12:14:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140109163120.GA8038@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <9DF5D0F7-F5A7-4705-8ACB-286B49D668C1@matuschek.net>
+References: <alpine.DEB.2.02.1401082231260.4025@parallels-Parallels-Virtual-Platform>
+	<20140109142745.GB6110@opensource.wolfsonmicro.com>
+	<9DF5D0F7-F5A7-4705-8ACB-286B49D668C1@matuschek.net>
+Date: Thu, 9 Jan 2014 09:14:07 -0800
+Message-ID: <CA+7tXijibZKUoeqeqpvOhgJg17OgpYR2Kv5S17TFdAKvaCjt3g@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: wm8804: Allow fine-grained control of
+ the PLL generation
+From: Trent Piepho <tpiepho@gmail.com>
+To: Daniel Matuschek <daniel@matuschek.net>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Dimitris.Papastamos@wolfsonmicro.com, Takashi Iwai <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        patches@opensource.wolfsonmicro.com,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 05:31:20PM +0100, Oleg Nesterov wrote:
-> This is really minor, but it seems you can simplify it a little bit.
-> We do not really need curr_inner, the main loop can do
-> 
-> 	for (...) {
-> 		...
-> 
-> 		if (prev_inner && prev_inner < next_outer)
-> 			return print_lock_invalid_wait_context(...);
-> 	}
-> 
-> 	return 0;
+On Thu, Jan 9, 2014 at 7:29 AM, Daniel Matuschek <daniel@matuschek.net> wrote:
+> On 09.01.2014, at 15:27, Charles Keepax <ckeepax@opensource.wolfsonmicro.com> wrote:
+>
+>> On Wed, Jan 08, 2014 at 10:36:53PM +0100, Daniel Matuschek wrote:
+>>> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
+>>>
+>>
+>> <snip>
+>>
+>>>                      pll_div->freqmode = post_table[i].freqmode;
+>>> -                    pll_div->mclkdiv = post_table[i].mclkdiv;
+>>> -                    target *= post_table[i].div;
+>>> -                    break;
+>>> +                    if ((mclk_div == WM8804_MCLKDIV_DONTCARE) ||
+>>> +                        ((post_table[i].mclkdiv == 1) &&
+>>> +                            (mclk_div == WM8804_MCLKDIV_1)) ||
+>>> +                        ((post_table[i].mclkdiv == 0) &&
+>>> +                            (mclk_div == WM8804_MCLKDIV_0))) {
+>>
+>> Would probably be nicer to update the post_table to use the new
+>> defines and directly compare.
 
-Indeed, that might work.. My brain still finds it easier to understand
-the min() version though.
+How about giving the defines better names?  Like WM8804_MCLKDIV_256x
+for 0.  Assuming that's the value for 256x, I can't actually tell.
+Which is why the define name could be better.
 
-> Off-topic question... I can't understand the "int check" argument of
-> lock_acquire(). First of all, __lock_acquire() does
-> 
-> 	if (!prove_locking)
-> 		check = 1;
-> 
-> Doesn't this mean lock_acquire_*() do not depend on CONFIG_PROVE_LOCKING?
-> IOW, can't we do
-> 
-> 	--- x/include/linux/lockdep.h
-> 	+++ x/include/linux/lockdep.h
-> 	@@ -479,15 +479,9 @@ static inline void print_irqtrace_events
-> 	  * on the per lock-class debug mode:
-> 	  */
-> 	 
-> 	-#ifdef CONFIG_PROVE_LOCKING
-> 	- #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
-> 	- #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
-> 	- #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
-> 	-#else
-> 	- #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
-> 	- #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
-> 	- #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
-> 	-#endif
-> 	+#define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
-> 	+#define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
-> 	+#define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
+>> This does feel like a slight abuse of pll_id, it feels to me that
+>> using the set_clkdiv callback would be a little more natural from
+>> a user perspective.
+>
+> Good idea, I will move it to set_clkdiv.
 
-I suppose we could; note however that the if (!prove_locking) logic was
-added later.
+Why does it need to be an option?  If 256x is better, then why not
+always use it?  Maybe the code to select the divisor should be better?
 
-> But what I really can't understans is what "check == 0" means? It
-> seems that in fact it can be 1 or 2? Or, iow, "check == 0" is actually
-> equivalent to "check == 1" ?
+If we look at the post_table:
+static struct {
+        unsigned int div;
+        unsigned int freqmode;
+        unsigned int mclkdiv;
+} post_table[] = {
+        {  2,  0, 0 },
+        {  4,  0, 1 },
+        {  4,  1, 0 },
+        {  8,  1, 1 },
+        {  8,  2, 0 },
+        { 16,  2, 1 },
+        { 12,  3, 0 },
+        { 24,  3, 1 }
+};
 
-Hmm indeed, the comment in lockdep.h says 0 means no checks at all, but
-the code doesn't actually appear to work like that. I'm not sure it ever
-did or not, I'd have to go dig through history.
+The code loops through that in order to find the first div that when
+multiplied by the target rate gives 90-100 MHz.  So if the first div=4
+in the table doesn't work, why would the second 4 work?  It looks like
+it's just doing unnecessary tries to re-reject the same divisor
+reached by different freqmode & mclkdiv combinations.
 
-That said, given the current state it certainly looks like we can remove
-the check argument.
+Since it stops at the first divisor that works, won't it always use
+mclkdiv=1?  If mclkdiv=0 is better, why not just list those first/only
+in the table so they get used?
 
-Ingo?
+BTW,
+        if ((K % 10) >= 5)
+                K += 5;
+        K /= 10;
+
+Worst Division With Rounding Ever.  And don't even get me started on
+the base 10 fixed point on a binary computer.
