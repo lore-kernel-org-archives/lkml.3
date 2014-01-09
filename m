@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaAIEpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 23:45:33 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:50640 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaAIEpa (ORCPT
+	id S1754147AbaAIErD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 23:47:03 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:49470 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaAIErB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 23:45:30 -0500
-From: panchaxari <panchaxari.prasannamurthy@linaro.org>
-To: viresh.linux@gmail.com
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        panchaxari.prasannamurthy@linaro.org,
-        Will Deacon <will.deacon@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH CFT] ARM:REALVIEW: Enable AUTO_ZRELADDR by default
-Date: Thu,  9 Jan 2014 10:14:14 +0530
-Message-Id: <1389242654-3925-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 8 Jan 2014 23:47:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140108094104.GC6701@e106331-lin.cambridge.arm.com>
+References: <1389162390-4582-1-git-send-email-sachin.kamat@linaro.org>
+	<1389162390-4582-3-git-send-email-sachin.kamat@linaro.org>
+	<20140108094104.GC6701@e106331-lin.cambridge.arm.com>
+Date: Thu, 9 Jan 2014 10:17:00 +0530
+Message-ID: <CAK9yfHxvjacrqodCw+_WuGN1egg2==wwk7BdAL4JD8iJ1Sa7qA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] Documentation: mfd: Add binding document for S2MPA01
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "sbkim73@samsung.com" <sbkim73@samsung.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables AUTO_ZRELADDR as default config to Realview platform.
+On 8 January 2014 15:11, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Wed, Jan 08, 2014 at 06:26:30AM +0000, Sachin Kamat wrote:
+>> Added initial binding documentation for S2MPA01 MFD.
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> ---
+>>  Documentation/devicetree/bindings/mfd/s2mpa01.txt |   91 +++++++++++++++++++++
+>>  1 file changed, 91 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/mfd/s2mpa01.txt b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>> new file mode 100644
+>> index 000000000000..ae750a28821b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/mfd/s2mpa01.txt
+>> @@ -0,0 +1,91 @@
+>> +
+>> +* Samsung S2MPA01 Voltage and Current Regulator
+>> +
+>> +The Samsung S2MPA01 is a multi-function device which includes high
+>> +efficiency buck converters including Dual-Phase buck converter, various LDOs,
+>> +and an RTC. It is interfaced to the host controller using an I2C interface.
+>> +Each sub-block is addressed by the host system using different I2C slave
+>> +addresses.
+>> +
+>> +Required properties:
+>> +- compatible: Should be "samsung,s2mpa01-pmic".
+>> +- reg: Specifies the I2C slave address of the PMIC block. It should be 0x66.
+>> +
+>> +Optional properties:
+>> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
+>> +  the interrupts from s2mpa01 are delivered to.
+>> +- interrupts: Interrupt specifiers for interrupt sources.
+>
+> That sounds a bit odd. How many interrupts might there be? What do they
+> signal?
 
-AUTO_ZRELADDR config enables auto calculation of the decompressed kernel image
-address. AUTO_ZRELADDR config is mutually exclusive to ZBOOT_ROM, and also
-assumes zImage to be loaded in the first 128MiB from start of memory.
+Actually there is only one interrupt line for sending interrupts to
+the AP for conditons like sudden
+voltage drop, etc. I will make the above sentence singular.
 
-CFT::Call For Testing
+>> +
+>> +Optional nodes:
+>> +- regulators: The regulators of s2mpa01 that have to be instantiated should be
+>> +included in a sub-node named 'regulators'. Regulator nodes included in this
+>> +sub-node should be of the format as listed below.
+>> +
+>> +     regulator_name {
+>> +             [standard regulator constraints....];
+>> +     };
+>> +
+>
+> Why not just say that the regulators node contains regulators in the
+> usual format, with reference to the regulator binding?
 
-Requesting maintainers of Realview platforms to evaluate the changes on the
-board and comment, as I dont have the board for testing, and also requesting
-an ACK.
+OK. I will update this (as also suggested by your later comment).
 
-Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Pawel Moll <Pawel.Moll@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
+>
+>> + regulator-ramp-delay for BUCKs = [6250/12500(default)/25000/50000] uV/us
+>> +
+>> + BUCK[1/2/3/4] supports disabling ramp delay on hardware, so explictly
+>> + regulator-ramp-delay = <0> can be used for them to disable ramp delay.
+>> + In the absence of the regulator-ramp-delay property, the default ramp
+>> + delay will be used.
+>> +
+>> +NOTE: Some BUCKs share the ramp rate setting i.e. same ramp value will be set
+>> +for a particular group of BUCKs. So provide same regulator-ramp-delay<value>.
+>> +Grouping of BUCKs sharing ramp rate setting is as follow : BUCK[1, 6],
+>> +BUCK[2, 4], and BUCK[8, 9, 10]
+>
+> It would probably be better to have a heading like "Properties for BUCK
+> regulator nodes" for all of the above.
 
----
-Below lkml link is a quoting by Russell, which explains more on concept of
-PHYS_VIRT and ZRELADDR
--------------------------------------------------
+OK.
 
-https://lkml.org/lkml/2011/10/14/434
+>
+>> +
+>> +The regulator constraints inside the regulator nodes use the standard regulator
+>> +bindings which are documented elsewhere.
+>
+> As mentioned above, state this at the beginning and point to the
+> regulator bindings.
 
--------------------------------------------------
----
- arch/arm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+OK.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 3dfc3b8..077ef9d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -332,6 +332,7 @@ config ARCH_REALVIEW
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARM_AMBA
- 	select ARM_TIMER_SP804
-+	select AUTO_ZRELADDR
- 	select COMMON_CLK
- 	select COMMON_CLK_VERSATILE
- 	select GENERIC_CLOCKEVENTS
+>> +
+>> +The following are the names of the regulators that the s2mpa01 PMIC block
+>> +supports. Note: The 'n' in LDOn and BUCKn represents the LDO or BUCK number
+>> +as per the datasheet of s2mpa01.
+>
+> So these are what the nodes should be called? (rather than values for
+> regulator-name).
+
+Yes. That is the convention followed here.
+
+>
+> Otherwise this looks ok to me.
+>
+
+Thanks for reviewing.
+
 -- 
-1.7.10.4
-
+With warm regards,
+Sachin
