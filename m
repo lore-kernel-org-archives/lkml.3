@@ -1,62 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaAIINu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:13:50 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:39372 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaAIINo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:13:44 -0500
-Date: Thu, 9 Jan 2014 00:11:42 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>, linux-arm-msm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@redhat.com>,
-        David Brown <davidb@codeaurora.org>, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v2 0/7] Allow MSM DT platforms to be built multi-platform
-Message-ID: <20140109081142.GH8285@quad.lixom.net>
-References: <1388438133-431-1-git-send-email-sboyd@codeaurora.org>
- <201401021913.25920.arnd@arndb.de>
- <52C70698.2030004@codeaurora.org>
- <CAOesGMiFixweRT1R-y2Cxvx+p6tzf3Qr-TaAwqDBCgB=Ge8FfA@mail.gmail.com>
+	id S1754567AbaAIIOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:14:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46890 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaAIIOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 03:14:32 -0500
+Message-ID: <52CE7720.6060809@suse.de>
+Date: Thu, 09 Jan 2014 11:17:04 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMiFixweRT1R-y2Cxvx+p6tzf3Qr-TaAwqDBCgB=Ge8FfA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Chen Gang <gang.chen.5i5j@gmail.com>, James Hogan <james.hogan@imgtec.com>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
+ instead of operator '%' for u64
+References: <52B4F837.1010403@gmail.com>	 <1387680997.5567.91.camel@haakon3.risingtidesystems.com>	 <52B6AE19.80401@gmail.com>	 <1387781487.5567.147.camel@haakon3.risingtidesystems.com>	 <52B90111.5050203@gmail.com> <52CCFF0C.7070704@suse.de> <1389223117.5567.271.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1389223117.5567.271.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 03, 2014 at 11:31:46AM -0800, Olof Johansson wrote:
-> On Fri, Jan 3, 2014 at 10:51 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > On 01/02/14 10:13, Arnd Bergmann wrote:
-> >> On Monday 30 December 2013, Stephen Boyd wrote:
-> >>> These patches allow the DT based MSM platforms to be built as part of the
-> >>> multi-platform kernel. I need acks from Chris Ball on the mmc patch and
-> >>> Rob/Dave on the drm patch. I dropped Arnd's ack on patch 6 because I've
-> >>> rebased that patch on top of the patchset David sent out (which this is in
-> >>> reply to). The rebase was fairly minor and the new patch for drm/msm is
-> >>> trivial. Please consider for v3.14.
-> >> Just for the record, I'm definitely happy with the way this is turning out,
-> >> don't see my question on the serial driver as a NAK. I assume we will apply
-> >> the patches for 3.14, but I first want to have a better understanding on
-> >> where we are with the stuff that is already queued up for 3.14.
-> >>
-> >
-> > It would be great if we could get these patches in for 3.14. Now that
-> > Olof has applied the collection of patches that David sent, these
-> > patches should apply cleanly on top of arm-soc.git qcom/soc. Can you
-> > apply them directly to the arm-soc tree?
-> 
-> Yeah, we'll get to it in a bit.
+On 01/09/2014 12:18 AM, Nicholas A. Bellinger wrote:
+> On Wed, 2014-01-08 at 08:32 +0100, Hannes Reinecke wrote:
+>> On 12/24/2013 04:35 AM, Chen Gang wrote:
+>>> On 12/23/2013 02:51 PM, Nicholas A. Bellinger wrote:
+>>>> On Sun, 2013-12-22 at 17:17 +0800, Chen Gang wrote:
+>
+> <SNIP>
+>
+>>>>> The related fix patch changed "start_lba = lba % ..." to "start_lba =
+>>>>> lba / ...", and also assumed "segment_size * segment_mult" is still
+>>>>> within u32 (can not cause type over flow).
+>>>>>
+>>>>> I guess the original author already knew about them, and intended to do
+>>>>> like that (if not, please let me know, thanks).
+>>>>>
+>>>>
+>>>> Sorry, your correct that the original code is using modulo division to
+>>>> calculate start_lba.
+>>>>
+>>>
+>>> Oh, that's all right, (in fact, don't need sorry), I am not quite
+>>> familiar with the details, so need related member help check it.  :-)
+>>>
+>>>> Hannes, can you please double check this below..?
+>>>>
+>>>
+>>> Please help check when have time, thanks.
+>>>
+>> I would even convert segment_size and segment_mult to u64,
+>> to ensure no overflows occur:
+>>
+>> diff --git a/drivers/target/target_core_alua.c
+>> b/drivers/target/target_core_alua
+>> .c
+>> index 9b1856d..54b1e52 100644
+>> --- a/drivers/target/target_core_alua.c
+>> +++ b/drivers/target/target_core_alua.c
+>> @@ -477,8 +477,7 @@ static inline int core_alua_state_lba_dependent(
+>>          u8 *alua_ascq)
+>>   {
+>>          struct se_device *dev = cmd->se_dev;
+>> -       u32 segment_size, segment_mult, sectors;
+>> -       u64 lba;
+>> +       u64 segment_size, segment_mult, sectors, lba;
+>>
+>>          /* Only need to check for cdb actually containing LBAs */
+>>          if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB))
+>>
+>>
+>
+> Will squash the above into the original patch shortly in for-next..
+>
+>> Other than that the sector_div() patch is correct.
+>>
+>
+> <nod> Thanks for confirming that sector_div() is correct here vs. the
+> original code using modulo that Chen had pointed out.
+>
+Ah, _that_ was the issue.
+I was wondering why you kept on poking me ...
 
-Ok, I've applied all but the DRM patch since Rob needed that respun. It should
-probably be merged through the DRM tree given the conflicts.
+Well.
+No, that's actually _not_ correct.
+The correct fix would be
 
+diff --git a/drivers/target/target_core_alua.c 
+b/drivers/target/target_core_alua.c
+index 54b1e52..12da9b3 100644
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -500,8 +500,7 @@ static inline int core_alua_state_lba_dependent(
 
--Olof
+                         if (segment_mult) {
+                                 u64 tmp = lba;
+-                               sector_div(tmp, segment_size * 
+segment_mult);
+-                               start_lba = tmp;
++                               start_lba = sector_div(tmp, segment_size 
+* segment_mult);
+
+                                 last_lba = first_lba + segment_size - 1;
+                                 if (start_lba >= first_lba &&
+(beware of line breaks ...)
+Thing is, we need to calculate the offset into the segment to figure out 
+which map entry to use.
+The actual number of the segment (as had been calculated with the 
+original fix) is immaterial here.
+
+Sorry for this. The email thread just flew past me during Xmas
+with me not paying real attention.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
