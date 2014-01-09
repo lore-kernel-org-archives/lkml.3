@@ -1,81 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084AbaAISr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 13:47:26 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52509 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755982AbaAISrU (ORCPT
+	id S1757202AbaAISsn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 13:48:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51459 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756644AbaAISsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 13:47:20 -0500
-Date: Thu, 9 Jan 2014 18:42:51 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "gang.chen@asianux.com" <gang.chen@asianux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>
-Subject: Re: [PATCH v3] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
- dependencies for XEN
-Message-ID: <20140109184251.GL17838@mudshark.cambridge.arm.com>
-References: <1389204023-26912-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20140109103004.GB11089@mudshark.cambridge.arm.com>
- <201401091204.17932.arnd@arndb.de>
- <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com>
+	Thu, 9 Jan 2014 13:48:39 -0500
+Date: Thu, 9 Jan 2014 10:49:10 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Aruna-Hewapathirane <aruna.hewapathirane@gmail.com>
+Cc: abbotti@mev.co.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Staging: comedi: drivers:
+Message-ID: <20140109184910.GA22892@kroah.com>
+References: <1389067694-12658-1-git-send-email-aruna.hewapathirane@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401091247000.21510@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389067694-12658-1-git-send-email-aruna.hewapathirane@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 12:47:24PM +0000, Stefano Stabellini wrote:
-> On Thu, 9 Jan 2014, Arnd Bergmann wrote:
-> > On Thursday 09 January 2014, Will Deacon wrote:
-> > > On Wed, Jan 08, 2014 at 06:00:23PM +0000, Stefano Stabellini wrote:
-> > > > Remove !GENERIC_ATOMIC64 build dependency:
-> > > > - rename atomic64_xchg to armv7_atomic64_xchg and define it even ifdef
-> > > >   GENERIC_ATOMIC64;
-> > > > - call armv7_atomic64_xchg directly from xen/events.h.
-> > > > 
-> > > > Remove !CPU_V6 build dependency:
-> > > > - introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
-> > > >   CONFIG_CPU_V6;
-> > > > - implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16.
-> > > > 
-> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > CC: arnd@arndb.de
-> > > > CC: linux@arm.linux.org.uk
-> > > > CC: will.deacon@arm.com
-> > > > CC: gang.chen@asianux.com
-> > > > CC: catalin.marinas@arm.com
-> > > > CC: jaccon.bastiaansen@gmail.com
-> > > > CC: linux-arm-kernel@lists.infradead.org
-> > > > CC: linux-kernel@vger.kernel.org
-> > > > 
-> > > 
-> > > I'm confused here. It looks like you want to call armv7 code in a v6 kernel.
-> > > What am I missing?
-> > 
-> > This is about being able to build a kernel that runs on ARMv6 and ARMv7
-> > and also includes Xen. Because of obvious hardware limitations, Xen
-> > will only run on v7, but currently you cannot even build it once you
-> > enable (pre-v6K) ARMv6 support, since the combined v6+v7 kernel can't
-> > do atomic accesses in a generic way on non-32bit variables.
-> 
-> Yep, that's right.
+On Mon, Jan 06, 2014 at 11:08:14PM -0500, Aruna-Hewapathirane wrote:
+> Fixed a coding style issue in ke_counter.c
 
-Ok, thanks for the explanation. Looking at the patch, I wonder whether it's
-not cleaner just to implement xchg code separately for Xen? The Linux code
-isn't always sufficient (due to the GENERIC_ATOMIC64 stuff) and most of the
-churn coming out of this patch is an attempt to provide some small code
-reuse at the cost of code readability.
+You forgot a valid Subject: line :(
 
-What do others think?
-
-Will
