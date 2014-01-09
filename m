@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaAIX7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 18:59:13 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:43448 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751751AbaAIX7K (ORCPT
+	id S1756085AbaAIX7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 18:59:49 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:42840 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151AbaAIX72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 18:59:10 -0500
-Date: Thu, 9 Jan 2014 18:59:07 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
-        Eric Paris <eparis@parisplace.org>, stable <stable@vger.kernel.org>,
-        Paul Moore <paul@paul-moore.com>, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
- inode_permission()
-Message-ID: <20140109185907.20cddb57@gandalf.local.home>
-In-Reply-To: <20140109234537.GR10038@linux.vnet.ibm.com>
-References: <20140109162731.12500986@gandalf.local.home>
-	<20140109214239.GD29910@parisc-linux.org>
-	<20140109165012.391db81e@gandalf.local.home>
-	<20140109223127.GM10323@ZenIV.linux.org.uk>
-	<CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
-	<20140109182523.5b50131f@gandalf.local.home>
-	<20140109182756.17abaaa8@gandalf.local.home>
-	<20140109234537.GR10038@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 9 Jan 2014 18:59:28 -0500
+Message-ID: <52CF37DF.4000309@codeaurora.org>
+Date: Thu, 09 Jan 2014 15:59:27 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/7] ARM: perf_event: Silence sparse warning
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org> <1389221984-10973-2-git-send-email-sboyd@codeaurora.org> <20140109104519.GA17838@mudshark.cambridge.arm.com>
+In-Reply-To: <20140109104519.GA17838@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014 15:45:37 -0800
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On 01/09/14 02:45, Will Deacon wrote:
+> Hi Stephen,
+>
+> On Wed, Jan 08, 2014 at 10:59:38PM +0000, Stephen Boyd wrote:
+>> arch/arm/kernel/perf_event_cpu.c:274:25: warning: incorrect type in assignment (different modifiers)
+>> arch/arm/kernel/perf_event_cpu.c:274:25: expected int ( *init_fn )( ... )
+>> arch/arm/kernel/perf_event_cpu.c:274:25: got void const *const data
+>>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+> Given that the rest of the series depends on the change to the percpu IRQ
+> stuff, I think you can just send this patch to Russell's patch system with
+> my ack:
+>
+>   Acked-by: Will Deacon <will.deacon@arm.com>
+>
 
-> >  static void inode_free_security(struct inode *inode)
-> >  {
-> >  	struct inode_security_struct *isec = inode->i_security;
-> > @@ -244,8 +252,7 @@ static void inode_free_security(struct i
-> >  		list_del_init(&isec->list);
-> >  	spin_unlock(&sbsec->isec_lock);
-> > 
-> > -	inode->i_security = NULL;
-> > -	kmem_cache_free(sel_inode_cache, isec);
-> > +	call_rcu(&isec->rcu, inode_free_rcu);
-> 
-> Does not clearing ->i_security mean that RCU readers can traverse
-> this pointer after the invocation of call_rcu()?  If so, this is
-> problematic.  (If something else already prevents readers from getting
-> here, no problem.)
+Thanks. It's 7937/1.
 
-This is called when we are about to free the inode. Look at
-destroy_inode(). Basically, this is the same as doing:
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-	call_rcu(&isec->rcu, inode_free_rcu);
-	call_rcu(&inode->i_rcu, i_callback);
-
-Where i_callback() does the free of the inode.
-
-If you can access inode->i_security, after a call_rcu, then you can
-also access the inode itself that has just been freed.
-
-Yes, technically, having two separate call_rcu(), the first grace
-period can end before the second, but everything to remove the inode
-from sight has already been set up before that first call_rcu() is
-made. That means when the first call_rcu() is executed, the inode
-should already be invisible to the readers.
-
-
-- Steve
-
-> 
-> 							Thanx, Paul
-> 
-> >  }
-> > 
