@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaAIKxi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:53:38 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:49848 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750766AbaAIKxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:53:30 -0500
-Message-ID: <1389264807.11777.6.camel@x41>
-Subject: [PATCH] RDMA/cxgb4: silence GCC warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 09 Jan 2014 11:53:27 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
+	id S1753359AbaAIKyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:54:01 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60440 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751753AbaAIKxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 05:53:55 -0500
+Message-ID: <52CE7F3F.1000201@ti.com>
+Date: Thu, 9 Jan 2014 16:21:43 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: <wim@iguana.be>
+CC: <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        <grygorii.strashko@ti.com>, <linux-watchdog@vger.kernel.org>,
+        <Pawel.Moll@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <galak@kernel.crashing.org>,
+        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>, <grant.likely@linaro.org>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] watchdog: davinci: rename platform driver to davinci-wdt
+References: <1385559113-4354-1-git-send-email-ivan.khoronzhuk@ti.com> <5295FB0E.4070406@ti.com> <52961665.3060309@roeck-us.net> <5296DCD6.3030002@ti.com> <52973E40.4060400@roeck-us.net> <52984CE8.50803@ti.com>
+In-Reply-To: <52984CE8.50803@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Jan 2014 10:53:28.0447 (UTC) FILETIME=[074EF8F0:01CF0D29]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building mem.o for 32 bits x86 triggers a GCC warning:
-    drivers/infiniband/hw/cxgb4/mem.c: In function '_c4iw_write_mem_dma_aligned':
-    drivers/infiniband/hw/cxgb4/mem.c:79:25: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+On Friday 29 November 2013 01:44 PM, Sekhar Nori wrote:
+> Wim,
+> 
+> On Thursday 28 November 2013 06:29 PM, Guenter Roeck wrote:
+>> On 11/27/2013 10:04 PM, Sekhar Nori wrote:
+>>> On Wednesday 27 November 2013 09:27 PM, Guenter Roeck wrote:
+>>>> On 11/27/2013 06:00 AM, Sekhar Nori wrote:
+>>>>> On Wednesday 27 November 2013 07:01 PM, Ivan Khoronzhuk wrote:
+>>>>>> As we switch to use the watchdog core which permits more than one
+>>>>>> active watchdog in the system, rename platform driver to
+>>>>>> "davinci-wdt" to be identifiable.
+>>>>>>
+>>>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>>>
+>>>>> Looks good to me. Since bulk of this patch touches mach-davinci, I
+>>>>> would
+>>>>> like to take this through my tree to avoid conflicts with other
+>>>>> mach-davinci patches I accept.
+>>>>>
+>>>>
+>>>> Good idea, and makes sense.
+>>>
+>>> Added to v3.14/soc with your Reviewed-by
+>>>
+>>
+>> You should get an Ack from Wim.
+> 
+> Can you please provide your ack? I will add it to the existing commit.
 
-Silence that warning by casting "&wr_wait" to unsigned long before
-casting it to __be64. That's what _c4iw_write_mem_inline() already does.
+I never received an ack from Wim, but I am going to send this for
+merging through ARM-SoC anyway. I will keep Wim copied on the pull
+request so he knows.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Compile tested only (on 32 bit x86): I do not have this hardware.
-
-1) This warning was introduced in v3.10-rc1, through commit 42b6a949903d
-("RDMA/cxgb4: Use DSGLs for fastreg and adapter memory writes for T5.").
-
- drivers/infiniband/hw/cxgb4/mem.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/infiniband/hw/cxgb4/mem.c b/drivers/infiniband/hw/cxgb4/mem.c
-index 84e4500..41b1195 100644
---- a/drivers/infiniband/hw/cxgb4/mem.c
-+++ b/drivers/infiniband/hw/cxgb4/mem.c
-@@ -76,7 +76,7 @@ static int _c4iw_write_mem_dma_aligned(struct c4iw_rdev *rdev, u32 addr,
- 	INIT_ULPTX_WR(req, wr_len, 0, 0);
- 	req->wr.wr_hi = cpu_to_be32(FW_WR_OP(FW_ULPTX_WR) |
- 			(wait ? FW_WR_COMPL(1) : 0));
--	req->wr.wr_lo = wait ? (__force __be64)&wr_wait : 0;
-+	req->wr.wr_lo = wait ? (__force __be64)(unsigned long) &wr_wait : 0L;
- 	req->wr.wr_mid = cpu_to_be32(FW_WR_LEN16(DIV_ROUND_UP(wr_len, 16)));
- 	req->cmd = cpu_to_be32(ULPTX_CMD(ULP_TX_MEM_WRITE));
- 	req->cmd |= cpu_to_be32(V_T5_ULP_MEMIO_ORDER(1));
--- 
-1.8.4.2
-
+Thanks,
+Sekhar
