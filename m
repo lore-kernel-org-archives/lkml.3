@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaAIWGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 17:06:54 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:61359 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751472AbaAIWGr (ORCPT
+	id S1751266AbaAIWMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 17:12:15 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37501 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaAIWMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 17:06:47 -0500
-Date: Thu, 9 Jan 2014 17:06:45 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [RFC][PATCH] tracing: Show available event triggers when no
- trigger is set
-Message-ID: <20140109170645.17c819ae@gandalf.local.home>
-In-Reply-To: <87a9f6di94.fsf@sejong.aot.lge.com>
-References: <20140107103548.0a84536d@gandalf.local.home>
-	<87a9f6di94.fsf@sejong.aot.lge.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 9 Jan 2014 17:12:07 -0500
+Message-ID: <52CF1EB5.9070706@codeaurora.org>
+Date: Thu, 09 Jan 2014 14:12:05 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH v4 02/15] clk: Allow drivers to pass in a regmap
+References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org> <1387847559-18330-3-git-send-email-sboyd@codeaurora.org> <20140109015158.7168.60274@quantum> <52CE055C.5030103@codeaurora.org>
+In-Reply-To: <52CE055C.5030103@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Jan 2014 16:50:47 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On 01/08/14 18:11, Stephen Boyd wrote:
+> On 01/08/14 17:51, Mike Turquette wrote:
+>> Patch #3 illustrates the sort of struct-member-creep that worries me.
+>> What is to stop someone from putting "unsigned int divider_reg" or
+>> "unsigned int mux_reg", and then the thing just keeps growing.
+>>
+> I see two ways forward if you don't want these members in struct clk_hw.
+>
+> 1) Inheritance: struct clk_regmap wrapper struct and
+> clk_register_regmap() and devm_clk_register_regmap() and then another
+> wrapper struct around that.
+>
+>  example:
+>
+> struct clk_regmap {
+>         struct clk_hw hw;
+>         struct regmap *regmap;
+>         unsigned int enable_reg;
+>         unsigned int enable_mask;
+>         bool enable_is_inverted;
+> };
+>
+> struct clk_branch {
+>         u32     hwcg_reg;
+>         u32     halt_reg;
+>         u8      hwcg_bit;
+>         u8      halt_bit;
+>         u8      halt_check;
+>
+>         struct clk_regmap       clkr;
+> };
+>
+> static struct clk_branch gsbi1_uart_clk = {
+>         .halt_reg = 0x2fcc,
+>         .halt_bit = 10,
+>         .clkr = {
+>                 .enable_reg = 0x29d4,
+>                 .enable_mask = BIT(9),
+>                 .hw.init = &(struct clk_init_data){
+>                         .name = "gsbi1_uart_clk",
+>                         .parent_names = (const char *[]){
+>                                 "gsbi1_uart_src",
+>                         },
+>                         .num_parents = 1,
+>                         .ops = &clk_branch_ops,
+>                         .flags = CLK_SET_RATE_PARENT,
+>                 },
+>         },
+> };
 
-> [SNIP]
-> > +	if (v == SHOW_AVAILABLE_TRIGGERS) {
-> > +		seq_puts(m, "# Available triggers:\n");
-> > +		seq_putc(m, '#');
-> > +		mutex_lock(&trigger_cmd_mutex);
-> > +		list_for_each_entry(p, &trigger_commands, list)
-> 
-> I guess the list_for_each_entry_reverse() will give a more intuitive
-> result here:
-> 
->   [root /sys/kernel/debug/tracing]# cat events/sched/sched_switch/trigger
->   # Available triggers:
->   # traceon traceoff snapshot stacktrace enable_event disable_event
-> 
+The downside to this approach is that we have to have two similar
+structs for struct clk_gate if we want to support regmap in that code
+path. If we put the regmap inside struct clk_hw we don't have two
+different structs, we would just assign different ops.
 
-Updated. Thanks for the review.
+struct clk_gate {
+        struct clk_hw hw;
+        void __iomem    *reg;
+        u8              bit_idx;
+        u8              flags;
+        spinlock_t      *lock;
+};
 
--- Steve
+and
+
+struct clk_gate_regmap {
+        struct clk_regmap hw;
+        u8              flags;
+        spinlock_t      *lock;
+};
+
+Do you have any preference on which way we move forward here? I have the
+wrapper method all finished and ready to send if you agree with that
+approach.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
