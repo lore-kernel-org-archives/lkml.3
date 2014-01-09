@@ -1,157 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126AbaAIUC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 15:02:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757371AbaAIUCt (ORCPT
+	id S932197AbaAIUHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 15:07:07 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:56630 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135AbaAIUHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 15:02:49 -0500
-Date: Thu, 9 Jan 2014 12:03:20 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Holla <Sudeep.Holla@arm.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ashok Raj <ashok.raj@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH RFC 1/3] drivers: base: support cpu cache information
- interface to userspace via sysfs
-Message-ID: <20140109200320.GA15986@kroah.com>
-References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com>
- <1389209168-17189-2-git-send-email-sudeep.holla@arm.com>
- <20140108202707.GE8417@kroah.com>
- <52CEF624.9020702@arm.com>
- <20140109193121.GA14991@kroah.com>
- <52CEFCE3.1040701@arm.com>
+	Thu, 9 Jan 2014 15:07:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CEFCE3.1040701@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140108134858.GF27046@suse.de>
+References: <1389103248-17617-1-git-send-email-mgorman@suse.de>
+	<20140107141715.GA32491@kroah.com>
+	<20140107185440.GA7844@kroah.com>
+	<20140107203012.GA27046@suse.de>
+	<20140108104340.GC27046@suse.de>
+	<20140108134858.GF27046@suse.de>
+Date: Thu, 9 Jan 2014 15:07:00 -0500
+X-Google-Sender-Auth: TDHqMeE1ODIxKaj0-0NbSlqmyuA
+Message-ID: <CAJvTdKmR90tsOWgo-2t9neNFTE15SOYtPN7zgjGKDvafWfk0TA@mail.gmail.com>
+Subject: Re: Idle power fix regresses ebizzy performance (was 3.12-stable
+ backport of NUMA balancing patches)
+From: Len Brown <lenb@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, athorlton@sgi.com,
+        Rik van Riel <riel@redhat.com>, chegu_vinod@hp.com,
+        Len Brown <len.brown@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 07:47:47PM +0000, Sudeep Holla wrote:
-> On 09/01/14 19:31, Greg Kroah-Hartman wrote:
-> > On Thu, Jan 09, 2014 at 07:19:00PM +0000, Sudeep Holla wrote:
-> >> On 08/01/14 20:27, Greg Kroah-Hartman wrote:
-> >>> On Wed, Jan 08, 2014 at 07:26:06PM +0000, Sudeep Holla wrote:
-> >>>> From: Sudeep Holla <sudeep.holla@arm.com>
-> >>>>
-> >>>> This patch adds initial support for providing processor cache information
-> >>>> to userspace through sysfs interface. This is based on x86 implementation
-> >>>> and hence the interface is intended to be fully compatible.
-> >>>>
-> >>>> A per-cpu array of cache information maintained is used mainly for
-> >>>> sysfs-related book keeping.
-> >>>>
-> >>>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> >>>> ---
-> >>>>  drivers/base/Makefile     |   2 +-
-> >>>>  drivers/base/cacheinfo.c  | 296 ++++++++++++++++++++++++++++++++++++++++++++++
-> >>>>  include/linux/cacheinfo.h |  43 +++++++
-> >>>>  3 files changed, 340 insertions(+), 1 deletion(-)
-> >>>>  create mode 100644 drivers/base/cacheinfo.c
-> >>>>  create mode 100644 include/linux/cacheinfo.h
-> >>>>
-> >>>> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-> >>>> index 94e8a80..76f07c8 100644
-> >>>> --- a/drivers/base/Makefile
-> >>>> +++ b/drivers/base/Makefile
-> >>>> @@ -4,7 +4,7 @@ obj-y			:= core.o bus.o dd.o syscore.o \
-> >>>>  			   driver.o class.o platform.o \
-> >>>>  			   cpu.o firmware.o init.o map.o devres.o \
-> >>>>  			   attribute_container.o transport_class.o \
-> >>>> -			   topology.o
-> >>>> +			   topology.o cacheinfo.o
-> >>>>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
-> >>>>  obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
-> >>>>  obj-y			+= power/
-> >>>> diff --git a/drivers/base/cacheinfo.c b/drivers/base/cacheinfo.c
-> >>>> new file mode 100644
-> >>>> index 0000000..f436c31
-> >>>> --- /dev/null
-> >>>> +++ b/drivers/base/cacheinfo.c
-> >>>> @@ -0,0 +1,296 @@
-> >>>> +/*
-> >>>> + * cacheinfo support - processor cache information via sysfs
-> >>>> + *
-> >>>> + * Copyright (C) 2013 ARM Ltd.
-> >>>> + * All Rights Reserved
-> >>>> + *
-> >>>> + * Author: Sudeep Holla <sudeep.holla@arm.com>
-> >>>> + *
-> >>>> + * This program is free software; you can redistribute it and/or modify
-> >>>> + * it under the terms of the GNU General Public License version 2 as
-> >>>> + * published by the Free Software Foundation.
-> >>>> + *
-> >>>> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> >>>> + * kind, whether express or implied; without even the implied warranty
-> >>>> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >>>> + * GNU General Public License for more details.
-> >>>> + */
-> >>>> +#include <linux/bitops.h>
-> >>>> +#include <linux/cacheinfo.h>
-> >>>> +#include <linux/compiler.h>
-> >>>> +#include <linux/cpu.h>
-> >>>> +#include <linux/device.h>
-> >>>> +#include <linux/init.h>
-> >>>> +#include <linux/kobject.h>
-> >>>> +#include <linux/of.h>
-> >>>> +#include <linux/sched.h>
-> >>>> +#include <linux/slab.h>
-> >>>> +#include <linux/smp.h>
-> >>>> +#include <linux/sysfs.h>
-> >>>> +
-> >>>> +struct cache_attr {
-> >>>> +	struct attribute attr;
-> >>>> +	 ssize_t(*show) (unsigned int, unsigned short, char *);
-> >>>> +	 ssize_t(*store) (unsigned int, unsigned short, const char *, size_t);
-> >>>> +};
-> >>>> +
-> >>>> +/* pointer to kobject for cpuX/cache */
-> >>>> +static DEFINE_PER_CPU(struct kobject *, ci_cache_kobject);
-> >>>> +#define per_cpu_cache_kobject(cpu)     (per_cpu(ci_cache_kobject, cpu))
-> >>>> +
-> >>>> +struct index_kobject {
-> >>>> +	struct kobject kobj;
-> >>>> +	unsigned int cpu;
-> >>>> +	unsigned short index;
-> >>>> +};
-> >>>> +
-> >>>> +static cpumask_t cache_dev_map;
-> >>>> +
-> >>>> +/* pointer to array of kobjects for cpuX/cache/indexY */
-> >>>
-> >>> Please don't use "raw" kobjects for this, use the device attribute
-> >>> groups, that's what they are there for.  Bonus is that your code should
-> >>> get a lot simpler when you do that.
-> >>>
-> >>
-> >> Yes I now understand device attribute group simplifies the code, but I think
-> >> kobjects are still needed as we need to track both cpu and cache index.
-> >> By reusing only cpu device kobject, we can track cpu only.
-> > 
-> > I don't understand, you are putting things under the cpu device object,
-> > why do you care about a "cache" kobject?
-> > 
-> Yes though the cache attributes are under cpu objects, it's hierarchical
-> something like:
-> /sys/devices/system/cpu/cpu<n>/cache/index<m>/<attribute_x>
-> <attribute_x> is unique for each pair of (cpu<n>, index<m>
-> index is more like cache level, but with 2 indices if they are separate(I$,D$)
-
-Then make the "cache" a struct device, and then create the attribute
-group under that?  You'll want that anyway as you don't have any
-visibility to userspace tools by using raw kobjects, they don't see them
-at all (i.e. libudev and the like.)
+Hi Mel,
+Thanks for the bisect.
+What is the cpuid of the machine that sees the regression?
 
 thanks,
+-Len
 
-greg k-h
+
+On Wed, Jan 8, 2014 at 8:48 AM, Mel Gorman <mgorman@suse.de> wrote:
+> Adding LKML to the list as this -stable snifftest has identified an
+> upstream regression.
+>
+> On Wed, Jan 08, 2014 at 10:43:40AM +0000, Mel Gorman wrote:
+>> On Tue, Jan 07, 2014 at 08:30:12PM +0000, Mel Gorman wrote:
+>> > On Tue, Jan 07, 2014 at 10:54:40AM -0800, Greg KH wrote:
+>> > > On Tue, Jan 07, 2014 at 06:17:15AM -0800, Greg KH wrote:
+>> > > > On Tue, Jan 07, 2014 at 02:00:35PM +0000, Mel Gorman wrote:
+>> > > > > A number of NUMA balancing patches were tagged for -stable but I got a
+>> > > > > number of rejected mails from either Greg or his robot minion.  The list
+>> > > > > of relevant patches is
+>> > > > >
+>> > > > > FAILED: patch "[PATCH] mm: numa: serialise parallel get_user_page against THP"
+>> > > > > FAILED: patch "[PATCH] mm: numa: call MMU notifiers on THP migration"
+>> > > > > MERGED: Patch "mm: clear pmd_numa before invalidating"
+>> > > > > FAILED: patch "[PATCH] mm: numa: do not clear PMD during PTE update scan"
+>> > > > > FAILED: patch "[PATCH] mm: numa: do not clear PTE for pte_numa update"
+>> > > > > MERGED: Patch "mm: numa: ensure anon_vma is locked to prevent parallel THP splits"
+>> > > > > MERGED: Patch "mm: numa: avoid unnecessary work on the failure path"
+>> > > > > MERGED: Patch "sched: numa: skip inaccessible VMAs"
+>> > > > > FAILED: patch "[PATCH] mm: numa: clear numa hinting information on mprotect"
+>> > > > > FAILED: patch "[PATCH] mm: numa: avoid unnecessary disruption of NUMA hinting during"
+>> > > > > Patch "mm: fix TLB flush race between migration, and change_protection_range"
+>> > > > > Patch "mm: numa: guarantee that tlb_flush_pending updates are visible before page table updates"
+>> > > > > FAILED: patch "[PATCH] mm: numa: defer TLB flush for THP migration as long as"
+>> > > > >
+>> > > > > Fixing the rejects one at a time may cause other conflicts due to ordering
+>> > > > > issues. Instead, this patch series against 3.12.6 is the full list of
+>> > > > > backported patches in the expected order. Greg, unfortunately this means
+>> > > > > you may have to drop some patches already in your stable tree and reapply
+>> > > > > but on the plus side they should be then in the correct order for bisection
+>> > > > > purposes and you'll know I've tested this combination of patches.
+>> > > >
+>> > > > Many thanks for these, I'll go queue them up in a bit and drop the
+>> > > > others to ensure I got all of this correct.
+>> > >
+>> > > Ok, I've now queued all of these up, in this order, so we should be
+>> > > good.
+>> > >
+>> > > I'll do a -rc2 in a bit as it needs some testing.
+>> > >
+>> >
+>> > Thanks a million. I should be cc'd on some of those so I'll pick up the
+>> > final result and run it through the same tests just to be sure.
+>> >
+>>
+>> Ok, tests completed and look more or less as expected. This is not to
+>> say the performance results are *good* as such.  Workloads that normally
+>> demonstrate automatic numa balancing suffered because of other patches that
+>> were merged (primarily fair zone allocation policy) that had interesting
+>> side-effects. However, it now does not crash under heavy stress and I
+>> prefer working a little slowly than crashing fast. NAS at least looks
+>> better.
+>>
+>> Other workloads like kernel builds, page fault microbench looked good as
+>> expected from the fair zone allocation policy fixes.
+>>
+>> Big downside is that ebizzy performance is *destroyed* in that RC2 patch
+>> somewhere
+>>
+>> ebizzy
+>>                          3.12.6                3.12.6            3.12.7-rc2
+>>                         vanilla         backport-v1r2             stablerc2
+>> Mean   1      3278.67 (  0.00%)     3180.67 ( -2.99%)     3212.00 ( -2.03%)
+>> Mean   2      2322.67 (  0.00%)     2294.67 ( -1.21%)     1839.00 (-20.82%)
+>> Mean   3      2257.00 (  0.00%)     2218.67 ( -1.70%)     1664.00 (-26.27%)
+>> Mean   4      2268.00 (  0.00%)     2224.67 ( -1.91%)     1629.67 (-28.15%)
+>> Mean   5      2247.67 (  0.00%)     2255.67 (  0.36%)     1582.33 (-29.60%)
+>> Mean   6      2263.33 (  0.00%)     2251.33 ( -0.53%)     1547.67 (-31.62%)
+>> Mean   7      2273.67 (  0.00%)     2222.67 ( -2.24%)     1545.67 (-32.02%)
+>> Mean   8      2254.67 (  0.00%)     2232.33 ( -0.99%)     1535.33 (-31.90%)
+>> Mean   12     2237.67 (  0.00%)     2266.33 (  1.28%)     1543.33 (-31.03%)
+>> Mean   16     2201.33 (  0.00%)     2252.67 (  2.33%)     1540.33 (-30.03%)
+>> Mean   20     2205.67 (  0.00%)     2229.33 (  1.07%)     1537.33 (-30.30%)
+>> Mean   24     2162.33 (  0.00%)     2168.67 (  0.29%)     1535.33 (-29.00%)
+>> Mean   28     2139.33 (  0.00%)     2107.67 ( -1.48%)     1535.00 (-28.25%)
+>> Mean   32     2084.67 (  0.00%)     2089.00 (  0.21%)     1537.33 (-26.26%)
+>> Mean   36     2002.00 (  0.00%)     2020.00 (  0.90%)     1530.33 (-23.56%)
+>> Mean   40     1972.67 (  0.00%)     1978.67 (  0.30%)     1530.33 (-22.42%)
+>> Mean   44     1951.00 (  0.00%)     1953.67 (  0.14%)     1531.00 (-21.53%)
+>> Mean   48     1931.67 (  0.00%)     1930.67 ( -0.05%)     1526.67 (-20.97%)
+>>
+>> Figures are records/sec, more is better for increasing numbers of threads
+>> up to 48 which is the number of logical CPUs in the machine. Three kernels
+>> tested
+>>
+>> 3.12.6        is self-explanatory
+>> backport-v1r2 is the backported series I sent you
+>> stablerc2     is the rc2 patch I pulled from kernel.org
+>>
+>> I'm not that familiar with the stable workflow but stable-queue.git looked
+>> like it had the correct quilt tree so bisection is in progress. If I had
+>> to bet money on it, I'd bet it's going to be scheduler or power management
+>> related mostly because problems in both of those areas have tended to
+>> screw ebizzy recently.
+>>
+>
+> I was not far off. Bisection identified the following commit
+>
+> 3d97ea0816589c818ac62fb401e61c3b6a59f351 is the first bad commit
+> commit 3d97ea0816589c818ac62fb401e61c3b6a59f351
+> Author: Len Brown <len.brown@intel.com>
+> Date:   Wed Dec 18 16:44:57 2013 -0500
+>
+>     x86 idle: Repair large-server 50-watt idle-power regression
+>
+>     commit 40e2d7f9b5dae048789c64672bf3027fbb663ffa upstream.
+>
+>     Linux 3.10 changed the timing of how thread_info->flags is touched:
+>
+>         x86: Use generic idle loop
+>         (7d1a941731fabf27e5fb6edbebb79fe856edb4e5)
+>
+>     This caused Intel NHM-EX and WSM-EX servers to experience a large number
+>     of immediate MONITOR/MWAIT break wakeups, which caused cpuidle to demote
+>     from deep C-states to shallow C-states, which caused these platforms
+>     to experience a significant increase in idle power.
+>
+>     Note that this issue was already present before the commit above,
+>     however, it wasn't seen often enough to be noticed in power measurements.
+>
+>     Here we extend an errata workaround from the Core2 EX "Dunnington"
+>     to extend to NHM-EX and WSM-EX, to prevent these immediate
+>     returns from MWAIT, reducing idle power on these platforms.
+>
+>     While only acpi_idle ran on Dunnington, intel_idle
+>     may also run on these two newer systems.
+>     As of today, there are no other models that are known
+>     to need this tweak.
+>
+>     Link: http://lkml.kernel.org/r/CAJvTdK=%2BaNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com
+>     Signed-off-by: Len Brown <len.brown@intel.com>
+>     Link: http://lkml.kernel.org/r/baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com
+>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> Len, HPA, the x86 idle regression fix fubars ebizzy as a consequence, I
+> don't know why. I know the workload is not that important (and I expected
+> ebizzy to be unaffected in this test) but it is probably indicative of
+> other performance regressions hiding in there. It was caught via -stable
+> testing by accident but I checked and upstream is also affected. This is
+> a snippet from the bisection log
+>
+> Wed 8 Jan 09:53:59 GMT 2014 compass ebizzy v3.12.6 mean-4:2317 good
+> Wed 8 Jan 10:13:04 GMT 2014 compass ebizzy v3.12.7-rc2 mean-4:1631 bad
+> Wed 8 Jan 10:27:45 GMT 2014 compass ebizzy a202b4808e500f4fd53b6cec150c8fe214c70183 mean-4:1620 bad
+> Wed 8 Jan 10:41:36 GMT 2014 compass ebizzy c915b8fa860e189cb84898a30f135399baa827fa mean-4:2290 good
+> Wed 8 Jan 10:55:14 GMT 2014 compass ebizzy c915b8fa860e189cb84898a30f135399baa827fa mean-4:2266 good
+> Wed 8 Jan 11:09:04 GMT 2014 compass ebizzy c62a6f8a28bf8897ba0903cf332d761c1132e48d mean-4:1624 bad
+> Wed 8 Jan 11:22:46 GMT 2014 compass ebizzy 346679aad15c3608844f6b433b8d8ba56ad03802 mean-4:2280 good
+> Wed 8 Jan 11:36:32 GMT 2014 compass ebizzy 36b9512dc19b535d72c1035048a95ec1c765d403 mean-4:1641 bad
+> Wed 8 Jan 11:50:22 GMT 2014 compass ebizzy 1a82fc9ab8bb6b4a5ee5cd32d570d6ff0b77efb2 mean-4:1627 bad
+> Wed 8 Jan 12:04:15 GMT 2014 compass ebizzy 3d97ea0816589c818ac62fb401e61c3b6a59f351 mean-4:1619 bad
+> Wed 8 Jan 13:10:03 GMT 2014 compass ebizzy v3.13-rc7 mean-4:1619 bad
+> Wed 8 Jan 13:39:19 GMT 2014 compass ebizzy v3.12.7-rc2-revert mean-4:2276 good
+>
+> mean-4 figures are records/sec as recorded by the bisection test. The
+> bisection points are based on the -stable quilt tree so the commit ids are
+> meaningless but you can see good/bad figures are relatively stable leading
+> me to conclude the bisection is valid.
+>
+> v3.12.6 was 2317 records/second and considered "good". The 3.12.7-rc2
+> stable candidate and 3.13-rc7 are both "bad". Reverting the single patch
+> from v3.12.7-rc2 restores performance.
+>
+> Greg, this does not affect your -stable release as such because upstream is
+> also affected. If you release with the patch merged then the upstream fix
+> (whatever that is) will also need to be included in -stable later. If you
+> release without the patch then both upstream fixes will be later required
+> and some Intel machines will continue to consume excessive amounts of
+> power in the meantime.
+>
+> --
+> Mel Gorman
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Len Brown, Intel Open Source Technology Center
