@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560AbaAILFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:05:09 -0500
-Received: from smarthost01b.mail.zen.net.uk ([212.23.1.3]:47856 "EHLO
-	smarthost01b.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753290AbaAILE6 (ORCPT
+	id S1753762AbaAILFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:05:20 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43081 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753290AbaAILFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:04:58 -0500
-Message-ID: <1389265491.4041.6.camel@linaro1.home>
-Subject: Re: [PATCH 2/5] ARM: kprobes-test: use <asm/opcodes.h> for
- instruction accesses
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Linaro Networking <linaro-networking@linaro.org>,
+	Thu, 9 Jan 2014 06:05:11 -0500
+Date: Thu, 9 Jan 2014 11:04:40 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 09 Jan 2014 11:04:51 +0000
-In-Reply-To: <CAArO44ump6fid28qDGYK3=vMNLpgicMjYNO1hOdyU7D-Lkd3bQ@mail.gmail.com>
-References: <1387815579-15677-1-git-send-email-taras.kondratiuk@linaro.org>
-	 <1387815579-15677-3-git-send-email-taras.kondratiuk@linaro.org>
-	 <1388764386.3430.10.camel@linaro1.home>
-	 <CAArO44ump6fid28qDGYK3=vMNLpgicMjYNO1hOdyU7D-Lkd3bQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01b-IP: [82.69.122.217]
+	<linux-arm-kernel@lists.infradead.org>,
+        Neil Leeder <nleeder@codeaurora.org>,
+        Ashwin Chaugule <ashwinc@codeaurora.org>
+Subject: Re: [PATCH 3/7] ARM: perf_event: Add basic support for Krait CPU PMUs
+Message-ID: <20140109110440.GC17838@mudshark.cambridge.arm.com>
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
+ <1389221984-10973-4-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389221984-10973-4-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-09 at 12:54 +0200, Taras Kondratiuk wrote:
-> On 3 January 2014 17:53, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> > On Mon, 2013-12-23 at 18:19 +0200, Taras Kondratiuk wrote:
-> >> From: Ben Dooks <ben.dooks@codethink.co.uk>
-> >>
-> >> Ensure we read instructions in the correct endian-ness by using
-> >> the <asm/opcodes.h> helper to transform them as necessary.
-> >>
-> >> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> >> [taras.kondratiuk@linaro.org: fix next_instruction() function]
-> >> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> >> ---
-> >
-> > Apart from the spurious line removal (see below) then:
-> >
-> > Acked-by: Jon Medhurst <tixy@linaro.org>
-> >
-> > and you can include an ACK for the other patches in this series too.
-> >
-> > Thanks.
+On Wed, Jan 08, 2014 at 10:59:40PM +0000, Stephen Boyd wrote:
+> Add basic support for the Krait CPU PMU. This allows us to use
+> the architected functionality of the PMU.
 > 
-> >> @@ -1593,7 +1594,6 @@ static int run_test_cases(void (*tests)(void), const union decode_item *table)
-> >>       return 0;
-> >>  }
-> >>
-> >> -
-> >
-> > I know the above blank line isn't needed but I believe the convention is
-> > to avoid doing unrelated white-space clean-ups in patches.
+> This is based on code originally written by Ashwin Chaugule and
+> Neil Leeder [1].
 > 
-> Right, I will remove it.
-> Should this series go through Russell's patch tracking system or it
-> can be pulled
-> to some tree?
+> [1] https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/arch/arm/kernel/perf_event_msm_krait.c?h=msm-3.4
+> 
+> Cc: Neil Leeder <nleeder@codeaurora.org>
+> Cc: Ashwin Chaugule <ashwinc@codeaurora.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/kernel/perf_event_cpu.c |   1 +
+>  arch/arm/kernel/perf_event_v7.c  | 165 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 166 insertions(+)
 
-I would assume as a pull request sent to Russell using the email alias
-he uses for these things: linux+pull@arm.linux.org.uk I'm sure he's
-shout up if I'm wrong...
+[...]
 
--- 
-Tixy
+> +static int krait_pmu_init(struct arm_pmu *cpu_pmu)
+> +{
+> +	u32 id = read_cpuid_id() & 0xffffff00;
+> +
+> +	armv7pmu_init(cpu_pmu);
+> +	cpu_pmu->name		= "ARMv7 Krait";
+> +	/* Some early versions of Krait don't support PC write events */
+> +	if (id == 0x511f0400 || id == 0x510f0600)
+> +		cpu_pmu->map_event	= krait_map_event_no_branch;
 
+Hmm, I'd really rather this information came via the DT. In fact, you could
+just drop the branch event from your main map_event_function and keep things
+simple. It depends how badly you want to advertise it in perf list :)
+
+Will
