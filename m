@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaAILIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:08:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41991 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaAILIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:08:31 -0500
-Message-ID: <52CE8314.2000000@ti.com>
-Date: Thu, 9 Jan 2014 16:38:04 +0530
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Michele Paolino <m.paolino@virtualopensystems.com>
-CC: <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/5] USB Host support for OMAP5 uEVM (for 3.14)
-References: <1389161742-10533-1-git-send-email-rogerq@ti.com> <52CE824D.2090905@virtualopensystems.com>
-In-Reply-To: <52CE824D.2090905@virtualopensystems.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1754094AbaAILJN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:09:13 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:51266 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753281AbaAILJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 06:09:03 -0500
+Date: Thu, 9 Jan 2014 12:08:52 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: mark.rutland@arm.com, devicetree@vger.kernel.org, grygorii.strashko@ti.com,
+        linux-watchdog@vger.kernel.org, Pawel.Moll@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        galak@kernel.crashing.org, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>, grant.likely@linaro.org,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] watchdog: davinci: rename platform driver to davinci-wdt
+Message-ID: <20140109110852.GA4898@spo001.leaseweb.com>
+References: <1385559113-4354-1-git-send-email-ivan.khoronzhuk@ti.com> <5295FB0E.4070406@ti.com> <52961665.3060309@roeck-us.net> <5296DCD6.3030002@ti.com> <52973E40.4060400@roeck-us.net> <52984CE8.50803@ti.com> <52CE7F3F.1000201@ti.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CE7F3F.1000201@ti.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michele,
+Hi Sekhar,
 
-Did you enable CONFIG_USB_EHCI_HCD_OMAP in the kernel config?
-It is not enabled by default in omap2plus_defconfig.
+> On Friday 29 November 2013 01:44 PM, Sekhar Nori wrote:
+> > Wim,
+> > 
+> > On Thursday 28 November 2013 06:29 PM, Guenter Roeck wrote:
+> >> On 11/27/2013 10:04 PM, Sekhar Nori wrote:
+> >>> On Wednesday 27 November 2013 09:27 PM, Guenter Roeck wrote:
+> >>>> On 11/27/2013 06:00 AM, Sekhar Nori wrote:
+> >>>>> On Wednesday 27 November 2013 07:01 PM, Ivan Khoronzhuk wrote:
+> >>>>>> As we switch to use the watchdog core which permits more than one
+> >>>>>> active watchdog in the system, rename platform driver to
+> >>>>>> "davinci-wdt" to be identifiable.
+> >>>>>>
+> >>>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> >>>>>
+> >>>>> Looks good to me. Since bulk of this patch touches mach-davinci, I
+> >>>>> would
+> >>>>> like to take this through my tree to avoid conflicts with other
+> >>>>> mach-davinci patches I accept.
+> >>>>>
+> >>>>
+> >>>> Good idea, and makes sense.
+> >>>
+> >>> Added to v3.14/soc with your Reviewed-by
+> >>>
+> >>
+> >> You should get an Ack from Wim.
+> > 
+> > Can you please provide your ack? I will add it to the existing commit.
+> 
+> I never received an ack from Wim, but I am going to send this for
+> merging through ARM-SoC anyway. I will keep Wim copied on the pull
+> request so he knows.
 
-cheers,
--roger
+This has my Ack. No issue with getting this through the ARM-SoC tree but bear in mind that there are allready other davinci pateches in the linux-watchdog-next tree+.
 
-On 01/09/2014 04:34 PM, Michele Paolino wrote:
-> Hello Roger,
-> 
-> I'm testing your patch on an OMAP5430 EVM board. The ethernet is not working in my case. The kernel I'm using is (Tero Kristo's repo - branch 3.13-rc7-dt-clks-v13). Is there something that I'm missing?
-> 
-> Here below you can find more info about my configuration:
-> 
-> boot error messages:
-> eth0: ERROR while getting interface flags: No such device
-> SIOCSIFADDR: No such device
-> eth0: ERROR while getting interface flags: No such device
-> SIOCADDRT: Network is unreachable
-> 
-> root@OMAP5:~# /usr/lib/klibc/bin/ipconfig eth0              
-> ipconfig: eth0: SIOCGIFINDEX: No such device
-> /usr/lib/klibc/bin/ipconfig: no devices to configure
-> 
-> root@OMAP5:~# uname -a
-> Linux OMAP5 3.13.0-rc7-g2a4526d-dirty #0 SMP Wed Jan 8 10:41:48 CET 2014x
-> 
-> root@OMAP5:~# dmesg | grep eth
-> [    1.661434] usbcore: registered new interface driver cdc_ether
-> 
-> Regards,
-> 
-> 
-> On 08/01/2014 07:15, Roger Quadros wrote:
->> Hi Benoit & Tony,
->>
->> This patchset brings up USB Host ports and Ethernet port on
->> the OMAP5 uEVM board.
->>
->> It depends on the TI Clock DT conversion patches [1] and is based
->> on 3.13-rc7
->>
->> [1] - http://article.gmane.org/gmane.linux.ports.arm.kernel/289895
->>
->> Changelog:
->>
->> v4:
->> - Updated DT binding document for clock binding
->>
->> v3:
->> - Rebased on top of 3.13-rc7
->>
->> cheers,
->> -roger
->>
->> Roger Quadros (5):
->>   mfd: omap-usb-host: Update DT clock binding information
->>   ARM: dts: OMAP5: Add 60MHz clock reference to USB Host module
->>   ARM: dts: omap4-panda: Provide USB PHY clock
->>   ARM: dts: omap5-uevm: Provide USB PHY clock
->>   ARM: OMAP2+: Remove legacy_init_ehci_clk()
->>
->>  Documentation/devicetree/bindings/mfd/omap-usb-host.txt |  4 ++++
->>  arch/arm/boot/dts/omap4-panda-common.dtsi               |  8 ++------
->>  arch/arm/boot/dts/omap5-uevm.dts                        |  8 ++------
->>  arch/arm/boot/dts/omap5.dtsi                            |  2 ++
->>  arch/arm/mach-omap2/pdata-quirks.c                      | 16 ----------------
->>  5 files changed, 10 insertions(+), 28 deletions(-)
->>
-> 
-> 
-> -- 
-> *Michele Paolino*, Virtualization R&D Engineer
-> Virtual Open Systems
-> /Open Source  KVM  Virtualization  Developments/
-> /Multicore Systems Virtualization Porting Services/
-> Web/:/ www.virtualopensystems. <http://www.virtualopensystems.com/>com <http://www.virtualopensystems.com/>
-> 
-> 
+Kind regards,
+Wim.
 
