@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbaAIMWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:22:16 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43939 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaAIMWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:22:04 -0500
-Message-ID: <52CE9466.3000207@ti.com>
-Date: Thu, 9 Jan 2014 14:21:58 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751058AbaAIMXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:23:41 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49954 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaAIMXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 07:23:33 -0500
+Date: Thu, 9 Jan 2014 12:23:14 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20140109122314.GH31886@sirena.org.uk>
+References: <1389201738-31406-1-git-send-email-lpapp@kde.org>
+ <20140108180747.GT31886@sirena.org.uk>
+ <CAOMwXhN8x0xHstrwsrxqXoE+n19TP=r1HJDCFOHs2O024HaY1w@mail.gmail.com>
+ <20140108190758.GY31886@sirena.org.uk>
+ <CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
+ <CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
+ <20140108214906.GB31886@sirena.org.uk>
+ <CAOMwXhNsuG-s7z2xfZK9-qGPWNoyuE_1x3pSmz6CC2qyiituLA@mail.gmail.com>
+ <52CE0CC8.20500@infradead.org>
+ <CAOMwXhOn=mxzNK5dE1kaH6bXnrCm9M-h1SuFhJ84yzE2DgG-GA@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Nazarewicz <mpn@google.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] drivers: video: metronomefb: avoid out-of-bounds
- array access
-References: <1385743903-9079-1-git-send-email-mpn@google.com>
-In-Reply-To: <1385743903-9079-1-git-send-email-mpn@google.com>
-X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="QExNdmMHqTkhJLMsRmxnvH3LdfXcokIft"
+	protocol="application/pgp-signature"; boundary="QgYiJByqJONV6c4d"
+Content-Disposition: inline
+In-Reply-To: <CAOMwXhOn=mxzNK5dE1kaH6bXnrCm9M-h1SuFhJ84yzE2DgG-GA@mail.gmail.com>
+X-Cookie: Go climb a gravity well!
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] include/linux/regmap.h: fix a couple of typos
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---QExNdmMHqTkhJLMsRmxnvH3LdfXcokIft
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
 
-On 2013-11-29 18:51, Michal Nazarewicz wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
->=20
-> load_waveform function checks whether padding bytes in stuff2a
-> and stuff2b are all zero, but does so by treating those arrays
-> as a single longer array.  Since the structure is packed, and
-> the size sum matches, it all works, but creates some confusion
-> in the code.
->=20
-> This commit changes the stuff2a and stuff2b arrays into pad1 and
-> pad2 fields such that they cover the same bytes as the arrays
-> covered, and changes the check in the load_waveform function so
-> that the fields are read instead of iterating over an arary.
->=20
-> It also renames the other =E2=80=9Cstuff=E2=80=9D fields to =E2=80=9Cig=
-nore*=E2=80=9D fields to
-> give them more semantic meaning.
->=20
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  drivers/video/metronomefb.c | 17 ++++++++---------
->  1 file changed, 8 insertions(+), 9 deletions(-)
->=20
-> diff --git a/drivers/video/metronomefb.c b/drivers/video/metronomefb.c
-> index 195cc2d..4f36a2b 100644
-> --- a/drivers/video/metronomefb.c
-> +++ b/drivers/video/metronomefb.c
-> @@ -126,7 +126,7 @@ static struct fb_var_screeninfo metronomefb_var =3D=
- {
-> =20
->  /* the waveform structure that is coming from userspace firmware */
->  struct waveform_hdr {
-> -	u8 stuff[32];
-> +	u8 ignore1[32];
-> =20
->  	u8 wmta[3];
->  	u8 fvsn;
-> @@ -134,13 +134,14 @@ struct waveform_hdr {
->  	u8 luts;
->  	u8 mc;
->  	u8 trc;
-> -	u8 stuff3;
-> +	u8 ignore2;
-> =20
->  	u8 endb;
->  	u8 swtb;
-> -	u8 stuff2a[2];
-> +	u32 pad1; /* u16 halfof(pad1) */
-> =20
-> -	u8 stuff2b[3];
-> +	/* u16 halfof(pad1) */
-> +	u8 pad2;
+--QgYiJByqJONV6c4d
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't quite follow what those comments mean...
+On Thu, Jan 09, 2014 at 10:22:19AM +0000, Laszlo Papp wrote:
 
-I know nothing of the hw in question, but I guess there's some reason
-the stuff2a and stuff2b has been separate, and there's even a blank line
-between. If they pad a particular block in the data structure, doesn't
-your change make it confusing?
+> Who is the maintainer? Is it Mark, or I should wait for someone else?
 
-It wouldn't be too pad to have those 5 fields as separate ones. One u16
-for the stuff2a, and u16 + u8 for the stuff2b. It'd be simple to check
-that those are zero.
+Yes, it's me.
 
- Tomi
-
-
-
---QExNdmMHqTkhJLMsRmxnvH3LdfXcokIft
+--QgYiJByqJONV6c4d
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSzpRmAAoJEPo9qoy8lh71QQ4QAIhnFfrJvBwDobmp1uVGW/y5
-vceNq+pMt5MQEWlLgjxNFUS4q6q4OyITYHZqz8qgwkEWQTbay9aHOCrFM7sspc51
-F+hkHEwyOdBOjGC4m8YgHgFxn19QW5mOEiS29XJyuBmgDdJQ/v1KnSqUg/82piQ0
-mUzCCv7nwtR6Q13Y3y7QfrCHAmXEJFuN9kXsCz+r7UlN00WrJ1IfJjqgjZB/K7/S
-LuvZmYFeGy9EuGnOE4aHJAHfaAZ1xg95qf1iPaUvE1kZQH9o/5+QMQjTohAMnTW5
-tKbromuf3TzTlMGKPl1+i0GPdIQT6y+kSqEfDNYHqBdpkw+M0EAdN2+z9cHD7vlL
-SMo/hD6c53qEjchROnecldrZmcMXNf6ZfUeAzkE2vfpvaH99nH9BAlQrN4a0srGa
-iXizVuK/fayVzPd9RIpP3F0lObe11rk15DFVLPti5TBQJPckMNMMNFpraNxvPxML
-wVF4scjqcMwFzH7/sNoyXzhniDU2FPfIk07EmmfeJG8Ow2ycy1DtQKbAu+bfnrPt
-a7Hzs+W4S3jJI8hbRi2ZDRaRUiHvJNaCzTdESEBq3YJ17nuVPVorj2eoeCr0JRRJ
-im3WtsUC8HBz04q0owrQKr6B9YMTb3sb72Wma8nnblAA3ounn3FNhClW16qIsTx5
-XMZKhqor1cxJP2YyzWg0
-=qesP
+iQIcBAEBAgAGBQJSzpSuAAoJELSic+t+oim9WhMP/0a51GYoWgdFTcSGwU3xhH8p
+tdUKmEaCMtcOOnDHFhr75kzM04LbTp3m4sk/75Z+TXxlUztbHHy/L84zOJeLUFXw
+LGIqT2WnOjS3Ltxj3BH+faD5/QNc+w7pZhZIdAn9SPA3sRIBXWR6hyPxERm2Cvfm
+lh4JgFwVHwvumSW5MJ4+e2wb4kOhdsx0s+fNMK/xwpFz20addwhiA/F3RdTvKDzk
+/Un9lQR2jQN77wmxUfH7r3k0DKW8ITvrGpP5dXtec9ymAThFpSPWR0zxnGtl6x6n
+7sKb4LaP9Mnt5mFgi4Uumw0nUHwl5G+v0wVnNHjXyK/beGqgRaWTWICp0D5oegBN
+gN9NWUmX9a9Rfbre0yTH99SKGLmyDkjGaJ8Kkm+3W4tqZ0oqApC+2jvaMMWF4Rj7
+rEtQ92xuXFQoeW5HEvaYaOBLvcfswNnMViTu5UhV2t4JiR+Oz+VLjU/ZkZLQd6ql
+vSdQT2MR4vaIvQ4UrLSWEybINIuGaoaJ07JmJiC+kN32wgnxhYNc2u3hCqO7y444
+KA+mJmmYLBpfIOJJdm6ApiDHycpN84Wq9TqLM37Aaymc/nV4zp1kJEiN3vv3sm5y
+IEsmb807nU4Y1WP+fHwuA52KA/EuqjWkBGbsiRK9aKO85Pa0nXO7HudX7JasJS/G
+MNKPALoM9udAhs8beXVA
+=MPhQ
 -----END PGP SIGNATURE-----
 
---QExNdmMHqTkhJLMsRmxnvH3LdfXcokIft--
+--QgYiJByqJONV6c4d--
