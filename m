@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaAIL5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:57:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:55627 "HELO
+	id S1753233AbaAIL7C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:59:02 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51858 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751300AbaAIL5Z (ORCPT
+	with SMTP id S1751695AbaAIL6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:57:25 -0500
+	Thu, 9 Jan 2014 06:58:51 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 Resend] cpufreq: create cpufreq_generic_get() routine
-Date: Thu, 09 Jan 2014 13:11:15 +0100
-Message-ID: <1645387.93uAkEaqro@vostro.rjw.lan>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: print error message and bail out early if failed to parse APIC ID for CPU
+Date: Thu, 09 Jan 2014 13:12:42 +0100
+Message-ID: <5603175.k76fij1bcj@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAKohpo=EsaBPdF3wYsa2rEdjcpPagbhPcxWw1_PA=yVLDnjRiA@mail.gmail.com>
-References: <d9239e0a5df99392647ff8343673342f89d09476.1389059568.git.viresh.kumar@linaro.org> <CAOesGMgfFVoVJpOMXWtzVWj_F4pD-L9Osyv4u6=c8RUWOoLHFw@mail.gmail.com> <CAKohpo=EsaBPdF3wYsa2rEdjcpPagbhPcxWw1_PA=yVLDnjRiA@mail.gmail.com>
+In-Reply-To: <1389255320-1563-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1389255320-1563-1-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -32,68 +25,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 09, 2014 02:56:28 PM Viresh Kumar wrote:
-> cc'ng Russell/LAKML/Fengguang..
+On Thursday, January 09, 2014 04:15:19 PM Jiang Liu wrote:
+> Enhance ACPI CPU hotplug driver to print clear error message and
+> bail out early if BIOS returns wrong value in ACPI MADT table or
+> _MAT method. Otherwise it will add the CPU device even if failed
+> to get APIC ID and fails any operations against sysfs interface:
+> /sys/devices/system/cpu/cpux/online
 > 
-> On 9 January 2014 14:08, Olof Johansson <olof@lixom.net> wrote:
-> > This patch breaks a bunch of ARM boards. In particular, the following
-> > defconfigs no longer build:
-> 
-> That's really bad, Rafael will scold me again :)
-> 
-> >           assabet_defconfig
-> >           badge4_defconfig
-> >           cerfcube_defconfig
-> >           collie_defconfig
-> >           h3600_defconfig
-> >           hackkit_defconfig
-> >           jornada720_defconfig
-> >           lart_defconfig
-> >           neponset_defconfig
-> >           pleb_defconfig
-> >           shannon_defconfig
-> >           simpad_defconfig
-> >
-> > Error is:
-> >
-> > drivers/built-in.o: In function `cpufreq_generic_get':
-> > drivers/cpufreq/cpufreq.c:189: undefined reference to `clk_get_rate'
-> >
-> > Seems like this needs to be guarded by HAVE_CLK?
-> 
-> Naah.. After some investigation I found this:
-> 
-> - We already have dummy implementations of clk routines in case
-> CONFIG_HAVE_CLK is not defined (I added them long back).
-> 
-> - There is one thing common among all above defconfigs, all
-> belong to SA1100 family :)
-> 
-> - And the problem is: SA1100 wanted to define its own clk routines
-> and selects CLKDEV_LOOKUP (which enables HAVE_CLK), but it
-> doesn't implement all clk routines. Which is *wrong*.
-> 
-> So, actually this patch brought an _existing_ bug in limelight. And
-> this should be fixed by adding dummy or meaningful implementation
-> of missing clk routines.
-> 
-> @Russell: If above looks correct then can you please communicate
-> what should we do here? I don't really know what exactly these
-> routines should have, simply a copy of dummy routines from clk.h
-> or some meaningful stuff. So, maybe you can write a patch, otherwise
-> let me know what to write and I will give it a try.
-> 
-> @Rafael: Please *don't* revert this patch, its not my fault this time :)
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-Well, if build is broken, it *always* is the fault of the commit that
-introduced the breakage, even if that is a result of someone else doing
-things incorrectly.  Why?  Because it potentially breaks bisection for
-people and *that* is a big deal.
-
-So yes, I'm going to revert it.  Please resubmit after you've addressed the
-build breakage.
+Do you have any pointers to bug reports regarding this etc.?  If so,
+it would be good to add links to them to the commit log.
 
 Thanks!
+
+> ---
+>  drivers/acpi/acpi_processor.c |   24 ++++++++++++++----------
+>  1 file changed, 14 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index 3c1d6b0..6ce71b0 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -212,7 +212,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  	union acpi_object object = { 0 };
+>  	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
+>  	struct acpi_processor *pr = acpi_driver_data(device);
+> -	int cpu_index, device_declaration = 0;
+> +	int apic_id, cpu_index, device_declaration = 0;
+>  	acpi_status status = AE_OK;
+>  	static int cpu0_initialized;
+>  	unsigned long long value;
+> @@ -258,18 +258,21 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  		device_declaration = 1;
+>  		pr->acpi_id = value;
+>  	}
+> -	pr->apic_id = acpi_get_apicid(pr->handle, device_declaration,
+> -					pr->acpi_id);
+> -	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+>  
+> -	/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+> -	if (!cpu0_initialized && (cpu_index == -1) &&
+> -	    (num_online_cpus() == 1)) {
+> -		cpu_index = 0;
+> +	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
+> +	if (apic_id < 0) {
+> +		acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
+> +		return -ENODEV;
+>  	}
+> +	pr->apic_id = apic_id;
+>  
+> -	cpu0_initialized = 1;
+> -
+> +	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+> +	if (!cpu0_initialized) {
+> +		cpu0_initialized = 1;
+> +		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+> +		if ((cpu_index == -1) && (num_online_cpus() == 1))
+> +			cpu_index = 0;
+> +	}
+>  	pr->id = cpu_index;
+>  
+>  	/*
+> @@ -282,6 +285,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  		if (ret)
+>  			return ret;
+>  	}
+> +
+>  	/*
+>  	 * On some boxes several processors use the same processor bus id.
+>  	 * But they are located in different scope. For example:
+> 
 
 -- 
 I speak only for myself.
