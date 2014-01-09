@@ -1,207 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaAIKmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:42:52 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:60009 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbaAIKmq (ORCPT
+	id S1752894AbaAIKnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:43:33 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:37721 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750925AbaAIKnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:42:46 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingchang Lu <jingchang.lu@freescale.com>
-Subject: Re: [PATCHv8 2/2] dma: Add Freescale eDMA engine driver support
-Date: Thu, 9 Jan 2014 11:42:34 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-References: <1388645544-5596-1-git-send-email-b35083@freescale.com> <5890639.zaOC7MRE09@wuerfel> <4efd24a1219547cbbf0ce8ec66d762e5@BL2PR03MB467.namprd03.prod.outlook.com>
-In-Reply-To: <4efd24a1219547cbbf0ce8ec66d762e5@BL2PR03MB467.namprd03.prod.outlook.com>
+	Thu, 9 Jan 2014 05:43:25 -0500
+Message-ID: <52CE7D3F.7030308@mellanox.com>
+Date: Thu, 9 Jan 2014 12:43:11 +0200
+From: Sagi Grimberg <sagig@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception
+ cases
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com> <1389212157-14540-3-git-send-email-nab@daterainc.com>
+In-Reply-To: <1389212157-14540-3-git-send-email-nab@daterainc.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401091142.35226.arnd@arndb.de>
-X-Provags-ID: V02:K0:gAvoB1lgIt9ZzkqEONFDhyMEAXzEdhTn3cEQnnQTuTa
- vrnnfB0iEAvkrcu+ZKv7qU3hiso24qdEnpNKc8BFGrpIGzwIWO
- IcHeD2qxkj01WEDoOWxNG+KdCqw4I0rCuaPFdMgg0IQBZDMnti
- qL8ZeoL0GJ8/Fo0UqaFP82KqLjFHWun0F4EYkkzfX+BjxkoFLa
- K60kbQFxWT1G5wTsN5sfJ1+bn+triFPwdVmrcgbBNYLF72JqOU
- oApqvRZ/cFdM6ugUqrDzUQbOprP4zxjKtlIovmW9BHXlbIlPsO
- Fpya2IMhvdwqAKRmY78FQY0MQIqsBHhMd8NSYZaPtTM6U51s7E
- bBulR/3ToE8U4P4rtGmQ=
+X-Originating-IP: [10.0.13.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 January 2014, Jingchang Lu wrote:
-> > > > +sai2: sai@40031000 {
-> > > > +	compatible = "fsl,vf610-sai";
-> > > > +	reg = <0x40031000 0x1000>;
-> > > > +	interrupts = <0 86 0x04>;
-> > > > +	clocks = <&clks VF610_CLK_SAI2>;
-> > > > +	clock-names = "sai";
-> > > > +	dma-names = "tx", "rx";
-> > > > +	dmas = <&edma0 VF610_EDMA_DMAMUX0 VF610_EDMA0_MUX0_SAI2_TX>,
-> > > > +		<&edma0 VF610_EDMA_DMAMUX0 VF610_EDMA0_MUX0_SAI2_RX>;
-> > > > +	status = "disabled";
-> > > > +};
-> > 
-> > It seems wrong to have macros defined like VF610_EDMA0_MUX0_SAI2_TX,
-> > in particular in the example. These should just be literal numbers.
-> [Lu Jingchang-b35083] 
-> This eDMA engineer requires two specifiers, one is a mux group id, the other is a request source id.
-> The VF610_EDMA0_MUX0_SAI2_TX is sai's tx dma request source id, it is defined as a literal number.
-> There are totally more than 100 request source id, I have them macros defined to make it referenced
-> easily and clearly, just like some clock binding done.
-> The macros are defined in include/dt-bindings/dma/vf610-edma.h.
-
-The clock bindings are special because the macros there tend to be made
-up for controllers that just have a bunch of clocks at random register
-locations.
-
-This is not the case for DMA bindings (or some of the more regular clock
-controllers), so there is absolutely no reason to define those macros
-in a header file, it just adds artificial dependencies between the
-driver, SoC support and the binding.
-
-If the numbers are the same as the ones provided in the data sheet,
-just use the numbers and remove the macros.
-
-> > > > +/*
-> > > > + * copying of ARM read{b,w,l) and write{b,w,l) macro definations
-> > > > + * except for doing default swap of cpu_to_le32, the bytes swap
-> > > > + * is done depending on eDMA controller's endian defination,
-> > > > + * which may be big-endian or little-endian.
-> > > > + */
-> > > > +static inline u16 edma_readw(void __iomem *addr)
-> > > > +{
-> > > > +	u16 __v = (__force u16) __raw_readw(addr);
-> > > > +
-> > > > +	__iormb();
-> > > > +	return __v;
-> > > > +}
-> > 
-> > The comment doesn't seem to match the implementation: You don't
-> > actually do swaps here at all, which means this will fail when
-> > your kernel is running in big-endian mode. Just use the regular
-> > readw() etc, or use ioread16/ioread16be depending on the flag,
-> > and get rid of your EDMA_SWAP macros.
-> > 
-> > No need to come up with your own scheme when the problem has
-> > been solved already elsewhere.
-> The working scenario for this device is, the cpu running in little-endian mode,
-> While the eDMA module running in little- or big-endian mode. This device is currently
-> running on ARM architecture only, and I notice that ARM's little-endian readl/writel
-> treats all value as little-endian. This is not matching our scenario here. So I removed
-> the default cpu_to_le32() in the readl(), and put it in EDMA_SWAP32() to satisfy the
-> required.
-
-You are right, your code is actually correct on all combinations
-of big-endian and little-endian ARM CPUs. However, I would argue that
-it's unusual style, and not portable to other architectures (e.g. arm64)
-because the definition of readl() is highly architecture dependent.
-It would also be problematic if the arm definition has to change
-in some form and this driver is overlooked.
-
-I would still recommend doing an implementation like
-
-static inline u16 edma_readw(struct fsl_edma_engine *edma, u16 val, unsigned long offset)
-{
-	if (edma->big_endian)
-		iowrite16be(val, edma->membase + offset);
-	else
-		iowrite16(val, edma->membase + offset);
-}
-
-
-This would simplify the callers that now can replace
-
-        cur_addr = EDMA_SWAP32(fsl_chan->edma, edma_readl(addr + EDMA_TCD_SADDR(ch)));
-
-with 
-
-	cur_addr = edma_readl(fsl_chan->edma, EDMA_TCD_SADDR(ch));
-
-which IMHO is much easier to read. For accessing muxbase, you
-don't have to use your own version, because all accesses are
-single-byte.
-
-BTW, I noticed that fsl_edma_set_tcd_params() is calling edma_writew()
-and edma_writel() without an endian-swap, so I assume it is still
-broken on big-endian CPUs, and likely also on big-endian eDMA engines.
-
-> > > > +static irqreturn_t fsl_edma_irq_handler(int irq, void *dev_id)
-> > > > +{
-> > > > +	if (fsl_edma_tx_handler(irq, dev_id) == IRQ_HANDLED)
-> > > > +		return IRQ_HANDLED;
-> > > > +
-> > > > +	return fsl_edma_err_handler(irq, dev_id);
-> > > > +}
-> > 
-> > Does this do the right thing if both completion and error are
-> > signalled at the same time? It seems you'd miss the error interrupt.
-> I think the error would occur rarely, so if the transmission irq entered,
-> it will return directly after handling. If there is really an error occur,
-> the interrupt will be raised again without transmission interrupt flag, then
-> the irq handler would execute fsl_edma_err_handler() function.
-
-Ah, so the error interrupt is level triggered? That's ok then.
-
-> > > > +static bool fsl_edma_filter_fn(struct dma_chan *chan, void *mux)
-> > > > +{
-> > > > +	 return (chan->chan_id / DMAMUX_NR) == (u32)mux;
-> > > > +}
-> > > > +
-> > > > +static struct dma_chan *fsl_edma_xlate(struct of_phandle_args
-> > *dma_spec,
-> > > > +		struct of_dma *ofdma)
-> > > > +{
-> > > > +	struct dma_chan *chan;
-> > > > +	dma_cap_mask_t mask;
-> > > > +
-> > > > +	if (dma_spec->args_count != 2)
-> > > > +		return NULL;
-> > > > +
-> > > > +	dma_cap_zero(mask);
-> > > > +	dma_cap_set(DMA_SLAVE, mask);
-> > > > +	dma_cap_set(DMA_CYCLIC, mask);
-> > > > +	chan = dma_request_channel(mask, fsl_edma_filter_fn, (void
-> > > > *)dma_spec->args[0]);
-> > > > +	if (chan)
-> > > > +		fsl_edma_chan_mux(to_fsl_edma_chan(chan), dma_spec->args[1],
-> > > > true);
-> > > > +	return chan;
-> > > > +}
-> > 
-> > Please remove the filter function now and use dma_get_slave_chan
-> > with the correct channel as an argument. No need to walk all
-> > available channels in the system and introduce bugs by not
-> > ignoring other dma engines.
+On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 >
-> The dma slave request can only be allocated to channel of particular channels group indicated by
-> the mux group id specifier. and the second specifier is the request id, not the channel number,
-> so to use the dma_get_slave_chan, I would find the channel for this request by walking all the
-> available channels manually.
+> This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
+> exception cases into transport_send_check_condition_and_sense().
+>
+> This includes:
+>
+>    LOGICAL BLOCK GUARD CHECK FAILED
+>    LOGICAL BLOCK APPLICATION TAG CHECK FAILED
+>    LOGICAL BLOCK REFERENCE TAG CHECK FAILED
+>
+> that used by DIF TYPE1 and TYPE3 failure cases.
+>
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Sagi Grimberg <sagig@mellanox.com>
+> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>   drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+>   include/target/target_core_base.h      |    3 +++
+>   2 files changed, 33 insertions(+)
+>
+> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> index 91953da..707ee17 100644
+> --- a/drivers/target/target_core_transport.c
+> +++ b/drivers/target/target_core_transport.c
+> @@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
+>   		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
+>   		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
+>   		break;
+> +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
+> +		/* CURRENT ERROR */
+> +		buffer[0] = 0x70;
+> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+> +		/* ILLEGAL REQUEST */
+> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+> +		/* LOGICAL BLOCK GUARD CHECK FAILED */
+> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
 
-Ah, I missed that you only check the mux number, not the channel number.
+You have Enums for ASCQs (TARGET_GUARD_CHECK_FAILED, 
+TARGET_APPTAG_CHECK_FAILED, TARGET_REFTAG_CHECK_FAILED). either use them 
+or loose them.
 
-The current version however is buggy because you don't check that you
-are actually looking at the right eDMA instance, or an eDMA at all, rather
-than some other random dma engine that may be connected to an external
-bus.
+> +		break;
+> +	case TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED:
+> +		/* CURRENT ERROR */
+> +		buffer[0] = 0x70;
+> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+> +		/* ILLEGAL REQUEST */
+> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+> +		/* LOGICAL BLOCK APPLICATION TAG CHECK FAILED */
+> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x02;
+> +		break;
+> +	case TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED:
+> +		/* CURRENT ERROR */
+> +		buffer[0] = 0x70;
+> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+> +		/* ILLEGAL REQUEST */
+> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+> +		/* LOGICAL BLOCK REFERENCE TAG CHECK FAILED */
+> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x03;
+> +		break;
+>   	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
+>   	default:
+>   		/* CURRENT ERROR */
+> diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+> index 15f402c..9a6e091 100644
+> --- a/include/target/target_core_base.h
+> +++ b/include/target/target_core_base.h
+> @@ -206,6 +206,9 @@ enum tcm_sense_reason_table {
+>   	TCM_OUT_OF_RESOURCES			= R(0x12),
+>   	TCM_PARAMETER_LIST_LENGTH_ERROR		= R(0x13),
+>   	TCM_MISCOMPARE_VERIFY			= R(0x14),
+> +	TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED	= R(0x15),
+> +	TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED	= R(0x16),
+> +	TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED	= R(0x17),
+>   #undef R
+>   };
+>   
 
-It is possible to fix that, but I suspect that would involve more
-complex code than finding an appropriate channel first and then
-calling dma_get_slave_chan() on that.
-I would suggest keeping a list of channels per dmamux and walking that
-list until you find one that succeeds in dma_get_slave_chan().
-
-	Arnd
