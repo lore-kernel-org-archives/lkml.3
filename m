@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562AbaAIJUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 04:20:11 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49498 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171AbaAIJTw (ORCPT
+	id S1756639AbaAIJUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 04:20:54 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:10731 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753445AbaAIJUn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 04:19:52 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Mel Gorman <mgorman@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 6/7] mm/page_alloc: store freelist migratetype to the page on buddy properly
-In-Reply-To: <1389251087-10224-7-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: http://mina86.com/
-References: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com> <1389251087-10224-7-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140109:akpm@linux-foundation.org::nOfiZZ8sAIoK9VKk:0000000000000000000000000000000000000NrE
-X-Hashcash: 1:20:140109:iamjoonsoo.kim@lge.com::C8cA1JndooMzlZNf:0000000000000000000000000000000000000000LJH
-X-Hashcash: 1:20:140109:cody@linux.vnet.ibm.com::eLZwybb9p0UCsTxO:000000000000000000000000000000000000000hEJ
-X-Hashcash: 1:20:140109:jiang.liu@huawei.com::4YOkIM02d5H0Kelv:000000000000000000000000000000000000000000be1
-X-Hashcash: 1:20:140109:hannes@cmpxchg.org::t0XS05NfB2L7ALjW:0000000000000000000000000000000000000000000113+
-X-Hashcash: 1:20:140109:mgorman@suse.de::nx3bcKS0Arthvent:001OCO
-X-Hashcash: 1:20:140109:tangchen@cn.fujitsu.com::n01I2HEYvwKGzPp+:000000000000000000000000000000000000001kMn
-X-Hashcash: 1:20:140109:iamjoonsoo.kim@lge.com::zGu1htoMJcLNKvhJ:0000000000000000000000000000000000000002409
-X-Hashcash: 1:20:140109:js1304@gmail.com::N32SsdDCUpDrTuq3:02k+M
-X-Hashcash: 1:20:140109:riel@redhat.com::HZXlzmTPEcxku6Ku:002Wc4
-X-Hashcash: 1:20:140109:minchan@kernel.org::z8qSBk51A3Uqfbpi:000000000000000000000000000000000000000000034JH
-X-Hashcash: 1:20:140109:mhocko@suse.cz::Nk2QnXsPmLFPTewt:0003O9D
-X-Hashcash: 1:20:140109:linux-kernel@vger.kernel.org::+PabEAW+4ogx9x8L:0000000000000000000000000000000004LTL
-X-Hashcash: 1:20:140109:kirill.shutemov@linux.intel.com::eQt10G0Z0sk0Tjxw:0000000000000000000000000000005R4f
-X-Hashcash: 1:20:140109:yongjun_wei@trendmicro.com.cn::Arv6jTCJVrC1SGnT:000000000000000000000000000000009HVg
-X-Hashcash: 1:20:140109:ak@linux.intel.com::VhKHBdFRnplJ870G:0000000000000000000000000000000000000000000CuZw
-X-Hashcash: 1:20:140109:linux-mm@kvack.org::ZaNIdRj3WOZFZ3Dy:000000000000000000000000000000000000000000099p3
-Date: Thu, 09 Jan 2014 10:19:44 +0100
-Message-ID: <xa1t8uupbjgv.fsf@mina86.com>
+	Thu, 9 Jan 2014 04:20:43 -0500
+X-IronPort-AV: E=Sophos;i="4.95,630,1384300800"; 
+   d="scan'208";a="91204335"
+From: Paul Durrant <Paul.Durrant@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Davies" <Jonathan.Davies@citrix.com>
+Subject: RE: [PATCH net-next v3 8/9] xen-netback: Timeout packets in RX path
+Thread-Topic: [PATCH net-next v3 8/9] xen-netback: Timeout packets in RX path
+Thread-Index: AQHPDLl4Wu4tZBxeyUWvbT3V/hLkQ5p8HC/w
+Date: Thu, 9 Jan 2014 09:20:32 +0000
+Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD0200C2A@AMSPEX01CL01.citrite.net>
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+ <1389139818-24458-9-git-send-email-zoltan.kiss@citrix.com>
+ <52CDC45D.3050509@citrix.com>
+In-Reply-To: <52CDC45D.3050509@citrix.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.80.2.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: Zoltan Kiss
+> Sent: 08 January 2014 21:34
+> To: Ian Campbell; Wei Liu; xen-devel@lists.xenproject.org;
+> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jonathan Davies
+> Cc: Zoltan Kiss; Paul Durrant
+> Subject: Re: [PATCH net-next v3 8/9] xen-netback: Timeout packets in RX
+> path
+> 
+> I just realized when answering Ma's mail that this doesn't cause the
+> desired effect after Paul's flow control improvement: starting the queue
+> doesn't drop the packets which cannot fit the ring. Which in fact might
+> be not good.
 
-On Thu, Jan 09 2014, Joonsoo Kim wrote:
-> To maintain freelist migratetype information on buddy pages, migratetype
-> should be set again whenever the page order is changed. set_page_order()
-> is the best place to do, because it is called whenever the page order is
-> changed, so this patch adds set_buddy_migratetype() to set_page_order().
->
-> And this patch makes set/get_buddy_migratetype() only enabled if it is
-> really needed, because it has some overhead.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+No, that would not be good.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> We are adding the skb to vif->rx_queue even when
+> xenvif_rx_ring_slots_available(vif, min_slots_needed) said there is no
+> space for that. Or am I missing something? Paul?
+> 
 
+That's correct. Part of the flow control improvement was to get rid of needless packet drops. For your purposes, you basically need to avoid using the queuing discipline and take packets into netback's vif->rx_queue regardless of the state of the shared ring so that you can drop them if they get beyond a certain age. So, perhaps you should never stop the netif queue, place an upper limit on vif->rx_queue (either packet or byte count) and drop when that is exceeded (i.e. mimicking pfifo or bfifo internally).
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+  Paul
 
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+> Zoli
+> 
+> On 08/01/14 00:10, Zoltan Kiss wrote:
+> > A malicious or buggy guest can leave its queue filled indefinitely, in which
+> > case qdisc start to queue packets for that VIF. If those packets came from
+> an
+> > another guest, it can block its slots and prevent shutdown. To avoid that,
+> we
+> > make sure the queue is drained in every 10 seconds.
+> ...
+> > diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-
+> netback/interface.c
+> > index 95fcd63..ce032f9 100644
+> > --- a/drivers/net/xen-netback/interface.c
+> > +++ b/drivers/net/xen-netback/interface.c
+> > @@ -114,6 +114,16 @@ static irqreturn_t xenvif_interrupt(int irq, void
+> *dev_id)
+> >   	return IRQ_HANDLED;
+> >   }
+> >
+> > +static void xenvif_wake_queue(unsigned long data)
+> > +{
+> > +	struct xenvif *vif = (struct xenvif *)data;
+> > +
+> > +	if (netif_queue_stopped(vif->dev)) {
+> > +		netdev_err(vif->dev, "draining TX queue\n");
+> > +		netif_wake_queue(vif->dev);
+> > +	}
+> > +}
+> > +
+> >   static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >   {
+> >   	struct xenvif *vif = netdev_priv(dev);
+> > @@ -143,8 +153,13 @@ static int xenvif_start_xmit(struct sk_buff *skb,
+> struct net_device *dev)
+> >   	 * then turn off the queue to give the ring a chance to
+> >   	 * drain.
+> >   	 */
+> > -	if (!xenvif_rx_ring_slots_available(vif, min_slots_needed))
+> > +	if (!xenvif_rx_ring_slots_available(vif, min_slots_needed)) {
+> > +		vif->wake_queue.function = xenvif_wake_queue;
+> > +		vif->wake_queue.data = (unsigned long)vif;
+> >   		xenvif_stop_queue(vif);
+> > +		mod_timer(&vif->wake_queue,
+> > +			jiffies + rx_drain_timeout_jiffies);
+> > +	}
+> >
+> >   	skb_queue_tail(&vif->rx_queue, skb);
+> >   	xenvif_kick_thread(vif);
 
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSzmmwAAoJECBgQBJQdR/01c4P/Ane1F6g9Fyos/HioQHFOTyT
-qElpv05RKxm+fQ6zBraYsXxqtybmVeaxm9CLV3ara5lgyFbRlsWYuLGNeVPrs7P9
-4GzdiK1Cd16f6F7ljLQ3SdZO0JgumR0hItG1eV5pR32XGmgZkTPJTfAKBtDNnsO+
-QDW6WqNL4GAK5k5m9PGpj9h0RAdQK/FhiiK00rjiPkCm+tqsHw4rJrBusOwUKPrv
-rRSsLRUTPhFLXM6EEL6+BrrdZ6ONjCci9Gq6PImIElz2+QTkNg5qcEMHeIE7phLQ
-n0LKZ4ojcdTzfRE5vu3w9iCzl8LLlww48HgRcru0faitpNcrs3cVU/h/i4kJ1YWM
-gWx2l+qwi30C5Rxlx6Kg9wJq/rBw+ZZSe/HE3ndbsL55JyQhJFSDkD0JR4OSbJ/d
-nLNJPsU3u0X5stHeDSfNakc2S/drDvNsR0JOWtLmme2ruUBjz2MrYNWqGDAaYcNf
-RkEpln08lsKrNpOdHZK9bUdzVxnADW3nZaJGYu0s1ZNgfg7Ug/CqGg0Mr+uSznW/
-YZSeruDxaMFGlckkkwIkYc7IKRz6/wh3jQ2YxPepPOEw5a6uUxIPXoM19EcsKTh+
-KL7bEp96FhnH1Us3N/cYLqacRlsIARQVXYx7ydLzsRB5UiKnVu/3pDgJDoGVd29c
-ozr6HnxHAPC2a7AaX+js
-=CZkg
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
