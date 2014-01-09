@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbaAIGwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 01:52:34 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:36698 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446AbaAIGvB (ORCPT
+	id S1752214AbaAIG5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 01:57:04 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39997 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751183AbaAIG5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 01:51:01 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s096ot4o032553, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <oliver@neukum.org>, <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/3] r8152: change the descriptor
-Date: Thu, 9 Jan 2014 14:50:30 +0800
-Message-ID: <1389250232-8663-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389250232-8663-1-git-send-email-hayeswang@realtek.com>
-References: <1389250232-8663-1-git-send-email-hayeswang@realtek.com>
+	Thu, 9 Jan 2014 01:57:01 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z579ehcb8kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 9 Jan 2014 14:57:42 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <rob@landley.net>
+Subject: Re: [PATCH] ARM: imx6q: Add missing esai_ahb clock to current clock
+ tree
+Message-ID: <20140109065740.GD21717@S2101-09.ap.freescale.net>
+References: <1389236699-10387-1-git-send-email-Guangyu.Chen@freescale.com>
+ <20140109035810.GB21717@S2101-09.ap.freescale.net>
+ <20140109034940.GA14480@MrMyself>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140109034940.GA14480@MrMyself>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The r8152 could support RTL8153. Update the relative descriptor.
+On Thu, Jan 09, 2014 at 11:49:41AM +0800, Nicolin Chen wrote:
+> On Thu, Jan 09, 2014 at 11:58:12AM +0800, Shawn Guo wrote:
+> > >  static struct clk *clk[clk_max];
+> > > @@ -355,6 +355,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+> > >  	clk[ecspi5]       = imx_clk_gate2("ecspi5",        "ecspi_root",        base + 0x6c, 8);
+> > >  	clk[enet]         = imx_clk_gate2("enet",          "ipg",               base + 0x6c, 10);
+> > >  	clk[esai]         = imx_clk_gate2("esai",          "esai_podf",         base + 0x6c, 16);
+> > > +	clk[esai_ahb]     = imx_clk_gate2("esai_ahb",      "ahb",               base + 0x6c, 16);
+> > 
+> > Hmm, having two clocks operating on the same gate bit will get us
+> > problem in clock disabling.  Clock enabling is fine, since either
+> > one who calls clk_enable() first will just set the gate bit.  But in
+> > case that clk_enable() is called on both clocks, and then when either
+> > clock calls clk_disable(), the gate bit will be cleared and thus breaks
+> > the other one that might still be in use.
+> 
+> Understood. But how could we handle this situation? The only way I can figure
+> out is to make sure the driver open/close them at the same time, it's not a
+> perfect way though.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/Kconfig | 5 +++--
- drivers/net/usb/r8152.c | 2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+Hmm, we generally leave the gate bit to the clock used to access
+register, because usually it's the first one to be on and the last one
+to be off.
 
-diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-index 47b0f73..6b638a0 100644
---- a/drivers/net/usb/Kconfig
-+++ b/drivers/net/usb/Kconfig
-@@ -92,11 +92,12 @@ config USB_RTL8150
- 	  module will be called rtl8150.
- 
- config USB_RTL8152
--	tristate "Realtek RTL8152 Based USB 2.0 Ethernet Adapters"
-+	tristate "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
- 	select MII
- 	help
- 	  This option adds support for Realtek RTL8152 based USB 2.0
--	  10/100 Ethernet adapters.
-+	  10/100 Ethernet adapters and RTL8153 based USB 3.0 10/100/1000
-+	  Ethernet adapters.
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called r8152.
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index bf7d549..38f3c14 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -26,7 +26,7 @@
- /* Version Information */
- #define DRIVER_VERSION "v1.03.0 (2013/12/26)"
- #define DRIVER_AUTHOR "Realtek linux nic maintainers <nic_swsd@realtek.com>"
--#define DRIVER_DESC "Realtek RTL8152 Based USB 2.0 Ethernet Adapters"
-+#define DRIVER_DESC "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
- #define MODULENAME "r8152"
- 
- #define R8152_PHY_ID		32
--- 
-1.8.4.2
+Shawn
 
