@@ -1,115 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519AbaAIJ1g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 04:27:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47955 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556AbaAIJ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 04:27:31 -0500
-Date: Thu, 9 Jan 2014 09:27:20 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>, Andi Kleen <ak@linux.intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH 0/7] improve robustness on handling migratetype
-Message-ID: <20140109092720.GM27046@suse.de>
-References: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1757442AbaAIJ3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 04:29:31 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:38278 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811AbaAIJ31 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 04:29:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
+References: <1389095509-14357-5-git-send-email-ch.naveen@samsung.com>
+	<1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
+Date: Thu, 9 Jan 2014 14:59:26 +0530
+Message-ID: <CAK9yfHyya0LwYp0f2ZrBbb9M51FVxnBkZuHqrD1ju9yDBffmqg@mail.gmail.com>
+Subject: Re: [PATCH 4/6 v2] crypto:s5p-sss: Kconfig: Let Exynos SoCs select
+ SSS driver
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-crypto@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, vzapolskiy@gmail.com,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 04:04:40PM +0900, Joonsoo Kim wrote:
-> Hello,
-> 
-> I found some weaknesses on handling migratetype during code review and
-> testing CMA.
-> 
-> First, we don't have any synchronization method on get/set pageblock
-> migratetype. When we change migratetype, we hold the zone lock. So
-> writer-writer race doesn't exist. But while someone changes migratetype,
-> others can get migratetype. This may introduce totally unintended value
-> as migratetype. Although I haven't heard of any problem report about
-> that, it is better to protect properly.
-> 
+Hi Naveen,
 
-This is deliberate. The migratetypes for the majority of users are advisory
-and aimed for fragmentation avoidance. It was important that the cost of
-that be kept as low as possible and the general case is that migration types
-change very rarely. In many cases, the zone lock is held. In other cases,
-such as splitting free pages, the cost is simply not justified.
+On 9 January 2014 10:29, Naveen Krishna Chatradhi <ch.naveen@samsung.com> wrote:
+> From: Naveen Krishna Ch <ch.naveen@samsung.com>
+>
+> This patch modifies Kconfig such that ARCH_EXYNOS SoCs
+> which includes (Exynos4210, Exynos5250 and Exynos5420)
+> can also select Samsung SSS(Security SubSystem) driver.
 
-I doubt there is any amount of data you could add in support that would
-justify hammering the free fast paths (which call get_pageblock_type).
-
-> Second, (get/set)_freepage_migrate isn't used properly. I guess that it
-> would be introduced for per cpu page(pcp) performance, but, it is also
-> used by memory isolation, now. For that case, the information isn't
-> enough to use, so we need to fix it.
-> 
-> Third, there is the problem on buddy allocator. It doesn't consider
-> migratetype when merging buddy, so pages from cma or isolate region can
-> be moved to other migratetype freelist. It makes CMA failed over and over.
-> To prevent it, the buddy allocator should consider migratetype if
-> CMA/ISOLATE is enabled.
-
-Without loioing at the patches, this is likely to add some cost to the
-page free fast path -- heavy cost if it's a pageblock lookup and lighter
-cost if you are using cached page information which is potentially stale.
-Why not force CMA regions to be aligned on MAX_ORDER_NR_PAGES boundary
-instead to avoid any possibility of merging issues?
-
-> This patchset is aimed at fixing these problems and based on v3.13-rc7.
-> 
->   mm/page_alloc: synchronize get/set pageblock
-
-cost with no justification.
-
->   mm/cma: fix cma free page accounting
-
-sounds like it would be a fix but unrelated to the leader and should be
-seperated out on its own
-
->   mm/page_alloc: move set_freepage_migratetype() to better place
-
-Very vague. If this does something useful then it could do with a better
-subject.
-
->   mm/isolation: remove invalid check condition
-
-Looks harmless.
-
->   mm/page_alloc: separate interface to set/get migratetype of freepage
->   mm/page_alloc: store freelist migratetype to the page on buddy
->     properly
-
-Potentially sounds useful
-
->   mm/page_alloc: don't merge MIGRATE_(CMA|ISOLATE) pages on buddy
-> 
-
-Sounds unnecessary if CMA regions were MAX_ORDER_NR_PAGES aligned and
-then the free paths would be unaffected for everybody.
-
-I didn't look at the patches because it felt like cost without any supporting
-justification for the patches. Superficially it looks like patch 1 needs to
-go away and the last patch could be done without affected !CMA users. The
-rest are potentially useful but there should have been some supporting
-data on how it helps CMA with some backup showing that the page allocation
-paths are not impacted as a result.
+What about Exynos4x12 and 5440 as they too come under ARCH_EXYNOS?
 
 -- 
-Mel Gorman
-SUSE Labs
+With warm regards,
+Sachin
