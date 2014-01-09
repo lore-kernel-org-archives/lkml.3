@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaAIKnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:43:33 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:37721 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750925AbaAIKnZ (ORCPT
+	id S1751973AbaAIKp7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:45:59 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42628 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750882AbaAIKpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:43:25 -0500
-Message-ID: <52CE7D3F.7030308@mellanox.com>
-Date: Thu, 9 Jan 2014 12:43:11 +0200
-From: Sagi Grimberg <sagig@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 9 Jan 2014 05:45:50 -0500
+Date: Thu, 9 Jan 2014 10:45:20 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/7] ARM: perf_event: Silence sparse warning
+Message-ID: <20140109104519.GA17838@mudshark.cambridge.arm.com>
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
+ <1389221984-10973-2-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception
- cases
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com> <1389212157-14540-3-git-send-email-nab@daterainc.com>
-In-Reply-To: <1389212157-14540-3-git-send-email-nab@daterainc.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.0.13.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389221984-10973-2-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
->
-> This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
-> exception cases into transport_send_check_condition_and_sense().
->
-> This includes:
->
->    LOGICAL BLOCK GUARD CHECK FAILED
->    LOGICAL BLOCK APPLICATION TAG CHECK FAILED
->    LOGICAL BLOCK REFERENCE TAG CHECK FAILED
->
-> that used by DIF TYPE1 and TYPE3 failure cases.
->
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Hannes Reinecke <hare@suse.de>
-> Cc: Sagi Grimberg <sagig@mellanox.com>
-> Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Hi Stephen,
+
+On Wed, Jan 08, 2014 at 10:59:38PM +0000, Stephen Boyd wrote:
+> arch/arm/kernel/perf_event_cpu.c:274:25: warning: incorrect type in assignment (different modifiers)
+> arch/arm/kernel/perf_event_cpu.c:274:25: expected int ( *init_fn )( ... )
+> arch/arm/kernel/perf_event_cpu.c:274:25: got void const *const data
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->   drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
->   include/target/target_core_base.h      |    3 +++
->   2 files changed, 33 insertions(+)
->
-> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> index 91953da..707ee17 100644
-> --- a/drivers/target/target_core_transport.c
-> +++ b/drivers/target/target_core_transport.c
-> @@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
->   		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
->   		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
->   		break;
-> +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
-> +		/* CURRENT ERROR */
-> +		buffer[0] = 0x70;
-> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-> +		/* ILLEGAL REQUEST */
-> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-> +		/* LOGICAL BLOCK GUARD CHECK FAILED */
-> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
 
-You have Enums for ASCQs (TARGET_GUARD_CHECK_FAILED, 
-TARGET_APPTAG_CHECK_FAILED, TARGET_REFTAG_CHECK_FAILED). either use them 
-or loose them.
+Given that the rest of the series depends on the change to the percpu IRQ
+stuff, I think you can just send this patch to Russell's patch system with
+my ack:
 
-> +		break;
-> +	case TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED:
-> +		/* CURRENT ERROR */
-> +		buffer[0] = 0x70;
-> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-> +		/* ILLEGAL REQUEST */
-> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-> +		/* LOGICAL BLOCK APPLICATION TAG CHECK FAILED */
-> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x02;
-> +		break;
-> +	case TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED:
-> +		/* CURRENT ERROR */
-> +		buffer[0] = 0x70;
-> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-> +		/* ILLEGAL REQUEST */
-> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-> +		/* LOGICAL BLOCK REFERENCE TAG CHECK FAILED */
-> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x03;
-> +		break;
->   	case TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE:
->   	default:
->   		/* CURRENT ERROR */
-> diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-> index 15f402c..9a6e091 100644
-> --- a/include/target/target_core_base.h
-> +++ b/include/target/target_core_base.h
-> @@ -206,6 +206,9 @@ enum tcm_sense_reason_table {
->   	TCM_OUT_OF_RESOURCES			= R(0x12),
->   	TCM_PARAMETER_LIST_LENGTH_ERROR		= R(0x13),
->   	TCM_MISCOMPARE_VERIFY			= R(0x14),
-> +	TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED	= R(0x15),
-> +	TCM_LOGICAL_BLOCK_APP_TAG_CHECK_FAILED	= R(0x16),
-> +	TCM_LOGICAL_BLOCK_REF_TAG_CHECK_FAILED	= R(0x17),
->   #undef R
->   };
->   
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
+Cheers,
+
+Will
+
+>  arch/arm/kernel/perf_event_cpu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+> index d85055cd24ba..20d553c9f5e2 100644
+> --- a/arch/arm/kernel/perf_event_cpu.c
+> +++ b/arch/arm/kernel/perf_event_cpu.c
+> @@ -254,7 +254,7 @@ static int probe_current_pmu(struct arm_pmu *pmu)
+>  static int cpu_pmu_device_probe(struct platform_device *pdev)
+>  {
+>  	const struct of_device_id *of_id;
+> -	int (*init_fn)(struct arm_pmu *);
+> +	const int (*init_fn)(struct arm_pmu *);
+>  	struct device_node *node = pdev->dev.of_node;
+>  	struct arm_pmu *pmu;
+>  	int ret = -ENODEV;
+> -- 
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+> 
