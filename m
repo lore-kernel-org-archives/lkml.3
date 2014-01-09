@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaAILeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:34:22 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:27288 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaAILeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:34:15 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-12-52ce89351286
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: tj@kernel.org, sergei.shtylyov@cogentembedded.com, kishon@ti.com,
-        hdegoede@redhat.com, arnd@arndb.de, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 0/3] ata: ahci_platform: Add PHY support and OMAP support
-Date: Thu, 09 Jan 2014 12:33:54 +0100
-Message-id: <1389284177.iKaZgY0Ov4@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1389264962-22858-1-git-send-email-rogerq@ti.com>
-References: <1389264962-22858-1-git-send-email-rogerq@ti.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jAV3TznNBBm/Palj8nXSM3WL+kXOs
-	Fm+OT2eyuPC0h83i2I5HTBaXd81hs+h5pGVxZtUtdotfy48yOnB6/P41idHjwdT/TB6bVnWy
-	ebzfd5XN4/iN7UwenzfJBbBFcdmkpOZklqUW6dslcGVsWONYcIy94uWMCUwNjB9Zuxg5OSQE
-	TCRerLzEBmGLSVy4tx7I5uIQEljEKNG6dS8rhNPCJHF+42mwKjYBK4mJ7asYQWwRAUWJeysh
-	OpgFDjJK9F2BKBIWCJCYsvQmC4jNIqAqcevdbmYQm1dAR+L2/slMILaogKfEju0rweo5Bewk
-	Xu/+ATZUSMBWYv6zXWwQ9YISPybfA5vDLCAvsW//VFYIW0dif+s0tgmMArOQlM1CUjYLSdkC
-	RuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEx8ExqB+PKBotDjAIcjEo8vCuKzwYJsSaW
-	FVfmHmKU4GBWEuGd2nguSIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILU
-	IpgsEwenVAPjoWY2btOLTV/vpfjKH3L5d5z5/I4/1hNFHl/pVcg8HX35Qeu0RF7F36JbtL0n
-	lc5y3/aJIdTqi6nQ2vsNW3L6G5qeLlDYc+CiTb71Gr8NNf7blp5acv7zunMe890z8veFRAbu
-	8n8f3H/a/HP2r0+36+xNuCQWvA7Q4mxMWK7++e7Um70PPneuUWIpzkg01GIuKk4EAEvT7+J9	AgAA
+	id S1752081AbaAILh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:37:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42714 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201AbaAILhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 06:37:46 -0500
+Message-ID: <52CE89F9.4040908@ti.com>
+Date: Thu, 9 Jan 2014 17:07:29 +0530
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, <tj@kernel.org>
+CC: <kishon@ti.com>, <b.zolnierkie@samsung.com>, <hdegoede@redhat.com>,
+        <arnd@arndb.de>, <linux-ide@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH v4 2/3] ata: ahci_platform: Manage SATA PHY
+References: <1389264962-22858-1-git-send-email-rogerq@ti.com> <1389264962-22858-3-git-send-email-rogerq@ti.com> <52CE85E9.7040703@cogentembedded.com>
+In-Reply-To: <52CE85E9.7040703@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/09/2014 04:50 PM, Sergei Shtylyov wrote:
+> On 09-01-2014 14:56, Roger Quadros wrote:
+> 
+>> From: Balaji T K <balajitk@ti.com>
+> 
+>> Some platforms have a PHY hooked up to the
+>> SATA controller. The PHY needs to be initialized
+>> and powered up for SATA to work. We do that
+>> using the PHY framework.
+> 
+>> [Roger Q] Cleaned up.
+> 
+>> CC: Tejun Heo <tj@kernel.org>
+>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> [...]
+> 
+>> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+>> index d5ced13..b476642 100644
+>> --- a/drivers/ata/ahci_platform.c
+>> +++ b/drivers/ata/ahci_platform.c
+>> @@ -142,6 +142,39 @@ static int ahci_probe(struct platform_device *pdev)
+>>           }
+>>       }
+>>
+>> +    hpriv->phy = devm_phy_get(dev, "sata-phy");
+>> +    if (IS_ERR(hpriv->phy)) {
+>> +        rc = PTR_ERR(hpriv->phy);
+>> +        switch (rc) {
+>> +        case -ENODEV:
+>> +        case -ENOSYS:
+>> +            /* continue normally */
+>> +            hpriv->phy = NULL;
+>> +            break;
+>> +
+>> +        case -EPROBE_DEFER:
+>> +            goto disable_unprepare_clk;
+>> +            break;
+> 
+>    Well, well, *break* after *goto*? :-)
+> 
+I know it is pointless functionally, but it is just my preference
+aesthetically.
 
-Hi,
+Is it much of an issue if left as is?
 
-On Thursday, January 09, 2014 04:25:59 PM Roger Quadros wrote:
-> Hi,
-> 
-> Some platforms have a PHY hooked up to the SATA controller.
-> The PHY needs to be initialized and powered up for SATA to work.
-> We do that using the Generic PHY framework in PATCH 2.
-> 
-> In order to support SATA on the OMAP platforms we need to runtime
-> resume the device before use. PATCH 3 takes care of that.
-> 
-> PATCH 1 just updates the compatible list in the DT binding document.
-> 
-> Changelog:
-> v4:
-> - Tackle error conditions while using PHY framework APIs.
-> 
-> v3:
-> - Addressed review comments and rebased on 3.13-rc7
-> - DT binding update moved to new patch.
-> 
-> v2:
-> - got rid of Texas Instruments SATA wrapper driver
-> - adressed review comments
-
-Thanks for fixing it.
-
-Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+cheers,
+-roger
 
