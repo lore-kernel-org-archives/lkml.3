@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaAIB7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 20:59:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33890 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaAIB71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 20:59:27 -0500
-Message-ID: <52CE0252.4090106@oracle.com>
-Date: Thu, 09 Jan 2014 09:58:42 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1752576AbaAICBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 21:01:06 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60390 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952AbaAICBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 21:01:03 -0500
+X-IronPort-AV: E=Sophos;i="4.95,627,1384272000"; 
+   d="scan'208";a="9393185"
+Message-ID: <52CEB92E.6060004@cn.fujitsu.com>
+Date: Thu, 09 Jan 2014 09:58:54 -0500
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: joro@8bytes.org, dwmw2@infradead.org, yinghai@kernel.org,
-        bhelgaas@google.com, jiang.liu@linux.intel.com
-CC: iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH Trivial] intel-iommu: check return value of device_to_iommu()
- before using it
-Content-Type: multipart/mixed;
- boundary="------------030603040806070308050806"
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, dsahern@gmail.com,
+        artagnon@gmail.com
+Subject: Re: [PATCH 2/8] perf tools: Make the print_pmu_events funtion to
+ return unsigned int.
+References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com> <52353637cf8005cef5f3eaa605121426ef49f557.1388416837.git.yangds.fnst@cn.fujitsu.com> <20140108151038.GA2626@infradead.org>
+In-Reply-To: <20140108151038.GA2626@infradead.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/09 09:59:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/09 09:59:58,
+	Serialize complete at 2014/01/09 09:59:58
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030603040806070308050806
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On 01/08/2014 10:10 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Dec 30, 2013 at 10:26:37AM -0500, Dongsheng Yang escreveu:
+>> Sometimes we need to know how many events have been printed in print_pmu_events.
+> "Sometimes" is too vague, of course it should be needed, otherwise why
+> bother with the patch? It would be better if you provided an example of
+> _where_ it will be used, like when printing that newline.
 
-in function iommu_support_dev_iotlb(),return value of device_to_iommu()
-is used without checking, this could cause NULL pointer issue.
+Sorry for the terrible commit message :(.
 
-this patch is for v3.12.6
+What about the following one?
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
-  drivers/iommu/intel-iommu.c |    2 ++
-  1 files changed, 2 insertions(+), 0 deletions(-)
+"When we call print_pmu_events(), we want to know how many events has 
+been printed in this function. But currently it is impossible, as it 
+return void.
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 40203ad..5b4531a 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1105,6 +1105,8 @@ static struct device_domain_info 
-*iommu_support_dev_iotlb(
-      struct device_domain_info *info;
-      struct intel_iommu *iommu = device_to_iommu(segment, bus, devfn);
+This patch change this function to return the number of events we have 
+printed."
 
-+    if (!iommu)
-+        return NULL;
-      if (!ecap_dev_iotlb_support(iommu->ecap))
-          return NULL;
+- Yang
+> Anyway, reading the other patches,
+>
+> - Arnaldo
+>   
+>> This patch make this function to return the number of events we have printed.
+>>
+>> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+>> ---
+>>   tools/perf/util/pmu.c | 12 +++++++-----
+>>   tools/perf/util/pmu.h |  2 +-
+>>   2 files changed, 8 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+>> index 0934d64..331dc2c 100644
+>> --- a/tools/perf/util/pmu.c
+>> +++ b/tools/perf/util/pmu.c
+>> @@ -711,12 +711,12 @@ static int cmp_string(const void *a, const void *b)
+>>   	return strcmp(*as, *bs);
+>>   }
+>>   
+>> -void print_pmu_events(const char *event_glob, bool name_only)
+>> +unsigned int print_pmu_events(const char *event_glob, bool name_only)
+>>   {
+>>   	struct perf_pmu *pmu;
+>>   	struct perf_pmu_alias *alias;
+>>   	char buf[1024];
+>> -	int printed = 0;
+>> +	unsigned int count = 0;
+>>   	int len, j;
+>>   	char **aliases;
+>>   
+>> @@ -727,7 +727,7 @@ void print_pmu_events(const char *event_glob, bool name_only)
+>>   			len++;
+>>   	aliases = malloc(sizeof(char *) * len);
+>>   	if (!aliases)
+>> -		return;
+>> +		return count;
+>>   	pmu = NULL;
+>>   	j = 0;
+>>   	while ((pmu = perf_pmu__scan(pmu)) != NULL)
+>> @@ -752,15 +752,17 @@ void print_pmu_events(const char *event_glob, bool name_only)
+>>   	for (j = 0; j < len; j++) {
+>>   		if (name_only) {
+>>   			printf("%s ", aliases[j]);
+>> +			count++;
+>>   			continue;
+>>   		}
+>>   		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
+>>   		zfree(&aliases[j]);
+>> -		printed++;
+>> +		count++;
+>>   	}
+>> -	if (printed)
+>> +	if (count)
+>>   		printf("\n");
+>>   	free(aliases);
+>> +	return count;
+>>   }
+>>   
+>>   bool pmu_have_event(const char *pname, const char *name)
+>> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+>> index 9183380..2987fe2 100644
+>> --- a/tools/perf/util/pmu.h
+>> +++ b/tools/perf/util/pmu.h
+>> @@ -42,7 +42,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+>>   
+>>   struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+>>   
+>> -void print_pmu_events(const char *event_glob, bool name_only);
+>> +unsigned int print_pmu_events(const char *event_glob, bool name_only);
+>>   bool pmu_have_event(const char *pname, const char *name);
+>>   
+>>   int perf_pmu__test(void);
+>> -- 
+>> 1.8.2.1
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
--- 
-1.7.1
-
-
---------------030603040806070308050806
-Content-Type: text/x-patch;
- name="0001-intel-iommu-check-return-value-of-device_to_iommu-be.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-intel-iommu-check-return-value-of-device_to_iommu-be.pa";
- filename*1="tch"
-
->From 27d8cdd3fcc6f4ff5cc2ba36d8d5ea0a97823a17 Mon Sep 17 00:00:00 2001
-From: ethan.zhao <ethan.zhao@oracle.com>
-Date: Thu, 9 Jan 2014 08:40:16 -0500
-Subject: [PATCH] intel-iommu: check return value of device_to_iommu() before using it
-
-in function iommu_support_dev_iotlb(),return value of device_to_iommu()
-is used without checking, this could cause NULL pointer issue.
-
-this patch is for v3.12.6
-
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
----
- drivers/iommu/intel-iommu.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 40203ad..5b4531a 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1105,6 +1105,8 @@ static struct device_domain_info *iommu_support_dev_iotlb(
- 	struct device_domain_info *info;
- 	struct intel_iommu *iommu = device_to_iommu(segment, bus, devfn);
- 
-+	if (!iommu)
-+		return NULL;
- 	if (!ecap_dev_iotlb_support(iommu->ecap))
- 		return NULL;
- 
--- 
-1.7.1
-
-
---------------030603040806070308050806--
