@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182AbaAIQtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 11:49:31 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:42048 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028AbaAIQtN (ORCPT
+	id S1756162AbaAIQtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 11:49:36 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:39334 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982AbaAIQtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 11:49:13 -0500
+	Thu, 9 Jan 2014 11:49:12 -0500
 From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
 To: <anton@enomsg.org>, <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>
 Cc: <mk7.kang@samsung.com>
-Subject: [PATCH 3/3] power_supply: modelgauge_battery: Remove Maxim MAX17040 gauge
-Date: Thu,  9 Jan 2014 20:49:05 +0400
-Message-Id: <1389286145-15375-4-git-send-email-vladimir.barinov@cogentembedded.com>
+Subject: [PATCH 2/3] dt: Document ModelGauge gauge bindings
+Date: Thu,  9 Jan 2014 20:49:04 +0400
+Message-Id: <1389286145-15375-3-git-send-email-vladimir.barinov@cogentembedded.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com>
 References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com>
@@ -21,347 +21,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove Maxim MAX17040 gauge driver since it is superseded by full-functional
-Maxim ModelGauge ICs gauge driver for MAX17040/41/43/44/48/49/58/59 chips
+These bindings can be used to register Maxim ModelGauge ICs fuel gauge
+(MAX17040/41/43/44/48/49/58/59)
 
 Signed-off-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
 
 ---
- drivers/power/Kconfig            |    8 -
- drivers/power/Makefile           |    1 
- drivers/power/max17040_battery.c |  297 ---------------------------------------
- 3 files changed, 306 deletions(-)
+ Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt |   82 ++++++++++
+ 1 file changed, 82 insertions(+)
 
-Index: battery-2.6/drivers/power/Kconfig
+Index: battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt
 ===================================================================
---- battery-2.6.orig/drivers/power/Kconfig	2014-01-09 15:09:36.331138847 +0400
-+++ battery-2.6/drivers/power/Kconfig	2014-01-09 15:09:39.523138923 +0400
-@@ -185,14 +185,6 @@
- 	  Say Y here to enable support for batteries charger integrated into
- 	  DA9052 PMIC.
- 
--config BATTERY_MAX17040
--	tristate "Maxim MAX17040 Fuel Gauge"
--	depends on I2C
--	help
--	  MAX17040 is fuel-gauge systems for lithium-ion (Li+) batteries
--	  in handheld and portable equipment. The MAX17040 is configured
--	  to operate with a single lithium cell
--
- config BATTERY_MAX17042
- 	tristate "Maxim MAX17042/17047/17050/8997/8966 Fuel Gauge"
- 	depends on I2C
-Index: battery-2.6/drivers/power/Makefile
-===================================================================
---- battery-2.6.orig/drivers/power/Makefile	2014-01-09 15:09:36.331138847 +0400
-+++ battery-2.6/drivers/power/Makefile	2014-01-09 15:09:39.523138923 +0400
-@@ -30,7 +30,6 @@
- obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
- obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
- obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
--obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
- obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
- obj-$(CONFIG_BATTERY_MODELGAUGE)	+= modelgauge_battery.o
- obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
-Index: battery-2.6/drivers/power/max17040_battery.c
-===================================================================
---- battery-2.6.orig/drivers/power/max17040_battery.c	2014-01-09 15:09:31.163138723 +0400
-+++ /dev/null	1970-01-01 00:00:00.000000000 +0000
-@@ -1,297 +0,0 @@
--/*
-- *  max17040_battery.c
-- *  fuel-gauge systems for lithium-ion (Li+) batteries
-- *
-- *  Copyright (C) 2009 Samsung Electronics
-- *  Minkyu Kang <mk7.kang@samsung.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/module.h>
--#include <linux/init.h>
--#include <linux/platform_device.h>
--#include <linux/mutex.h>
--#include <linux/err.h>
--#include <linux/i2c.h>
--#include <linux/delay.h>
--#include <linux/power_supply.h>
--#include <linux/max17040_battery.h>
--#include <linux/slab.h>
--
--#define MAX17040_VCELL_MSB	0x02
--#define MAX17040_VCELL_LSB	0x03
--#define MAX17040_SOC_MSB	0x04
--#define MAX17040_SOC_LSB	0x05
--#define MAX17040_MODE_MSB	0x06
--#define MAX17040_MODE_LSB	0x07
--#define MAX17040_VER_MSB	0x08
--#define MAX17040_VER_LSB	0x09
--#define MAX17040_RCOMP_MSB	0x0C
--#define MAX17040_RCOMP_LSB	0x0D
--#define MAX17040_CMD_MSB	0xFE
--#define MAX17040_CMD_LSB	0xFF
--
--#define MAX17040_DELAY		1000
--#define MAX17040_BATTERY_FULL	95
--
--struct max17040_chip {
--	struct i2c_client		*client;
--	struct delayed_work		work;
--	struct power_supply		battery;
--	struct max17040_platform_data	*pdata;
--
--	/* State Of Connect */
--	int online;
--	/* battery voltage */
--	int vcell;
--	/* battery capacity */
--	int soc;
--	/* State Of Charge */
--	int status;
--};
--
--static int max17040_get_property(struct power_supply *psy,
--			    enum power_supply_property psp,
--			    union power_supply_propval *val)
--{
--	struct max17040_chip *chip = container_of(psy,
--				struct max17040_chip, battery);
--
--	switch (psp) {
--	case POWER_SUPPLY_PROP_STATUS:
--		val->intval = chip->status;
--		break;
--	case POWER_SUPPLY_PROP_ONLINE:
--		val->intval = chip->online;
--		break;
--	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
--		val->intval = chip->vcell;
--		break;
--	case POWER_SUPPLY_PROP_CAPACITY:
--		val->intval = chip->soc;
--		break;
--	default:
--		return -EINVAL;
--	}
--	return 0;
--}
--
--static int max17040_write_reg(struct i2c_client *client, int reg, u8 value)
--{
--	int ret;
--
--	ret = i2c_smbus_write_byte_data(client, reg, value);
--
--	if (ret < 0)
--		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
--
--	return ret;
--}
--
--static int max17040_read_reg(struct i2c_client *client, int reg)
--{
--	int ret;
--
--	ret = i2c_smbus_read_byte_data(client, reg);
--
--	if (ret < 0)
--		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
--
--	return ret;
--}
--
--static void max17040_reset(struct i2c_client *client)
--{
--	max17040_write_reg(client, MAX17040_CMD_MSB, 0x54);
--	max17040_write_reg(client, MAX17040_CMD_LSB, 0x00);
--}
--
--static void max17040_get_vcell(struct i2c_client *client)
--{
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--	u8 msb;
--	u8 lsb;
--
--	msb = max17040_read_reg(client, MAX17040_VCELL_MSB);
--	lsb = max17040_read_reg(client, MAX17040_VCELL_LSB);
--
--	chip->vcell = (msb << 4) + (lsb >> 4);
--}
--
--static void max17040_get_soc(struct i2c_client *client)
--{
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--	u8 msb;
--	u8 lsb;
--
--	msb = max17040_read_reg(client, MAX17040_SOC_MSB);
--	lsb = max17040_read_reg(client, MAX17040_SOC_LSB);
--
--	chip->soc = msb;
--}
--
--static void max17040_get_version(struct i2c_client *client)
--{
--	u8 msb;
--	u8 lsb;
--
--	msb = max17040_read_reg(client, MAX17040_VER_MSB);
--	lsb = max17040_read_reg(client, MAX17040_VER_LSB);
--
--	dev_info(&client->dev, "MAX17040 Fuel-Gauge Ver %d%d\n", msb, lsb);
--}
--
--static void max17040_get_online(struct i2c_client *client)
--{
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--
--	if (chip->pdata->battery_online)
--		chip->online = chip->pdata->battery_online();
--	else
--		chip->online = 1;
--}
--
--static void max17040_get_status(struct i2c_client *client)
--{
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--
--	if (!chip->pdata->charger_online || !chip->pdata->charger_enable) {
--		chip->status = POWER_SUPPLY_STATUS_UNKNOWN;
--		return;
--	}
--
--	if (chip->pdata->charger_online()) {
--		if (chip->pdata->charger_enable())
--			chip->status = POWER_SUPPLY_STATUS_CHARGING;
--		else
--			chip->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
--	} else {
--		chip->status = POWER_SUPPLY_STATUS_DISCHARGING;
--	}
--
--	if (chip->soc > MAX17040_BATTERY_FULL)
--		chip->status = POWER_SUPPLY_STATUS_FULL;
--}
--
--static void max17040_work(struct work_struct *work)
--{
--	struct max17040_chip *chip;
--
--	chip = container_of(work, struct max17040_chip, work.work);
--
--	max17040_get_vcell(chip->client);
--	max17040_get_soc(chip->client);
--	max17040_get_online(chip->client);
--	max17040_get_status(chip->client);
--
--	schedule_delayed_work(&chip->work, MAX17040_DELAY);
--}
--
--static enum power_supply_property max17040_battery_props[] = {
--	POWER_SUPPLY_PROP_STATUS,
--	POWER_SUPPLY_PROP_ONLINE,
--	POWER_SUPPLY_PROP_VOLTAGE_NOW,
--	POWER_SUPPLY_PROP_CAPACITY,
--};
--
--static int max17040_probe(struct i2c_client *client,
--			const struct i2c_device_id *id)
--{
--	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
--	struct max17040_chip *chip;
--	int ret;
--
--	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE))
--		return -EIO;
--
--	chip = devm_kzalloc(&client->dev, sizeof(*chip), GFP_KERNEL);
--	if (!chip)
--		return -ENOMEM;
--
--	chip->client = client;
--	chip->pdata = client->dev.platform_data;
--
--	i2c_set_clientdata(client, chip);
--
--	chip->battery.name		= "battery";
--	chip->battery.type		= POWER_SUPPLY_TYPE_BATTERY;
--	chip->battery.get_property	= max17040_get_property;
--	chip->battery.properties	= max17040_battery_props;
--	chip->battery.num_properties	= ARRAY_SIZE(max17040_battery_props);
--
--	ret = power_supply_register(&client->dev, &chip->battery);
--	if (ret) {
--		dev_err(&client->dev, "failed: power supply register\n");
--		return ret;
--	}
--
--	max17040_reset(client);
--	max17040_get_version(client);
--
--	INIT_DEFERRABLE_WORK(&chip->work, max17040_work);
--	schedule_delayed_work(&chip->work, MAX17040_DELAY);
--
--	return 0;
--}
--
--static int max17040_remove(struct i2c_client *client)
--{
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--
--	power_supply_unregister(&chip->battery);
--	cancel_delayed_work(&chip->work);
--	return 0;
--}
--
--#ifdef CONFIG_PM_SLEEP
--
--static int max17040_suspend(struct device *dev)
--{
--	struct i2c_client *client = to_i2c_client(dev);
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--
--	cancel_delayed_work(&chip->work);
--	return 0;
--}
--
--static int max17040_resume(struct device *dev)
--{
--	struct i2c_client *client = to_i2c_client(dev);
--	struct max17040_chip *chip = i2c_get_clientdata(client);
--
--	schedule_delayed_work(&chip->work, MAX17040_DELAY);
--	return 0;
--}
--
--static SIMPLE_DEV_PM_OPS(max17040_pm_ops, max17040_suspend, max17040_resume);
--#define MAX17040_PM_OPS (&max17040_pm_ops)
--
--#else
--
--#define MAX17040_PM_OPS NULL
--
--#endif /* CONFIG_PM_SLEEP */
--
--static const struct i2c_device_id max17040_id[] = {
--	{ "max17040", 0 },
--	{ }
--};
--MODULE_DEVICE_TABLE(i2c, max17040_id);
--
--static struct i2c_driver max17040_i2c_driver = {
--	.driver	= {
--		.name	= "max17040",
--		.pm	= MAX17040_PM_OPS,
--	},
--	.probe		= max17040_probe,
--	.remove		= max17040_remove,
--	.id_table	= max17040_id,
--};
--module_i2c_driver(max17040_i2c_driver);
--
--MODULE_AUTHOR("Minkyu Kang <mk7.kang@samsung.com>");
--MODULE_DESCRIPTION("MAX17040 Fuel Gauge");
--MODULE_LICENSE("GPL");
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt	2014-01-09 15:09:38.035138887 +0400
+@@ -0,0 +1,82 @@
++modelgauge_battery
++~~~~~~~~~~~~~~~~~~
++
++Required properties:
++ - compatible		: should contain one of the following:
++			  - "maxim,max17040" for MAX17040
++			  - "maxim,max17041" for MAX17041
++			  - "maxim,max17043" for MAX17043
++			  - "maxim,max17044" for MAX17044
++			  - "maxim,max17048" for MAX17048
++			  - "maxim,max17049" for MAX17049
++			  - "maxim,max17058" for MAX17058
++			  - "maxim,max17059" for MAX17059
++
++Optional properties:
++ - maxim,empty_alert_threshold	: Capacity threshold where an interrupt is
++				  generated on the ALRT pin;
++
++ - soc_change_alert		: /* alert for 1% soc change */
++ - hibernate_threshold		: Hibernate threshold (crate), where IC
++				  enters hibernate mode
++ - active_threshold		: Active threshold (mV), where IC exits
++				  hibernate mode
++ - undervoltage			: Voltage (mV), when IC alerts while battery
++				  voltage less then undervoltage
++ - overvoltage			: Voltage (mV), when IC alerts while battery
++				  voltage greater then overvoltage
++ - maxim,resetvoltage		: Voltage threshold (mV) below which the IC
++				  resets itself. Used to detect battery removal
++				  and reinsertion;
++ - maxim,empty_adjustment	: Capacity charge empty design value;
++ - maxim,full_adjustment	: Capacity charge full design value;
++ - maxim,rcomp0			: ModelGauge RCOMP parameter, used for
++				  temperature compensation;
++ - maxim,temp_co_up		: ModelGauge TempCoUp parameter, used for
++				  temperature compensation;
++ - maxim,temp_co_down		: ModelGauge TempCoDown parameter, used for
++				  temperature compensation;
++ - maxim,ocvtest		: ModelGauge OCVTest parameter, used for
++				  verification of Custom Model calibration data
++				  loaded into IC RAM;
++ - maxim,soc_check_a		: ModelGauge SOCCheckA parameter, used for
++				  verification of Custom Model calibration data
++				  loaded into IC RAM;
++ - maxim,soc_check_b		: ModelGauge SOCCheckB parameter, used for
++				  verification of Custom Model calibration data
++				  loaded into IC RAM;
++ - maxim,bits			: ModelGauge Bits parameter, used as
++				  scaling parameter in Custom Model algorithm;
++ - maxim,model_data		: ModelGauge ModelData data,
++				  Custom Model calibration data.
++
++Example:
++
++modelgauge@36 {
++	compatible = "maxim,max17058";
++	reg = <0x36>;
++	interrupt-parent = <&msmgpio>;
++	interrupts = <107 0x2>;
++
++	maxim,empty_alert_threshold = /bits/ 8 <15>;
++	maxim,resetvoltage = /bits/ 16 <0>;
++	maxim,empty_adjustment = /bits/ 8 <0>;
++	maxim,full_adjustment = /bits/ 8 <100>;
++	maxim,rcomp0 = /bits/ 8 <175>;
++	maxim,temp_co_up = <(-1100)>;
++	maxim,temp_co_down = <(-4000)>;
++	maxim,ocvtest = /bits/ 16 <56144>;
++	maxim,soc_check_a = /bits/ 8 <241>;
++	maxim,soc_check_b = /bits/ 8 <243>;
++	maxim,bits = /bits/ 8 <19>;
++
++	maxim,model_data = /bits/ 8 <
++		0x9B 0x70 0xAB 0x30 0xB5 0xA0 0xB9 0xD0
++		0xBB 0xA0 0xBC 0x00 0xBC 0xB0 0xBD 0x00
++		0xBD 0x60 0xBE 0x40 0xBF 0x40 0xC1 0xF0
++		0xC5 0x60 0xC8 0xA0 0xCD 0x00 0xD1 0x50
++		0x00 0xE0 0x01 0x80 0x18 0x60 0x1C 0x20
++		0x54 0x00 0x6A 0xC0 0x79 0x20 0x65 0xC0
++		0x0B 0xE0 0x2A 0xC0 0x1D 0x00 0x17 0xE0
++		0x15 0xE0 0x11 0xE0 0x11 0x00 0x11 0x00>;
++};
