@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaAIPeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:34:19 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:44907 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbaAIPeJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:34:09 -0500
-Date: Thu, 9 Jan 2014 16:34:04 +0100
-From: Gerardo Di Iorio <arete74@gmail.com>
-To: maxime.ripard@free-electrons.com
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: [PATCH] ARM: sunxi: change the AllWinner A1X to sunxi
-Message-ID: <20140109153404.GA21055@kvmhost>
+	id S1753513AbaAIPgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:36:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912AbaAIPgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 10:36:12 -0500
+Subject: [PATCH] pci/iov: VFs are never multifunction
+From: Alex Williamson <alex.williamson@redhat.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: sathya.perla@emulex.com, linux-kernel@vger.kernel.org,
+        ajit.khaparde@emulex.com, ddutile@redhat.com,
+        subbu.seetharaman@emulex.com, myron.stowe@redhat.com
+Date: Thu, 09 Jan 2014 08:36:08 -0700
+Message-ID: <20140109153513.21446.31778.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the AllWinner A1X SOCs to Allwinner Sunxi SOCs
+Per the SR-IOV spec rev 1.1:
 
-Signed-off-by: Gerardo Di Iorio <arete74@gmail.com>
+3.4.1.9 Header Type (Offset 0Eh)
+
+"... For VFs, this register must be RO Zero."
+
+Unfortunately some devices get this wrong, ex. Emulex OneConnect 10Gb
+NIC.  When they do it makes us handle ACS testing and therefore IOMMU
+groups as if they were actual multifunction devices and require ACS
+capabilities to make sure there's no peer-to-peer between functions.
+VFs are never traditional multifunction devices, so simply clear this
+bit before we get any further into setup.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- arch/arm/mach-sunxi/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/iov.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 547004c..adb2574 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -1,5 +1,5 @@
- config ARCH_SUNXI
--       bool "Allwinner A1X SOCs" if ARCH_MULTI_V7
-+       bool "Allwinner Sunxi SOCs" if ARCH_MULTI_V7
-        select ARCH_HAS_RESET_CONTROLLER
-        select ARCH_REQUIRE_GPIOLIB
-        select ARM_GIC
---
-1.8.4.2
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index 1fe2d6f..e2fbb67 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -84,6 +84,7 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
+ 	virtfn->dev.parent = dev->dev.parent;
+ 	virtfn->physfn = pci_dev_get(dev);
+ 	virtfn->is_virtfn = 1;
++	virtfn->multifunction = 0;
+ 
+ 	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+ 		res = dev->resource + PCI_IOV_RESOURCES + i;
 
