@@ -1,442 +1,642 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528AbaAILP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:15:56 -0500
-Received: from mail-pb0-f66.google.com ([209.85.160.66]:39622 "EHLO
-	mail-pb0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480AbaAILMD (ORCPT
+	id S1756478AbaAILPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:15:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57962 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaAILPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:12:03 -0500
-From: me@anmolsarma.in
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Anmol Sarma <me@anmolsarma.in>
-Subject: [PATCH 3/3] Staging: rtl8187se: ieee80211: ieee80211_softmac.c: mark symbols as static
-Date: Thu,  9 Jan 2014 16:41:07 +0530
-Message-Id: <9036792bea27cf00f564bbcb72f19de6b450f4a3.1389263965.git.me@anmolsarma.in>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1389263965.git.me@anmolsarma.in>
-References: <cover.1389263965.git.me@anmolsarma.in>
-In-Reply-To: <cover.1389263965.git.me@anmolsarma.in>
-References: <cover.1389263965.git.me@anmolsarma.in>
+	Thu, 9 Jan 2014 06:15:31 -0500
+Date: Thu, 9 Jan 2014 12:15:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [RFC][PATCH] lockdep: Introduce wait-type checks
+Message-ID: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anmol Sarma <me@anmolsarma.in>
+Subject: lockdep: Introduce wait-type checks
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue, 19 Nov 2013 21:45:48 +0100
 
-Fixes the following sparse warnings:
-50:14: warning: symbol 'ieee80211_MFIE_rate_len' was not declared. Should it be
-static?
-68:6: warning: symbol 'ieee80211_MFIE_Brate' was not declared. Should it be
-static?
-85:6: warning: symbol 'ieee80211_MFIE_Grate' was not declared. Should it be
-static?
-109:6: warning: symbol 'ieee80211_WMM_Info' was not declared. Should it be
-static?
-132:6: warning: symbol 'ieee80211_TURBO_Info' was not declared. Should it be
-static?
-148:6: warning: symbol 'enqueue_mgmt' was not declared. Should it be static?
-166:16: warning: symbol 'dequeue_mgmt' was not declared. Should it be static?
-181:6: warning: symbol 'init_mgmt_queue' was not declared. Should it be static?
-377:6: warning: symbol 'ieee80211_send_beacon' was not declared. Should it be
-static?
-402:6: warning: symbol 'ieee80211_send_beacon_cb' was not declared. Should it be
-static?
-413:6: warning: symbol 'ieee80211_send_probe' was not declared. Should it be
-static?
-425:6: warning: symbol 'ieee80211_send_probe_requests' was not declared. Should
-it be static?
-436:6: warning: symbol 'ieee80211_softmac_scan_syncro' was not declared. Should
-it be static?
-574:6: warning: symbol 'ieee80211_softmac_scan_wq' was not declared. Should it
-be static?
-617:6: warning: symbol 'ieee80211_beacons_start' was not declared. Should it be
-static?
-629:6: warning: symbol 'ieee80211_beacons_stop' was not declared. Should it be
-static?
-661:6: warning: symbol 'ieee80211_softmac_stop_scan' was not declared. Should it
-be static?
-969:16: warning: symbol 'ieee80211_null_func' was not declared. Should it be
-static?
-995:6: warning: symbol 'ieee80211_resp_to_assoc_rq' was not declared. Should it
-be static?
-1006:6: warning: symbol 'ieee80211_resp_to_auth' was not declared. Should it be
-static?
-1017:6: warning: symbol 'ieee80211_resp_to_probe' was not declared. Should it be
-static?
-1166:6: warning: symbol 'ieee80211_associate_abort_cb' was not declared. Should
-it be static?
-1172:6: warning: symbol 'ieee80211_associate_step1' was not declared. Should it
-be static?
-1202:6: warning: symbol 'ieee80211_rtl_auth_challenge' was not declared. Should
-it be static?
-1237:6: warning: symbol 'ieee80211_associate_step2' was not declared. Should it
-be static?
-1259:6: warning: symbol 'ieee80211_associate_complete_wq' was not declared.
-Should it be
-static?
-1280:6: warning: symbol 'ieee80211_associate_complete' was not declared. Should
-it be static?
-1294:6: warning: symbol 'ieee80211_associate_procedure_wq' was not declared.
-Should it be static?
-1453:5: warning: symbol 'auth_rq_parse' was not declared. Should it be static?
-1510:5: warning: symbol 'assoc_rq_parse' was not declared. Should it be static?
-1600:7: warning: symbol 'ieee80211_sta_ps_sleep' was not declared. Should it be
-static?
-2020:6: warning: symbol 'ieee80211_resume_tx' was not declared. Should it be
-static?
-2150:6: warning: symbol 'ieee80211_start_monitor_mode' was not declared. Should
-it be static?
-2161:6: warning: symbol 'ieee80211_start_ibss_wq' was not declared. Should it be
-static?
-2334:6: warning: symbol 'ieee80211_associate_retry_wq' was not declared. Should
-it be static?
-2626:6: warning: symbol 'ieee80211_wpa_assoc_frame' was not declared. Should it
-be static?
-1654:13: warning: symbol 'ieee80211_sta_ps' was not declared. Should it be
-static?
+This patch extends lockdep to validate lock wait-type context.
 
-Signed-off-by: Anmol Sarma <me@anmolsarma.in>
+The current wait-types are:
+
+	LD_WAIT_FREE,		/* wait free, rcu etc.. */
+	LD_WAIT_SPIN,		/* spin loops, raw_spinlock_t etc.. */
+	LD_WAIT_CONFIG,		/* CONFIG_PREEMPT_LOCK, spinlock_t etc.. */
+	LD_WAIT_SLEEP,		/* sleeping locks, mutex_t etc.. */
+
+Where lockdep validates that the current lock (the one being acquired)
+fits in the current wait-context (as generated by the held stack).
+
+This ensures that we do not try and acquire mutices while holding
+spinlocks, do not attempt to acquire spinlocks while holding
+raw_spinlocks and so on. In other words, its a more fancy
+might_sleep().
+
+Obviously RCU made the entire ordeal more complex than a simple single
+value test because we can acquire RCU in (pretty much) any context and
+while it presents a context to nested locks it is not the same as it
+got acquired in.
+
+Therefore we needed to split the wait_type into two values, one
+representing the acquire (outer) and one representing the nested
+context (inner). For most 'normal' locks these two are the same.
+
+[ To make static initialization easier we have the rule that:
+  .outer == INV means .outer == .inner; because INV == 0. ]
+
+It further means that we need to find the minimal .inner of the held
+stack to compare against the outer of the new lock; because while
+'normal' RCU presents a CONFIG type to nested locks, if it is taken
+while already holding a SPIN type it obviously doesn't relax the
+rules.
+
+Below is an example output; generated by the trivial example:
+
+	raw_spin_lock(&foo);
+	spin_lock(&bar);
+	spin_unlock(&bar);
+	raw_spin_unlock(&foo);
+
+The way to read it is to look at the new -{n,m} part in the lock
+description; -{3:3} for our attempted lock, and try and match that up
+to the held locks, which in this case is the one: -{2,2}.
+
+This tells us that the acquiring lock requires a more relaxed
+environment that presented by the lock stack.
+
+Currently only the normal locks and RCU are converted, the rest of the
+lockdep users defaults to .inner = INV which is ignored. More
+convertions can be done when desired.
+
+ [ ] =============================
+ [ ] [ BUG: Invalid wait context ]
+ [ ] 3.13.0-rc7-01825-g4443577b1c38-dirty #718 Not tainted
+ [ ] -----------------------------
+ [ ] swapper/0/1 is trying to lock:
+ [ ]  (bar){......}-{3:3}, at: [<ffffffff81d0acea>] sched_init_smp+0x423/0x45e
+ [ ]
+ [ ] stack backtrace:
+ [ ] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc7-01825-g4443577b1c38-dirty #718
+ [ ] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+ [ ]  00000000000000a2 ffff880236847cf8 ffffffff8165d96a 0000000000000001
+ [ ]  ffff880236847df0 ffffffff810df09f ffffffff81c3e698 ffffffff820b0290
+ [ ]  ffff880200000000 ffffea0000000000 ffff880400000000 0000000000004140
+ [ ] Call Trace:
+ [ ]  [<ffffffff8165d96a>] dump_stack+0x4e/0x7a
+ [ ]  [<ffffffff810df09f>] __lock_acquire+0x44f/0x2100
+ [ ]  [<ffffffff810c0c8a>] ? task_rq_lock+0x5a/0xa0
+ [ ]  [<ffffffff816657ad>] ? _raw_spin_unlock_irqrestore+0x6d/0x80
+ [ ]  [<ffffffff810e1317>] lock_acquire+0x87/0x120
+ [ ]  [<ffffffff81d0acea>] ? sched_init_smp+0x423/0x45e
+ [ ]  [<ffffffff81664e5b>] _raw_spin_lock+0x3b/0x50
+ [ ]  [<ffffffff81d0acea>] ? sched_init_smp+0x423/0x45e
+ [ ]  [<ffffffff81d0acea>] sched_init_smp+0x423/0x45e
+ [ ]  [<ffffffff81cedf03>] kernel_init_freeable+0x91/0x197
+ [ ]  [<ffffffff8164f600>] ? rest_init+0xd0/0xd0
+ [ ]  [<ffffffff8164f60e>] kernel_init+0xe/0x130
+ [ ]  [<ffffffff8166d36c>] ret_from_fork+0x7c/0xb0
+ [ ]  [<ffffffff8164f600>] ? rest_init+0xd0/0xd0
+ [ ]
+ [ ] other info that might help us debug this:
+ [ ] 1 lock held by swapper/0/1:
+ [ ]  #0:  (foo){+.+...}-{2:2}, at: [<ffffffff81d0acde>] sched_init_smp+0x417/0x45e
+ [ ]
+ [ ] stack backtrace:
+ [ ] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-rc7-01825-g4443577b1c38-dirty #718
+ [ ] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+ [ ]  00000000000000a2 ffff880236847cf8 ffffffff8165d96a 0000000000000001
+ [ ]  ffff880236847df0 ffffffff810df0cf ffffffff81c3e698 ffffffff820b0290
+ [ ]  ffff880200000000 ffffea0000000000 ffff880400000000 0000000000004140
+ [ ] Call Trace:
+ [ ]  [<ffffffff8165d96a>] dump_stack+0x4e/0x7a
+ [ ]  [<ffffffff810df0cf>] __lock_acquire+0x47f/0x2100
+ [ ]  [<ffffffff810c0c8a>] ? task_rq_lock+0x5a/0xa0
+ [ ]  [<ffffffff816657ad>] ? _raw_spin_unlock_irqrestore+0x6d/0x80
+ [ ]  [<ffffffff810e1317>] lock_acquire+0x87/0x120
+ [ ]  [<ffffffff81d0acea>] ? sched_init_smp+0x423/0x45e
+ [ ]  [<ffffffff81664e5b>] _raw_spin_lock+0x3b/0x50
+ [ ]  [<ffffffff81d0acea>] ? sched_init_smp+0x423/0x45e
+ [ ]  [<ffffffff81d0acea>] sched_init_smp+0x423/0x45e
+ [ ]  [<ffffffff81cedf03>] kernel_init_freeable+0x91/0x197
+ [ ]  [<ffffffff8164f600>] ? rest_init+0xd0/0xd0
+ [ ]  [<ffffffff8164f60e>] kernel_init+0xe/0x130
+ [ ]  [<ffffffff8166d36c>] ret_from_fork+0x7c/0xb0
+ [ ]  [<ffffffff8164f600>] ? rest_init+0xd0/0xd0
+
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Requested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- .../rtl8187se/ieee80211/ieee80211_softmac.c        | 74 +++++++++++-----------
- 1 file changed, 37 insertions(+), 37 deletions(-)
+ include/linux/lockdep.h         |   27 +++++++++-
+ include/linux/mutex.h           |    7 +-
+ include/linux/rwlock_types.h    |    6 +-
+ include/linux/rwsem.h           |    6 +-
+ include/linux/spinlock.h        |   36 ++++++++++---
+ include/linux/spinlock_types.h  |   24 +++++++--
+ kernel/locking/lockdep.c        |  103 +++++++++++++++++++++++++++++++++++++---
+ kernel/locking/mutex-debug.c    |    2 
+ kernel/locking/rwsem-spinlock.c |    2 
+ kernel/locking/rwsem-xadd.c     |    2 
+ kernel/locking/spinlock_debug.c |    6 +-
+ kernel/rcu/update.c             |   24 ++++++---
+ 12 files changed, 207 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-index 3af1bf9..c27392d 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-@@ -47,7 +47,7 @@ short ieee80211_is_shortslot(const struct ieee80211_network *net)
-  * tag and the EXTENDED RATE MFIE tag if needed.
-  * It encludes two bytes per tag for the tag itself and its len
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -104,6 +104,9 @@ struct lock_class {
+ 	const char			*name;
+ 	int				name_version;
+ 
++	short				wait_type_inner;
++	short				wait_type_outer;
++
+ #ifdef CONFIG_LOCK_STAT
+ 	unsigned long			contention_point[LOCKSTAT_POINTS];
+ 	unsigned long			contending_point[LOCKSTAT_POINTS];
+@@ -143,6 +146,17 @@ struct lock_class_stats lock_stats(struc
+ void clear_lock_stats(struct lock_class *class);
+ #endif
+ 
++enum lockdep_wait_type {
++	LD_WAIT_INV = 0,	/* not checked, catch all */
++
++	LD_WAIT_FREE,		/* wait free, rcu etc.. */
++	LD_WAIT_SPIN,		/* spin loops, raw_spinlock_t etc.. */
++	LD_WAIT_CONFIG,		/* CONFIG_PREEMPT_LOCK, spinlock_t etc.. */
++	LD_WAIT_SLEEP,		/* sleeping locks, mutex_t etc.. */
++
++	LD_WAIT_MAX,		/* must be last */
++};
++
+ /*
+  * Map the lock object (the lock instance) to the lock-class object.
+  * This is embedded into specific lock instances:
+@@ -151,6 +165,8 @@ struct lockdep_map {
+ 	struct lock_class_key		*key;
+ 	struct lock_class		*class_cache[NR_LOCKDEP_CACHING_CLASSES];
+ 	const char			*name;
++	short				wait_type_outer; /* can be taken in this context */
++	short				wait_type_inner; /* presents this context */
+ #ifdef CONFIG_LOCK_STAT
+ 	int				cpu;
+ 	unsigned long			ip;
+@@ -276,8 +292,14 @@ extern void lockdep_on(void);
+  * to lockdep:
   */
--unsigned int ieee80211_MFIE_rate_len(struct ieee80211_device *ieee)
-+static unsigned int ieee80211_MFIE_rate_len(struct ieee80211_device *ieee)
- {
- 	unsigned int rate_len = 0;
  
-@@ -65,7 +65,7 @@ unsigned int ieee80211_MFIE_rate_len(struct ieee80211_device *ieee)
-  * Then it updates the pointer so that
-  * it points after the new MFIE tag added.
+-extern void lockdep_init_map(struct lockdep_map *lock, const char *name,
+-			     struct lock_class_key *key, int subclass);
++extern void lockdep_init_map_wait(struct lockdep_map *lock, const char *name,
++		struct lock_class_key *key, int subclass, short inner);
++
++static inline void lockdep_init_map(struct lockdep_map *lock, const char *name,
++			     struct lock_class_key *key, int subclass)
++{
++	lockdep_init_map_wait(lock, name, key, subclass, LD_WAIT_INV);
++}
+ 
+ /*
+  * To initialize a lockdep_map statically use this macro.
+@@ -304,6 +326,7 @@ extern void lockdep_init_map(struct lock
+ 
+ #define lockdep_set_novalidate_class(lock) \
+ 	lockdep_set_class(lock, &__lockdep_no_validate__)
++
+ /*
+  * Compare locking classes
   */
--void ieee80211_MFIE_Brate(struct ieee80211_device *ieee, u8 **tag_p)
-+static void ieee80211_MFIE_Brate(struct ieee80211_device *ieee, u8 **tag_p)
- {
- 	u8 *tag = *tag_p;
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -100,8 +100,11 @@ static inline void mutex_destroy(struct
+ #endif
  
-@@ -82,7 +82,7 @@ void ieee80211_MFIE_Brate(struct ieee80211_device *ieee, u8 **tag_p)
- 	*tag_p = tag;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-# define __DEP_MAP_MUTEX_INITIALIZER(lockname) \
+-		, .dep_map = { .name = #lockname }
++# define __DEP_MAP_MUTEX_INITIALIZER(lockname)			\
++		, .dep_map = {					\
++			.name = #lockname,			\
++			.wait_type_inner = LD_WAIT_SLEEP,	\
++		}
+ #else
+ # define __DEP_MAP_MUTEX_INITIALIZER(lockname)
+ #endif
+--- a/include/linux/rwlock_types.h
++++ b/include/linux/rwlock_types.h
+@@ -25,7 +25,11 @@ typedef struct {
+ #define RWLOCK_MAGIC		0xdeaf1eed
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-# define RW_DEP_MAP_INIT(lockname)	.dep_map = { .name = #lockname }
++# define RW_DEP_MAP_INIT(lockname)					\
++	.dep_map = {							\
++		.name = #lockname,					\
++		.wait_type_inner = LD_WAIT_CONFIG,			\
++	}
+ #else
+ # define RW_DEP_MAP_INIT(lockname)
+ #endif
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -50,7 +50,11 @@ static inline int rwsem_is_locked(struct
+ /* Common initializer macros and functions */
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-# define __RWSEM_DEP_MAP_INIT(lockname) , .dep_map = { .name = #lockname }
++# define __RWSEM_DEP_MAP_INIT(lockname)			\
++	, .dep_map = {					\
++		.name = #lockname,			\
++		.wait_type_inner = LD_WAIT_SLEEP,	\
++	}
+ #else
+ # define __RWSEM_DEP_MAP_INIT(lockname)
+ #endif
+--- a/include/linux/spinlock.h
++++ b/include/linux/spinlock.h
+@@ -91,12 +91,13 @@
+ 
+ #ifdef CONFIG_DEBUG_SPINLOCK
+   extern void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+-				   struct lock_class_key *key);
+-# define raw_spin_lock_init(lock)				\
+-do {								\
+-	static struct lock_class_key __key;			\
+-								\
+-	__raw_spin_lock_init((lock), #lock, &__key);		\
++				   struct lock_class_key *key, short inner);
++
++# define raw_spin_lock_init(lock)					\
++do {									\
++	static struct lock_class_key __key;				\
++									\
++	__raw_spin_lock_init((lock), #lock, &__key, LD_WAIT_SPIN);	\
+ } while (0)
+ 
+ #else
+@@ -292,12 +293,27 @@ static inline raw_spinlock_t *spinlock_c
+ 	return &lock->rlock;
  }
  
--void ieee80211_MFIE_Grate(struct ieee80211_device *ieee, u8 **tag_p)
-+static void ieee80211_MFIE_Grate(struct ieee80211_device *ieee, u8 **tag_p)
- {
- 	u8 *tag = *tag_p;
+-#define spin_lock_init(_lock)				\
+-do {							\
+-	spinlock_check(_lock);				\
+-	raw_spin_lock_init(&(_lock)->rlock);		\
++#ifdef CONFIG_DEBUG_SPINLOCK
++
++# define spin_lock_init(lock)					\
++do {								\
++	static struct lock_class_key __key;			\
++								\
++	__raw_spin_lock_init(spinlock_check(lock),		\
++			     #lock, &__key, LD_WAIT_CONFIG);	\
++} while (0)
++
++#else
++
++# define spin_lock_init(_lock)			\
++do {						\
++	spinlock_check(_lock);			\
++	*(lock) = __SPIN_LOCK_UNLOCKED(lock);	\
+ } while (0)
  
-@@ -106,7 +106,7 @@ void ieee80211_MFIE_Grate(struct ieee80211_device *ieee, u8 **tag_p)
++#endif
++
++
+ static inline void spin_lock(spinlock_t *lock)
+ {
+ 	raw_spin_lock(&lock->rlock);
+--- a/include/linux/spinlock_types.h
++++ b/include/linux/spinlock_types.h
+@@ -36,8 +36,18 @@ typedef struct raw_spinlock {
+ #define SPINLOCK_OWNER_INIT	((void *)-1L)
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-# define SPIN_DEP_MAP_INIT(lockname)	.dep_map = { .name = #lockname }
++# define RAW_SPIN_DEP_MAP_INIT(lockname)		\
++	.dep_map = {					\
++		.name = #lockname,			\
++		.wait_type_inner = LD_WAIT_SPIN,	\
++	}
++# define SPIN_DEP_MAP_INIT(lockname)			\
++	.dep_map = {					\
++		.name = #lockname,			\
++		.wait_type_inner = LD_WAIT_CONFIG,	\
++	}
+ #else
++# define RAW_SPIN_DEP_MAP_INIT(lockname)
+ # define SPIN_DEP_MAP_INIT(lockname)
+ #endif
+ 
+@@ -54,7 +64,7 @@ typedef struct raw_spinlock {
+ 	{					\
+ 	.raw_lock = __ARCH_SPIN_LOCK_UNLOCKED,	\
+ 	SPIN_DEBUG_INIT(lockname)		\
+-	SPIN_DEP_MAP_INIT(lockname) }
++	RAW_SPIN_DEP_MAP_INIT(lockname) }
+ 
+ #define __RAW_SPIN_LOCK_UNLOCKED(lockname)	\
+ 	(raw_spinlock_t) __RAW_SPIN_LOCK_INITIALIZER(lockname)
+@@ -75,11 +85,17 @@ typedef struct spinlock {
+ 	};
+ } spinlock_t;
+ 
++#define ___SPIN_LOCK_INITIALIZER(lockname)	\
++	{					\
++	.raw_lock = __ARCH_SPIN_LOCK_UNLOCKED,	\
++	SPIN_DEBUG_INIT(lockname)		\
++	SPIN_DEP_MAP_INIT(lockname) }
++
+ #define __SPIN_LOCK_INITIALIZER(lockname) \
+-	{ { .rlock = __RAW_SPIN_LOCK_INITIALIZER(lockname) } }
++	{ { .rlock = ___SPIN_LOCK_INITIALIZER(lockname) } }
+ 
+ #define __SPIN_LOCK_UNLOCKED(lockname) \
+-	(spinlock_t ) __SPIN_LOCK_INITIALIZER(lockname)
++	(spinlock_t) __SPIN_LOCK_INITIALIZER(lockname)
+ 
+ #define DEFINE_SPINLOCK(x)	spinlock_t x = __SPIN_LOCK_UNLOCKED(x)
+ 
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -532,7 +532,9 @@ static void print_lock_name(struct lock_
+ 
+ 	printk(" (");
+ 	__print_lock_name(class);
+-	printk("){%s}", usage);
++	printk("){%s}-{%hd:%hd}", usage,
++			class->wait_type_outer ?: class->wait_type_inner,
++			class->wait_type_inner);
  }
  
- 
--void ieee80211_WMM_Info(struct ieee80211_device *ieee, u8 **tag_p)
-+static void ieee80211_WMM_Info(struct ieee80211_device *ieee, u8 **tag_p)
- {
- 	u8 *tag = *tag_p;
- 
-@@ -129,7 +129,7 @@ void ieee80211_WMM_Info(struct ieee80211_device *ieee, u8 **tag_p)
- 	*tag_p = tag;
- }
- 
--void ieee80211_TURBO_Info(struct ieee80211_device *ieee, u8 **tag_p)
-+static void ieee80211_TURBO_Info(struct ieee80211_device *ieee, u8 **tag_p)
- {
- 	u8 *tag = *tag_p;
- 	*tag++ = MFIE_TYPE_GENERIC; /* 0 */
-@@ -145,7 +145,7 @@ void ieee80211_TURBO_Info(struct ieee80211_device *ieee, u8 **tag_p)
- 	printk(KERN_ALERT "This is enable turbo mode IE process\n");
- }
- 
--void enqueue_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb)
-+static void enqueue_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb)
- {
- 	int nh;
- 	nh = (ieee->mgmt_queue_head +1) % MGMT_QUEUE_NUM;
-@@ -163,7 +163,7 @@ void enqueue_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb)
- 	//return 0;
- }
- 
--struct sk_buff *dequeue_mgmt(struct ieee80211_device *ieee)
-+static struct sk_buff *dequeue_mgmt(struct ieee80211_device *ieee)
- {
- 	struct sk_buff *ret;
- 
-@@ -178,7 +178,7 @@ struct sk_buff *dequeue_mgmt(struct ieee80211_device *ieee)
- 	return ret;
- }
- 
--void init_mgmt_queue(struct ieee80211_device *ieee)
-+static void init_mgmt_queue(struct ieee80211_device *ieee)
- {
- 	ieee->mgmt_queue_tail = ieee->mgmt_queue_head = 0;
- }
-@@ -374,7 +374,7 @@ void ext_ieee80211_send_beacon_wq(struct ieee80211_device *ieee)
- 	//spin_unlock_irqrestore(&ieee->beacon_lock,flags);
- }
- 
--void ieee80211_send_beacon(struct ieee80211_device *ieee)
-+static void ieee80211_send_beacon(struct ieee80211_device *ieee)
- {
- 	struct sk_buff *skb;
- 
-@@ -399,7 +399,7 @@ void ieee80211_send_beacon(struct ieee80211_device *ieee)
- }
- 
- 
--void ieee80211_send_beacon_cb(unsigned long _ieee)
-+static void ieee80211_send_beacon_cb(unsigned long _ieee)
- {
- 	struct ieee80211_device *ieee =
- 		(struct ieee80211_device *) _ieee;
-@@ -410,7 +410,7 @@ void ieee80211_send_beacon_cb(unsigned long _ieee)
- 	spin_unlock_irqrestore(&ieee->beacon_lock, flags);
- }
- 
--void ieee80211_send_probe(struct ieee80211_device *ieee)
-+static void ieee80211_send_probe(struct ieee80211_device *ieee)
- {
- 	struct sk_buff *skb;
- 
-@@ -422,7 +422,7 @@ void ieee80211_send_probe(struct ieee80211_device *ieee)
- 	}
- }
- 
--void ieee80211_send_probe_requests(struct ieee80211_device *ieee)
-+static void ieee80211_send_probe_requests(struct ieee80211_device *ieee)
- {
- 	if (ieee->active_scan && (ieee->softmac_features & IEEE_SOFTMAC_PROBERQ)){
- 		ieee80211_send_probe(ieee);
-@@ -433,7 +433,7 @@ void ieee80211_send_probe_requests(struct ieee80211_device *ieee)
- /* this performs syncro scan blocking the caller until all channels
-  * in the allowed channel map has been checked.
+ static void print_lockdep_cache(struct lockdep_map *lock)
+@@ -757,9 +759,11 @@ register_lock_class(struct lockdep_map *
+ 	 * We have to do the hash-walk again, to avoid races
+ 	 * with another CPU:
+ 	 */
+-	list_for_each_entry(class, hash_head, hash_entry)
++	list_for_each_entry(class, hash_head, hash_entry) {
+ 		if (class->key == key)
+ 			goto out_unlock_set;
++	}
++
+ 	/*
+ 	 * Allocate a new key from the static array, and add it to
+ 	 * the hash:
+@@ -784,6 +788,8 @@ register_lock_class(struct lockdep_map *
+ 	INIT_LIST_HEAD(&class->locks_before);
+ 	INIT_LIST_HEAD(&class->locks_after);
+ 	class->name_version = count_matching_names(class);
++	class->wait_type_inner = lock->wait_type_inner;
++	class->wait_type_outer = lock->wait_type_outer;
+ 	/*
+ 	 * We use RCU's safe list-add method to make
+ 	 * parallel walking of the hash-list safe:
+@@ -2949,8 +2955,8 @@ static int mark_lock(struct task_struct
+ /*
+  * Initialize a lock instance's lock-class mapping info:
   */
--void ieee80211_softmac_scan_syncro(struct ieee80211_device *ieee)
-+static void ieee80211_softmac_scan_syncro(struct ieee80211_device *ieee)
- {
- 	short ch = 0;
- 	u8 channel_map[MAX_CHANNEL_NUMBER+1];
-@@ -571,7 +571,7 @@ out:
- 		DOT11D_ScanComplete(ieee);
- }
- 
--void ieee80211_softmac_scan_wq(struct work_struct *work)
-+static void ieee80211_softmac_scan_wq(struct work_struct *work)
- {
- 	struct delayed_work *dwork = to_delayed_work(work);
- 	struct ieee80211_device *ieee = container_of(dwork, struct ieee80211_device, softmac_scan_wq);
-@@ -614,7 +614,7 @@ out:
- 	return;
- }
- 
--void ieee80211_beacons_start(struct ieee80211_device *ieee)
-+static void ieee80211_beacons_start(struct ieee80211_device *ieee)
- {
- 	unsigned long flags;
- 
-@@ -626,7 +626,7 @@ void ieee80211_beacons_start(struct ieee80211_device *ieee)
- 	spin_unlock_irqrestore(&ieee->beacon_lock,flags);
- }
- 
--void ieee80211_beacons_stop(struct ieee80211_device *ieee)
-+static void ieee80211_beacons_stop(struct ieee80211_device *ieee)
- {
- 	unsigned long flags;
- 
-@@ -658,7 +658,7 @@ void ieee80211_start_send_beacons(struct ieee80211_device *ieee)
- }
- 
- 
--void ieee80211_softmac_stop_scan(struct ieee80211_device *ieee)
-+static void ieee80211_softmac_stop_scan(struct ieee80211_device *ieee)
- {
- //	unsigned long flags;
- 
-@@ -966,7 +966,7 @@ static struct sk_buff *ieee80211_auth_resp(struct ieee80211_device *ieee,
- 
- }
- 
--struct sk_buff *ieee80211_null_func(struct ieee80211_device *ieee, short pwr)
-+static struct sk_buff *ieee80211_null_func(struct ieee80211_device *ieee, short pwr)
- {
- 	struct sk_buff *skb;
- 	struct ieee80211_hdr_3addr* hdr;
-@@ -992,7 +992,7 @@ struct sk_buff *ieee80211_null_func(struct ieee80211_device *ieee, short pwr)
- }
- 
- 
--void ieee80211_resp_to_assoc_rq(struct ieee80211_device *ieee, u8 *dest)
-+static void ieee80211_resp_to_assoc_rq(struct ieee80211_device *ieee, u8 *dest)
- {
- 	struct sk_buff *buf = ieee80211_assoc_resp(ieee, dest);
- 
-@@ -1003,7 +1003,7 @@ void ieee80211_resp_to_assoc_rq(struct ieee80211_device *ieee, u8 *dest)
- }
- 
- 
--void ieee80211_resp_to_auth(struct ieee80211_device *ieee, int s, u8 *dest)
-+static void ieee80211_resp_to_auth(struct ieee80211_device *ieee, int s, u8 *dest)
- {
- 	struct sk_buff *buf = ieee80211_auth_resp(ieee, s, dest);
- 
-@@ -1014,7 +1014,7 @@ void ieee80211_resp_to_auth(struct ieee80211_device *ieee, int s, u8 *dest)
- }
- 
- 
--void ieee80211_resp_to_probe(struct ieee80211_device *ieee, u8 *dest)
-+static void ieee80211_resp_to_probe(struct ieee80211_device *ieee, u8 *dest)
- {
- 
- 	struct sk_buff *buf = ieee80211_probe_resp(ieee, dest);
-@@ -1163,13 +1163,13 @@ void ieee80211_associate_abort(struct ieee80211_device *ieee)
- 	spin_unlock_irqrestore(&ieee->lock, flags);
- }
- 
--void ieee80211_associate_abort_cb(unsigned long dev)
-+static void ieee80211_associate_abort_cb(unsigned long dev)
- {
- 	ieee80211_associate_abort((struct ieee80211_device *) dev);
- }
- 
- 
--void ieee80211_associate_step1(struct ieee80211_device *ieee)
-+static void ieee80211_associate_step1(struct ieee80211_device *ieee)
- {
- 	struct ieee80211_network *beacon = &ieee->current_network;
- 	struct sk_buff *skb;
-@@ -1199,7 +1199,7 @@ void ieee80211_associate_step1(struct ieee80211_device *ieee)
- 	}
- }
- 
--void ieee80211_rtl_auth_challenge(struct ieee80211_device *ieee, u8 *challenge,
-+static void ieee80211_rtl_auth_challenge(struct ieee80211_device *ieee, u8 *challenge,
- 				  int chlen)
- {
- 	u8 *c;
-@@ -1234,7 +1234,7 @@ void ieee80211_rtl_auth_challenge(struct ieee80211_device *ieee, u8 *challenge,
- 	kfree(challenge);
- }
- 
--void ieee80211_associate_step2(struct ieee80211_device *ieee)
-+static void ieee80211_associate_step2(struct ieee80211_device *ieee)
- {
- 	struct sk_buff* skb;
- 	struct ieee80211_network *beacon = &ieee->current_network;
-@@ -1256,7 +1256,7 @@ void ieee80211_associate_step2(struct ieee80211_device *ieee)
- 	}
- }
- 
--void ieee80211_associate_complete_wq(struct work_struct *work)
-+static void ieee80211_associate_complete_wq(struct work_struct *work)
- {
- 	struct ieee80211_device *ieee = container_of(work, struct ieee80211_device, associate_complete_wq);
- 
-@@ -1277,7 +1277,7 @@ void ieee80211_associate_complete_wq(struct work_struct *work)
- 	netif_carrier_on(ieee->dev);
- }
- 
--void ieee80211_associate_complete(struct ieee80211_device *ieee)
-+static void ieee80211_associate_complete(struct ieee80211_device *ieee)
+-void lockdep_init_map(struct lockdep_map *lock, const char *name,
+-		      struct lock_class_key *key, int subclass)
++void lockdep_init_map_wait(struct lockdep_map *lock, const char *name,
++		struct lock_class_key *key, int subclass, short inner)
  {
  	int i;
- 	del_timer_sync(&ieee->associate_timer);
-@@ -1291,7 +1291,7 @@ void ieee80211_associate_complete(struct ieee80211_device *ieee)
- 	queue_work(ieee->wq, &ieee->associate_complete_wq);
+ 
+@@ -2973,6 +2979,9 @@ void lockdep_init_map(struct lockdep_map
+ 
+ 	lock->name = name;
+ 
++	lock->wait_type_outer = LD_WAIT_INV; /* INV outer matches inner. */
++	lock->wait_type_inner = inner;
++
+ 	/*
+ 	 * No key, no joy, we need to hash something.
+ 	 */
+@@ -2997,7 +3006,7 @@ void lockdep_init_map(struct lockdep_map
+ 	if (subclass)
+ 		register_lock_class(lock, subclass, 1);
+ }
+-EXPORT_SYMBOL_GPL(lockdep_init_map);
++EXPORT_SYMBOL_GPL(lockdep_init_map_wait);
+ 
+ struct lock_class_key __lockdep_no_validate__;
+ EXPORT_SYMBOL_GPL(__lockdep_no_validate__);
+@@ -3036,6 +3045,85 @@ print_lock_nested_lock_not_held(struct t
+ 	return 0;
  }
  
--void ieee80211_associate_procedure_wq(struct work_struct *work)
-+static void ieee80211_associate_procedure_wq(struct work_struct *work)
- {
- 	struct ieee80211_device *ieee = container_of(work, struct ieee80211_device, associate_procedure_wq);
++static int
++print_lock_invalid_wait_context(struct task_struct *curr,
++				struct held_lock *hlock)
++{
++	if (!debug_locks_off())
++		return 0;
++	if (debug_locks_silent)
++		return 0;
++
++	printk("\n");
++	printk("=============================\n");
++	printk("[ BUG: Invalid wait context ]\n");
++	print_kernel_ident();
++	printk("-----------------------------\n");
++
++	printk("%s/%d is trying to lock:\n", curr->comm, task_pid_nr(curr));
++	print_lock(hlock);
++
++	/* XXX */
++
++	printk("\nstack backtrace:\n");
++	dump_stack();
++
++	printk("\nother info that might help us debug this:\n");
++	lockdep_print_held_locks(curr);
++
++	printk("\nstack backtrace:\n");
++	dump_stack();
++
++	return 0;
++}
++
++/*
++ * Verify the wait_type context.
++ *
++ * This check validates we takes locks in the right wait-type order; that is it
++ * ensures that we do not take mutexes inside spinlocks and do not attempt to
++ * acquire spinlocks inside raw_spinlocks and the sort.
++ *
++ * The entire thing is slightly more complex because of RCU, RCU is a lock that
++ * can be taken from (pretty much) any context but also has constraints.
++ * However when taken in a stricter environment the RCU lock does not loosen
++ * the constraints.
++ *
++ * Therefore we must look for the strictest environment in the lock stack and
++ * compare that to the lock we're trying to acquire.
++ */
++static int check_context(struct task_struct *curr, struct held_lock *next)
++{
++	short next_inner = hlock_class(next)->wait_type_inner;
++	short next_outer = hlock_class(next)->wait_type_outer;
++	short curr_inner = LD_WAIT_MAX;
++	int depth;
++
++	if (!curr->lockdep_depth || !next_inner)
++		return 0;
++
++	if (!next_outer)
++		next_outer = next_inner;
++
++	for (depth = 0; depth < curr->lockdep_depth; depth++) {
++		struct held_lock *prev = curr->held_locks + depth;
++		short prev_inner = hlock_class(prev)->wait_type_inner;
++
++		if (prev_inner) {
++			/*
++			 * we can have a bigger inner than a previous one
++			 * when outer is smaller than inner, as with RCU.
++			 */
++			curr_inner = min(curr_inner, prev_inner);
++		}
++	}
++
++	if (next_outer > curr_inner)
++		return print_lock_invalid_wait_context(curr, next);
++
++	return 0;
++}
++
+ static int __lock_is_held(struct lockdep_map *lock);
  
-@@ -1450,7 +1450,7 @@ static inline u16 auth_parse(struct sk_buff *skb, u8 **challenge, int *chlen)
+ /*
+@@ -3105,7 +3193,7 @@ static int __lock_acquire(struct lockdep
+ 
+ 	class_idx = class - lock_classes + 1;
+ 
+-	if (depth) {
++	if (depth) { /* we're holding locks */
+ 		hlock = curr->held_locks + depth - 1;
+ 		if (hlock->class_idx == class_idx && nest_lock) {
+ 			if (hlock->references)
+@@ -3138,6 +3226,9 @@ static int __lock_acquire(struct lockdep
+ 	hlock->holdtime_stamp = lockstat_clock();
+ #endif
+ 
++	if (check_context(curr, hlock))
++		return 0;
++
+ 	if (check == 2 && !mark_irqflags(curr, hlock))
+ 		return 0;
+ 
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -93,7 +93,7 @@ void debug_mutex_init(struct mutex *lock
+ 	 * Make sure we are not reinitializing a held lock:
+ 	 */
+ 	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+-	lockdep_init_map(&lock->dep_map, name, key, 0);
++	lockdep_init_map_wait(&lock->dep_map, name, key, 0, LD_WAIT_SLEEP);
+ #endif
+ 	lock->magic = lock;
  }
+--- a/kernel/locking/rwsem-spinlock.c
++++ b/kernel/locking/rwsem-spinlock.c
+@@ -44,7 +44,7 @@ void __init_rwsem(struct rw_semaphore *s
+ 	 * Make sure we are not reinitializing a held semaphore:
+ 	 */
+ 	debug_check_no_locks_freed((void *)sem, sizeof(*sem));
+-	lockdep_init_map(&sem->dep_map, name, key, 0);
++	lockdep_init_map_wait(&sem->dep_map, name, key, 0, LD_WAIT_SLEEP);
+ #endif
+ 	sem->activity = 0;
+ 	raw_spin_lock_init(&sem->wait_lock);
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -22,7 +22,7 @@ void __init_rwsem(struct rw_semaphore *s
+ 	 * Make sure we are not reinitializing a held semaphore:
+ 	 */
+ 	debug_check_no_locks_freed((void *)sem, sizeof(*sem));
+-	lockdep_init_map(&sem->dep_map, name, key, 0);
++	lockdep_init_map_wait(&sem->dep_map, name, key, 0, LD_WAIT_SLEEP);
+ #endif
+ 	sem->count = RWSEM_UNLOCKED_VALUE;
+ 	raw_spin_lock_init(&sem->wait_lock);
+--- a/kernel/locking/spinlock_debug.c
++++ b/kernel/locking/spinlock_debug.c
+@@ -14,14 +14,14 @@
+ #include <linux/export.h>
  
- 
--int auth_rq_parse(struct sk_buff *skb, u8 *dest)
-+static int auth_rq_parse(struct sk_buff *skb, u8 *dest)
+ void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
+-			  struct lock_class_key *key)
++			  struct lock_class_key *key, short inner)
  {
- 	struct ieee80211_authentication *a;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	/*
+ 	 * Make sure we are not reinitializing a held lock:
+ 	 */
+ 	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+-	lockdep_init_map(&lock->dep_map, name, key, 0);
++	lockdep_init_map_wait(&lock->dep_map, name, key, 0, inner);
+ #endif
+ 	lock->raw_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+ 	lock->magic = SPINLOCK_MAGIC;
+@@ -39,7 +39,7 @@ void __rwlock_init(rwlock_t *lock, const
+ 	 * Make sure we are not reinitializing a held lock:
+ 	 */
+ 	debug_check_no_locks_freed((void *)lock, sizeof(*lock));
+-	lockdep_init_map(&lock->dep_map, name, key, 0);
++	lockdep_init_map_wait(&lock->dep_map, name, key, 0, LD_WAIT_CONFIG);
+ #endif
+ 	lock->raw_lock = (arch_rwlock_t) __ARCH_RW_LOCK_UNLOCKED;
+ 	lock->magic = RWLOCK_MAGIC;
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -114,18 +114,30 @@ EXPORT_SYMBOL_GPL(__rcu_read_unlock);
  
-@@ -1507,7 +1507,7 @@ static short probe_rq_parse(struct ieee80211_device *ieee, struct sk_buff *skb,
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ static struct lock_class_key rcu_lock_key;
+-struct lockdep_map rcu_lock_map =
+-	STATIC_LOCKDEP_MAP_INIT("rcu_read_lock", &rcu_lock_key);
++struct lockdep_map rcu_lock_map = {
++	.name = "rcu_read_lock",
++	.key = &rcu_lock_key,
++	.wait_type_outer = LD_WAIT_FREE,
++	.wait_type_inner = LD_WAIT_CONFIG, /* XXX PREEMPT_RCU ? */
++};
+ EXPORT_SYMBOL_GPL(rcu_lock_map);
  
- }
+ static struct lock_class_key rcu_bh_lock_key;
+-struct lockdep_map rcu_bh_lock_map =
+-	STATIC_LOCKDEP_MAP_INIT("rcu_read_lock_bh", &rcu_bh_lock_key);
++struct lockdep_map rcu_bh_lock_map = {
++	.name = "rcu_read_lock_bh",
++	.key = &rcu_bh_lock_key,
++	.wait_type_outer = LD_WAIT_FREE,
++	.wait_type_inner = LD_WAIT_CONFIG, /* PREEMPT_LOCK also makes BH preemptible */
++};
+ EXPORT_SYMBOL_GPL(rcu_bh_lock_map);
  
--int assoc_rq_parse(struct sk_buff *skb, u8 *dest)
-+static int assoc_rq_parse(struct sk_buff *skb, u8 *dest)
- {
- 	struct ieee80211_assoc_request_frame *a;
+ static struct lock_class_key rcu_sched_lock_key;
+-struct lockdep_map rcu_sched_lock_map =
+-	STATIC_LOCKDEP_MAP_INIT("rcu_read_lock_sched", &rcu_sched_lock_key);
++struct lockdep_map rcu_sched_lock_map = {
++	.name = "rcu_read_lock_sched",
++	.key = &rcu_sched_lock_key,
++	.wait_type_outer = LD_WAIT_FREE,
++	.wait_type_inner = LD_WAIT_SPIN,
++};
+ EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
  
-@@ -1597,7 +1597,7 @@ void ieee80211_sta_ps_send_null_frame(struct ieee80211_device *ieee, short pwr)
- }
- 
- 
--short ieee80211_sta_ps_sleep(struct ieee80211_device *ieee, u32 *time_h,
-+static short ieee80211_sta_ps_sleep(struct ieee80211_device *ieee, u32 *time_h,
- 			     u32 *time_l)
- {
-         int timeout = 0;
-@@ -1651,7 +1651,7 @@ short ieee80211_sta_ps_sleep(struct ieee80211_device *ieee, u32 *time_h,
- 
- }
- 
--inline void ieee80211_sta_ps(struct ieee80211_device *ieee)
-+static inline void ieee80211_sta_ps(struct ieee80211_device *ieee)
- {
- 
- 	u32 th,tl;
-@@ -2017,7 +2017,7 @@ void ieee80211_softmac_xmit(struct ieee80211_txb *txb,
- }
- 
- /* called with ieee->lock acquired */
--void ieee80211_resume_tx(struct ieee80211_device *ieee)
-+static void ieee80211_resume_tx(struct ieee80211_device *ieee)
- {
- 	int i;
- 	for(i = ieee->tx_pending.frag; i < ieee->tx_pending.txb->nr_frags; i++) {
-@@ -2147,7 +2147,7 @@ void ieee80211_start_master_bss(struct ieee80211_device *ieee)
- 	netif_carrier_on(ieee->dev);
- }
- 
--void ieee80211_start_monitor_mode(struct ieee80211_device *ieee)
-+static void ieee80211_start_monitor_mode(struct ieee80211_device *ieee)
- {
- 	if(ieee->raw_tx){
- 
-@@ -2158,7 +2158,7 @@ void ieee80211_start_monitor_mode(struct ieee80211_device *ieee)
- 	}
- }
- 
--void ieee80211_start_ibss_wq(struct work_struct *work)
-+static void ieee80211_start_ibss_wq(struct work_struct *work)
- {
- 	struct delayed_work *dwork = to_delayed_work(work);
- 	struct ieee80211_device *ieee = container_of(dwork, struct ieee80211_device, start_ibss_wq);
-@@ -2331,7 +2331,7 @@ void ieee80211_disassociate(struct ieee80211_device *ieee)
- 	ieee->state = IEEE80211_NOLINK;
- 
- }
--void ieee80211_associate_retry_wq(struct work_struct *work)
-+static void ieee80211_associate_retry_wq(struct work_struct *work)
- {
- 	struct delayed_work *dwork = to_delayed_work(work);
- 	struct ieee80211_device *ieee = container_of(dwork, struct ieee80211_device, associate_retry_wq);
-@@ -2623,7 +2623,7 @@ static int ieee80211_wpa_enable(struct ieee80211_device *ieee, int value)
- }
- 
- 
--void ieee80211_wpa_assoc_frame(struct ieee80211_device *ieee, char *wpa_ie,
-+static void ieee80211_wpa_assoc_frame(struct ieee80211_device *ieee, char *wpa_ie,
- 			       int wpa_ie_len)
- {
- 	/* make sure WPA is enabled */
--- 
-1.8.3.2
-
+ static struct lock_class_key rcu_callback_key;
