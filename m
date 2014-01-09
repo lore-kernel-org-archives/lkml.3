@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751AbaAIVIB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:08:01 -0500
-Received: from relay.parallels.com ([195.214.232.42]:57106 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaAIVHy (ORCPT
+	id S1757554AbaAIVIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:08:51 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:52551 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757441AbaAIVIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:07:54 -0500
-Date: Fri, 10 Jan 2014 01:07:49 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Florian Westphal <fw@strlen.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Andrey Vagin <avagin@openvz.org>,
-        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <coreteam@netfilter.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <vvs@openvz.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Cyrill Gorcunov" <gorcunov@openvz.org>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get
-Message-ID: <20140109210749.GA29440@paralelels.com>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
- <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140107152520.GF9894@breakpoint.cc>
- <20140109203206.GA26348@paralelels.com>
- <20140109205622.GA29458@breakpoint.cc>
+	Thu, 9 Jan 2014 16:08:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <20140109205622.GA29458@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.24.24.156]
+In-Reply-To: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com>
+From: Andrew de los Reyes <andrew-vger@gizmolabs.org>
+Date: Thu, 9 Jan 2014 13:08:23 -0800
+X-Google-Sender-Auth: iP6T1giBZIy__yjXXJE4r-37EqA
+Message-ID: <CAG_cf+eYoK--k=z+f5xQBx0FP3_z5sbszrSZ1qYq7jR_Zi9Vaw@mail.gmail.com>
+Subject: Re: [PATCH 0/5] HID logitech DJ fixes and preps for enabling extended features
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Andrew de los Reyes <adlr@chromium.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 09:56:22PM +0100, Florian Westphal wrote:
-> Andrew Vagin <avagin@parallels.com> wrote:
-> > Can we allocate conntrack with zero ct_general.use and increment it at
-> > the first time before inserting the conntrack into the hash table?
-> > When conntrack is allocated it is attached exclusively to one skb.
-> > It must be destroyed with skb, if it has not been confirmed, so we
-> > don't need refcnt on this stage.
-> > 
-> > I found only one place, where a reference counter of unconfirmed
-> > conntract can incremented. It's ctnetlink_dump_table().
-> 
-> What about skb_clone, etc?  They will also increment the refcnt
-> if a conntrack entry is attached to the skb.
+In general, I'm positive on the change to fix the USB3 issue (yay!),
+and for the others I'm happy it's going upstream. It seem to open up
+the possibility of user-space drivers, which is great, even though we
+don't need this on our team.
 
-We can not attach an unconfirmed conntrack to a few skb, because
-nf_nat_setup_info can be executed concurrently for the same conntrack.
+One thing I want to double-check: on some devices (T651, at least),
+the raw data comes in not via HID++, but tacked onto the end of the
+normal mouse reports. Will a driver for this device be able to get all
+packets, not just HID++ ones? Sorry if this was clear and I missed it.
 
-How do we avoid this race condition for cloned skb-s?
+-andrew
+
+On Wed, Jan 8, 2014 at 2:18 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Hi Jiri,
+>
+> Well, this work is _not_ for 3.14 (except maybe patch 1), especially since it is
+> missing the biggest part where we enable the capabilities of Logitech devices.
+>
+> Long story short:
+> This work is based on the work I did back in Summer 2011. I worked at Logitech
+> for a few weeks to show up a demo of a driver for the Logitech Wireless Touchpad.
+> At that time, a first draft has been done, but due to a lack of resources, noone
+> upstreamed it.
+> Since then, the code marinated a little at Logitech and in the ChromeOS kernel
+> tree, but nobody tried to push it upstream. So here I am, trying to push this stuff
+> upstream.
+>
+> I can not send the full series right now because I am lacking most of the
+> testing hardware (I mean I only have the oldest Wireless Touchpad).
+> Hopefully, I should receive some other soon, and I'll be able to send the second
+> part then.
+>
+> Now, let me roughly explain the patches:
+> - patch 1 can be applied right now I think, but it's entirely up to you Jiri.
+>   This patch should fix the missing notifications with some USB 3.0 boards.
+> - patches 2 to 5 allows to forward in both direction the proprietary protocol
+>   used by Logitech (HID++ [1]) between the driver and the hardware.
+> - later patches will introduce a transport layer for HID++ and also a driver
+>   to support full multitouch on various Logitech touchpads.
+>
+> Nestor, Andrew, feel free to add your "Signed-off-by" whereever you want, I lost
+> a little bit the track of who added what.
+>
+> Cheers,
+> Benjamin
+>
+> [1] HID++: Documentation is provided at
+> https://drive.google.com/a/logitech.com/?tab=mo#folders/0BxbRzx7vEV7eWmgwazJ3NUFfQ28
+>
+> Benjamin Tisssoires (5):
+>   HID: logitech-dj: Fix USB 3.0 issue
+>   HID: core: do not scan reports if the group is already set
+>   HID: logitech-dj: rely on hid groups to separate receivers from dj
+>     devices
+>   HID: logitech-dj: forward incoming HID++ reports to the correct dj
+>     device
+>   HID: logitech-dj: add .request callback
+>
+>  drivers/hid/hid-core.c        |   3 +-
+>  drivers/hid/hid-logitech-dj.c | 161 +++++++++++++++++++++++++++++++++---------
+>  drivers/hid/hid-logitech-dj.h |  16 ++---
+>  include/linux/hid.h           |   1 +
+>  4 files changed, 136 insertions(+), 45 deletions(-)
+>
+> --
+> 1.8.4.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
