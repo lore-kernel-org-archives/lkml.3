@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaAIPX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:23:56 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:61851 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaAIPXr (ORCPT
+	id S1751929AbaAIP3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:29:22 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54771 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaAIP3S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:23:47 -0500
-Message-ID: <1389281025.31367.35.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
- nf_conntrack_find_get
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Vagin <avagin@gmail.com>
-Cc: Florian Westphal <fw@strlen.de>, Andrey Vagin <avagin@openvz.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Thu, 09 Jan 2014 07:23:45 -0800
-In-Reply-To: <20140109052454.GA16743@gmail.com>
-References: <1389090711-15843-1-git-send-email-avagin@openvz.org>
-	 <1389107305.26646.20.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140109052454.GA16743@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 9 Jan 2014 10:29:18 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [alsa-devel] [PATCH] ASoC: wm8804: Allow fine-grained control of the PLL generation
+From: Daniel Matuschek <daniel@matuschek.net>
+In-Reply-To: <20140109142745.GB6110@opensource.wolfsonmicro.com>
+Date: Thu, 9 Jan 2014 16:29:13 +0100
+Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Dimitris.Papastamos@Wolfsonmicro.com, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9DF5D0F7-F5A7-4705-8ACB-286B49D668C1@matuschek.net>
+References: <alpine.DEB.2.02.1401082231260.4025@parallels-Parallels-Virtual-Platform> <20140109142745.GB6110@opensource.wolfsonmicro.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-09 at 09:24 +0400, Andrew Vagin wrote:
 
-> I have one more question. Looks like I found another problem.
+On 09.01.2014, at 15:27, Charles Keepax <ckeepax@opensource.wolfsonmicro.com> wrote:
+
+> On Wed, Jan 08, 2014 at 10:36:53PM +0100, Daniel Matuschek wrote:
+>> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
+>> 
 > 
-> init_conntrack:
->         hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
->                       &net->ct.unconfirmed);
+> <snip>
 > 
-> __nf_conntrack_hash_insert:
-> 	hlist_nulls_add_head_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode,
-> 		   &net->ct.hash[hash]);
+>> 			pll_div->freqmode = post_table[i].freqmode;
+>> -			pll_div->mclkdiv = post_table[i].mclkdiv;
+>> -			target *= post_table[i].div;
+>> -			break;
+>> +			if ((mclk_div == WM8804_MCLKDIV_DONTCARE) ||
+>> +			    ((post_table[i].mclkdiv == 1) &&
+>> +				(mclk_div == WM8804_MCLKDIV_1)) ||
+>> +			    ((post_table[i].mclkdiv == 0) &&
+>> +				(mclk_div == WM8804_MCLKDIV_0))) {
 > 
-> We use one hlist_nulls_node to add a conntrack into two different lists.
-> As far as I understand, it's unacceptable in case of
-> SLAB_DESTROY_BY_RCU.
+> Would probably be nicer to update the post_table to use the new
+> defines and directly compare.
 
-I guess you missed :
-
-net/netfilter/nf_conntrack_core.c:1598: INIT_HLIST_NULLS_HEAD(&net->ct.unconfirmed, UNCONFIRMED_NULLS_VAL);
-
+Yes, this is an option.
 
 > 
-> Lets imagine that we have two threads. The first one enumerates objects
-> from a first list, the second one recreates an object and insert it in a
-> second list.  If a first thread in this moment stays on the object, it
-> can read "next", when it's in the second list, so it will continue
-> to enumerate objects from the second list. It is not what we want, isn't
-> it?
+>> +				pll_div->mclkdiv = post_table[i].mclkdiv;
+>> +				target *= post_table[i].div;
+>> +				break;
+>> +			}
+>> 		}
+>> 	}
+>> 
+>> @@ -388,7 +396,7 @@ static int wm8804_set_pll(struct snd_soc_dai *dai, int pll_id,
+>> 		int ret;
+>> 		struct pll_div pll_div;
+>> 
+>> -		ret = pll_factors(&pll_div, freq_out, freq_in);
+>> +		ret = pll_factors(&pll_div, freq_out, freq_in, pll_id);
 > 
-> cpu1				cpu2
-> 				hlist_nulls_for_each_entry_rcu(ct)
-> destroy_conntrack
->  kmem_cache_free
+> This does feel like a slight abuse of pll_id, it feels to me that
+> using the set_clkdiv callback would be a little more natural from
+> a user perspective.
+
+Good idea, I will move it to set_clkdiv.
+
 > 
-> init_conntrack
->  hlist_nulls_add_head_rcu
-> 				ct = ct->next
+>> 		if (ret)
+>> 			return ret;
+>> 
+>> diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
+>> index 8ec14f5..0365177 100644
+>> --- a/sound/soc/codecs/wm8804.h
+>> +++ b/sound/soc/codecs/wm8804.h
+>> @@ -58,4 +58,11 @@
+>> 
+>> #define WM8804_CLKOUT_DIV			1
+>> 
+>> +#define WM8804_MCLKDIV_DONTCARE			0
+>> +#define WM8804_MCLKDIV_0			1
+>> +#define WM8804_MCLKDIV_1			2
+>> +#define WM8804_PLL_MCLKDIV_DONTCARE		WM8804_MCLKDIV_DONTCARE
+>> +#define WM8804_PLL_MCLKDIV_0			WM8804_MCLKDIV_0
+>> +#define WM8804_PLL_MCLKDIV_1			WM8804_MCLKDIV_1
 > 
+> Do we really need two copies of these?
 
-This will be fine.
-
-I think we even have a counter to count number of occurrence of this
-rare event. (I personally never read a non null search_restart value)
-
- NF_CT_STAT_INC(net, search_restart); 
-
-
+Not really ;-) I will remove the duplicates.
 
