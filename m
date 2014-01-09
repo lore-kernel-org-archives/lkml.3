@@ -1,81 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189AbaAIVQF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:16:05 -0500
-Received: from mail-gg0-f175.google.com ([209.85.161.175]:51100 "EHLO
-	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343AbaAIVP6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:15:58 -0500
-Date: Thu, 9 Jan 2014 13:15:54 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-In-Reply-To: <20140109073259.GK4106@localhost.localdomain>
-Message-ID: <alpine.DEB.2.02.1401091310510.31538@chino.kir.corp.google.com>
-References: <20140101002935.GA15683@localhost.localdomain> <52C5AA61.8060701@intel.com> <20140103033303.GB4106@localhost.localdomain> <52C6FED2.7070700@intel.com> <20140105003501.GC4106@localhost.localdomain> <20140106164604.GC27602@dhcp22.suse.cz>
- <20140108101611.GD27937@dhcp22.suse.cz> <20140109073259.GK4106@localhost.localdomain>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757546AbaAIVXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:23:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63348 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756516AbaAIVX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 16:23:29 -0500
+Message-ID: <52CF1327.3090705@redhat.com>
+Date: Thu, 09 Jan 2014 16:22:47 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andrew de los Reyes <andrew-vger@gizmolabs.org>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Andrew de los Reyes <adlr@chromium.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] HID logitech DJ fixes and preps for enabling extended
+ features
+References: <1389219529-29671-1-git-send-email-benjamin.tissoires@redhat.com> <CAG_cf+eYoK--k=z+f5xQBx0FP3_z5sbszrSZ1qYq7jR_Zi9Vaw@mail.gmail.com>
+In-Reply-To: <CAG_cf+eYoK--k=z+f5xQBx0FP3_z5sbszrSZ1qYq7jR_Zi9Vaw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014, Han Pingtian wrote:
-
-> min_free_kbytes may be raised during THP's initialization. Sometimes,
-> this will change the value being set by user. Showing message will
-> clarify this confusion.
+On 09/01/14 16:08, Andrew de los Reyes wrote:
+> In general, I'm positive on the change to fix the USB3 issue (yay!),
+> and for the others I'm happy it's going upstream. It seem to open up
+> the possibility of user-space drivers, which is great, even though we
+> don't need this on our team.
 > 
-> Only show this message when changing the value set by user according to
-> Michal Hocko's suggestion.
-> 
-> Showing the old value of min_free_kbytes according to Dave Hansen's
-> suggestion. This will give user the chance to restore old value of
-> min_free_kbytes.
-> 
-> Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
-> ---
->  mm/huge_memory.c |    9 ++++++++-
->  mm/page_alloc.c  |    2 +-
->  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 7de1bf8..e0e4e29 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
->  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
->  };
->  
-> +extern int user_min_free_kbytes;
->  
+> One thing I want to double-check: on some devices (T651, at least),
+> the raw data comes in not via HID++, but tacked onto the end of the
+> normal mouse reports. Will a driver for this device be able to get all
+> packets, not just HID++ ones? Sorry if this was clear and I missed it.
 
-We don't add extern declarations to .c files.  How many other examples of 
-this can you find in mm/?
+Yeah, that is partly why I can not send the rest of the series right
+now. Nestor already warned me about those funny devices, so I need to
+double check how to implement HID++.
 
->  static int set_recommended_min_free_kbytes(void)
->  {
-> @@ -130,8 +131,14 @@ static int set_recommended_min_free_kbytes(void)
->  			      (unsigned long) nr_free_buffer_pages() / 20);
->  	recommended_min <<= (PAGE_SHIFT-10);
->  
-> -	if (recommended_min > min_free_kbytes)
-> +	if (recommended_min > min_free_kbytes) {
-> +		if (user_min_free_kbytes >= 0)
-> +			pr_info("raising min_free_kbytes from %d to %lu "
-> +				"to help transparent hugepage allocations\n",
-> +				min_free_kbytes, recommended_min);
-> +
->  		min_free_kbytes = recommended_min;
-> +	}
->  	setup_per_zone_wmarks();
->  	return 0;
->  }
+On a technical point of view, a driver connected through the unifying
+receiver currently only get the regular input reports, and this series
+adds the HID++ reports to these ones. So yes, a device will receive all
+reports dedicated to it.
 
-Does this even ever trigger since set_recommended_min_free_kbytes() is 
-called via late_initcall()?
+Cheers,
+Benjamin
+
+> 
+> -andrew
+> 
+> On Wed, Jan 8, 2014 at 2:18 PM, Benjamin Tissoires
+> <benjamin.tissoires@redhat.com> wrote:
+>> Hi Jiri,
+>>
+>> Well, this work is _not_ for 3.14 (except maybe patch 1), especially since it is
+>> missing the biggest part where we enable the capabilities of Logitech devices.
+>>
+>> Long story short:
+>> This work is based on the work I did back in Summer 2011. I worked at Logitech
+>> for a few weeks to show up a demo of a driver for the Logitech Wireless Touchpad.
+>> At that time, a first draft has been done, but due to a lack of resources, noone
+>> upstreamed it.
+>> Since then, the code marinated a little at Logitech and in the ChromeOS kernel
+>> tree, but nobody tried to push it upstream. So here I am, trying to push this stuff
+>> upstream.
+>>
+>> I can not send the full series right now because I am lacking most of the
+>> testing hardware (I mean I only have the oldest Wireless Touchpad).
+>> Hopefully, I should receive some other soon, and I'll be able to send the second
+>> part then.
+>>
+>> Now, let me roughly explain the patches:
+>> - patch 1 can be applied right now I think, but it's entirely up to you Jiri.
+>>   This patch should fix the missing notifications with some USB 3.0 boards.
+>> - patches 2 to 5 allows to forward in both direction the proprietary protocol
+>>   used by Logitech (HID++ [1]) between the driver and the hardware.
+>> - later patches will introduce a transport layer for HID++ and also a driver
+>>   to support full multitouch on various Logitech touchpads.
+>>
+>> Nestor, Andrew, feel free to add your "Signed-off-by" whereever you want, I lost
+>> a little bit the track of who added what.
+>>
+>> Cheers,
+>> Benjamin
+>>
+>> [1] HID++: Documentation is provided at
+>> https://drive.google.com/a/logitech.com/?tab=mo#folders/0BxbRzx7vEV7eWmgwazJ3NUFfQ28
+>>
+>> Benjamin Tisssoires (5):
+>>   HID: logitech-dj: Fix USB 3.0 issue
+>>   HID: core: do not scan reports if the group is already set
+>>   HID: logitech-dj: rely on hid groups to separate receivers from dj
+>>     devices
+>>   HID: logitech-dj: forward incoming HID++ reports to the correct dj
+>>     device
+>>   HID: logitech-dj: add .request callback
+>>
+>>  drivers/hid/hid-core.c        |   3 +-
+>>  drivers/hid/hid-logitech-dj.c | 161 +++++++++++++++++++++++++++++++++---------
+>>  drivers/hid/hid-logitech-dj.h |  16 ++---
+>>  include/linux/hid.h           |   1 +
+>>  4 files changed, 136 insertions(+), 45 deletions(-)
+>>
+>> --
+>> 1.8.4.2
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
