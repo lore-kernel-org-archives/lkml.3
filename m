@@ -1,274 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaAIKdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:33:17 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55280 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843AbaAIKdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:33:00 -0500
+	id S1752139AbaAIKeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:34:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59231 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273AbaAIKdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 05:33:54 -0500
+Message-ID: <52CE7A9B.9000300@ti.com>
+Date: Thu, 9 Jan 2014 16:01:55 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140109094147.GA20699@lee--X1>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-2-git-send-email-lpapp@kde.org>
-	<20140108223933.GD18611@lee--X1>
-	<CAOMwXhN5JStJgG5Q9cjuJByhyhz-XPb4ThkA45B+fA724Ucqog@mail.gmail.com>
-	<20140109094147.GA20699@lee--X1>
-Date: Thu, 9 Jan 2014 10:33:00 +0000
-X-Google-Sender-Auth: Mf7YB9icPlIGXNNjV1YVx9LIeE4
-Message-ID: <CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, <prabhakar.csengg@gmail.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
         Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH v3 0/2] gpio: davinci: reuse for keystone arch
+References: <1387885284-8119-1-git-send-email-grygorii.strashko@ti.com> <52CC3EDC.7070404@ti.com> <52CCCEB6.9050006@ti.com> <52CD5BD8.8090903@ti.com>
+In-Reply-To: <52CD5BD8.8090903@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 9, 2014 at 9:41 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> +config MFD_MAX6651
->> >> +     bool "Maxim Semiconductor MAX6651 Support"
->> >> +     depends on I2C=y
->> >> +     select MFD_CORE
->> >> +     select IRQ_DOMAIN
->> >
->> > Why have you selected IRQ_DOMAIN?
+On Wednesday 08 January 2014 07:38 PM, Santosh Shilimkar wrote:
+> On Tuesday 07 January 2014 11:06 PM, Sekhar Nori wrote:
+>> On Tuesday 07 January 2014 11:22 PM, Santosh Shilimkar wrote:
+>>> Sekhar,
+>>>
+>>> On Tuesday 24 December 2013 06:41 AM, Grygorii Strashko wrote:
+>>>> This series is intended to update Davinci GPIO driver and reuse
+>>>> it for Keystone SoCs, because Keystone uses the similar GPIO IP like Davinci.
+>>>> Keystone GPIO IP: supports:
+>>>> - up to 32 GPIO lines;
+>>>> - only unbanked irqs;
+>>>>
+>>>> See Documentation:
+>>>> Keystone - http://www.ti.com/lit/ug/sprugv1/sprugv1.pdf
+>>>>
+>>>> This series based on:
+>>>> https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.14/gpio
+>>>>
+>>>> Changes in v3:
+>>>> - fixed code, changed by mistake; fixed sparse warning 
+>>>> Changes in v2:
+>>>> - minor comments applied, no functional changes
+>>>>
+>>>> v2: https://lkml.org/lkml/2013/12/18/135
+>>>> v1: https://lkml.org/lkml/2013/12/12/366
+>>>>
+>>>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>>>> Cc: Alexandre Courbot <gnurou@gmail.com>
+>>>> Cc: Sekhar Nori <nsekhar@ti.com>
+>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>
+>>>> Grygorii Strashko (2):
+>>>>   gpio: davinci: don't create irq_domain in case of unbanked irqs
+>>>>   gpio: davinci: reuse for Keystone SoC
+>>>>
+>>>>  .../devicetree/bindings/gpio/gpio-davinci.txt      |    4 +-
+>>>>  drivers/gpio/gpio-davinci.c                        |   82 ++++++++++++++------
+>>>>  2 files changed, 61 insertions(+), 25 deletions(-)
+>>>>
+>>> Have you picked up the $subject series in your queue ?
 >>
->> Initial consistency with other corresponding drivers, but I should
->> have dropped it once I dropped the irq handling to be as simple as
->> possible initially.
->
-> IRQ_DOMAINs are only relevant for IRQ Controllers.
-
-Sure.
-
->> >> +#include <linux/device.h>
->> >> +#include <linux/delay.h>
->> >> +#include <linux/input.h>
->> >> +#include <linux/interrupt.h>
->> >> +#include <linux/mfd/core.h>
->> >> +#include <linux/slab.h>
->> >> +#include <linux/module.h>
->> >> +#include <linux/i2c.h>
->> >
->> > Are you sure all these are used? I'm pretty sure some of them are
->> > not. Only add headers if you require them. Try not to copy and paste
->> > stuff you don't need.
+>> Not yet, at least on the new compatible introduction, I need an ack from
+>> DT folks.
 >>
->> Yes, this was meant to be the "final clean up step". I aimed
->> functionality and design first.
->
-> In future please only send your best, most cleaned-up
-> code. Sub-standard codes desearves nothing but a sub-standard review.
+> I noticed that but the usual 2 weeks period to get ack is over I guess ;-)
+> The DT part is really trivial as well but I let you decide.
 
-Do not worry, I appreciate your review a lot. :)
+I just realize that Rob's e-mail address bounces. I have added his
+updated address now and hopefully he will see this to provide his ack.
 
->> >> +#include <linux/mfd/max6651-private.h>
->> >> +
->> >> +static struct mfd_cell max6651_devs[] = {
->> >> +    { .name = "max6651-gpio", },
->> >> +    { .name = "max6650", },
->> >
->> > It would be nice to have a comment here to indicate that this is a
->> > hwmon driver. If you're planning to add support for the MAX6651 to
->> > this existing driver,
+Rob,
+
+We need your ack on 2/2 of this series. If you do not have the patch, I
+can forward it to you.
+
+> 
+>> I am happy with the patches though and have tested them as well, In case
+>> I do not get an ack from 2/2 in time, I can at least send 1/2 for
+>> inclusion after my first gpio pull request to ARM-SoC gets pulled.
 >>
->> Actually, it is already renamed to max6650-hwmon in the next patch of
->> this series.
->
-> This won't work, as you haven't changed the name in the
-> platform_driver struct. And rightly so, as it has nothing to do with
-> converting the driver over to a platform one. Pull the part that
-> changes the name into another patch.
+> Would be great to get both of them but if not both at least 1/2.
 
-I already changed that locally last week when debugging the
-platform_match bug about it... This two lines can be taken into a
-fourth patch, surely, but is it worth it when the change is already
-long for the conversion and two lines do not make much difference.
-Anyway, I will surely do it since you would seem to be happier.
+I had already sent it with my first pull request. Hmph. Everything
+except 2/2 of tis series should be in linux-next now.
 
->> >> +    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
->> >> +    int ret;
->> >
->> > Always use 8 char tabs for kernel code.
->>
->> As discussed, style stuff is not fixed for a design review. I am still
->> intereted in having an automated fix-up like astyle in other projects?
->> What is the recommended way? I really would not like to waste too much
->> time with style clean up.
->
-> If you send any more lazy patches where it's clear that no attempt has
-> been made to adhere to the documentation I've provided you with, I
-> won't review. 'Please', no more half-ar$ed patches RFC or otherwise.
->
-> There is no automated way to get styling right, but the first step is
-> to set your editor's config for 8 char tabbing at a bare minimum.
-
-Yes, I understand. The problem is that the Linux kernel is not the
-only project I am contributing to. That is why I was asking what
-people do in similar scenarios. Do they have different editor profiles
-for each project? How is it gently solved? What is the best practice?
-I am using vim for what it is worth. Although, I can probably ask this
-on the list in a different thread.... Will do it.
-
->> >> +static int max6651_i2c_probe(struct i2c_client *i2c,
->> >> +                         const struct i2c_device_id *id)
->> >> +{
->> >> +     struct max6651_dev *max6651;
->> >> +     int ret = 0;
->> >
->> > Why are you initialising ret?
->>
->> Habit for striving for good pratice, I think. It may have also been
->> consitency. That being said, I already removed it when I took a look
->> at the other driver based on Linus' suggestion. I was trying to be
->> consistent with other maxim drivers.
->>
->> The linux kernel drivers are inconsistent in general at large,
->> unfortunately. It is hard to pick up the "right one" for consistency.
->> I will do whatever asked as it really does not make any difference for
->> me.
->
-> The kernel should be mostly standard with this kind of stuff. If the
-> variable 'could possibly' be read before it is written to, then
-> initialise it, failing that, don't worry.
-
-Sure. It might be that my experiment was reading so at some point, and
-I did not adhere to the change later. I will remove it as you asked
-because I agree.
-
->> >> +     ret = mfd_add_devices(max6651->dev, -1, max6651_devs,
->> >> +                     ARRAY_SIZE(max6651_devs),
->> >> +                     NULL, 0, NULL);
->> >> +
->> >> +     if (ret < 0) {
->> >> +        dev_err(max6651->dev, "cannot add mfd cells\n");
->> >
->> > Are you trying to add cells or register devices?
->>
->> I would not know the difference in this context. Care to elaborate?
->
-> Providing a cell structure is just a tool. A means to an end if you
-> will. The real goal here is to register child devices.
->
-> "failed to register child devices\n"
-
-Right, but in that case, I will go ahead and fix at the place rfom
-where I picked this up.
-
->> >> +     kfree(max6651);
->> >
->> > If you use managed resources you don't need this.
->>
->> I am not sure what exactly you mean by managed resource here. I only
->> used the malloc above as far as I can tell. Perhaps, the called
->> function has some magic behind. I would need to double check...
->
-> Yes, devm_* (managed resources) contains magic so you don't have you
-> free your own memory. You can remove the goto altogether.
-
-OK, thankie.
-
->> >> +static int max6651_i2c_remove(struct i2c_client *i2c)
->> >> +{
->> >> +    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
->> >> +
->> >> +    mfd_remove_devices(max6651->dev);
->> >
->> > In this case you would normally need to kfree() here, but if you use
->> > managed resources you won't have to.
->>
->> As above...
->
-> As above...
-
-As above... (thankie). :-)
-
->> >> +    return 0;
->> >> +}
->> >> +
->> >> +static const struct i2c_device_id max6651_i2c_id[] = {
->> >> +    { "max6650", TYPE_MAX6650 },
->> >> +    { "max6651", TYPE_MAX6651 },
->> >
->> > So were're registering the max6650 from here too?
->>
->> Absolutely, that is the idea.
->>
->> > If so, then you need to change the name of the file.
-
-Yes, we discussed that before and I agree with the "obfuscating" 'x'.
-
->> >
->> >> +    { }
->> >
->> > {},
->>
->> Yep, tiring style stuff...
->
-> Styling i.e nice, neat, easily readable/maintainable code should be
-> your bread and butter. If styling tires you, perhaps a new career
-> might be in order. ;)
-
-or a new tool to be more professional ...
-
->> >> +#include <linux/i2c.h>
->> >> +#include <linux/export.h>
->> >
->> > Why is this in here?
->>
->> Because this series was meant for a design review and overall
->> direction as opposed to a completely fine tuned patch set. Naturally,
->> I agree with the feedback of removing unnecessary header inclusion.
->
-> Don't do that.
-
-I will guess that you mean "unnecessary header inclusion is OK"...
-
->> >> +struct max6651_dev {
->> >> +    struct device *dev;
->> >> +    struct mutex iolock;
->> >> +
->> >> +    struct i2c_client *i2c;
->> >
->> > Is this used?
->>
->> Yes, heavily, for reading and writing the registers in the subdevice drivers.
->
-> Can you show me where?
-
-Check the gpio driver or even the hwmon in this series. Look at the
-places where it is using the read/write_reg functions, or you can just
-check their signature in this patch. I am in the process of
-refactoring it into regmap as we speak, but it is not painless because
-I need to get it working for 3.2, too ...
-
->> >> +     int type;
->> >
->> > Or this?
->>
->> Absolutely, this identifies the type, which is necessary for
->> initializing some corresponding data.
->
-> Can you show me where?
-
-Well, you have different number of GPIO pins for starter ...
-
->> >> +};
->> >> +
->> >> +enum max6651_types {
->> >> +     TYPE_MAX6650,
->> >> +     TYPE_MAX6651,
->> >> +};
->> >
->> > What are you using these for?
->>
->> See above.
->
-> Can you show me where you are using them?
-
-Perhaps, I was not while submitting this change, but the upcoming
-changes should.
+Thanks,
+Sekhar
