@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaAILda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:33:30 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60306 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750882AbaAILdU (ORCPT
+	id S1751823AbaAILeW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:34:22 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:27288 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaAILeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:33:20 -0500
-Date: Thu, 9 Jan 2014 11:33:00 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 Resend] cpufreq: create cpufreq_generic_get() routine
-Message-ID: <20140109113300.GA27432@n2100.arm.linux.org.uk>
-References: <d9239e0a5df99392647ff8343673342f89d09476.1389059568.git.viresh.kumar@linaro.org> <CAOesGMgfFVoVJpOMXWtzVWj_F4pD-L9Osyv4u6=c8RUWOoLHFw@mail.gmail.com> <CAKohpo=EsaBPdF3wYsa2rEdjcpPagbhPcxWw1_PA=yVLDnjRiA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpo=EsaBPdF3wYsa2rEdjcpPagbhPcxWw1_PA=yVLDnjRiA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 9 Jan 2014 06:34:15 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-12-52ce89351286
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: tj@kernel.org, sergei.shtylyov@cogentembedded.com, kishon@ti.com,
+        hdegoede@redhat.com, arnd@arndb.de, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 0/3] ata: ahci_platform: Add PHY support and OMAP support
+Date: Thu, 09 Jan 2014 12:33:54 +0100
+Message-id: <1389284177.iKaZgY0Ov4@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+References: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jAV3TznNBBm/Palj8nXSM3WL+kXOs
+	Fm+OT2eyuPC0h83i2I5HTBaXd81hs+h5pGVxZtUtdotfy48yOnB6/P41idHjwdT/TB6bVnWy
+	ebzfd5XN4/iN7UwenzfJBbBFcdmkpOZklqUW6dslcGVsWONYcIy94uWMCUwNjB9Zuxg5OSQE
+	TCRerLzEBmGLSVy4tx7I5uIQEljEKNG6dS8rhNPCJHF+42mwKjYBK4mJ7asYQWwRAUWJeysh
+	OpgFDjJK9F2BKBIWCJCYsvQmC4jNIqAqcevdbmYQm1dAR+L2/slMILaogKfEju0rweo5Bewk
+	Xu/+ATZUSMBWYv6zXWwQ9YISPybfA5vDLCAvsW//VFYIW0dif+s0tgmMArOQlM1CUjYLSdkC
+	RuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEx8ExqB+PKBotDjAIcjEo8vCuKzwYJsSaW
+	FVfmHmKU4GBWEuGd2nguSIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILU
+	IpgsEwenVAPjoWY2btOLTV/vpfjKH3L5d5z5/I4/1hNFHl/pVcg8HX35Qeu0RF7F36JbtL0n
+	lc5y3/aJIdTqi6nQ2vsNW3L6G5qeLlDYc+CiTb71Gr8NNf7blp5acv7zunMe890z8veFRAbu
+	8n8f3H/a/HP2r0+36+xNuCQWvA7Q4mxMWK7++e7Um70PPneuUWIpzkg01GIuKk4EAEvT7+J9	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 02:56:28PM +0530, Viresh Kumar wrote:
-> Naah.. After some investigation I found this:
+
+Hi,
+
+On Thursday, January 09, 2014 04:25:59 PM Roger Quadros wrote:
+> Hi,
 > 
-> - We already have dummy implementations of clk routines in case
-> CONFIG_HAVE_CLK is not defined (I added them long back).
+> Some platforms have a PHY hooked up to the SATA controller.
+> The PHY needs to be initialized and powered up for SATA to work.
+> We do that using the Generic PHY framework in PATCH 2.
 > 
-> - There is one thing common among all above defconfigs, all
-> belong to SA1100 family :)
+> In order to support SATA on the OMAP platforms we need to runtime
+> resume the device before use. PATCH 3 takes care of that.
 > 
-> - And the problem is: SA1100 wanted to define its own clk routines
-> and selects CLKDEV_LOOKUP (which enables HAVE_CLK), but it
-> doesn't implement all clk routines. Which is *wrong*.
+> PATCH 1 just updates the compatible list in the DT binding document.
+> 
+> Changelog:
+> v4:
+> - Tackle error conditions while using PHY framework APIs.
+> 
+> v3:
+> - Addressed review comments and rebased on 3.13-rc7
+> - DT binding update moved to new patch.
+> 
+> v2:
+> - got rid of Texas Instruments SATA wrapper driver
+> - adressed review comments
 
-No, it implements only what it's clk API implementation requires.
+Thanks for fixing it.
 
-> @Russell: If above looks correct then can you please communicate
-> what should we do here? I don't really know what exactly these
-> routines should have, simply a copy of dummy routines from clk.h
-> or some meaningful stuff. So, maybe you can write a patch, otherwise
-> let me know what to write and I will give it a try.
+Reviewed-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-I've no idea at the moment, and I don't have time to look at this.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
