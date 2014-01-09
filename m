@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaAIBYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 20:24:21 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:42913 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaAIBYS (ORCPT
+	id S1751769AbaAIBf7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 20:35:59 -0500
+Received: from mailout.micron.com ([137.201.242.129]:50747 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaAIBf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 20:24:18 -0500
-Date: Thu, 9 Jan 2014 02:24:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: suravee.suthikulpanit@amd.com
-Cc: mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
-        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
-Subject: Re: [PATCH 1/4] perf/x86/amd: AMD support for bp_len >
- HW_BREAKPOINT_LEN_8
-Message-ID: <20140109012411.GA7204@localhost.localdomain>
-References: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1386764906-1681-2-git-send-email-suravee.suthikulpanit@amd.com>
+	Wed, 8 Jan 2014 20:35:57 -0500
+From: =?utf-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
+To: "dedekind1@gmail.com" <dedekind1@gmail.com>
+CC: Adrian Hunter <adrian.hunter@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        =?utf-8?B?UWkgV2FuZyDnjovotbcgKHFpd2FuZyk=?= <qiwang@micron.com>
+Subject: RE: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Topic: [PATCH 1/1]  MTD: UBI:  avoid program operation on  NOR flash
+ after erasure interrupted
+Thread-Index: AQHPBvI9R7Ql4kYjCUG7syxWj0KNGppxBa8AgAADUQCAAT0XoP//tW6AgAUSXCCABJnCkA==
+Date: Thu, 9 Jan 2014 01:35:24 +0000
+Message-ID: <71CF8D7F32C5C24C9CD1D0E02D52498A770C7770@NTXXIAMBX02.xacn.micron.com>
+References: <71CF8D7F32C5C24C9CD1D0E02D52498A770B54B1@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B68A8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B6F77@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B79C8@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770B8611@NTXXIAMBX02.xacn.micron.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770BA389@NTXXIAMBX02.xacn.micron.com>
+	 <1388675460.25123.90.camel@sauron.fi.intel.com>
+	 <1388676172.25123.93.camel@sauron.fi.intel.com>
+	 <71CF8D7F32C5C24C9CD1D0E02D52498A770BA889@NTXXIAMBX02.xacn.micron.com>
+ <1388728253.25123.98.camel@sauron.fi.intel.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20418.003
+X-TM-AS-Result: No-1.210900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386764906-1681-2-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s091a9rq030920
 
-On Wed, Dec 11, 2013 at 06:28:23AM -0600, suravee.suthikulpanit@amd.com wrote:
-> @@ -295,11 +301,17 @@ static int arch_build_bp_info(struct perf_event *bp)
->  		break;
->  #endif
->  	default:
-> -		return -EINVAL;
-> +		if (!is_power_of_2(bp->attr.bp_len))
-> +			return -EINVAL;
-> +		if (!cpu_has_bpext)
-> +			return -EOPNOTSUPP;
-> +		info->mask = bp->attr.bp_len - 1;
-> +		info->len = X86_BREAKPOINT_LEN_1;
+Hi Artem:
+Do you have any suggestion for my modification?
+Other code I think it is ok.
+Thanks
 
-I think I asked this before but I can't remember. So dr7 must have
-length as LEN_1 for breakpoint extension?
+
+-----Original Message-----
+From: Qi Wang ç‹èµ· (qiwang) 
+Sent: Monday, January 06, 2014 1:11 PM
+To: 'dedekind1@gmail.com'
+Cc: Adrian Hunter; linux-kernel@vger.kernel.org; linux-mtd@lists.infradead.org
+Subject: RE: [PATCH 1/1] MTD: UBI: avoid program operation on NOR flash after erasure interrupted
+
+>Please, remember that I pushed your patch to a temporary branch, only
+>for you to be able to easily pick it. I do not send it upstream.
+
+>As I said, I need to you look at it and confirm that it is all-right.
+>And if it is not all-right, correct it.
+
+>This is because I modified it myself.
+
+>So waiting for your response on this.
+I checked the code you modified, compile, and run on our platform, it is ok.
+
++	ubi_err("cannot invalidate PEB %d, write returned %d write returned %d",
++		pnum, err, err); 
+
+But I think above code print "write err" twice. so I suggest to change to below:
+
++	ubi_err("cannot invalidate PEB %d, write returned %d", pnum, err);
+ 
+I will send you the patch in another email convenient for you to apply patch.
+Thanks
+--
+qiwang 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
