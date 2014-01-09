@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaAIQZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 11:25:28 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:33007 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901AbaAIQZP (ORCPT
+	id S1755279AbaAIQ0P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 11:26:15 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56651 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523AbaAIQ0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 11:25:15 -0500
+	Thu, 9 Jan 2014 11:26:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140109112249.30d457d8@gandalf.local.home>
-References: <20140109101932.0508dec7@gandalf.local.home>
-	<CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
-	<20140109105114.5c409fef@gandalf.local.home>
-	<1389283030.15209.56.camel@localhost>
-	<1389283545.15209.59.camel@localhost>
-	<52CEC9DD.4000901@tycho.nsa.gov>
-	<20140109112249.30d457d8@gandalf.local.home>
-Date: Thu, 9 Jan 2014 11:25:14 -0500
-Message-ID: <CACLa4psHnLQxbRL8PBF3ZtpWMyxm7+zhnhR3zF7LnYhT3nMg2A@mail.gmail.com>
-Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
-From: Eric Paris <eparis@parisplace.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        stable <stable@vger.kernel.org>, SE-Linux <selinux@tycho.nsa.gov>,
-        LSM List <linux-security-module@vger.kernel.org>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <aaadbfa341a881c8250f2d23bc77062228d2e70b.1389279793.git.viresh.kumar@linaro.org>
+References: <aaadbfa341a881c8250f2d23bc77062228d2e70b.1389279793.git.viresh.kumar@linaro.org>
+Date: Thu, 9 Jan 2014 08:26:08 -0800
+Message-ID: <CAOesGMgQgOUxbj=0=AYx2pN4mh5HoDcW4p1W89+kvNtXpFmYxA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: SA1100: Create dummy clk_get_rate() to avoid
+ build failures
+From: Olof Johansson <olof@lixom.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-https://bugzilla.redhat.com/show_bug.cgi?id=829715
+On Thu, Jan 9, 2014 at 7:08 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> There are some parts of common kernel which would be using routines like
+> clk_get_rate() on some platforms. Currently these wouldn't be called for SA1100
+> boards but we need these routines for successful builds of these boards.
+>
+> So, this patch creates a dummy clk_get_rate() routine which is being used by
+> cpufreq core. More dummy routines might be added later if there is a need for
+> that.
+>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+> Reported-by: <Olof Johansson> olof@lixom.net
 
-at least has some discussion...
+That's not the right format.
 
-On Thu, Jan 9, 2014 at 11:22 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 09 Jan 2014 11:10:05 -0500
-> Stephen Smalley <sds@tycho.nsa.gov> wrote:
->
->> I didn't know that was the case; originally when we added the hook it
->> was not possible.   I have seen a Red Hat bugzilla report about it,
->> but no upstream discussion.
->
-> Maybe not enough people use SELinux ;-)
->
-> Do you know what the Red Hat BZ # was?
->
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Olof
