@@ -1,41 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906AbaAITsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:48:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757074AbaAITsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:48:42 -0500
-Message-ID: <52CEFCB9.2030604@redhat.com>
-Date: Thu, 09 Jan 2014 14:47:05 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1756870AbaAITxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:53:19 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:63124 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982AbaAITxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 14:53:09 -0500
+X-IronPort-AV: E=Sophos;i="4.95,633,1384300800"; 
+   d="scan'208";a="89285057"
+Message-ID: <52CEFE21.8060608@citrix.com>
+Date: Thu, 9 Jan 2014 19:53:05 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Alex Shi <alex.shi@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] x86: mm: Clean up inconsistencies when flushing TLB
- ranges
-References: <1389278098-27154-1-git-send-email-mgorman@suse.de> <1389278098-27154-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1389278098-27154-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Wei Liu <wei.liu2@citrix.com>
+CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jonathan.davies@citrix.com>,
+        =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH net-next v3 1/9] xen-netback: Introduce TX grant map definitions
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com> <1389139818-24458-2-git-send-email-zoltan.kiss@citrix.com> <20140109153010.GE12164@zion.uk.xensource.com>
+In-Reply-To: <20140109153010.GE12164@zion.uk.xensource.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 09:34 AM, Mel Gorman wrote:
-> NR_TLB_LOCAL_FLUSH_ALL is not always accounted for correctly and the
-> comparison with total_vm is done before taking tlb_flushall_shift into
-> account. Clean it up.
+On 09/01/14 15:30, Wei Liu wrote:
+> On Wed, Jan 08, 2014 at 12:10:10AM +0000, Zoltan Kiss wrote:
+>> v3:
+>> - fix comment in xenvif_tx_dealloc_action()
+>> - call unmap hypercall directly instead of gnttab_unmap_refs(), which does
+>>    unnecessary m2p_override. Also remove pages_to_[un]map members
 >
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Alex Shi <alex.shi@linaro.org>
+> Is it worthy to have another function call
+> gnttab_unmap_refs_no_m2p_override in Xen core driver, or just add a
+> parameter to control wether we need to touch m2p_override? I *think* it
+> will benefit block driver as well?
+>
+> (CC Roger and David for input)
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Yep, it worth, but let's make it a different patch
+
+>> --- a/drivers/net/xen-netback/netback.c
+>> +++ b/drivers/net/xen-netback/netback.c
+>> @@ -771,6 +771,19 @@ static struct page *xenvif_alloc_page(struct xenvif *vif,
+>>   	return page;
+>>   }
+>>
+>> +static inline void xenvif_tx_create_gop(struct xenvif *vif, u16 pending_idx,
+>> +	       struct xen_netif_tx_request *txp,
+>> +	       struct gnttab_map_grant_ref *gop)
+>
+> Indentation.
+I fixed it and the later ones up, hopefully I haven't missed anything.
+
+>
+>> +
+>> +	spin_lock_irqsave(&vif->dealloc_lock, flags);
+>> +	do {
+>> +		pending_idx = ubuf->desc;
+>> +		ubuf = (struct ubuf_info *) ubuf->ctx;
+>> +		index = pending_index(vif->dealloc_prod);
+>> +		vif->dealloc_ring[index] = pending_idx;
+>> +		/* Sync with xenvif_tx_action_dealloc:
+>
+> xenvif_tx_dealloc_action I suppose.
+Yes.
+
+>> +			/* Already unmapped? */
+>> +			if (vif->grant_tx_handle[pending_idx] ==
+>> +				NETBACK_INVALID_HANDLE) {
+>> +				netdev_err(vif->dev,
+>> +					"Trying to unmap invalid handle! "
+>> +					"pending_idx: %x\n", pending_idx);
+>> +				continue;
+>
+> You seemed to miss the BUG_ON we discussed?
+>
+> See thread starting <52AF1A84.3090304@citrix.com>.
+Indeed, despite I wrote it in the version history :)
+
 
