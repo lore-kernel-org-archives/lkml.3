@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaAILDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:03:05 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:5562 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaAILCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:02:52 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 09 Jan 2014 03:02:55 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: add system-power-controller property for PMIC node
-Date: Thu, 9 Jan 2014 16:31:48 +0530
-Message-ID: <1389265308-26405-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752107AbaAILEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:04:08 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56096 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925AbaAILEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 06:04:04 -0500
+Date: Thu, 9 Jan 2014 12:03:59 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 3/6] ARM: Add Krait L2 accessor functions
+Message-ID: <20140109110358.GB11594@pd.tnic>
+References: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org>
+ <1388434457-4194-4-git-send-email-sboyd@codeaurora.org>
+ <20140109005332.GB23276@sonymobile.com>
+ <52CE0154.4030803@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52CE0154.4030803@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add system-power-controller property to system PMIC, ams AS3722,
-node to enable power off functionality through PMIC.
+On Wed, Jan 08, 2014 at 05:54:28PM -0800, Stephen Boyd wrote:
+> Ok. Borislav, should I resend to add krait_ before these functions?
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- arch/arm/boot/dts/tegra124-venice2.dts |    2 ++
- 1 file changed, 2 insertions(+)
+Yes please - I can't even build-test here so I'm relying on you.
 
-diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
-index c6dcef5..1ad3f33 100644
---- a/arch/arm/boot/dts/tegra124-venice2.dts
-+++ b/arch/arm/boot/dts/tegra124-venice2.dts
-@@ -616,6 +616,8 @@
- 			reg = <0x40>;
- 			interrupts = <0 86 IRQ_TYPE_LEVEL_HIGH>;
- 
-+			ams,system-power-controller;
-+
- 			#interrupt-cells = <2>;
- 			interrupt-controller;
- 
+That's why I thought it might be a better idea for this purely arm patch
+to go through some other tree where it sees some build-testing at least.
+
+Thanks.
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
