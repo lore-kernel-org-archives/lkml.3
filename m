@@ -1,151 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaAICC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 21:02:26 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:21450 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbaAICCX (ORCPT
+	id S1751753AbaAICLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 21:11:51 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:38349 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaAICLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 21:02:23 -0500
-X-AuditID: cbfee68e-b7f566d000002344-78-52ce032db095
-Message-id: <52CE0330.4090501@samsung.com>
-Date: Thu, 09 Jan 2014 11:02:24 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon next for 3.14
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsWyRsSkUFeP+VyQwdozTBbXvzxntWhevJ7N
-	4mzTG3aLTY+vsVpc3jWHzeJ24wo2BzaP/XPXsHtsXlLv0bdlFaPH501yASxRXDYpqTmZZalF
-	+nYJXBk3Z15mKbgpW9H+6C9bA+M/sS5GTg4JAROJXUc2sUHYYhIX7q0Hsrk4hASWMkp8mbON
-	Dabo65+1UIlFjBLTNzezQDivGCUOz9nB2sXIwcEroCVx9pAAiMkioCox4VwlSC8bUHT/ixtg
-	c0QFwiRWTr/CAmLzCghK/Jh8D8wWEdCQeHn0FthIZoEXjBI/ZiwHaxAGSnQuuMIMYjML6Ejs
-	b53GBmHLS2xe85YZpEFCYBm7xM3n/8GKWAQEJL5NPsQCcoSEgKzEpgPMEA9IShxccYNlAqPI
-	LCS7ZyEZOwvJ2AWMzKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxAiPm9L9nfTsYbx6wPsSY
-	DLRyIrOUaHI+MOLySuINjc2MLExNTI2NzC3NSBNWEudd9DApSEggPbEkNTs1tSC1KL6oNCe1
-	+BAjEwenVAPj5PvRNeapR5b1z9g3sUlx9tQ/PByLWo+IrwuSeXkuViv6+vsOhuatNZlr87Mb
-	GE/POfhfZlJJpYL0AxfnmDk1/RN8TV/vrSzTXlVfLLLqm6bObHNr0xnqrHp537SCG5b9ELjw
-	/Rjvs+JSOakFMy4u3jAzQTRgwZIc/arAk7z2OcdeXE3n0XJXYinOSDTUYi4qTgQABrsS9q4C	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jAV1d5nNBBnuemltc//Kc1aJ58Xo2
-	i7NNb9gtNj2+xmpxedccNovbjSvYHNg89s9dw+6xeUm9R9+WVYwenzfJBbBENTDaZKQmpqQW
-	KaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAtV1IoS8wpBQoFJBYX
-	K+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm3Jx5maXgpmxF+6O/bA2M/8S6GDk5JARMJL7+
-	WcsGYYtJXLi3Hsjm4hASWMQoMX1zMwuE84pR4vCcHaxdjBwcvAJaEmcPCYCYLAKqEhPOVYL0
-	sgFF97+4ATZHVCBMYuX0KywgNq+AoMSPyffAbBEBDYmXR2+BjWQWeMEo8WPGcrAGYaBE54Ir
-	zCA2s4COxP7WaWwQtrzE5jVvmScw8s1CMmsWkrJZSMoWMDKvYhRNLUguKE5KzzXSK07MLS7N
-	S9dLzs/dxAiOx2fSOxhXNVgcYhTgYFTi4V1RfDZIiDWxrLgy9xCjBAezkghvEcO5ICHelMTK
-	qtSi/Pii0pzU4kOMyUCfTmSWEk3OB6aKvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeW
-	pGanphakFsFsYeLglGpgdGtcsvRk0Q1Hw1W2qxJSo7nnth0Jv8J989uNTK4gDkum96nH1ft8
-	Z6w88XWaye3XC6eH5W68/f9BhtVVvYQjyjL7BVkV9D3mFvN0vrrEtXKta6bD4/OiMdvfCgV8
-	cVW66rn9npWC3WGlCX1CJz+of32boG+3qi7C//bbvU+Pm0Ws+be3YhfjGSWW4oxEQy3mouJE
-	ADcU1BALAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 8 Jan 2014 21:11:42 -0500
+Message-ID: <52CE055C.5030103@codeaurora.org>
+Date: Wed, 08 Jan 2014 18:11:40 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH v4 02/15] clk: Allow drivers to pass in a regmap
+References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org> <1387847559-18330-3-git-send-email-sboyd@codeaurora.org> <20140109015158.7168.60274@quantum>
+In-Reply-To: <20140109015158.7168.60274@quantum>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg,
+On 01/08/14 17:51, Mike Turquette wrote:
+> Quoting Stephen Boyd (2013-12-23 17:12:26)
+>> Add support to the clock core so that drivers can pass in a
+>> regmap. If no regmap is specified try to query the device that's
+>> registering the clock for its regmap. This should allow drivers
+>> to use the core regmap helpers. This is based on a similar design
+>> in the regulator framework.
+>>
+>> Cc: Mark Brown <broonie@kernel.org>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>> ---
+>>  drivers/clk/clk.c            | 8 ++++++++
+>>  include/linux/clk-provider.h | 7 +++++++
+>>  2 files changed, 15 insertions(+)
+>>
+>> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+>> index 9ad7b71..5e71f5c 100644
+>> --- a/drivers/clk/clk.c
+>> +++ b/drivers/clk/clk.c
+>> @@ -20,6 +20,7 @@
+>>  #include <linux/device.h>
+>>  #include <linux/init.h>
+>>  #include <linux/sched.h>
+>> +#include <linux/regmap.h>
+>>  
+>>  static DEFINE_SPINLOCK(enable_lock);
+>>  static DEFINE_MUTEX(prepare_lock);
+>> @@ -1834,6 +1835,13 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
+>>         clk->num_parents = hw->init->num_parents;
+>>         hw->clk = clk;
+>>  
+>> +       if (hw->init->regmap)
+>> +               hw->regmap = hw->init->regmap;
+> Hi Stephen,
+>
+> The whole series looks good to me except for the placement of the regmap
+> details inside struct clk_hw. That structure exists only to hide struct
+> clk from the hardware-specific clock structure and I'd not like to set
+> the precedent of shoving per-clock data into it.
+>
+> As an alternative, how about finding a way to put these per-clock regmap
+> details into the hardware-specific clock structure? I understand that
+> you want to make these ops available to others, which is why they are in
+> the public struct clk_hw. I'm just wondering if that is the right way to
+> do it...
 
-This is extcon-next full request for v3.14. I add detailed description of this
-pull request on below. Please pull extcon with following updates.
+The regulator framework has gone this way. It seemed like a similar
+approach in the clock framework would be the right way to go too.
 
-This patchset is rebased on 'Linux 3-13-rc4' because char-misc-next is based on
-'Linux 3-13-rc4'.
+>
+> Patch #3 illustrates the sort of struct-member-creep that worries me.
+> What is to stop someone from putting "unsigned int divider_reg" or
+> "unsigned int mux_reg", and then the thing just keeps growing.
+>
 
-Best Regards,
-Chanwoo Choi
+I see two ways forward if you don't want these members in struct clk_hw.
 
-The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
+1) Inheritance: struct clk_regmap wrapper struct and
+clk_register_regmap() and devm_clk_register_regmap() and then another
+wrapper struct around that.
 
-  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
+ example:
 
-are available in the git repository at:
+struct clk_regmap {
+        struct clk_hw hw;
+        struct regmap *regmap;
+        unsigned int enable_reg;
+        unsigned int enable_mask;
+        bool enable_is_inverted;
+};
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.14
+struct clk_branch {
+        u32     hwcg_reg;
+        u32     halt_reg;
+        u8      hwcg_bit;
+        u8      halt_bit;
+        u8      halt_check;
 
-for you to fetch changes up to 6544dfa5795060b01042fd62fd1a92e18c2fc485:
+        struct clk_regmap       clkr;
+};
 
-  extcon: gpio: Add power resume support (2014-01-09 09:53:30 +0900)
+static struct clk_branch gsbi1_uart_clk = {
+        .halt_reg = 0x2fcc,
+        .halt_bit = 10,
+        .clkr = {
+                .enable_reg = 0x29d4,
+                .enable_mask = BIT(9),
+                .hw.init = &(struct clk_init_data){
+                        .name = "gsbi1_uart_clk",
+                        .parent_names = (const char *[]){
+                                "gsbi1_uart_src",
+                        },
+                        .num_parents = 1,
+                        .ops = &clk_branch_ops,
+                        .flags = CLK_SET_RATE_PARENT,
+                },
+        },
+};
 
-----------------------------------------------------------------
-Update extcon for v3.14
 
-This patchset add new driver of extcon-max14577.c which detect various external
-connector and fix minor issue of extcon provider driver(extcon-arizona/palams/
-gpio.c). Also, update documentation of previous 'switch' porting guide and
-extcon git repository url.
+2) Interfaces: Add a void *data in struct clk_hw that can point to
+whatever I want and still have the same clk_regmap_register() and
+devm_clk_regmap_register()
 
-Detailed description for patchset:
-- New driver of extcon-max14577.c
-: Add extcon-max14577.c drvier to support Maxim MUIC(Micro USB Interface
-Controller) which detect USB/TA/JIG/AUDIO-DOCK and additional accessory
-according to each resistance when connected external connector.
+Example:
 
-- extcon-arizoan.c driver
-: Code clean to use define macro instead of hex value
-: Fix minor issue to reset back to our staring state
-: Fix race with microphone detection and removal
+struct clk_hw {
+        struct clk *clk;
+        const struct clk_init_data *init;
+        void *data;
+};
 
-- extcon-palmas.c driver
-: Fix minor issue and renaming compatible string of Devicetree
+struct clk_regmap {
+        struct regmap *regmap;
+        unsigned int enable_reg;
+        unsigned int enable_mask;
+        bool enable_is_inverted;
+};
 
-- extcon-gpio.c driver
-: Fix bug about ordering initialization of gpio pin on probe()
-: Send uevent after wakeup from suspend state because some SoC
-  haven't wakeup interrupt on suspend state.
+struct clk_branch {
+        u32     hwcg_reg;
+        u32     halt_reg;
+        u8      hwcg_bit;
+        u8      halt_bit;
+        u8      halt_check;
 
-- Documentation (Documentation/extcon/porting-android-switch-class)
-: Fix switch class porting guide
+        struct clk_hw;
+};
 
-- Update extcon git repository url
+static struct clk_branch gsbi1_uart_clk = {
+        .halt_reg = 0x2fcc,
+        .halt_bit = 10,
+        .hw = {
+                .data = &(struct clk_regmap){
+                        .enable_reg = 0x29d4,
+                        .enable_mask = BIT(9),
+                 };
+                .init = &(struct clk_init_data){
+                        .name = "gsbi1_uart_clk",
+                        .parent_names = (const char *[]){
+                                "gsbi1_uart_src",
+                        },
+                        .num_parents = 1,
+                        .ops = &clk_branch_ops,
+                        .flags = CLK_SET_RATE_PARENT,
+                },
+        },
+};
 
-----------------------------------------------------------------
-Chanwoo Choi (2):
-      MAINTAINERS: Add git repository for extcon
-      extcon: max14577: Add extcon-max14577 driver to support MUIC device
+I guess option 2 is less likely given your comment about clk_hw being
+nothing more than a traversal mechanism.
 
-Charles Keepax (5):
-      extcon: arizona: Add defines for microphone detection levels
-      extcon: arizona: Fix reset of HPDET after race with removal
-      extcon: arizona: Fix race with microphone detection and removal
-      extcon: arizona: No need to switch back down HPDET ranges
-      extcon: arizona: Add support for headphone detection on wm5110 rev D
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-George Cherian (1):
-      extcon: palmas: Handle ID interrupt properly using USB_ID_INT_SRC
-
-Guenter Roeck (1):
-      extcon: gpio: Request gpio pin before modifying its state
-
-Kishon Vijay Abraham I (1):
-      extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
-
-MyungJoo Ham (1):
-      extcon: fix switch class porting guide (Documentation)
-
-Rongjun Ying (1):
-      extcon: gpio: Add power resume support
-
- .../devicetree/bindings/extcon/extcon-palmas.txt   |   6 +-
- Documentation/extcon/porting-android-switch-class  |   9 +-
- MAINTAINERS                                        |   1 +
- drivers/extcon/Kconfig                             |  10 +
- drivers/extcon/Makefile                            |   1 +
- drivers/extcon/extcon-arizona.c                    |  73 +-
- drivers/extcon/extcon-gpio.c                       |  32 +-
- drivers/extcon/extcon-max14577.c                   | 752 +++++++++++++++++++++
- drivers/extcon/extcon-palmas.c                     |  17 +-
- include/linux/extcon/extcon-gpio.h                 |   1 +
- include/linux/mfd/arizona/registers.h              |   9 +
- 11 files changed, 876 insertions(+), 35 deletions(-)
- create mode 100644 drivers/extcon/extcon-max14577.c
