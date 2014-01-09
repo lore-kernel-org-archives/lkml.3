@@ -1,134 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaAICBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 21:01:06 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:60390 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952AbaAICBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 21:01:03 -0500
-X-IronPort-AV: E=Sophos;i="4.95,627,1384272000"; 
-   d="scan'208";a="9393185"
-Message-ID: <52CEB92E.6060004@cn.fujitsu.com>
-Date: Thu, 09 Jan 2014 09:58:54 -0500
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        artagnon@gmail.com
-Subject: Re: [PATCH 2/8] perf tools: Make the print_pmu_events funtion to
- return unsigned int.
-References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com> <52353637cf8005cef5f3eaa605121426ef49f557.1388416837.git.yangds.fnst@cn.fujitsu.com> <20140108151038.GA2626@infradead.org>
-In-Reply-To: <20140108151038.GA2626@infradead.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/09 09:59:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/09 09:59:58,
-	Serialize complete at 2014/01/09 09:59:58
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753234AbaAICC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 21:02:26 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:21450 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaAICCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 21:02:23 -0500
+X-AuditID: cbfee68e-b7f566d000002344-78-52ce032db095
+Message-id: <52CE0330.4090501@samsung.com>
+Date: Thu, 09 Jan 2014 11:02:24 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [GIT PULL] extcon next for 3.14
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsWyRsSkUFeP+VyQwdozTBbXvzxntWhevJ7N
+	4mzTG3aLTY+vsVpc3jWHzeJ24wo2BzaP/XPXsHtsXlLv0bdlFaPH501yASxRXDYpqTmZZalF
+	+nYJXBk3Z15mKbgpW9H+6C9bA+M/sS5GTg4JAROJXUc2sUHYYhIX7q0Hsrk4hASWMkp8mbON
+	Dabo65+1UIlFjBLTNzezQDivGCUOz9nB2sXIwcEroCVx9pAAiMkioCox4VwlSC8bUHT/ixtg
+	c0QFwiRWTr/CAmLzCghK/Jh8D8wWEdCQeHn0FthIZoEXjBI/ZiwHaxAGSnQuuMIMYjML6Ejs
+	b53GBmHLS2xe85YZpEFCYBm7xM3n/8GKWAQEJL5NPsQCcoSEgKzEpgPMEA9IShxccYNlAqPI
+	LCS7ZyEZOwvJ2AWMzKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxAiPm9L9nfTsYbx6wPsSY
+	DLRyIrOUaHI+MOLySuINjc2MLExNTI2NzC3NSBNWEudd9DApSEggPbEkNTs1tSC1KL6oNCe1
+	+BAjEwenVAPj5PvRNeapR5b1z9g3sUlx9tQ/PByLWo+IrwuSeXkuViv6+vsOhuatNZlr87Mb
+	GE/POfhfZlJJpYL0AxfnmDk1/RN8TV/vrSzTXlVfLLLqm6bObHNr0xnqrHp537SCG5b9ELjw
+	/Rjvs+JSOakFMy4u3jAzQTRgwZIc/arAk7z2OcdeXE3n0XJXYinOSDTUYi4qTgQABrsS9q4C	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jAV1d5nNBBnuemltc//Kc1aJ58Xo2
+	i7NNb9gtNj2+xmpxedccNovbjSvYHNg89s9dw+6xeUm9R9+WVYwenzfJBbBENTDaZKQmpqQW
+	KaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAtV1IoS8wpBQoFJBYX
+	K+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm3Jx5maXgpmxF+6O/bA2M/8S6GDk5JARMJL7+
+	WcsGYYtJXLi3Hsjm4hASWMQoMX1zMwuE84pR4vCcHaxdjBwcvAJaEmcPCYCYLAKqEhPOVYL0
+	sgFF97+4ATZHVCBMYuX0KywgNq+AoMSPyffAbBEBDYmXR2+BjWQWeMEo8WPGcrAGYaBE54Ir
+	zCA2s4COxP7WaWwQtrzE5jVvmScw8s1CMmsWkrJZSMoWMDKvYhRNLUguKE5KzzXSK07MLS7N
+	S9dLzs/dxAiOx2fSOxhXNVgcYhTgYFTi4V1RfDZIiDWxrLgy9xCjBAezkghvEcO5ICHelMTK
+	qtSi/Pii0pzU4kOMyUCfTmSWEk3OB6aKvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeW
+	pGanphakFsFsYeLglGpgdGtcsvRk0Q1Hw1W2qxJSo7nnth0Jv8J989uNTK4gDkum96nH1ft8
+	Z6w88XWaye3XC6eH5W68/f9BhtVVvYQjyjL7BVkV9D3mFvN0vrrEtXKta6bD4/OiMdvfCgV8
+	cVW66rn9npWC3WGlCX1CJz+of32boG+3qi7C//bbvU+Pm0Ws+be3YhfjGSWW4oxEQy3mouJE
+	ADcU1BALAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2014 10:10 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 30, 2013 at 10:26:37AM -0500, Dongsheng Yang escreveu:
->> Sometimes we need to know how many events have been printed in print_pmu_events.
-> "Sometimes" is too vague, of course it should be needed, otherwise why
-> bother with the patch? It would be better if you provided an example of
-> _where_ it will be used, like when printing that newline.
+Dear Greg,
 
-Sorry for the terrible commit message :(.
+This is extcon-next full request for v3.14. I add detailed description of this
+pull request on below. Please pull extcon with following updates.
 
-What about the following one?
+This patchset is rebased on 'Linux 3-13-rc4' because char-misc-next is based on
+'Linux 3-13-rc4'.
 
-"When we call print_pmu_events(), we want to know how many events has 
-been printed in this function. But currently it is impossible, as it 
-return void.
+Best Regards,
+Chanwoo Choi
 
-This patch change this function to return the number of events we have 
-printed."
+The following changes since commit 319e2e3f63c348a9b66db4667efa73178e18b17d:
 
-- Yang
-> Anyway, reading the other patches,
->
-> - Arnaldo
->   
->> This patch make this function to return the number of events we have printed.
->>
->> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
->> ---
->>   tools/perf/util/pmu.c | 12 +++++++-----
->>   tools/perf/util/pmu.h |  2 +-
->>   2 files changed, 8 insertions(+), 6 deletions(-)
->>
->> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
->> index 0934d64..331dc2c 100644
->> --- a/tools/perf/util/pmu.c
->> +++ b/tools/perf/util/pmu.c
->> @@ -711,12 +711,12 @@ static int cmp_string(const void *a, const void *b)
->>   	return strcmp(*as, *bs);
->>   }
->>   
->> -void print_pmu_events(const char *event_glob, bool name_only)
->> +unsigned int print_pmu_events(const char *event_glob, bool name_only)
->>   {
->>   	struct perf_pmu *pmu;
->>   	struct perf_pmu_alias *alias;
->>   	char buf[1024];
->> -	int printed = 0;
->> +	unsigned int count = 0;
->>   	int len, j;
->>   	char **aliases;
->>   
->> @@ -727,7 +727,7 @@ void print_pmu_events(const char *event_glob, bool name_only)
->>   			len++;
->>   	aliases = malloc(sizeof(char *) * len);
->>   	if (!aliases)
->> -		return;
->> +		return count;
->>   	pmu = NULL;
->>   	j = 0;
->>   	while ((pmu = perf_pmu__scan(pmu)) != NULL)
->> @@ -752,15 +752,17 @@ void print_pmu_events(const char *event_glob, bool name_only)
->>   	for (j = 0; j < len; j++) {
->>   		if (name_only) {
->>   			printf("%s ", aliases[j]);
->> +			count++;
->>   			continue;
->>   		}
->>   		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
->>   		zfree(&aliases[j]);
->> -		printed++;
->> +		count++;
->>   	}
->> -	if (printed)
->> +	if (count)
->>   		printf("\n");
->>   	free(aliases);
->> +	return count;
->>   }
->>   
->>   bool pmu_have_event(const char *pname, const char *name)
->> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
->> index 9183380..2987fe2 100644
->> --- a/tools/perf/util/pmu.h
->> +++ b/tools/perf/util/pmu.h
->> @@ -42,7 +42,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
->>   
->>   struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
->>   
->> -void print_pmu_events(const char *event_glob, bool name_only);
->> +unsigned int print_pmu_events(const char *event_glob, bool name_only);
->>   bool pmu_have_event(const char *pname, const char *name);
->>   
->>   int perf_pmu__test(void);
->> -- 
->> 1.8.2.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+  Linux 3.13-rc4 (2013-12-15 12:31:33 -0800)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.14
+
+for you to fetch changes up to 6544dfa5795060b01042fd62fd1a92e18c2fc485:
+
+  extcon: gpio: Add power resume support (2014-01-09 09:53:30 +0900)
+
+----------------------------------------------------------------
+Update extcon for v3.14
+
+This patchset add new driver of extcon-max14577.c which detect various external
+connector and fix minor issue of extcon provider driver(extcon-arizona/palams/
+gpio.c). Also, update documentation of previous 'switch' porting guide and
+extcon git repository url.
+
+Detailed description for patchset:
+- New driver of extcon-max14577.c
+: Add extcon-max14577.c drvier to support Maxim MUIC(Micro USB Interface
+Controller) which detect USB/TA/JIG/AUDIO-DOCK and additional accessory
+according to each resistance when connected external connector.
+
+- extcon-arizoan.c driver
+: Code clean to use define macro instead of hex value
+: Fix minor issue to reset back to our staring state
+: Fix race with microphone detection and removal
+
+- extcon-palmas.c driver
+: Fix minor issue and renaming compatible string of Devicetree
+
+- extcon-gpio.c driver
+: Fix bug about ordering initialization of gpio pin on probe()
+: Send uevent after wakeup from suspend state because some SoC
+  haven't wakeup interrupt on suspend state.
+
+- Documentation (Documentation/extcon/porting-android-switch-class)
+: Fix switch class porting guide
+
+- Update extcon git repository url
+
+----------------------------------------------------------------
+Chanwoo Choi (2):
+      MAINTAINERS: Add git repository for extcon
+      extcon: max14577: Add extcon-max14577 driver to support MUIC device
+
+Charles Keepax (5):
+      extcon: arizona: Add defines for microphone detection levels
+      extcon: arizona: Fix reset of HPDET after race with removal
+      extcon: arizona: Fix race with microphone detection and removal
+      extcon: arizona: No need to switch back down HPDET ranges
+      extcon: arizona: Add support for headphone detection on wm5110 rev D
+
+George Cherian (1):
+      extcon: palmas: Handle ID interrupt properly using USB_ID_INT_SRC
+
+Guenter Roeck (1):
+      extcon: gpio: Request gpio pin before modifying its state
+
+Kishon Vijay Abraham I (1):
+      extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
+
+MyungJoo Ham (1):
+      extcon: fix switch class porting guide (Documentation)
+
+Rongjun Ying (1):
+      extcon: gpio: Add power resume support
+
+ .../devicetree/bindings/extcon/extcon-palmas.txt   |   6 +-
+ Documentation/extcon/porting-android-switch-class  |   9 +-
+ MAINTAINERS                                        |   1 +
+ drivers/extcon/Kconfig                             |  10 +
+ drivers/extcon/Makefile                            |   1 +
+ drivers/extcon/extcon-arizona.c                    |  73 +-
+ drivers/extcon/extcon-gpio.c                       |  32 +-
+ drivers/extcon/extcon-max14577.c                   | 752 +++++++++++++++++++++
+ drivers/extcon/extcon-palmas.c                     |  17 +-
+ include/linux/extcon/extcon-gpio.h                 |   1 +
+ include/linux/mfd/arizona/registers.h              |   9 +
+ 11 files changed, 876 insertions(+), 35 deletions(-)
+ create mode 100644 drivers/extcon/extcon-max14577.c
