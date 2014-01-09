@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148AbaAIIvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:51:36 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:57009 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548AbaAIIvb (ORCPT
+	id S1755398AbaAIIy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:54:57 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:53305 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033AbaAIIyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:51:31 -0500
-Date: Thu, 9 Jan 2014 17:51:28 +0900
-From: Simon Horman <horms@verge.net.au>
-To: panchaxari <panchaxari.prasannamurthy@linaro.org>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Magnus Damm <damm@opensource.se>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH CFT] ARM:SHMOBILE: Enable AUTO_ZRELADDR by default
-Message-ID: <20140109085128.GI9267@verge.net.au>
-References: <1389256274-6308-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+	Thu, 9 Jan 2014 03:54:53 -0500
+Date: Thu, 9 Jan 2014 00:52:51 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: SoC fixes for 3.13
+Message-ID: <20140109085251.GA30534@quad.lixom.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389256274-6308-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does not enable AUTO_ZRELADDR by default.
-It forces AUTO_ZRELADDR to be enabled to be used unless ZBOOT_ROM is enabled.
+Hi Linus,
 
-I'm not opposed to this approach but I think the changelog is misleading.
+The following changes since commit 413541dd66d51f791a0b169d9b9014e4f56be13c:
 
+  Linux 3.13-rc5 (2013-12-22 13:08:32 -0800)
 
-AUTO_ZRELADDR is known to work on the Genmai, Koelsch, KZM9D and Lager
-boards and is enabled in their defconfigs.
+are available in the git repository at:
 
-I will defer to Magnus on weather he is comfortable with being
-enable globally for shmobile but if not perhaps it could be selected
-on a per-board or per-SoC basis.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-On Thu, Jan 09, 2014 at 02:01:14PM +0530, panchaxari wrote:
-> This patch enables AUTO_ZRELADDR as default config to Renasas R-Mobile and
-> SH-Mobile platforms.
-> 
-> AUTO_ZRELADDR config enables auto calculation of the decompressed kernel image
-> address. AUTO_ZRELADDR config is mutually exclusive to ZBOOT_ROM, and also
-> assumes zImage to be loaded in the first 128MiB from start of memory.
-> 
-> CFT::Call For Testing
-> 
-> Requesting maintainers of R-Mobile and SH-Mobile platforms to evaluate the
-> changes on the board and comment, as I dont have the board for testing, and
-> also requesting an ACK.
-> 
-> Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
+for you to fetch changes up to 7c06abcb16e1a03270f70725d0c62e8cf818cf48:
 
-Please use your first name and last  name in the From address and
-Signed-off-by line.
+  Merge tag 'renesas-fixes3-for-v3.13' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into fixes (2014-01-02 11:00:49 -0800)
 
-e.g.
+----------------------------------------------------------------
 
-Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+ARM: SoC fixes for 3.13-rc
 
-> Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: Magnus Damm <damm@opensource.se>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: linux-sh@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> Below lkml link is a quoting by Russell which clears the concept of PHYS_VIRT
-> and ZRELADDR
-> ---------------------------------------------------
-> 
-> https://lkml.org/lkml/2011/10/14/434
-> 
-> -------------------------------------------------
-> ---
->  arch/arm/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 8e668e2..077ef9d 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -674,6 +674,7 @@ config ARCH_MSM
->  config ARCH_SHMOBILE
->  	bool "Renesas SH-Mobile / R-Mobile"
->  	select ARM_PATCH_PHYS_VIRT
-> +	select AUTO_ZRELADDR
->  	select CLKDEV_LOOKUP
->  	select GENERIC_CLOCKEVENTS
->  	select HAVE_ARM_SCU if SMP
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Hopefully the last set of arm-soc fixes for 3.13, or at least only a
+few stray patches after this.
+
+There are a few fixes for Renesas platforms to fixup DMA masks (this
+started causing errors once the DMA API added checks for valid masks in
+3.13). Two more dealing with resources for MMC and PWM setup.
+
+There's also a few TI/OMAP/DRA fixes for smaller stuff and a fix for
+compilation failures on a PXA platform.
+
+----------------------------------------------------------------
+Ben Dooks (1):
+      ARM: shmobile: r8a7790: fix shdi resource sizes
+
+Kuninori Morimoto (1):
+      ARM: shmobile: bockw: fixup DMA mask
+
+Laurent Pinchart (4):
+      ARM: shmobile: armadillo: Add PWM backlight power supply
+      ARM: shmobile: armadillo: Fix coherent DMA mask
+      ARM: shmobile: kzm9g: Fix coherent DMA mask
+      ARM: shmobile: mackerel: Fix coherent DMA mask
+
+Linus Walleij (1):
+      ARM: pxa: fix USB gadget driver compilation regression
+
+Olof Johansson (3):
+      Merge tag 'renesas-fixes2-for-v3.13' of git://git.kernel.org/.../horms/renesas into fixes
+      Merge tag 'omap-for-v3.13/intc-ldp-fix' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+      Merge tag 'renesas-fixes3-for-v3.13' of git://git.kernel.org/.../horms/renesas into fixes
+
+Rajendra Nayak (1):
+      ARM: DRA7: hwmod: Fix boot crash with DEBUG_LL
+
+Suman Anna (1):
+      ARM: OMAP2+: hwmod_data: fix missing OMAP_INTC_START in irq data
+
+Tony Lindgren (2):
+      ARM: OMAP2+: Fix LCD panel backlight regression for LDP legacy booting
+      Merge tag 'for-v3.13-rc/hwmod-fixes-b' of git://git.kernel.org/.../pjw/omap-pending into debug-ll-and-ldp-backlight-fix
+
+ arch/arm/boot/dts/r8a7790.dtsi                     |  4 ++--
+ arch/arm/mach-omap2/board-ldp.c                    |  7 ++++++-
+ arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c |  4 ++--
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |  6 +++---
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c          |  2 +-
+ arch/arm/mach-pxa/include/mach/lubbock.h           |  2 ++
+ arch/arm/mach-shmobile/board-armadillo800eva.c     | 11 +++++++++--
+ arch/arm/mach-shmobile/board-bockw.c               |  2 +-
+ arch/arm/mach-shmobile/board-kzm9g.c               |  2 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |  4 ++--
+ 10 files changed, 29 insertions(+), 15 deletions(-)
