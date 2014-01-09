@@ -1,200 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562AbaAIML7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:11:59 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43696 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754130AbaAIMJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:09:34 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <balbi@ti.com>, <arnd@arndb.de>, <sre@debian.org>, <mark.rutland@arm.com>,
-        <m.paolino@virtualopensystems.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v5 2/9] mfd: omap-usb-host: Get clocks based on hardware revision
-Date: Thu, 9 Jan 2014 17:38:16 +0530
-Message-ID: <1389269303-30465-3-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389269303-30465-1-git-send-email-rogerq@ti.com>
-References: <1389269303-30465-1-git-send-email-rogerq@ti.com>
+	id S1755704AbaAIMMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:12:25 -0500
+Received: from mail-gg0-f171.google.com ([209.85.161.171]:33622 "EHLO
+	mail-gg0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523AbaAIMMO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 07:12:14 -0500
+Date: Thu, 9 Jan 2014 09:12:06 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [patch] perf tools: perf list broken on ARM
+Message-ID: <20140109121206.GA30069@ghostprotocols.net>
+References: <alpine.DEB.2.10.1312301536150.28814@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
+ <871u0hd0x4.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871u0hd0x4.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all revisions have all the clocks so get the necessary clocks
-based on hardware revision.
+Em Thu, Jan 09, 2014 at 05:17:27PM +0900, Namhyung Kim escreveu:
+> Hi Vince,
+> 
+> On Wed, 8 Jan 2014 16:30:17 -0500 (EST), Vince Weaver wrote:
+> > just checking on the status of this patch.  Am I sending it to the wrong 
+> > place?  Did it get lost in the post-holiday e-mail purges?  
+> >
+> > The bug is annoying if you're trying to use perf on ARM systems.
+> 
+> Right, acme, would you please merge this?
 
-This should avoid un-necessary clk_get failure messages that were
-observed earlier.
+I will, but having a patch authored by someone and Acked-by that same
+person looks weird, so, to clarify, this was written by Vince, acked by
+you, right?
 
-Be more strict and always fail on clk_get() error.
-
-CC: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/mfd/omap-usb-host.c | 93 +++++++++++++++++++++++++++++++--------------
- 1 file changed, 64 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 1c9bca2..7202cc6 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -92,7 +92,6 @@
- #define is_ehci_tll_mode(x)	(x == OMAP_EHCI_PORT_MODE_TLL)
- #define is_ehci_hsic_mode(x)	(x == OMAP_EHCI_PORT_MODE_HSIC)
+- Arnaldo
  
--
- struct usbhs_hcd_omap {
- 	int				nports;
- 	struct clk			**utmi_clk;
-@@ -665,22 +664,41 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		goto err_mem;
- 	}
- 
--	need_logic_fck = false;
-+	/* Set all clocks as invalid to begin with */
-+	omap->ehci_logic_fck = omap->init_60m_fclk = ERR_PTR(-EINVAL);
-+	omap->utmi_p1_gfclk = omap->utmi_p2_gfclk = ERR_PTR(-EINVAL);
-+	omap->xclk60mhsp1_ck = omap->xclk60mhsp2_ck = ERR_PTR(-EINVAL);
-+
- 	for (i = 0; i < omap->nports; i++) {
--		if (is_ehci_phy_mode(i) || is_ehci_tll_mode(i) ||
--			is_ehci_hsic_mode(i))
--				need_logic_fck |= true;
-+		omap->utmi_clk[i] = ERR_PTR(-EINVAL);
-+		omap->hsic480m_clk[i] = ERR_PTR(-EINVAL);
-+		omap->hsic60m_clk[i] = ERR_PTR(-EINVAL);
- 	}
- 
--	omap->ehci_logic_fck = ERR_PTR(-EINVAL);
--	if (need_logic_fck) {
--		omap->ehci_logic_fck = devm_clk_get(dev, "ehci_logic_fck");
--		if (IS_ERR(omap->ehci_logic_fck)) {
--			ret = PTR_ERR(omap->ehci_logic_fck);
--			dev_dbg(dev, "ehci_logic_fck failed:%d\n", ret);
-+	/* for OMAP3 i.e. USBHS REV1 */
-+	if (omap->usbhs_rev == OMAP_USBHS_REV1) {
-+		need_logic_fck = false;
-+		for (i = 0; i < omap->nports; i++) {
-+			if (is_ehci_phy_mode(pdata->port_mode[i]) ||
-+			    is_ehci_tll_mode(pdata->port_mode[i]) ||
-+			    is_ehci_hsic_mode(pdata->port_mode[i]))
-+
-+				need_logic_fck |= true;
-+		}
-+
-+		if (need_logic_fck) {
-+			omap->ehci_logic_fck = clk_get(dev, "usbhost_120m_fck");
-+			if (IS_ERR(omap->ehci_logic_fck)) {
-+				ret = PTR_ERR(omap->ehci_logic_fck);
-+				dev_err(dev, "usbhost_120m_fck failed:%d\n",
-+					ret);
-+				goto err_mem;
-+			}
- 		}
-+		goto initialize;
- 	}
- 
-+	/* for OMAP4+ i.e. USBHS REV2+ */
- 	omap->utmi_p1_gfclk = devm_clk_get(dev, "utmi_p1_gfclk");
- 	if (IS_ERR(omap->utmi_p1_gfclk)) {
- 		ret = PTR_ERR(omap->utmi_p1_gfclk);
-@@ -728,54 +746,71 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		 * them
- 		 */
- 		omap->utmi_clk[i] = devm_clk_get(dev, clkname);
--		if (IS_ERR(omap->utmi_clk[i]))
--			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
--				clkname, PTR_ERR(omap->utmi_clk[i]));
-+		if (IS_ERR(omap->utmi_clk[i])) {
-+			ret = PTR_ERR(omap->utmi_clk[i]);
-+			dev_err(dev, "Failed to get clock : %s : %d\n",
-+				clkname, ret);
-+			goto err_mem;
-+		}
- 
- 		snprintf(clkname, sizeof(clkname),
- 				"usb_host_hs_hsic480m_p%d_clk", i + 1);
- 		omap->hsic480m_clk[i] = devm_clk_get(dev, clkname);
--		if (IS_ERR(omap->hsic480m_clk[i]))
--			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
--				clkname, PTR_ERR(omap->hsic480m_clk[i]));
-+		if (IS_ERR(omap->hsic480m_clk[i])) {
-+			ret = PTR_ERR(omap->hsic480m_clk[i]);
-+			dev_err(dev, "Failed to get clock : %s : %d\n",
-+				clkname, ret);
-+			goto err_mem;
-+		}
- 
- 		snprintf(clkname, sizeof(clkname),
- 				"usb_host_hs_hsic60m_p%d_clk", i + 1);
- 		omap->hsic60m_clk[i] = devm_clk_get(dev, clkname);
--		if (IS_ERR(omap->hsic60m_clk[i]))
--			dev_dbg(dev, "Failed to get clock : %s : %ld\n",
--				clkname, PTR_ERR(omap->hsic60m_clk[i]));
-+		if (IS_ERR(omap->hsic60m_clk[i])) {
-+			ret = PTR_ERR(omap->hsic60m_clk[i]);
-+			dev_err(dev, "Failed to get clock : %s : %d\n",
-+				clkname, ret);
-+			goto err_mem;
-+		}
- 	}
- 
- 	if (is_ehci_phy_mode(pdata->port_mode[0])) {
--		/* for OMAP3, clk_set_parent fails */
- 		ret = clk_set_parent(omap->utmi_p1_gfclk,
- 					omap->xclk60mhsp1_ck);
--		if (ret != 0)
--			dev_dbg(dev, "xclk60mhsp1_ck set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "xclk60mhsp1_ck set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	} else if (is_ehci_tll_mode(pdata->port_mode[0])) {
- 		ret = clk_set_parent(omap->utmi_p1_gfclk,
- 					omap->init_60m_fclk);
--		if (ret != 0)
--			dev_dbg(dev, "P0 init_60m_fclk set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "P0 init_60m_fclk set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	}
- 
- 	if (is_ehci_phy_mode(pdata->port_mode[1])) {
- 		ret = clk_set_parent(omap->utmi_p2_gfclk,
- 					omap->xclk60mhsp2_ck);
--		if (ret != 0)
--			dev_dbg(dev, "xclk60mhsp2_ck set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "xclk60mhsp2_ck set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	} else if (is_ehci_tll_mode(pdata->port_mode[1])) {
- 		ret = clk_set_parent(omap->utmi_p2_gfclk,
- 						omap->init_60m_fclk);
--		if (ret != 0)
--			dev_dbg(dev, "P1 init_60m_fclk set parent failed: %d\n",
-+		if (ret != 0) {
-+			dev_err(dev, "P1 init_60m_fclk set parent failed: %d\n",
- 					ret);
-+			goto err_mem;
-+		}
- 	}
- 
-+initialize:
- 	omap_usbhs_init(dev);
- 
- 	if (dev->of_node) {
--- 
-1.8.3.2
-
+> Thanks,
+> Namhyung
+> 
+> >
+> > On Mon, 30 Dec 2013, Vince Weaver wrote:
+> >
+> >> 
+> >> "perf list" listing of hardware events doesn't work on older ARM devices.
+> >> The change enabling event detection:
+> >> 
+> >>  commit b41f1cec91c37eeea6fdb15effbfa24ea0a5536b
+> >>  Author: Namhyung Kim <namhyung.kim@lge.com>
+> >>  Date:   Tue Aug 27 11:41:53 2013 +0900
+> >> 
+> >>      perf list: Skip unsupported events
+> >> 
+> >> 
+> >> uses the following code in tools/perf/util/parse-events.c:
+> >> 
+> >>         struct perf_event_attr attr = {
+> >>                 .type = type,
+> >>                 .config = config,
+> >>                 .disabled = 1,
+> >>                 .exclude_kernel = 1,
+> >>         };
+> >> 
+> >> On ARM machines pre-dating the Cortex-A15 this doesn't work, as
+> >> these machines don't support .exclude_kernel.  So starting with 3.12
+> >> "perf list" does not report any hardware events at all on older
+> >> machines (seen on Rasp-Pi, Pandaboard, Beagleboard, etc).
+> >> 
+> >> This version of the patch makes changes suggested by Namhyung Kim
+> >> to check for EACCESS and retry (instead of just dropping
+> >> the exclude_kernel) so we can properly handle machines where 
+> >> /proc/sys/kernel/perf_event_paranoid is set to 2.
+> >> 
+> >> Reported-by: Chad Paradis <chad.paradis@umit.maine.edu>
+> >> Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+> >> Acked-by: Namhyung Kim <namhyung@kernel.org>
+> >> 
+> >> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> >> index 6de6f89..1fa98b9 100644
+> >> --- a/tools/perf/util/parse-events.c
+> >> +++ b/tools/perf/util/parse-events.c
+> >> @@ -1082,12 +1082,12 @@ int is_valid_tracepoint(const char *event_string)
+> >>  static bool is_event_supported(u8 type, unsigned config)
+> >>  {
+> >>  	bool ret = true;
+> >> +	int open_return;
+> >>  	struct perf_evsel *evsel;
+> >>  	struct perf_event_attr attr = {
+> >>  		.type = type,
+> >>  		.config = config,
+> >>  		.disabled = 1,
+> >> -		.exclude_kernel = 1,
+> >>  	};
+> >>  	struct {
+> >>  		struct thread_map map;
+> >> @@ -1099,7 +1099,20 @@ static bool is_event_supported(u8 type, unsigned config)
+> >>  
+> >>  	evsel = perf_evsel__new(&attr);
+> >>  	if (evsel) {
+> >> -		ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
+> >> +		open_return = perf_evsel__open(evsel, NULL, &tmap.map);
+> >> +		ret = open_return >= 0;
+> >> +
+> >> +		if (open_return == -EACCES) {
+> >> +			/*
+> >> +			 * This happens if the paranoid value
+> >> +			 * /proc/sys/kernel/perf_event_paranoid is set to 2
+> >> +			 * Re-run with exclude_kernel set; we don't do that
+> >> +			 * by default as some ARM machines do not support it.
+> >> +			 *
+> >> +			 */
+> >> +			evsel->attr.exclude_kernel = 1;
+> >> +			ret = perf_evsel__open(evsel, NULL, &tmap.map) >= 0;
+> >> +		}
+> >>  		perf_evsel__delete(evsel);
+> >>  	}
+> >>  
+> >> 
+> >
+> > Vince Weaver
+> > vincent.weaver@maine.edu
+> > http://www.eece.maine.edu/~vweaver/
