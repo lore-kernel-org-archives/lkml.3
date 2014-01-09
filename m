@@ -1,193 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaAIKGe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 05:06:34 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:56489 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaAIKGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 05:06:30 -0500
+	id S1752476AbaAIKHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 05:07:07 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:46699 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752316AbaAIKG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 05:06:57 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+Thread-Index: AQHPBmhf5d97FnYUxUSD3GhphkgfRJpx0RcAgAFWX4CAAEcRgIAAGCMAgAAj0ICAB/sxgIAAkUsQ
+Date: Thu, 9 Jan 2014 10:05:11 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D455F92@AcuExch.aculab.com>
+References: <20131218211219.461663463@linuxfoundation.org>
+ <20131218211220.412278148@linuxfoundation.org> <52C32BB0.90600@gmail.com>
+ <20140102191510.GA9621@xanatos> <52C6D9F1.9000709@gmail.com>
+ <20140103195455.GA4193@xanatos> <52C729CE.9050307@gmail.com>
+ <20140103232929.GD4193@xanatos> <52CDF9CD.8010402@gmail.com>
+In-Reply-To: <52CDF9CD.8010402@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <2147414.aVD9xOxI7n@amdc1032>
-References: <1388408823-4963-1-git-send-email-yuvaraj.cd@samsung.com>
-	<2078358.4WniMksEuS@amdc1032>
-	<CAKuRcOK73rpH_qJu-tNRjsBNA20B0_w7EiA-Xw6vVTc-arygkA@mail.gmail.com>
-	<2147414.aVD9xOxI7n@amdc1032>
-Date: Thu, 9 Jan 2014 15:36:28 +0530
-Message-ID: <CAKuRcOJMihCoZk3+fvsRPZTiCDPqh2q3UaGxckNG30W_T5_O0g@mail.gmail.com>
-Subject: Re: [PATCH V4 1/2] Phy: Exynos: Add Exynos5250 sata phy driver
-From: Yuvaraj Kumar <yuvaraj.cd@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Jingoo Han <jg1.han@samsung.com>, sunil joshi <joshi@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>, linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s09A7BKs000474
 
-On Wed, Jan 8, 2014 at 9:16 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> On Wednesday, January 08, 2014 06:39:52 PM Yuvaraj Kumar wrote:
->> On Tue, Jan 7, 2014 at 7:52 PM, Bartlomiej Zolnierkiewicz
->> <b.zolnierkie@samsung.com> wrote:
->> >
->> > Hi,
->> >
->> > On Thursday, January 02, 2014 07:03:23 PM Yuvaraj Kumar wrote:
->> >> On Tue, Dec 31, 2013 at 9:00 PM, Bartlomiej Zolnierkiewicz
->> >> <b.zolnierkie@samsung.com> wrote:
->> >
->> >> >> @@ -8,3 +8,4 @@ obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)   += phy-exynos-mipi-video.o
->> >> >>  obj-$(CONFIG_PHY_MVEBU_SATA)         += phy-mvebu-sata.o
->> >> >>  obj-$(CONFIG_OMAP_USB2)                      += phy-omap-usb2.o
->> >> >>  obj-$(CONFIG_TWL4030_USB)            += phy-twl4030-usb.o
->> >> >> +obj-$(CONFIG_EXYNOS5250_SATA_PHY)    += sata_phy_exynos5250.o exynos5250_phy_i2c.o
->> >> >
->> >> > Will this compile/work without I2C support?
->> >> No.I missed this.It will not compile without I2C support.
->> >> How about  below change in drivers/phy/Kconfig ?
->> >> config EXYNOS5250_SATA_PHY
->> >> select I2C
->> >> select I2C_S3C2410
->> >
->> > Fine with me.
->> >
->> >> > CONFIG_EXYNOS5250_SATA_PHY doesn't require it currently.
->> >> I didnt get this. what it doesn't require?
->> >
->> > It doesn't require I2C.  If you add above I2C selects it will be OK.
->> >
->> >> >> +struct i2c_driver sataphy_i2c_driver = {
->> >> >
->> >> > Keeping it global together with sataphy_attach_i2c_client() is not very
->> >> > nice.  I've talked with our local device tree guru (a.k.a. Tomasz Figa)
->> >> > about this and it may be that this i2c driver is not even necessary.
->> >> Can you elaborate more on this?
->> >
->> > The usage of the global i2c driver is not a proper solution.
->> >
->> > i2c driver should register itself in the driver init function
->> do you mean i2c-s3c2410.c driver?
->
-> No, I mean that drivers/phy/exynos5250_phy_i2c.c should do
->
->         i2c_add_driver(&sataphy_i2c_driver)
->
-> instead of drivers/phy/sata_phy_exynos5250.c.
->
-> i.e.:
->
-> ...
-> static int exynos_sata_i2c_probe(struct i2c_client *client,
->                                 const struct i2c_device_id *i2c_id)
-> {
->         return 0;
-> }
-> ...
-> static struct i2c_driver sataphy_i2c_driver = {
-> ...
-> };
-> ...
-> static int __init exynos5250_phy_i2c_init(void)
-> {
->         return i2c_add_driver(&sataphy_i2c_driver);
-> }
-> ...
-> module_init(exynos5250_phy_i2c_init);
-> ...
-Thanks for the explaination.Will change as above.
->
-> BTW For consistency with the new naming it would be good to rename
-> exynos5250_phy_i2c.c to phy-exynos5250-sata-i2c.c.
-Sure,will rename it.
->
->> > (which is not present currently) instead of being registered by
->> > the SATA PHY driver.
->> >
->> > The SATA PHY driver should find i2c client device using DT.
->> >
->> > sataphy_attach_i2c_client() should then be removed.
->> >
->> >> > If you manage to extract i2c adapter and address data from the device
->> >> > tree (using proper of_* methods) they can be used instead of i2c client
->> >> > data in the SATA PHY driver.
->> >> I think the above is true, if the complete SATA PHY controller sits on
->> >> the i2c adapter.
->> >> But in Exynos5250 case,only the few configurations ( CMU and TRSV
->> >> blocks ) SATA PHY
->> >> are done through I2C(channel 9). Correct me if i am wrong.
->> >
->> > Well, it shouldn't matter if all or only some of the configuration of
->> > the SATA PHY controller is done through i2c.
->> >
->> > Anyway, how about another idea -> adding a new phandle of i2c client
->> > device to SATA PHY DT entry and using DT in the SATA PHY driver to
->> > find i2c client device?
->> >
->> > i.e. "samsung,exynos-sataphy-i2c-phandle" property in SATA PHY
->> > controller DT entry can point at existing "sata-phy@38" sataphy i2c
->> > client DT entry (by adding new label to it, i.e. "sata_phy_i2c").
->> >
->> > Such new phandle can be used first to find the DT device node of i2c
->> > device (by using of_parse_phandle(), if it returns NULL the error
->> > should be returned) and then later to find proper i2c client device
->> > (by using of_find_i2c_device_by_node(), if it returns NULL deferred
->> > probing should be requested by returning -EPROBE_DEFER).
->> I can get the i2c_client structure,but how the client driver binding
->> happens to registered device?
->> Currently with this approach i2c client device is being registered but
->> cleint driver could not able to bind with the device.
->
-> Could you please explain more what the problem is?  What is the new
-> code exacly and what is the difference in the kernel logs?
-I misunderstood your previous comments.Now its clarified.
-I have addressed these comments and posted V5.
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
->> [    0.082680] i2c i2c-9: adapter [s3c2410-i2c] registered
->> [    0.082691] i2c i2c-9: of_i2c: walking child nodes
->> [    0.082696] i2c i2c-9: of_i2c: register /i2c@121D0000/sata-phy@38
->> [    0.082794] i2c 9-0038: uevent
->> [    0.082845] i2c i2c-9: client [exynos-sataphy-i2c] registered with
->> bus id 9-0038
->> [    0.082851] s3c-i2c 121d0000.i2c: i2c-9: S3C I2C adapter
->> >
->> > i2c@121D0000 {
->> >         ...
->> >         sata_phy_i2c: sata-phy@38 {
->> >                 ...
->> >         };
->> >         ...
->> > };
->> >
->> > sata_phy: sata-phy@12170000 {
->> >         ...
->> >         samsung,exynos-sataphy-i2c-phandle = <&sata_phy_i2c>;
->> >         ...
->> > };
->> >
->> > Best regards,
->> > --
->> > Bartlomiej Zolnierkiewicz
->> > Samsung R&D Institute Poland
->> > Samsung Electronics
->
+> From: walt
+...
+> I'm still wondering if I'm suffering from hardware quirks.  From the
+> first day I installed my usb3 adapter card and the usb3 disk docking
+> station I've noticed some quirky behavior.
+
+Ah - this isn't an 'on chip' usb3 adapter.
+Some kind of PCIe card ?
+
+> e.g. I boot the machine with the docking station powered-off, and then
+> later I power it on, the usb3 disk is not detected at all -- until I
+> reboot the machine with the docking station still powered on.
+
+That will be something completely different to failures when running.
+
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
