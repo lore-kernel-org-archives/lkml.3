@@ -1,127 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaAIIOl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:14:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46890 "EHLO mx2.suse.de"
+	id S1751212AbaAIIPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:15:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34917 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaAIIOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:14:32 -0500
-Message-ID: <52CE7720.6060809@suse.de>
-Date: Thu, 09 Jan 2014 11:17:04 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Chen Gang <gang.chen.5i5j@gmail.com>, James Hogan <james.hogan@imgtec.com>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
- instead of operator '%' for u64
-References: <52B4F837.1010403@gmail.com>	 <1387680997.5567.91.camel@haakon3.risingtidesystems.com>	 <52B6AE19.80401@gmail.com>	 <1387781487.5567.147.camel@haakon3.risingtidesystems.com>	 <52B90111.5050203@gmail.com> <52CCFF0C.7070704@suse.de> <1389223117.5567.271.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1389223117.5567.271.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751201AbaAIIOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 03:14:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,629,1384329600"; 
+   d="scan'208";a="462471128"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI: print error message and bail out early if failed to parse APIC ID for CPU
+Date: Thu,  9 Jan 2014 16:15:19 +0800
+Message-Id: <1389255320-1563-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 12:18 AM, Nicholas A. Bellinger wrote:
-> On Wed, 2014-01-08 at 08:32 +0100, Hannes Reinecke wrote:
->> On 12/24/2013 04:35 AM, Chen Gang wrote:
->>> On 12/23/2013 02:51 PM, Nicholas A. Bellinger wrote:
->>>> On Sun, 2013-12-22 at 17:17 +0800, Chen Gang wrote:
->
-> <SNIP>
->
->>>>> The related fix patch changed "start_lba = lba % ..." to "start_lba =
->>>>> lba / ...", and also assumed "segment_size * segment_mult" is still
->>>>> within u32 (can not cause type over flow).
->>>>>
->>>>> I guess the original author already knew about them, and intended to do
->>>>> like that (if not, please let me know, thanks).
->>>>>
->>>>
->>>> Sorry, your correct that the original code is using modulo division to
->>>> calculate start_lba.
->>>>
->>>
->>> Oh, that's all right, (in fact, don't need sorry), I am not quite
->>> familiar with the details, so need related member help check it.  :-)
->>>
->>>> Hannes, can you please double check this below..?
->>>>
->>>
->>> Please help check when have time, thanks.
->>>
->> I would even convert segment_size and segment_mult to u64,
->> to ensure no overflows occur:
->>
->> diff --git a/drivers/target/target_core_alua.c
->> b/drivers/target/target_core_alua
->> .c
->> index 9b1856d..54b1e52 100644
->> --- a/drivers/target/target_core_alua.c
->> +++ b/drivers/target/target_core_alua.c
->> @@ -477,8 +477,7 @@ static inline int core_alua_state_lba_dependent(
->>          u8 *alua_ascq)
->>   {
->>          struct se_device *dev = cmd->se_dev;
->> -       u32 segment_size, segment_mult, sectors;
->> -       u64 lba;
->> +       u64 segment_size, segment_mult, sectors, lba;
->>
->>          /* Only need to check for cdb actually containing LBAs */
->>          if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB))
->>
->>
->
-> Will squash the above into the original patch shortly in for-next..
->
->> Other than that the sector_div() patch is correct.
->>
->
-> <nod> Thanks for confirming that sector_div() is correct here vs. the
-> original code using modulo that Chen had pointed out.
->
-Ah, _that_ was the issue.
-I was wondering why you kept on poking me ...
+Enhance ACPI CPU hotplug driver to print clear error message and
+bail out early if BIOS returns wrong value in ACPI MADT table or
+_MAT method. Otherwise it will add the CPU device even if failed
+to get APIC ID and fails any operations against sysfs interface:
+/sys/devices/system/cpu/cpux/online
 
-Well.
-No, that's actually _not_ correct.
-The correct fix would be
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/acpi/acpi_processor.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/target/target_core_alua.c 
-b/drivers/target/target_core_alua.c
-index 54b1e52..12da9b3 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -500,8 +500,7 @@ static inline int core_alua_state_lba_dependent(
-
-                         if (segment_mult) {
-                                 u64 tmp = lba;
--                               sector_div(tmp, segment_size * 
-segment_mult);
--                               start_lba = tmp;
-+                               start_lba = sector_div(tmp, segment_size 
-* segment_mult);
-
-                                 last_lba = first_lba + segment_size - 1;
-                                 if (start_lba >= first_lba &&
-(beware of line breaks ...)
-Thing is, we need to calculate the offset into the segment to figure out 
-which map entry to use.
-The actual number of the segment (as had been calculated with the 
-original fix) is immaterial here.
-
-Sorry for this. The email thread just flew past me during Xmas
-with me not paying real attention.
-
-Cheers,
-
-Hannes
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index 3c1d6b0..6ce71b0 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -212,7 +212,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 	union acpi_object object = { 0 };
+ 	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
+ 	struct acpi_processor *pr = acpi_driver_data(device);
+-	int cpu_index, device_declaration = 0;
++	int apic_id, cpu_index, device_declaration = 0;
+ 	acpi_status status = AE_OK;
+ 	static int cpu0_initialized;
+ 	unsigned long long value;
+@@ -258,18 +258,21 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 		device_declaration = 1;
+ 		pr->acpi_id = value;
+ 	}
+-	pr->apic_id = acpi_get_apicid(pr->handle, device_declaration,
+-					pr->acpi_id);
+-	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+ 
+-	/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+-	if (!cpu0_initialized && (cpu_index == -1) &&
+-	    (num_online_cpus() == 1)) {
+-		cpu_index = 0;
++	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
++	if (apic_id < 0) {
++		acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
++		return -ENODEV;
+ 	}
++	pr->apic_id = apic_id;
+ 
+-	cpu0_initialized = 1;
+-
++	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
++	if (!cpu0_initialized) {
++		cpu0_initialized = 1;
++		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
++		if ((cpu_index == -1) && (num_online_cpus() == 1))
++			cpu_index = 0;
++	}
+ 	pr->id = cpu_index;
+ 
+ 	/*
+@@ -282,6 +285,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 		if (ret)
+ 			return ret;
+ 	}
++
+ 	/*
+ 	 * On some boxes several processors use the same processor bus id.
+ 	 * But they are located in different scope. For example:
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+1.7.10.4
+
