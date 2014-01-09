@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaAIIhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:37:00 -0500
-Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:37163 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752129AbaAIIgx (ORCPT
+	id S1754908AbaAIIip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:38:45 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:46241 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752214AbaAIIig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:36:53 -0500
-Message-ID: <52CE5F82.6070802@overkiz.com>
-Date: Thu, 09 Jan 2014 09:36:18 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 9 Jan 2014 03:38:36 -0500
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <20140108183418.GA12358@obsidianresearch.com> <52CDA032.3010804@overkiz.com> <20140108191339.GB12358@obsidianresearch.com>
-In-Reply-To: <20140108191339.GB12358@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 6891914806252108010
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <d9239e0a5df99392647ff8343673342f89d09476.1389059568.git.viresh.kumar@linaro.org>
+References: <d9239e0a5df99392647ff8343673342f89d09476.1389059568.git.viresh.kumar@linaro.org>
+Date: Thu, 9 Jan 2014 00:38:35 -0800
+Message-ID: <CAOesGMgfFVoVJpOMXWtzVWj_F4pD-L9Osyv4u6=c8RUWOoLHFw@mail.gmail.com>
+Subject: Re: [PATCH V3 Resend] cpufreq: create cpufreq_generic_get() routine
+From: Olof Johansson <olof@lixom.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2014 20:13, Jason Gunthorpe wrote:
-> On Wed, Jan 08, 2014 at 08:00:02PM +0100, boris brezillon wrote:
->> Hello Jason,
->>
->> Le 08/01/2014 19:34, Jason Gunthorpe a ?crit :
->>> On Wed, Jan 08, 2014 at 03:21:58PM +0100, Boris BREZILLON wrote:
->>>
->>>> +int of_get_nand_timings(struct device_node *np, struct nand_timings *timings)
->>>> +{
->>>> +	memset(timings, 0, sizeof(*timings));
->>>> +	of_property_read_u32(np, "tCLS-min", &timings->tCLS_min);
->>>> +	of_property_read_u32(np, "tCLH-min", &timings->tCLH_min);
->>>> +	of_property_read_u32(np, "tCS-min", &timings->tCS_min);
->>> [..]
->>>
->>> A while ago when discussing another controller it was pointed out
->>> these values are all auto-probable directly from the NAND via a ONFI
->>> defined GET FEATURE @0x01 query, and adding these timings to the DT
->>> was NAK'd..
->>>
->>> Basically you set the interface to the slowest ONFI timing mode, do
->>> the GET FEATURE to the NAND chip and then increase the interface speed
->>> to the highest mutually supported ONFI mode.
->>> Is there some reason you need to encode this in the DT?
->> What if the NAND does not support the ONFI interface (and this is
->> exactly the case for the NAND available on the cubietruck board:
->> H27UCG8T2ATR).
-> Sounds like a good reason to me!
+Hi Viresh,
+
+On Mon, Jan 6, 2014 at 5:54 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> CPUFreq drivers that use clock frameworks interface,i.e. clk_get_rate(), to get
+> CPUs clk rate, has similar sort of code used for most of them.
 >
-> You might want to check if you can boil down the DT timings from the
-> huge list to just an ONFI mode number..
-
-Sure, but the sunxi driver needs at least 19 of them...
-
+> This patch adds a generic ->get() which will do the same thing for them. All
+> those drivers are required to now is to set .get to cpufreq_generic_get() and
+> set their clk pointer in policy->clk during ->init().
 >
-> I'd echo Rob's comments, the property needs to include the units
-> in the name, and I strongly recommend picoseconds for these
-> values.
-
-Agreed, picosecond is a more future-proof unit.
-
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> Acked-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> Rafael,
 >
-> Also, you might want to check that the ONFI names for these parameters
-> are used, not a vendor specific name to try and avoid confusion.
+> V2->V3: As asked by you earlier, I have merged all 23 patches here as they had
+> common log and were touching separate drivers. This is already acked by many
+> people.  Please see if looks okay for 3.14.
 
-I'll check it.
+This patch breaks a bunch of ARM boards. In particular, the following
+defconfigs no longer build:
 
-Thanks.
+          assabet_defconfig
+          badge4_defconfig
+          cerfcube_defconfig
+          collie_defconfig
+          h3600_defconfig
+          hackkit_defconfig
+          jornada720_defconfig
+          lart_defconfig
+          neponset_defconfig
+          pleb_defconfig
+          shannon_defconfig
+          simpad_defconfig
 
-Best Regards,
+Error is:
 
-Boris
+drivers/built-in.o: In function `cpufreq_generic_get':
+drivers/cpufreq/cpufreq.c:189: undefined reference to `clk_get_rate'
 
->
-> Jason
+Seems like this needs to be guarded by HAVE_CLK?
 
+
+-Olof
