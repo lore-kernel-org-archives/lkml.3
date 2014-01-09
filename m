@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940AbaAIOZF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:25:05 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:64347 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078AbaAIOUK (ORCPT
+	id S1754592AbaAIOZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:25:23 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:47338 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756906AbaAIOY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:20:10 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 07/14] locks: consolidate checks for compatible filp->f_mode values in setlk handlers
-Date: Thu,  9 Jan 2014 09:19:40 -0500
-Message-Id: <1389277187-18211-8-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
-References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
+	Thu, 9 Jan 2014 09:24:59 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Bryan Wu <cooloney@gmail.com>
+Subject: Re: Broken locking in leds-lp5523.c
+Date: Thu, 9 Jan 2014 15:24:53 +0100
+User-Agent: KMail/1.13.7 (Linux/3.12.0-5-generic; KDE/4.12.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, milo kim <milo.kim@ti.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>
+References: <20140107204233.GA22413@amd.pavel.ucw.cz> <CAK5ve-Kk9BuH=56F98aZOgPS+w-=8iF0HtpOYWNjRN8am2Zqjg@mail.gmail.com>
+In-Reply-To: <CAK5ve-Kk9BuH=56F98aZOgPS+w-=8iF0HtpOYWNjRN8am2Zqjg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2342032.7oLgp7sGUA";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401091524.53417@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move this check into flock64_to_posix_lock instead of duplicating it in
-two places. This also fixes a minor wart in the code where we continue
-referring to the struct flock after converting it to struct file_lock.
+--nextPart2342032.7oLgp7sGUA
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c | 46 ++++++++++++----------------------------------
- 1 file changed, 12 insertions(+), 34 deletions(-)
+On Wednesday 08 January 2014 01:32:15 Bryan Wu wrote:
+> On Tue, Jan 7, 2014 at 12:42 PM, Pavel Machek <pavel@ucw.cz>=20
+wrote:
+> > Hi!
+> >=20
+> > There's some locking weirdness, and few missing comments in
+> > lp5523 driver.
+> >=20
+> > Now, this is untested patch from my reverse-engineering. I
+> > hope I understood things right...
+> >=20
+> > In particular, there's unbalanced unlock in
+> > lp5523_update_program_memory, and
+> > lp5523_update_program_memory needs to be protected by the
+> > lock.
+> >=20
+> > Comments? Does someone maintain this?
+>=20
+> Actually the locking issue was fixed in my for-next branch,
+> http://git.kernel.org/cgit/linux/kernel/git/cooloney/linux-led
+> s.git/commit/?h=3Dfor-next&id=3D0d70bdb957cde2c25a4b3e4c93d0d33403
+> 795be9
+>=20
+> Thanks,
+> -Bryan
+>=20
 
-diff --git a/fs/locks.c b/fs/locks.c
-index b49e853..4cd2578 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -388,6 +388,18 @@ static int flock64_to_posix_lock(struct file *filp, struct file_lock *fl,
- 	fl->fl_ops = NULL;
- 	fl->fl_lmops = NULL;
- 
-+	/* Ensure that fl->fl_filp has compatible f_mode */
-+	switch (l->l_type) {
-+	case F_RDLCK:
-+		if (!(filp->f_mode & FMODE_READ))
-+			return -EBADF;
-+		break;
-+	case F_WRLCK:
-+		if (!(filp->f_mode & FMODE_WRITE))
-+			return -EBADF;
-+		break;
-+	}
-+
- 	return assign_type(fl, l->l_type);
- }
- 
-@@ -2025,23 +2037,6 @@ again:
- 		file_lock->fl_flags |= FL_SLEEP;
- 	}
- 	
--	error = -EBADF;
--	switch (flock.l_type) {
--	case F_RDLCK:
--		if (!(filp->f_mode & FMODE_READ))
--			goto out;
--		break;
--	case F_WRLCK:
--		if (!(filp->f_mode & FMODE_WRITE))
--			goto out;
--		break;
--	case F_UNLCK:
--		break;
--	default:
--		error = -EINVAL;
--		goto out;
--	}
--
- 	error = do_lock_file_wait(filp, cmd, file_lock);
- 
- 	/*
-@@ -2143,23 +2138,6 @@ again:
- 		file_lock->fl_flags |= FL_SLEEP;
- 	}
- 	
--	error = -EBADF;
--	switch (flock.l_type) {
--	case F_RDLCK:
--		if (!(filp->f_mode & FMODE_READ))
--			goto out;
--		break;
--	case F_WRLCK:
--		if (!(filp->f_mode & FMODE_WRITE))
--			goto out;
--		break;
--	case F_UNLCK:
--		break;
--	default:
--		error = -EINVAL;
--		goto out;
--	}
--
- 	error = do_lock_file_wait(filp, cmd, file_lock);
- 
- 	/*
--- 
-1.8.4.2
+Now, with linus tree lp5523 driver does not work without above=20
+commit on Nokia N900 device. I think that commit should go to=20
+3.13 and stable... What do you think?
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2342032.7oLgp7sGUA
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlLOsTUACgkQi/DJPQPkQ1LPMQCgw+1ISSh9sKHacsx9nIQ+esd+
+ITIAoIwil0UvJFvkN7Dp+STjDRPG8+Cx
+=4WNb
+-----END PGP SIGNATURE-----
+
+--nextPart2342032.7oLgp7sGUA--
