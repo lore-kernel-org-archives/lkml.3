@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162AbaAIE2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 23:28:06 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:36305 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaAIE2C (ORCPT
+	id S1754296AbaAIEcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 23:32:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46133 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaAIEcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 23:28:02 -0500
+	Wed, 8 Jan 2014 23:32:50 -0500
+Date: Wed, 8 Jan 2014 20:33:13 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Wang YanQing <udknight@gmail.com>, jslaby@suse.cz, airlied@redhat.com,
+        akpm@linux-foundation.org, kilobyte@angband.pl,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vt: initialize con_driver->node in con_init
+Message-ID: <20140109043313.GA28887@kroah.com>
+References: <20131230031102.GA4424@udknight>
 MIME-Version: 1.0
-In-Reply-To: <1713694.HL69UGM8yf@flatron>
-References: <1389095509-14357-1-git-send-email-ch.naveen@samsung.com>
- <1389095509-14357-5-git-send-email-ch.naveen@samsung.com> <1713694.HL69UGM8yf@flatron>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Thu, 9 Jan 2014 09:57:41 +0530
-Message-ID: <CAHfPSqDpFHYc+kJ4ghBJYgCSPhaDL1=vrdafJPnmXKNh1etBvw@mail.gmail.com>
-Subject: Re: [PATCH 4/5] crypto:s5p-sss: Exynos5 SoCs too can select SSS driver
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Naveen Krishna Ch <ch.naveen@samsung.com>, linux-crypto@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
-        cpgs@samsung.com, "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131230031102.GA4424@udknight>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomasz,
+On Mon, Dec 30, 2013 at 11:11:02AM +0800, Wang YanQing wrote:
+> Commit 6db4063c5b72b46e9793b0f141a7a3984ac6facf
+> ("[PATCH] VT binding: Add sysfs control to the VT layer")
+> add node item into struct con_driver.
 
-On 8 January 2014 06:00, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On Tuesday 07 of January 2014 17:21:48 Naveen Krishna Ch wrote:
->> This patch modifies Kconfig such that ARCH_EXYNOS5 SoCs
->> can also select Samsung SSS(Security SubSystem) driver.
->>
->> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
->> CC: Herbert Xu <herbert@gondor.apana.org.au>
->> CC: David S. Miller <davem@davemloft.net>
->> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
->> TO: <linux-crypto@vger.kernel.org>
->> CC: <linux-samsung-soc@vger.kernel.org>
->> ---
->>  drivers/crypto/Kconfig |    8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
->> index f4fd837..137dcd8 100644
->> --- a/drivers/crypto/Kconfig
->> +++ b/drivers/crypto/Kconfig
->> @@ -300,15 +300,15 @@ config CRYPTO_DEV_DCP
->>         capabilities of the DCP co-processor
->>
->>  config CRYPTO_DEV_S5P
->> -     tristate "Support for Samsung S5PV210 crypto accelerator"
->> -     depends on ARCH_S5PV210
->> +     tristate "Support for Samsung crypto accelerator"
->> +     depends on ARCH_S5PV210 || ARCH_EXYNOS5
->>       select CRYPTO_AES
->>       select CRYPTO_ALGAPI
->>       select CRYPTO_BLKCIPHER
->>       help
->>         This option allows you to have support for S5P crypto acceleration.
->> -       Select this to offload Samsung S5PV210 or S5PC110 from AES
->> -       algorithms execution.
->> +       Select this to offload Samsung S5PV210 or S5PC110, Exynos5250
->> +       and Exynos5420 from AES algorithms execution.
->
-> What about Exynos4 SoCs?
-The SSS module as such looks alike on Exynos5250, Exynso5420 and Exynos4210.
-I couldn't test it right now. I should also verify on other Exynos4 SoCs.
->
-> Best regards,
-> Tomasz
->
+That patch was from 2006.  Why is this change needed now, what problems
+happen without your fix below?
 
+thanks,
 
+greg k-h
 
--- 
-Shine bright,
-(: Nav :)
+> 
+> This patch initialize con_driver->node in con_init.
+> 
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  drivers/tty/vt/vt.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index edcd6b8..9adb4e0 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -2879,6 +2879,7 @@ static int __init con_init(void)
+>  		if (con_driver->con == NULL) {
+>  			con_driver->con = conswitchp;
+>  			con_driver->desc = display_desc;
+> +			con_driver->node = i;
+>  			con_driver->flag = CON_DRIVER_FLAG_INIT;
+>  			con_driver->first = 0;
+>  			con_driver->last = MAX_NR_CONSOLES - 1;
+> -- 
+> 1.8.3.4.8.g69490f3.dirty
