@@ -1,111 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940AbaAIJCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 04:02:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47489 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808AbaAIJCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 04:02:10 -0500
-Date: Thu, 9 Jan 2014 10:02:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-Message-ID: <20140109090208.GA27538@dhcp22.suse.cz>
-References: <20140101002935.GA15683@localhost.localdomain>
- <52C5AA61.8060701@intel.com>
- <20140103033303.GB4106@localhost.localdomain>
- <52C6FED2.7070700@intel.com>
- <20140105003501.GC4106@localhost.localdomain>
- <20140106164604.GC27602@dhcp22.suse.cz>
- <20140108101611.GD27937@dhcp22.suse.cz>
- <20140109073259.GK4106@localhost.localdomain>
+	id S1756132AbaAIJCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 04:02:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54248 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437AbaAIJCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 04:02:42 -0500
+Date: Thu, 9 Jan 2014 10:02:28 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [patch] perf tools: perf list broken on ARM
+Message-ID: <20140109090228.GD7572@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1312301536150.28814@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109073259.GK4106@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 09-01-14 15:32:59, Han Pingtian wrote:
-[...]
-> From b8db4f157a17d6d8652cc9cff024a192c3ee0779 Mon Sep 17 00:00:00 2001
-> From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-> Date: Thu, 9 Jan 2014 15:24:26 +0800
-> Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
+On Wed, Jan 08, 2014 at 04:30:17PM -0500, Vince Weaver wrote:
 > 
-> min_free_kbytes may be raised during THP's initialization. Sometimes,
-> this will change the value being set by user. Showing message will
-> clarify this confusion.
+> just checking on the status of this patch.  Am I sending it to the wrong 
+> place?  Did it get lost in the post-holiday e-mail purges?  
 > 
-> Only show this message when changing the value set by user according to
-> Michal Hocko's suggestion.
-> 
-> Showing the old value of min_free_kbytes according to Dave Hansen's
-> suggestion. This will give user the chance to restore old value of
-> min_free_kbytes.
-> 
-> Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
+> The bug is annoying if you're trying to use perf on ARM systems.
 
-Looks good to me
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks!
-
-> ---
->  mm/huge_memory.c |    9 ++++++++-
->  mm/page_alloc.c  |    2 +-
->  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 7de1bf8..e0e4e29 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
->  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
->  };
->  
-> +extern int user_min_free_kbytes;
->  
->  static int set_recommended_min_free_kbytes(void)
->  {
-> @@ -130,8 +131,14 @@ static int set_recommended_min_free_kbytes(void)
->  			      (unsigned long) nr_free_buffer_pages() / 20);
->  	recommended_min <<= (PAGE_SHIFT-10);
->  
-> -	if (recommended_min > min_free_kbytes)
-> +	if (recommended_min > min_free_kbytes) {
-> +		if (user_min_free_kbytes >= 0)
-> +			pr_info("raising min_free_kbytes from %d to %lu "
-> +				"to help transparent hugepage allocations\n",
-> +				min_free_kbytes, recommended_min);
-> +
->  		min_free_kbytes = recommended_min;
-> +	}
->  	setup_per_zone_wmarks();
->  	return 0;
->  }
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 9ea62b2..a9dcfd8 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -205,7 +205,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
->  };
->  
->  int min_free_kbytes = 1024;
-> -int user_min_free_kbytes;
-> +int user_min_free_kbytes = -1;
->  
->  static unsigned long __meminitdata nr_kernel_pages;
->  static unsigned long __meminitdata nr_all_pages;
-> -- 
-> 1.7.7.6
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Its for acme and he seems on the Cc, I suppose you got stuck in the
+holiday backlog.
