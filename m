@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581AbaAILQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:16:34 -0500
-Received: from mail-pd0-f196.google.com ([209.85.192.196]:53801 "EHLO
-	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880AbaAILLx (ORCPT
+	id S1756617AbaAILQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:16:52 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:33804 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414AbaAILQ3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:11:53 -0500
-From: me@anmolsarma.in
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Anmol Sarma <me@anmolsarma.in>
-Subject: [PATCH 1/3] Staging: rtl8187se: r8180_core.c: mark symbols as static
-Date: Thu,  9 Jan 2014 16:41:05 +0530
-Message-Id: <e56855c2b55be13cdd4f9640f23075c8633d5c83.1389263965.git.me@anmolsarma.in>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1389263965.git.me@anmolsarma.in>
-References: <cover.1389263965.git.me@anmolsarma.in>
-In-Reply-To: <cover.1389263965.git.me@anmolsarma.in>
-References: <cover.1389263965.git.me@anmolsarma.in>
+	Thu, 9 Jan 2014 06:16:29 -0500
+Date: Thu, 9 Jan 2014 11:59:03 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: dri-devel@lists.freedesktop.org
+Cc: Dave Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 7/28] drm/i2c: tda998x: set the video mode from the
+ adjusted value
+Message-ID: <20140109115903.00517f15@armhf>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anmol Sarma <me@anmolsarma.in>
+This patch uses always the adjusted video mode instead of a mix of
+original and adjusted mode.
 
-Fixes the following sparse warnings:
-390:6: warning: symbol 'buffer_free' was not declared. Should it be static?
-1031:5: warning: symbol 'ComputeTxTime' was not declared. Should it be static?
-2345:7: warning: symbol 'rtl8180_init' was not declared. Should it be static?
-2835:6: warning: symbol 'MgntActSet_802_11_PowerSaveMode' was not declared.
-Should it be static?
-2847:6: warning: symbol 'LeisurePSEnter' was not declared. Should it be static?
-2856:6: warning: symbol 'LeisurePSLeave' was not declared. Should it be static?
-3529:13: warning: symbol 'rtl8180_interrupt' was not declared. Should it be
-static?
-
-Signed-off-by: Anmol Sarma <me@anmolsarma.in>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/staging/rtl8187se/r8180_core.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i2c/tda998x_drv.c    | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index 297136b..45a60c0 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -387,7 +387,7 @@ static short buffer_add(struct buffer **buffer, u32 *buf, dma_addr_t dma,
- 	return 0;
- }
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index c29c0b1..1abf404 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -777,6 +777,8 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 	uint16_t de_pix_s, de_pix_e;
+ 	uint8_t reg, div, rep;
  
--void buffer_free(struct net_device *dev, struct buffer **buffer, int len,
-+static void buffer_free(struct net_device *dev, struct buffer **buffer, int len,
- 		 short consistent)
- {
++	mode = adjusted_mode;
++
+ 	/*
+ 	 * Internally TDA998x is using ITU-R BT.656 style sync but
+ 	 * we get VESA style sync. TDA998x is using a reference pixel
+@@ -808,8 +810,8 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 	 * those to adjust the position of the rising VS edge by adding
+ 	 * HSKEW to ref_pix.
+ 	 */
+-	if (adjusted_mode->flags & DRM_MODE_FLAG_HSKEW)
+-		ref_pix += adjusted_mode->hskew;
++	if (mode->flags & DRM_MODE_FLAG_HSKEW)
++		ref_pix += mode->hskew;
  
-@@ -1028,7 +1028,7 @@ inline u8 rtl8180_IsWirelessBMode(u16 rate)
+ 	if ((mode->flags & DRM_MODE_FLAG_INTERLACE) == 0) {
+ 		ref_line     = 1 + mode->vsync_start - mode->vdisplay;
+@@ -941,11 +943,10 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+ 		reg_write(priv, REG_ENC_CNTRL, ENC_CNTRL_CTL_CODE(1));
+ 		reg_set(priv, REG_TX33, TX33_HDMI);
  
- u16 N_DBPSOfRate(u16 DataRate);
+-		tda998x_write_avi(priv, adjusted_mode);
++		tda998x_write_avi(priv, mode);
  
--u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
-+static u16 ComputeTxTime(u16 FrameLength, u16 DataRate, u8 bManagementFrame,
- 		  u8 bShortPreamble)
- {
- 	u16	FrameTime;
-@@ -2342,7 +2342,7 @@ static void rtl8187se_eeprom_register_write(struct eeprom_93cx6 *eeprom)
- 	udelay(10);
- }
- 
--short rtl8180_init(struct net_device *dev)
-+static short rtl8180_init(struct net_device *dev)
- {
- 	struct r8180_priv *priv = ieee80211_priv(dev);
- 	u16 word;
-@@ -2832,7 +2832,7 @@ static struct net_device_stats *rtl8180_stats(struct net_device *dev)
- /*
-  * Change current and default preamble mode.
-  */
--bool MgntActSet_802_11_PowerSaveMode(struct r8180_priv *priv,
-+static bool MgntActSet_802_11_PowerSaveMode(struct r8180_priv *priv,
- 				     RT_PS_MODE rtPsMode)
- {
- 	/* Currently, we do not change power save mode on IBSS mode. */
-@@ -2844,7 +2844,7 @@ bool MgntActSet_802_11_PowerSaveMode(struct r8180_priv *priv,
- 	return true;
- }
- 
--void LeisurePSEnter(struct r8180_priv *priv)
-+static void LeisurePSEnter(struct r8180_priv *priv)
- {
- 	if (priv->bLeisurePs) {
- 		if (priv->ieee80211->ps == IEEE80211_PS_DISABLED)
-@@ -2853,7 +2853,7 @@ void LeisurePSEnter(struct r8180_priv *priv)
+ 		if (priv->params.audio_cfg)
+-			tda998x_configure_audio(priv, adjusted_mode,
+-						&priv->params);
++			tda998x_configure_audio(priv, mode, &priv->params);
  	}
  }
  
--void LeisurePSLeave(struct r8180_priv *priv)
-+static void LeisurePSLeave(struct r8180_priv *priv)
- {
- 	if (priv->bLeisurePs) {
- 		if (priv->ieee80211->ps != IEEE80211_PS_DISABLED)
-@@ -3526,7 +3526,7 @@ static void rtl8180_tx_isr(struct net_device *dev, int pri, short error)
- 	spin_unlock_irqrestore(&priv->tx_lock, flag);
- }
- 
--irqreturn_t rtl8180_interrupt(int irq, void *netdev)
-+static irqreturn_t rtl8180_interrupt(int irq, void *netdev)
- {
- 	struct net_device *dev = (struct net_device *) netdev;
- 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
--- 
-1.8.3.2
 
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
