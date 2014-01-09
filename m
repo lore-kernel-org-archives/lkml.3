@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaAISG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 13:06:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9549 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142AbaAISGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 13:06:51 -0500
-Date: Thu, 9 Jan 2014 19:06:28 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 10/28] perf report: Cache cumulative callchains
-Message-ID: <20140109180627.GC11793@krava.brq.redhat.com>
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
- <1389170793-21926-11-git-send-email-namhyung@kernel.org>
+	id S1756004AbaAISJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 13:09:04 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:50891 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281AbaAISJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 13:09:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389170793-21926-11-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140109153513.21446.31778.stgit@bling.home>
+References: <20140109153513.21446.31778.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 9 Jan 2014 11:08:38 -0700
+Message-ID: <CAErSpo4Asnx4JiZvppZLUzxmVymz0t-fHXRFMr81-Qz31XyR+g@mail.gmail.com>
+Subject: Re: [PATCH] pci/iov: VFs are never multifunction
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        sathya.perla@emulex.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ajit.khaparde@emulex.com, Don Dutile <ddutile@redhat.com>,
+        subbu.seetharaman@emulex.com, Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 05:46:15PM +0900, Namhyung Kim wrote:
+On Thu, Jan 9, 2014 at 8:36 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Per the SR-IOV spec rev 1.1:
+>
+> 3.4.1.9 Header Type (Offset 0Eh)
+>
+> "... For VFs, this register must be RO Zero."
+>
+> Unfortunately some devices get this wrong, ex. Emulex OneConnect 10Gb
+> NIC.  When they do it makes us handle ACS testing and therefore IOMMU
+> groups as if they were actual multifunction devices and require ACS
+> capabilities to make sure there's no peer-to-peer between functions.
+> VFs are never traditional multifunction devices, so simply clear this
+> bit before we get any further into setup.
 
-SNIP
+This seems reasonable.  Do you have "lspci -vvxxxx" output for this
+device?  I'd like to save it for future reference.
 
->  			goto out;
->  	}
->  
-> -	if (al->map->groups == &iter->machine->kmaps) {
-> -		if (machine__is_host(iter->machine)) {
-> +	if (al->map->groups == &al->machine->kmaps) {
-> +		if (machine__is_host(al->machine)) {
->  			al->cpumode = PERF_RECORD_MISC_KERNEL;
->  			al->level = 'k';
->  		} else {
-> @@ -417,7 +440,7 @@ iter_next_cumulative_entry(struct hist_entry_iter *iter,
->  			al->level = 'g';
->  		}
->  	} else {
-> -		if (machine__is_host(iter->machine)) {
-> +		if (machine__is_host(al->machine)) {
->  			al->cpumode = PERF_RECORD_MISC_USER;
->  			al->level = '.';
->  		} else if (perf_guest) {
-> @@ -440,7 +463,29 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
->  {
->  	struct perf_evsel *evsel = iter->evsel;
->  	struct perf_sample *sample = iter->sample;
-> +	struct hist_entry **he_cache = iter->priv;
->  	struct hist_entry *he;
-> +	struct hist_entry he_tmp = {
-> +		.cpu = al->cpu,
-> +		.thread = al->thread,
-> +		.comm = thread__comm(al->thread),
-> +		.ip = al->addr,
-> +		.ms = {
-> +			.map = al->map,
-> +			.sym = al->sym,
-> +		},
-> +		.parent = iter->parent,
-> +	};
-> +	int i;
-> +
-> +	/*
-> +	 * Check if there's duplicate entries in the callchain.
-> +	 * It's possible that it has cycles or recursive calls.
-> +	 */
-> +	for (i = 0; i < iter->curr; i++) {
-> +		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
-
-we need here:
-			iter->he = he_cache[i];
-
-> +			return 0;
-> +	}
-
-otherwise iter->he and al are not in sync and 
-hist_entry__inc_addr_samples fails in hist_iter_cb
-
-jirka
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/iov.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index 1fe2d6f..e2fbb67 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -84,6 +84,7 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
+>         virtfn->dev.parent = dev->dev.parent;
+>         virtfn->physfn = pci_dev_get(dev);
+>         virtfn->is_virtfn = 1;
+> +       virtfn->multifunction = 0;
+>
+>         for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+>                 res = dev->resource + PCI_IOV_RESOURCES + i;
+>
