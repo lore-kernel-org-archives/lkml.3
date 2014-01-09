@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503AbaAIA2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 19:28:09 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:55292 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531AbaAIA2F (ORCPT
+	id S1757334AbaAIAgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 19:36:04 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:58815 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485AbaAIAgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 19:28:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAEPRUYo0r5YcRTYdgSNLqedVV4D0bsor7USBoxRRpBXRs7wpbw@mail.gmail.com>
-References: <1389120821-12007-1-git-send-email-tim.kryger@linaro.org>
-	<CAEPRUYo0r5YcRTYdgSNLqedVV4D0bsor7USBoxRRpBXRs7wpbw@mail.gmail.com>
-Date: Wed, 8 Jan 2014 16:28:04 -0800
-Message-ID: <CAAYSxhpgJwnq63fUdYBtmneRads_69c2mik8upofvAS1Y25fOA@mail.gmail.com>
-Subject: Re: [RESEND PATCH] ARM: dts: bcm28155-ap: Fix Card Detection GPIO
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Christian Daudt <bcm@fixthebug.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Arm Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Jan 2014 19:36:01 -0500
+X-AuditID: cbfee68d-b7fcd6d00000315b-fc-52cdeeefb711
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Mark Brown'" <broonie@kernel.org>
+Cc: "'Liam Girdwood'" <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        "'Sascha Hauer'" <s.hauer@pengutronix.de>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002001cf0c0d$461abfa0$d2503ee0$%han@samsung.com>
+ <002101cf0c0d$6d90d470$48b27d50$%han@samsung.com>
+ <20140108171538.GJ31886@sirena.org.uk>
+In-reply-to: <20140108171538.GJ31886@sirena.org.uk>
+Subject: Re: [PATCH 2/3] regulator: mc13892: Fix checkpatch issue
+Date: Thu, 09 Jan 2014 09:35:59 +0900
+Message-id: <004e01cf0cd2$c493f4d0$4dbbde70$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac8MlUQlk7BOh3XzT9SIow3JukJIwQAPPiag
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zfd33784GGczpsLGY+vAJm8XlhZdY
+	Lb5d6WCyuLxrDpvF3+2bWBxYPXbOusvusWlVJ5tH/18Dj74tqxg9Pm+SC2CN4rJJSc3JLEst
+	0rdL4MrYtnE3c8FMloqtbZ/YGxiXMHcxcnJICJhIbLx7lw3CFpO4cG89kM3FISSwjFHiw4Vz
+	bDBFj1/MYYRITGeUmL34MTuE84tR4sH2tywgVWwCahJfvhwGSnBwiAioSvx/5Q4SZhaYxiix
+	6qEtRP0sRolHy96ygyQ4BYwllrRsYgKxhQUcJdbueg1mswD1/pq6mRVkDq+ArcSGgwogYV4B
+	QYkfk++xQMzUkli/8zgThC0vsXnNW2aQcgkBdYlHf3UhLjCSmPBZG6JCRGLfi3dg50sI3GKX
+	2DTvACvEJgGJb5MPsUC0ykpsOgANE0mJgytusExglJiFZPEsJItnIVk8C8mKBYwsqxhFUwuS
+	C4qT0osM9YoTc4tL89L1kvNzNzFCorR3B+PtA9aHGJOB1k9klhJNzgdGeV5JvKGxmZGFqYmp
+	sZG5pRlpwkrivEkPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MC7uXRP51aN1ilp0WcMO
+	G71nfdfmTH1YZ+KoonDl3+OkI5lPz0qHXz/pVVHxnzlVXexdBvcEhnttktOOcK3rizcw/mi2
+	r+t47pe8f7lRrNyebx9M8V/yMLHs5kxrwQPH+U4Zn1X7JvnL84l811rOJzfnLri95ddv/gUh
+	Bzbp1fJf2PpQrS/yuK4SS3FGoqEWc1FxIgC4WjvG6AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jQd33784GGSz4ZG4x9eETNovLCy+x
+	Wny70sFkcXnXHDaLv9s3sTiweuycdZfdY9OqTjaP/r8GHn1bVjF6fN4kF8Aa1cBok5GamJJa
+	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
+	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsW3jbuaCmSwVW9s+sTcwLmHuYuTkkBAwkXj8
+	Yg4jhC0mceHeerYuRi4OIYHpjBKzFz9mh3B+MUo82P6WBaSKTUBN4suXw0AJDg4RAVWJ/6/c
+	QcLMAtMYJVY9tIWon8Uo8WjZW3aQBKeAscSSlk1MILawgKPE2l2vwWwWoN5fUzezgszhFbCV
+	2HBQASTMKyAo8WPyPRaImVoS63ceZ4Kw5SU2r3nLDFIuIaAu8eivLsQFRhITPmtDVIhI7Hvx
+	jnECo9AsJINmIRk0C8mgWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQITgHPpHYw
+	rmywOMQowMGoxMO7ovhskBBrYllxZe4hRgkOZiUR3hPngUK8KYmVValF+fFFpTmpxYcYk4He
+	nMgsJZqcD0xPeSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXA
+	eHb2K7vKe6Em4ienF28saVvTWGC17BC7+S6XhdzflY4pLRJJt66WldriW1KWkXBbuXiOeB6H
+	kO0L9xuTuFkZ15U/m1xpP+FmoBpDuNl/x08Prxh1M6z9q/q1ecVhr9iXBxcslZxw9l1+pP1P
+	qwC7qIZYwc0b2+vPGhmL180Pz8ptmPnEqX+uEktxRqKhFnNRcSIAF8DqnEUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 3:38 PM, Christian Daudt <bcm@fixthebug.org> wrote:
-> On Tue, Jan 7, 2014 at 10:53 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
->> The board schematic states that the "SD_CARD_DET_N gets pulled to GND
->> when card is inserted" so the polarity has been updated to active low.
->>
->> Polarity is now specified with a GPIO define instead of a magic number.
->>
->> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
->> Reviewed-by: Matt Porter <matt.porter@linaro.org>
->> ---
->>  arch/arm/boot/dts/bcm28155-ap.dts | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/bcm28155-ap.dts b/arch/arm/boot/dts/bcm28155-ap.dts
->> index 08e47c2..27dd110 100644
->> --- a/arch/arm/boot/dts/bcm28155-ap.dts
->> +++ b/arch/arm/boot/dts/bcm28155-ap.dts
->> @@ -13,6 +13,8 @@
->>
->>  /dts-v1/;
->>
->> +#include <dt-bindings/gpio/gpio.h>
->> +
->>  #include "bcm11351.dtsi"
->>
->>  / {
->> @@ -40,7 +42,7 @@
->>
->>         sdio4: sdio@3f1b0000 {
->>                 max-frequency = <48000000>;
->> -               cd-gpios = <&gpio 14 0>;
->> +               cd-gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
->>                 status = "okay";
->>         };
->>  };
->> --
->> 1.8.0.1
->>
-> Tim,
->  Does bcm11351-brt not also suffer from the same bug? If it does can
-> you pls update the patch to also fix it?
->
->  Thanks,
->    csd
+On Thursday, January 09, 2014 2:16 AM, Mark Brown wrote:
+> On Wed, Jan 08, 2014 at 10:03:22AM +0900, Jingoo Han wrote:
+> > Fix the following checkpatch warnings.
+> >
+> >   WARNING: Avoid unnecessary line continuations
+> >   WARNING: line over 80 characters
+> 
+> This doesn't apply against current code, the same changes have already
+> been made by you in October.
 
-The BRT and AP boards are similar so it may have the same problem but
-I don't have a BRT and wouldn't be able to test any changes to its DTS
-file.
+Sorry for annoying you.
+I checked this patch applied to 'mc13892' branch in regulator
+git tree. Thank you. :-)
+Happy New Year!
 
--Tim
+Best regards,
+Jingoo Han
+
