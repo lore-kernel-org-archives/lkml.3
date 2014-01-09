@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433AbaAIMhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 07:37:10 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:40624 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423AbaAIMfQ (ORCPT
+	id S1755532AbaAIMhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 07:37:18 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:47528 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438AbaAIMhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 07:35:16 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: nicolas.ferre@atmel.com, b.brezillon@overkiz.com, arnd@arndb.de
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v2 09/12] at91: dt: sam9261: Pinmux DT entries for the SMC/EBI interface
-Date: Thu,  9 Jan 2014 13:31:46 +0100
-Message-Id: <1389270709-32662-10-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
-References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
+	Thu, 9 Jan 2014 07:37:10 -0500
+Subject: Re: [patch] perf tools: perf list broken on ARM
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20140109121206.GA30069@ghostprotocols.net>
+References: <alpine.DEB.2.10.1312301536150.28814@vincent-weaver-1.um.maine.edu>
+	 <alpine.DEB.2.10.1401081629200.4410@vincent-weaver-1.um.maine.edu>
+	 <871u0hd0x4.fsf@sejong.aot.lge.com>
+	 <20140109121206.GA30069@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 09 Jan 2014 21:37:03 +0900
+Message-ID: <1389271023.1722.4.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- arch/arm/boot/dts/at91sam9261.dtsi | 54 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+2014-01-09 (목), 09:12 -0300, Arnaldo Carvalho de Melo:
+> Em Thu, Jan 09, 2014 at 05:17:27PM +0900, Namhyung Kim escreveu:
+> > Hi Vince,
+> > 
+> > On Wed, 8 Jan 2014 16:30:17 -0500 (EST), Vince Weaver wrote:
+> > > just checking on the status of this patch.  Am I sending it to the wrong 
+> > > place?  Did it get lost in the post-holiday e-mail purges?  
+> > >
+> > > The bug is annoying if you're trying to use perf on ARM systems.
+> > 
+> > Right, acme, would you please merge this?
+> 
+> I will, but having a patch authored by someone and Acked-by that same
+> person looks weird, so, to clarify, this was written by Vince, acked by
+> you, right?
 
-diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
-index cd219b9..695d5d2 100644
---- a/arch/arm/boot/dts/at91sam9261.dtsi
-+++ b/arch/arm/boot/dts/at91sam9261.dtsi
-@@ -317,6 +317,60 @@
- 							 >;
- 					};
- 				};
-+				smc {
-+					pinctrl_smc_nwait: smc_nwait-0 {
-+						atmel,pins = <AT91_PIOC 2 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_a23_a25: smc_a23_a25-0 {
-+						atmel,pins =
-+							<AT91_PIOA 30 AT91_PERIPH_B AT91_PINCTRL_NONE
-+							 AT91_PIOA 31 AT91_PERIPH_B AT91_PINCTRL_NONE
-+							 AT91_PIOC 3  AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_d16_d31: smc_d16_d31-0 {
-+						atmel,pins =
-+							<AT91_PIOC 16 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 17 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 18 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 19 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 20 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 21 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 22 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 23 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 24 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 25 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 26 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 27 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 28 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 29 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 30 AT91_PERIPH_A AT91_PINCTRL_NONE
-+							 AT91_PIOC 31 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_ncs4: smc_ncs4-0 {
-+						atmel,pins = <AT91_PIOC 4 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_ncs5: smc_ncs5-0 {
-+						atmel,pins = <AT91_PIOC 5 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_nandoe: smc_nandoe-0 {
-+						atmel,pins = <AT91_PIOC 0 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_ncs6: smc_ncs6-0 {
-+						atmel,pins = <AT91_PIOC 0 AT91_PERIPH_B AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_nandwe: smc_nandwe-0 {
-+						atmel,pins = <AT91_PIOC 1 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_ncs7: smc_ncs7-0 {
-+						atmel,pins = <AT91_PIOC 1 AT91_PERIPH_B AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_cfce1: smc_cfce1-0 {
-+						atmel,pins = <AT91_PIOC 6 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+					pinctrl_smc_cfce2: smc_cfce2-0 {
-+						atmel,pins = <AT91_PIOC 7 AT91_PERIPH_A AT91_PINCTRL_NONE>;
-+					};
-+				};
- 				pioA: gpio@fffff400 {
- 					compatible = "atmel,at91rm9200-gpio";
- 					reg = <0xfffff400 0x200>;
--- 
-1.8.5.2
+You seemed to be confused - it's not authored by me.  He was just
+referring a problematic commit b41f1cec91c3 which was written by me.  So
+yeah, this commit was written by Vince.
+
+Thanks,
+Namhyung
+
 
