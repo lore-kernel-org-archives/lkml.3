@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaAIBpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 20:45:25 -0500
-Received: from ozlabs.org ([203.10.76.45]:52962 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaAIBpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 20:45:23 -0500
-Date: Thu, 9 Jan 2014 12:45:15 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Gordeev <agordeev@redhat.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>
-Subject: linux-next: manual merge of the libata tree with the pci tree
-Message-Id: <20140109124515.754c7d393b8c118766f1d2d2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__9_Jan_2014_12_45_15_+1100_nrr03Bu=lptLv49v"
+	id S1751530AbaAIBqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 20:46:15 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44324 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585AbaAIBqN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Jan 2014 20:46:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140108214906.GB31886@sirena.org.uk>
+References: <1389201738-31406-1-git-send-email-lpapp@kde.org>
+	<20140108180747.GT31886@sirena.org.uk>
+	<CAOMwXhN8x0xHstrwsrxqXoE+n19TP=r1HJDCFOHs2O024HaY1w@mail.gmail.com>
+	<20140108190758.GY31886@sirena.org.uk>
+	<CAOMwXhMh6A8wZa3rtQHH1HpYU6PoZuWkPuSki64hOAnAZ-QZoQ@mail.gmail.com>
+	<CAOMwXhNLN-gDHt=UKmmbA0VM1f6PnjcZWkZSDncemVZuxEGF1Q@mail.gmail.com>
+	<20140108214906.GB31886@sirena.org.uk>
+Date: Thu, 9 Jan 2014 01:46:12 +0000
+X-Google-Sender-Auth: 3rR5Ho7yQb3eYFf9NCJKGBCetSU
+Message-ID: <CAOMwXhNsuG-s7z2xfZK9-qGPWNoyuE_1x3pSmz6CC2qyiituLA@mail.gmail.com>
+Subject: Re: [PATCH] include/linux/regmap.h: fix a couple of typos
+From: Laszlo Papp <lpapp@kde.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__9_Jan_2014_12_45_15_+1100_nrr03Bu=lptLv49v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 8, 2014 at 9:49 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Jan 08, 2014 at 09:08:44PM +0000, Laszlo Papp wrote:
+>> On Wed, Jan 8, 2014 at 9:02 PM, Laszlo Papp <lpapp@kde.org> wrote:
+>
+>> > That being said, I will not have time, nor the motivation to argue
+>> > over such a nuance, so feel free to reject the change.
+>
+>> Of course, this is just on top of the vim spell checker error as I
+>> wrote in the commit message...
+>
+>> Oh yes, and one more factual data in here:
+>
+>> lpapp ~/Projects/linux-staging $ grep -rn "e\.g\." . | wc -l
+>> 3447
+>
+>> lpapp ~/Projects/linux-staging $ grep -rn " eg," | wc -l
+>> 18
+>
+> That's not the issue - it's dropping the comma.  It's either "e.g." or
+> "eg", the comma is a separate thing providing a break between clauses.
+> Strictly it should have the periods since it is an abbreviation but
+> their use is more vauge in fixed point text since they look ugly, the
+> thing that made me complain was that you dropped the comma as well as
+> substituting in the expanded version.
 
-Hi Tejun,
+I still do not get what point you are trying to make. Could you please
+provide evidence? Because really, this is the usage I have seen in
+projects out there all around, including the majority of the linux
+kernel.
 
-Today's linux-next merge of the libata tree got a conflict in
-drivers/ata/ahci.c between commit 7b92b4f61ec4 ("PCI/MSI: Remove
-pci_enable_msi_block_auto()") from the pci tree and commit d93414513966
-("drivers: ata: Mark the function ahci_init_interrupts() as static in
-ahci.c") from the libata tree.
+Here is some more data:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/ata/ahci.c
-index 3cf6dad71e11,74911c2cb1dd..000000000000
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@@ -1097,40 -1148,26 +1148,40 @@@ static inline void ahci_gtf_filter_work
-  {}
-  #endif
- =20
-- int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- -static int ahci_init_interrupts(struct pci_dev *pdev, struct ahci_host_pr=
-iv *hpriv)
-++static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_port=
-s,
- +			 struct ahci_host_priv *hpriv)
-  {
- -	int rc;
- -	unsigned int maxvec;
- +	int rc, nvec;
- =20
- -	if (!(hpriv->flags & AHCI_HFLAG_NO_MSI)) {
- -		rc =3D pci_enable_msi_block_auto(pdev, &maxvec);
- -		if (rc > 0) {
- -			if ((rc =3D=3D maxvec) || (rc =3D=3D 1))
- -				return rc;
- -			/*
- -			 * Assume that advantage of multipe MSIs is negated,
- -			 * so fallback to single MSI mode to save resources
- -			 */
- -			pci_disable_msi(pdev);
- -			if (!pci_enable_msi(pdev))
- -				return 1;
- -		}
- -	}
- +	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
- +		goto intx;
- +
- +	rc =3D pci_msi_vec_count(pdev);
- +	if (rc < 0)
- +		goto intx;
- +
- +	/*
- +	 * If number of MSIs is less than number of ports then Sharing Last
- +	 * Message mode could be enforced. In this case assume that advantage
- +	 * of multipe MSIs is negated and use single MSI mode instead.
- +	 */
- +	if (rc < n_ports)
- +		goto single_msi;
- +
- +	nvec =3D rc;
- +	rc =3D pci_enable_msi_block(pdev, nvec);
- +	if (rc)
- +		goto intx;
- =20
- +	return nvec;
- +
- +single_msi:
- +	rc =3D pci_enable_msi(pdev);
- +	if (rc)
- +		goto intx;
- +	return 1;
- +
- +intx:
-  	pci_intx(pdev, 1);
-  	return 0;
-  }
-
---Signature=_Thu__9_Jan_2014_12_45_15_+1100_nrr03Bu=lptLv49v
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSzf8wAAoJEMDTa8Ir7ZwVN4IP/idj3xZk7gJiAskPB8Fny3fN
-ADqolQ/Bbzapri1rt67wkJm+JH6aAhv2Ph3/RfQSOUkIgXGgl0yDYhDxyOeW3LW2
-UsFfiA9LFUHj1nGb/q7RqP2j4heuBEDucnAT90SEibzL5G+5dWHCSk3DATvlL1wp
-a4liX2kBbaegLD8vHAw317adOF37OtPwZRVDjCo5vAXJDq9YzL1poo3774Nfc3Sy
-3rVnhVC/fQqNLnEYxz1S2SIBf3FBCQxoTVf0U8vmjCEcwZ+D4VSyQ3q/90MJWF7h
-v0ZtvDMuIUX9eiABkPaW8XpN+e/t0Hr+FqYLBE4HeRdXomq/aWd9SCo2LvEA3sAI
-6waVcgByIPEn40S1rx9t9fiEjTFsZMEHTsvKUQabmqlEC39HJshfIbkEb+p6FgAl
-qpaOdkmGOkW799JhznkyWWMwHVWIOguwAo175UbcXmhOaLWyIODZSLOKtjPK7CZw
-7NtHFnR7XTurC20wDPDsaZRLZqdTsheJr9cSa53qMpgAEGxgtMRt9+pWPygYSw/K
-HzJ+Nh/E2PwcRgDAhYTxgPBYH5hNuYMdJFe+x16dedP/nfTotqwdnbymtMYzCfDe
-53ZHG3rr4L9xOg5lHhwERZqSFrDndiRsb1zyT5kefNTaJBvwy+nzfMYUtEww7Xjy
-gutCJ4ncAmUaSjelj1SG
-=e4R0
------END PGP SIGNATURE-----
-
---Signature=_Thu__9_Jan_2014_12_45_15_+1100_nrr03Bu=lptLv49v--
+grep -rn "e\.g\. " . | wc -l
+2553
+lpapp ~/Projects/linux-staging $ grep -rn "e\.g\.," . | wc -l
+573
