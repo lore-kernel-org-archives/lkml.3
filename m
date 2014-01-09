@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaAIIip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:38:45 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:46241 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752214AbaAIIig (ORCPT
+	id S1754818AbaAIIpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:45:05 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:41118 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077AbaAIIo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:38:36 -0500
+	Thu, 9 Jan 2014 03:44:58 -0500
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <d9239e0a5df99392647ff8343673342f89d09476.1389059568.git.viresh.kumar@linaro.org>
-References: <d9239e0a5df99392647ff8343673342f89d09476.1389059568.git.viresh.kumar@linaro.org>
-Date: Thu, 9 Jan 2014 00:38:35 -0800
-Message-ID: <CAOesGMgfFVoVJpOMXWtzVWj_F4pD-L9Osyv4u6=c8RUWOoLHFw@mail.gmail.com>
-Subject: Re: [PATCH V3 Resend] cpufreq: create cpufreq_generic_get() routine
-From: Olof Johansson <olof@lixom.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1389256274-6308-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+References: <1389256274-6308-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
+Date: Thu, 9 Jan 2014 17:44:56 +0900
+Message-ID: <CANqRtoSko2Ctwkq-Q8TTLmkjNQPFi5CPxyvHt_NSxq4qBAX+BQ@mail.gmail.com>
+Subject: Re: [PATCH CFT] ARM:SHMOBILE: Enable AUTO_ZRELADDR by default
+From: Magnus Damm <magnus.damm@gmail.com>
+To: panchaxari <panchaxari.prasannamurthy@linaro.org>
+Cc: "Simon Horman [Horms]" <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Russell King <linux@arm.linux.org.uk>, patches@linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Magnus Damm <damm@opensource.se>, linaro-kernel@lists.linaro.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
-
-On Mon, Jan 6, 2014 at 5:54 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> CPUFreq drivers that use clock frameworks interface,i.e. clk_get_rate(), to get
-> CPUs clk rate, has similar sort of code used for most of them.
+On Thu, Jan 9, 2014 at 5:31 PM, panchaxari
+<panchaxari.prasannamurthy@linaro.org> wrote:
+> This patch enables AUTO_ZRELADDR as default config to Renasas R-Mobile and
+> SH-Mobile platforms.
 >
-> This patch adds a generic ->get() which will do the same thing for them. All
-> those drivers are required to now is to set .get to cpufreq_generic_get() and
-> set their clk pointer in policy->clk during ->init().
+> AUTO_ZRELADDR config enables auto calculation of the decompressed kernel image
+> address. AUTO_ZRELADDR config is mutually exclusive to ZBOOT_ROM, and also
+> assumes zImage to be loaded in the first 128MiB from start of memory.
 >
-> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Rafael,
+> CFT::Call For Testing
 >
-> V2->V3: As asked by you earlier, I have merged all 23 patches here as they had
-> common log and were touching separate drivers. This is already acked by many
-> people.  Please see if looks okay for 3.14.
+> Requesting maintainers of R-Mobile and SH-Mobile platforms to evaluate the
+> changes on the board and comment, as I dont have the board for testing, and
+> also requesting an ACK.
+>
+> Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
 
-This patch breaks a bunch of ARM boards. In particular, the following
-defconfigs no longer build:
+Thanks for the patch. I believe we enable this for the multiplatform
+case already. The legacy case still supports ZBOOT_ROM and boards that
+don't work with AUTO_ZRELADDR, so because of this we intentionally
+don't enable it there.
 
-          assabet_defconfig
-          badge4_defconfig
-          cerfcube_defconfig
-          collie_defconfig
-          h3600_defconfig
-          hackkit_defconfig
-          jornada720_defconfig
-          lart_defconfig
-          neponset_defconfig
-          pleb_defconfig
-          shannon_defconfig
-          simpad_defconfig
+What is the reason you want to add it here?
 
-Error is:
+Thanks,
 
-drivers/built-in.o: In function `cpufreq_generic_get':
-drivers/cpufreq/cpufreq.c:189: undefined reference to `clk_get_rate'
-
-Seems like this needs to be guarded by HAVE_CLK?
-
-
--Olof
+/ magnus
