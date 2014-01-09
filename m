@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaAIQBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 11:01:13 -0500
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:55312 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610AbaAIQBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 11:01:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAZheXmEuSB0C-xDS1HWa2npX13s5TdPfpxfmnYQU6y4r9T66A@mail.gmail.com>
-References: <jim_baxter@mentor.com>
-	<1373999390-14548-1-git-send-email-jim_baxter@mentor.com>
-	<20130716193714.GA19924@merkur.ravnborg.org>
-	<51E5B7FF.9080004@mentor.com>
-	<CAAZheXmEuSB0C-xDS1HWa2npX13s5TdPfpxfmnYQU6y4r9T66A@mail.gmail.com>
-Date: Thu, 9 Jan 2014 21:01:06 +0500
-Message-ID: <CAAZheX=QjTQtp_BPE=e1U3ZwFiWTRPbE=T0yYnsxHf05t1DvsQ@mail.gmail.com>
-Subject: Fwd: [RFC] kbuild: Build samples directory with make modules
-From: Syed Muhammad Mohsin Kazmi <08beesmmkazmi@seecs.edu.pk>
-To: Jim Baxter <jim_baxter@mentor.com>, "cc: Sam Ravnborg" <sam@ravnborg.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753445AbaAIQGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 11:06:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43840 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752354AbaAIQF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 11:05:57 -0500
+Message-ID: <1389283545.15209.59.camel@localhost>
+Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
+ selinux_inode_permission()
+From: Eric Paris <eparis@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        stable <stable@vger.kernel.org>, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org
+Date: Thu, 09 Jan 2014 11:05:45 -0500
+In-Reply-To: <1389283030.15209.56.camel@localhost>
+References: <20140109101932.0508dec7@gandalf.local.home>
+	 <CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
+	 <20140109105114.5c409fef@gandalf.local.home>
+	 <1389283030.15209.56.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is there any specific reason that this patch is ignored still yet?
-Compiling the uImage and modules together add the support of samples?
-Shouldn't it be compiled as a module separately and that is correct
-behavior in case of if samples are compiled as loadable modules?
+[adding lsm and selinux]
 
-Thanks,
-Mohsin Kazmi
+Am I just crazy, or was this bug discussed (and obviously not fixed)
+some time ago?
+
+VFS can still use inodes after security_inode_free_security() was
+called...
+
+On Thu, 2014-01-09 at 10:57 -0500, Eric Paris wrote:
+> On Thu, 2014-01-09 at 10:51 -0500, Steven Rostedt wrote:
+> > On Thu, 9 Jan 2014 10:31:55 -0500
+> > Eric Paris <eparis@parisplace.org> wrote:
+> > 
+> > > Didn't Al find this/something very similar.  I really hate this
+> > 
+> > I'm not involved with the vfs, so I'm unaware of other solutions
+> > presented. I just hit this now and solving bugs is where I get a chance
+> > to learn about other aspects of the kernel. ;-)
+> > 
+> > > solution.  Why should every LSM try to understand the intimate
+> > > lifetime rules of the parent subsystems?  The real problem is that
+> > > inode_free_security() is being called while the inode is still in use.
+> > >  While I agree with the assessment, I disagree with the solution.  Let
+> > > me try to find where Al and Christoph talked about this....
+> > > 
+> > 
+> > The other obvious solution (but not as trivial to implement) is to call
+> > the security_inode_free() and friends (probably __destroy_inode()
+> > itself) after a synchronize_rcu().
+> > 
+> > Perhaps something like this?
+> 
+> I can't for the life of me find that conversation!  Maybe I'm just
+> making it all up...  Usually I forget conversations, not remember ones
+> that didn't happen...
+> 
+> Assuming the VFS guys say that delaying __destroy_inode() is safe like
+> that, I like it better.  It also means that this is fixed for all LSMs,
+> not just SELinux...
+> 
+> -Eric
+> 
+> > 
+> > -- Steve
+> > 
+> > diff --git a/fs/inode.c b/fs/inode.c
+> > index 4bcdad3..a8f3b88 100644
+> > --- a/fs/inode.c
+> > +++ b/fs/inode.c
+> > @@ -252,16 +252,17 @@ EXPORT_SYMBOL(__destroy_inode);
+> >  static void i_callback(struct rcu_head *head)
+> >  {
+> >  	struct inode *inode = container_of(head, struct inode, i_rcu);
+> > +	__destroy_inode(inode);
+> >  	kmem_cache_free(inode_cachep, inode);
+> >  }
+> >  
+> >  static void destroy_inode(struct inode *inode)
+> >  {
+> >  	BUG_ON(!list_empty(&inode->i_lru));
+> > -	__destroy_inode(inode);
+> > -	if (inode->i_sb->s_op->destroy_inode)
+> > +	if (inode->i_sb->s_op->destroy_inode) {
+> > +		__destroy_inode(inode);
+> >  		inode->i_sb->s_op->destroy_inode(inode);
+> > -	else
+> > +	} else
+> >  		call_rcu(&inode->i_rcu, i_callback);
+> >  }
+> >  
+> 
 
 
-On Wed, Jul 17, 2013 at 2:15 AM, Jim Baxter <jim_baxter@mentor.com> wrote:
->
-> On 16/07/13 20:37, Sam Ravnborg wrote:
-> > On Tue, Jul 16, 2013 at 07:29:50PM +0100, Jim Baxter wrote:
-> >> If CONFIG_SAMPLES is enabled with any of the sample
-> >> modules enabled, they are only built if the make command
-> >> includes uImage and modules (i.e. make uImage modules).
-> >
-> > With the current location samples are built when you build vmlinux.
-> > And vmlinux is implicit when you just type "make".
-> >
-> > With the suggestion you have samples are built when you do "make modules".
-> > IMO this is less logical than to built them with vmlinux as we do today.
-> >
-> >       Sam
-> >
->
-> Hi,
->
-> I am building it with:
-> make uImage
-> make modules
->
-> At least bitbake in Yocto and Openembedded is.
->
-> Running make on it's own is the equivalent of:
-> make vmlinux modules
->
-> which builds the samples directory, however if you run:
-> make vmlinux
-> make modules
->
-> Then the Samples are not built, that is what I am trying to fix.
->
-> Thank you,
-> Jim
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
