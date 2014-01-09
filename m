@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074AbaAIOfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:35:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54881 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224AbaAIOfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:35:03 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Alex Shi <alex.shi@linaro.org>, Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 2/5] x86: mm: Clean up inconsistencies when flushing TLB ranges
-Date: Thu,  9 Jan 2014 14:34:55 +0000
-Message-Id: <1389278098-27154-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1389278098-27154-1-git-send-email-mgorman@suse.de>
-References: <1389278098-27154-1-git-send-email-mgorman@suse.de>
+	id S1755551AbaAIOfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 09:35:44 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:40976 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaAIOfS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 09:35:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140109000735.GA23891@leaf>
+References: <b21c9d47bbb72f2134540b852c908a2080f1ed1d.1389018324.git.rashika.kheria@gmail.com>
+	<8af55c93ab10b11d473f9c731eddd6710ae7a418.1389018324.git.rashika.kheria@gmail.com>
+	<CADnq5_OrzQ+Jr0G6pzLq99ivA7WEc2dnEmY6S3y6FKWwXZ09TA@mail.gmail.com>
+	<20140109000735.GA23891@leaf>
+Date: Thu, 9 Jan 2014 09:35:15 -0500
+Message-ID: <CADnq5_O7S0LPNQ4Z9+m2CeQNcTD-2bAoTd4ru66r=bQF5C+2sQ@mail.gmail.com>
+Subject: Re: [PATCH 22/85] drivers: gpu: Mark functions as static in radeon_device.c
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Jerome Glisse <jglisse@redhat.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>,
+        =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NR_TLB_LOCAL_FLUSH_ALL is not always accounted for correctly and the
-comparison with total_vm is done before taking tlb_flushall_shift into
-account. Clean it up.
+On Wed, Jan 8, 2014 at 7:07 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Wed, Jan 08, 2014 at 11:40:28AM -0500, Alex Deucher wrote:
+>> On Mon, Jan 6, 2014 at 10:21 AM, Rashika Kheria
+>> <rashika.kheria@gmail.com> wrote:
+>> > Mark functions radeon_doorbell_init() and radeon_doorbell_fini() as
+>> > static in drm/radeon/radeon_device.c because they are not used outside
+>> > this file.
+>> >
+>> > This eliminates the following warning in drm/radeon/radeon_device.c:
+>> > drivers/gpu/drm/radeon/radeon_device.c:252:5: warning: no previous prototype for ‘radeon_doorbell_init’ [-Wmissing-prototypes]
+>> > drivers/gpu/drm/radeon/radeon_device.c:281:6: warning: no previous prototype for ‘radeon_doorbell_fini’ [-Wmissing-prototypes]
+>> >
+>> > Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>>
+>> I've pulled in a subset of these patches:
+>> http://cgit.freedesktop.org/~agd5f/linux/log/?h=drm-next-3.14-wip
+>> I held off on some of the others as I'd rather fix up the headers
+>> properly rather than just cramming everything in radeon.h or
+>> radeon-asic.h for now.
+>
+> Can you elaborate on which patches are putting functions in the wrong
+> header, and what header you'd prefer to see them in?
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Alex Shi <alex.shi@linaro.org>
----
- arch/x86/mm/tlb.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Sure.  atombios.h defines the vbios interface so it shouldn't have any
+driver functions defined in it.  radeon_asic.h was only supposed to
+include the function definitions for the asic specific callbacks
+assigned in radeon_asic.c.  For everything else, I'd rather move to
+asic specific headers, e.g., rather than adding r600_*() functions to
+radeon.h for example, I'd rather add an r600.h and include that where
+r600_*() functions are used, etc.
 
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 05446c1..5176526 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -189,6 +189,7 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- {
- 	unsigned long addr;
- 	unsigned act_entries, tlb_entries = 0;
-+	unsigned long nr_base_pages;
- 
- 	preempt_disable();
- 	if (current->active_mm != mm)
-@@ -210,18 +211,17 @@ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 		tlb_entries = tlb_lli_4k[ENTRIES];
- 	else
- 		tlb_entries = tlb_lld_4k[ENTRIES];
-+
- 	/* Assume all of TLB entries was occupied by this task */
--	act_entries = mm->total_vm > tlb_entries ? tlb_entries : mm->total_vm;
-+	act_entries = tlb_entries >> tlb_flushall_shift;
-+	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
-+	nr_base_pages = (end - start) >> PAGE_SHIFT;
- 
- 	/* tlb_flushall_shift is on balance point, details in commit log */
--	if ((end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift) {
-+	if (nr_base_pages > act_entries || has_large_page(mm, start, end)) {
- 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 		local_flush_tlb();
- 	} else {
--		if (has_large_page(mm, start, end)) {
--			local_flush_tlb();
--			goto flush_all;
--		}
- 		/* flush range by one by one 'invlpg' */
- 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
- 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
--- 
-1.8.4
+Thanks,
 
+Alex
