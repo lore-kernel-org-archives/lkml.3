@@ -1,51 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaAILFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 06:05:42 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56849 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbaAILF3 (ORCPT
+	id S1751508AbaAILGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 06:06:46 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:61892 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaAILGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 06:05:29 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH v4 0/3] ata: ahci_platform: Add PHY support and OMAP support
-Date: Thu, 9 Jan 2014 12:05:24 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: tj@kernel.org, sergei.shtylyov@cogentembedded.com, kishon@ti.com,
-        b.zolnierkie@samsung.com, hdegoede@redhat.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-References: <1389264962-22858-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+	Thu, 9 Jan 2014 06:06:39 -0500
+Date: Thu, 9 Jan 2014 11:06:35 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
+Message-ID: <20140109110635.GB20699@lee--X1>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+ <1387814889-16670-2-git-send-email-lpapp@kde.org>
+ <20140108223933.GD18611@lee--X1>
+ <CAOMwXhN5JStJgG5Q9cjuJByhyhz-XPb4ThkA45B+fA724Ucqog@mail.gmail.com>
+ <20140109094147.GA20699@lee--X1>
+ <CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401091205.24818.arnd@arndb.de>
-X-Provags-ID: V02:K0:K8HXdbjPdf6ZBFBplb1mr6POBe1fw88P161WEGzVJic
- kGXERazh7EM9YVaeeFepN4SrBiMV7cznYqjtcC5F4GKwszejdf
- quFDHh+kZqY0Cloz/gBROLRqno2fiGl2DyqvtUMENRkB7z9iaB
- CZJHDx2G7rbpHP+oq4rs91VRoZbsDruwmww1kPwfvBkpPIz8fs
- 7nxpvjfYg5DQDzBO5P4MjGX9RRwDrF8Y3ip0TABCUiZp/anG+x
- j8XybOuFFXkYtPg/bwpWAbFxft/By40Pgopy99grR2HU6pwgHv
- eK+44pp3m/GO/+thcsvgoo9r83wCljSZWh++f4Q9YBCEuT5o1v
- EQaEZk/EWo9aAU1rVmj8=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMwXhO=0K+SL2rNo_7JvKVET2DYZnTSr_=wzFedz2e2z_3u1w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 January 2014, Roger Quadros wrote:
-> Hi,
+> > Styling i.e nice, neat, easily readable/maintainable code should be
+> > your bread and butter. If styling tires you, perhaps a new career
+> > might be in order. ;)
 > 
-> Some platforms have a PHY hooked up to the SATA controller.
-> The PHY needs to be initialized and powered up for SATA to work.
-> We do that using the Generic PHY framework in PATCH 2.
-> 
-> In order to support SATA on the OMAP platforms we need to runtime
-> resume the device before use. PATCH 3 takes care of that.
-> 
-> PATCH 1 just updates the compatible list in the DT binding document.
-> 
+> or a new tool to be more professional ...
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Patches accepted.
+
+> >> >> +#include <linux/i2c.h>
+> >> >> +#include <linux/export.h>
+> >> >
+> >> > Why is this in here?
+> >>
+> >> Because this series was meant for a design review and overall
+> >> direction as opposed to a completely fine tuned patch set. Naturally,
+> >> I agree with the feedback of removing unnecessary header inclusion.
+> >
+> > Don't do that.
+> 
+> I will guess that you mean "unnecessary header inclusion is OK"...
+
+No, I mean don't send sub-standard patches which crap you don't need
+or a copy and pasted mess contained within them.
+
+> >> >> +struct max6651_dev {
+> >> >> +    struct device *dev;
+> >> >> +    struct mutex iolock;
+> >> >> +
+> >> >> +    struct i2c_client *i2c;
+> >> >
+> >> > Is this used?
+> >>
+> >> Yes, heavily, for reading and writing the registers in the subdevice drivers.
+> >
+> > Can you show me where?
+> 
+> Check the gpio driver or even the hwmon in this series. Look at the
+> places where it is using the read/write_reg functions, or you can just
+> check their signature in this patch. I am in the process of
+> refactoring it into regmap as we speak, but it is not painless because
+> I need to get it working for 3.2, too ...
+
+Can you show me the line where you initialise it?
+
+> >> >> +     int type;
+> >> >
+> >> > Or this?
+> >>
+> >> Absolutely, this identifies the type, which is necessary for
+> >> initializing some corresponding data.
+> >
+> > Can you show me where?
+> 
+> Well, you have different number of GPIO pins for starter ...
+
+Can you show me the line where this variable is used?
+
+> >> >> +};
+> >> >> +
+> >> >> +enum max6651_types {
+> >> >> +     TYPE_MAX6650,
+> >> >> +     TYPE_MAX6651,
+> >> >> +};
+> >> >
+> >> > What are you using these for?
+> >>
+> >> See above.
+> >
+> > Can you show me where you are using them?
+> 
+> Perhaps, I was not while submitting this change, but the upcoming
+> changes should.
+
+Again, this adds confusion. Send your best, cleanest, most up-to-date
+code, or all you're doing is wasting people's time.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
