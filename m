@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126AbaAIWU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 17:20:26 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:64944 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaAIWUS (ORCPT
+	id S1752920AbaAIW0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 17:26:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39634 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaAIWZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 17:20:18 -0500
-Date: Thu, 9 Jan 2014 14:20:15 -0800
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>,
-        John Fastabend <john.fastabend@gmail.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        Neil Horman <nhorman@tuxdriver.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>
-Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for
- macvtap
-Message-ID: <20140109142015.1cd462ed@nehalam.linuxnetplumber.net>
-In-Reply-To: <20140109220323.GC9385@redhat.com>
-References: <52CB7009.2030903@redhat.com>
-	<52CB8D54.9090506@gmail.com>
-	<52CB9D1A.1050101@redhat.com>
-	<52CBAC2A.90005@intel.com>
-	<52CBC22D.3050002@redhat.com>
-	<20140108125528.GC14741@redhat.com>
-	<52CDA186.1080601@gmail.com>
-	<20140109071721.GD19559@redhat.com>
-	<52CE63EB.5000109@redhat.com>
-	<20140109133908.354a4d73@nehalam.linuxnetplumber.net>
-	<20140109220323.GC9385@redhat.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jan 2014 17:25:58 -0500
+Date: Thu, 9 Jan 2014 22:25:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eric Paris <eparis@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
+ selinux_inode_permission()
+Message-ID: <20140109222555.GK10323@ZenIV.linux.org.uk>
+References: <20140109101932.0508dec7@gandalf.local.home>
+ <CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
+ <20140109221303.GI10323@ZenIV.linux.org.uk>
+ <1389305889.15209.75.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389305889.15209.75.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jan 2014 00:03:23 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Thu, Jan 09, 2014 at 05:18:09PM -0500, Eric Paris wrote:
 
-> On Thu, Jan 09, 2014 at 01:39:08PM -0800, Stephen Hemminger wrote:
-> > On Thu, 09 Jan 2014 16:55:07 +0800
-> > Jason Wang <jasowang@redhat.com> wrote:
+> > Just RCU-delay freeing the damn thing and treat NULL ->i_security in
+> > ->permission() (which can happen only with MAY_NOT_BLOCK in mask) as
+> > "return -ECHILD and let the caller deal with that".
 > > 
-> > > What if use do want a qdisc and want to change the its queue length for
-> > > tun/macvlan? And the the name tx_queue_length is misleading. For tun it
-> > > may make sense since it was used in transmission path. For macvtap it
-> > > was not. So maybe what we need is just a new ioctl for both tun/macvtap
-> > > and a new feature flag. If user create the device with new feature flag,
-> > > the socket receive queue length could be changed by ioctl instead of
-> > > dev->tx_queue_length. If not, the old behaviour could be kept.
-> > 
-> > The overloading of tx_queue_len in macvtap was the original design mistake.
-> > Can't this just be undone and expose rx_queue_len as sysfs attribute?
+> > Modifying every ->destroy_inode() is obviously wrong - there's a lot more
+> > filesystems than LSM buggers in the tree.
 > 
-> Yes but we need to avoid breaking user-visible ABI.
+> We just want the same lifetime as the inode.  Allocate the security blob
+> when the inode is allocated and free the security blob when the inode is
+> freed.
 
-I think in this case, it was a mistake and hasn't been around long enough
-to cause serious damage.
-
-> So I think we'll need to catch any access attempts and redirect them to
-> the new rx_queue_len.  I posted a patch like this using new
-> ndo_set_tx_queue_len/ndo_get_tx_queue_len.  Have you seen it? What do
-> you think?
-
-It encourages others to do/make the same mistake so I don't like it.
+Ultimate freeing of struct inode can easily happen outside of VFS - that's
+what ->destroy_inode() is for.  Moreover, filesystem might decide to do
+very odd things to it, as long as it doesn't do so without RCU delay.
+So no, there's no single place to do that.
