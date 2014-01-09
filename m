@@ -1,132 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbaAIWpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 17:45:47 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37585 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaAIWpj (ORCPT
+	id S1753523AbaAIWpn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 17:45:43 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:41315 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaAIWpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 17:45:39 -0500
-Date: Wed, 8 Jan 2014 17:16:50 -0800
+	Thu, 9 Jan 2014 17:45:35 -0500
+Date: Wed, 8 Jan 2014 17:30:14 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] rcu_dereference_check_fdtable fix/cleanups
-Message-ID: <20140109011650.GI10038@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>,
+        kbuild test robot <fengguang.wu@intel.com>
+Subject: Re: [PATCH 2/2] tracing: Fix rcu handling of event_trigger_data
+ filter field
+Message-ID: <20140109013014.GL10038@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140107181258.GA29288@redhat.com>
- <20140108132852.GF10038@linux.vnet.ibm.com>
- <20140108151918.GA5156@redhat.com>
+References: <20131222030759.339128630@goodmis.org>
+ <20131222031147.984230034@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140108151918.GA5156@redhat.com>
+In-Reply-To: <20131222031147.984230034@goodmis.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14010922-3532-0000-0000-0000049BCAA5
+x-cbid: 14010922-0928-0000-0000-0000053E98F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 04:19:18PM +0100, Oleg Nesterov wrote:
-> On 01/08, Paul E. McKenney wrote:
-> >
-> > I am not all that excited about invoking rcu_lock_acquire() outside
-> > of RCU...
+On Sat, Dec 21, 2013 at 10:08:01PM -0500, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> Yes, me too. That is why I thought about the helper with a good name,
-> see below.
+> The filter field of the event_trigger_data structure is protected under
+> RCU sched locks. It was not annotated as such, and after doing so,
+> sparse pointed out several locations that required fix ups.
 > 
-> > Another approach would be to add an argument to files_fdtable()
-> > that is zero normally and one for "we know we don't need RCU
-> > protection."  Then rcu_dereference_check() could be something
-> > like the following:
-> >
-> > #define files_fdtable(files, c) \
-> > 		(rcu_dereference_check_fdtable((files), (files)->fdt) || c)
-> >
-> > Would that work?
-> 
-> Yes, I considered this optiion, but this needs much more uglifications^W
-> changes.
-> 
-> Either we need to change all users of files_fdtable(), or we need something
-> like
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-There are only about 20 uses of files_fdtable() in 3.12, with almost all
-of them in fs/file.c.  So is changing all the users really all that
-problematic?
+Looks good to me!
 
-							Thanx, Paul
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> 	#define __rcu_dereference_check_fdtable(files, unshared, fdtfd) \
-> 		rcu_dereference_check((fdtfd), unshared || lockdep_is_held(&(files)->file_lock))
+> ---
+>  kernel/trace/trace.h                | 2 +-
+>  kernel/trace/trace_events_trigger.c | 8 +++++---
+>  2 files changed, 6 insertions(+), 4 deletions(-)
 > 
-> 	#define rcu_dereference_check_fdtable(files, fdtfd)
-> 		__rcu_dereference_check_fdtable(files, false, fdtfd)
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 0380cab..02b592f 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -1057,7 +1057,7 @@ struct event_trigger_data {
+>  	int				ref;
+>  	struct event_trigger_ops	*ops;
+>  	struct event_command		*cmd_ops;
+> -	struct event_filter		*filter;
+> +	struct event_filter __rcu	*filter;
+>  	char				*filter_str;
+>  	void				*private_data;
+>  	struct list_head		list;
+> diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
+> index 12ac8a5..f6dd115 100644
+> --- a/kernel/trace/trace_events_trigger.c
+> +++ b/kernel/trace/trace_events_trigger.c
+> @@ -67,6 +67,7 @@ event_triggers_call(struct ftrace_event_file *file, void *rec)
+>  {
+>  	struct event_trigger_data *data;
+>  	enum event_trigger_type tt = ETT_NONE;
+> +	struct event_filter *filter;
 > 
-> 	#define __files_fdtable(files)
-> 		__rcu_dereference_check_fdtable((files), true, (files)->fdt)
+>  	if (list_empty(&file->triggers))
+>  		return tt;
+> @@ -76,7 +77,8 @@ event_triggers_call(struct ftrace_event_file *file, void *rec)
+>  			data->ops->func(data);
+>  			continue;
+>  		}
+> -		if (data->filter && !filter_match_preds(data->filter, rec))
+> +		filter = rcu_dereference(data->filter);
+> +		if (filter && !filter_match_preds(filter, rec))
+>  			continue;
+>  		if (data->cmd_ops->post_trigger) {
+>  			tt |= data->cmd_ops->trigger_type;
+> @@ -703,7 +705,7 @@ static int set_trigger_filter(char *filter_str,
+>  	if (ret)
+>  		goto out;
+>   assign:
+> -	tmp = data->filter;
+> +	tmp = rcu_access_pointer(data->filter);
 > 
-> 	#define files_fdtable(files)
-> 		__rcu_dereference_check_fdtable((files), false, (files)->fdt)
+>  	rcu_assign_pointer(data->filter, filter);
 > 
-> Plus we need
+> @@ -719,7 +721,7 @@ static int set_trigger_filter(char *filter_str,
+>  	if (filter_str) {
+>  		data->filter_str = kstrdup(filter_str, GFP_KERNEL);
+>  		if (!data->filter_str) {
+> -			free_event_filter(data->filter);
+> +			free_event_filter(rcu_access_pointer(data->filter));
+>  			data->filter = NULL;
+>  			ret = -ENOMEM;
+>  		}
+> -- 
+> 1.8.4.3
 > 
-> 	static inline struct file *__fcheck_files(struct files_struct *files,
-> 						bool unshared, unsigned int fd)
-> 	{
-> 		struct file *file = NULL;
-> 		struct fdtable *fdt = __rcu_dereference_check_fdtable(files, unshared, files->fdt);
-> 
-> 		if (fd < fdt->max_fds)
-> 			file = __rcu_dereference_check_fdtable(files, unshared, fdt->fd[fd]);
-> 		return file;
-> 	}
-> 
-> doesn't look very nice...
-> 
-> As for 2/2, probably close_files() can simply do
-> 
-> 	/*
-> 	 * It is safe to dereference the fd table without RCU or
-> 	 * ->file_lock because this is the last reference to the
-> 	 * files structure.
-> 	 */
-> 	fdt = rcu_dereference_raw(files->fdt);
-> 
-> Or we can add
-> 
-> 	#define __files_fdtable(files)	\
-> 		 rcu_dereference_raw((files)->fdt)
-> 
-> but it is not clear to me what 1/1 should do. Perhaps
-> 
-> 	static inline struct file *__fcheck_files(struct files_struct *files, unsigned int fd)
-> 	{
-> 		struct fdtable *fdt = rcu_dereference_raw(files->fdt);
-> 		struct file *file = NULL;
-> 
-> 		if (fd < fdt->max_fds)
-> 			file = rcu_dereference_raw(fdt->fd[fd]);
-> 
-> 		return file;
-> 	}
-> 
-> 	static inline struct file *fcheck_files(struct files_struct *files, unsigned int fd)
-> 	{
-> 		rcu_lockdep_assert(rcu_read_lock_held() ||
-> 				   lockdep_is_held(files->file_lock),
-> 				   "message");
-> 		return __fcheck_files(files, fd);
-> 	}
-> 
-> ?
-> 
-> Oleg.
 > 
 
