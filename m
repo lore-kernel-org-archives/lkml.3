@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625AbaAIVei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:34:38 -0500
-Received: from mail-gg0-f181.google.com ([209.85.161.181]:36035 "EHLO
-	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089AbaAIVe2 (ORCPT
+	id S1757788AbaAIVeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:34:50 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:61202 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757604AbaAIVeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:34:28 -0500
-Date: Thu, 9 Jan 2014 13:34:24 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com>
-References: <20131210103827.GB20242@dhcp22.suse.cz> <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com> <20131217162342.GG28991@dhcp22.suse.cz> <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com> <20131218200434.GA4161@dhcp22.suse.cz> <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz> <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 9 Jan 2014 16:34:37 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140109150053.GD25897@redhat.com>
+References: <1389220181-14474-1-git-send-email-prarit@redhat.com>
+ <3476878.EqQiEtA2Ag@vostro.rjw.lan> <20140109150053.GD25897@redhat.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Thu, 9 Jan 2014 16:34:16 -0500
+Message-ID: <CAHGf_=oaPZNE8tVsZ1C1z3mHee8MK6CkuZ0YBTcJpRrTWgVn6g@mail.gmail.com>
+Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
+ hotplug for kexec
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Prarit Bhargava <prarit@redhat.com>, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dave Young <dyoung@redhat.com>,
+        Kexec Mailing List <kexec@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Jan 2014, Andrew Morton wrote:
+On Thu, Jan 9, 2014 at 10:00 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Jan 09, 2014 at 12:00:29AM +0100, Rafael J. Wysocki wrote:
+>
+> [..]
+>> > The system then panics and the kdump/kexec kernel boots.  During this boot
+>> > ACPi is initialized and the kernel (as can be seen above)
+>>
+>> Which is a bug.  You're not supposed to initialize ACPI twice in a row.
+>
+> [CC lkml, kexec mailing list, dave young]
+>
+> It is a fresh instance of kernel booting and it is initializing its data
+> structures fresh. It is *not* re-initializing ACPI in same kernel.
+>
+>> > This patchset resolves the problem by adding a kernel parameter,
+>> > no_memory_hotplug, to disable ACPI memory hotplug.  It can be added by default
+>> > as a parameter to the kexec/kdump kernel so the kernel boots correctly.
+>>
+>> This problem is specific to kexec/kdump, so please don't add *generic* command
+>> line parameters to address this.
+>>
+>
+> There are other command line options to solve kdump problems. In general
+> one might want to disable memory hogplug on the fly even if it is compiled
+> in the kernel. So it can act as a good debugging aid.
+>
+> Secondly, it can be specified with memmap=exactmap and mem=X paramters to
+> make sure no memory is hot added in the system.
+>
+> So I can see other usages of this parameter. To me it makes sense to have
+> a separate command line option to disable memory hotplug feature on the
+> fly.
 
-> I just spent a happy half hour reliving this thread and ended up
-> deciding I agreed with everyone!  I appears that many more emails are
-> needed so I think I'll drop
-> http://ozlabs.org/~akpm/mmots/broken-out/mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch
-> for now.
-> 
-> The claim that
-> mm-memcg-avoid-oom-notification-when-current-needs-access-to-memory-reserves.patch
-> will impact existing userspace seems a bit dubious to me.
-> 
+I'm ok this option. But note, even if this option is specified, SH,
+Power and S390 still
+be able to use memory hotplug because their firmware are totally
+different from ACPI.
 
-I'm not sure why this was dropped since it's vitally needed for any sane 
-userspace oom handler to be effective.
-
-Without the patch, a userspace oom handler waiting on memory.oom_control 
-will be triggered when any process with a pending SIGKILL or in the exit() 
-path simply needs access to memory reserves to make forward progress.  The 
-kernel oom killer itself is preempted since nothing is actionable other 
-than giving current access to memory reserves by setting the TIF_MEMDIE 
-bit.  Userspace does not have the privilege to set this bit itself, so in 
-such cases there is absolutely nothing actionable for the userspace oom 
-handler.
-
-The problem is that the userspace oom handler doesn't know that.
-
-It would be ludicrous to require that a userspace oom handler must wait 
-for some arbitrary amount of time to determine if it is actionable or not; 
-what is a sane amount of time to wait?  Should we reliably expect that 
-multiple oom notifications will be sent over a period of time if we are in 
-a situation where current doesn't require memory reserves to make forward 
-progress?  How long should the userspace oom handler store this state to 
-determine how many times it has woken up?
-
-Userspace oom handling implementations are fragile enough as it is, they 
-should be made as trivial as possible to ensure they can do what is needed 
-to make memory available, have the smallest memory footprint possible, and 
-be as reliable as possible.  Requiring them to determine when a 
-notification is actionable is troublesome.
-
-Furthermore, Section 10 of Documentation/cgroups/memory.txt does not imply 
-that any of this checking needs to be done and lists possible actions that 
-a userspace oom handler can do upon being notified such as raising a limit 
-or killing a process itself.  This is what userspace _expects_ to do when 
-notified.
-
-Giving current access to memory reserves so that it may make forward 
-progress is something only the kernel can do and is a part of both the VM 
-and memcg implementations to allow forward progress to be made.  It is not 
-something userspace is involved in.
-
-Additionally, you're not losing any functionality by merging the patch, if 
-you really want to know simply when the limit has been reached and not 
-something actionable as stated by the memcg documentation, you can do so 
-with memory thresholds or VMPRESSURE_CRITICAL.
-
-Google relies on this behavior so that userspace oom handlers can be 
-implemented to respond to oom conditions and not cause unnecessary oom 
-killing.  We'd like to know why you refuse to provide such an interface in 
-a responsible and reliable way.
-
-Thanks.
+Maybe, adding acpi prefix provides good clarification.
