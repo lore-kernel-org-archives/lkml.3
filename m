@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764AbaAITfF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 14:35:05 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:39086 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaAITe6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 14:34:58 -0500
-Message-ID: <52CEF9E7.4070706@arm.com>
-Date: Thu, 09 Jan 2014 19:35:03 +0000
-From: Sudeep Holla <Sudeep.Holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756579AbaAIToy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 14:44:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751AbaAITor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 14:44:47 -0500
+Date: Thu, 9 Jan 2014 20:43:50 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
+	prep_new_page() race
+Message-ID: <20140109194350.GA22436@redhat.com>
+References: <20140103195547.GB26555@redhat.com> <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org> <20140104164347.GA31359@redhat.com> <20140108115400.GD27046@suse.de> <20140108161338.GA10434@redhat.com> <20140108180202.GL27046@suse.de> <20140108190443.GA17282@redhat.com> <20140109112736.GR27046@suse.de> <20140109140447.GA25391@redhat.com> <20140109185254.GC1141@redhat.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Sudeep.Holla@arm.com, "x86@kernel.org" <x86@kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ashok Raj <ashok.raj@intel.com>
-Subject: Re: [PATCH RFC 2/3] ARM: kernel: add support for cpu cache information
-References: <1389209168-17189-1-git-send-email-sudeep.holla@arm.com> <1389209168-17189-3-git-send-email-sudeep.holla@arm.com> <20140108205754.GN27432@n2100.arm.linux.org.uk>
-In-Reply-To: <20140108205754.GN27432@n2100.arm.linux.org.uk>
-X-OriginalArrivalTime: 09 Jan 2014 19:34:55.0845 (UTC) FILETIME=[E00D0950:01CF0D71]
-X-MC-Unique: 114010919345600201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140109185254.GC1141@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/14 20:57, Russell King - ARM Linux wrote:
-> On Wed, Jan 08, 2014 at 07:26:07PM +0000, Sudeep Holla wrote:
->> +#if __LINUX_ARM_ARCH__ < 7 /* pre ARMv7 */
->> +
->> +#define MAX_CACHE_LEVEL		1	/* Only 1 level supported */
->> +#define CTR_CTYPE_SHIFT		24
->> +#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
->> +
->> +static inline unsigned int get_ctr(void)
->> +{
->> +	unsigned int ctr;
->> +	asm volatile ("mrc p15, 0, %0, c0, c0, 1" : "=r" (ctr));
->> +	return ctr;
->> +}
->> +
->> +static enum cache_type get_cache_type(int level)
->> +{
->> +	if (level > MAX_CACHE_LEVEL)
->> +		return CACHE_TYPE_NOCACHE;
->> +	return get_ctr() & CTR_CTYPE_MASK ?
->> +		CACHE_TYPE_SEPARATE : CACHE_TYPE_UNIFIED;
-> 
-> So, what do we do for CPUs that don't implement the CTR?  Just return
-> random rubbish based on decoding the CPU Identity register as if it
-> were the cache type register?
-> 
+On 01/09, Andrea Arcangeli wrote:
+>
+> On Thu, Jan 09, 2014 at 03:04:47PM +0100, Oleg Nesterov wrote:
+> > OK. Even if I am right, we can probably make another fix.
+>
+> I think the confusion here was to think this was related to the futex
+> code, it isn't. This was just a generic theoretical problem found
+> doing the futex cleanups but it's not related to the futex code.
 
-I assume you referring to some particular CPUs which don't implement this.
-I could not find it as optional or IMPLEMENTATION defined in ARM ARM.
-I might be missing to find it or there may be exceptions.
-Can you please provide more information on that ?
+Yes, yes, sure. I mentioned get_futex_key() just for example.
 
-Regards,
-Sudeep
+> > put_compound_page() and __get_page_tail() can do yet another PageTail()
+> > check _before_ compound_lock().
+>
+> The above alternate fix looks good to me too.
+>
+> Only thing to sort out is in the common code (not just x86) then we
+> may need a smp_mb() between PageTail check and the bit_spin_lock... We
+> just can't risk writing the bit_spin_lock before reading PageTail.
+
+I do not think we need mb() in between... other callers of compound_lock()
+look fine, get/put(page_tail) can't have the false positive after successful
+get_page_unless_zero(), and recently it was documented that the kernel can
+rely on the control dependency to serialize LOAD + STORE.
+
+But we probably need barrier() in between, we can't use ACCESS_ONCE().
+
+> And regardless of gup_fast, like Linus said, for increased NUMA
+> fairness we could move the compound lock from page->flags to an hashed
+> array of proper spinlocks sized in function of ram. The contention on
+> these locks is so low that I doubt we can run into lock starvation,
+> but because the contention is so low, the array would be fine as well,
+> and it would be more theoretically correct for NUMA usages than the
+> bit spinlock. So this problem also goes away if we convert the
+> bit_spin_lock to an hashed array of spin_lock.
+
+Yes. But in this case I really think we should cleanup get/put first
+and add the helper, like the patch I mentioned does.
+
+> I personally prefer to keep the complexity in one place so adding to
+> get/put_page
+
+OK. I'll send v3.
+
+> > Although personally I'd prefer this patch. And if we change get/put
+> > I think it would be  better to do this on top of
+> >
+> > 	"[PATCH -mm 6/7] mm: thp: introduce get_lock_thp_head()"
+> > 	http://marc.info/?l=linux-kernel&m=138739438800899
+>
+> Not against the cleanups of course, but about the order, it gets
+> harder to backport it for distros if applied after the cleanups.
+
+Oh, I don't think this highly theoreitical fix should be backported
+but I agree, lets fix the bug first.
+
+Oleg.
 
