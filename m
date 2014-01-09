@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163AbaAIRzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 12:55:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751636AbaAIRzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 12:55:44 -0500
-Date: Thu, 9 Jan 2014 18:54:48 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: check && lockdep_no_validate (Was: lockdep: Introduce wait-type
-	checks)
-Message-ID: <20140109175448.GA17673@redhat.com>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net>
+	id S1756084AbaAISBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 13:01:46 -0500
+Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:46499
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752814AbaAISBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 13:01:38 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: Implement the file copy service
+Thread-Topic: [PATCH 1/1] Drivers: hv: Implement the file copy service
+Thread-Index: AQHPDMVZ9zrtMOoYp0KOm7oSIbZbR5p8TC2AgABjvCA=
+Date: Thu, 9 Jan 2014 18:01:21 +0000
+Message-ID: <35fb9cd2070242f1b1f5f5c44e6d1438@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1389224915-8737-1-git-send-email-kys@microsoft.com>
+ <20140109120351.GA25423@aepfle.de>
+In-Reply-To: <20140109120351.GA25423@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.174.216]
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 008663486A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(377454003)(24454002)(51704005)(199002)(189002)(13464003)(92566001)(81686001)(66066001)(54356001)(51856001)(59766001)(77982001)(79102001)(54316002)(46102001)(56776001)(76482001)(53806001)(81816001)(80022001)(65816001)(63696002)(74876001)(85306002)(74316001)(90146001)(56816005)(33646001)(85852003)(74366001)(83072002)(87936001)(2656002)(74706001)(76576001)(76786001)(76796001)(87266001)(4396001)(49866001)(47736001)(47976001)(50986001)(81542001)(80976001)(19580405001)(19580395003)(83322001)(69226001)(74662001)(47446002)(81342001)(74502001)(31966008)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB297;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:131.107.174.216;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140109170823.GF7572@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-I changed the subject to avoid the confusion.
-
-On 01/09, Peter Zijlstra wrote:
->
-> On Thu, Jan 09, 2014 at 05:31:20PM +0100, Oleg Nesterov wrote:
->
-> > 	-#ifdef CONFIG_PROVE_LOCKING
-> > 	- #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
-> > 	- #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
-> > 	- #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
-> > 	-#else
-> > 	- #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
-> > 	- #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
-> > 	- #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
-> > 	-#endif
-> > 	+#define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
-> > 	+#define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
-> > 	+#define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
->
-> I suppose we could; note however that the if (!prove_locking) logic was
-> added later.
-
-OK, thanks...
-
-> > But what I really can't understans is what "check == 0" means? It
-> > seems that in fact it can be 1 or 2? Or, iow, "check == 0" is actually
-> > equivalent to "check == 1" ?
->
-> Hmm indeed, the comment in lockdep.h says 0 means no checks at all, but
-> the code doesn't actually appear to work like that. I'm not sure it ever
-> did or not, I'd have to go dig through history.
->
-> That said, given the current state it certainly looks like we can remove
-> the check argument.
-
-Or yes, we can probably simply remove it. Unlikely we will need
-lock_acquire(check => 0).
-
-But this connects to lockdep_no_validate. Not sure I understand what
-this class should actually do, but consider this code:
-
-	DEFINE_MUTEX(m1);
-	DEFINE_MUTEX(m2);
-	DEFINE_MUTEX(mx);
-
-	void lockdep_should_complain(void)
-	{
-		lockdep_set_novalidate_class(&mx);
-
-		// m1 -> mx -> m2
-		mutex_lock(&m1);
-		mutex_lock(&mx);
-		mutex_lock(&m2);
-		mutex_unlock(&m2);
-		mutex_unlock(&mx);
-		mutex_unlock(&m1);
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s09I1oe2003891
 
 
-		// m2 -> m1 ; should trigger the warning
-		mutex_lock(&m2);
-		mutex_lock(&m1);
-		mutex_unlock(&m1);
-		mutex_unlock(&m2);
-	}
 
-lockdep doesn't not detect the trivial possible deadlock.
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Thursday, January 09, 2014 4:04 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH 1/1] Drivers: hv: Implement the file copy service
+> 
+> On Wed, Jan 08, K. Y. Srinivasan wrote:
+> 
+> > +++ b/tools/hv/hv_fcopy_daemon.c
+> 
+> > +		len = pread(fcopy_fd, buffer, (4096 * 2), 0);
+> > +
+> > +		if (len <= 0) {
+> > +			syslog(LOG_ERR, "Read error: %s\n", strerror(errno));
+> > +			continue;
+> 
+> This could flood syslog. I think the error should be logged just once.
+> Maybe like this:
+> 
+>         if (len <=0) {
+>                 if (!error) {
+>                         syslog(...);
+>                         error = HV_ERROR_NOT_SUPPORTED;
+>                 }
+>                 continue;
+>         }
+> 
+> > +		}
+> > +		in_msg = (struct hv_fcopy_hdr *)buffer;
+> > +
+> > +		switch (in_msg->operation) {
+> > +		case START_FILE_COPY:
+> > +			error = hv_start_fcopy((struct hv_start_fcopy *)in_msg);
 
-The patch below seems to work but most probably it is not right, and
-I forgot everything (not too much) I knew about lockdep internals.
+Will do. 
 
-Oleg.
-
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -1939,7 +1939,8 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
- 		 * Only non-recursive-read entries get new dependencies
- 		 * added:
- 		 */
--		if (hlock->read != 2) {
-+		if (hlock->read != 2 &&
-+		    hlock->instance->key != &__lockdep_no_validate__) {
- 			if (!check_prev_add(curr, hlock, next,
- 						distance, trylock_loop))
- 				return 0;
-
+K. Y
+> 
+> Olaf
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
