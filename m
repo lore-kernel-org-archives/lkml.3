@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaAIHnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 02:43:51 -0500
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:18236
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753725AbaAIHnp convert rfc822-to-8bit (ORCPT
+	id S1752576AbaAIHwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 02:52:06 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:4741 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751204AbaAIHv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 02:43:45 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: RE: [PATCH 3/4] ASoC: fsl: Add VF610 simple audio card widgets
- driver.
-Thread-Topic: [PATCH 3/4] ASoC: fsl: Add VF610 simple audio card widgets
- driver.
-Thread-Index: AQHPDEeRsrwa/WcpkkSC4pOFwyzCb5p7IDAAgADe3jA=
-Date: Thu, 9 Jan 2014 07:43:42 +0000
-Message-ID: <3ebbe152f0a94858a24a97f6251e5715@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1389164556-2728-1-git-send-email-Li.Xiubo@freescale.com>
- <1389164556-2728-3-git-send-email-Li.Xiubo@freescale.com>
- <20140108180638.GS31886@sirena.org.uk>
-In-Reply-To: <20140108180638.GS31886@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 008663486A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(51704005)(199002)(189002)(74366001)(46102001)(51856001)(2656002)(87936001)(65816001)(80022001)(66066001)(33646001)(85306002)(77982001)(59766001)(47976001)(50986001)(4396001)(47736001)(54316002)(49866001)(79102001)(53806001)(54356001)(87266001)(56776001)(63696002)(76482001)(74316001)(31966008)(74662001)(69226001)(76796001)(81342001)(81686001)(74502001)(47446002)(85852003)(19580395003)(80976001)(83072002)(83322001)(19580405001)(74706001)(74876001)(76576001)(76786001)(81542001)(81816001)(92566001)(56816005)(90146001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Jan 2014 02:51:57 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z579ehcb8kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h1155h)
+Date: Thu, 9 Jan 2014 15:41:38 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <rob@landley.net>
+Subject: Re: [PATCH] ARM: imx6q: Add missing esai_ahb clock to current clock
+ tree
+Message-ID: <20140109074137.GA14809@MrMyself>
+References: <1389236699-10387-1-git-send-email-Guangyu.Chen@freescale.com>
+ <20140109035810.GB21717@S2101-09.ap.freescale.net>
+ <20140109034940.GA14480@MrMyself>
+ <20140109065740.GD21717@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140109065740.GD21717@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > This is the SGTL5000 codec based off-CODEC widgets supports.
-> >
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > ---
-> >  sound/soc/fsl/Kconfig                     | 25 ++++++++++++++++++
-> >  sound/soc/fsl/Makefile                    |  3 +++
-> >  sound/soc/fsl/snd-soc-simple-card-vf610.c | 44
-> +++++++++++++++++++++++++++++++
+On Thu, Jan 09, 2014 at 02:57:42PM +0800, Shawn Guo wrote:
+> On Thu, Jan 09, 2014 at 11:49:41AM +0800, Nicolin Chen wrote:
+> > On Thu, Jan 09, 2014 at 11:58:12AM +0800, Shawn Guo wrote:
+> > > >  static struct clk *clk[clk_max];
+> > > > @@ -355,6 +355,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+> > > >  	clk[ecspi5]       = imx_clk_gate2("ecspi5",        "ecspi_root",        base + 0x6c, 8);
+> > > >  	clk[enet]         = imx_clk_gate2("enet",          "ipg",               base + 0x6c, 10);
+> > > >  	clk[esai]         = imx_clk_gate2("esai",          "esai_podf",         base + 0x6c, 16);
+> > > > +	clk[esai_ahb]     = imx_clk_gate2("esai_ahb",      "ahb",               base + 0x6c, 16);
+> > > 
+> > > Hmm, having two clocks operating on the same gate bit will get us
+> > > problem in clock disabling.  Clock enabling is fine, since either
+> > > one who calls clk_enable() first will just set the gate bit.  But in
+> > > case that clk_enable() is called on both clocks, and then when either
+> > > clock calls clk_disable(), the gate bit will be cleared and thus breaks
+> > > the other one that might still be in use.
+> > 
+> > Understood. But how could we handle this situation? The only way I can figure
+> > out is to make sure the driver open/close them at the same time, it's not a
+> > perfect way though.
 > 
-> If we're needing to add explict code for a simple audio card that seems
-> to defeat the point of using the simple audio card - we may as well just
-> have an explicit machine driver.
->
+> Hmm, we generally leave the gate bit to the clock used to access
+> register, because usually it's the first one to be on and the last one
+> to be off.
 
-IMHO, the simple audio card driver could fulfil most of machine driver's work. 
-And will make some machine driver simpler and eaiser to code.
+Then we should attach CLK_IGNORE_UNUSED to clk[esai] since clk[esai_ahb] is
+the clock used to access memory, shouldn't we?
 
-Thanks,
+Thank you.
+Nicolin
 
---
-Best Regards,
-Xiubo 
+
+
