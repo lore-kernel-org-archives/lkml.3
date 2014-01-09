@@ -1,111 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaAIQVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 11:21:22 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:43624 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaAIQVM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 11:21:12 -0500
-Message-ID: <1389284118.1792.72.camel@misato.fc.hp.com>
-Subject: Re: kdump failed because of hotplug memory adding in kdump kernel
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Baoquan <bhe@redhat.com>,
-        linux-acpi@vger.kernel.org, zhangyanfei@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dyoung@redhat.com
-Date: Thu, 09 Jan 2014 09:15:18 -0700
-In-Reply-To: <20140109145359.GC25897@redhat.com>
-References: <52CD6E33.400@redhat.com> <8500545.JVNPnKcyD1@vostro.rjw.lan>
-	 <1389226308.1792.39.camel@misato.fc.hp.com>
-	 <1607377.rjs1kRTsnc@vostro.rjw.lan> <20140109145359.GC25897@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753425AbaAIQWk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 11:22:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751137AbaAIQWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 11:22:31 -0500
+Date: Thu, 9 Jan 2014 17:24:15 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Lockdep problem
+Message-ID: <20140109162414.GA1719@redhat.com>
+References: <52CC474A.7090207@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CC474A.7090207@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-09 at 09:53 -0500, Vivek Goyal wrote:
-> On Thu, Jan 09, 2014 at 02:10:26PM +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, January 08, 2014 05:11:48 PM Toshi Kani wrote:
-> > > On Thu, 2014-01-09 at 00:07 +0100, Rafael J. Wysocki wrote:
-> > > > On Wednesday, January 08, 2014 10:58:29 AM Vivek Goyal wrote:
-> > > > > On Wed, Jan 08, 2014 at 11:26:43PM +0800, Baoquan wrote:
-> > > > > 
-> > > > > [..]
-> > > > > > [    1.592222] acpi PNP0A03:03: fail to add MMCONFIG information, can't access extended PCI configuration space under this bridge.
-> > > > > > [    1.605045] PCI host bridge to bus 0000:ff
-> > > > > > [    1.609615] pci_bus 0000:ff: root bus resource [bus ff]
-> > > > > > [    1.632117] System RAM resource [mem 0x01000000-0x7bffffff] cannot be added
-> > > > > > [    1.639892] init_memory_mapping: [mem 0x100000000-0x87fffffff]
-> > > > > > [    1.717793] swapper/0: page allocation failure: order:9, mode:0x84d0
-> > > > > > [    1.724884] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-59.el7.x86_64 #1
-> > > > > > [    1.732842] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S001.032520101647 03/25/2010
-> > > > > > [    1.743224]  0000000000000000 ffff8800339878c8 ffffffff815b64ad ffff880033987950
-> > > > > > [    1.751513]  ffffffff8113a980 ffff88003673ab28 00000000000001fe 0000000000000001
-> > > > > > [    1.759804]  ffff880000000040 ffffffff810bc28a 0000000000000000 0000000000000200
-> > > > > > [    1.768096] Call Trace:                                                                                                                                            [348/1928]
-> > > > > > [    1.770834]  [<ffffffff815b64ad>] dump_stack+0x19/0x1b
-> > > > > > [    1.776561]  [<ffffffff8113a980>] warn_alloc_failed+0xf0/0x160
-> > > > > > [    1.783076]  [<ffffffff810bc28a>] ? on_each_cpu_mask+0x2a/0x60
-> > > > > > [    1.789581]  [<ffffffff8113e92f>] __alloc_pages_nodemask+0x7ff/0xa00
-> > > > > > [    1.796672]  [<ffffffff815ada2c>] vmemmap_alloc_block+0x62/0xba
-> > > > > > [    1.803274]  [<ffffffff815ada99>] vmemmap_alloc_block_buf+0x15/0x3b
-> > > > > > [    1.810263]  [<ffffffff815ab8a6>] vmemmap_populate+0xb4/0x21b
-> > > > > > [    1.816673]  [<ffffffff815adecd>] sparse_mem_map_populate+0x27/0x35
-> > > > > > [    1.823665]  [<ffffffff815ad8bf>] sparse_add_one_section+0x7a/0x185
-> > > > > > [    1.830659]  [<ffffffff8159b74f>] __add_pages+0xaf/0x240
-> > > > > > [    1.836588]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> > > > > > [    1.842804]  [<ffffffff8159ba89>] add_memory+0xb9/0x1b0
-> > > > > > [    1.848638]  [<ffffffff8132dd2c>] acpi_memory_device_add+0x18d/0x26d
-> > > > > > [    1.855728]  [<ffffffff81303b91>] acpi_bus_device_attach+0x7d/0xcd
-> > > > > > [    1.862625]  [<ffffffff8131d92d>] acpi_ns_walk_namespace+0xc8/0x17f
-> > > > > > [    1.869616]  [<ffffffff81303b14>] ? acpi_bus_type_and_status+0x90/0x90
-> > > > > > [    1.876896]  [<ffffffff81303b14>] ? acpi_bus_type_and_status+0x90/0x90
-> > > > > > [    1.884177]  [<ffffffff8131de1c>] acpi_walk_namespace+0x95/0xc5
-> > > > > > [    1.890780]  [<ffffffff81304866>] acpi_bus_scan+0x8b/0x9d
-> > > > > > [    1.896805]  [<ffffffff81a14a15>] acpi_scan_init+0x63/0x160
-> > > > > > [    1.903021]  [<ffffffff81a14830>] acpi_init+0x25d/0x2a6
-> > > > > 
-> > > > > So basically acpi thinks that some memory block is a hot plug memory
-> > > > > and tries to add it. And that consumes lots of memory and we don't have
-> > > > > that memory in second kernel.
-> > > > 
-> > > > That's not exactly the case.  What seems to happen is that there is an ACPI
-> > > > memory object in the ACPI namespace and the ACPI memory hotplug driver
-> > > > attempts to bind to it.  That driver attempts to find removable memory blocks
-> > > > associated with that object and to add them to the memory map.
-> > > > 
-> > > > Why don't you simply append acpi=off to the kexec command line?  That should
-> > > > make the problem go away.
-> > > 
-> > > Yes, that should work, but Baoquan's approach makes sense to me.  When
-> > > memmap=exactmap is specified, the kernel should ignore any memory
-> > > information from the firmware.
-> > 
-> > OK
-> > 
-> > Baoquan, please modify your patch to get rid of the #ifdef CONFIG_X86 in
-> > acpi_memory_hotplug_init().  For example, you can add a function returning true
-> > if use_exactmap is set and false otherwise and make acpi_memory_hotplug_init()
-> > call that function.  Alternatively, you can define arch-independent
-> > no_memory_hotplug (instead of use_exactmap) and set if for memmap=exactmap.
-> > 
+On Tue, Jan 07, 2014 at 12:28:26PM -0600, Larry Finger wrote:
+>   rtnl_mutex --> misc_mtx --> rfkill_global_mutex
 > 
-> Prarit sent a patch to introduce no_memory_hotplug command line. I still
-> think that memmap=exactmap does not necessarily mean that memory hotplug
-> is disabled.
+>   Possible unsafe locking scenario:
 > 
-> What about mem= parameter. If somebody specifies mem=1G, should that mean
-> there can not be any hotplugged memory.
+>         CPU0                    CPU1
+>         ----                    ----
+>    lock(rfkill_global_mutex);
+>                                 lock(misc_mtx);
+>                                 lock(rfkill_global_mutex);
+>    lock(rtnl_mutex);
+> 
+>  *** DEADLOCK ***
 
-Good point.  Yes, I think we need to ignore ACPI memory objects in this
-case as well.  I suppose the use of this option is limited for specific
-test purpose, and disabling memory hotplug is not a big issue here.
+There are 3 mutexes dependency. The deadlock can happen if on another
+cpu, let say CPU2, there will be sequence:
 
-Thanks,
--Toshi
+lock(rtnl_mutex);
+lock(misc_mtx);
+
+Then on deadlock scenario:
+CPU0 waits for rtnl_mutex to unlock, keep rfkill_global_mutex locked
+CPU1 waits for rfkill_global_mutex to unlock, keep misc_mtx locked
+CPU2 waits for misc_mtx to unlock, keep rtnl_mutex locked.
+
+This dependency can be broken by moving b43_rng_init() outside from
+rtnl_mutex scope, like on below patch. IIUC b43 random number generator
+works only if we already started network connection, but this should
+not be a problem, as b43_rng_read() do not return any data if device
+is not prepared.
+
+You could also remove whole b43 rnd. Everyone know, that HW vendors
+are influenced by NSA and they random generators do not provide truly
+random numbers (just kidding ;-)
+
+Stanislaw
+
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index ccd24f0a..2c153f9 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -2475,6 +2475,10 @@ start_ieee80211:
+ 		goto err_one_core_detach;
+ 	wl->hw_registred = true;
+ 	b43_leds_register(wl->current_dev);
++
++	/* Register HW RNG driver */
++	b43_rng_init(wl);
++
+ 	goto out;
+ 
+ err_one_core_detach:
+@@ -4636,9 +4640,6 @@ static void b43_wireless_core_exit(struct b43_wldev *dev)
+ 	if (!dev || b43_status(dev) != B43_STAT_INITIALIZED)
+ 		return;
+ 
+-	/* Unregister HW RNG driver */
+-	b43_rng_exit(dev->wl);
+-
+ 	b43_set_status(dev, B43_STAT_UNINIT);
+ 
+ 	/* Stop the microcode PSM. */
+@@ -4795,9 +4796,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
+ 
+ 	b43_set_status(dev, B43_STAT_INITIALIZED);
+ 
+-	/* Register HW RNG driver */
+-	b43_rng_init(dev->wl);
+-
+ out:
+ 	return err;
+ 
+@@ -5464,6 +5462,9 @@ static void b43_bcma_remove(struct bcma_device *core)
+ 
+ 	b43_one_core_detach(wldev->dev);
+ 
++	/* Unregister HW RNG driver */
++	b43_rng_exit(wl);
++
+ 	b43_leds_unregister(wl);
+ 
+ 	ieee80211_free_hw(wl->hw);
+
 
