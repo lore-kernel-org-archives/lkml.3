@@ -1,135 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757752AbaAIVgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 16:36:11 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:36438
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1757572AbaAIVig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 16:38:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11509 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503AbaAIVgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 16:36:08 -0500
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next] hyperv: Add support for physically discontinuous receive buffer
-Date: Thu,  9 Jan 2014 14:24:47 -0800
-Message-Id: <1389306287-20057-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753729AbaAIVia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 16:38:30 -0500
+Date: Thu, 9 Jan 2014 22:36:57 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH v2 1/1] mm: fix the theoretical compound_lock() vs
+ prep_new_page() race
+Message-ID: <20140109213657.GD1141@redhat.com>
+References: <20140103130023.fdbf96fc95c702bf63871b56@linux-foundation.org>
+ <20140104164347.GA31359@redhat.com>
+ <20140108115400.GD27046@suse.de>
+ <20140108161338.GA10434@redhat.com>
+ <20140108180202.GL27046@suse.de>
+ <20140108190443.GA17282@redhat.com>
+ <20140109112736.GR27046@suse.de>
+ <20140109140447.GA25391@redhat.com>
+ <20140109185254.GC1141@redhat.com>
+ <20140109194350.GA22436@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140109194350.GA22436@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow us to use bigger receive buffer, and prevent allocation failure
-due to fragmented memory.
+On Thu, Jan 09, 2014 at 08:43:50PM +0100, Oleg Nesterov wrote:
+> get_page_unless_zero(), and recently it was documented that the kernel can
+> rely on the control dependency to serialize LOAD + STORE.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/channel.c            |   14 ++++++++------
- drivers/net/hyperv/hyperv_net.h |    2 +-
- drivers/net/hyperv/netvsc.c     |    7 ++-----
- 3 files changed, 11 insertions(+), 12 deletions(-)
+Ok, that's cheap then.
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index cea623c..69ea36f 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -209,7 +209,6 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- {
- 	int i;
- 	int pagecount;
--	unsigned long long pfn;
- 	struct vmbus_channel_gpadl_header *gpadl_header;
- 	struct vmbus_channel_gpadl_body *gpadl_body;
- 	struct vmbus_channel_msginfo *msgheader;
-@@ -219,7 +218,6 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 	int pfnsum, pfncount, pfnleft, pfncurr, pfnsize;
- 
- 	pagecount = size >> PAGE_SHIFT;
--	pfn = virt_to_phys(kbuffer) >> PAGE_SHIFT;
- 
- 	/* do we need a gpadl body msg */
- 	pfnsize = MAX_SIZE_CHANNEL_MESSAGE -
-@@ -248,7 +246,8 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 		gpadl_header->range[0].byte_offset = 0;
- 		gpadl_header->range[0].byte_count = size;
- 		for (i = 0; i < pfncount; i++)
--			gpadl_header->range[0].pfn_array[i] = pfn+i;
-+			gpadl_header->range[0].pfn_array[i] = slow_virt_to_phys(
-+				kbuffer + PAGE_SIZE * i) >> PAGE_SHIFT;
- 		*msginfo = msgheader;
- 		*messagecount = 1;
- 
-@@ -301,7 +300,9 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 			 * so the hypervisor gurantees that this is ok.
- 			 */
- 			for (i = 0; i < pfncurr; i++)
--				gpadl_body->pfn[i] = pfn + pfnsum + i;
-+				gpadl_body->pfn[i] = slow_virt_to_phys(
-+					kbuffer + PAGE_SIZE * (pfnsum + i)) >>
-+					PAGE_SHIFT;
- 
- 			/* add to msg header */
- 			list_add_tail(&msgbody->msglistentry,
-@@ -327,7 +328,8 @@ static int create_gpadl_header(void *kbuffer, u32 size,
- 		gpadl_header->range[0].byte_offset = 0;
- 		gpadl_header->range[0].byte_count = size;
- 		for (i = 0; i < pagecount; i++)
--			gpadl_header->range[0].pfn_array[i] = pfn+i;
-+			gpadl_header->range[0].pfn_array[i] = slow_virt_to_phys(
-+				kbuffer + PAGE_SIZE * i) >> PAGE_SHIFT;
- 
- 		*msginfo = msgheader;
- 		*messagecount = 1;
-@@ -344,7 +346,7 @@ nomem:
-  * vmbus_establish_gpadl - Estabish a GPADL for the specified buffer
-  *
-  * @channel: a channel
-- * @kbuffer: from kmalloc
-+ * @kbuffer: from kmalloc or vmalloc
-  * @size: page-size multiple
-  * @gpadl_handle: some funky thing
-  */
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index a26eecb..7b594ce 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -462,7 +462,7 @@ struct nvsp_message {
- 
- #define NETVSC_MTU 65536
- 
--#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*2)	/* 2MB */
-+#define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
- 
- #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
- 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 93b485b..03a2c6e 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -136,8 +136,7 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 
- 	if (net_device->recv_buf) {
- 		/* Free up the receive buffer */
--		free_pages((unsigned long)net_device->recv_buf,
--			get_order(net_device->recv_buf_size));
-+		vfree(net_device->recv_buf);
- 		net_device->recv_buf = NULL;
- 	}
- 
-@@ -163,9 +162,7 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 		return -ENODEV;
- 	ndev = net_device->ndev;
- 
--	net_device->recv_buf =
--		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
--				get_order(net_device->recv_buf_size));
-+	net_device->recv_buf = vzalloc(net_device->recv_buf_size);
- 	if (!net_device->recv_buf) {
- 		netdev_err(ndev, "unable to allocate receive "
- 			"buffer of size %d\n", net_device->recv_buf_size);
--- 
-1.7.4.1
+> 
+> But we probably need barrier() in between, we can't use ACCESS_ONCE().
 
+After get_page_unless_zero I don't think there's any need of
+barrier(). barrier() should have been implicit in __atomic_add_unless
+in fact it should be a full smp_mb() equivalent too. Memory is always
+clobbered there and the asm is volatile.
+
+My wondering was only about the runtime (not compiler) barrier after
+running PageTail and before compound_lock, because bit_spin_lock has
+only acquire semantics so in absence of the branch that bails out the
+lock, the spinlock could run before PageTail. If the branch is good
+enough guarantee for all archs it's good and cheap solution. Clearly
+this is not an x86 concern, which is always fine without anything when
+surrounded by locked ops like here.
+
+> Yes. But in this case I really think we should cleanup get/put first
+> and add the helper, like the patch I mentioned does.
+
+Ok, up to you, I'll check it.
+
+> Oh, I don't think this highly theoreitical fix should be backported
+> but I agree, lets fix the bug first.
+
+I think it should, but the risk free version of it, so either a few
+liner addition before compound_lock or the previous with smp_wmb()
+inside the ifdef (considering it only matters on x86 where smp_wmb is
+zero cost and the only operational change is actually the reordering
+of the set_page_refcounted not the smp_wmb irrelevant for x86).
