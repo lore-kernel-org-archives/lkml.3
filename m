@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342AbaAIIbj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 03:31:39 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:57747 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820AbaAIIbe (ORCPT
+	id S1755756AbaAIIcG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 03:32:06 -0500
+Received: from 6.mo3.mail-out.ovh.net ([188.165.43.173]:34049 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755398AbaAIIb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 03:31:34 -0500
-From: panchaxari <panchaxari.prasannamurthy@linaro.org>
-To: horms@verge.net.au
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        panchaxari.prasannamurthy@linaro.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Magnus Damm <damm@opensource.se>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH CFT] ARM:SHMOBILE: Enable AUTO_ZRELADDR by default
-Date: Thu,  9 Jan 2014 14:01:14 +0530
-Message-Id: <1389256274-6308-1-git-send-email-panchaxari.prasannamurthy@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 9 Jan 2014 03:31:56 -0500
+Message-ID: <52CE5E5A.6050209@overkiz.com>
+Date: Thu, 09 Jan 2014 09:31:22 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org
+Subject: Re: [RFC PATCH 6/9] mtd: nand: add sunxi NFC dt bindings doc
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-7-git-send-email-b.brezillon@overkiz.com> <201401082228.55807.arnd@arndb.de>
+In-Reply-To: <201401082228.55807.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 6808316737053554692
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables AUTO_ZRELADDR as default config to Renasas R-Mobile and
-SH-Mobile platforms.
+On 08/01/2014 22:28, Arnd Bergmann wrote:
+> On Wednesday 08 January 2014, Boris BREZILLON wrote:
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+>> @@ -0,0 +1,71 @@
+>> +Allwinner NAND Flash Controller (NFC)
+>> +
+>> +Required properties:
+>> +- compatible : "allwinner,sun4i-nfc".
+>> +- reg : shall contain registers location and length for data and reg.
+>> +- interrupts : shall define the NFC interrupt.
+>> +- #address-cells: shall be set to 1. Encode the nand CS.
+>> +- #size-cells : shall be set to 0.
+>> +- clocks : shall reference NFC clocks.
+>> +- clock-names : NFC internal clock names. Shall contain :
+>> +    * "ahb_clk" : AHB gating clock
+>> +    * "sclk" : NFC clock
+>> +
+> One small request: Can we try to avoid the "NFC" name here? I think it's
+> too overloaded and people may confuse it with near-field communication,
+> which I'm sure will be supported in sunxi based devices at some point.
+>
+> It doesn't hurt to also mention that the function block is called
+> nfc, but I think references to it are better named "nand", which is
+> less confusing.
 
-AUTO_ZRELADDR config enables auto calculation of the decompressed kernel image
-address. AUTO_ZRELADDR config is mutually exclusive to ZBOOT_ROM, and also
-assumes zImage to be loaded in the first 128MiB from start of memory.
+Sure, I'll remove references to the NFC acronym:
+  - change compatible string to "allwinner,sun4i-nand"
+  - avoid NFC references in the doc
+  - rename the driver into sunxi-nand.c (formerly sunxi_nfc.c)
 
-CFT::Call For Testing
+Do you see any other references to this acronym ?
 
-Requesting maintainers of R-Mobile and SH-Mobile platforms to evaluate the
-changes on the board and comment, as I dont have the board for testing, and
-also requesting an ACK.
 
-Signed-off-by: panchaxari <panchaxari.prasannamurthy@linaro.org>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: Simon Horman <horms@verge.net.au>
-Cc: Magnus Damm <damm@opensource.se>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-sh@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
-Below lkml link is a quoting by Russell which clears the concept of PHYS_VIRT
-and ZRELADDR
----------------------------------------------------
+Best Regards,
 
-https://lkml.org/lkml/2011/10/14/434
-
--------------------------------------------------
----
- arch/arm/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 8e668e2..077ef9d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -674,6 +674,7 @@ config ARCH_MSM
- config ARCH_SHMOBILE
- 	bool "Renesas SH-Mobile / R-Mobile"
- 	select ARM_PATCH_PHYS_VIRT
-+	select AUTO_ZRELADDR
- 	select CLKDEV_LOOKUP
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
--- 
-1.7.10.4
+Boris
+> 	Arnd
 
