@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaAIPCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:02:15 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60563 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753425AbaAIPCA (ORCPT
+	id S1753861AbaAIPEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:04:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50216 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaAIPEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:02:00 -0500
-Date: Thu, 9 Jan 2014 15:01:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Nicolin Chen <Guangyu.Chen@freescale.com>, shawn.guo@linaro.org,
-        kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, rob@landley.net, mturquette@linaro.org
-Subject: Re: [PATCH] ARM: imx6q: Add missing esai_ahb clock to current
-	clock tree
-Message-ID: <20140109150141.GD27432@n2100.arm.linux.org.uk>
-References: <1389236699-10387-1-git-send-email-Guangyu.Chen@freescale.com> <20140109075525.GO6750@pengutronix.de>
+	Thu, 9 Jan 2014 10:04:00 -0500
+Date: Thu, 9 Jan 2014 07:04:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: me@anmolsarma.in
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Staging: rtl8187se: ieee80211: ieee80211_softmac.c:
+ mark symbols as static
+Message-ID: <20140109150428.GA20411@kroah.com>
+References: <cover.1389263965.git.me@anmolsarma.in>
+ <9036792bea27cf00f564bbcb72f19de6b450f4a3.1389263965.git.me@anmolsarma.in>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109075525.GO6750@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <9036792bea27cf00f564bbcb72f19de6b450f4a3.1389263965.git.me@anmolsarma.in>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sascha, your messages have the Mail-Followup-To: header...
+On Thu, Jan 09, 2014 at 04:41:07PM +0530, me@anmolsarma.in wrote:
+> From: Anmol Sarma <me@anmolsarma.in>
+> 
+> Fixes the following sparse warnings:
+> 50:14: warning: symbol 'ieee80211_MFIE_rate_len' was not declared. Should it be
+> static?
+> 68:6: warning: symbol 'ieee80211_MFIE_Brate' was not declared. Should it be
+> static?
 
-Mail-Followup-To: Nicolin Chen <Guangyu.Chen@freescale.com>,                    
-        shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,    
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,     
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,      
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,                    
-        devicetree@vger.kernel.org, rob@landley.net, mturquette@linaro.org      
+Please don't line-wrap error messages like this, it makes it quite
+messy, don't you think?
 
-resulting in me (and others) getting mails marked as To: me where they're
-not supposed to be To: me in the first place.
-
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
