@@ -1,166 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115AbaAIUp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 15:45:56 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:29833
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753095AbaAIUpq (ORCPT
+	id S1757200AbaAIUwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 15:52:33 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60997 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754979AbaAIUwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 15:45:46 -0500
-X-Forefront-Antispam-Report: CIP:157.56.240.101;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0510HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z579ehz98dI9371Ic89bh154dI542I1432I4015Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzc2hz1de098h8275bh8275dh1de097hz2fh109h2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah224fh1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1fe8h1ff5h2216h22d0h2336h9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(10009001)(13464003)(54534003)(24454002)(164054003)(377454003)(51704005)(189002)(199002)(69226001)(81542001)(76796001)(87936001)(92566001)(87266001)(2656002)(81342001)(80976001)(81686001)(85306002)(81816001)(74876001)(74706001)(76786001)(1941001)(49866001)(47736001)(47976001)(4396001)(50986001)(54316002)(66066001)(33646001)(54356001)(65816001)(76482001)(51856001)(53806001)(63696002)(80022001)(46102001)(56776001)(79102001)(59766001)(77982001)(85852003)(83072002)(90146001)(56816005)(76576001)(19580405001)(83322001)(19580395003)(31966008)(74662001)(74366001)(74502001)(47446002)(74316001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB525;H:DM2PR05MB671.namprd05.prod.outlook.com;CLIP:66.129.239.12;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-From: Rajat Jain <rajatjain@juniper.net>
-To: Rajat Jain <rajatjain@juniper.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        Rajat Jain <rajatxjain@gmail.com>
-CC: Rajat Jain <rajatjain.linux@gmail.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, Guenter Roeck <groeck@juniper.net>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: RE: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Thread-Topic: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
- during removal
-Thread-Index: AQHO+2O+glESpPkjFkO6kKuv5WeLEZp4gVEKgAEwLtCAA07WEA==
-Date: Thu, 9 Jan 2014 20:45:34 +0000
-Message-ID: <bfe1b6a0b2494c71be43fea45f413575@DM2PR05MB671.namprd05.prod.outlook.com>
-References: <52B0AEAD.6050604@gmail.com> <20131218010207.GC15119@google.com>
- <CAA93t1qh2Wn2uPKUGvbqrOJxDfqAqTNFSqOryC36Wm=gnygUog@mail.gmail.com>
- <CAErSpo6A0=0Ph22vMZ1_eC1L7ndoi5S6162zRDYkMoPf53Fhcg@mail.gmail.com>
- <4b24688d857e432eb7ecf9095c95b742@DM2PR05MB671.namprd05.prod.outlook.com>
-In-Reply-To: <4b24688d857e432eb7ecf9095c95b742@DM2PR05MB671.namprd05.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.129.239.12]
-x-forefront-prvs: 008663486A
-Content-Type: text/plain; charset="utf-8"
+	Thu, 9 Jan 2014 15:52:23 -0500
+Message-ID: <52CF0C05.1080308@codeaurora.org>
+Date: Thu, 09 Jan 2014 12:52:21 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 4/6] devicetree: bindings: Document Krait L1/L2 EDAC
+References: <1388434457-4194-1-git-send-email-sboyd@codeaurora.org> <1388434457-4194-5-git-send-email-sboyd@codeaurora.org> <20140107105439.GC5906@e102568-lin.cambridge.arm.com> <20140107201239.GD14405@codeaurora.org> <20140108100538.GA2927@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140108100538.GA2927@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s09KjxJV004763
 
-Hi Bjorn,
+On 01/08/14 02:05, Lorenzo Pieralisi wrote:
+> On Tue, Jan 07, 2014 at 08:12:39PM +0000, Stephen Boyd wrote:
+>> On 01/07, Lorenzo Pieralisi wrote:
+>>
+>>> I have a problem with the cache level definition, and in
+>>> particular the numbering, ie what the level number represents. If we
+>>> mean the cache level seen through the CLIDR and co., it is hard to use
+>>> it for shared caches since the level seen by different CPUs can actually
+>>> be different, or put it differently the level number might not be unique for
+>>> a shared cache. I need to think about a proper way to sort this out.
+>>>
+>> Ok. I don't even use this property in my driver. All I really
+>> need is the phandle from cpus pointing to the L2 and the
+>> interrupts property in the L2 node.
+>>
+>> How do you want to proceed here? If your cache binding goes
+>> through I would just need to add the interrupts part. Or you
+>> could even add that part in the same patch, you could have my
+>> signed-off-by for that.
+> Ok, I will try to update the bindings with the interrupt part and copy
+> you in, even though the level definition worries me a bit, it is an
+> important property for power management and I need to find a proper
+> solution before bindings can get accepted (basically the problem is:
+> if different CPUs can see a cache at different levels as defined in the
+> CLIDR we cannot describe a cache with a single cache level or put it
+> differently, level can not represent the value in the CLIDR hence we
+> need to describe it differently).
 
-> -----Original Message-----
-> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
-> owner@vger.kernel.org] On Behalf Of Rajat Jain
-> Sent: Tuesday, January 07, 2014 10:21 AM
-> To: Bjorn Helgaas; Rajat Jain
-> Cc: Rajat Jain; Kenji Kaneshige; Alex Williamson; Yijing Wang; linux-
-> pci@vger.kernel.org; linux-kernel@vger.kernel.org; Yinghai Lu; Guenter
-> Roeck; Yinghai Lu
-> Subject: RE: [PATCH v3 4/8] pciehp: Don't disable the link permanently,
-> during removal
-> 
-> Hello Bjorn / Yinghai,
-> 
-> > -----Original Message-----
-> > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> > Sent: Monday, January 06, 2014 4:04 PM
-> > To: Rajat Jain
-> > Cc: Rajat Jain; Kenji Kaneshige; Alex Williamson; Yijing Wang; linux-
-> > pci@vger.kernel.org; linux-kernel@vger.kernel.org; Yinghai Lu; Guenter
-> > Roeck; Rajat Jain; Yinghai Lu
-> > Subject: Re: [PATCH v3 4/8] pciehp: Don't disable the link
-> > permanently, during removal
-> >
-> > On Sun, Jan 5, 2014 at 10:53 AM, Rajat Jain <rajatxjain@gmail.com>
-> > wrote:
-> > > Hello Bjorn,
-> > >
-> > > Just checking on the fate of this patch set...
-> > >
-> > > On Tue, Dec 17, 2013 at 5:02 PM, Bjorn Helgaas <bhelgaas@google.com>
-> > wrote:
-> > >> [+cc yinghai@kernel.org (seems to be Yinghai's preferred email]
-> > >>
-> > >> On Tue, Dec 17, 2013 at 12:06:05PM -0800, Rajat Jain wrote:
-> > >>> We need future link up events for hot-add, thus don't disable the
-> > >>> link permanently during device removal. Also, remove the static
-> > >>> functions that are now left unused.
-> > >>
-> > >> The changelog should mention that this reverts part of 2debd9289997
-> > ("PCI:
-> > >> pciehp: Disable/enable link during slot power off/on").
-> > >
-> > > Sure. Do you want me to submit another patch set (bumping up the
-> > > version) with this change log, or you'd want to add this change log
-> > > while merging?
-> > >
-> > >>
-> > >> Yinghai, can you tell us whether this is an issue on your systems?
-> > >
-> > > As Yinghai confirms further down this thread, his issue was
-> > > confirmed by Intel to be a bug in the repeater chip.
-> > > ----------------------------------
-> > > Yinghai writes:
-> > >> According to HW guys and Intel, that should be bug of repeater.
-> > >>
-> > > ---------------------------------
-> > >  I don't know about the details of his scenario, except that when
-> > > the adapter was disabled the repeater kept on flapping the link up &
-> > > down (and hence disabling the link solved the problem then). Yinghai
-> > > couldn't test, but I believe with this patch even if we disable
-> > > presence detect interrupt, the "adapter present / no present"
-> > > messages would (rightly) convert to "Link Up / Link Down" messages
-> > > (since the repeater keeps on flapping the link).
-> > >
-> > > Since it is a platform specific bug, I'm not sure what can be done
-> > > to remove those messages except may be reduce the verbosity? If
-> > > you'd like I could change all the INFO messages to DBG messages.
-> >
-> > Even if it's a defect in a particular piece of hardware, I don't want
-> > to regress on that hardware, even if the regression is just extra
-> > messages that we didn't see before.
-> >
-> > I think ideally we would add some sort of quirk for that hardware so
-> > it works just as well as it does today.  I think extra messages will
-> > lead to a bug reports from users.
-> 
-> Sure, I can do that. I think what the quirk would have to do is that for
-> that particular platform, don't enable the link-state based hotplug.
-> (Since link-state hotplug will not work if we disable the link
-> permanently as we do today on card removal).
-> 
-> But the question is how to determine that the quirk has to be applied? I
-> think the objective is to apply the quirk to the platforms that have a
-> "PCIe repeater". Since this does not depend on a PCI device / vendor ID,
-> and I think the PCIe repeater is probably not even visible to the pciehp
-> or the PCI subsystem, how do I determine that the quirk has to be
-> applied?
+Ok. I've dropped the cache part from this patch. I left the example as
+is minus the cache-level attribute.
 
-Any ideas on how do I identify the platforms that may have this problem? 
+Understanding how the cache-level value would be used might help. I
+wonder if the cache-level can just be a number that describes the
+largest value that the cache could be assigned. Then if you have
+different CPUs seeing different levels of cache they can traverse from
+their CPU node to the cache and count how many phandles they went through.
 
-Thanks,
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Rajat
-
-
-> 
-> If (hw_has_pcie_repeater)
-> 	Don't use link-state hotplug (and disable link permanently during
-> card removal) Else
-> 	Use link-state hotplug (and don't disable the link permanently)
-> 
-> 
-> Yinghai: Since I do not have that hardware, I will need some help in
-> testing the patch with the quirk. I was wondering if you'd still have
-> that hardware around and would be able to help me with testing?
-> 
-> Thanks,
-> 
-> Rajat
->  {.n +       +%  lzwm  b Îß≤  r  zX  \ )   w*jg        ›¢j/   z ﬁñ  2 ﬁô
-> & )ﬂ° a     G   h  j:+v   w Ÿ•
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
