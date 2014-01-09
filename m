@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648AbaAIBuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Jan 2014 20:50:24 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:36858 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAIBuU (ORCPT
+	id S1752263AbaAIBxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Jan 2014 20:53:01 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:62330 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaAIBw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Jan 2014 20:50:20 -0500
-Message-ID: <52CE005A.3070802@codeaurora.org>
-Date: Wed, 08 Jan 2014 17:50:18 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Wed, 8 Jan 2014 20:52:59 -0500
+Date: Thu, 9 Jan 2014 02:52:53 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: mingo@kernel.org, mingo@redhat.com, jacob.w.shin@gmail.com,
+        oleg@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, sherry.hurwitz@amd.com
+Subject: Re: [PATCH V6 0/4] perf/x86/amd: AMD Family 16h Data Breakpoint
+ Extensions
+Message-ID: <20140109015251.GA7398@localhost.localdomain>
+References: <1386764906-1681-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <52CDA054.4010700@amd.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH v2 0/9] CPU enable method based SMP/hotplug + MSM conversion
-References: <1387845593-10050-1-git-send-email-sboyd@codeaurora.org> <201401082237.36626.arnd@arndb.de>
-In-Reply-To: <201401082237.36626.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CDA054.4010700@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/14 13:37, Arnd Bergmann wrote:
-> On Tuesday 24 December 2013, Stephen Boyd wrote:
->> This is a rework of patches sent a months back by Rohit[1].
->> The goal of these patches is to add support for SMP and (basic)
->> hotplug on MSM based SoCs. To get there, we add support for a
->> generic way to hook in SMP/hotplug support code based on DT. To
->> show how it's used, we convert the MSM8660 SMP support code over
->> to the new method. After that we add support for the rest of the
->> upstream MSM SoCs (note these patches are piled high on top of
->> Rohit's patches to add 8074 support to MSM[2] and my follow ups[3,4],
->> but this should only matter to the MSM maintainers).
->>
->> This is one of the last items of code that still requires us to have
->> a mach directory and a machine descriptor. We should be able to move
->> the hotplug/smp code out of mach directories if this approach is
->> accepted.
-> The implementation looks ok to me, but I wonder whether on a global
-> scale we want to tie it more closely to the cpuidle implementations.
-> We already have a drivers/cpuidle framework, and while I admit
-> that I'm not familiar with the code in there, I would assume that
-> the smp operations and the cpuidle code usually go hand in hand.
+Hi Suravee,
 
-Sure. Right now the smp ops code is fairly well tied into the arch layer
-so it sounds like there is some future work when we move this stuff out
-of the mach directory.
+On Wed, Jan 08, 2014 at 01:00:36PM -0600, Suravee Suthikulanit wrote:
+> Ping.  Are there any other concerns regarding this patch?
+> 
+> Thank you,
+> 
+> Suravee
 
-Would arm-soc be able to pick these patches up for 3.14? I think
-everything is in place for these patches now that Mark has reviewed them.
+The patches look good. I'll apply the series and propose it to the perf maintainers.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Thanks!
