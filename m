@@ -1,153 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512AbaAIO60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 09:58:26 -0500
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:57368 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750702AbaAIO6V (ORCPT
+	id S1752807AbaAIPA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:00:29 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:64965 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaAIPAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:58:21 -0500
-Message-ID: <52CEB901.6030504@mellanox.com>
-Date: Thu, 9 Jan 2014 16:58:09 +0200
-From: Sagi Grimberg <sagig@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 9 Jan 2014 10:00:21 -0500
+Date: Thu, 9 Jan 2014 10:00:16 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>, kishon@ti.com,
+        b.zolnierkie@samsung.com, hdegoede@redhat.com, arnd@arndb.de,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Balaji T K <balajitk@ti.com>
+Subject: Re: [PATCH v4 2/3] ata: ahci_platform: Manage SATA PHY
+Message-ID: <20140109150016.GA18867@htj.dyndns.org>
+References: <1389264962-22858-1-git-send-email-rogerq@ti.com>
+ <1389264962-22858-3-git-send-email-rogerq@ti.com>
+ <52CE85E9.7040703@cogentembedded.com>
+ <52CE89F9.4040908@ti.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        oren Duer <oren@mellanox.com>
-Subject: Re: [PATCH 03/14] target/sbc: Add sbc_check_prot + update sbc_parse_cdb
- for DIF
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com> <1389212157-14540-4-git-send-email-nab@daterainc.com>
-In-Reply-To: <1389212157-14540-4-git-send-email-nab@daterainc.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.0.13.1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CE89F9.4040908@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
->
-> This patch adds sbc_check_prot() for performing various DIF
-> related CDB sanity checks, along with setting SCF_PROT once
-> sanity checks have passed.
->
-> Also, add calls in sbc_parse_cdb() for READ_[10,12,16] +
-> WRITE_[10,12,16] to perform DIF sanity checking.
->
-> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Hannes Reinecke <hare@suse.de>
-> Cc: Sagi Grimberg <sagig@mellanox.com>
-> Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> ---
->   drivers/target/target_core_sbc.c |   39 ++++++++++++++++++++++++++++++++++++++
->   1 file changed, 39 insertions(+)
->
-> diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-> index 52ae54e..600ffcb 100644
-> --- a/drivers/target/target_core_sbc.c
-> +++ b/drivers/target/target_core_sbc.c
-> @@ -563,6 +563,27 @@ sbc_compare_and_write(struct se_cmd *cmd)
->   	return TCM_NO_SENSE;
->   }
->   
-> +bool
-> +sbc_check_prot(struct se_device *dev, struct se_cmd *cmd, unsigned char *cdb)
-> +{
-> +	if (!dev->dev_attrib.pi_prot_type)
-> +		return true;
-> +
-> +	if (dev->dev_attrib.pi_prot_type == TARGET_DIF_TYPE2_PROT &&
-> +	   (cdb[1] & 0xe0))
-> +		return false;
-> +
-> +	if (!(cdb[1] & 0xe0)) {
-> +		pr_warn("Target: Unprotected READ/WRITE to DIF device\n");
-> +		return true;
-> +	}
-> +	if (!cmd->t_prot_sg || !cmd->t_prot_nents)
-> +		return true;
-> +
-> +	cmd->se_cmd_flags |= SCF_PROT;
+On Thu, Jan 09, 2014 at 05:07:29PM +0530, Roger Quadros wrote:
+> I know it is pointless functionally, but it is just my preference
+> aesthetically.
+> 
+> Is it much of an issue if left as is?
 
-Isn't this the place to fill the se_cmd DIF execution parameters? 
-prot_op, prot_type, guard_type, initial_reftag, apptag etc...
-Next, all parties interested in DIF execution should look in se_cmd 
-(backstore, transport).
+Yes.
 
-> +	return true;
-> +}
-> +
->   sense_reason_t
->   sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   {
-> @@ -581,6 +602,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   		cmd->execute_cmd = sbc_execute_rw;
->   		break;
->   	case READ_10:
-> +		if (!sbc_check_prot(dev, cmd, cdb))
-> +			return TCM_UNSUPPORTED_SCSI_OPCODE;
-> +
->   		sectors = transport_get_sectors_10(cdb);
->   		cmd->t_task_lba = transport_lba_32(cdb);
->   		cmd->se_cmd_flags |= SCF_SCSI_DATA_CDB;
-> @@ -588,6 +612,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   		cmd->execute_cmd = sbc_execute_rw;
->   		break;
->   	case READ_12:
-> +		if (!sbc_check_prot(dev, cmd, cdb))
-> +			return TCM_UNSUPPORTED_SCSI_OPCODE;
-> +
->   		sectors = transport_get_sectors_12(cdb);
->   		cmd->t_task_lba = transport_lba_32(cdb);
->   		cmd->se_cmd_flags |= SCF_SCSI_DATA_CDB;
-> @@ -595,6 +622,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   		cmd->execute_cmd = sbc_execute_rw;
->   		break;
->   	case READ_16:
-> +		if (!sbc_check_prot(dev, cmd, cdb))
-> +			return TCM_UNSUPPORTED_SCSI_OPCODE;
-> +
->   		sectors = transport_get_sectors_16(cdb);
->   		cmd->t_task_lba = transport_lba_64(cdb);
->   		cmd->se_cmd_flags |= SCF_SCSI_DATA_CDB;
-> @@ -610,6 +640,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   		break;
->   	case WRITE_10:
->   	case WRITE_VERIFY:
-> +		if (!sbc_check_prot(dev, cmd, cdb))
-> +			return TCM_UNSUPPORTED_SCSI_OPCODE;
-> +
->   		sectors = transport_get_sectors_10(cdb);
->   		cmd->t_task_lba = transport_lba_32(cdb);
->   		if (cdb[1] & 0x8)
-> @@ -619,6 +652,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   		cmd->execute_cmd = sbc_execute_rw;
->   		break;
->   	case WRITE_12:
-> +		if (!sbc_check_prot(dev, cmd, cdb))
-> +			return TCM_UNSUPPORTED_SCSI_OPCODE;
-> +
->   		sectors = transport_get_sectors_12(cdb);
->   		cmd->t_task_lba = transport_lba_32(cdb);
->   		if (cdb[1] & 0x8)
-> @@ -628,6 +664,9 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
->   		cmd->execute_cmd = sbc_execute_rw;
->   		break;
->   	case WRITE_16:
-> +		if (!sbc_check_prot(dev, cmd, cdb))
-> +			return TCM_UNSUPPORTED_SCSI_OPCODE;
-> +
->   		sectors = transport_get_sectors_16(cdb);
->   		cmd->t_task_lba = transport_lba_64(cdb);
->   		if (cdb[1] & 0x8)
-
+-- 
+tejun
