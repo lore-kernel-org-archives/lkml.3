@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaAIHFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 02:05:13 -0500
+	id S1755140AbaAIHFW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 02:05:22 -0500
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54034 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaAIHEd (ORCPT
+	with ESMTP id S1751594AbaAIHEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 02:04:33 -0500
-X-AuditID: 9c930197-b7b37ae000002e5a-cc-52ce49fef305
+	Thu, 9 Jan 2014 02:04:32 -0500
+X-AuditID: 9c930197-b7b37ae000002e5a-c6-52ce49fed4b0
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
@@ -20,9 +20,9 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Tang Chen <tangchen@cn.fujitsu.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 5/7] mm/page_alloc: separate interface to set/get migratetype of freepage
-Date: Thu,  9 Jan 2014 16:04:45 +0900
-Message-Id: <1389251087-10224-6-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 3/7] mm/page_alloc: move set_freepage_migratetype() to better place
+Date: Thu,  9 Jan 2014 16:04:43 +0900
+Message-Id: <1389251087-10224-4-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1389251087-10224-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -31,138 +31,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use (set/get)_freepage_migratetype in two use cases.
-One is to know the buddy list where this page will be linked and
-the other is to know the buddy list where this page is linked now.
+set_freepage_migratetype() inform us of the buddy freelist where
+the page should be linked when it goes to buddy freelist.
 
-But, we should deal these two use cases differently, because information
-isn't sufficient for the second use case and properly setting this
-information needs some overhead. Whenever the page is merged or split
-in buddy, this information isn't properly re-assigned and it may not
-have enough information for the second use case.
+Now, it has done in rmqueue_bulk() so that we should call
+get_pageblock_migratetype() to know it's migratetype exactly if
+CONFIG_CMA is enabled. That function has some overhead so that
+removing it is preferable.
 
-This patch just separates interface, so there is no functional change.
-Following patch will do further steps about this issue.
+To remove it, we move set_freepage_migratetype() to __rmqueue_fallback()
+and __rmqueue_smallest(). In those functions, we can know migratetype
+easily so that we don't need to call get_pageblock_migratetype().
+
+Removing is_migrate_isolate() is safe since what we want to ensure is
+that the page from cma will not go to other migratetype freelist.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 3552717..2733e0b 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -257,14 +257,31 @@ struct inode;
- #define page_private(page)		((page)->private)
- #define set_page_private(page, v)	((page)->private = (v))
- 
--/* It's valid only if the page is free path or free_list */
--static inline void set_freepage_migratetype(struct page *page, int migratetype)
-+/*
-+ * It's valid only if the page is on buddy. It represents
-+ * which freelist the page is linked.
-+ */
-+static inline void set_buddy_migratetype(struct page *page, int migratetype)
-+{
-+	page->index = migratetype;
-+}
-+
-+static inline int get_buddy_migratetype(struct page *page)
-+{
-+	return page->index;
-+}
-+
-+/*
-+ * It's valid only if the page is on pcp list. It represents
-+ * which freelist the page should go on buddy.
-+ */
-+static inline void set_pcp_migratetype(struct page *page, int migratetype)
- {
- 	page->index = migratetype;
- }
- 
--/* It's valid only if the page is free path or free_list */
--static inline int get_freepage_migratetype(struct page *page)
-+/* It's valid only if the page is on pcp list */
-+static inline int get_pcp_migratetype(struct page *page)
- {
- 	return page->index;
- }
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4913829..c9e6622 100644
+index 1489c301..4913829 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -681,7 +681,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			page = list_entry(list->prev, struct page, lru);
- 			/* must delete as __free_one_page list manipulates */
- 			list_del(&page->lru);
--			mt = get_freepage_migratetype(page);
-+			mt = get_pcp_migratetype(page);
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, zone, 0, mt);
- 			trace_mm_page_pcpu_drain(page, 0, mt);
-@@ -745,7 +745,7 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	local_irq_save(flags);
- 	__count_vm_events(PGFREE, 1 << order);
- 	migratetype = get_pageblock_migratetype(page);
--	set_freepage_migratetype(page, migratetype);
-+	set_buddy_migratetype(page, migratetype);
- 	free_one_page(page_zone(page), page, order, migratetype);
- 	local_irq_restore(flags);
- }
-@@ -903,7 +903,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+@@ -903,6 +903,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
  		rmv_page_order(page);
  		area->nr_free--;
  		expand(zone, page, order, current_order, area, migratetype);
--		set_freepage_migratetype(page, migratetype);
-+		set_pcp_migratetype(page, migratetype);
++		set_freepage_migratetype(page, migratetype);
  		return page;
  	}
  
-@@ -971,7 +971,7 @@ int move_freepages(struct zone *zone,
- 		order = page_order(page);
- 		list_move(&page->lru,
- 			  &zone->free_area[order].free_list[migratetype]);
--		set_freepage_migratetype(page, migratetype);
-+		set_buddy_migratetype(page, migratetype);
- 		page += 1 << order;
- 		pages_moved += 1 << order;
- 	}
-@@ -1094,12 +1094,11 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+@@ -1093,8 +1094,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
  
  			/* CMA pages cannot be stolen */
  			if (is_migrate_cma(migratetype)) {
--				set_freepage_migratetype(page, migratetype);
-+				set_pcp_migratetype(page, migratetype);
++				set_freepage_migratetype(page, migratetype);
  				__mod_zone_page_state(zone,
  					NR_FREE_CMA_PAGES, -(1 << order));
- 			} else {
--				set_freepage_migratetype(page,
--							start_migratetype);
-+				set_pcp_migratetype(page, start_migratetype);
++			} else {
++				set_freepage_migratetype(page,
++							start_migratetype);
  			}
  
  			/* Remove the page from the freelists */
-@@ -1346,7 +1345,7 @@ void free_hot_cold_page(struct page *page, int cold)
- 		return;
+@@ -1153,7 +1158,7 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+ 			unsigned long count, struct list_head *list,
+ 			int migratetype, int cold)
+ {
+-	int mt = migratetype, i;
++	int i;
  
- 	migratetype = get_pageblock_migratetype(page);
--	set_freepage_migratetype(page, migratetype);
-+	set_pcp_migratetype(page, migratetype);
- 	local_irq_save(flags);
- 	__count_vm_event(PGFREE);
- 
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index 534fb3a..c341413 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -190,7 +190,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
- 			 * is MIGRATE_ISOLATE. Catch it and move the page into
- 			 * MIGRATE_ISOLATE list.
- 			 */
--			if (get_freepage_migratetype(page) != MIGRATE_ISOLATE) {
-+			if (get_buddy_migratetype(page) != MIGRATE_ISOLATE) {
- 				struct page *end_page;
- 
- 				end_page = page + (1 << page_order(page)) - 1;
+ 	spin_lock(&zone->lock);
+ 	for (i = 0; i < count; ++i) {
+@@ -1174,12 +1179,6 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+ 			list_add(&page->lru, list);
+ 		else
+ 			list_add_tail(&page->lru, list);
+-		if (IS_ENABLED(CONFIG_CMA)) {
+-			mt = get_pageblock_migratetype(page);
+-			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
+-				mt = migratetype;
+-		}
+-		set_freepage_migratetype(page, mt);
+ 		list = &page->lru;
+ 	}
+ 	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
 -- 
 1.7.9.5
 
