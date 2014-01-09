@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152AbaAIP5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 10:57:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7792 "EHLO mx1.redhat.com"
+	id S1752382AbaAIP6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 10:58:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:48239 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142AbaAIP5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 10:57:22 -0500
-Message-ID: <1389283030.15209.56.camel@localhost>
-Subject: Re: [PATCH] SELinux: Fix possible NULL pointer dereference in
- selinux_inode_permission()
-From: Eric Paris <eparis@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        stable <stable@vger.kernel.org>
-Date: Thu, 09 Jan 2014 10:57:10 -0500
-In-Reply-To: <20140109105114.5c409fef@gandalf.local.home>
-References: <20140109101932.0508dec7@gandalf.local.home>
-	 <CACLa4pv+EUGHO+MKj8ckhmi8YKiTNVL9pSM+DDsjg+0jbjOCcA@mail.gmail.com>
-	 <20140109105114.5c409fef@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751142AbaAIP6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 10:58:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,631,1384329600"; 
+   d="scan'208";a="464176571"
+Date: Thu, 9 Jan 2014 18:05:05 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Cc: linux-spi@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: Check conflicting CS based on spi->chip_select
+ instead of device name
+Message-ID: <20140109160505.GC2494@intel.com>
+References: <1389273835-8615-1-git-send-email-mika.westerberg@linux.intel.com>
+ <52CEAB4A.605@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CEAB4A.605@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-09 at 10:51 -0500, Steven Rostedt wrote:
-> On Thu, 9 Jan 2014 10:31:55 -0500
-> Eric Paris <eparis@parisplace.org> wrote:
-> 
-> > Didn't Al find this/something very similar.  I really hate this
-> 
-> I'm not involved with the vfs, so I'm unaware of other solutions
-> presented. I just hit this now and solving bugs is where I get a chance
-> to learn about other aspects of the kernel. ;-)
-> 
-> > solution.  Why should every LSM try to understand the intimate
-> > lifetime rules of the parent subsystems?  The real problem is that
-> > inode_free_security() is being called while the inode is still in use.
-> >  While I agree with the assessment, I disagree with the solution.  Let
-> > me try to find where Al and Christoph talked about this....
-> > 
-> 
-> The other obvious solution (but not as trivial to implement) is to call
-> the security_inode_free() and friends (probably __destroy_inode()
-> itself) after a synchronize_rcu().
-> 
-> Perhaps something like this?
+On Thu, Jan 09, 2014 at 03:59:38PM +0200, Jarkko Nikula wrote:
+> On 01/09/2014 03:23 PM, Mika Westerberg wrote:
+> >Commit e13ac47bec20 (spi: Use stable dev_name for ACPI enumerated SPI
+> >slaves) changed the SPI device naming to be based on ACPI device name
+> >instead of carrying bus number and chip select for devices enumerated
+> >from ACPI namespace.
+> >
+> >In case of a buggy BIOS that lists multiple SPI devices sharing the same
+> >chip select (even though they should use different) the current code fails
+> >to detect that and allows the devices to be added to the bus.
+> >
+> >Fix this by walking through the bus and comparing spi->chip_select instead
+> >of device name. This should work regardless what the device name will be in
+> >future.
+> >
+> >Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+> >Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >---
+> >  drivers/spi/spi.c | 18 +++++++++++++-----
+> >  1 file changed, 13 insertions(+), 5 deletions(-)
+> >
+> >diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> >index 349ebba4b199..13dcc360bde6 100644
+> >--- a/drivers/spi/spi.c
+> >+++ b/drivers/spi/spi.c
+> >
+> I guess this is a valid fix in that sense that before my patch those
+> ill-defined SPI devices were not added. Is this something which
+> should go to 3.13?
 
-I can't for the life of me find that conversation!  Maybe I'm just
-making it all up...  Usually I forget conversations, not remember ones
-that didn't happen...
+This is pretty rare case so I wouldn't expect any current HSW machines for
+example to have such bugs. I'm not even sure if the SPI bus on LPSS is used
+anywhere outside Intel currently.
 
-Assuming the VFS guys say that delaying __destroy_inode() is safe like
-that, I like it better.  It also means that this is fixed for all LSMs,
-not just SELinux...
+However, we happen to have few development machines here where this bug
+exists.
 
--Eric
+Up to Mark to decide whether this is urgent enough to be included in 3.13.
 
-> 
-> -- Steve
-> 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 4bcdad3..a8f3b88 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -252,16 +252,17 @@ EXPORT_SYMBOL(__destroy_inode);
->  static void i_callback(struct rcu_head *head)
->  {
->  	struct inode *inode = container_of(head, struct inode, i_rcu);
-> +	__destroy_inode(inode);
->  	kmem_cache_free(inode_cachep, inode);
->  }
->  
->  static void destroy_inode(struct inode *inode)
->  {
->  	BUG_ON(!list_empty(&inode->i_lru));
-> -	__destroy_inode(inode);
-> -	if (inode->i_sb->s_op->destroy_inode)
-> +	if (inode->i_sb->s_op->destroy_inode) {
-> +		__destroy_inode(inode);
->  		inode->i_sb->s_op->destroy_inode(inode);
-> -	else
-> +	} else
->  		call_rcu(&inode->i_rcu, i_callback);
->  }
->  
+> Acked-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-
+Thanks.
