@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaAIUIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 15:08:38 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60733 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135AbaAIUI3 (ORCPT
+	id S1756924AbaAIUJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 15:09:52 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39806 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729AbaAIUJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 15:08:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140109184711.GB2309@amt.cnet>
-References: <1388654051-5968-1-git-send-email-chen.fan.fnst@cn.fujitsu.com>
-	<20140108211009.GD20624@amt.cnet>
-	<CAHqbYQt0ERa4kgK97D0NWZnZdF9TtdskaH0as7fZyO7N=5AzPw@mail.gmail.com>
-	<20140108232527.GA17874@amt.cnet>
-	<CAHqbYQu0rYfviVMJhgeEnBKYri5OVMA7XEp2ZCVGpvsiTYRJGg@mail.gmail.com>
-	<CAHqbYQs0f5bH1Sg1emeFfUzJ0SEQBoVUx3jXhH=wa7VJdeccMQ@mail.gmail.com>
-	<20140109184711.GB2309@amt.cnet>
-Date: Thu, 9 Jan 2014 15:08:25 -0500
-Message-ID: <CAHqbYQtUtLQ38zbycjhSz=WCt7x_panWHXWz5b8=ZwYnDFTXqw@mail.gmail.com>
-Subject: Re: [PATCH] kvm: x86: Fix debug typo error in lapic
-From: Hu Yaohui <loki2441@gmail.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm <kvm@vger.kernel.org>,
+	Thu, 9 Jan 2014 15:09:47 -0500
+Date: Thu, 9 Jan 2014 23:09:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chen Fan <chen.fan.fnst@cn.fujitsu.com>, gleb@redhat.com,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/1] Drivers: hv: Implement the file copy service
+Message-ID: <20140109200921.GT30234@mwanda>
+References: <1389224915-8737-1-git-send-email-kys@microsoft.com>
+ <20140109073949.GR30234@mwanda>
+ <540ecdf5cf6b47d79583f4f97788e3f0@BY2PR03MB299.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540ecdf5cf6b47d79583f4f97788e3f0@BY2PR03MB299.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
-Thanks for your replying!
-I hope you have a good day! I am sorry that it's not that obvious to
-me after I checked that function.
-If the remote vcpu is not in the same pcpu as the sender which calls
-kvm_vpcu_kick.
-Before the remote vcpu received the Host-IPI, it could be in guest
-mode which could possibly access the stale tlb entry that have been
-modifed by the sender.
+We've had this discussion before where you urge me to trust the host...
 
-For smp_call_function_wait, the wait parameter will only let the
-sender side wait until the function has been executed on all the
-target cpus, then return.
-For TLB Flush IPI, the sender has already invalidate one tlb entry,
-the received side should get the IPI ASAP to invalidate the specified
-tlb before it's accessed, or there should have some mechanisms to
-enusre that even the stale tlb entry is accessed, it's still ok. I am
-not sure what's the situation here after I reviewed all the source
-codes.
+ Problem: This code is racy.
+Solution: The host will only send one message at a time.
 
-Thanks for your time!
+Now I have to audit the user space code on the host and I don't feel
+like doing that so you win.
 
-Best Wishes,
-Yaohui Hu
+I wish we had a better way to do IPC.  If kdbus were ready, that might
+have worked for this, and it's a better solution because both sender and
+reciever code will be written in a less trusting way.
 
+regards,
+dan carpenter
 
-On Thu, Jan 9, 2014 at 1:47 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> On Thu, Jan 09, 2014 at 11:28:40AM -0500, Hu Yaohui wrote:
->> Hi Macelo,
->> I am sorry to bother you again. In your first possibility,
->> kvm_vcpu_kick sends an host-IPI to the remote vcpu,
->> and if that vcpu is in guest mode, a VM-exit will be triggered due to
->> the host-IPI. My question is if the vcpu has
->> accessed the stale tlb entry before the host-IPI arrives, what will
->> happen?  Thanks for your time!
->>
->> Best Wishes,
->> Yaohui Hu
->
-> Yaohui Hu, the reply from a few seconds ago should clarify that (wait
-> parameter).
->
