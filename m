@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769AbaAJPsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:48:14 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:61838 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757724AbaAJPsJ (ORCPT
+	id S1757822AbaAJPtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:49:49 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:51716 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaAJPtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:48:09 -0500
-Message-ID: <52D01639.9000205@gmail.com>
-Date: Fri, 10 Jan 2014 23:48:09 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 10 Jan 2014 10:49:46 -0500
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2] arch: use ASM_NL instead of ';' for assembler new
- line character in the macro
-References: <526E3CE2.2070405@asianux.com> <526E6A92.6090301@synopsys.com> <526F09B8.9030202@asianux.com> <526F11C0.1030809@asianux.com> <526F149A.3000306@asianux.com> <52733FEC.4010807@synopsys.com> <528DD92E.9070408@synopsys.com> <52C6AF2B.8050104@suse.cz> <C2D7FE5348E1B147BCA15975FBA23075175CC4@IN01WEMBXA.internal.synopsys.com> <52CA76D3.2010102@suse.cz> <52CE4496.5030401@synopsys.com>
-In-Reply-To: <52CE4496.5030401@synopsys.com>
+In-Reply-To: <1387815579-15677-4-git-send-email-taras.kondratiuk@linaro.org>
+References: <1387815579-15677-1-git-send-email-taras.kondratiuk@linaro.org>
+	<1387815579-15677-4-git-send-email-taras.kondratiuk@linaro.org>
+Date: Fri, 10 Jan 2014 17:49:44 +0200
+Message-ID: <CAArO44uuHoTjb9TJAXJLmp88GeY+kEGp+nom8LMt8-KoF0isYQ@mail.gmail.com>
+Subject: Re: [PATCH 3/5] ARM: kprobes-test: use <asm/opcodes.h> for ARM
+ instruction building
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Jon Medhurst <tixy@linaro.org>, Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: Patch Tracking <patches@linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Victor Kamensky <victor.kamensky@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 02:41 PM, Vineet Gupta wrote:
-> Forwarding to Chen's email address:
-> 
+On 23 December 2013 18:19, Taras Kondratiuk <taras.kondratiuk@linaro.org> wrote:
+> From: Ben Dooks <ben.dooks@codethink.co.uk>
+>
+> The kprobes test will build certain instructions incorrectly if building
+> big endian as .word output gets endian-swapped by the linker. Change to
+> using <asm/opcodes.h> and __inst_arm() to produce instructions.
+>
+> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+> [taras.kondratiuk@linaro.org: fixed a few missed instructions]
+> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+> ---
+>  arch/arm/kernel/kprobes-test-arm.c |  595 ++++++++++++++++++------------------
+>  1 file changed, 298 insertions(+), 297 deletions(-)
+>
+> diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
+> index 8393129..56be041 100644
+> --- a/arch/arm/kernel/kprobes-test-arm.c
+> +++ b/arch/arm/kernel/kprobes-test-arm.c
 
-Oh, thank you for your forwarding, sorry for I really did not notice
-about it.
+[snip]
 
-> On Monday 06 January 2014 02:56 PM, Michal Marek wrote:
-...
->> Oops :). I wanted to ask if this is the final patch that should be
->> merged, or if there are more known instances of .S code that needs
->> s/;/ASM_NL/. I did not find any suspects outside arch/ by grepping. If
->> this is the final patch, Chen, could you please resubmit it? I do not
->> have the original copy.
->>
+> @@ -1180,43 +1181,43 @@ void kprobe_arm_test_cases(void)
+>                                                                                 \
+>         TEST_COPROCESSOR( "stc"two"     0, cr0, [r15, #4]")                     \
+>         TEST_COPROCESSOR( "stc"two"     0, cr0, [r15, #-4]")                    \
+> -       TEST_UNSUPPORTED(".word 0x"cc"daf0001   @ stc"two"      0, cr0, [r15, #4]!")    \
+> -       TEST_UNSUPPORTED(".word 0x"cc"d2f0001   @ stc"two"      0, cr0, [r15, #-4]!")   \
+> -       TEST_UNSUPPORTED(".word 0x"cc"caf0001   @ stc"two"      0, cr0, [r15], #4")     \
+> -       TEST_UNSUPPORTED(".word 0x"cc"c2f0001   @ stc"two"      0, cr0, [r15], #-4")    \
+> +       TEST_UNSUPPORTED(__inst_arm(0x##ccdaf0001) "    @ stc"two"      0, cr0, [r15, #4]!")    \
+> +       TEST_UNSUPPORTED(__inst_arm(0x##ccd2f0001) "    @ stc"two"      0, cr0, [r15, #-4]!")   \
+> +       TEST_UNSUPPORTED(__inst_arm(0x##cccaf0001) "    @ stc"two"      0, cr0, [r15], #4")     \
+> +       TEST_UNSUPPORTED(__inst_arm(0x##ccc2f0001) "    @ stc"two"      0, cr0, [r15], #-4")    \
 
-OK, thank, I will/should send it again within this week end (before
-2014-01-12 night).
+Oops. Should be something like __inst_arm(0x##cc##c2f0001).
+My compiler truncated it to 32 bits, so these tests passed anyway.
+I'll repost a fixed series.
 
-And I will/should use my gmail address instead of asianux address as
-signed-of-by. (if still need the original one, please let me know,
-thanks).
-
-
-BTW:
-
-I am sorry for replying late, during these days, I changed job, move
-house for it, and familiar with related environments (about android
-kernel and user mode programs).
-
-But I will/should still need keep 1-3 patches/month for upstream kernel
-(and this year, I will/should also need make patches for qemu/kvm/xen,
-and toolchain).
-
-
-Thanks.
 -- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Regards,
+Taras Kondratiuk
