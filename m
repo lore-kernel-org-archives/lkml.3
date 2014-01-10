@@ -1,135 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849AbaAJBAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 20:00:20 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:35546 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266AbaAJBAS (ORCPT
+	id S932182AbaAJBCD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 20:02:03 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:33463 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755859AbaAJBB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 20:00:18 -0500
+	Thu, 9 Jan 2014 20:01:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <1389286145-15375-3-git-send-email-vladimir.barinov@cogentembedded.com>
-References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com>
-	<1389286145-15375-3-git-send-email-vladimir.barinov@cogentembedded.com>
-Date: Fri, 10 Jan 2014 10:00:17 +0900
-X-Google-Sender-Auth: vXf5_nn-mpalJ7npD5qxMttocQs
-Message-ID: <CAH9JG2XC0mhXMPJc7DzJCE9B+CZnHhczCAQbMWd4QRkXeD2kfg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] dt: Document ModelGauge gauge bindings
-From: Kyungmin Park <kmpark@infradead.org>
-To: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
-Cc: anton@enomsg.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mk7.kang@samsung.com,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+In-Reply-To: <20140109195527.2a86c7b7@tlielax.poochiereds.net>
+References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
+ <1389277187-18211-15-git-send-email-jlayton@redhat.com> <52CF0690.5030006@amacapital.net>
+ <20140109195527.2a86c7b7@tlielax.poochiereds.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 9 Jan 2014 17:01:38 -0800
+Message-ID: <CALCETrWjYoHLvuocWy9SRR=Kowu9YJjf4_dk4xzagZEYFhfXzA@mail.gmail.com>
+Subject: Re: [PATCH v5 14/14] locks: add new fcntl cmd values for handling
+ file private locks
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 1:49 AM, Vladimir Barinov
-<vladimir.barinov@cogentembedded.com> wrote:
-> These bindings can be used to register Maxim ModelGauge ICs fuel gauge
-> (MAX17040/41/43/44/48/49/58/59)
+On Thu, Jan 9, 2014 at 4:55 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Thu, 09 Jan 2014 12:29:04 -0800
+> Andy Lutomirski <luto@amacapital.net> wrote:
 >
-> Signed-off-by: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+>> On 01/09/2014 06:19 AM, Jeff Layton wrote:
+>> > Due to some unfortunate history, POSIX locks have very strange and
+>> > unhelpful semantics. The thing that usually catches people by surprise
+>> > is that they are dropped whenever the process closes any file descriptor
+>> > associated with the inode.
+>> >
+>>
+>> [...]
+>>
+>> > +#define F_GETLKP   36
+>> > +#define F_SETLKP   37
+>> > +#define F_SETLKPW  38
+>> > +
+>> > +#ifndef CONFIG_64BIT
+>> > +#ifndef F_GETLK64
+>> > +#define F_GETLKP64 39
+>> > +#define F_SETLKP64 40
+>> > +#define F_SETLKPW64        41
+>> > +#endif
+>> > +#endif
+>> > +
+>>
+>> Since there are no existing callers of these fcntls, can you get rid of
+>> the non-64-bit variants?  The implementation might be a bit more of
+>> departure from current code, but it should make everything a lot cleaner
+>> and make it easier (aka automatic) for new architectures to support this
+>> feature.
+>>
 >
-> ---
->  Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt |   82 ++++++++++
->  1 file changed, 82 insertions(+)
+> That sounds reasonable, but I'll admit I had some trouble slogging
+> through the morass of fcntl/fcntl64 syscall handling code. I mostly did
+> the cargo-cult thing on this patch to get something that worked.
 >
-> Index: battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt
-> ===================================================================
-> --- /dev/null   1970-01-01 00:00:00.000000000 +0000
-> +++ battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt   2014-01-09 15:09:38.035138887 +0400
-> @@ -0,0 +1,82 @@
-> +modelgauge_battery
-> +~~~~~~~~~~~~~~~~~~
-> +
-> +Required properties:
-> + - compatible          : should contain one of the following:
-> +                         - "maxim,max17040" for MAX17040
-> +                         - "maxim,max17041" for MAX17041
-> +                         - "maxim,max17043" for MAX17043
-> +                         - "maxim,max17044" for MAX17044
-> +                         - "maxim,max17048" for MAX17048
-> +                         - "maxim,max17049" for MAX17049
-> +                         - "maxim,max17058" for MAX17058
-> +                         - "maxim,max17059" for MAX17059
-> +
-> +Optional properties:
-> + - maxim,empty_alert_threshold : Capacity threshold where an interrupt is
-> +                                 generated on the ALRT pin;
-> +
-> + - soc_change_alert            : /* alert for 1% soc change */
-> + - hibernate_threshold         : Hibernate threshold (crate), where IC
-> +                                 enters hibernate mode
-> + - active_threshold            : Active threshold (mV), where IC exits
-> +                                 hibernate mode
-> + - undervoltage                        : Voltage (mV), when IC alerts while battery
-> +                                 voltage less then undervoltage
-> + - overvoltage                 : Voltage (mV), when IC alerts while battery
-> +                                 voltage greater then overvoltage
-> + - maxim,resetvoltage          : Voltage threshold (mV) below which the IC
-> +                                 resets itself. Used to detect battery removal
-> +                                 and reinsertion;
-> + - maxim,empty_adjustment      : Capacity charge empty design value;
-> + - maxim,full_adjustment       : Capacity charge full design value;
-> + - maxim,rcomp0                        : ModelGauge RCOMP parameter, used for
-> +                                 temperature compensation;
-> + - maxim,temp_co_up            : ModelGauge TempCoUp parameter, used for
-> +                                 temperature compensation;
-> + - maxim,temp_co_down          : ModelGauge TempCoDown parameter, used for
-> +                                 temperature compensation;
-> + - maxim,ocvtest               : ModelGauge OCVTest parameter, used for
-> +                                 verification of Custom Model calibration data
-> +                                 loaded into IC RAM;
-> + - maxim,soc_check_a           : ModelGauge SOCCheckA parameter, used for
-> +                                 verification of Custom Model calibration data
-> +                                 loaded into IC RAM;
-> + - maxim,soc_check_b           : ModelGauge SOCCheckB parameter, used for
-> +                                 verification of Custom Model calibration data
-> +                                 loaded into IC RAM;
-> + - maxim,bits                  : ModelGauge Bits parameter, used as
-> +                                 scaling parameter in Custom Model algorithm;
-> + - maxim,model_data            : ModelGauge ModelData data,
-> +                                 Custom Model calibration data.
-Dose it open to vendor? we're using this chip. we don't need to setup
-it at all. most of property except "rcomp" doesn't used.
+> So, to make sure I understand...
+>
+> You're basically suggesting that we just require that 32-bit userland
+> always use fcntl64() to access these new cmd values?
 
-Thank you,
-Kyungmin Park
-> +
-> +Example:
-> +
-> +modelgauge@36 {
-> +       compatible = "maxim,max17058";
-> +       reg = <0x36>;
-> +       interrupt-parent = <&msmgpio>;
-> +       interrupts = <107 0x2>;
-> +
-> +       maxim,empty_alert_threshold = /bits/ 8 <15>;
-> +       maxim,resetvoltage = /bits/ 16 <0>;
-> +       maxim,empty_adjustment = /bits/ 8 <0>;
-> +       maxim,full_adjustment = /bits/ 8 <100>;
-> +       maxim,rcomp0 = /bits/ 8 <175>;
-> +       maxim,temp_co_up = <(-1100)>;
-> +       maxim,temp_co_down = <(-4000)>;
-> +       maxim,ocvtest = /bits/ 16 <56144>;
-> +       maxim,soc_check_a = /bits/ 8 <241>;
-> +       maxim,soc_check_b = /bits/ 8 <243>;
-> +       maxim,bits = /bits/ 8 <19>;
-> +
-> +       maxim,model_data = /bits/ 8 <
-> +               0x9B 0x70 0xAB 0x30 0xB5 0xA0 0xB9 0xD0
-> +               0xBB 0xA0 0xBC 0x00 0xBC 0xB0 0xBD 0x00
-> +               0xBD 0x60 0xBE 0x40 0xBF 0x40 0xC1 0xF0
-> +               0xC5 0x60 0xC8 0xA0 0xCD 0x00 0xD1 0x50
-> +               0x00 0xE0 0x01 0x80 0x18 0x60 0x1C 0x20
-> +               0x54 0x00 0x6A 0xC0 0x79 0x20 0x65 0xC0
-> +               0x0B 0xE0 0x2A 0xC0 0x1D 0x00 0x17 0xE0
-> +               0x15 0xE0 0x11 0xE0 0x11 0x00 0x11 0x00>;
-> +};
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Exactly.
+
+It's general Linux policy these days to avoid introducing new
+interfaces that need compat support.  (The OABI thing is probably
+unavoidable here, but at least the compat mess could be restricted to
+ARM.)
+
+You may be able to do pretty well by undoing the compat changes and
+leaving everything else alone.  I suspect that everything will just
+work.
+
+>
+> I'll try to do that, but I'll probably need someone to carefully review
+> what I come up with (hint, hint).
+
+I'll try.  I'm not an expert on this particular morass :)
+
+--Andy
