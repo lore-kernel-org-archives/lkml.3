@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbaAJHAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:00:24 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34804 "EHLO
+	id S1754665AbaAJHFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:05:52 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34868 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAJHAW (ORCPT
+	with ESMTP id S1751524AbaAJHAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:00:22 -0500
+	Fri, 10 Jan 2014 02:00:23 -0500
 From: Chen-Yu Tsai <wens@csie.org>
 To: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
         Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
+        Maxime Ripard <maxime.ripard@free-electrons.com>
 Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
         linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
         Emilio Lopez <emilio@elopez.com.ar>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v2 01/16] reset: add non CONFIG_RESET_CONTROLLER routines
-Date: Fri, 10 Jan 2014 15:00:02 +0800
-Message-Id: <1389337217-29032-2-git-send-email-wens@csie.org>
+Subject: [PATCH v2 08/16] net: stmmac: sunxi platform extensions for GMAC in Allwinner A20 SoC's
+Date: Fri, 10 Jan 2014 15:00:09 +0800
+Message-Id: <1389337217-29032-9-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1389337217-29032-1-git-send-email-wens@csie.org>
 References: <1389337217-29032-1-git-send-email-wens@csie.org>
@@ -27,72 +26,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers are shared between platforms that may or may not
-have RESET_CONTROLLER selected for them. Add dummy functions
-when RESET_CONTROLLER is not selected, thereby eliminating the
-need for drivers to enclose reset_control_*() calls within
-#ifdef CONFIG_RESET_CONTROLLER, #endif
+The Allwinner A20 has an ethernet controller that seems to be
+an early version of Synopsys DesignWare MAC 10/100/1000 Universal,
+which is supported by the stmmac driver.
+
+Allwinner's GMAC requires setting additional registers in the SoC's
+clock control unit.
+
+The exact version of the DWMAC IP that Allwinner uses is unknown,
+thus the exact feature set is unknown.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- include/linux/reset.h | 39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
+ .../bindings/net/allwinner,sun7i-a20-gmac.txt      |  27 +++++
+ drivers/net/ethernet/stmicro/stmmac/Kconfig        |  12 ++
+ drivers/net/ethernet/stmicro/stmmac/Makefile       |   1 +
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c  | 133 +++++++++++++++++++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac.h       |   3 +
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   3 +
+ 6 files changed, 179 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/allwinner,sun7i-a20-gmac.txt
+ create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c
 
-diff --git a/include/linux/reset.h b/include/linux/reset.h
-index 6082247..38aa616 100644
---- a/include/linux/reset.h
-+++ b/include/linux/reset.h
-@@ -4,6 +4,8 @@
- struct device;
- struct reset_control;
+diff --git a/Documentation/devicetree/bindings/net/allwinner,sun7i-a20-gmac.txt b/Documentation/devicetree/bindings/net/allwinner,sun7i-a20-gmac.txt
+new file mode 100644
+index 0000000..ea4d752
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/allwinner,sun7i-a20-gmac.txt
+@@ -0,0 +1,27 @@
++* Allwinner GMAC ethernet controller
++
++This device is a platform glue layer for stmmac.
++Please see stmmac.txt for the other unchanged properties.
++
++Required properties:
++ - compatible:  Should be "allwinner,sun7i-a20-gmac"
++ - clocks: Should contain the GMAC main clock, and tx clock
++   The tx clock type should be "allwinner,sun7i-a20-gmac-clk"
++ - clock-names: Should contain the clock names "stmmaceth",
++   and "allwinner_gmac_tx"
++
++Optional properties:
++- phy-supply: phandle to a regulator if the PHY needs one
++
++Examples:
++
++	gmac: ethernet@01c50000 {
++		compatible = "allwinner,sun7i-a20-gmac";
++		reg = <0x01c50000 0x10000>,
++		      <0x01c20164 0x4>;
++		interrupts = <0 85 1>;
++		interrupt-names = "macirq";
++		clocks = <&ahb_gates 49>, <&gmac_tx>;
++		clock-names = "stmmaceth", "allwinner_gmac_tx";
++		phy-mode = "mii";
++	};
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Kconfig b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+index 6e52c0f..e076411 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Kconfig
++++ b/drivers/net/ethernet/stmicro/stmmac/Kconfig
+@@ -25,6 +25,18 @@ config STMMAC_PLATFORM
  
-+#ifdef CONFIG_RESET_CONTROLLER
-+
- int reset_control_reset(struct reset_control *rstc);
- int reset_control_assert(struct reset_control *rstc);
- int reset_control_deassert(struct reset_control *rstc);
-@@ -14,4 +16,41 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
+ 	  If unsure, say N.
  
- int device_reset(struct device *dev);
++config DWMAC_SUNXI
++	bool "Allwinner GMAC support"
++	depends on STMMAC_PLATFORM
++	depends on ARCH_SUNXI
++	default y
++	---help---
++	  Support for Allwinner A20/A31 GMAC ethernet controllers.
++
++	  This selects Allwinner SoC glue layer support for the
++	  stmmac device driver. This driver is used for A20/A31
++	  GMAC 	  ethernet controller.
++
+ config STMMAC_PCI
+ 	bool "STMMAC PCI bus support"
+ 	depends on STMMAC_ETH && PCI
+diff --git a/drivers/net/ethernet/stmicro/stmmac/Makefile b/drivers/net/ethernet/stmicro/stmmac/Makefile
+index 356a9dd..ecadece 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/Makefile
++++ b/drivers/net/ethernet/stmicro/stmmac/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_STMMAC_ETH) += stmmac.o
+ stmmac-$(CONFIG_STMMAC_PLATFORM) += stmmac_platform.o
+ stmmac-$(CONFIG_STMMAC_PCI) += stmmac_pci.o
++stmmac-$(CONFIG_DWMAC_SUNXI) += dwmac-sunxi.o
+ stmmac-objs:= stmmac_main.o stmmac_ethtool.o stmmac_mdio.o ring_mode.o	\
+ 	      chain_mode.o dwmac_lib.o dwmac1000_core.o  dwmac1000_dma.o \
+ 	      dwmac100_core.o dwmac100_dma.o enh_desc.o  norm_desc.o \
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c
+new file mode 100644
+index 0000000..ea62bd1
+--- /dev/null
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sunxi.c
+@@ -0,0 +1,133 @@
++/**
++ * dwmac-sunxi.c - Allwinner sunxi DWMAC specific glue layer
++ *
++ * Copyright (C) 2013 Chen-Yu Tsai
++ *
++ * Chen-Yu Tsai  <wens@csie.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/stmmac.h>
++#include <linux/clk.h>
++#include <linux/phy.h>
++#include <linux/of_net.h>
++#include <linux/regulator/consumer.h>
++
++struct sunxi_priv_data {
++	int interface;
++	int clk_enabled;
++	struct clk *tx_clk;
++	struct regulator *regulator;
++};
++
++static void *sun7i_gmac_setup(struct platform_device *pdev)
++{
++	struct sunxi_priv_data *gmac;
++	struct device *dev = &pdev->dev;
++
++	gmac = devm_kzalloc(dev, sizeof(*gmac), GFP_KERNEL);
++	if (!gmac)
++		return ERR_PTR(-ENOMEM);
++
++	gmac->interface = of_get_phy_mode(dev->of_node);
++
++	gmac->tx_clk = devm_clk_get(dev, "allwinner_gmac_tx");
++	if (IS_ERR(gmac->tx_clk)) {
++		dev_err(dev, "could not get tx clock\n");
++		return gmac->tx_clk;
++	}
++
++	/* Optional regulator for PHY */
++	gmac->regulator = devm_regulator_get_optional(dev, "phy");
++	if (IS_ERR(gmac->regulator)) {
++		if (PTR_ERR(gmac->regulator) == -EPROBE_DEFER)
++			return ERR_PTR(-EPROBE_DEFER);
++		dev_info(dev, "no regulator found\n");
++		gmac->regulator = NULL;
++	}
++
++	return gmac;
++}
++
++static int sun7i_gmac_init(struct platform_device *pdev, void *priv)
++{
++	struct sunxi_priv_data *gmac = priv;
++	int ret;
++
++	if (gmac->regulator) {
++		ret = regulator_enable(gmac->regulator);
++		if (ret)
++			return ret;
++	}
++
++	/* Set GMAC interface port mode */
++	if (gmac->interface == PHY_INTERFACE_MODE_RGMII) {
++		clk_set_rate(gmac->tx_clk, 125000000);
++		clk_prepare_enable(gmac->tx_clk);
++		gmac->clk_enabled = 1;
++	} else {
++		clk_set_rate(gmac->tx_clk, 25000000);
++		clk_prepare(gmac->tx_clk);
++	}
++
++	return 0;
++}
++
++static void sun7i_gmac_exit(struct platform_device *pdev, void *priv)
++{
++	struct sunxi_priv_data *gmac = priv;
++
++	if (gmac->clk_enabled) {
++		clk_disable(gmac->tx_clk);
++		gmac->clk_enabled = 0;
++	}
++	clk_unprepare(gmac->tx_clk);
++
++	if (gmac->regulator)
++		regulator_disable(gmac->regulator);
++}
++
++static void sun7i_fix_speed(void *priv, unsigned int speed)
++{
++	struct sunxi_priv_data *gmac = priv;
++
++	/* only GMII mode requires us to switch clocks modes */
++	if (gmac->interface != PHY_INTERFACE_MODE_GMII)
++		return;
++
++	if (gmac->clk_enabled) {
++		clk_disable(gmac->tx_clk);
++		gmac->clk_enabled = 0;
++	}
++	clk_unprepare(gmac->tx_clk);
++
++	if (speed == 1000) {
++		clk_set_rate(gmac->tx_clk, 125000000);
++		clk_prepare_enable(gmac->tx_clk);
++		gmac->clk_enabled = 1;
++	} else {
++		clk_set_rate(gmac->tx_clk, 25000000);
++		clk_prepare(gmac->tx_clk);
++	}
++}
++
++/* of_data specifying hardware features and callbacks.
++ * hardware features were copied from Allwinner drivers. */
++const struct stmmac_of_data sun7i_gmac_data = {
++	.has_gmac = 1,
++	.tx_coe = 1,
++	.fix_mac_speed = sun7i_fix_speed,
++	.setup = sun7i_gmac_setup,
++	.init = sun7i_gmac_init,
++	.exit = sun7i_gmac_exit,
++};
++
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+index f19a040..2c63560 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
+@@ -132,6 +132,9 @@ void stmmac_disable_eee_mode(struct stmmac_priv *priv);
+ bool stmmac_eee_init(struct stmmac_priv *priv);
  
-+#else /* !CONFIG_RESET_CONTROLLER */
-+
-+static inline int reset_control_reset(struct reset_control *rstc)
-+{
-+	return 0;
-+}
-+
-+static inline int reset_control_assert(struct reset_control *rstc)
-+{
-+	return 0;
-+}
-+
-+static inline int reset_control_deassert(struct reset_control *rstc)
-+{
-+	return 0;
-+}
-+
-+static inline struct reset_control *reset_control_get(struct device *dev,
-+		const char *id)
-+{
-+	return NULL;
-+}
-+static inline void reset_control_put(struct reset_control *rstc) {}
-+
-+static inline struct reset_control *devm_reset_control_get(struct device *dev,
-+		const char *id)
-+{
-+	return NULL;
-+}
-+
-+static inline int device_reset(struct device *dev)
-+{
-+	return 0;
-+}
-+
+ #ifdef CONFIG_STMMAC_PLATFORM
++#ifdef CONFIG_DWMAC_SUNXI
++extern const struct stmmac_of_data sun7i_gmac_data;
 +#endif
-+
- #endif
+ extern struct platform_driver stmmac_pltfr_driver;
+ static inline int stmmac_register_platform(void)
+ {
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 2e554e3..8db588f 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -30,6 +30,9 @@
+ #include "stmmac.h"
+ 
+ static const struct of_device_id stmmac_dt_ids[] = {
++#ifdef CONFIG_DWMAC_SUNXI
++	{ .compatible = "allwinner,sun7i-a20-gmac", .data = &sun7i_gmac_data},
++#endif
+ 	/* SoC specific glue layers should come before generic bindings */
+ 	{ .compatible = "st,spear600-gmac"},
+ 	{ .compatible = "snps,dwmac-3.610"},
 -- 
 1.8.5.2
 
