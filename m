@@ -1,185 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaAJNYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:24:51 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:57495 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751618AbaAJNYr (ORCPT
+	id S1757285AbaAJN1P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:27:15 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52106 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365AbaAJN1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:24:47 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Len Brown <lenb@kernel.org>, kosaki.motohiro@gmail.com,
-        dyoung@redhat.com, linux-acpi@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory hotplug
-Date: Fri, 10 Jan 2014 14:38:38 +0100
-Message-ID: <2744011.4P53znW6Ec@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389354577-9927-1-git-send-email-prarit@redhat.com>
-References: <1389354577-9927-1-git-send-email-prarit@redhat.com>
+	Fri, 10 Jan 2014 08:27:11 -0500
+Date: Fri, 10 Jan 2014 13:26:42 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: timur@tabi.org, alsa-devel@alsa-project.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, shawn.guo@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Message-ID: <20140110132642.GM29039@sirena.org.uk>
+References: <1389265078-16256-1-git-send-email-Guangyu.Chen@freescale.com>
+ <20140109184453.GP12858@sirena.org.uk>
+ <20140110023252.GA16467@MrMyself>
+ <20140110023537.GB16467@MrMyself>
+ <20140110120439.GG29039@sirena.org.uk>
+ <20140110130338.GA17392@MrMyself>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x38akuY2VS0PywU3"
+Content-Disposition: inline
+In-Reply-To: <20140110130338.GA17392@MrMyself>
+X-Cookie: May I ask a question?
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASoC: fsl_esai: Add ESAI CPU DAI driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 10, 2014 06:49:37 AM Prarit Bhargava wrote:
-> When booting a kexec/kdump kernel on a system that has specific memory hotplug
-> regions the boot will fail with warnings like:
-> 
-> [    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
-> [    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-> 3.10.0-65.el7.x86_64 #1
-> [    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
-> QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-> [    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
-> ffff8800341bd950
-> [    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
-> 00000000000084d0
-> [    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
-> 0000000000000200
-> [    2.989821] Call Trace:
-> [    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
-> [    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
-> [    3.004817]  [<ffffffff815b87ee>] ?
-> __alloc_pages_direct_compact+0xac/0x196
-> [    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
-> [    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
-> [    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
-> [    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
-> [    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
-> [    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
-> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-> [    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
-> [    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
-> [    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
-> [    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
-> [    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-> [    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
-> [    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
-> [    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-> [    3.181956] Mem-Info:
-> [    3.184490] Node 0 DMA per-cpu:
-> [    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
-> [    3.193353] Node 0 DMA32 per-cpu:
-> [    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
-> [    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
-> [    3.202410]  active_file:0 inactive_file:0 isolated_file:0
-> [    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
-> [    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
-> [    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
-> [    3.202410]  free_cma:0
-> 
-> because the system has run out of memory at boot time.  This occurs
-> because of the following sequence in the boot:
-> 
-> Main kernel boots and sets E820 map.  The second kernel is booted with a
-> map generated by the kdump service using memmap= and memmap=exactmap.
-> These parameters are added to the kernel parameters of the kexec/kdump
-> kernel.   The kexec/kdump kernel has limited memory resources so as not
-> to severely impact the main kernel.
-> 
-> The system then panics and the kdump/kexec kernel boots (which is a
-> completely new kernel boot).  During this boot ACPI is initialized and the
-> kernel (as can be seen above) traverses the ACPI namespace and finds an
-> entry for a memory device to be hotadded.
-> 
-> ie)
-> 
-> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-> 
-> At this point the kernel adds page table information and the the kexec/kdump
-> kernel runs out of memory.
-> 
-> This can also be reproduced by using the memmap=exactmap and mem=X
-> parameters on the main kernel and booting.
-> 
-> This patchset resolves the problem by adding a kernel parameter,
-> acpi_no_memhotplug, to disable ACPI memory hotplug.
-> 
-> [v2]: changed to acpi_no_memhotplug
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: kosaki.motohiro@gmail.com
-> Cc: dyoung@redhat.com
-> Cc: linux-acpi@vger.kernel.org
-> Cc: kexec@lists.infradead.org
-> ---
->  Documentation/kernel-parameters.txt |    3 +++
->  drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
->  2 files changed, 15 insertions(+)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index b9e9bd8..41374f9 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2117,6 +2117,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  
->  	nomce		[X86-32] Machine Check Exception
->  
-> +	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
-> +			   and kdump kernels.
-> +
->  	nomfgpt		[X86-32] Disable Multi-Function General Purpose
->  			Timer usage (for AMD Geode machines).
->  
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 551dad7..669f590 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
->  	acpi_memory_device_free(mem_device);
->  }
->  
-> +static int acpi_no_memhotplug;
 
-What about using bool?
+--x38akuY2VS0PywU3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +
->  void __init acpi_memory_hotplug_init(void)
->  {
-> +	if (acpi_no_memhotplug)
-> +		return;
-> +
->  	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
->  }
-> +
-> +static int __init disable_acpi_memory_hotplug(char *str)
-> +{
-> +	acpi_no_memhotplug = 1;
-> +	return 1;
-> +}
-> +__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
-> 
+On Fri, Jan 10, 2014 at 09:03:39PM +0800, Nicolin Chen wrote:
+> On Fri, Jan 10, 2014 at 12:04:39PM +0000, Mark Brown wrote:
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> > This is about what I'd expect but then surely the next step is for the
+> > driver to choose a defualt BCLK ratio - that's how most drivers work,
+> > they try to generate the exact rate that is needed to clock the data.
+
+> Does that mean I should call set_bclk() once in the startup() when !active
+> to set a default bit clock rate to suit a common sample rate like 44100Hz?
+> I'm a bit confused if so. Because the driver would call set_bclk() any way
+> in the hw_params().
+
+Right, any choice here needs to be deferred to hw_params() as you say.
+
+> But your suggestion just reminds me of the slave mode in SSI driver as
+> default mode. And I should patch ESAI to slave mode for default as well,
+> shouldn't I?
+
+master/slave selection is kind of orthogonal here - the two bits of
+information that are normally needed are the MCLK to use (and its rate)
+and the sample rate/format (which give you the BCLK that is needed).
+Normally it's then possible to caculate a divider which generates BCLK
+=66rom MCLK.  Overriding is normally only needed if there are additional
+constraints on BCLK due to something like limitations in one of the
+devices or sample rates for the opposite direction if the BCLK is shared
+but LRCLK isn't.
+
+> > Are the bit clock shared between playback and capture?
+
+> Only shared in synchronous mode and totally individual in asynchronous mo=
+de.
+> Each of them can have their own HCK(MCLK) from different sources and deri=
+ve
+> their own SCK(BCLK).
+
+OK, so in asynchronous mode there should be a good chance of a a default
+choice working since it won't restrict the other direction.
+
+--x38akuY2VS0PywU3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSz/UPAAoJELSic+t+oim9+M8QAImXq8LRXn58WvYsyM3+jGlV
+2FuqBmOjiDlEyiNIha5E+X5tkBM6ZY7mULBBMx1EV+cJZm4ZiIdpWIyZANp+wv2w
+O0+woCXXQ41D+FAdpBE+qVN1HmuESwEkUqufCC2E8aiFEy29mNg3O181fFF25Cbm
+0hr26w+9oJDLEDGN2nVCR568ooBuaCF0yY0xhzCZSb/+8eMJUZUTqbjntCLZ07pQ
+oCiMQ/JosR9UE4DPOvrqaH/3bssf9GO0fI9VeCTjJk9JFyARIXI1D8m1knYMs47U
+5g8xM8VxrBJaoFzv6m7xyCMniHhJwfgCrEkhdp4+vpUUeR1yoXMJ6yVP9QEbZV8j
+ScBmE9IoM7PVYCmw2LYNlgtmT+x27trB81JzHxKe60ZXOhmXhDKS+vwq0rqW3SQA
+pnvt12qjTAaju88wmyANNPACOgMMr7g+uYiVplFCQmjFPUalEz/3FveyHrnaocwt
+WCqDo0stNUyT74pq3YW7DEsWFJFZp8v9B870Xe5DoKeQ3RdaoH2ukF8W/Y61/7uw
+BnsA4ZZLFj15roFcJZG7NdvvdRUwdABAdNEu8qxUZ1wzARaX9CsoTfxhGZfVPbfT
+DvBZO+CV5zQDKaFBKRS/UY9EuporY5Crx3G3xi0HUEqjzNGgk5cuF5X8G4La/q5t
+uiETXXSvhw9g+hGdsBGY
+=W7uy
+-----END PGP SIGNATURE-----
+
+--x38akuY2VS0PywU3--
