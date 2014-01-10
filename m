@@ -1,183 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaAJNof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:44:35 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:35233 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaAJNod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:44:33 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-fd-52cff93f1650
-Message-id: <52CFF938.706@samsung.com>
-Date: Fri, 10 Jan 2014 14:44:24 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 2/6 v2] crypto:s5p-sss: Add device tree support
-References: <1389095509-14357-3-git-send-email-ch.naveen@samsung.com>
- <1389243541-13122-1-git-send-email-ch.naveen@samsung.com>
- <52CEAEB0.80304@samsung.com>
- <CAHfPSqA=xkHX1kajjYfNz2KMrnfHGdWzu9GWvSE4ZjWWZb-hQA@mail.gmail.com>
-In-reply-to: <CAHfPSqA=xkHX1kajjYfNz2KMrnfHGdWzu9GWvSE4ZjWWZb-hQA@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t/xq7r2P88HGZzYw21x9/lhRouXhzQt
-	5pxvYbHofiVjcf/eTyaLy7vmsFnMOL+PyWLRtv/MFqt2/WG0ODvnEJMDl8eWlTeZPHbOusvu
-	se2AqkffllWMHp83yQWwRnHZpKTmZJalFunbJXBl3G54xV6wX63i5sKnjA2Ma+W6GDk5JARM
-	JF6t7GOFsMUkLtxbz9bFyMUhJLCUUeLg/EMsEM5nRokb/08zgVTxCqhJ7L7fxQhiswioSvze
-	dYcdxGYDin9ueMQGYosKREj8nbeeEaJeUOLH5HssILaIgJHEzAcLGUGGMgvcZZLYdO0o0GoO
-	DmEBZ4knJ50glj1nlFi/9Q8zSAOnQLDE+qO9YAuYBawlVk7axghhy0tsXvOWeQKjwCwkO2Yh
-	KZuFpGwBI/MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJAI+LqDcekxq0OMAhyMSjy8BbPO
-	BwmxJpYVV+YeYpTgYFYS4bV/BRTiTUmsrEotyo8vKs1JLT7EyMTBKdXAeG7T4Wer2xv1FsUv
-	nd325jPDybzzvyyZb79vMf7Urvd4oa7htG+KS11m1Nf+2p5yvV3gQUHPtQUbuiao7r6zUeNi
-	cWAca8S7r7Jv/llNf5szXYVX6IFu8lKnR+uPGV+bJXuLc/qCf115F4/z5pr1hH891CWbd4ZV
-	xvT2gnk5+hL6n37er3VV0lNiKc5INNRiLipOBAC+HG4zXgIAAA==
+	id S1752257AbaAJNom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:44:42 -0500
+Received: from ring0.de ([91.143.88.219]:45169 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752062AbaAJNog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 08:44:36 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+Date: Fri, 10 Jan 2014 14:44:26 +0100
+From: Sebastian Reichel <sre@ring0.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
+Message-ID: <20140110134426.GA7235@earth.universe>
+Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
+	"Gustavo F. Padovan" <gustavo@padovan.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	"linux-bluetooth@vger.kernel.org development" <linux-bluetooth@vger.kernel.org>,
+	Ville Tervo <ville.tervo@nokia.com>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <20140102161824.GA8204@amd.pavel.ucw.cz>
+ <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
+ <20140103001753.GA21023@amd.pavel.ucw.cz>
+ <20140103013640.GB27678@earth.universe>
+ <20140109233843.GB19974@amd.pavel.ucw.cz>
+ <20140110003231.GA14141@earth.universe>
+ <20140110121805.GA21117@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+In-Reply-To: <20140110121805.GA21117@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
 
-On 10.01.2014 07:07, Naveen Krishna Ch wrote:
-> Hello Tomasz,
->
-> Thanks for time and review comments they are really helping me a lot
-> in getting the patches merged.
->
-> Secondly, accept my apologies for not giving proper writeup of why i
-> din't address
-> few of your comments on v1 of this patchset.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's okay.
+Hi Pavel,
 
->
-> On 9 January 2014 19:44, Tomasz Figa <t.figa@samsung.com> wrote:
->> Hi Naveen,
->>
->>
->> On 09.01.2014 05:59, Naveen Krishna Chatradhi wrote:
->>>
->>> This patch adds device tree support to the s5p-sss.c crypto driver.
->>> Implements a varient struct to address the changes in SSS hardware
->>> on various SoCs from Samsung.
->>>
->>> Also, Documentation under devicetree/bindings added.
->>>
->>> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
->>> CC: Herbert Xu <herbert@gondor.apana.org.au>
->>> CC: David S. Miller <davem@davemloft.net>
->>> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
->>> TO: <linux-crypto@vger.kernel.org>
->>> CC: <linux-samsung-soc@vger.kernel.org>
->>> ---
->>> Changes since v1:
->>> 1. Added description of the SSS module in Documentation
->>> 2. Corrected the interrupts description
->>> 3. Added varient struct instead of the version variable
->>>
->>>    .../devicetree/bindings/crypto/samsung-sss.txt     |   20 +++++
->>>    drivers/crypto/s5p-sss.c                           |   81
->>> ++++++++++++++++++--
->>>    2 files changed, 95 insertions(+), 6 deletions(-)
->>>    create mode 100644
->>> Documentation/devicetree/bindings/crypto/samsung-sss.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/crypto/samsung-sss.txt
->>> b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
->>> new file mode 100644
->>> index 0000000..0e45b0d
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/crypto/samsung-sss.txt
->>> @@ -0,0 +1,20 @@
->>> +Samsung SoC SSS (Security SubSystem) module
->>> +
->>> +The SSS module in S5PV210 SoC supports the following:
->>> +-- Feeder (FeedCtrl)
->>> +-- Advanced Encryption Standard (AES)
->>> +-- Data Encryption Standard (DES)/3DES
->>> +-- Public Key Accelerator (PKA)
->>> +-- SHA-1/SHA-256/MD5/HMAC (SHA-1/SHA-256/MD5)/PRNG
->>> +-- PRNG: Pseudo Random Number Generator
->>> +
->>> +Required properties:
->>> +
->>> +- compatible : Should contain entries for this and backward compatible
->>> +  SSS versions:
->>> +  - "samsung,s5p-secss" for S5PV210 SoC.
->>
->>
->> As I wrote in my previous reply, please use specific compatible string
->> containing name of SoC on which the block described by it appeared first.
->> Let me say it again, for security block that showed up first on S5PV210 the
->> string will be "samsung,s5pv210-secss".
-> 1. .name           = "s5p-secss", is the name used in the present driver.
->      So, i dint modify that.
+You have missed some things. See inline comments below.
 
-Please note that compatible strings and platform driver names are 
-completely different things. There is no relation between them. 
-Moreover, there are different rules (or recommendation) involved for 
-creating both, so it's completely fine to add a compatible string of 
-"samsung,s5pv210-secss", while keeping platform driver named "s5p-secss".
+On Fri, Jan 10, 2014 at 01:18:05PM +0100, Pavel Machek wrote:
+> diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_cor=
+e.c
+> index 5c7acad..d6b0701 100644
+> --- a/drivers/bluetooth/nokia_core.c
+> v+++ b/drivers/bluetooth/nokia_core.c
+> @@ -39,6 +39,7 @@
+>  #include <linux/gpio.h>
+>  #include <linux/timer.h>
+>  #include <linux/kthread.h>
+> +#include <linux/io.h>
+> =20
+>  #include <net/bluetooth/bluetooth.h>
+>  #include <net/bluetooth/hci_core.h>
+> @@ -1079,7 +1080,7 @@ static int hci_h4p_probe(struct platform_device *pd=
+ev)
+>  	int err;
+> =20
+>  	dev_info(&pdev->dev, "Registering HCI H4P device\n");
+> -	info =3D kzalloc(sizeof(struct hci_h4p_info), GFP_KERNEL);
+> +	info =3D devm_kzalloc(&pdev->dev, sizeof(struct hci_h4p_info), GFP_KERN=
+EL);
+>  	if (!info)
+>  		return -ENOMEM;
+> =20
+> @@ -1092,7 +1093,6 @@ static int hci_h4p_probe(struct platform_device *pd=
+ev)
+> =20
+>  	if (pdev->dev.platform_data =3D=3D NULL) {
+>  		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
+> -		kfree(info);
+>  		return -ENODATA;
+>  	}
+> =20
+> @@ -1113,67 +1113,59 @@ static int hci_h4p_probe(struct platform_device *=
+pdev)
+>  	complete_all(&info->test_completion);
+> =20
+>  	if (!info->reset_gpio_shared) {
+> -		err =3D gpio_request(info->reset_gpio, "bt_reset");
+> +		err =3D devm_gpio_request_one(&pdev->dev, info->reset_gpio,
+> +					    GPIOF_OUT_INIT_LOW, "bt_reset");
+>  		if (err < 0) {
+>  			dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
+>  				info->reset_gpio);
+> -			goto cleanup_setup;
+> +			return err;
+>  		}
+>  	}
+> =20
+> -	err =3D gpio_request(info->bt_wakeup_gpio, "bt_wakeup");
+> +	err =3D devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
+> +				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
+> +
+>  	if (err < 0) {
+>  		dev_err(info->dev, "Cannot get GPIO line 0x%d",
+>  			info->bt_wakeup_gpio);
+> -		if (!info->reset_gpio_shared)
+> -			gpio_free(info->reset_gpio);
+> -		goto cleanup_setup;
+> +		return err;
+>  	}
+> =20
+> -	err =3D gpio_request(info->host_wakeup_gpio, "host_wakeup");
+> +	err =3D devm_gpio_request_one(&pdev->dev, info->host_wakeup_gpio,
+> +				    GPIOF_DIR_IN, "host_wakeup");
+>  	if (err < 0) {
+>  		dev_err(info->dev, "Cannot get GPIO line %d",
+>  		       info->host_wakeup_gpio);
+> -		if (!info->reset_gpio_shared)
+> -			gpio_free(info->reset_gpio);
+> -		gpio_free(info->bt_wakeup_gpio);
+> -		goto cleanup_setup;
+> +		return err;
+>  	}
+> =20
+> -	gpio_direction_output(info->reset_gpio, 0);
+> -	gpio_direction_output(info->bt_wakeup_gpio, 0);
+> -	gpio_direction_input(info->host_wakeup_gpio);
+> -
+>  	info->irq =3D bt_plat_data->uart_irq;
+> -	info->uart_base =3D ioremap(bt_plat_data->uart_base, SZ_2K);
+> -	info->uart_iclk =3D clk_get(NULL, bt_plat_data->uart_iclk);
+> -	info->uart_fclk =3D clk_get(NULL, bt_plat_data->uart_fclk);
+> +	info->uart_base =3D devm_ioremap(&pdev->dev, bt_plat_data->uart_base, S=
+Z_2K);
+> +	info->uart_iclk =3D devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
+> +	info->uart_fclk =3D devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
+> =20
+>  	err =3D request_irq(info->irq, hci_h4p_interrupt, IRQF_DISABLED, "hci_h=
+4p",
+>  			  info);
 
-> 2. I'm not sure which one is the first soc to have the new varient.
->      May be Exynos4210. Will modify in the next version.
+This one should also use devm_request_irq(). Especially since you
+removed the cleanup in the probe function already ;)
 
-Let's see.
+>  	if (err < 0) {
+>  		dev_err(info->dev, "hci_h4p: unable to get IRQ %d\n", info->irq);
+> -		goto cleanup;
+> +		return err;
+>  	}
+> =20
+> -	err =3D request_irq(gpio_to_irq(info->host_wakeup_gpio),
+> +	err =3D devm_request_irq(&pdev->dev, gpio_to_irq(info->host_wakeup_gpio=
+),
+>  			  hci_h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
+>  			  IRQF_TRIGGER_RISING | IRQF_DISABLED,
+>  			  "hci_h4p_wkup", info);
+>  	if (err < 0) {
+>  		dev_err(info->dev, "hci_h4p: unable to get wakeup IRQ %d\n",
+>  			  gpio_to_irq(info->host_wakeup_gpio));
+> -		free_irq(info->irq, info);
+> -		goto cleanup;
+> +		return err;
+>  	}
+> =20
+>  	err =3D irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
+>  	if (err < 0) {
+>  		dev_err(info->dev, "hci_h4p: unable to set wakeup for IRQ %d\n",
+>  				gpio_to_irq(info->host_wakeup_gpio));
+> -		free_irq(info->irq, info);
+> -		free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+> -		goto cleanup;
+> +		return err;
+>  	}
+> =20
+>  	init_timer_deferrable(&info->lazy_release);
+> @@ -1182,7 +1174,7 @@ static int hci_h4p_probe(struct platform_device *pd=
+ev)
+>  	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
+>  	err =3D hci_h4p_reset_uart(info);
+>  	if (err < 0)
+> -		goto cleanup_irq;
+> +		return err;
+>  	gpio_set_value(info->reset_gpio, 0);
+>  	hci_h4p_set_clk(info, &info->tx_clocks_en, 0);
+> =20
+> @@ -1190,23 +1182,10 @@ static int hci_h4p_probe(struct platform_device *=
+pdev)
+> =20
+>  	if (hci_h4p_register_hdev(info) < 0) {
+>  		dev_err(info->dev, "failed to register hci_h4p hci device\n");
+> -		goto cleanup_irq;
+> +		return -EINVAL;
+>  	}
+> =20
+>  	return 0;
+> -
+> -cleanup_irq:
+> -	free_irq(info->irq, (void *)info);
+> -	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+> -cleanup:
+> -	gpio_set_value(info->reset_gpio, 0);
+> -	if (!info->reset_gpio_shared)
+> -		gpio_free(info->reset_gpio);
+> -	gpio_free(info->bt_wakeup_gpio);
+> -	gpio_free(info->host_wakeup_gpio);
+> -cleanup_setup:
+> -	kfree(info);
+> -	return err;
+>  }
+> =20
+>  static int hci_h4p_remove(struct platform_device *pdev)
+> @@ -1217,15 +1196,11 @@ static int hci_h4p_remove(struct platform_device =
+*pdev)
+> =20
+>  	hci_h4p_sysfs_remove_files(info->dev);
+>  	hci_h4p_hci_close(info->hdev);
+> -	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+>  	hci_unregister_dev(info->hdev);
+>  	hci_free_dev(info->hdev);
+> -	if (!info->reset_gpio_shared)
+> -		gpio_free(info->reset_gpio);
+>  	gpio_free(info->bt_wakeup_gpio);
+>  	gpio_free(info->host_wakeup_gpio);
 
- From what I can find in various user's manuals, S5PV210 is the first to 
-have the first variant, while Exynos4210 already has the new one.
+those two gpios are also managed. No need to free them manually.
 
->>
->>> +       },
->>> +       { },
->>> +};
->>> +MODULE_DEVICE_TABLE(of, s5p_sss_dt_match);
->>> +#else
->>> +static struct of_device_id s5p_sss_dt_match[] =  {
->>> +       { },
->>> +};
->>
->>
->> Hmm, I don't think there is any need for this.
-> I think all Exynos4 and Exynos5 now supports DT
-> But, i'm not sure of the S5PV210 series.
+>  	free_irq(info->irq, (void *) info);
 
-S5PV210 does not support DT yet. Work is already in progress, but board 
-file support will have to be retained for some time, so this driver 
-should support non-DT probing too.
+Once this irq is also requested using managed resources you can also
+drop this line.
 
-It doesn't affect my comment, though, as you can use of_match_ptr() macro.
+> -	kfree(info);
+> =20
+>  	return 0;
+>  }
+> [...]
 
->>> @@ -674,9 +741,11 @@ static int s5p_aes_remove(struct platform_device
->>> *pdev)
->>>    static struct platform_driver s5p_aes_crypto = {
->>>          .probe  = s5p_aes_probe,
->>>          .remove = s5p_aes_remove,
->>> +       .id_table       = s5p_sss_ids,
->>>          .driver = {
->>>                  .owner  = THIS_MODULE,
->>>                  .name   = "s5p-secss",
->>> +               .of_match_table = s5p_sss_dt_match,
->>
->>
->> .of_match_table = of_match_ptr(s5p_sss_dt_match),
-> I dint use it, Some time back there was a patchset from Sachin
-> https://lkml.org/lkml/2013/9/28/61
-> Please suggest me on this.
+-- Sebastian
 
-I believe Sachin already explained this in his reply to your patch. 
-Generally the driver from your link is supposed to always support DT, 
-while this one can be built without DT support.
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Best regards,
-Tomasz
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSz/k6AAoJENju1/PIO/qac6gP/2zP9u9pnyA7tKmQrTBgH7EE
+KFj6Z1c9fs7AoS72I5F9ZyBndwO9F4meP8XMEPOuJBVW94uZo+8d74u8ZQTSz4Ih
++eVSwW9G4DyIE/Ht4uhmMD4rH6s1k33iKPTUcMwRZ2dtTkuDELJt3HLtleu3gj4l
+jGtCpzaEAx9no40LT9s8qzHYlXgPKzcbRFhDcQLBrRZOsxrD6IiMSVnXhzLPunQ7
+TIV7gTy1rioveI4VDIo1DeGs3xQrcyZ6ePAIblmmJPoYBQgMgyLYqpxQWs4HytIe
+SCf33pyYVAZGBTszHRpMuIJYKhmzOYBAdZLoD8L77eFeCaC831sh0xOZB8z8gEoF
+JWqp36nf5JFHFQgb8HGbqf8iElaSSRLciiEHzC1FGN5Dw9max/jKqDIdx2zQqKVc
++uKXbfH6wA6NANiyze2lvu+cEDhmrIE+CFbxKd0tqgEm0/PLfg/wZteCmJMJ4Sfg
+AoStCuaIwSJCSM0fYeDYgg1cuok9MNCm54oWaQUBN1R5uQcu7nSX9cjrZMiLGVx1
+oyJvrrHTbz3NF6fWB/DJJwv9ZydmzoaxMWlb3LTxuX0P+1jn32d4bCBMPDfLizFc
+grGHsyvK4x3FCCvJ2ca4dcMmuIXYdqY20g7crJ6OA7Z3j40UYSIgDAvQu8ZnLOan
+cfh73uCx0Mhigq2HBH4/
+=0LTS
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
