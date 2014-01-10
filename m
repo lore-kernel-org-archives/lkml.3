@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769AbaAJS03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 13:26:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962AbaAJS01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 13:26:27 -0500
-Message-ID: <52D03B13.60401@redhat.com>
-Date: Fri, 10 Jan 2014 13:25:23 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Bob Liu <bob.liu@oracle.com>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+	id S1757776AbaAJS14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 13:27:56 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28149 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaAJS1z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 13:27:55 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/5tmqicavx1KvFgDdzCXgGH/d0b13MzPc=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D4355506977
+Date: Fri, 10 Jan 2014 13:27:44 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/9] mm: shmem: save one radix tree lookup when truncating
- swapped pages
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org> <1389377443-11755-4-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1389377443-11755-4-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [GIT PULL] irqchip: mvebu: fixes for v3.13
+Message-ID: <20140110182744.GL19878@titan.lakedaemon.net>
+References: <20131217145518.GK2609@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131217145518.GK2609@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 01:10 PM, Johannes Weiner wrote:
-> Page cache radix tree slots are usually stabilized by the page lock,
-> but shmem's swap cookies have no such thing.  Because the overall
-> truncation loop is lockless, the swap entry is currently confirmed by
-> a tree lookup and then deleted by another tree lookup under the same
-> tree lock region.
+Thomas,
+
+On Tue, Dec 17, 2013 at 09:55:18AM -0500, Jason Cooper wrote:
+> Thomas,
 > 
-> Use radix_tree_delete_item() instead, which does the verification and
-> deletion with only one lookup.  This also allows removing the
-> delete-only special case from shmem_radix_tree_replace().
+> Here's a couple of small fixes for the armada-370-xp driver.  These have
+> been in -next for 3 days now.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> thx,
+> 
+> Jason.
+> 
+> 
+> The following changes since commit 6ce4eac1f600b34f2f7f58f9cd8f0503d79e42ae:
+> 
+>   Linux 3.13-rc1 (2013-11-22 11:30:55 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.infradead.org/linux-mvebu.git tags/mvebu-irqchip-fixes-3.13
+> 
+> for you to fetch changes up to c7f7bd4a136e4b02dd2a66bf95aec545bd93e8db:
+> 
+>   irqchip: armada-370-xp: fix MSI race condition (2013-12-13 16:34:40 +0000)
+> 
+> ----------------------------------------------------------------
+> mvebu irqchip fixes for v3.13
+> 
+>  - armada-370-xp
+>     - fix races is MSI and IPI
+> 
+> ----------------------------------------------------------------
+> Lior Amsalem (2):
+>       irqchip: armada-370-xp: fix IPI race condition
+>       irqchip: armada-370-xp: fix MSI race condition
+> 
+>  drivers/irqchip/irq-armada-370-xp.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+It doesn't seem as though this has been pulled.  Did it fall through the
+cracks?
 
+thx,
 
--- 
-All rights reversed
+Jason.
