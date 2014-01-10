@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159AbaAJVkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 16:40:47 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:43204 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaAJVko (ORCPT
+	id S1758179AbaAJVpE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 16:45:04 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:65014 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbaAJVo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 16:40:44 -0500
-Message-ID: <1389389688.1792.174.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory
- mapping is specified by user [v2]
-From: Toshi Kani <toshi.kani@hp.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
-        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
-        kosaki.motohiro@gmail.com, dyoung@redhat.com,
-        linux-acpi@vger.kernel.org, linux-mm@kvack.org
-Date: Fri, 10 Jan 2014 14:34:48 -0700
-In-Reply-To: <1389380698-19361-4-git-send-email-prarit@redhat.com>
-References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
-	 <1389380698-19361-4-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Jan 2014 16:44:58 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: lm-sensors@lm-sensors.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
+Subject: [PATCH] hwmon: (sht15) add include guard
+Date: Fri, 10 Jan 2014 16:44:46 -0500
+Message-Id: <1389390286-6287-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389390286-6287-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1389390286-6287-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-10 at 14:04 -0500, Prarit Bhargava wrote:
- :
->  arch/x86/kernel/e820.c         |   10 +++++++++-
->  drivers/acpi/acpi_memhotplug.c |    7 ++++++-
->  include/linux/memory_hotplug.h |    3 +++
->  3 files changed, 18 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index 174da5f..747f36a 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -20,6 +20,7 @@
->  #include <linux/firmware-map.h>
->  #include <linux/memblock.h>
->  #include <linux/sort.h>
-> +#include <linux/memory_hotplug.h>
->  
->  #include <asm/e820.h>
->  #include <asm/proto.h>
-> @@ -834,6 +835,8 @@ static int __init parse_memopt(char *p)
->  		return -EINVAL;
->  	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
->  
-> +	set_acpi_no_memhotplug();
-> +
+Add include guard to include/linux/platform_data/sht15.h to prevent
+multiple inclusion.
 
-It won't build when CONFIG_ACPI_HOTPLUG_MEMORY is not defined.
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+---
+ include/linux/platform_data/sht15.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Thanks,
--Toshi
-
-
-
+diff --git a/include/linux/platform_data/sht15.h b/include/linux/platform_data/sht15.h
+index 33e0fd2..12289c1 100644
+--- a/include/linux/platform_data/sht15.h
++++ b/include/linux/platform_data/sht15.h
+@@ -12,6 +12,9 @@
+  * For further information, see the Documentation/hwmon/sht15 file.
+  */
+ 
++#ifndef _PDATA_SHT15_H
++#define _PDATA_SHT15_H
++
+ /**
+  * struct sht15_platform_data - sht15 connectivity info
+  * @gpio_data:		no. of gpio to which bidirectional data line is
+@@ -31,3 +34,5 @@ struct sht15_platform_data {
+ 	bool no_otp_reload;
+ 	bool low_resolution;
+ };
++
++#endif /* _PDATA_SHT15_H */
+-- 
+1.8.5.2
 
