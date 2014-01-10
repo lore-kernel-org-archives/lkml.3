@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbaAJBoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 20:44:20 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:46251 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaAJBoR (ORCPT
+	id S1756883AbaAJBue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 20:50:34 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18439 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaAJBu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 20:44:17 -0500
+	Thu, 9 Jan 2014 20:50:29 -0500
+To: Hannes Reinecke <hare@suse.de>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>, chuck.lever@oracle.com,
+        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Doug Gilbert <dgilbert@interlog.com>
+Subject: Re: status of block-integrity
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <20131222192128.GA28532@infradead.org> <52C6D0DB.1050906@suse.de>
+	<yq1wqigzvc1.fsf@sermon.lab.mkp.net>
+	<20140107013646.GB10297@birch.djwong.org> <52CBAA1B.7000509@suse.de>
+	<yq1a9f7wjqr.fsf@sermon.lab.mkp.net> <52CCFADB.6080909@suse.de>
+	<yq1lhyqv6ns.fsf@sermon.lab.mkp.net> <52CE85C6.8000405@suse.de>
+Date: Thu, 09 Jan 2014 20:49:53 -0500
+In-Reply-To: <52CE85C6.8000405@suse.de> (Hannes Reinecke's message of "Thu, 09
+	Jan 2014 12:19:34 +0100")
+Message-ID: <yq1vbxssj0e.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMgQgOUxbj=0=AYx2pN4mh5HoDcW4p1W89+kvNtXpFmYxA@mail.gmail.com>
-References: <aaadbfa341a881c8250f2d23bc77062228d2e70b.1389279793.git.viresh.kumar@linaro.org>
-	<CAOesGMgQgOUxbj=0=AYx2pN4mh5HoDcW4p1W89+kvNtXpFmYxA@mail.gmail.com>
-Date: Fri, 10 Jan 2014 07:14:16 +0530
-Message-ID: <CAKohpo=kpyEatDfc8GZ=660sB60co4gSwxCp_brQbm5xhynmyQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: SA1100: Create dummy clk_get_rate() to avoid
- build failures
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 January 2014 21:56, Olof Johansson <olof@lixom.net> wrote:
-> On Thu, Jan 9, 2014 at 7:08 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> There are some parts of common kernel which would be using routines like
->> clk_get_rate() on some platforms. Currently these wouldn't be called for SA1100
->> boards but we need these routines for successful builds of these boards.
->>
->> So, this patch creates a dummy clk_get_rate() routine which is being used by
->> cpufreq core. More dummy routines might be added later if there is a need for
->> that.
->>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
->> Reported-by: <Olof Johansson> olof@lixom.net
->
-> That's not the right format.
+>>>>> "Hannes" == Hannes Reinecke <hare@suse.de> writes:
 
-So sorry for that..
-@Rafael: Can you fix this up while applying? Or you want me to send
-this again?
+Hannes> With LID1/XCopy you have the ambiguity on where to actually send
+Hannes> the command to; the spec is silent in this area.
+
+Yeah, right now it's a coin toss.
+
+However, thanks to VAAI most arrays support LID1. I'm trying to leverage
+that. Doesn't in any way preclude LID4 being supported as well.
+
+Hannes> As said, Doug and me are working on putting this into sg3_utils,
+Hannes> then we'll have a better idea on the actual workings.
+
+Cool! That'll save me some headaches when we start seeing LID4 devices.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
