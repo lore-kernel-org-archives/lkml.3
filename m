@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838AbaAJPVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:21:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:43231 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753379AbaAJPVE (ORCPT
+	id S1752277AbaAJPW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:22:27 -0500
+Received: from smtp.domeneshop.no ([194.63.252.54]:57778 "EHLO
+	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757883AbaAJPWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:21:04 -0500
-Message-Id: <20140110152100.763984865@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 10 Jan 2014 10:20:09 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 5/5] tracing: Show available event triggers when no trigger is set
-References: <20140110152004.200225053@goodmis.org>
-Content-Disposition: inline; filename=0005-tracing-Show-available-event-triggers-when-no-trigge.patch
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Fri, 10 Jan 2014 10:22:24 -0500
+Message-ID: <52D00F6A.4050602@ovekarlsen.com>
+Date: Fri, 10 Jan 2014 16:19:06 +0100
+From: Ove Karlsen <mail@ovekarlsen.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Linus - Firebreathing dragon idol of Linux: The Lost Computer Idealism.
+References: <52B8993E.9030309@ovekarlsen.com>	<CANq1nOCf38QCob269fDn=CqSds2HhEUuSBnnwO5c-_=DwBBBGw@mail.gmail.com> <CADOd_ht0h24CB_3qizxU=wRxzkki9zyeVtjaJmOo6+0wMVZKvg@mail.gmail.com>
+In-Reply-To: <CADOd_ht0h24CB_3qizxU=wRxzkki9zyeVtjaJmOo6+0wMVZKvg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+http://ovekarlsen.com/Blog/wp-content/uploads/oss7.jpg
 
-Currently there's no way to know what triggers exist on a kernel without
-looking at the source of the kernel or randomly trying out triggers.
-Instead of creating another file in the debugfs system, simply show
-what available triggers are there when cat'ing the trigger file when
-it has no events:
+This is also a symbolic LSD image. Obviously "Unix" is still stuck in 
+the 70s for many, and not much has happened since.
 
- [root /sys/kernel/debug/tracing]# cat events/sched/sched_switch/trigger
- # Available triggers:
- # traceon traceoff snapshot stacktrace enable_event disable_event
+But this is how they view Linux. And it carries symbolism of Linus.
 
-This stays consistent with other debugfs files where meta data like
-this is always proceeded with a '#' at the start of the line so that
-tools can strip these out.
+While all LSD-symbolism is demonic, this is actually quite right.
 
-Link: http://lkml.kernel.org/r/20140107103548.0a84536d@gandalf.local.home
+Ofcourse a tone of abuse, owns the linux-environment, when The Leader, 
+is abusive.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_events_trigger.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+With the GNU thought police, and the "everything for the commune", it is 
+ofcourse like many facist constructs in the world, under their idol. And 
+idolatry is of Satan.
 
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index a53e0da..8efbb69 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -115,10 +115,15 @@ event_triggers_post_call(struct ftrace_event_file *file,
- }
- EXPORT_SYMBOL_GPL(event_triggers_post_call);
- 
-+#define SHOW_AVAILABLE_TRIGGERS	(void *)(1UL)
-+
- static void *trigger_next(struct seq_file *m, void *t, loff_t *pos)
- {
- 	struct ftrace_event_file *event_file = event_file_data(m->private);
- 
-+	if (t == SHOW_AVAILABLE_TRIGGERS)
-+		return NULL;
-+
- 	return seq_list_next(t, &event_file->triggers, pos);
- }
- 
-@@ -132,6 +137,9 @@ static void *trigger_start(struct seq_file *m, loff_t *pos)
- 	if (unlikely(!event_file))
- 		return ERR_PTR(-ENODEV);
- 
-+	if (list_empty(&event_file->triggers))
-+		return *pos == 0 ? SHOW_AVAILABLE_TRIGGERS : NULL;
-+
- 	return seq_list_start(&event_file->triggers, *pos);
- }
- 
-@@ -143,6 +151,18 @@ static void trigger_stop(struct seq_file *m, void *t)
- static int trigger_show(struct seq_file *m, void *v)
- {
- 	struct event_trigger_data *data;
-+	struct event_command *p;
-+
-+	if (v == SHOW_AVAILABLE_TRIGGERS) {
-+		seq_puts(m, "# Available triggers:\n");
-+		seq_putc(m, '#');
-+		mutex_lock(&trigger_cmd_mutex);
-+		list_for_each_entry_reverse(p, &trigger_commands, list)
-+			seq_printf(m, " %s", p->name);
-+		seq_putc(m, '\n');
-+		mutex_unlock(&trigger_cmd_mutex);
-+		return 0;
-+	}
- 
- 	data = list_entry(v, struct event_trigger_data, list);
- 	data->ops->print(m, data->ops, data);
--- 
-1.8.4.3
+Ironically many here have then become or support what abused them in 
+their schoolyears, and what abuses intelligent people everywhere.
 
-
+PBWY.
