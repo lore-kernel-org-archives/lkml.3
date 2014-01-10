@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816AbaAJQBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:01:09 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:41475 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaAJQBH (ORCPT
+	id S1757885AbaAJQCR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:02:17 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:6989 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757464AbaAJQCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:01:07 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-12-52d01941b16d
-Message-id: <52D0193A.30301@samsung.com>
-Date: Fri, 10 Jan 2014 17:00:58 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH 6/8 v3] ARM: dts: exynos5250/5420: add dt node for sss
- module
-References: <1389243621-13245-1-git-send-email-ch.naveen@samsung.com>
- <1389354291-32051-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1389354291-32051-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xy7qOkheCDF62SFrcfX6Y0eLlIU2L
-	7lcyFr0LrrJZ3L/3k8ni8q45bBYzzu9jsli07T+zxapdfxgtzs45xOTA5bFz1l12j20HVD36
-	tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY+njnYwFc1grGto3MDUwLmbpYuTkkBAwkfh0YBcb
-	hC0mceHeeiCbi0NIYCmjxPGPTewgCSGBz4wSh6ZJdjFycPAKaEg86pMHMVkEVCV2tdiAVLAJ
-	qEl8bngENkZUIELi77z1jCA2r4CgxI/J98BWiQiUS/y7sQZsPLPAAUaJddNPgTUICwRLnDiy
-	jQVibyNQ4sJ5sG5OATeJLxfaWEFsZgFriZWTtjFC2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8
-	ilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMk5L/sYFx8zOoQowAHoxIPb4DIhSAh1sSy4src
-	Q4wSHMxKIrzXBIFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGNdMXrPDq0rmnV7+85BvJrv4Z+v/
-	iPvt/yhMwkahl+P8w4uvmSx+Kz3UY1VLc9K8f517049HK1c5rT1zVHJiXM4SX00+N7bwRpXV
-	LcX3W+VqGDQvntzGp5uXeufnI2um+alLNbd5/cjbl/O1QPuCS3OSIpPg7i9ndtrcC110L+sx
-	q/lWTslvcUosxRmJhlrMRcWJAKY7Se9XAgAA
+	Fri, 10 Jan 2014 11:02:14 -0500
+Message-ID: <1389369377.1792.160.camel@misato.fc.hp.com>
+Subject: Re: kdump failed because of hotplug memory adding in kdump kernel
+From: Toshi Kani <toshi.kani@hp.com>
+To: Baoquan <bhe@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        tangchen@cn.fujitsu.com, linux-acpi@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, dyoung@redhat.com
+Date: Fri, 10 Jan 2014 08:56:17 -0700
+In-Reply-To: <20140110071124.GA6464@dhcp-16-105.nay.redhat.com>
+References: <8500545.JVNPnKcyD1@vostro.rjw.lan>
+	 <1389226308.1792.39.camel@misato.fc.hp.com>
+	 <20140109145035.GB25897@redhat.com>
+	 <1389283439.1792.66.camel@misato.fc.hp.com>
+	 <20140109162427.GF25897@redhat.com>
+	 <1389288265.1792.108.camel@misato.fc.hp.com>
+	 <20140109182310.GG25897@redhat.com>
+	 <1389292470.1792.109.camel@misato.fc.hp.com>
+	 <20140109212705.GC12111@redhat.com>
+	 <1389304583.1792.139.camel@misato.fc.hp.com>
+	 <20140110071124.GA6464@dhcp-16-105.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Fri, 2014-01-10 at 15:11 +0800, Baoquan wrote:
+> On 01/09/14 at 02:56pm, Toshi Kani wrote:
+ :
+> > I am more curious to know how makedumpfile decides what memory ranges to
+> > dump.  The 1st kernel may have performed memory hot-add / delete
+> > operations before a crash, so it needs to know the valid physical
+> > address range at the time of crash, and may not rely on the E820 map
+> > from BIOS (which is stale).  Am I right to assume that makedumpfile gets
+> > it from the page tables of the 1st kernel?
+> 
+> makedumpfile just do the dump, what memory ranges to dump is decided in
+> 1st kernel by kexec-tools. In 1st kernel, if kexec-tools executed, it
+> will find all System Ram memorys which exclude the reserved regions for
+> kdump kernel, then build a logical elf file, each load segment is one of
+> these System Ram memory regions, its addr and length is written into the
+> program header.
+> 
+> Then makedumpfile just read this elf file, and read all of them and
+> dump.
+> 
+> If after kexec-tools execution and before crash, a hotplug memory is
+> removed, udev will check this and trigger a kdump restart, kexec-tools
+> is executed again, System Ram region information are stored. The logical
+> file header will be passed to 2nd kernel.
 
-On 10.01.2014 12:44, Naveen Krishna Chatradhi wrote:
-> This patch adds the device tree node for SSS module
-> found on Exynos5420 and Exynos5250
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> TO: <linux-samsung-soc@vger.kernel.org>
-> CC: Kukjin Kim <kgene.kim@samsung.com>
-> CC: <linux-crypto@vger.kernel.org>
-> ---
-> Changes since v2:
-> 1. Added device tree node for SSS on Exynos5250 aswell
->
->   arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
->   arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
->   2 files changed, 18 insertions(+)
+Oh, that's how it works.  Thanks for the explanation!  In case of
+hot-delete, ideally, the elf file should be updated after a memory
+region is put into off-line, but before it is ejected.  But it is
+difficult/vulnerable to coordinate such sequence with user space.  So,
+the current scheme sounds good to me.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Thanks,
+-Toshi
 
-Best regards,
-Tomasz
