@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341AbaAJPdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:33:51 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:37526 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaAJPds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:33:48 -0500
-X-IronPort-AV: E=Sophos;i="4.95,638,1384300800"; 
-   d="scan'208";a="89571796"
-Message-ID: <52D012D9.1010602@citrix.com>
-Date: Fri, 10 Jan 2014 15:33:45 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1757236AbaAJPef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:34:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbaAJPec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 10:34:32 -0500
+Date: Fri, 10 Jan 2014 16:34:59 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] rcu_dereference_check_fdtable fix/cleanups
+Message-ID: <20140110153459.GA31491@redhat.com>
+References: <20140107181258.GA29288@redhat.com> <20140108132852.GF10038@linux.vnet.ibm.com> <20140108151918.GA5156@redhat.com> <20140109011650.GI10038@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>
-Subject: Re: randconfig build error with next-20140108, in drivers/xen/platform-pci.c
-References: <CA+r1ZhinEQiBzonB_+ev_9hry+-7wscEVWcwqW46ExjGC2SYYg@mail.gmail.com> <20140110150738.GC19124@phenom.dumpdata.com>
-In-Reply-To: <20140110150738.GC19124@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140109011650.GI10038@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/14 15:07, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jan 08, 2014 at 03:32:00PM -0700, Jim Davis wrote:
->> Building with the attached random configuration file,
->>
->> drivers/xen/platform-pci.c: In function ‘platform_pci_init’:
->> drivers/xen/platform-pci.c:131:2: error: implicit declaration of
->> function ‘pci_request_region’ [-Werror=implicit-function-declaration]
->>   ret = pci_request_region(pdev, 1, DRV_NAME);
->>   ^
->> drivers/xen/platform-pci.c:170:2: error: implicit declaration of
->> function ‘pci_release_region’ [-Werror=implicit-function-declaration]
->>   pci_release_region(pdev, 0);
->>   ^
->> cc1: some warnings being treated as errors
->> make[2]: *** [drivers/xen/platform-pci.o] Error 1
->>
->> These warnings appeared too:
->>
->> warning: (XEN_PVH) selects XEN_PVHVM which has unmet direct
->> dependencies (HYPERVISOR_GUEST && XEN && PCI && X86_LOCAL_APIC)
-> 
-> Hey Jim,
-> 
-> This fix works for me:
-> 
-> 
-> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-> index d88bfd6..01b9026 100644
-> --- a/arch/x86/xen/Kconfig
-> +++ b/arch/x86/xen/Kconfig
-> @@ -53,6 +53,5 @@ config XEN_DEBUG_FS
->  
->  config XEN_PVH
->  	bool "Support for running as a PVH guest"
-> -	depends on X86_64 && XEN
-> -	select XEN_PVHVM
-> +	depends on X86_64 && XEN && XEN_PVHVM
->  	def_bool n
-> 
-> David, you OK with that? You suggested to use 'select' in the patchset
-> instead of 'depends' and this throws away your suggestion.
+On 01/08, Paul E. McKenney wrote:
+>
+> On Wed, Jan 08, 2014 at 04:19:18PM +0100, Oleg Nesterov wrote:
+> > On 01/08, Paul E. McKenney wrote:
+> > >
+> > > Another approach would be to add an argument to files_fdtable()
+> > > that is zero normally and one for "we know we don't need RCU
+> > > protection."  Then rcu_dereference_check() could be something
+> > > like the following:
+> > >
+> > > #define files_fdtable(files, c) \
+> > > 		(rcu_dereference_check_fdtable((files), (files)->fdt) || c)
+> > >
+> > > Would that work?
+> >
+> > Yes, I considered this optiion, but this needs much more uglifications^W
+> > changes.
+> >
+> > Either we need to change all users of files_fdtable(), or we need something
+> > like
+>
+> There are only about 20 uses of files_fdtable() in 3.12, with almost all
+> of them in fs/file.c.  So is changing all the users really all that
+> problematic?
 
-Yes.
+But only one user, close_files(), needs files_fdtable(files, true). Why
+complicate the patch and the code? I think it would be better to simply
+change close_files() to use rcu_dereference_raw().
 
-David
+And note that rcu_dereference_check_fdtable() needs the new argument too.
+
+And we should also take care of fcheck_files(),
+
+> > 	static inline struct file *__fcheck_files(struct files_struct *files, unsigned int fd)
+> > 	{
+> > 		struct fdtable *fdt = rcu_dereference_raw(files->fdt);
+> > 		struct file *file = NULL;
+> >
+> > 		if (fd < fdt->max_fds)
+> > 			file = rcu_dereference_raw(fdt->fd[fd]);
+> >
+> > 		return file;
+> > 	}
+> >
+> > 	static inline struct file *fcheck_files(struct files_struct *files, unsigned int fd)
+> > 	{
+> > 		rcu_lockdep_assert(rcu_read_lock_held() ||
+> > 				   lockdep_is_held(files->file_lock),
+> > 				   "message");
+> > 		return __fcheck_files(files, fd);
+> > 	}
+
+doesn't this look much simpler than adding the "bool unshared" argument
+and changing the callers?
+
+Oleg.
+
