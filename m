@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249AbaAJGzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 01:55:52 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:58451 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAJGzu (ORCPT
+	id S1751476AbaAJG67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 01:58:59 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60650 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaAJG64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 01:55:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <52CF8455.5090506@ti.com>
-References: <CAAfyv37aM6SrpuU9fzKA6GKsWn=To5ANOpG_kSX509NjMjdecA@mail.gmail.com>
-	<529F1E89.6080700@ti.com>
-	<CAAfyv36sNyEiEHEOKfZWN1xRYLGUt-NW18uhcJbSTWRBA5=2BA@mail.gmail.com>
-	<52CE32AB.1050204@ti.com>
-	<52CF8455.5090506@ti.com>
-Date: Fri, 10 Jan 2014 07:55:48 +0100
-Message-ID: <CAAfyv34ce=V_nheonE0HLGPNEF=Z_Ep-hj64dSuKrRqehNfOCw@mail.gmail.com>
-Subject: Re: 3.13-rc2 phy-twl4030-usb.c - Timeout setting T2 HSUSB PHY DPLL
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 10 Jan 2014 01:58:56 -0500
+Message-ID: <1389337238.5567.408.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
+ attributes
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@mellanox.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Date: Thu, 09 Jan 2014 23:00:38 -0800
+In-Reply-To: <52CE817B.9070203@mellanox.com>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
+	 <52CE817B.9070203@mellanox.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2014-01-09 at 13:01 +0200, Sagi Grimberg wrote:
+> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This patch adds support for exposing DIF protection device
+> > attributes via configfs.  This includes:
+> >
+> >     pi_prot_type: Protection Type (0, 1, 3 currently support)
+> >     pi_prot_version: Protection Version (DIF v1 currently supported)
+> >     pi_guard_type: Guard Type (1=DIF CRC, 2=IP CRC)
+> >
+> > Within se_dev_set_pi_prot_type() it also adds the se_subsystem_api
+> > device callbacks to setup per device protection information.
+> 
+> Suggestion, expose pi_prot_format and call transport->init_prot() there. 
+> It is more explicit
+> and this routine should be called upon getting FORMAT_UNIT as well.
 
-On Fri, Jan 10, 2014 at 6:25 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Hi,
->
-> On Thursday 09 January 2014 10:54 AM, Roger Quadros wrote:
->> Hi Marek,
->>
->> I have no idea what is happening there. Have you tried using device tree boot?
->> Board file boot support would be dropped eventually.
->>
->> Did you try if I2C read write to the twl4030 device works and all necessary clocks/supplies are
->> present?
->>
->> Kishon, do you know what is causing the USB DPLL failure there?
-Issue was fixed. There was in 3.13-rc7 issue with unable to find phy
-(phy was twl4030_usb). After that
-issue is gone.
->
-> Not sure what's causing those failures :-s
->
-> -Kishon
->
->>
->> cheers,
->> -roger
->>
->> On 01/09/2014 02:31 AM, Belisko Marek wrote:
->>> Any pointers? Still present in 3.13-rc7.
->>>
->>> On Wed, Dec 4, 2013 at 1:22 PM, Roger Quadros <rogerq@ti.com> wrote:
->>>> +Kishon
->>>>
->>>> On 12/03/2013 11:33 PM, Belisko Marek wrote:
->>>>> Hi,
->>>>>
->>>>> current 3.13-rcX break usb support on gta04 board (similar to
->>>>> beagleboard) when booting via board file.
->>>>>
->>>>> In console we can see messages:
->>>>>  [ 5227.287841] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
->>>>> [ 5232.936096] omap_musb_mailbox: musb core is not yet ready
->>>>> [ 5233.958160] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
->>>>> [ 5235.058227] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
->>>>>
->>>>> Any pointer what could cause that? (in 3.12 usb works fine)
->>>>>
->>>>> BR,
->>>>>
->>>>> marek
->>>>>
->>>>
->>>
->>> BR,
->>>
->>> marek
->>>
->>
->
+<nod>, working on this next for FILEIO following your original example
+code.
 
-BR,
+Thanks Sagi!
 
-marek
+--nab
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
