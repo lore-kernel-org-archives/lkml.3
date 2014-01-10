@@ -1,77 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766AbaAJQT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:19:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34633 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaAJQT1 (ORCPT
+	id S1757927AbaAJQUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:20:17 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:59159 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaAJQUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:19:27 -0500
-Message-ID: <52D01D82.5070202@canonical.com>
-Date: Fri, 10 Jan 2014 11:19:14 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 10 Jan 2014 11:20:13 -0500
+Message-ID: <52D01DBE.6010205@gmail.com>
+Date: Sat, 11 Jan 2014 00:20:14 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
- mmio
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com> <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
-In-Reply-To: <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+To: James Hogan <james.hogan@imgtec.com>
+CC: linux-metag@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggest] arch: metag: compiler: Are they compiler's issues?
+References: <52B8F33C.3030808@gmail.com> <52CA85FF.8050604@imgtec.com> <52CD6849.4050007@gmail.com> <52D01860.6060801@gmail.com> <52D019A2.9000705@imgtec.com>
+In-Reply-To: <52D019A2.9000705@imgtec.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2013 02:55 PM, Yinghai Lu wrote:
-> On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
->>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>> That doesn't answer my question at all.
+On 01/11/2014 12:02 AM, James Hogan wrote:
+> On 10/01/14 15:57, Chen Gang wrote:
+>> On 01/08/2014 11:01 PM, Chen Gang wrote:
+>>> On 01/06/2014 06:31 PM, James Hogan wrote:
+>>>> I suspect this is due to bad assumptions in the code. The metag ABI is
+>>>> unusual in padding the size of structs to a 32bit boundary even if all
+>>>> members are <32bit. This is actually permitted by the C standard but
+>>>> it's a bit of a pain. e.g.
 >>>>
->>>> I understand that this change makes it so Joseph doesn't have to use
->>>> "pci=realloc=off".  But why should auto-reallocation be limited to
->>>> buses that have resources above 4GB?  That doesn't make any sense.
+>>>> struct s {
+>>>> 	short x
+>>>> 	struct {
+>>>> 		short x[3];
+>>>> 	} y;
+>>>> 	short z;
+>>>> };
 >>>>
->>>> We should fix the reallocation code so it can deal with this case.  If
->>>> there's not enough space for everything, obviously we have to leave
->>>> something unassigned.  A ROM BAR is a good candidate for leaving
->>>> unassigned, because most of the time we can get along without it.
->>> Yes, that is ideal and not that simple.
->>> but that would be hard to backport to old kernels.
+>>>> on x86
+>>>> 	alignof(s::y) == 2
+>>>> 	s::y at offset 2
+>>>> 	sizeof(s::y) == 6
+>>>> 	s::z at offset 6+2 = 8
+>>>> 	sizeof(struct s) == 10
+>>>>
+>>>> but on metag
+>>>> 	alignof(s::y) == 4
+>>>> 	s::y at offset 4
+>>>> 	sizeof(s::y) == 8 (padding, this is what catches people out)
+>>>> 	s::z at offset 4+8 = 12
+>>>> 	sizeof(struct s) == 16 (and here too)
+>>>>
+>>>> Adding packed attribute on outer struct reduces sizeof(struct s) to 12
+>>>> on metag:
+>>>> 	alignof(s::y) == 4
+>>>> 	s::y at offset 2 (packed)
+>>>> 	sizeof(s::y) == 8 (still padded)
 >>>
->>> BTW, Joseph, can you try
->>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>> for-pci-3.14
->>> with pci=realloc=on
+>>> In my memory, when packed(2), it breaks the C standard (although I am
+>>> not quit sure).
 >>>
->>> on that system?
+>>> And I guess, all C programmers will assume it will be 6 when within
+>>> pack(2) or pack(1).
 >>>
->>> Thanks
+>>>> 	s::z at offset 2+8 = 10
+>>>> 	sizeof(struct s) == 12 (packed)
+>>>>
+>>>> Also reduced to 12 if only inner struct is marked packed:
+>>>> 	alignof(s::y) == 2
+>>>> 	s::y at offset 2
+>>>> 	sizeof(s::y) == 6 (packed)
+>>>> 	s::z at offset 2+6 = 8
+>>>> 	sizeof(struct s) == 12 (still padded)
+>>>>
+>>>> Adding packed attribute on both outer and inner struct reduces
+>>>> sizeof(struct s) to 10 to match x86.
+>>>>
+>>>> Unfortunately it's years too late to change this ABI, so we're stuck
+>>>> with it.
+>>>>
 >>>
->>> Yinghai
->> I noticed there was some back and forth on this thread.  Do you still
->> want me to test this version, Yinghai?
-> Yes, if that works, we would not need to put the patch in upstream for limiting
-> realloc auto scope.
->
-> Thanks
->
-> Yinghai
+>>> Unfortunately too, most using cases are related with API (the related
+>>> structure definition must be the same in binary data).
+>>>
+>>> I am sure there are still another ways to bypass this issue, but that
+>>> will make the code looks very strange (especially they are API).
+>>>
+>>> :-(
+>>>
+>>
+>> I guess most C programmers will use this way to describe protocol/data
+>> format, and keep compatible for it (since it is API).
+>>
+>> So even if it really does not break C standard, I still recommend our
+>> compiler to improve itself to support this features.
+> 
+> The compiler cannot change this without breaking the ABI.
+> 
+> If the structure describes a set-in-stone data layout (which it sounds
+> like it does since it asserts the size of it) then the correct fix is to
+> pack the structures in such a way as to guarantee the correct offsets
+> and sizes on all compliant compilers. Otherwise if it's just an internal
+> programming API it shouldn't be using compile time asserts to enforce
+> things that vary between ABIs.
+> 
 
-Another user has confirmed that at test kernel from your branch[0] does
-resolve the bug.
+OK, thanks, I guess your meaning is:
 
-Thanks,
+	struct s {
+		short x;
+		struct {
+			short x[3];
+		} y __attribute__ ((packed));
+		short z;
+	} __attribute__ ((packed));
 
-Joe
+That will satisfy all of compilers (include metag), is it correct?
 
-[0]
 
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+Thanks.
+-- 
+Chen Gang
 
+Open, share and attitude like air, water and life which God blessed
