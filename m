@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094AbaAJWCB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:02:01 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:57632 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751263AbaAJWB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:01:58 -0500
-Date: Fri, 10 Jan 2014 16:01:55 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
-Message-ID: <20140110220155.GD3066@sgi.com>
-References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
- <20140110202310.GB1421@node.dhcp.inet.fi>
+	id S1758134AbaAJWC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:02:26 -0500
+Received: from mail.windriver.com ([147.11.1.11]:39183 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaAJWCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 17:02:24 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+CC: <linux-alpha@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] alpha: don't use module_init for non-modular core code
+Date: Fri, 10 Jan 2014 17:02:02 -0500
+Message-ID: <1389391322-29873-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110202310.GB1421@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 10:23:10PM +0200, Kirill A. Shutemov wrote:
-> Do you know what cause the difference? I prefer to fix THP instead of
-> adding new knob to disable it.
+The srm console is always built in.  It will never be modular,
+so using module_init as an alias for __initcall is rather
+misleading.
 
-The issue is that when you touch 1 byte of an untouched, contiguous 2MB
-chunk, a THP will be handed out, and the THP will be stuck on whatever
-node the chunk was originally referenced from.  If many remote nodes
-need to do work on that same chunk, they'll be making remote accesses.
-With THP disabled, 4K pages can be handed out to separate nodes as
-they're needed, greatly reducing the amount of remote accesses to
-memory.  I give a bit better description here:
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
-https://lkml.org/lkml/2013/8/27/397
+Direct use of __initcall is discouraged, vs prioritized ones.
+Use of device_initcall is consistent with what __initcall
+maps onto, and hence does not change the init order, making the
+impact of this change zero.   Should someone with real hardware
+for boot testing want to change it later to arch_initcall or
+console_initcall, they can do that at a later date.
 
-I had been looking into better ways to handle this issues, but after
-spinning through a few other ideas:
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-- Per cpuset flag to control THP:
-https://lkml.org/lkml/2013/6/10/331
+diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
+index 6f01d9ad7b81..72b59511e59a 100644
+--- a/arch/alpha/kernel/srmcons.c
++++ b/arch/alpha/kernel/srmcons.c
+@@ -237,8 +237,7 @@ srmcons_init(void)
+ 
+ 	return -ENODEV;
+ }
+-
+-module_init(srmcons_init);
++device_initcall(srmcons_init);
+ 
+ 
+ /*
+-- 
+1.8.5.2
 
-- Threshold to determine when to hand out THPs:
-https://lkml.org/lkml/2013/12/12/394
-
-We've arrived back here.  Andrea seemed to think that this is an
-acceptable approach to solve the problem, at least as a starting point:
-
-https://lkml.org/lkml/2013/12/17/397
-
-I agree that we should, ideally, come up with a way to appropriately
-handle this problem in the kernel, but as of right now, it appears that
-that might be a rather large undertaking.
-
-- Alex
