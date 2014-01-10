@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689AbaAJOQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:16:26 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58533 "HELO
+	id S1755977AbaAJOQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:16:30 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64916 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752301AbaAJOQS (ORCPT
+	with SMTP id S1753107AbaAJOQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:16:18 -0500
+	Fri, 10 Jan 2014 09:16:23 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Yinghai Lu <yinghai@kernel.org>,
@@ -19,12 +19,12 @@ Cc: Yinghai Lu <yinghai@kernel.org>,
         Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-scsi@vger.kernel.org,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 8/9] powerpc / eeh_driver: Use global PCI rescan-remove locking
-Date: Fri, 10 Jan 2014 15:28:38 +0100
-Message-ID: <4447911.Q1f9tEzrXs@vostro.rjw.lan>
+Subject: [PATCH 0/9] PCI: Eliminate race conditions between hotplug and sysfs rescan/remove (Was: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once)
+Date: Fri, 10 Jan 2014 15:20:44 +0100
+Message-ID: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1992931.Zv6xBcN8V4@vostro.rjw.lan> <20440867.YaQfKrcfsQ@vostro.rjw.lan>
+In-Reply-To: <1992931.Zv6xBcN8V4@vostro.rjw.lan>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <CAErSpo6edmz5nkSYogbYk1FFYsCCwNV_-rir2jGP2JBnvOx+iw@mail.gmail.com> <1992931.Zv6xBcN8V4@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -32,96 +32,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[Cc: adding linux-scsi for the MPT changes, Ben for powerpc, Matthew for
+ platform/x86 and Konrad for Xen]
 
-Race conditions are theoretically possible between the PCI device
-addition and removal in the PPC64 PCI error recovery driver and
-the generic PCI bus rescan and device removal that can be triggered
-via sysfs.
+On Friday, December 06, 2013 02:21:50 AM Rafael J. Wysocki wrote:
 
-To avoid those race conditions make PPC64 PCI error recovery driver
-use global PCI rescan-remove locking around PCI device addition and
-removal.
+[...]
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- arch/powerpc/kernel/eeh_driver.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+> 
+> OK
+> 
+> To be a bit more constructive, as the next step I'd try to use
+> pci_remove_rescan_mutex to serialize all PCI hotplug operations (as I said
+> above) without making the other changes made by my patch.  Does that sound
+> reasonable?
 
-Index: linux-pm/arch/powerpc/kernel/eeh_driver.c
-===================================================================
---- linux-pm.orig/arch/powerpc/kernel/eeh_driver.c
-+++ linux-pm/arch/powerpc/kernel/eeh_driver.c
-@@ -369,7 +369,9 @@ static void *eeh_rmv_device(void *data,
- 	edev->mode |= EEH_DEV_DISCONNECTED;
- 	(*removed)++;
- 
-+	pci_lock_rescan_remove();
- 	pci_stop_and_remove_bus_device(dev);
-+	pci_unlock_rescan_remove();
- 
- 	return NULL;
- }
-@@ -416,10 +418,13 @@ static int eeh_reset_device(struct eeh_p
- 	 * into pcibios_add_pci_devices().
- 	 */
- 	eeh_pe_state_mark(pe, EEH_PE_KEEP);
--	if (bus)
-+	if (bus) {
-+		pci_lock_rescan_remove();
- 		pcibios_remove_pci_devices(bus);
--	else if (frozen_bus)
-+		pci_unlock_rescan_remove();
-+	} else if (frozen_bus) {
- 		eeh_pe_dev_traverse(pe, eeh_rmv_device, &removed);
-+	}
- 
- 	/* Reset the pci controller. (Asserts RST#; resets config space).
- 	 * Reconfigure bridges and devices. Don't try to bring the system
-@@ -429,6 +434,8 @@ static int eeh_reset_device(struct eeh_p
- 	if (rc)
- 		return rc;
- 
-+	pci_lock_rescan_remove();
-+
- 	/* Restore PE */
- 	eeh_ops->configure_bridge(pe);
- 	eeh_pe_restore_bars(pe);
-@@ -462,6 +469,7 @@ static int eeh_reset_device(struct eeh_p
- 	pe->tstamp = tstamp;
- 	pe->freeze_count = cnt;
- 
-+	pci_unlock_rescan_remove();
- 	return 0;
- }
- 
-@@ -618,8 +626,11 @@ perm_error:
- 	eeh_pe_dev_traverse(pe, eeh_report_failure, NULL);
- 
- 	/* Shut down the device drivers for good. */
--	if (frozen_bus)
-+	if (frozen_bus) {
-+		pci_lock_rescan_remove();
- 		pcibios_remove_pci_devices(frozen_bus);
-+		pci_unlock_rescan_remove();
-+	}
- }
- 
- static void eeh_handle_special_event(void)
-@@ -692,6 +703,7 @@ static void eeh_handle_special_event(voi
- 	if (rc == 2 || rc == 1)
- 		eeh_handle_normal_event(pe);
- 	else {
-+		lock_pci_remove_rescan();
- 		list_for_each_entry_safe(hose, tmp,
- 			&hose_list, list_node) {
- 			phb_pe = eeh_phb_pe_get(hose);
-@@ -703,6 +715,7 @@ static void eeh_handle_special_event(voi
- 			eeh_pe_dev_traverse(pe, eeh_report_failure, NULL);
- 			pcibios_remove_pci_devices(bus);
- 		}
-+		unlock_pci_remove_rescan();
- 	}
- }
- 
+Well, no answer here, so as a followup, a series implementing that idea
+follows.
+
+I *hope* I found all of the places that need to be synchronized vs the bus
+rescan and device removal that can be triggered via sysfs, but I might overlook
+something.  Also in some cases I wasn't quite sure how much stuff to put under
+the lock, because said stuff is not exactly straightforward.
+
+Enjoy!
+
+Rafael
 
