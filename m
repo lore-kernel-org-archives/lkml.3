@@ -1,62 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaAJDBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 22:01:34 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:42893 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405AbaAJDBD (ORCPT
+	id S1755342AbaAJDBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 22:01:44 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:38923 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753405AbaAJDBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 22:01:03 -0500
-Message-ID: <52CF6269.8030105@gmail.com>
-Date: Fri, 10 Jan 2014 04:00:57 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 9 Jan 2014 22:01:40 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <kuninori.morimoto.gx@renesas.com>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ASoC: simple-card: fix one bug to writing to the platform data
+Date: Fri, 10 Jan 2014 10:05:17 +0800
+Message-ID: <1389319517-12128-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: Olaf Hering <olaf@aepfle.de>, Thomas Gleixner <tglx@linutronix.de>
-CC: linux-pm@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:667
-References: <52157D88.3070701@gmail.com> <20131017093854.GA19052@aepfle.de>
-In-Reply-To: <20131017093854.GA19052@aepfle.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.10.2013 11:38, Olaf Hering wrote:
->> Waking up from system sleep state S3:
-> 
->> ------------[ cut here ]------------
->> WARNING: CPU: 2 PID: 0 at kernel/time/tick-broadcast.c:667
->> tick_broadcast_oneshot_control+0x181/0x190()
-> 
-> 
-> Thomas,
-> 
-> this WARN_ON_ONCE happens on resume on my HP ProBook 6555b.
-> Is it still needed to be verbose in such case? It was introduced with
-> commit 26517f3e99248668315aee9460dcea21628cdd7f ("tick: Avoid
-> programming the local cpu timer if broadcast pending").
+It's a bug that writing to the platform data directly, for it should
+be constant. So just copy it before writing.
 
-3.10.2 - 3.13.0-0.rc7:
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:668
-tick_broadcast_oneshot_control+0x17d/0x190()
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-0.rc7.git2.2.fc21.x86_64 #1
-Call Trace:
- [<ffffffff81680a6a>] dump_stack+0x45/0x56
- [<ffffffff8106841d>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff810684fa>] warn_slowpath_null+0x1a/0x20
- [<ffffffff810cf16d>] tick_broadcast_oneshot_control+0x17d/0x190
- [<ffffffff810cdcb8>] clockevents_notify+0x178/0x1a0
- [<ffffffff8101c17b>] amd_e400_idle+0x7b/0x100
- [<ffffffff8101c916>] arch_cpu_idle+0x26/0x30
- [<ffffffff810bb425>] cpu_startup_entry+0xc5/0x290
- [<ffffffff81040bab>] start_secondary+0x22b/0x2e0
----[ end trace a6717546b328eaba ]---
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ sound/soc/generic/simple-card.c | 40 +++++++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
 
-
-poma
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 406e4ea..5b65324 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -9,9 +9,10 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/clk.h>
++#include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+-#include <linux/module.h>
++#include <linux/string.h>
+ #include <sound/simple_card.h>
+ 
+ #define asoc_simple_get_card_info(p) \
+@@ -204,36 +205,37 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct device_node *of_cpu, *of_codec, *of_platform;
+ 	struct device *dev = &pdev->dev;
++	int ret;
+ 
+ 	cinfo		= NULL;
+ 	of_cpu		= NULL;
+ 	of_codec	= NULL;
+ 	of_platform	= NULL;
++
++	cinfo = devm_kzalloc(dev, sizeof(*cinfo), GFP_KERNEL);
++	if (!cinfo)
++		return -ENOMEM;
++
+ 	if (np && of_device_is_available(np)) {
+-		cinfo = devm_kzalloc(dev, sizeof(*cinfo), GFP_KERNEL);
+-		if (cinfo) {
+-			int ret;
+-			cinfo->snd_card.dev = &pdev->dev;
+-			ret = asoc_simple_card_parse_of(np, cinfo, dev,
+-							&of_cpu,
+-							&of_codec,
+-							&of_platform);
+-			if (ret < 0) {
+-				if (ret != -EPROBE_DEFER)
+-					dev_err(dev, "parse error %d\n", ret);
+-				return ret;
+-			}
+-		} else {
+-			return -ENOMEM;
++		cinfo->snd_card.dev = dev;
++
++		ret = asoc_simple_card_parse_of(np, cinfo, dev,
++						&of_cpu,
++						&of_codec,
++						&of_platform);
++		if (ret < 0) {
++			if (ret != -EPROBE_DEFER)
++				dev_err(dev, "parse error %d\n", ret);
++			return ret;
+ 		}
+ 	} else {
+-		cinfo = pdev->dev.platform_data;
+-		if (!cinfo) {
++		if (!pdev->dev.platform_data) {
+ 			dev_err(dev, "no info for asoc-simple-card\n");
+ 			return -EINVAL;
+ 		}
+ 
+-		cinfo->snd_card.dev = &pdev->dev;
++		memcpy(cinfo, pdev->dev.platform_data, sizeof(cinfo));
++		cinfo->snd_card.dev = dev;
+ 	}
+ 
+ 	if (!cinfo->name	||
+-- 
+1.8.4
 
 
