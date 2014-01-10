@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686AbaAJMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:32:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:35595 "EHLO mga09.intel.com"
+	id S1756638AbaAJMck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:32:40 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34258 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085AbaAJMcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:32:19 -0500
+	id S1755983AbaAJMce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 07:32:34 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,638,1384329600"; 
-   d="scan'208";a="436877043"
+   d="scan'208";a="456668299"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, eranian@google.com,
         jolsa@redhat.com, fweisbec@gmail.com, mingo@kernel.org,
         adrian.hunter@intel.com, dsahern@gmail.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/4] perf, tools: Filter out small loops from LBR-as-call-stack
-Date: Fri, 10 Jan 2014 04:32:05 -0800
-Message-Id: <1389357126-3003-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 4/4] perf, tools: Enable printing the srcline in the history
+Date: Fri, 10 Jan 2014 04:32:06 -0800
+Message-Id: <1389357126-3003-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
 References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
@@ -27,129 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Small loops can cause unnecessary duplication in the LBR-as-callstack,
-because the loop body appears multiple times. Filter out duplications
-from the LBR before unifying it into the histories.  This way the
-same loop body only appears once.
+For lbr-as-callgraph we need to see the line number in the history,
+because many LBR entries can be in a single function, and just
+showing the same function name many times is not useful.
 
-This uses a simple hash based cycle detector. It takes some short
-cuts (not handling hash collisions) so in rare cases duplicates may
-be missed.
+When the history code is configured to sort by address, also try to
+resolve the address to a file:srcline and display this in the browser.
+If that doesn't work still display the address.
+
+This can be also useful without LBRs for understanding which call in a large
+function (or in which inlined function) called something else.
+
+Contains fixes from Namhyung Kim
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/machine.c | 73 ++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 62 insertions(+), 11 deletions(-)
+ tools/perf/ui/browsers/hists.c | 15 ++++++++++++---
+ tools/perf/ui/stdio/hist.c     | 16 +++++++++++++---
+ tools/perf/util/callchain.h    |  1 +
+ tools/perf/util/machine.c      |  2 +-
+ tools/perf/util/srcline.c      |  8 +++++++-
+ 5 files changed, 34 insertions(+), 8 deletions(-)
 
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index a440e03..5e0688b 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -399,9 +399,18 @@ static char *callchain_list__sym_name(struct callchain_list *cl,
+ {
+ 	int printed;
+ 
+-	if (cl->ms.sym)
+-		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	else
++	if (cl->ms.sym) {
++		if (callchain_param.key == CCKEY_ADDRESS && 
++		    cl->ms.map && !cl->srcline)
++			cl->srcline = get_srcline(cl->ms.map->dso,
++						  map__rip_2objdump(cl->ms.map,
++								    cl->ip));
++		if (cl->srcline)
++			printed = scnprintf(bf, bfsize, "%s %s", 
++					cl->ms.sym->name, cl->srcline);
++		else
++			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
++	} else
+ 		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+ 
+ 	if (show_dso)
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index c244cb5..eea2af2 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -56,9 +56,19 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
+ 		} else
+ 			ret += fprintf(fp, "%s", "          ");
+ 	}
+-	if (chain->ms.sym)
+-		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
+-	else
++	if (chain->ms.sym) {
++		if (callchain_param.key == CCKEY_ADDRESS && 
++		    chain->ms.map)
++			chain->srcline = get_srcline(chain->ms.map->dso,
++						  map__rip_2objdump(
++							  chain->ms.map,
++							  chain->ip));
++		if (chain->srcline)
++			ret += fprintf(fp, "%s %s\n", 
++				       chain->ms.sym->name, chain->srcline);
++		else
++			ret += fprintf(fp, "%s\n", chain->ms.sym->name);
++	} else
+ 		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
+ 
+ 	return ret;
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3d799f2..70bb29b 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -59,6 +59,7 @@ struct callchain_param {
+ struct callchain_list {
+ 	u64			ip;
+ 	struct map_symbol	ms;
++	char 		       *srcline;
+ 	struct list_head	list;
+ };
+ 
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a7e538b..0fb4e9a 100644
+index 0fb4e9a..14437af 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -10,6 +10,7 @@
- #include "thread.h"
- #include <stdbool.h>
- #include "unwind.h"
-+#include "linux/hash.h"
+@@ -1300,7 +1300,7 @@ static int add_callchain_ip(struct machine *machine,
+ 			return -EINVAL;
+ 	}
  
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- {
-@@ -1302,6 +1303,46 @@ static int add_callchain_ip(struct machine *machine,
- 	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
+-	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
++	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
  }
  
-+#define CHASHSZ 127
-+#define CHASHBITS 7
-+#define NO_ENTRY 0xff
-+
-+#define PERF_MAX_BRANCH_DEPTH 127
-+
-+/* Remove loops. */
-+static int remove_loops(struct branch_entry *l, int nr)
-+{
-+	int i, j, off;
-+	unsigned char chash[CHASHSZ];
-+	memset(chash, -1, sizeof(chash));
-+
-+	BUG_ON(nr >= 256);
-+	for (i = 0; i < nr; i++) {
-+		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
-+
-+		/* no collision handling for now */
-+		if (chash[h] == NO_ENTRY) {
-+			chash[h] = i;
-+		} else if (l[chash[h]].from == l[i].from) {
-+			bool is_loop = true;
-+			/* check if it is a real loop */
-+			off = 0;
-+			for (j = chash[h]; j < i && i + off < nr; j++, off++)
-+				if (l[j].from != l[i + off].from) {
-+					is_loop = false;
-+					break;
-+				}
-+			if (is_loop) {
-+				memmove(l + i, l + i + off, 
-+					(nr - (i + off))
-+					* sizeof(struct branch_entry));
-+				nr -= off;
-+			}
-+		}
+ #define CHASHSZ 127
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index d11aefb..65c402d 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -230,7 +230,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 	size_t size;
+ 
+ 	if (!dso->has_srcline)
+-		return SRCLINE_UNKNOWN;
++		goto out;
+ 
+ 	if (dso_name[0] == '[')
+ 		goto out;
+@@ -255,6 +255,12 @@ char *get_srcline(struct dso *dso, unsigned long addr)
+ 
+ out:
+ 	dso->has_srcline = 0;
++	size = snprintf(NULL, 0, "%s[%lx]", dso->short_name, addr) + 1;
++	srcline = malloc(size);
++	if (srcline) { 
++		snprintf(srcline, size, "%s[%lx]", dso->short_name, addr);
++		return srcline;
 +	}
-+	return nr;
-+}
-+
- static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
- 					     struct ip_callchain *chain,
-@@ -1328,29 +1369,39 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 	 * - No extra filters
- 	 * - No annotations (should annotate somehow)
- 	 * - When the sample is near the beginning of the function
-- 	 *   we may overlap with the real callstack. Could handle this
--	 *   case later, by checking against the last ip.
-+ 	 *   we may overlap with the real callstack. 
- 	 */
- 
-+	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
-+		pr_warning("corrupted branch chain. skipping...\n");
-+		return 0;
-+	}
-+
- 	if (callchain_param.branch_callstack) {
--		for (i = 0; i < branch->nr; i++) { 
--			struct branch_entry *b; 
-+		int nr = branch->nr;
-+		struct branch_entry be[nr];
- 
-+		for (i = 0; i < nr; i++) { 
- 			if (callchain_param.order == ORDER_CALLEE)
--				b = &branch->entries[i];
-+				be[i] = branch->entries[i];
- 			else
--				b = &branch->entries[branch->nr - i - 1];
-+				be[i] = branch->entries[branch->nr - i - 1];
-+		}
- 
--			err = add_callchain_ip(machine, thread, parent, root_al,
--					       -1, b->to);
-+		nr = remove_loops(be, nr);
-+
-+		for (i = 0; i < nr; i++) {
-+			err = add_callchain_ip(machine, thread, parent, 
-+					       root_al,
-+					       -1, be[i].to);
- 			if (!err)
--				err = add_callchain_ip(machine, thread, parent, root_al,
--					       -1, b->from);
-+				err = add_callchain_ip(machine, thread, 
-+						       parent, root_al,
-+						       -1, be[i].from);
- 			if (err == -EINVAL)
- 				break;
- 			if (err)
- 				return err;
--
- 		}
- 	}
+ 	return SRCLINE_UNKNOWN;
+ }
  
 -- 
 1.8.3.1
