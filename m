@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaAJPM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:12:29 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:55057 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaAJPM1 (ORCPT
+	id S1756165AbaAJPMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:12:43 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:47504 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753223AbaAJPMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:12:27 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH-next] drivers/hwmon: remove new __cpuinit usage from coretemp.c
-Date: Fri, 10 Jan 2014 10:10:23 -0500
-Message-ID: <1389366623-26552-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Fri, 10 Jan 2014 10:12:38 -0500
+Date: Fri, 10 Jan 2014 10:12:37 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: walt <w41ter@gmail.com>, David Laight <David.Laight@ACULAB.COM>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
+ a USB payload burst
+In-Reply-To: <20140109235045.GA17660@xanatos>
+Message-ID: <Pine.LNX.4.44L0.1401101007330.1399-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit da9e8c7a7b99b245c464ff45c7bde38a4b510019 ("hwmon: (coretemp)
-Use PCI host bridge ID to identify CPU if necessary") added a new
-instance of the __cpuinit macro usage.
+On Thu, 9 Jan 2014, Sarah Sharp wrote:
 
-We removed this a couple versions ago; we now want to remove
-the compat no-op stubs.  Introducing new users is not what
-we want to see at this point in time, as it will break once
-the stubs are gone.
+> > I can't see anything obvious either.
+> > However there is no response to the 'stop endpoint' command.
+> > Section 4.6.9 (page 107 of rev1.0) states that the controller will complete
+> > any USB IN or OUT transaction before raising the command completion event.
+> > Possibly it is too 'stuck' to complete the transaction?
+> 
+> The host has to stop processing the transaction, it can't "wait" for the
+> transaction to finish.  "The Stop Endpoint Command is expected to stop
+> endpoint activity as soon as possible, which may mean that it stops in
+> the middle of a TRB."
 
-Cc: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+Just to clarify for Walt: There's a difference between a transaction 
+and a transfer.  Transfers can take an indefinitely long time to 
+complete, because the device doesn't have to accept or send any data 
+until it is ready.
 
-[Patch based on today's linux-next tree, so if hwmon next content
- gets rebased, then the above commit ID will be invalidated; if it
- _does_ get rebased, then feel free to squash this fix into the orig.]
+By contrast, transactions have sharply bounded lifetimes.  A
+transaction consists of some maximum number of packets (usually 3,
+sometimes a little more) with upper limits on the time intervals
+between them.
 
- drivers/hwmon/coretemp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+A TRB lies somewhere between a transfer and a transaction.  A single 
+TRB can encompass a single transaction or multiple transactions, and a 
+single transfer can involve more than one TRB.
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 6e0579e80538..f44549f7c445 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -197,7 +197,7 @@ struct tjmax_pci {
- 	int tjmax;
- };
- 
--static const struct tjmax_pci tjmax_pci_table[] __cpuinitconst = {
-+static const struct tjmax_pci tjmax_pci_table[] = {
- 	{ 0x0708, 110000 },	/* CE41x0 (Sodaville ) */
- 	{ 0x0c72, 102000 },	/* Atom S1240 (Centerton) */
- 	{ 0x0c73, 95000 },	/* Atom S1220 (Centerton) */
--- 
-1.8.5.2
+Alan Stern
 
