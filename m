@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135AbaAJVkB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 16:40:01 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:12211 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757951AbaAJVj6 (ORCPT
+	id S1758159AbaAJVkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 16:40:47 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:43204 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658AbaAJVko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 16:39:58 -0500
-Message-ID: <1389389641.1792.173.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 1/2] acpi memory hotplug, add parameter to disable
- memory hotplug [v2]
+	Fri, 10 Jan 2014 16:40:44 -0500
+Message-ID: <1389389688.1792.174.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory
+ mapping is specified by user [v2]
 From: Toshi Kani <toshi.kani@hp.com>
 To: Prarit Bhargava <prarit@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
@@ -22,10 +22,10 @@ Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
         kosaki.motohiro@gmail.com, dyoung@redhat.com,
         linux-acpi@vger.kernel.org, linux-mm@kvack.org
-Date: Fri, 10 Jan 2014 14:34:01 -0700
-In-Reply-To: <1389380698-19361-3-git-send-email-prarit@redhat.com>
+Date: Fri, 10 Jan 2014 14:34:48 -0700
+In-Reply-To: <1389380698-19361-4-git-send-email-prarit@redhat.com>
 References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
-	 <1389380698-19361-3-git-send-email-prarit@redhat.com>
+	 <1389380698-19361-4-git-send-email-prarit@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
@@ -36,31 +36,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 2014-01-10 at 14:04 -0500, Prarit Bhargava wrote:
  :
-> ---
->  Documentation/kernel-parameters.txt |    3 +++
->  drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
->  2 files changed, 15 insertions(+)
+>  arch/x86/kernel/e820.c         |   10 +++++++++-
+>  drivers/acpi/acpi_memhotplug.c |    7 ++++++-
+>  include/linux/memory_hotplug.h |    3 +++
+>  3 files changed, 18 insertions(+), 2 deletions(-)
 > 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index b9e9bd8..41374f9 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2117,6 +2117,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+> index 174da5f..747f36a 100644
+> --- a/arch/x86/kernel/e820.c
+> +++ b/arch/x86/kernel/e820.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/firmware-map.h>
+>  #include <linux/memblock.h>
+>  #include <linux/sort.h>
+> +#include <linux/memory_hotplug.h>
 >  
->  	nomce		[X86-32] Machine Check Exception
+>  #include <asm/e820.h>
+>  #include <asm/proto.h>
+> @@ -834,6 +835,8 @@ static int __init parse_memopt(char *p)
+>  		return -EINVAL;
+>  	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
 >  
-> +	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
-> +			   and kdump kernels.
+> +	set_acpi_no_memhotplug();
 > +
 
-Please move it to where other acpi_xxx are described.
-
-For kdump kernel, this option will be used when memmap=exactmap is
-deprecated.  IOW, it is not useful yet.  Not sure what you mean by kexec
-kernel.  Memory hotplug does not need to be disabled for kexec reboot.
+It won't build when CONFIG_ACPI_HOTPLUG_MEMORY is not defined.
 
 Thanks,
 -Toshi
+
 
 
 
