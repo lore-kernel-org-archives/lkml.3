@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaAJOQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:16:30 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64916 "HELO
+	id S1754927AbaAJOQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:16:28 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59001 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753107AbaAJOQX (ORCPT
+	with SMTP id S1752361AbaAJOQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:16:23 -0500
+	Fri, 10 Jan 2014 09:16:18 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Yinghai Lu <yinghai@kernel.org>,
@@ -19,12 +19,12 @@ Cc: Yinghai Lu <yinghai@kernel.org>,
         Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-scsi@vger.kernel.org,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 0/9] PCI: Eliminate race conditions between hotplug and sysfs rescan/remove (Was: Re: [PATCH v2 04/10] PCI: Destroy pci dev only once)
-Date: Fri, 10 Jan 2014 15:20:44 +0100
-Message-ID: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
+Subject: [PATCH 7/9] MPT / PCI: Use pci_stop_and_remove_bus_device_locked()
+Date: Fri, 10 Jan 2014 15:27:56 +0100
+Message-ID: <5291802.S1gYQvjIuc@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1992931.Zv6xBcN8V4@vostro.rjw.lan>
-References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <CAErSpo6edmz5nkSYogbYk1FFYsCCwNV_-rir2jGP2JBnvOx+iw@mail.gmail.com> <1992931.Zv6xBcN8V4@vostro.rjw.lan>
+In-Reply-To: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1992931.Zv6xBcN8V4@vostro.rjw.lan> <20440867.YaQfKrcfsQ@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -32,30 +32,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Cc: adding linux-scsi for the MPT changes, Ben for powerpc, Matthew for
- platform/x86 and Konrad for Xen]
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-On Friday, December 06, 2013 02:21:50 AM Rafael J. Wysocki wrote:
+Race conditions are theoretically possible between the MPT PCI
+device removal and the generic PCI bus rescan and device removal
+that can be triggered via sysfs.
 
-[...]
+To avoid those race conditions make the MPT PCI code use
+pci_stop_and_remove_bus_device_locked().
 
-> 
-> OK
-> 
-> To be a bit more constructive, as the next step I'd try to use
-> pci_remove_rescan_mutex to serialize all PCI hotplug operations (as I said
-> above) without making the other changes made by my patch.  Does that sound
-> reasonable?
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/message/fusion/mptbase.c    |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
+ drivers/scsi/mpt3sas/mpt3sas_base.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Well, no answer here, so as a followup, a series implementing that idea
-follows.
-
-I *hope* I found all of the places that need to be synchronized vs the bus
-rescan and device removal that can be triggered via sysfs, but I might overlook
-something.  Also in some cases I wasn't quite sure how much stuff to put under
-the lock, because said stuff is not exactly straightforward.
-
-Enjoy!
-
-Rafael
+Index: linux-pm/drivers/scsi/mpt3sas/mpt3sas_base.c
+===================================================================
+--- linux-pm.orig/drivers/scsi/mpt3sas/mpt3sas_base.c
++++ linux-pm/drivers/scsi/mpt3sas/mpt3sas_base.c
+@@ -131,7 +131,7 @@ static int mpt3sas_remove_dead_ioc_func(
+ 	pdev = ioc->pdev;
+ 	if ((pdev == NULL))
+ 		return -1;
+-	pci_stop_and_remove_bus_device(pdev);
++	pci_stop_and_remove_bus_device_locked(pdev);
+ 	return 0;
+ }
+ 
+Index: linux-pm/drivers/scsi/mpt2sas/mpt2sas_base.c
+===================================================================
+--- linux-pm.orig/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ linux-pm/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -128,7 +128,7 @@ static int mpt2sas_remove_dead_ioc_func(
+ 		pdev = ioc->pdev;
+ 		if ((pdev == NULL))
+ 			return -1;
+-		pci_stop_and_remove_bus_device(pdev);
++		pci_stop_and_remove_bus_device_locked(pdev);
+ 		return 0;
+ }
+ 
+Index: linux-pm/drivers/message/fusion/mptbase.c
+===================================================================
+--- linux-pm.orig/drivers/message/fusion/mptbase.c
++++ linux-pm/drivers/message/fusion/mptbase.c
+@@ -346,7 +346,7 @@ static int mpt_remove_dead_ioc_func(void
+ 	if ((pdev == NULL))
+ 		return -1;
+ 
+-	pci_stop_and_remove_bus_device(pdev);
++	pci_stop_and_remove_bus_device_locked(pdev);
+ 	return 0;
+ }
+ 
 
