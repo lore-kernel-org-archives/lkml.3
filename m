@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaAJF0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 00:26:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46036 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702AbaAJF0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 00:26:10 -0500
-Message-ID: <52CF8455.5090506@ti.com>
-Date: Fri, 10 Jan 2014 10:55:41 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752038AbaAJFds (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 00:33:48 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:2067 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750702AbaAJFdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 00:33:45 -0500
+From: Nenghua Cao <nhcao@marvell.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+CC: Nenghua Cao <nhcao@marvell.com>
+Subject: [PATCH] ASoC: dpcm: don't do hw_param when BE has done hw_param
+Date: Fri, 10 Jan 2014 13:36:35 +0800
+Message-ID: <1389332195-15900-1-git-send-email-nhcao@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, Belisko Marek <marek.belisko@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: 3.13-rc2 phy-twl4030-usb.c - Timeout setting T2 HSUSB PHY DPLL
-References: <CAAfyv37aM6SrpuU9fzKA6GKsWn=To5ANOpG_kSX509NjMjdecA@mail.gmail.com>	<529F1E89.6080700@ti.com> <CAAfyv36sNyEiEHEOKfZWN1xRYLGUt-NW18uhcJbSTWRBA5=2BA@mail.gmail.com> <52CE32AB.1050204@ti.com>
-In-Reply-To: <52CE32AB.1050204@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-10_02:2014-01-09,2014-01-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1401090258
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Nenghua Cao <nhcao@marvell.com>
 
-On Thursday 09 January 2014 10:54 AM, Roger Quadros wrote:
-> Hi Marek,
-> 
-> I have no idea what is happening there. Have you tried using device tree boot?
-> Board file boot support would be dropped eventually.
-> 
-> Did you try if I2C read write to the twl4030 device works and all necessary clocks/supplies are
-> present?
-> 
-> Kishon, do you know what is causing the USB DPLL failure there?
+    It fixes the following case:
+    Two FEs connects the same BE; FE1 & BE path has been opened and hw_paramed.
+At this momment, FE2 & BE path is being opened and hw_paramed. The BE
+dai will do hw_param again even if it has done hw_param. It is not
+reasonable.
+FE1------------>BE
+FE2-------------^
 
-Not sure what's causing those failures :-s
+Signed-off-by: Nenghua Cao <nhcao@marvell.com>
+---
+ sound/soc/soc-pcm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
--Kishon
-
-> 
-> cheers,
-> -roger
-> 
-> On 01/09/2014 02:31 AM, Belisko Marek wrote:
->> Any pointers? Still present in 3.13-rc7.
->>
->> On Wed, Dec 4, 2013 at 1:22 PM, Roger Quadros <rogerq@ti.com> wrote:
->>> +Kishon
->>>
->>> On 12/03/2013 11:33 PM, Belisko Marek wrote:
->>>> Hi,
->>>>
->>>> current 3.13-rcX break usb support on gta04 board (similar to
->>>> beagleboard) when booting via board file.
->>>>
->>>> In console we can see messages:
->>>>  [ 5227.287841] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
->>>> [ 5232.936096] omap_musb_mailbox: musb core is not yet ready
->>>> [ 5233.958160] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
->>>> [ 5235.058227] twl4030_usb twl4030_usb: Timeout setting T2 HSUSB PHY DPLL clock
->>>>
->>>> Any pointer what could cause that? (in 3.12 usb works fine)
->>>>
->>>> BR,
->>>>
->>>> marek
->>>>
->>>
->>
->> BR,
->>
->> marek
->>
-> 
+diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
+index 891b9a9..ec07e37 100644
+--- a/sound/soc/soc-pcm.c
++++ b/sound/soc/soc-pcm.c
+@@ -1339,7 +1339,6 @@ static int dpcm_be_dai_hw_params(struct snd_soc_pcm_runtime *fe, int stream)
+ 			continue;
+ 
+ 		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
+-		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
+ 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
+ 			continue;
+ 
+-- 
+1.7.0.4
 
