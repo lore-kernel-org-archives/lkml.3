@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642AbaAJPI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:08:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58324 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746AbaAJPIz (ORCPT
+	id S1752722AbaAJPM3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:12:29 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:55057 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaAJPM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:08:55 -0500
-Date: Fri, 10 Jan 2014 07:08:56 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: Re: [PATCHSET v3 driver-core-next] kernfs, sysfs, driver-core:
- implement synchronous self-removal
-Message-ID: <20140110150856.GB22533@kroah.com>
-References: <1389362251-8128-1-git-send-email-tj@kernel.org>
+	Fri, 10 Jan 2014 10:12:27 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>
+CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH-next] drivers/hwmon: remove new __cpuinit usage from coretemp.c
+Date: Fri, 10 Jan 2014 10:10:23 -0500
+Message-ID: <1389366623-26552-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389362251-8128-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 08:57:17AM -0500, Tejun Heo wrote:
-> Hello,
-> 
-> This is v3 of kernfs self-removal patchset.  v2 posting mistakenly
-> sent out slightly old set of patches, so the v3.  Sorry about the
-> noise.  Changes from the first take[L] are,
+Commit da9e8c7a7b99b245c464ff45c7bde38a4b510019 ("hwmon: (coretemp)
+Use PCI host bridge ID to identify CPU if necessary") added a new
+instance of the __cpuinit macro usage.
 
-It's really late in the -rc cycle for me to take this for 3.14, but I
-see patch 1 is a good one to have, so I'll take that now, and queue the
-rest up for after 3.14-rc1 is out for 3.15.  Is that ok with you, or do
-you have patches that depend on this series for 3.14?
+We removed this a couple versions ago; we now want to remove
+the compat no-op stubs.  Introducing new users is not what
+we want to see at this point in time, as it will break once
+the stubs are gone.
 
-thanks,
+Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
 
-greg k-h
+[Patch based on today's linux-next tree, so if hwmon next content
+ gets rebased, then the above commit ID will be invalidated; if it
+ _does_ get rebased, then feel free to squash this fix into the orig.]
+
+ drivers/hwmon/coretemp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 6e0579e80538..f44549f7c445 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -197,7 +197,7 @@ struct tjmax_pci {
+ 	int tjmax;
+ };
+ 
+-static const struct tjmax_pci tjmax_pci_table[] __cpuinitconst = {
++static const struct tjmax_pci tjmax_pci_table[] = {
+ 	{ 0x0708, 110000 },	/* CE41x0 (Sodaville ) */
+ 	{ 0x0c72, 102000 },	/* Atom S1240 (Centerton) */
+ 	{ 0x0c73, 95000 },	/* Atom S1220 (Centerton) */
+-- 
+1.8.5.2
+
