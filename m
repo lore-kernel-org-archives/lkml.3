@@ -1,206 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659AbaAJCmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 21:42:25 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25486 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaAJCkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 21:40:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
-   d="scan'208";a="464478245"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH 1/6] Add bdev_read_page() and bdev_write_page()
-Date: Thu,  9 Jan 2014 21:39:46 -0500
-Message-Id: <cover.1387748522.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
-References: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
+	id S1756734AbaAJCnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 21:43:14 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:52836
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751632AbaAJCnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 21:43:12 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 10 Jan 2014 10:44:03 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <kernel@pengutronix.de>, <fabio.estevam@freescale.com>,
+        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] Revert "ARM: dts: imx: use dual-fifo sdma script for
+ ssi"
+Message-ID: <20140110024359.GB6844@S2101-09.ap.freescale.net>
+References: <1389170756-22351-1-git-send-email-Guangyu.Chen@freescale.com>
+ <1389170756-22351-2-git-send-email-Guangyu.Chen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1389170756-22351-2-git-send-email-Guangyu.Chen@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A block device driver may choose to provide a rw_page operation.
-These will be called when the filesystem is attempting to do page sized
-I/O to page cache pages (ie not for direct I/O).  This does preclude
-I/Os that are larger than page size, so this may only be a performance
-gain for some devices.
+On Wed, Jan 08, 2014 at 04:45:55PM +0800, Nicolin Chen wrote:
+> This reverts commit b1d27c79c8377df1880447375deffa3bb82c7bd3.
+> 
+> Previously we switched the SSI scriprt to dual-fifo mode to reduce playback
+> underrun issue, which is only included by SDMA firmware version 2. However,
+> there are quite a lot people still using version 1 or default firmware in
+> the ROM code of SoC while these two kinds of firmwares do not support the
+> dual-fifo script and the audio function on their platform would be broken.
+> 
+> Thus this patch provisionally reverts the dual-fifo script to the original
+> single fifo script to meet all kinds of users' requirements, including the
+> version 1/2 or inner ROM firmware.
+> 
+> Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/block_dev.c         | 34 ++++++++++++++++++++++++++
- fs/mpage.c             | 66 ++++++++++++++++++++++++++++++++------------------
- include/linux/blkdev.h |  4 +++
- 3 files changed, 80 insertions(+), 24 deletions(-)
+If Vinod's tree can be rebased, the patch can just be dropped.
+Otherwise,
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 1e86823..660557c 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -363,6 +363,40 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
- }
- EXPORT_SYMBOL(blkdev_fsync);
- 
-+int bdev_read_page(struct block_device *bdev, sector_t sector,
-+			struct page *page)
-+{
-+	const struct block_device_operations *ops = bdev->bd_disk->fops;
-+	if (!ops->rw_page)
-+		return -EOPNOTSUPP;
-+	return ops->rw_page(bdev, sector + get_start_sect(bdev), page, READ);
-+}
-+EXPORT_SYMBOL_GPL(bdev_read_page);
-+
-+int bdev_write_page(struct block_device *bdev, sector_t sector,
-+			struct page *page, struct writeback_control *wbc)
-+{
-+	int result;
-+	int rw = (wbc->sync_mode == WB_SYNC_ALL) ? WRITE_SYNC : WRITE;
-+	const struct block_device_operations *ops = bdev->bd_disk->fops;
-+	if (!ops->rw_page)
-+		return -EOPNOTSUPP;
-+	result = ops->rw_page(bdev, sector + get_start_sect(bdev), page, rw);
-+	if (result) {
-+		if (PageSwapCache(page)) {
-+			set_page_dirty(page);
-+			ClearPageReclaim(page);
-+			end_page_writeback(page);
-+		} else {
-+			redirty_page_for_writepage(wbc, page);
-+			result = 0;
-+		}
-+	}
-+	unlock_page(page);
-+	return result;
-+}
-+EXPORT_SYMBOL_GPL(bdev_write_page);
-+
- /*
-  * pseudo-fs
-  */
-diff --git a/fs/mpage.c b/fs/mpage.c
-index 0face1c..b8552ae 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -286,6 +286,11 @@ do_mpage_readpage(struct bio *bio, struct page *page, unsigned nr_pages,
- 
- alloc_new:
- 	if (bio == NULL) {
-+		if (first_hole == blocks_per_page) {
-+			if (!bdev_read_page(bdev, blocks[0] << (blkbits - 9),
-+								page))
-+				goto out;
-+		}
- 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
- 			  	min_t(int, nr_pages, bio_get_nr_vecs(bdev)),
- 				GFP_KERNEL);
-@@ -440,6 +445,35 @@ struct mpage_data {
- 	unsigned use_writepage;
- };
- 
-+/*
-+ * We have our BIO, so we can now mark the buffers clean.  Make
-+ * sure to only clean buffers which we know we'll be writing.
-+ */
-+static void clean_buffers(struct page *page, unsigned first_unmapped)
-+{
-+	unsigned buffer_counter = 0;
-+	struct buffer_head *bh, *head;
-+	if (!page_has_buffers(page))
-+		return;
-+	head = page_buffers(page);
-+	bh = head;
-+
-+	do {
-+		if (buffer_counter++ == first_unmapped)
-+			break;
-+		clear_buffer_dirty(bh);
-+		bh = bh->b_this_page;
-+	} while (bh != head);
-+
-+	/*
-+	 * we cannot drop the bh if the page is not uptodate or a concurrent
-+	 * readpage would fail to serialize with the bh and it would read from
-+	 * disk before we reach the platter.
-+	 */
-+	if (buffer_heads_over_limit && PageUptodate(page))
-+		try_to_free_buffers(page);
-+}
-+
- static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
- 		      void *data)
- {
-@@ -575,6 +609,13 @@ page_is_mapped:
- 
- alloc_new:
- 	if (bio == NULL) {
-+		if (first_unmapped == blocks_per_page) {
-+			if (!bdev_write_page(bdev, blocks[0] << (blkbits - 9),
-+								page, wbc)) {
-+				clean_buffers(page, first_unmapped);
-+				goto out;
-+			}
-+		}
- 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
- 				bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
- 		if (bio == NULL)
-@@ -592,30 +633,7 @@ alloc_new:
- 		goto alloc_new;
- 	}
- 
--	/*
--	 * OK, we have our BIO, so we can now mark the buffers clean.  Make
--	 * sure to only clean buffers which we know we'll be writing.
--	 */
--	if (page_has_buffers(page)) {
--		struct buffer_head *head = page_buffers(page);
--		struct buffer_head *bh = head;
--		unsigned buffer_counter = 0;
--
--		do {
--			if (buffer_counter++ == first_unmapped)
--				break;
--			clear_buffer_dirty(bh);
--			bh = bh->b_this_page;
--		} while (bh != head);
--
--		/*
--		 * we cannot drop the bh if the page is not uptodate
--		 * or a concurrent readpage would fail to serialize with the bh
--		 * and it would read from disk before we reach the platter.
--		 */
--		if (buffer_heads_over_limit && PageUptodate(page))
--			try_to_free_buffers(page);
--	}
-+	clean_buffers(page, first_unmapped);
- 
- 	BUG_ON(PageWriteback(page));
- 	set_page_writeback(page);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1b135d4..50dc979 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1564,6 +1564,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
- struct block_device_operations {
- 	int (*open) (struct block_device *, fmode_t);
- 	void (*release) (struct gendisk *, fmode_t);
-+	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
- 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
- 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
- 	int (*direct_access) (struct block_device *, sector_t,
-@@ -1582,6 +1583,9 @@ struct block_device_operations {
- 
- extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
- 				 unsigned long);
-+extern int bdev_read_page(struct block_device *, sector_t, struct page *);
-+extern int bdev_write_page(struct block_device *, sector_t, struct page *,
-+						struct writeback_control *);
- #else /* CONFIG_BLOCK */
- /*
-  * stubs for when the block layer is configured out
--- 
-1.8.5.2
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
