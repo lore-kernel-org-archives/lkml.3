@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242AbaAJAMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:12:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54246 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaAJAMs (ORCPT
+	id S1755198AbaAJASX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:18:23 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:49198 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaAJASU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:12:48 -0500
-Date: Thu, 9 Jan 2014 16:12:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current
- needs access to memory reserves
-Message-Id: <20140109161246.57ea590f00ea5b61fdbf5f11@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
-References: <20131210103827.GB20242@dhcp22.suse.cz>
-	<alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com>
-	<20131211095549.GA18741@dhcp22.suse.cz>
-	<alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com>
-	<20131212103159.GB2630@dhcp22.suse.cz>
-	<alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com>
-	<20131217162342.GG28991@dhcp22.suse.cz>
-	<alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com>
-	<20131218200434.GA4161@dhcp22.suse.cz>
-	<alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
-	<20131219144134.GH10855@dhcp22.suse.cz>
-	<20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
-	<alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com>
-	<20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
-	<alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jan 2014 19:18:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140110000642.GN10323@ZenIV.linux.org.uk>
+References: <20140109162731.12500986@gandalf.local.home>
+	<20140109214239.GD29910@parisc-linux.org>
+	<20140109165012.391db81e@gandalf.local.home>
+	<20140109223127.GM10323@ZenIV.linux.org.uk>
+	<CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+	<20140109182523.5b50131f@gandalf.local.home>
+	<20140109182756.17abaaa8@gandalf.local.home>
+	<1389310626.15209.92.camel@localhost>
+	<CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
+	<20140110000642.GN10323@ZenIV.linux.org.uk>
+Date: Fri, 10 Jan 2014 08:18:18 +0800
+X-Google-Sender-Auth: ig9ZWLsxN7jpB910lwwyIJjBh4E
+Message-ID: <CA+55aFwVNAKAqyR8gA+pewz2qSjDCq2w+NwN-vmChoMKSz-idg@mail.gmail.com>
+Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in inode_permission()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
+        stable <stable@vger.kernel.org>, Paul Moore <paul@paul-moore.com>,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014 16:01:15 -0800 (PST) David Rientjes <rientjes@google.com> wrote:
+On Fri, Jan 10, 2014 at 8:06 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Sure, we can separate the simple "just do call_rcu(...->free_inode)" case
+> and hit it whenever full ->free_inode is there and ->destroy_inode isn't.
+> Not too pretty, but removal of tons of boilerplate might be worth doing
+> that anyway.
 
-> On Thu, 9 Jan 2014, Andrew Morton wrote:
-> 
-> > > I'm not sure why this was dropped since it's vitally needed for any sane 
-> > > userspace oom handler to be effective.
-> > 
-> > It was dropped because the other memcg developers disagreed with it.
-> > 
-> 
-> It was acked-by Michal.
+Yeah.
 
-And Johannes?
+> But ->destroy_inode() is still needed for cases where fs
+> has its own idea of inode lifetime rules.  Again, check what XFS is doing
+> in that area...
 
-> > I'd really prefer not to have to spend a great amount of time parsing
-> > argumentative and repetitive emails to make a tie-break decision which
-> > may well be wrong anyway.
-> > 
-> > Please work with the other guys to find an acceptable implementation. 
-> > There must be *something* we can do?
-> > 
-> 
-> We REQUIRE this behavior for a sane userspace oom handler implementation.  
-> You've snipped my email quite extensively, but I'd like to know 
-> specifically how you would implement a userspace oom handler described by 
-> Section 10 of Documentation/cgroups/memory.txt without this patch?
+Ok, so we can't change destroy_inode, and we'd need to add a new op
+for just freeing it.
 
->From long experience I know that if I suggest an alternative
-implementation, advocates of the initial implementation will invest
-great effort in demonstrating why my suggestion won't work while
-investing zero effort in thinking up alternatives themselves.
+Painful mainly because there are so many filesystems, but it shouldn't
+be *complicated*.
 
-> Are you suggesting that userspace is supposed to wait for successive 
-> wakeups over some arbitrarily defined period of time to determine whether 
-> memory freeing (i.e. a process in the exit() path or with a pending 
-> SIGKILL making forward progress to free its memory) can be done or whether 
-> it needs to do something to free memory?  If not, how else is userspace 
-> supposed to know that it should act?
-> 
-> How do you prevent unnecessary oom killing if the userspace oom handler 
-> wakes up and kills something concurrent with the process triggering the 
-> notification getting access to memory reserves, exiting, and freeing its 
-> memory?  Userspace just killed a process unnecessarily.  This is the exact 
-> reason why the kernel oom killer doesn't do a damn thing in these 
-> conditions, because it's NOT ACTIONABLE by the oom killer, a process 
-> simply needs to exit.
+> There's an extra source of headache, BTW - what about the "LSM stacking"
+> crowd and their plans?
 
-So the interface is wrong.  We have two semantically different kernel
-states which are being communicated to userspace in the same way, so
-userspace cannot disambiguate.
+LSM stacking is a pipedream right  now anyway, isn't it? It's been
+talked about for years and years, I've never seen a patch-set that is
+even remotely something we'd seriously consider.
 
-Solution: invent a better communication scheme with a richer payload. 
-Use that, deprecate the old interface if poss.
-
-Another solution: add a mode knob to select between alternative kernel
-behaviors (yuk).
-
-Another solution: get David to think of a solution which addresses the
-issues which others have raised.
-
-Johannes' final email in this thread has yet to be replied to, btw.
+            Linus
