@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaAJLom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 06:44:42 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:35878 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAJLok (ORCPT
+	id S1756638AbaAJLpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 06:45:11 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:44618 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaAJLpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 06:44:40 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-f1-52cfdd22515c
+	Fri, 10 Jan 2014 06:45:05 -0500
+X-AuditID: cbfee690-b7f266d00000287c-3a-52cfdd40ddf0
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 6/8 v3] ARM: dts: exynos5250/5420: add dt node for sss module
-Date: Fri, 10 Jan 2014 17:14:51 +0530
-Message-id: <1389354291-32051-1-git-send-email-ch.naveen@samsung.com>
+        cpgs@samsung.com, tomasz.figa@gmail.com
+Subject: [PATCH 7/8 v3] crypto:s5p-sss: validate iv before memcpy
+Date: Fri, 10 Jan 2014 17:15:21 +0530
+Message-id: <1389354321-32096-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1389243621-13245-1-git-send-email-ch.naveen@samsung.com>
-References: <1389243621-13245-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkRlfp7vkgg0Ur5C1eHtK06H4lY9G7
-	4Cqbxf17P5ksLu+aw2Yx4/w+JotF2/4zW6za9YfR4uycQ0wOnB47Z91l99h2QNWjb8sqRo/P
-	m+QCWKK4bFJSczLLUov07RK4Mnb0XGAs+MVd8XvjfvYGxg+cXYycHBICJhId39YxQthiEhfu
-	rWfrYuTiEBJYyiix8/8tNpiiz0/eQiUWMUosftME5fQzSbTubmACqWITMJM4uGg1O4gtIuAs
-	8bt5DStIEbPAAUaJddNPgY0SFvCVeNj2HsxmEVCVWLHjOVgDr4CrxK3vf4Du4ABapyAxZ5IN
-	SJhTwE3i55LVLCC2EFDJuXaYUxexSzydIgMxRkDi2+RDLBCtshKbDjBDlEhKHFxxg2UCo/AC
-	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIGhfvrfs/4djHcPWB9iTAYaN5FZSjQ5Hxgr
-	eSXxhsZmRhamJqbGRuaWZqQJK4nz3n+YFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBkefc
-	h4fatwUili89tLZkxvneSd84d01e8ySGs/ZjW/uhyFmTCnctNyxgqOI1iQzSXd3Xff6x/gq9
-	JV+O/pyz0sbptmLNfj6Z1labxNV68Xu9z5VZvJ2ymqVl3caVrmv9eL7OmvJdc+ZZfsMfE0Q5
-	3/uvvZM3eeP9y2WPN8+Wf7mt2Ln0iUJ7UJsSS3FGoqEWc1FxIgDHq90fiwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9jAV2lu+eDDB5NFbN4eUjTovuVjEXv
-	gqtsFvfv/WSyuLxrDpvFjPP7mCwWbfvPbLFq1x9Gi7NzDjE5cHrsnHWX3WPbAVWPvi2rGD0+
-	b5ILYIlqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvM
-	AbpESaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixo+cCY8Ev7orfG/ez
-	NzB+4Oxi5OSQEDCR+PzkLRuELSZx4d56IJuLQ0hgEaPE4jdNUE4/k0Tr7gYmkCo2ATOJg4tW
-	s4PYIgLOEr+b17CCFDELHGCUWDf9FNgoYQFfiYdt78FsFgFViRU7noM18Aq4Stz6/oexi5ED
-	aJ2CxJxJNiBhTgE3iZ9LVrOA2EJAJefa1zFOYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10v
-	OT93EyM4lp5J72Bc1WBxiFGAg1GJh7dg1vkgIdbEsuLK3EOMEhzMSiK85heAQrwpiZVVqUX5
-	8UWlOanFhxiTgY6ayCwlmpwPjPO8knhDYxNzU2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqem
-	FqQWwWxh4uCUamDsWO/cUnphxpIX2xT5ojItr925IPy5gEti07+zP/4XhMwTntcwOWOu2DKn
-	n7pMYbyPD955o+OxcP3/oAYZgSlG89KnF7lxiux7/TGeSc8itElz4VqvBdOZrTPOTRESklvS
-	tk2ebw1TRnurVHsvJ+Pjd1kZNaf591wXXGxTLtEuwu6pWFBo+1aJpTgj0VCLuag4EQBrRIPL
-	6QIAAA==
+In-reply-to: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
+References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsWyRsSkRtfh7vkgg9mHDC1eHtK06H4lY3H/
+	3k8mi8u75rBZzDi/j8li0bb/zBardv1htDg75xCTA4fHzll32T22HVD16NuyitHj8ya5AJYo
+	LpuU1JzMstQifbsEroz/WxqZCy6wVTz49pipgXEraxcjJ4eEgInE9/X7GCFsMYkL99azdTFy
+	cQgJLGWUWL5yEnMXIwdY0eWF1hDx6YwSq7f9YYJw+pkkTrbMBpvEJmAmcXDRanYQW0TAWeJ3
+	8xpWkCJmgTmMEg+XtLOATBIWcJRoblIAMVkEVCVWv1MDKecVcJW4+KqLDWKXgsScSTYgYU4B
+	N4mtl5+ATRQCKplz4iozyEQJgXnsEou2vWUGSbAICEh8m3yIBaJXVmLTAWaIXyQlDq64wTKB
+	UXgBI8MqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjMDgPv3v2YQdjPcOWB9iTAYaN5FZSjQ5
+	HxgdeSXxhsZmRhamJqbGRuaWZqQJK4nzqj1KChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	yLLBYs7mhnUedjt9JTb8X7twal7YowPmbBtzLtvv/qCYsbTretnSUKekT9/TnxssLPr7bePG
+	Txobz/82bWfw/XLm+EbRJyVGWxuSRdoiPj3YFNopNfv4BvltzH1G8XPWLYzKyo+capnVsivm
+	wqW/LMoXAjfcn/7riVCz4nnZ2sdPnhY8XPbnloUSS3FGoqEWc1FxIgBbV5r4hAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t9jQV2Hu+eDDKat0rR4eUjTovuVjMX9
+	ez+ZLC7vmsNmMeP8PiaLRdv+M1us2vWH0eLsnENMDhweO2fdZffYdkDVo2/LKkaPz5vkAlii
+	GhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4COUFIo
+	S8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm/N/SyFxwga3iwbfHTA2MW1m7
+	GDk4JARMJC4vtO5i5AQyxSQu3FvP1sXIxSEkMJ1RYvW2P0wQTj+TxMmW2awgVWwCZhIHF61m
+	B7FFBJwlfjevYQUpYhaYwyjxcEk7C8hUYQFHieYmBRCTRUBVYvU7NZByXgFXiYuvutgg9ipI
+	zJlkAxLmFHCT2Hr5CdhEIaCSOSeuMk9g5F3AyLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cT
+	Izh2nknvYFzVYHGIUYCDUYmHt2DW+SAh1sSy4srcQ4wSHMxKIrzmF4BCvCmJlVWpRfnxRaU5
+	qcWHGJOBbprILCWanA+M67ySeENjE3NTY1NLEwsTM0vShJXEeQ+2WgcKCaQnlqRmp6YWpBbB
+	bGHi4JRqYJxjcG9D6pw3DjmHFP/zHbO1NVDcfamEUf1uUXa19umkj5dufbYOWZa6PGYyi/vX
+	jVMsr6zxLivY4+d5lqOcX8jvFlf29PrmKt9VpjfkjXZ+krz3x6703uXHk7KW8Pu9iJ1tJ/i5
+	6GbVNkvGDZ9lr0pps7lX8f69V8TSnrDtqNTHTxf+vY1nEFViKc5INNRiLipOBADLxUck4QIA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,57 +49,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the device tree node for SSS module
-found on Exynos5420 and Exynos5250
+This patch adds code to validate "iv" buffer before trying to
+memcpy the contents
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-TO: <linux-samsung-soc@vger.kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: <linux-crypto@vger.kernel.org>
 ---
 Changes since v2:
-1. Added device tree node for SSS on Exynos5250 aswell
+None
 
- arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
- arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
- 2 files changed, 18 insertions(+)
+ drivers/crypto/s5p-sss.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index c341e55..1d249df 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -704,4 +704,12 @@
- 		io-channel-ranges;
- 		status = "disabled";
- 	};
-+
-+	sss@10830000 {
-+		compatible = "samsung,exynos4210-secss";
-+		reg = <0x10830000 0x10000>;
-+		interrupts = <0 112 0>;
-+		clocks = <&clock 346>;
-+		clock-names = "secss";
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 11dd202..56a3f3e 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -652,4 +652,14 @@
- 		clocks = <&clock 319>, <&clock 318>;
- 		clock-names = "tmu_apbif", "tmu_triminfo_apbif";
- 	};
-+
-+	sss@10830000 {
-+		compatible = "samsung,exynos4210-secss";
-+		reg = <0x10830000 0x10000>;
-+		interrupts = <0 112 0>;
-+		clocks = <&clock 471>;
-+		clock-names = "secss";
-+		samsung,power-domain = <&g2d_pd>;
-+	};
-+
- };
+diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
+index f274f5f..7058bb6 100644
+--- a/drivers/crypto/s5p-sss.c
++++ b/drivers/crypto/s5p-sss.c
+@@ -381,8 +381,9 @@ static void s5p_set_aes(struct s5p_aes_dev *dev,
+ 	struct samsung_aes_variant *var = dev->variant;
+ 	void __iomem *keystart;
+ 
+-	memcpy(dev->ioaddr + SSS_REG_AES_IV_DATA
+-				(var->aes_offset, 0), iv, 0x10);
++	if (iv)
++		memcpy(dev->ioaddr + SSS_REG_AES_IV_DATA
++					(var->aes_offset, 0), iv, 0x10);
+ 
+ 	if (keylen == AES_KEYSIZE_256)
+ 		keystart = dev->ioaddr +
 -- 
 1.7.9.5
 
