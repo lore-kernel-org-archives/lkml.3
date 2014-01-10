@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaAJNra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:47:30 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:43887 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaAJNrV (ORCPT
+	id S1756622AbaAJNs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:48:26 -0500
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:37562 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753719AbaAJNra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:47:21 -0500
+	Fri, 10 Jan 2014 08:47:30 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/14] kernfs: make kernfs_get_active() block if the node is deactivated but not removed
-Date: Fri, 10 Jan 2014 08:46:54 -0500
-Message-Id: <1389361620-5086-9-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: [PATCH 13/14] s390: use device_remove_file_self() instead of device_schedule_callback()
+Date: Fri, 10 Jan 2014 08:46:59 -0500
+Message-Id: <1389361620-5086-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389361620-5086-1-git-send-email-tj@kernel.org>
 References: <1389361620-5086-1-git-send-email-tj@kernel.org>
@@ -23,74 +24,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kernfs_get_active() fails if the target node is
-deactivated.  This is fine as a node always gets removed after
-deactivation; however, we're gonna add reactivation so the assumption
-won't hold.  It'd be incorrect for kernfs_get_active() to fail for a
-node which was deactivated only temporarily.
+driver-core now supports synchrnous self-deletion of attributes and
+the asynchrnous removal mechanism is scheduled for removal.  Use it
+instead of device_schedule_callback().
 
-This patch makes kernfs_get_active() block if the node is deactivated
-but not removed.  If the node gets reactivated (not yet implemented),
-it will be retried and succeed.  If the node gets removed, it will be
-woken up and fail.
+* Conversions in arch/s390/pci/pci_sysfs.c and
+  drivers/s390/block/dcssblk.c are straightforward.
+
+* drivers/s390/cio/ccwgroup.c is a bit more tricky because
+  ccwgroup_notifier() was (ab)using device_schedule_callback() to
+  purely obtain a process context to kick off ungroup operation which
+  may block from a notifier callback.
+
+  Rename ccwgroup_ungroup_callback() to ccwgroup_ungroup() and make it
+  take ccwgroup_device * instead.  The new function is now called
+  directly from ccwgroup_ungroup_store().
+
+  ccwgroup_notifier() chain is updated to explicitly bounce through
+  ccwgroup_device->ungroup_work.  This also removes possible failure
+  from memory pressure.
+
+Only compile-tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
 ---
- fs/kernfs/dir.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ arch/s390/include/asm/ccwgroup.h |  1 +
+ arch/s390/pci/pci_sysfs.c        | 18 ++++++++----------
+ drivers/s390/block/dcssblk.c     | 14 +++++++-------
+ drivers/s390/cio/ccwgroup.c      | 26 ++++++++++++++++----------
+ 4 files changed, 32 insertions(+), 27 deletions(-)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 52ffac7..f18fc5e 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -149,12 +149,25 @@ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn)
- 	if (unlikely(!kn))
- 		return NULL;
- 
--	if (!atomic_inc_unless_negative(&kn->active))
--		return NULL;
--
- 	if (kernfs_lockdep(kn))
- 		rwsem_acquire_read(&kn->dep_map, 0, 1, _RET_IP_);
--	return kn;
-+
-+	/*
-+	 * Try to obtain an active ref.  If @kn is deactivated, we block
-+	 * till either it's reactivated or killed.
-+	 */
-+	do {
-+		if (atomic_inc_unless_negative(&kn->active))
-+			return kn;
-+
-+		wait_event(kernfs_root(kn)->deactivate_waitq,
-+			   atomic_read(&kn->active) >= 0 ||
-+			   RB_EMPTY_NODE(&kn->rb));
-+	} while (!RB_EMPTY_NODE(&kn->rb));
-+
-+	if (kernfs_lockdep(kn))
-+		rwsem_release(&kn->dep_map, 1, _RET_IP_);
-+	return NULL;
- }
+diff --git a/arch/s390/include/asm/ccwgroup.h b/arch/s390/include/asm/ccwgroup.h
+index 23723ce..6e670f8 100644
+--- a/arch/s390/include/asm/ccwgroup.h
++++ b/arch/s390/include/asm/ccwgroup.h
+@@ -23,6 +23,7 @@ struct ccwgroup_device {
+ 	unsigned int count;
+ 	struct device	dev;
+ 	struct ccw_device *cdev[0];
++	struct work_struct ungroup_work;
+ };
  
  /**
-@@ -786,6 +799,7 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
+diff --git a/arch/s390/pci/pci_sysfs.c b/arch/s390/pci/pci_sysfs.c
+index cf8a12f..ab4a913 100644
+--- a/arch/s390/pci/pci_sysfs.c
++++ b/arch/s390/pci/pci_sysfs.c
+@@ -48,29 +48,27 @@ static ssize_t show_pfgid(struct device *dev, struct device_attribute *attr,
+ }
+ static DEVICE_ATTR(pfgid, S_IRUGO, show_pfgid, NULL);
  
- static void __kernfs_remove(struct kernfs_node *kn)
+-static void recover_callback(struct device *dev)
++static ssize_t store_recover(struct device *dev, struct device_attribute *attr,
++			     const char *buf, size_t count)
  {
-+	struct kernfs_root *root = kernfs_root(kn);
- 	struct kernfs_node *pos;
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+ 	int ret;
  
- 	lockdep_assert_held(&kernfs_mutex);
-@@ -830,6 +844,9 @@ static void __kernfs_remove(struct kernfs_node *kn)
- 
- 		kernfs_put(pos);
- 	} while (pos != kn);
++	if (!device_remove_file_self(dev, attr))
++		return count;
 +
-+	/* some nodes killed, kick get_active waiters */
-+	wake_up_all(&root->deactivate_waitq);
+ 	pci_stop_and_remove_bus_device(pdev);
+ 	ret = zpci_disable_device(zdev);
+ 	if (ret)
+-		return;
++		return ret;
+ 
+ 	ret = zpci_enable_device(zdev);
+ 	if (ret)
+-		return;
++		return ret;
+ 
+ 	pci_rescan_bus(zdev->bus);
+-}
+-
+-static ssize_t store_recover(struct device *dev, struct device_attribute *attr,
+-			     const char *buf, size_t count)
+-{
+-	int rc = device_schedule_callback(dev, recover_callback);
+-	return rc ? rc : count;
++	return count;
+ }
+ static DEVICE_ATTR(recover, S_IWUSR, NULL, store_recover);
+ 
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 6eca019..2e2f454 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -304,12 +304,6 @@ dcssblk_load_segment(char *name, struct segment_info **seg_info)
+ 	return rc;
  }
  
- /**
+-static void dcssblk_unregister_callback(struct device *dev)
+-{
+-	device_unregister(dev);
+-	put_device(dev);
+-}
+-
+ /*
+  * device attribute for switching shared/nonshared (exclusive)
+  * operation (show + store)
+@@ -397,7 +391,13 @@ removeseg:
+ 	blk_cleanup_queue(dev_info->dcssblk_queue);
+ 	dev_info->gd->queue = NULL;
+ 	put_disk(dev_info->gd);
+-	rc = device_schedule_callback(dev, dcssblk_unregister_callback);
++	up_write(&dcssblk_devices_sem);
++
++	if (device_remove_file_self(dev, attr)) {
++		device_unregister(dev);
++		put_device(dev);
++	}
++	return rc;
+ out:
+ 	up_write(&dcssblk_devices_sem);
+ 	return rc;
+diff --git a/drivers/s390/cio/ccwgroup.c b/drivers/s390/cio/ccwgroup.c
+index 959135a..67b9dc9 100644
+--- a/drivers/s390/cio/ccwgroup.c
++++ b/drivers/s390/cio/ccwgroup.c
+@@ -168,14 +168,12 @@ static ssize_t ccwgroup_online_show(struct device *dev,
+  * Provide an 'ungroup' attribute so the user can remove group devices no
+  * longer needed or accidentially created. Saves memory :)
+  */
+-static void ccwgroup_ungroup_callback(struct device *dev)
++static void ccwgroup_ungroup(struct ccwgroup_device *gdev)
+ {
+-	struct ccwgroup_device *gdev = to_ccwgroupdev(dev);
+-
+ 	mutex_lock(&gdev->reg_mutex);
+ 	if (device_is_registered(&gdev->dev)) {
+ 		__ccwgroup_remove_symlinks(gdev);
+-		device_unregister(dev);
++		device_unregister(&gdev->dev);
+ 		__ccwgroup_remove_cdev_refs(gdev);
+ 	}
+ 	mutex_unlock(&gdev->reg_mutex);
+@@ -195,10 +193,9 @@ static ssize_t ccwgroup_ungroup_store(struct device *dev,
+ 		rc = -EINVAL;
+ 		goto out;
+ 	}
+-	/* Note that we cannot unregister the device from one of its
+-	 * attribute methods, so we have to use this roundabout approach.
+-	 */
+-	rc = device_schedule_callback(dev, ccwgroup_ungroup_callback);
++
++	if (device_remove_file_self(dev, attr))
++		ccwgroup_ungroup(gdev);
+ out:
+ 	if (rc) {
+ 		if (rc != -EAGAIN)
+@@ -224,6 +221,14 @@ static const struct attribute_group *ccwgroup_attr_groups[] = {
+ 	NULL,
+ };
+ 
++static void ccwgroup_ungroup_workfn(struct work_struct *work)
++{
++	struct ccwgroup_device *gdev =
++		container_of(work, struct ccwgroup_device, ungroup_work);
++
++	ccwgroup_ungroup(gdev);
++}
++
+ static void ccwgroup_release(struct device *dev)
+ {
+ 	kfree(to_ccwgroupdev(dev));
+@@ -323,6 +328,7 @@ int ccwgroup_create_dev(struct device *parent, struct ccwgroup_driver *gdrv,
+ 	atomic_set(&gdev->onoff, 0);
+ 	mutex_init(&gdev->reg_mutex);
+ 	mutex_lock(&gdev->reg_mutex);
++	INIT_WORK(&gdev->ungroup_work, ccwgroup_ungroup_workfn);
+ 	gdev->count = num_devices;
+ 	gdev->dev.bus = &ccwgroup_bus_type;
+ 	gdev->dev.parent = parent;
+@@ -404,10 +410,10 @@ EXPORT_SYMBOL(ccwgroup_create_dev);
+ static int ccwgroup_notifier(struct notifier_block *nb, unsigned long action,
+ 			     void *data)
+ {
+-	struct device *dev = data;
++	struct ccwgroup_device *gdev = to_ccwgroupdev(data);
+ 
+ 	if (action == BUS_NOTIFY_UNBIND_DRIVER)
+-		device_schedule_callback(dev, ccwgroup_ungroup_callback);
++		schedule_work(&gdev->ungroup_work);
+ 
+ 	return NOTIFY_OK;
+ }
 -- 
 1.8.4.2
 
