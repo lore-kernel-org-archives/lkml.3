@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaAJBue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 20:50:34 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18439 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaAJBu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 20:50:29 -0500
-To: Hannes Reinecke <hare@suse.de>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>, chuck.lever@oracle.com,
-        Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Doug Gilbert <dgilbert@interlog.com>
-Subject: Re: status of block-integrity
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <20131222192128.GA28532@infradead.org> <52C6D0DB.1050906@suse.de>
-	<yq1wqigzvc1.fsf@sermon.lab.mkp.net>
-	<20140107013646.GB10297@birch.djwong.org> <52CBAA1B.7000509@suse.de>
-	<yq1a9f7wjqr.fsf@sermon.lab.mkp.net> <52CCFADB.6080909@suse.de>
-	<yq1lhyqv6ns.fsf@sermon.lab.mkp.net> <52CE85C6.8000405@suse.de>
-Date: Thu, 09 Jan 2014 20:49:53 -0500
-In-Reply-To: <52CE85C6.8000405@suse.de> (Hannes Reinecke's message of "Thu, 09
-	Jan 2014 12:19:34 +0100")
-Message-ID: <yq1vbxssj0e.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1757142AbaAJBzz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 20:55:55 -0500
+Received: from ozlabs.org ([203.10.76.45]:40968 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330AbaAJBzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 20:55:52 -0500
+Date: Fri, 10 Jan 2014 12:55:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-sh@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bastian Hecht <hechtb@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: Re: linux-next: manual merge of the sh tree with the tree
+Message-Id: <20140110125529.9843f450bf79223164031b02@canb.auug.org.au>
+In-Reply-To: <20140110004724.GA22965@verge.net.au>
+References: <20140106121317.bada4233ec3fec40f79735cc@canb.auug.org.au>
+	<CAOesGMgJe9KR2muA4F9EaXYpDFDLxVZsKOj-8qZFbDZTiRBuww@mail.gmail.com>
+	<20140110004724.GA22965@verge.net.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Hannes" == Hannes Reinecke <hare@suse.de> writes:
+--Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hannes> With LID1/XCopy you have the ambiguity on where to actually send
-Hannes> the command to; the spec is silent in this area.
+Hi all,
 
-Yeah, right now it's a coin toss.
+On Fri, 10 Jan 2014 09:47:24 +0900 Simon Horman <horms@verge.net.au> wrote:
+>
+> On Wed, Jan 08, 2014 at 11:11:03PM -0800, Olof Johansson wrote:
+> >
+> > The request to merge the sh code came through Simon with claimed
+> > agreement from SH maintainers to do so -- I didn't verify this since
+> > they have in the past been well-coordinated. Simon?
+>=20
+> I spoke with Paul recently and my understanding is that
+> he hasn't been actively working in this area for over a year now.
+>=20
+> I guess there are some stale patches in his tree.
 
-However, thanks to VAAI most arrays support LID1. I'm trying to leverage
-that. Doesn't in any way preclude LID4 being supported as well.
+That is certainly what it looks like.  So, do I remove the sh{,.-current)
+trees (git://github.com/pmundt/linux-sh.git#sh-{latest,fixes-for-linus})
+from linux-next permanently?  Will it be cleaned up any time soon?
 
-Hannes> As said, Doug and me are working on putting this into sg3_utils,
-Hannes> then we'll have a better idea on the actual workings.
+Is anyone maintaining/supporting sh now?  Is it a candidate for pruning?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Cool! That'll save me some headaches when we start seeing LID4 devices.
+--Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d
+Content-Type: application/pgp-signature
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSz1MWAAoJEMDTa8Ir7ZwVnpIP/A+iKbAeswNZaczDSBECksLB
+52GnN8weDyFm6xgh3TnlQVK5ud5PJZWN/bG3d8IQaPTNWNXnqF8GGEVNzeNQ5mFT
+XPZ1voH143P3cFa8k9SYgRBuva8qWVlgaxAcM7dvoC2tUCOQ7FL9/pO0iMpDRjUk
+xoKGJpzxsHcbxyb30c07q75KHO4Z135jep0kOzc+GMSi5z6xhrtsOhX3AqIsGRC7
+8zu3OBsQmRHlEwRJhBR+mcXNdHn5dSOYj/HBC5LoqSj+3WWyvG2aoXslirzBe2P1
+bZPXBnX8F4WtKGb2zliQ37rhBE/pzaPRkxlVwC7t1UE275P2PCXuea58SqTi3VD3
+KluF2EfQNF3EDaukJ4s3nRjsLdJmCVwoiEAP2N6acI8WrmVxQUd8D5TJe+NVg9T9
+TbXtGpIrP6O2ocAXWZ1v8QKotXmg9Rh09nSeMihbaDGY7vl37StD0OKlJ9u/FAZh
+bPiZb9k3GG+E0WIBume0BKxFPnOEcnnMp/F6R0B/ZuM8w42NIg5tKtb6pYet/d6u
+j5iyRlbqvKsYSnHo459IETP+zUXTHhcW45PdSC2hTKT90Iu38SORe4bFnXOLjO2R
+9FUt9cNzZmGz0PMTYo/nV2jIl2V73EqZd1fI08q7bTr4CmtWvc34PfMcD7GpeUpC
+MLjs4xlUrT8pFfkQ3jcJ
+=KM7E
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d--
