@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaAJCzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 21:55:54 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:64400 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504AbaAJCzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 21:55:51 -0500
-Message-ID: <52CF6129.4040308@amacapital.net>
-Date: Thu, 09 Jan 2014 18:55:37 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Victor Porton <porton@narod.ru>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC] subreaper mode 2 (Re: A feature suggestion for sandboxing processes)
-References: <223151389311706@web9g.yandex.ru>
-In-Reply-To: <223151389311706@web9g.yandex.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752765AbaAJDA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 22:00:58 -0500
+Received: from ozlabs.org ([203.10.76.45]:52125 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaAJDAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 22:00:55 -0500
+Date: Fri, 10 Jan 2014 14:00:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: linux-next: build failure after merge of the kvm tree
+Message-Id: <20140110140043.1e090e614df48b230202ab3d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 03:55 PM, Victor Porton wrote:
-> In Fedora there is bin/sandbox command which runs a specified command in so called 'sandbox'. Program running in sandbox cannot open new files (it is commonly used with preopen stdin and stdout) and possibly its access to network is limited. It is intended to run potentially malicious software safely.
-> 
-> This Fedora sandbox is not perfect however.
-> 
-> One problem is:
-> 
-> Suppose the sandboxed program spawned some child processes and exited itself.
-> 
-> Suppose we want to kill the sandboxed program after 30 second, if it has not exited voluntarily.
-> 
-> The trouble is that the software cannot figure out which processes have appeared from the sandboxed binary. So we are unable to kill these processes automatically. This means that a hacker can in this way create thousands (or more) processes which would overload the system.
-> 
-> Also note that the sandboxed program may run setsid() and thus its identity may be lost completely.
-> 
-> I propose to add parameter sandbox_id to each process in the kernel. It would be 0 for normal processes and allocated like PID or GID for processes we create in sandbox. Children inherit sandbox_id. There should be an API call using which a process makes it sandboxed_id non-zero (which returns EPERM if it is already non-zero).
-> 
-> Then there should be API to enumerate all processes with given sandbox_id, so that we would be able to kill them (-TERM or -KILL). Or maybe we should also have the function which sends the given signal to all processes with given sandbox_id (otherwise we would war with a hacker which could possibly create new children faster than we kill them).
+--Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think you need to think bigger :)
+Hi all,
 
-I've occasionally pondered how to do real tracking of process trees
-(sandbox could use it, but I was thinking of systemd and other service
-managers).  cgroups* suck for this purpose.
+After merging the kvm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-One approach would be to have another subreaper mode (subreaper mode 2)
-that does three things:
- - Subreaper mode 2 zombies do not send SIGCHLD and cannot be reaped
-until they have no descendents left.
- - Direct zombie children of subreaper mode 2 zombies are automatically
-reaped.
- - Descendents that need to be reparented are reparented to the
-subreaper, just like in subreaper mode 1.
+arch/powerpc/kvm/../../../virt/kvm/kvm_main.c: In function 'kvm_vcpu_on_spi=
+n':
+arch/powerpc/kvm/../../../virt/kvm/kvm_main.c:1807:4: error: implicit decla=
+ration of function 'kvm_vcpu_eligible_for_directed_yield' [-Werror=3Dimplic=
+it-function-declaration]
+    if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+    ^
 
-Then you'd add an API that takes the PID of a mode 2 subreaper and kills
-its entire process subtree.  (Optionally, tgkill could do that
-automatically.)
+Caused by commit 7940876e1330 ("kvm: make local functions static").
 
-To use this for sandbox, sandbox would set subreaper mode 2 and then
-fork.  The initial sandbox process would exit and the child would exec
-into the sandbox.  The parent would stick around as a zombie until the
-whole tree went away.
+I have used the kvm tree from next-20140109 for today.
 
-To use this for an init-like program, the service manager would
-fork/clone a dummy PID, set subreaper mode 2, fork again, and exec the
-service.  That dummy PID would serve as a persistent reference to the
-subtree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-For added fun, there should be a way to efficiently find the mode 2
-subreaper that owns a given pid/tid.  That way systemd / journald could
-map PIDs to service names without mucking with cgroups.
+--Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m
+Content-Type: application/pgp-signature
 
-An alternative formulation of more or less the same thing would be a
-syscall manage_pid_subtree(pid_t pid) that does, roughly:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  if (pid->real_parent != current) return -EINVAL;
-  set subreaper mode;
-  exit current mm, signal set, etc to conserve resources;
-  /* at this point, current is essentially a kernel thread. */
-  wait for pid to exit;
-  exit, copying pid's return code and other exit siginfo state;
+iQIcBAEBCAAGBQJSz2JfAAoJEMDTa8Ir7ZwVn6AP/jp6XvkSCua3h4cyT692ULzU
+xm1valW1vKADwnYhEBkxqbRGwU0QRhtPHe/j6I4/S1IZajysSSpoSq2AYGwQlMoM
+N3kmJ3g0wAB63ElYstFsNuOY1j10iYK8E2dfON2fV5v3RuF/3/ELo4lfAi+C1s/e
+lFLQqe3WnddCBYa7B0pG5j9ziYFWbvVsUvlQWXRmevznqvog9jVcScvS/ov09PoM
+f1Dmxw51ocTv7O4yf5TTP8tty5Zxcn2jLd66nWgkpw/+HWgme9Iaa29xNT4XNogS
+9/CYhhwBWkAa6WCB6/qG0OSkl4mMTFS/z2ocCwR2DTHi37OTmR0ujkEz4HvFTfeY
+/UwKvunhM6NzuS9ydyH8iR6rfWQenDrm/cNcBHUeRiEBs6s+H8NRXnJ15nARXxrK
+i1SJWQYERi90FhYCYyQGTEzwRAaBpsUEVcCSEdA+arIe7gAJ8Myw3jHz5QKri123
+MjAekUwHenM69tl5h6D21TN6oXIjVqv+9Pq9ZfOnOKXDs52QoaZ8w/T7pNw8qs5u
+XaEDavi4doPkEUkJ4X45hBNZv4dAVrQ+Ex/ykN8IC5udWjlVsb2VQBPw32a39ZzA
+iOg2TE0GeEa49brR8bljhs1T3zmzpJMUO6XlqBIBusCiISB+SuPsTABQoqstrBLp
+A2fx5IqYe0lpydz+WUfu
+=IyZI
+-----END PGP SIGNATURE-----
 
-To manage a subreaper, you double-fork, and then the middle process
-would call manage_pid_subtree on its child.
-
-Thoughts?
-
-* Goddamnit, systemd, I want a way to turn *off* your control of the One
-True Cgroup Hierarchy (TM).  I consider the lack of such a mechanism to
-be a serious upcoming regression.  Maybe if the kernel gives systemd a
-way to do this, systemd will use it.
-
---Andy
+--Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m--
