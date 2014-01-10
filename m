@@ -1,155 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaAJNrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:47:14 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:47039 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaAJNrJ (ORCPT
+	id S1753402AbaAJNrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:47:24 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:52920 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734AbaAJNrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:47:09 -0500
+	Fri, 10 Jan 2014 08:47:20 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: [PATCHSET v2 driver-core-next] kernfs, sysfs, driver-core: implement synchronous self-removal
-Date: Fri, 10 Jan 2014 08:46:46 -0500
-Message-Id: <1389361620-5086-1-git-send-email-tj@kernel.org>
+        JBottomley@parallels.com, bhelgaas@google.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/14] kernfs: remove kernfs_addrm_cxt
+Date: Fri, 10 Jan 2014 08:46:53 -0500
+Message-Id: <1389361620-5086-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389361620-5086-1-git-send-email-tj@kernel.org>
+References: <1389361620-5086-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+kernfs_addrm_cxt and the accompanying kernfs_addrm_start/finish() were
+added because there were operations which should be performed outside
+kernfs_mutex after adding and removing kernfs_nodes.  The necessary
+operations were recorded in kernfs_addrm_cxt and performed by
+kernfs_addrm_finish(); however, after the recent changes which
+relocated deactivation and unmapping so that they're performed
+directly during removal, the only operation kernfs_addrm_finish()
+performs is kernfs_put(), which can be moved inside the removal path
+too.
 
-This is the second take of kernfs self-removal patchset.  Changes from
-the last take[L] are,
+This patch moves the kernfs_put() of the base ref to __kernfs_remove()
+and remove kernfs_addrm_cxt and kernfs_addrm_start/finish().
 
-* Patches reordered so that more trivial ones are in the front.
+* kernfs_add_one() is updated to grab and release the parent's active
+  ref and kernfs_mutex itself.  kernfs_get/put_active() and
+  kernfs_addrm_start/finish() invocations around it are removed from
+  all users.
 
-* Deactivation split into a separate stage instead of being part of
-  unlinking.  Deactivation is now exposed as kernfs API via four new
-  functions - kernfs_{de|re}activate[_self]().  These functions can
-  nest and allow implementation of "deactivate, lock subsys, try
-  removal, unlock subsys, reactivate" sequence where removal may or
-  may not succeed.  This will be used to convert cgroup to kernfs.
-  (prototype seems happy with this API)
+* __kernfs_remove() puts an unlinked node directly instead of chaining
+  it to kernfs_addrm_cxt.  Its callers are updated to grab and release
+  kernfs_mutex instead of calling kernfs_addrm_start/finish() around
+  it.
 
-* As this means that deactivation can be temporary,
-  kernfs_get_active() is updated to block if the node is deactivated
-  but not removed.
+v2: Updated to fit the v2 restructuring of removal path.
 
-* kernfs_remove_self() is now implemented using the new deactivation
-  API.  Its behavior remains the same.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ fs/kernfs/dir.c             | 114 ++++++++++----------------------------------
+ fs/kernfs/file.c            |  10 +---
+ fs/kernfs/kernfs-internal.h |  12 +----
+ fs/kernfs/symlink.c         |  10 +---
+ include/linux/kernfs.h      |   4 --
+ 5 files changed, 29 insertions(+), 121 deletions(-)
 
-Original patch description follows.
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index bb4662f..52ffac7 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -399,28 +399,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
+ }
+ 
+ /**
+- *	kernfs_addrm_start - prepare for kernfs_node add/remove
+- *	@acxt: pointer to kernfs_addrm_cxt to be used
+- *
+- *	This function is called when the caller is about to add or remove
+- *	kernfs_node.  This function acquires kernfs_mutex.  @acxt is used
+- *	to keep and pass context to other addrm functions.
+- *
+- *	LOCKING:
+- *	Kernel thread context (may sleep).  kernfs_mutex is locked on
+- *	return.
+- */
+-void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt)
+-	__acquires(kernfs_mutex)
+-{
+-	memset(acxt, 0, sizeof(*acxt));
+-
+-	mutex_lock(&kernfs_mutex);
+-}
+-
+-/**
+  *	kernfs_add_one - add kernfs_node to parent without warning
+- *	@acxt: addrm context to use
+  *	@kn: kernfs_node to be added
+  *	@parent: the parent kernfs_node to add @kn to
+  *
+@@ -428,34 +407,29 @@ void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt)
+  *	parent inode if @kn is a directory and link into the children list
+  *	of the parent.
+  *
+- *	This function should be called between calls to
+- *	kernfs_addrm_start() and kernfs_addrm_finish() and should be passed
+- *	the same @acxt as passed to kernfs_addrm_start().
+- *
+- *	LOCKING:
+- *	Determined by kernfs_addrm_start().
+- *
+  *	RETURNS:
+  *	0 on success, -EEXIST if entry with the given name already
+  *	exists.
+  */
+-int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+-		  struct kernfs_node *parent)
++int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
+ {
+-	bool has_ns = kernfs_ns_enabled(parent);
+ 	struct kernfs_iattrs *ps_iattr;
++	bool has_ns;
+ 	int ret;
+ 
+-	WARN_ON_ONCE(atomic_read(&parent->active) < 0);
++	if (!kernfs_get_active(parent))
++		return -ENOENT;
+ 
+-	if (has_ns != (bool)kn->ns) {
+-		WARN(1, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
+-		     has_ns ? "required" : "invalid", parent->name, kn->name);
+-		return -EINVAL;
+-	}
++	mutex_lock(&kernfs_mutex);
++
++	ret = -EINVAL;
++	has_ns = kernfs_ns_enabled(parent);
++	if (WARN(has_ns != (bool)kn->ns, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
++		 has_ns ? "required" : "invalid", parent->name, kn->name))
++		goto out_unlock;
+ 
+ 	if (kernfs_type(parent) != KERNFS_DIR)
+-		return -EINVAL;
++		goto out_unlock;
+ 
+ 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
+ 	kn->parent = parent;
+@@ -463,7 +437,7 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+ 
+ 	ret = kernfs_link_sibling(kn);
+ 	if (ret)
+-		return ret;
++		goto out_unlock;
+ 
+ 	/* Update timestamps on the parent */
+ 	ps_iattr = parent->iattr;
+@@ -474,34 +448,11 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+ 
+ 	/* Mark the entry added into directory tree */
+ 	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
+-	return 0;
+-}
+-
+-/**
+- *	kernfs_addrm_finish - finish up kernfs_node add/remove
+- *	@acxt: addrm context to finish up
+- *
+- *	Finish up kernfs_node add/remove.  Resources acquired by
+- *	kernfs_addrm_start() are released and removed kernfs_nodes are
+- *	cleaned up.
+- *
+- *	LOCKING:
+- *	kernfs_mutex is released.
+- */
+-void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
+-	__releases(kernfs_mutex)
+-{
+-	/* release resources acquired by kernfs_addrm_start() */
++	ret = 0;
++out_unlock:
+ 	mutex_unlock(&kernfs_mutex);
+-
+-	/* kill removed kernfs_nodes */
+-	while (acxt->removed) {
+-		struct kernfs_node *kn = acxt->removed;
+-
+-		acxt->removed = kn->u.removed_list;
+-
+-		kernfs_put(kn);
+-	}
++	kernfs_put_active(parent);
++	return ret;
+ }
+ 
+ /**
+@@ -633,7 +584,6 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+ 					 const char *name, umode_t mode,
+ 					 void *priv, const void *ns)
+ {
+-	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 	int rc;
+ 
+@@ -648,14 +598,7 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
+ 	kn->priv = priv;
+ 
+ 	/* link in */
+-	rc = -ENOENT;
+-	if (kernfs_get_active(parent)) {
+-		kernfs_addrm_start(&acxt);
+-		rc = kernfs_add_one(&acxt, kn, parent);
+-		kernfs_addrm_finish(&acxt);
+-		kernfs_put_active(parent);
+-	}
+-
++	rc = kernfs_add_one(kn, parent);
+ 	if (!rc)
+ 		return kn;
+ 
+@@ -841,8 +784,7 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
+ 	}
+ }
+ 
+-static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+-			    struct kernfs_node *kn)
++static void __kernfs_remove(struct kernfs_node *kn)
+ {
+ 	struct kernfs_node *pos;
+ 
+@@ -883,8 +825,7 @@ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+ 				ps_iattr->ia_iattr.ia_mtime = CURRENT_TIME;
+ 			}
+ 
+-			pos->u.removed_list = acxt->removed;
+-			acxt->removed = pos;
++			kernfs_put(pos);
+ 		}
+ 
+ 		kernfs_put(pos);
+@@ -899,11 +840,9 @@ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+  */
+ void kernfs_remove(struct kernfs_node *kn)
+ {
+-	struct kernfs_addrm_cxt acxt;
+-
+-	kernfs_addrm_start(&acxt);
+-	__kernfs_remove(&acxt, kn);
+-	kernfs_addrm_finish(&acxt);
++	mutex_lock(&kernfs_mutex);
++	__kernfs_remove(kn);
++	mutex_unlock(&kernfs_mutex);
+ }
+ 
+ /**
+@@ -918,7 +857,6 @@ void kernfs_remove(struct kernfs_node *kn)
+ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 			     const void *ns)
+ {
+-	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 
+ 	if (!parent) {
+@@ -927,13 +865,13 @@ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 		return -ENOENT;
+ 	}
+ 
+-	kernfs_addrm_start(&acxt);
++	mutex_lock(&kernfs_mutex);
+ 
+ 	kn = kernfs_find_ns(parent, name, ns);
+ 	if (kn)
+-		__kernfs_remove(&acxt, kn);
++		__kernfs_remove(kn);
+ 
+-	kernfs_addrm_finish(&acxt);
++	mutex_unlock(&kernfs_mutex);
+ 
+ 	if (kn)
+ 		return 0;
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index 231a171..cd1022c 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -820,7 +820,6 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
+ 					 bool name_is_static,
+ 					 struct lock_class_key *key)
+ {
+-	struct kernfs_addrm_cxt acxt;
+ 	struct kernfs_node *kn;
+ 	unsigned flags;
+ 	int rc;
+@@ -856,14 +855,7 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
+ 	if (ops->mmap)
+ 		kn->flags |= KERNFS_HAS_MMAP;
+ 
+-	rc = -ENOENT;
+-	if (kernfs_get_active(parent)) {
+-		kernfs_addrm_start(&acxt);
+-		rc = kernfs_add_one(&acxt, kn, parent);
+-		kernfs_addrm_finish(&acxt);
+-		kernfs_put_active(parent);
+-	}
+-
++	rc = kernfs_add_one(kn, parent);
+ 	if (rc) {
+ 		kernfs_put(kn);
+ 		return ERR_PTR(rc);
+diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
+index 57a93f4..6804046 100644
+--- a/fs/kernfs/kernfs-internal.h
++++ b/fs/kernfs/kernfs-internal.h
+@@ -46,13 +46,6 @@ static inline struct kernfs_root *kernfs_root(struct kernfs_node *kn)
+ }
+ 
+ /*
+- * Context structure to be used while adding/removing nodes.
+- */
+-struct kernfs_addrm_cxt {
+-	struct kernfs_node	*removed;
+-};
+-
+-/*
+  * mount.c
+  */
+ struct kernfs_super_info {
+@@ -101,10 +94,7 @@ extern const struct inode_operations kernfs_dir_iops;
+ 
+ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn);
+ void kernfs_put_active(struct kernfs_node *kn);
+-void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt);
+-int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+-		   struct kernfs_node *parent);
+-void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt);
++int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent);
+ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
+ 				    umode_t mode, unsigned flags);
+ 
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+index b2c106c..3a939c2 100644
+--- a/fs/kernfs/symlink.c
++++ b/fs/kernfs/symlink.c
+@@ -27,7 +27,6 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       struct kernfs_node *target)
+ {
+ 	struct kernfs_node *kn;
+-	struct kernfs_addrm_cxt acxt;
+ 	int error;
+ 
+ 	kn = kernfs_new_node(kernfs_root(parent), name, S_IFLNK|S_IRWXUGO,
+@@ -40,14 +39,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 	kn->symlink.target_kn = target;
+ 	kernfs_get(target);	/* ref owned by symlink */
+ 
+-	error = -ENOENT;
+-	if (kernfs_get_active(parent)) {
+-		kernfs_addrm_start(&acxt);
+-		error = kernfs_add_one(&acxt, kn, parent);
+-		kernfs_addrm_finish(&acxt);
+-		kernfs_put_active(parent);
+-	}
+-
++	error = kernfs_add_one(kn, parent);
+ 	if (!error)
+ 		return kn;
+ 
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 61bd7ae..9b5a4bb 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -89,10 +89,6 @@ struct kernfs_node {
+ 
+ 	struct rb_node		rb;
+ 
+-	union {
+-		struct kernfs_node	*removed_list;
+-	} u;
+-
+ 	const void		*ns;	/* namespace tag */
+ 	unsigned int		hash;	/* ns + name hash */
+ 	union {
+-- 
+1.8.4.2
 
-kernfs / sysfs implement the "sever" semantic for userland accesses.
-When a node is removed, no further userland operations are allowed and
-the in-flight ones are drained before removal is finished.  This makes
-policing post-mortem userland accesses trivial for its users;
-unfortunately, this comes with a drawback - a node which tries to
-delete oneself through one of its userland operations deadlocks.
-Removal wants to drain the active access that the operation itself is
-running on top of.
-
-This currently is worked around in the sysfs layer using
-sysfs_schedule_callback() which punts the actual removal to a work
-item.  While making the operation asynchronous kinda works, it's a bit
-cumbersome to use and its behavior isn't quite correct as the caller
-has no way of telling when or even whether the operation is actually
-complete.  If such self-removal is followed by another operation which
-expects the removed name to be available, there's no way to make the
-second operation reliable - e.g. something like "echo 1 > asdf/delete;
-echo asdf > create_new_child" can't work properly.
-
-This patchset improves kernfs removal path and implements
-kernfs_remove_self() which is to be called from an on-going kernfs
-operation and removes the self node.  The function can be called
-concurrently and only one will return %true and all others will wait
-until the winner's file operation is complete (not the
-kernfs_remove_self() call itself but the enclosing file operation
-which invoked the function).  This ensures that if there are multiple
-concurrent "echo 1 > asdf/delete", all of them would finish only after
-the whole store_delete() method is complete.
-
-kernfs_remove_self() is exposed to upper layers through
-sysfs_remove_file_self() and device_remove_file_self().  The existing
-users of device_schedule_callback() are converted to use remove_self
-and the unused async mechanism is removed.
-
-This patchset contains the following 14 patches.
-
- 0001-kernfs-fix-get_active-failure-handling-in-kernfs_seq.patch
- 0002-kernfs-replace-kernfs_node-u.completion-with-kernfs_.patch
- 0003-kernfs-remove-KERNFS_ACTIVE_REF-and-add-kernfs_lockd.patch
- 0004-kernfs-remove-KERNFS_REMOVED.patch
- 0005-kernfs-restructure-removal-path-to-fix-possible-prem.patch
- 0006-kernfs-invoke-kernfs_unmap_bin_file-directly-from-__.patch
- 0007-kernfs-remove-kernfs_addrm_cxt.patch
- 0008-kernfs-make-kernfs_get_active-block-if-the-node-is-d.patch
- 0009-kernfs-implement-kernfs_-de-re-activate-_self.patch
- 0010-kernfs-sysfs-driver-core-implement-kernfs_remove_sel.patch
- 0011-pci-use-device_remove_file_self-instead-of-device_sc.patch
- 0012-scsi-use-device_remove_file_self-instead-of-device_s.patch
- 0013-s390-use-device_remove_file_self-instead-of-device_s.patch
- 0014-sysfs-driver-core-remove-unused-sysfs-device-_schedu.patch
-
-0001 fixes -ENODEV failure handling in kernfs.  I *think* this could
-be the fix for the issue Sasha reported with trinity fuzzying.  Sasha,
-would it be possible to confirm whether the issue is reproducible with
-this patch applied?
-
-0002 replaces kernfs_node->u.completion with a hierarchy-wide
-wait_queue_head.  This will be used to fix concurrent removal
-behavior.
-
-0003-0004 simplifies removal path to prepare for restructuring.
-
-0005 fixes premature completion of node removal when multiple removers
-are competing.  This shouldn't matter for the existing sysfs users.
-
-0006-0007 cleans up removal path.  The size of kernfs_node gets
-reduced by one pointer.
-
-0008-0010 implement kernfs_{de|re}activate[_self](),
-kernfs_remove_self() and friends.
-
-0011-0014 convert the existing users of device_schedule_callback() to
-device_remove_file_self() and remove now unused async mechanism.
-
-After the changes, kernfs_node is shrunken by a pointer.
-Unfortunately, the addition of deactivation API makes LOC go up by
-above a hundred lines.  Oh well....
-
-The patchset is on top of the current driver-core-next eb4c69033fd1
-("Revert "kobject: introduce kobj_completion"") and also available in
-the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-suicide
-
-diffstat follows.
-
- arch/s390/include/asm/ccwgroup.h |    1
- arch/s390/pci/pci_sysfs.c        |   18 -
- drivers/base/core.c              |   50 +--
- drivers/pci/pci-sysfs.c          |   24 -
- drivers/s390/block/dcssblk.c     |   14
- drivers/s390/cio/ccwgroup.c      |   26 +
- drivers/scsi/scsi_sysfs.c        |   15 -
- fs/kernfs/dir.c                  |  572 ++++++++++++++++++++++++++-------------
- fs/kernfs/file.c                 |   57 +++
- fs/kernfs/kernfs-internal.h      |   15 -
- fs/kernfs/symlink.c              |    6
- fs/sysfs/file.c                  |  115 +------
- include/linux/device.h           |   13
- include/linux/kernfs.h           |   24 +
- include/linux/sysfs.h            |   16 -
- 15 files changed, 540 insertions(+), 426 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] http://thread.gmane.org/gmane.linux.kernel/1624740
