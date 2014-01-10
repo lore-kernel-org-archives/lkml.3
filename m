@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaAJJcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 04:32:04 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:39830 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaAJJcA (ORCPT
+	id S1753085AbaAJJdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 04:33:18 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:20677 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaAJJdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 04:32:00 -0500
-Date: Fri, 10 Jan 2014 01:31:48 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
-        stable <stable@vger.kernel.org>, Paul Moore <paul@paul-moore.com>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
- inode_permission()
-Message-ID: <20140110093148.GA26159@infradead.org>
-References: <20140109162731.12500986@gandalf.local.home>
- <20140109214239.GD29910@parisc-linux.org>
- <20140109165012.391db81e@gandalf.local.home>
- <20140109223127.GM10323@ZenIV.linux.org.uk>
- <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
- <20140109182523.5b50131f@gandalf.local.home>
- <20140109182756.17abaaa8@gandalf.local.home>
- <1389310626.15209.92.camel@localhost>
- <CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
- <20140110000642.GN10323@ZenIV.linux.org.uk>
+	Fri, 10 Jan 2014 04:33:13 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-serial@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Marek Roszko <mark.roszko@gmail.com>, stable <stable@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] tty/serial: at91: disable uart timer at start of shutdown
+Date: Fri, 10 Jan 2014 10:33:11 +0100
+Message-ID: <1389346391-26145-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110000642.GN10323@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 12:06:42AM +0000, Al Viro wrote:
-> Check what XFS is doing ;-/  That's where those call_rcu() have come from.
-> Sure, we can separate the simple "just do call_rcu(...->free_inode)" case
-> and hit it whenever full ->free_inode is there and ->destroy_inode isn't.
-> Not too pretty, but removal of tons of boilerplate might be worth doing
-> that anyway.  But ->destroy_inode() is still needed for cases where fs
-> has its own idea of inode lifetime rules.  Again, check what XFS is doing
-> in that area...
+From: Marek Roszko <mark.roszko@gmail.com>
 
-Btw, I'd really love to get rid of the XFS ->destroy_inode abuse, it's
-been a long time thorn in the flesh.
+The uart timer will schedule a tasklet when it fires. It is possible that it
+can fire inside _shutdown before it is killed in the dma and pdc cleanup
+routines. This causes a tasklet that exists after the port is shutdown, so when
+the kernel finally executes it, it panics as the tty port is NULL.
 
-What's really needed there to make XFS behave more similar to everyone
-else is a way for the filesystem to say: "I can't actually free this
-inode right now, but I'll come back to you later".  That's what we
-actually do right now, except we pretend that the VFS inode gets freed,
-while its memory lives on (punt intended).
+This is a somewhat rare condition but its possible if a program keeps on
+opening/closing the port. It has been observed in particular with systemd
+boot messages that were causing a kernel panic because of this behavior.
+
+Moving the timer deletion to the beginning of the function stops a tasklet from
+being scheduled unexpectedly.
+
+Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+Cc: stable <stable@vger.kernel.org> # v3.12
+[nicolas.ferre@atmel.com: modify commit message, call setup_timer() in any case]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/tty/serial/atmel_serial.c | 22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 2b6ac1be00d3..a49f10d269b2 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -825,9 +825,6 @@ static void atmel_release_rx_dma(struct uart_port *port)
+ 	atmel_port->desc_rx = NULL;
+ 	atmel_port->chan_rx = NULL;
+ 	atmel_port->cookie_rx = -EINVAL;
+-
+-	if (!atmel_port->is_usart)
+-		del_timer_sync(&atmel_port->uart_timer);
+ }
+ 
+ static void atmel_rx_from_dma(struct uart_port *port)
+@@ -1229,9 +1226,6 @@ static void atmel_release_rx_pdc(struct uart_port *port)
+ 				 DMA_FROM_DEVICE);
+ 		kfree(pdc->buf);
+ 	}
+-
+-	if (!atmel_port->is_usart)
+-		del_timer_sync(&atmel_port->uart_timer);
+ }
+ 
+ static void atmel_rx_from_pdc(struct uart_port *port)
+@@ -1604,12 +1598,13 @@ static int atmel_startup(struct uart_port *port)
+ 	/* enable xmit & rcvr */
+ 	UART_PUT_CR(port, ATMEL_US_TXEN | ATMEL_US_RXEN);
+ 
++	setup_timer(&atmel_port->uart_timer,
++			atmel_uart_timer_callback,
++			(unsigned long)port);
++
+ 	if (atmel_use_pdc_rx(port)) {
+ 		/* set UART timeout */
+ 		if (!atmel_port->is_usart) {
+-			setup_timer(&atmel_port->uart_timer,
+-					atmel_uart_timer_callback,
+-					(unsigned long)port);
+ 			mod_timer(&atmel_port->uart_timer,
+ 					jiffies + uart_poll_timeout(port));
+ 		/* set USART timeout */
+@@ -1624,9 +1619,6 @@ static int atmel_startup(struct uart_port *port)
+ 	} else if (atmel_use_dma_rx(port)) {
+ 		/* set UART timeout */
+ 		if (!atmel_port->is_usart) {
+-			setup_timer(&atmel_port->uart_timer,
+-					atmel_uart_timer_callback,
+-					(unsigned long)port);
+ 			mod_timer(&atmel_port->uart_timer,
+ 					jiffies + uart_poll_timeout(port));
+ 		/* set USART timeout */
+@@ -1652,6 +1644,12 @@ static void atmel_shutdown(struct uart_port *port)
+ 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
+ 
+ 	/*
++	 * Prevent any tasklets being scheduled during
++	 * cleanup
++	 */
++	del_timer_sync(&atmel_port->uart_timer);
++
++	/*
+ 	 * Clear out any scheduled tasklets before
+ 	 * we destroy the buffers
+ 	 */
+-- 
+1.8.2.2
 
