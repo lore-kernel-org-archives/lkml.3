@@ -1,96 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaAJNGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:06:53 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:43910
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751865AbaAJNGr (ORCPT
+	id S1752677AbaAJNQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:16:10 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:50299 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaAJNQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:06:47 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z551biz98dI1102I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h1155h)
-Date: Fri, 10 Jan 2014 21:03:39 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <timur@tabi.org>, <alsa-devel@alsa-project.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <grant.likely@linaro.org>, <shawn.guo@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2] ASoC: fsl_esai: Add ESAI CPU DAI driver
-Message-ID: <20140110130338.GA17392@MrMyself>
-References: <1389265078-16256-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140109184453.GP12858@sirena.org.uk>
- <20140110023252.GA16467@MrMyself>
- <20140110023537.GB16467@MrMyself>
- <20140110120439.GG29039@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140110120439.GG29039@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 10 Jan 2014 08:16:06 -0500
+X-Nat-Received: from [202.181.97.72]:58085 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1389359707.16517
+To: pavel@ucw.cz
+Cc: keescook@chromium.org, joe@perches.com, akpm@linux-foundation.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT[C012] format specifier
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <CAGXu5j+gHtgx9MVCaJ2ogJ0WGCeTDkphsH3gm7S=+mTssicABg@mail.gmail.com>
+	<201401041126.BHJ81291.VOHLOtMFOJFQFS@I-love.SAKURA.ne.jp>
+	<201401051215.ACJ30759.MJSHtFFFVOOOQL@I-love.SAKURA.ne.jp>
+	<20140105222752.GA27517@amd.pavel.ucw.cz>
+	<201401062302.FJG51045.tFSOFJQLOOHFMV@I-love.SAKURA.ne.jp>
+In-Reply-To: <201401062302.FJG51045.tFSOFJQLOOHFMV@I-love.SAKURA.ne.jp>
+Message-Id: <201401102215.IEJ51533.FFVQHOOLOFJSMt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Fri, 10 Jan 2014 22:15:06 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 10012014 #7293297, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just received the 'applied' mail. But still want to confirm this topic to
-see how to refine the driver in the step ahead.
+Tetsuo Handa wrote:
+> Pavel Machek wrote:
+> > > + * Please use this wrapper function which will be updated in the future to read
+> > > + * @tsk->comm in a consistent way.
+> > > + */
+> > > +static inline int commcmp(const struct task_struct *tsk, const char *comm)
+> > > +{
+> > > +	return strcmp(tsk->comm, comm);
+> > > +}
+> > 
+> > Is this useful to something? Printing command name is
+> > useful. Comparing it...?
+> >
+> 
+> (a) Using tsk->comm for reducing duplicated printk() messages.
+> 
+>     if (strcmp(p->comm, last_comm)) {
+>         printk("hello\n");
+>         strcpy(last_comm, p->comm);
+>     }
+> 
+> (b) Using tsk->pid for reducing duplicated printk() messages.
+> 
+>     if (p->pid != last_pid) {
+>         printk("hello\n");
+>         last_pid = p->pid;
+>     }
+> 
+> (c) Using printk_ratelimit() for reducing printk() flooding.
+> 
+>     printk_ratelimit("hello\n");
+> 
+> (d) Using plain printk().
+> 
+>     printk("hello\n");
+> 
+> (e) Other purposes. (e.g. drivers/target/iscsi/iscsi_target_tq.c )
+> 
+>     if (!strncmp(current->comm, ISCSI_RX_THREAD_NAME,
+>                  strlen(ISCSI_RX_THREAD_NAME)))
+>         thread_called = ISCSI_RX_THREAD;
+>     else if (!strncmp(current->comm, ISCSI_TX_THREAD_NAME,
+>                       strlen(ISCSI_TX_THREAD_NAME)))
+>         thread_called = ISCSI_TX_THREAD;
+> 
+> commcmp() and commcpy() are for wrappring (a).
+> Though (a) should consider changing to (b) or (c).
+> 
+> (e) should be rewritten not to depend on current->comm .
+> 
 
-On Fri, Jan 10, 2014 at 12:04:39PM +0000, Mark Brown wrote:
-> On Fri, Jan 10, 2014 at 10:35:39AM +0800, Nicolin Chen wrote:
-> 
-> > Resent this because of losing attached file.
-> 
-> I don't think your previous mail got sent at all, or at least it must've
-> been caught by spam filters here...
-> 
-> > On Fri, Jan 10, 2014 at 10:32:52AM +0800, Nicolin Chen wrote:
-> > > On Thu, Jan 09, 2014 at 06:44:53PM +0000, Mark Brown wrote:
-> 
-> > > > Why does the machine driver have to do this by hand, being able to
-> > > > override is fine but having sensible defaults is easier?  Or does it
-> > > > actually do that and the comment just needs updating?
-> 
-> > > The divider part of ESAI is pretty complicated due to caring about three
-> > > configure bits - ETO, ETI, HCKD. (I've attached a diagram to this mail.)
-> > > So setting sysclk() alone is not enough to take care all the configurations.
-> > > That's why I designed these two interfaces at the first place. And it should
-> > > be hard to find a default situation.
-> 
-> Why is the machine driver going to be able to come up with a sensible
-> configuration then?  It's OK to support overriding the configuration
-> where needed, my concern is about providing a default.
-> 
-> > > But there is one approach to omit this calling for machine driver is to do
-> > > the set_bclk_ratio() at this CPU DAI driver. And this might be a good idea
-> > > because we can then separate the settings between PLAYBACK and CAPTURE, even
-> > > though we might then need to check the Master or Slave state to apply the
-> > > settings accordingly.
-> 
-> This is about what I'd expect but then surely the next step is for the
-> driver to choose a defualt BCLK ratio - that's how most drivers work,
-> they try to generate the exact rate that is needed to clock the data.
+I realized that we don't need commcmp() because we can rewrite like below.
 
-Does that mean I should call set_bclk() once in the startup() when !active
-to set a default bit clock rate to suit a common sample rate like 44100Hz?
-I'm a bit confused if so. Because the driver would call set_bclk() any way
-in the hw_params().
+  (a)
+      char tmp_comm[TASK_COMM_LEN];
+      commcpy(tmp_comm, p->comm);
+      if (strcmp(tmp_comm, last_comm)) {
+          printk("hello\n");
+          strcpy(last_comm, tmp_comm);
+      }
 
-But your suggestion just reminds me of the slave mode in SSI driver as
-default mode. And I should patch ESAI to slave mode for default as well,
-shouldn't I?
+  (e)
+      char tmp_comm[TASK_COMM_LEN];
+      commcpy(tmp_comm, p->comm);
+      if (!strncmp(tmp_comm, ISCSI_RX_THREAD_NAME,
+                   strlen(ISCSI_RX_THREAD_NAME)))
+          thread_called = ISCSI_RX_THREAD;
+      else if (!strncmp(tmp_comm, ISCSI_TX_THREAD_NAME,
+                        strlen(ISCSI_TX_THREAD_NAME)))
+          thread_called = ISCSI_TX_THREAD;
 
-> Are the bit clock shared between playback and capture?
-Only shared in synchronous mode and totally individual in asynchronous mode.
-Each of them can have their own HCK(MCLK) from different sources and derive
-their own SCK(BCLK).
+Below is an updated patch (and one of users of this patch). I assume we can
+agree on these patches, and I expect these patches go to linux-next.git via
+linux-security.git (as I can save one merge window for fixing this issue in
+the LSM auditing code.)
+----------------------------------------
+>From 0c183ad7aceb0db8ca4b9bd3a048182bf23e32be Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Fri, 10 Jan 2014 21:54:38 +0900
+Subject: [PATCH] exec: Add wrapper function for reading task_struct->comm.
 
-Thank you,
-Nicolin
+Since task_struct->comm can be modified by other threads while the current
+thread is reading it, it is recommended to use get_task_comm() for reading it.
 
+However, since get_task_comm() holds task_struct->alloc_lock spinlock,
+some users cannot use get_task_comm(). Also, a lot of users are directly
+reading from task_struct->comm even if they can use get_task_comm().
+Such users might obtain inconsistent result.
 
+This patch introduces a wrapper function for reading task_struct->comm .
+Currently this function does not provide consistency. I'm planning to change to
+use RCU in the future. By using RCU, the comm name read from task_struct->comm
+will be guaranteed to be consistent. But before modifying set_task_comm() to
+use RCU, we need to kill direct ->comm users who do not use get_task_comm().
+
+Users directly reading from task_struct->comm for printing purpose can use
+%pT format specifier rather than this wrapper function.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ include/linux/sched.h |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e27baee..de12b27 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1601,6 +1601,24 @@ static inline cputime_t task_gtime(struct task_struct *t)
+ extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
+ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
+ 
++/**
++ * commcpy - Copy task_struct->comm to buffer.
++ *
++ * @buf: Buffer to copy @tsk->comm which must be at least TASK_COMM_LEN bytes.
++ * @tsk: Pointer to "struct task_struct".
++ *
++ * Returns return value of memcpy(@buf, @tsk->comm, TASK_COMM_LEN).
++ *
++ * Please use get_task_comm(@buf, @tsk) if it is safe to call task_lock(@tsk),
++ * for get_task_comm() reads @tsk->comm in a consistent way. Otherwise, please
++ * use this wrapper function which will be updated in the future to read
++ * @tsk->comm in a consistent way.
++ */
++static inline void *commcpy(void *buf, const struct task_struct *tsk)
++{
++	return memcpy(buf, tsk->comm, TASK_COMM_LEN);
++}
++
+ /*
+  * Per process flags
+  */
+-- 
+1.7.1
+----------------------------------------
+>From 3b5137f09bfdac7b0133ddaa194d181d7c897e1f Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Fri, 10 Jan 2014 22:02:14 +0900
+Subject: [PATCH] LSM: Pass comm name via commcpy()
+
+When we pass task->comm to audit_log_untrustedstring(), we need to pass a
+snapshot of it using commcpy() because task->comm can be changed to contain
+control character by other threads after audit_log_untrustedstring() confirmed
+that task->comm does not contain control character.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/lsm_audit.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/security/lsm_audit.c b/security/lsm_audit.c
+index 8d8d97d..76f37f7 100644
+--- a/security/lsm_audit.c
++++ b/security/lsm_audit.c
+@@ -212,6 +212,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 				   struct common_audit_data *a)
+ {
+ 	struct task_struct *tsk = current;
++	char name[TASK_COMM_LEN];
+ 
+ 	/*
+ 	 * To keep stack sizes in check force programers to notice if they
+@@ -221,7 +222,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 	BUILD_BUG_ON(sizeof(a->u) > sizeof(void *)*2);
+ 
+ 	audit_log_format(ab, " pid=%d comm=", tsk->pid);
+-	audit_log_untrustedstring(ab, tsk->comm);
++	audit_log_untrustedstring(ab, commcpy(name, tsk));
+ 
+ 	switch (a->type) {
+ 	case LSM_AUDIT_DATA_NONE:
+@@ -280,7 +281,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 		tsk = a->u.tsk;
+ 		if (tsk && tsk->pid) {
+ 			audit_log_format(ab, " pid=%d comm=", tsk->pid);
+-			audit_log_untrustedstring(ab, tsk->comm);
++			audit_log_untrustedstring(ab, commcpy(name, tsk));
+ 		}
+ 		break;
+ 	case LSM_AUDIT_DATA_NET:
+-- 
+1.7.1
+----------------------------------------
