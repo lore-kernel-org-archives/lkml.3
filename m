@@ -1,153 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaAJO1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:27:19 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53138 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaAJO1Q (ORCPT
+	id S1752600AbaAJO3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:29:08 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:34392 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaAJO3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:27:16 -0500
-Date: Fri, 10 Jan 2014 09:27:00 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net V2 2/2] net: core: explicitly select a txq before
- doing l2 forwarding
-Message-ID: <20140110142700.GA10111@neilslaptop.think-freely.org>
-References: <1389260252-48591-1-git-send-email-jasowang@redhat.com>
- <1389260252-48591-2-git-send-email-jasowang@redhat.com>
- <20140109123144.GC16701@hmsreliant.think-freely.org>
- <52CF9B25.7020909@redhat.com>
+	Fri, 10 Jan 2014 09:29:04 -0500
+Message-ID: <52D003AC.3000808@cogentembedded.com>
+Date: Fri, 10 Jan 2014 18:29:00 +0400
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CF9B25.7020909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "anton@enomsg.org" <anton@enomsg.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "mk7.kang@samsung.com" <mk7.kang@samsung.com>
+Subject: Re: [PATCH 1/3] power_supply: modelgauge_battery: Maxim ModelGauge
+ ICs gauge
+References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com> <1389286145-15375-2-git-send-email-vladimir.barinov@cogentembedded.com> <20140110111130.GD6798@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140110111130.GD6798@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 03:03:01PM +0800, Jason Wang wrote:
-> On 01/09/2014 08:31 PM, Neil Horman wrote:
-> > On Thu, Jan 09, 2014 at 05:37:32PM +0800, Jason Wang wrote:
-> >> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
-> >> will cause several issues:
-> >>
-> >> - NETIF_F_LLTX were removed for macvlan, so txq lock were done for macvlan
-> >>   instead of lower device which misses the necessary txq synchronization for
-> >>   lower device such as txq stopping or frozen required by dev watchdog or
-> >>   control path.
-> >> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
-> >>   watchdog.
-> >> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
-> >>   when tso is disabled for lower device.
-> >>
-> >> Fix this by explicitly introducing a new param for .ndo_select_queue() for just
-> >> selecting queues in the case of l2 forwarding offload. And also introducing
-> >> dfwd_direct_xmit() to do the queue selecting, txq holding and transmitting for
-> >> l2 forwarding.
-> >>
-> >> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
-> >> to check txq against NULL in dev_hard_start_xmit(). Also there's no need to keep
-> >> a dedicated ndo_dfwd_start_xmit().
-> >>
-> >> In the future, it was also required for macvtap l2 forwarding support since it
-> >> provides a necessary synchronization method.
-> >>
-> >> Cc: John Fastabend <john.r.fastabend@intel.com>
-> >> Cc: Neil Horman <nhorman@tuxdriver.com>
-> >> Cc: e1000-devel@lists.sourceforge.net
-> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >>
-> >> ---
-> >> Changes from V1:
-> >> - Adding a new parameter to ndo_select_queue instead of a new method to select
-> >>   queue for l2 forwarding.
-> >> - Remove the unnecessary ndo_dfwd_start_xmit() since txq was selected
-> >>   explicitly.
-> >> - Keep NETIF_F_LLTX when netdev feature is changed.
-> >> - Shape the commit log
-> > A few minor nits inline.
-> >> <snip>
-> >>  }
-> >> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-> >> index 5360f73..7eb4c82 100644
-> >> --- a/drivers/net/macvlan.c
-> >> +++ b/drivers/net/macvlan.c
-> >> @@ -299,7 +299,7 @@ netdev_tx_t macvlan_start_xmit(struct sk_buff *skb,
-> >>  
-> >>  	if (vlan->fwd_priv) {
-> >>  		skb->dev = vlan->lowerdev;
-> >> -		ret = dev_hard_start_xmit(skb, skb->dev, NULL, vlan->fwd_priv);
-> >> +		ret = dfwd_direct_xmit(skb, skb->dev, vlan->fwd_priv);
-> >>  	} else {
-> >>  		ret = macvlan_queue_xmit(skb, dev);
-> >>  	}
-> >> @@ -366,7 +366,6 @@ static int macvlan_open(struct net_device *dev)
-> >>  		if (IS_ERR_OR_NULL(vlan->fwd_priv)) {
-> >>  			vlan->fwd_priv = NULL;
-> >>  		} else {
-> >> -			dev->features &= ~NETIF_F_LLTX;
-> >>  			return 0;
-> >>  		}
-> > After removing the features flag operation here, you don't need the braces
-> > around the else statement either.
-> 
-> Ok.
-> >> <snip>
-> >> +int dfwd_direct_xmit(struct sk_buff *skb, struct net_device *dev,
-> >> +		     void *accel_priv)
-> >> +{
-> >> +	struct netdev_queue *txq;
-> >> +	int ret = NETDEV_TX_BUSY;
-> >> +	int index;
-> >> +
-> >> +	BUG_ON(!dev->netdev_ops->ndo_select_queue);
-> >> +	index =	dev->netdev_ops->ndo_select_queue(dev, skb, accel_priv);
-> >> +
-> >> +	local_bh_disable();
-> >> +
-> >> +	skb_set_queue_mapping(skb, index);
-> >> +	txq = netdev_get_tx_queue(dev, index);
-> >> +
-> >> +	HARD_TX_LOCK(dev, txq, smp_processor_id());
-> >> +	if (!netif_xmit_frozen_or_stopped(txq))
-> >> +		ret = dev_hard_start_xmit(skb, dev, txq);
-> >> +	HARD_TX_UNLOCK(dev, txq);
-> >> +
-> >> +	local_bh_enable();
-> >> +	return ret;
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(dfwd_direct_xmit);
-> >> +
-> > Now that we're using the common path to select a queue, can we just use
-> > dev_queue_xmit here instead of creating our own transmit function?  The txq we
-> > select from the ixgbe card will just have a pfifo_fast queue on it (if not a
-> > noop queue), so dev_queue_xmit should just fall into the dev_hard_start_xmit
-> > path, and save us this extra coding.
-> >
-> > Neil
-> 
-> Ture, and this will make no difference with the case without l2
-> forwarding. To not trouble other parts too much, I will keep the current
-> dev_queue_xmit() API and rename the current dev_queue_xmit() to
-> __dev_queue_xmit() can make it can accept a accel_priv parameter. So
-> dev_queue_xmit() will call this will NULL accel_priv and introduce a
-> dev_queue_xmit_accel() that can accept a accel_priv parameter.
-> 
+Hello,
 
-Sounds perfect, thanks!
-Neil
+On 01/10/2014 03:11 PM, Mark Rutland wrote:
+> On Thu, Jan 09, 2014 at 04:49:03PM +0000, Vladimir Barinov wrote:
+>> Add Maxim ModelGauge ICs gauge driver for MAX17040/41/43/44/48/49/58/59 chips
+>>
+>> Signed-off-by: Vladimir Barinov<vladimir.barinov@cogentembedded.com>
+>>
+>> ---
+>>   drivers/power/Kconfig                            |    8
+>>   drivers/power/Makefile                           |    1
+>>   drivers/power/modelgauge_battery.c               |  875 +++++++++++++++++++++++
+>>   include/linux/platform_data/battery-modelgauge.h |   44 +
+>>   4 files changed, 928 insertions(+)
+> [...]
+>
+>> +static struct modelgauge_platform_data *modelgauge_parse_dt(struct device *dev)
+>> +{
+>> +       struct device_node *np = dev->of_node;
+>> +       struct modelgauge_platform_data *pdata;
+>> +       struct property *prop;
+>> +
+>> +       if (!of_get_property(np, "maxim,empty_alert_threshold", NULL)&&
+>> +           !of_get_property(np, "maxim,soc_change_alert", NULL)&&
+>> +           !of_get_property(np, "maxim,hibernate_threshold", NULL)&&
+>> +           !of_get_property(np, "maxim,active_threshold", NULL)&&
+>> +           !of_get_property(np, "maxim,undervoltage", NULL)&&
+>> +           !of_get_property(np, "maxim,overvoltage", NULL)&&
+>> +           !of_get_property(np, "maxim,resetvoltage", NULL))
+>> +               return NULL;
+> These were described as optional in the binding. It wasn't clear that to
+> have one you need the others. It would be nice for that to be clarified
+> in the binding.
+Yes, since they are optional then we'll return NULL here, that means no 
+platform data provided.
+The "if" statement checked if nothing was provided in DT then there is 
+not platform data.
 
-> Thanks
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Since, you requested to remove above binding from DT and make the driver 
+to take care, then I'll move them to sysfs.
+>
+>> +
+>> +       pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+>> +       if (!pdata)
+>> +               return NULL;
+>> +
+>> +       of_property_read_u8(np, "maxim,empty_alert_threshold",
+>> +&pdata->empty_alert_threshold);
+>> +       pdata->soc_change_alert =
+>> +                       of_property_read_bool(np, "maxim,soc_change_alert");
+> As mentioned in my comments on the binding document, I don't think this
+> property is necessary at all.
+Yes, I will move it into driver.
+>
+>> +       of_property_read_u8(np, "maxim,hibernate_threshold",
+>> +&pdata->hibernate_threshold);
+>> +       of_property_read_u8(np, "maxim,active_threshold",
+>> +&pdata->active_threshold);
+>> +       of_property_read_u16(np, "maxim,undervoltage",&pdata->undervoltage);
+>> +       of_property_read_u16(np, "maxim,overvoltage",&pdata->overvoltage);
+>> +       of_property_read_u16(np, "maxim,resetvoltage",&pdata->resetvoltage);
+Ditto for above.
+>> +
+>> +       prop = of_find_property(np, "maxim,ocvtest", NULL);
+> Here you seem to be using of_find_property to check if a property is
+> present, but earlier you used of_get_property for this purpose. It would
+> be nice if one or the other were used consistently.
+Since above code will be removed then only this parameter will be used 
+for battery specific data presence check.
+>
+>> +       if (prop) {
+>> +               pdata->model = devm_kzalloc(dev, sizeof(*pdata->model),
+>> +                                           GFP_KERNEL);
+>> +               if (!pdata->model)
+>> +                       return NULL;
+>> +
+>> +               of_property_read_u8(np, "maxim,empty_adjustment",
+>> +&pdata->model->empty_adjustment);
+>> +               of_property_read_u8(np, "maxim,full_adjustment",
+>> +&pdata->model->full_adjustment);
+>> +               of_property_read_u8(np, "maxim,rcomp0",
+>> +&pdata->model->rcomp0);
+>> +               prop = of_find_property(np, "maxim,temp_co_up", NULL);
+>> +               if (prop)
+>> +                       pdata->model->temp_co_up = be32_to_cpup(prop->value);
+> Use of_property_read_u32. If it can't read the property it won't
+> modify the pointer it's been handed, and it handles the endianness
+> conversion.
+>
+> You seem to be happy to use of_property_read_u{8,16}, so I don't
+> understand why you are treating 32-bit differently.
+Because the this property is signed. So I can't use of_property_read_u32.
+>
+>> +               prop = of_find_property(np, "maxim,temp_co_down", NULL);
+>> +               if (prop)
+>> +                       pdata->model->temp_co_down = be32_to_cpup(prop->value);
+> Likewise.
+Ditto.
+>
+>> +               of_property_read_u16(np, "maxim,ocvtest",
+>> +&pdata->model->ocvtest);
+> While you've checked that this property was present earlier, you don't
+> know it's size. You might want to check the return value of
+> of_property_read_u16 (and you might want to do so for other accessors
+> too).
+Ok, I will add checking of of_property_read_XX() return values.
+>
+>> +               of_property_read_u8(np, "maxim,soc_check_a",
+>> +&pdata->model->soc_check_a);
+>> +               of_property_read_u8(np, "maxim,soc_check_b",
+>> +&pdata->model->soc_check_b);
+>> +               of_property_read_u8(np, "maxim,bits",
+>> +&pdata->model->bits);
+>> +               of_property_read_u16(np, "maxim,rcomp_seg",
+>> +&pdata->model->rcomp_seg);
+>> +       }
+>> +
+>> +       prop = of_find_property(np, "maxim,model_data", NULL);
+>> +       if (prop&&  prop->length == MODELGAUGE_TABLE_SIZE) {
+>> +               pdata->model->model_data = devm_kzalloc(dev,
+>> +                                                       MODELGAUGE_TABLE_SIZE,
+>> +                                                       GFP_KERNEL);
+>> +               if (!pdata->model->model_data)
+>> +                       return NULL;
+>> +
+>> +               of_property_read_u8_array(np, "maxim,model_data",
+>> +                                         pdata->model->model_data,
+>> +                                         MODELGAUGE_TABLE_SIZE);
+>> +       }
+> It's probably worth printing a warning or error if this isn't the size
+> you expect (perhaps failing to probe).
+okay.
+>
+>> +
+>> +       return pdata;
+>> +}
+> Thanks,
+> Mark.
+Regards,
+Vladimir
+
