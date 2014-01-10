@@ -1,44 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777AbaAJAfO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:35:14 -0500
-Received: from mail-gg0-f177.google.com ([209.85.161.177]:58253 "EHLO
-	mail-gg0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaAJAfM (ORCPT
+	id S1757631AbaAJAi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:38:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54355 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756369AbaAJAiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:35:12 -0500
-Date: Thu, 9 Jan 2014 16:35:05 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <alpine.DEB.2.02.1401091613560.22649@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1401091634390.24832@chino.kir.corp.google.com>
-References: <20131210103827.GB20242@dhcp22.suse.cz> <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com> <20131217162342.GG28991@dhcp22.suse.cz> <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com> <20131218200434.GA4161@dhcp22.suse.cz> <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz> <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org> <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com> <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
- <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com> <20140109161246.57ea590f00ea5b61fdbf5f11@linux-foundation.org> <alpine.DEB.2.02.1401091613560.22649@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 9 Jan 2014 19:38:22 -0500
+Date: Thu, 9 Jan 2014 16:38:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        netdev@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <JBottomley@Parallels.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v2 4/4] dma debug: introduce debug_dma_assert_idle()
+Message-Id: <20140109163820.ddbaaab9fdb2222c92ec3d78@linux-foundation.org>
+In-Reply-To: <20140109201657.28381.9305.stgit@viggo.jf.intel.com>
+References: <20140109201157.28381.94057.stgit@viggo.jf.intel.com>
+	<20140109201657.28381.9305.stgit@viggo.jf.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014, David Rientjes wrote:
+On Thu, 09 Jan 2014 12:17:26 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
 
-> > Johannes' final email in this thread has yet to be replied to, btw.
-> > 
+> Record actively mapped pages and provide an api for asserting a given
+> page is dma inactive before execution proceeds.  Placing
+> debug_dma_assert_idle() in cow_user_page() flagged the violation of the
+> dma-api in the NET_DMA implementation (see commit 77873803363c "net_dma:
+> mark broken").
 > 
-> Will do.
-> 
+> --- a/include/linux/dma-debug.h
+> +++ b/include/linux/dma-debug.h
+> @@ -185,4 +185,10 @@ static inline void debug_dma_dump_mappings(struct device *dev)
+>  
+>  #endif /* CONFIG_DMA_API_DEBUG */
+>  
+> +#ifdef CONFIG_DMA_VS_CPU_DEBUG
+> +extern void debug_dma_assert_idle(struct page *page);
+> +#else
+> +static inline void debug_dma_assert_idle(struct page *page) { }
 
-I've responded to this email, but nothing in Johannes' email actually 
-talks about this specific patch at all, so I'm not sure it's very useful.
+Surely this breaks the build when CONFIG_DMA_VS_CPU_DEBUG=n? 
+lib/dma-debug.c is missing the necessary "#ifdef
+CONFIG_DMA_VS_CPU_DEBUG"s.
 
-Thanks.
+Do we really need this config setting anyway?  What goes bad if we
+permanently enable this subfeature when dma debugging is enabled?
+
+>
+> ...
+>
+> index d87a17a819d0..f67ae111cd2f 100644
+> --- a/lib/dma-debug.c
+> +++ b/lib/dma-debug.c
+> @@ -57,7 +57,8 @@ struct dma_debug_entry {
+>  	struct list_head list;
+>  	struct device    *dev;
+>  	int              type;
+> -	phys_addr_t      paddr;
+> +	unsigned long	 pfn;
+> +	size_t		 offset;
+
+Some documentation for the fields would be nice.  offset of what
+relative to what, in what units?
+
+>  	u64              dev_addr;
+>  	u64              size;
+>  	int              direction;
+> @@ -372,6 +373,11 @@ static void hash_bucket_del(struct dma_debug_entry *entry)
+>  	list_del(&entry->list);
+>  }
+>  
+>
+> ...
+>
+>  
+> +/* memory usage is constrained by the maximum number of available
+> + * dma-debug entries
+> + */
+
+A brief design overview would be useful.  What goes in tree, how is it
+indexed, when and why do we add/remove/test items, etc.
+
+> +static RADIX_TREE(dma_active_pfn, GFP_NOWAIT);
+> +static DEFINE_SPINLOCK(radix_lock);
+> +
+> +static void __active_pfn_inc_overlap(struct dma_debug_entry *entry)
+> +{
+> +	unsigned long pfn = entry->pfn;
+> +	int i;
+> +
+> +	for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
+> +		if (radix_tree_tag_get(&dma_active_pfn, pfn, i) == 0) {
+> +			radix_tree_tag_set(&dma_active_pfn, pfn, i);
+> +			return;
+> +		}
+> +	pr_debug("DMA-API: max overlap count (%d) reached for pfn 0x%lx\n",
+> +		 RADIX_TREE_MAX_TAGS, pfn);
+> +}
+> +
+>
+> ...
+>
+> +void debug_dma_assert_idle(struct page *page)
+> +{
+> +	unsigned long flags;
+> +	struct dma_debug_entry *entry;
+> +
+> +	if (!page)
+> +		return;
+> +
+> +	spin_lock_irqsave(&radix_lock, flags);
+> +	entry = radix_tree_lookup(&dma_active_pfn, page_to_pfn(page));
+> +	spin_unlock_irqrestore(&radix_lock, flags);
+> +
+> +	if (!entry)
+> +		return;
+> +
+> +	err_printk(entry->dev, entry,
+> +		   "DMA-API: cpu touching an active dma mapped page "
+> +		   "[pfn=0x%lx]\n", entry->pfn);
+> +}
+> +EXPORT_SYMBOL_GPL(debug_dma_assert_idle);
+
+The export isn't needed for mm/memory.c
+
+>
+> ...
+>
+
