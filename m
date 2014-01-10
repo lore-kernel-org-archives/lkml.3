@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378AbaAJMcX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:32:23 -0500
+	id S1755686AbaAJMc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:32:26 -0500
 Received: from mga09.intel.com ([134.134.136.24]:35595 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784AbaAJMcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:32:17 -0500
+	id S1753085AbaAJMcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 07:32:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,638,1384329600"; 
-   d="scan'208";a="464666395"
+   d="scan'208";a="436877043"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, eranian@google.com,
         jolsa@redhat.com, fweisbec@gmail.com, mingo@kernel.org,
         adrian.hunter@intel.com, dsahern@gmail.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/4] perf, tools: Add --branch-call-stack option to report
-Date: Fri, 10 Jan 2014 04:32:04 -0800
-Message-Id: <1389357126-3003-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 3/4] perf, tools: Filter out small loops from LBR-as-call-stack
+Date: Fri, 10 Jan 2014 04:32:05 -0800
+Message-Id: <1389357126-3003-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
 References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
@@ -27,91 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a --branch-call-stack option toperf report that changes all
-the settings necessary for using the branches in callstacks.
+Small loops can cause unnecessary duplication in the LBR-as-callstack,
+because the loop body appears multiple times. Filter out duplications
+from the LBR before unifying it into the histories.  This way the
+same loop body only appears once.
 
-This is just a short cut to make this nicer to use.
+This uses a simple hash based cycle detector. It takes some short
+cuts (not handling hash collisions) so in rare cases duplicates may
+be missed.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/builtin-report.c              | 25 ++++++++++++++++++++++---
- 2 files changed, 27 insertions(+), 3 deletions(-)
+ tools/perf/util/machine.c | 73 ++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 62 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 10a2798..77ec0b9 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -223,6 +223,11 @@ OPTIONS
- 	branch stacks and it will automatically switch to the branch view mode,
- 	unless --no-branch-stack is used.
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index a7e538b..0fb4e9a 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -10,6 +10,7 @@
+ #include "thread.h"
+ #include <stdbool.h>
+ #include "unwind.h"
++#include "linux/hash.h"
  
-+--branch-call-stack::
-+	Add the addresses of sampled taken branches to the callstack.
-+	This allows to examine the path the program took to each sample.
-+	The data collection must have used -b or -j.	
-+
- --objdump=<path>::
-         Path to objdump binary.
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index c2e6e43..c39d1ac 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -763,6 +763,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ {
+@@ -1302,6 +1303,46 @@ static int add_callchain_ip(struct machine *machine,
+ 	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
  }
  
- static int
-+parse_branch_call_mode(const struct option *opt __maybe_unused,
-+		  const char *str __maybe_unused, int unset)
-+{
-+	int *branch_mode = opt->value;
++#define CHASHSZ 127
++#define CHASHBITS 7
++#define NO_ENTRY 0xff
 +
-+	*branch_mode = !unset;
-+	return 0;
++#define PERF_MAX_BRANCH_DEPTH 127
++
++/* Remove loops. */
++static int remove_loops(struct branch_entry *l, int nr)
++{
++	int i, j, off;
++	unsigned char chash[CHASHSZ];
++	memset(chash, -1, sizeof(chash));
++
++	BUG_ON(nr >= 256);
++	for (i = 0; i < nr; i++) {
++		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
++
++		/* no collision handling for now */
++		if (chash[h] == NO_ENTRY) {
++			chash[h] = i;
++		} else if (l[chash[h]].from == l[i].from) {
++			bool is_loop = true;
++			/* check if it is a real loop */
++			off = 0;
++			for (j = chash[h]; j < i && i + off < nr; j++, off++)
++				if (l[j].from != l[i + off].from) {
++					is_loop = false;
++					break;
++				}
++			if (is_loop) {
++				memmove(l + i, l + i + off, 
++					(nr - (i + off))
++					* sizeof(struct branch_entry));
++				nr -= off;
++			}
++		}
++	}
++	return nr;
 +}
 +
-+static int
- parse_percent_limit(const struct option *opt, const char *str,
- 		    int unset __maybe_unused)
- {
-@@ -777,7 +787,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_session *session;
- 	struct stat st;
- 	bool has_br_stack = false;
--	int branch_mode = -1;
-+	int branch_mode = -1, branch_call_mode = -1;
- 	int ret = -1;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
-@@ -883,7 +893,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
- 		    "Show event group information together"),
- 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
--		    "use branch records for histogram filling", parse_branch_mode),
-+		    "use branch records for per branch histogram filling", parse_branch_mode),
-+	OPT_CALLBACK_NOOPT(0, "branch-call-stack", &branch_call_mode, "",
-+		    "add last branch records to call stack",
-+		    parse_branch_call_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-@@ -931,8 +944,14 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
+ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					     struct thread *thread,
+ 					     struct ip_callchain *chain,
+@@ -1328,29 +1369,39 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	 * - No extra filters
+ 	 * - No annotations (should annotate somehow)
+ 	 * - When the sample is near the beginning of the function
+- 	 *   we may overlap with the real callstack. Could handle this
+-	 *   case later, by checking against the last ip.
++ 	 *   we may overlap with the real callstack. 
+ 	 */
  
--	if (branch_mode == -1 && has_br_stack)
-+	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
- 		sort__mode = SORT_MODE__BRANCH;
-+	if (branch_call_mode != -1) {
-+		callchain_param.branch_callstack = 1;
-+		callchain_param.key = CCKEY_ADDRESS;
-+		symbol_conf.use_callchain = true;
-+		callchain_register_param(&callchain_param);
++	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
++		pr_warning("corrupted branch chain. skipping...\n");
++		return 0;
 +	}
++
+ 	if (callchain_param.branch_callstack) {
+-		for (i = 0; i < branch->nr; i++) { 
+-			struct branch_entry *b; 
++		int nr = branch->nr;
++		struct branch_entry be[nr];
  
- 	/* sort__mode could be NORMAL if --no-branch-stack */
- 	if (sort__mode == SORT_MODE__BRANCH) {
++		for (i = 0; i < nr; i++) { 
+ 			if (callchain_param.order == ORDER_CALLEE)
+-				b = &branch->entries[i];
++				be[i] = branch->entries[i];
+ 			else
+-				b = &branch->entries[branch->nr - i - 1];
++				be[i] = branch->entries[branch->nr - i - 1];
++		}
+ 
+-			err = add_callchain_ip(machine, thread, parent, root_al,
+-					       -1, b->to);
++		nr = remove_loops(be, nr);
++
++		for (i = 0; i < nr; i++) {
++			err = add_callchain_ip(machine, thread, parent, 
++					       root_al,
++					       -1, be[i].to);
+ 			if (!err)
+-				err = add_callchain_ip(machine, thread, parent, root_al,
+-					       -1, b->from);
++				err = add_callchain_ip(machine, thread, 
++						       parent, root_al,
++						       -1, be[i].from);
+ 			if (err == -EINVAL)
+ 				break;
+ 			if (err)
+ 				return err;
+-
+ 		}
+ 	}
+ 
 -- 
 1.8.3.1
 
