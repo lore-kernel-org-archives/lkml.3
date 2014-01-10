@@ -1,169 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbaAJM3O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:29:14 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54971 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364AbaAJM3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:29:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,638,1384329600"; 
-   d="scan'208";a="456667153"
-Message-ID: <1389356948.2293.55.camel@loki>
-Subject: Re: [alsa-devel] [PATCH] ASoC: dpcm: don't do hw_param when BE has
- done	hw_param
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Nenghua Cao <nhcao@marvell.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 10 Jan 2014 12:29:08 +0000
-In-Reply-To: <s5hk3e8xcz2.wl%tiwai@suse.de>
-References: <1389332195-15900-1-git-send-email-nhcao@marvell.com>
-	 <s5htxdcxg0q.wl%tiwai@suse.de> <52CFD7BE.5030907@marvell.com>
-	 <1389354435.2293.32.camel@loki> <52CFE0AE.1030606@marvell.com>
-	 <s5hk3e8xcz2.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752953AbaAJMcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:32:17 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49803 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751784AbaAJMcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 07:32:14 -0500
+X-Sasl-enc: rjRBLb+bcBRhu/D8Bd0+b/xYsN+pDb+Ea76LgQjPaf67 1389357133
+Message-ID: <52CFE84A.9050107@ladisch.de>
+Date: Fri, 10 Jan 2014 13:32:10 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Rafael Aquini <aquini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [RFC PATCH] char: random: stir the output pools differently when
+ the random_write lenght allows splitting the seed
+References: <42f6dc88535d5ecdab13b1376db7ccbbbc550600.1389297772.git.aquini@redhat.com> <1510904.XsOZgVgixq@tauon> <52CFDB76.2030207@ladisch.de> <5743525.Bz4yhBJ8Tl@tauon>
+In-Reply-To: <5743525.Bz4yhBJ8Tl@tauon>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-10 at 13:01 +0100, Takashi Iwai wrote:
-> At Fri, 10 Jan 2014 19:59:42 +0800,
-> Nenghua Cao wrote:
-> > 
-> > On 01/10/2014 07:47 PM, Liam Girdwood wrote:
-> > > On Fri, 2014-01-10 at 19:21 +0800, Nenghua Cao wrote:
-> > >> On 01/10/2014 06:55 PM, Takashi Iwai wrote:
-> > >>> [Corrected mail addresses of both Mark and Liam]
-> > >>>
-> > >> Hi, Takashi:
-> > >> Thanks for correcting my mistake.
-> > >>> At Fri, 10 Jan 2014 13:36:35 +0800,
-> > >>> Nenghua Cao wrote:
-> > >>>>
-> > >>>> From: Nenghua Cao <nhcao@marvell.com>
-> > >>>>
-> > >>>>     It fixes the following case:
-> > >>>>     Two FEs connects the same BE; FE1 & BE path has been opened and hw_paramed.
-> > >>>> At this momment, FE2 & BE path is being opened and hw_paramed. The BE
-> > >>>> dai will do hw_param again even if it has done hw_param. It is not
-> > >>>> reasonable.
-> > >>>> FE1------------>BE
-> > >>>> FE2-------------^
-> > >>>
-> > >>> What happens if FE2 tries to set up an incompatible hw_params?
-> > >>> (Through a quick glance, it won't work properly well, too, though...)
-> > >>>
-> > > 
-> > > The intention in this case would be for the DSP FE driver to determine
-> > > if it can perform format conversion or SRC to the running BE. If the DSP
-> > > cant do the conversion then it should fail.
-> > > 
-> > >> If FE2 uses an incompatible param, it will make FE1 doesn't work. Maybe
-> > >> FE2 works well.
-> > >> If FE2 uses the same param, BE hw_param function will be called twice
-> > >> (This is the most happening case).
-> > >> So we can't get benefits from it.
-> > > 
-> > > We shouldn't be calling the hw_params() on the BE when it's already
-> > > configured in this case. So this seems like a bug. However :-
-> > > 
-> > > /* only allow hw_params() if no connected FEs are running */
-> > > 		if (!snd_soc_dpcm_can_be_params(fe, be, stream))
-> > > 			continue;
-> > > 
-> > > 		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
-> > > 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
-> > > 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
-> > > 			continue;
-> > > 
-> > > We do do a test to check if any connected FEs are running (i.e.
-> > > triggered) prior to calling hw_params() on the BE. Can you confirm if
-> > > the FE was running in your case ?
-> > > 
-> > Hi, Liam:
-> >    I am so glad to hear from you. In my case, FE1 has called hw_param,
-> > and before FE1 calls prepare/trigger function, the scheduler switches to
-> > do FE2 open, hw_param. So hw_param is called twice.
-> 
-> So basically the current implementation is racy about this.
-> 
+Stephan Mueller wrote:
+> Am Freitag, 10. Januar 2014, 12:37:26 schrieb Clemens Ladisch:
+>> Stephan Mueller wrote:
+>>> Am Freitag, 10. Januar 2014, 09:13:57 schrieb Clemens Ladisch:
+>>>> Rafael Aquini wrote:
+>>>>> This patch introduces changes to the random_write method so it can
+>>>>> split the given seed and completely stir the output pools with
+>>>>> different halves of it, when seed lenght allows us doing so.
+>>>>>
+>>>>> -	ret = write_pool(&blocking_pool, buffer, count);
+>>>>> +	ret = write_pool(pool1, buffer, count1);
+>>>>>
+>>>>>  	if (ret)
+>>>>>  	
+>>>>>  		return ret;
+>>>>>
+>>>>> -	ret = write_pool(&nonblocking_pool, buffer, count);
+>>>>> +	ret = write_pool(pool2, buffer + offset, count2);
+>>>>
+>>>> Doesn't this assume that both halves of the buffer contain some
+>>>> (uncredited) entropy?  In other words, wouldn't this result in worse
+>>>> randomness for pool2 if the second half of the buffer contains just
+>>>> zero padding?
+>>>
+>>> [...]
+>>> Coming back to your concern: sure, the caller can pad any data
+>>> injected into /dev/?random with zeros.
+>>
+>> Assume that the userspace of an embedded device wants to do the same
+>> kind of initialization that a call to add_device_randomness() does, and
+>> that it has some data like "char serial_number[256]".  The padding
+>> wouldn't be done intentionally, it's just a property of the data (and
+>> it wouldn't have mattered before this patch).
+>>
+>>> But as writing to the character files is allowed to every user, this
+>>> per definition must not matter (e.g. an attacker may simply write
+>>> zeros or other known data into the character file). And the random.c
+>>> driver handles that case appropriately by not increasing the entropy
+>>> estimator when receiving data.
+>>
+>> The problem is not with the entropy estimate.
+>>
+>>> All the patch tries to achieve is to ensure that both pools are not
+>>> always mixed with the same values.
+>>
+>> Before this patch, both pools got mixed with the same values.  After
+>> this patch, both pools indeed get mixed with different values, but now
+>> one pool gets mixed with a known value if one half of the buffer
+>> happens to be known.
+>
+> Do you imply in your example above that the serial number is unknown?
+> Anything that unprivileged user space tries to inject into /dev/?random
+> should be considered data with known value.
 
-This is a valid use case from the userspace perspective too. The BE in
-this case is a shared resource (whether userspace is aware or not) and
-I'd expect it to take the the last configured hw_params (in this case
-FE2 hw_params) before it is triggered.
+Like the kernel's add_device_randomness() function, this example assumes
+that there is no persistent storage with a saved seed (or that it isn't
+yet available), and that mixing a device-specific value at least
+prevents multiple device instances from generating identical random
+numbers.
 
-Fwiw, a similar topic came up the conference this year wrt compressed
-streams. The question was about configuring the BE format and rate
-directly from userspace. This should be possible without too much effort
-since the BE is essentially a PCM. e.g. from userspace
+This indeed helps only against attackers that do not know that serial
+number.
 
-1) configure FE1 hw_params
-
-2) configure FE2 hw_params
-
-3) optional - configure BE1 hw_params
-
-If step 3 is not performed then the values from step2 are used.
-
-> OTOH, not calling hw_params twice is also buggy.  hw_params may be
-> called multiple times without hw_free for the same stream if user
-> wants to re-setup/update the parameters.  OSS emulation layer does it,
-> for example.
-
-This is supported under DPCM unless the BE is triggered, but will always
-take the last hw_params sent from userspace.
-
-Liam
-
-> 
-> Takashi
-> 
-> > 
-> > > Thanks
-> > > 
-> > > Liam
-> > > 
-> > >>>
-> > >>> Takashi
-> > >>>
-> > >>>>
-> > >>>> Signed-off-by: Nenghua Cao <nhcao@marvell.com>
-> > >>>> ---
-> > >>>>  sound/soc/soc-pcm.c |    1 -
-> > >>>>  1 files changed, 0 insertions(+), 1 deletions(-)
-> > >>>>
-> > >>>> diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
-> > >>>> index 891b9a9..ec07e37 100644
-> > >>>> --- a/sound/soc/soc-pcm.c
-> > >>>> +++ b/sound/soc/soc-pcm.c
-> > >>>> @@ -1339,7 +1339,6 @@ static int dpcm_be_dai_hw_params(struct snd_soc_pcm_runtime *fe, int stream)
-> > >>>>  			continue;
-> > >>>>  
-> > >>>>  		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
-> > >>>> -		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
-> > >>>>  		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
-> > >>>>  			continue;
-> > >>>>  
-> > >>>> -- 
-> > >>>> 1.7.0.4
-> > >>>>
-> > >>>> _______________________________________________
-> > >>>> Alsa-devel mailing list
-> > >>>> Alsa-devel@alsa-project.org
-> > >>>> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
-> > >>>>
-> > >>
-> > > 
-> > > 
-> > > 
-> > 
+If the data written by unprivileged users to /dev/?random were
+considered known to *all* attackers, then it wouldn't make sense to
+allow such writes at all.
 
 
-
+Regards,
+Clemens
