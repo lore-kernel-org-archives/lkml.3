@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270AbaAJWea (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:34:30 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:60208 "EHLO zene.cmpxchg.org"
+	id S1758244AbaAJWfO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:35:14 -0500
+Received: from ring0.de ([91.143.88.219]:47445 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816AbaAJWe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:34:28 -0500
-Date: Fri, 10 Jan 2014 17:34:20 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20140110223420.GE6963@cmpxchg.org>
-References: <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com>
- <20131218200434.GA4161@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz>
- <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
- <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com>
- <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
- <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
- <20140110083025.GE9437@dhcp22.suse.cz>
- <alpine.DEB.2.02.1401101335200.21486@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401101335200.21486@chino.kir.corp.google.com>
+	id S1751356AbaAJWfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 17:35:12 -0500
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
+        pavel@ucw.cz
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Sebastian Reichel <sre@debian.org>
+Subject: [PATCHv2] dt: binding documentation for bq2415x charger
+Date: Fri, 10 Jan 2014 23:34:46 +0100
+Message-Id: <1389393286-15263-1-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 01:38:50PM -0800, David Rientjes wrote:
-> On Fri, 10 Jan 2014, Michal Hocko wrote:
-> 
-> > I have already explained why I have acked it. I will not repeat
-> > it here again. I have also proposed an alternative solution
-> > (https://lkml.org/lkml/2013/12/12/174) which IMO is more viable because
-> > it handles both user/kernel memcg OOM consistently. This patch still has
-> > to be discussed because of other Johannes concerns. I plan to repost it
-> > in a near future.
-> > 
-> 
-> This three ring circus has to end.  Really.
-> 
-> Your patch, which is partially based on my suggestion to move the 
-> mem_cgroup_oom_notify() and call it from two places to support both 
-> memory.oom_control == 1 and != 1, is something that I liked as you know.  
-> It's based on my patch which is now removed from -mm.  So if you want to 
-> rebase that patch and propose it, that's great, but this is yet another 
-> occurrence of where important patches have been yanked out just before the 
-> merge window when the problem they are fixing is real and we depend on 
-> them.
+Add devicetree binding documentation for bq2415x charger.
 
-We tried to discuss and understand the problem, yet all we got was
-"it's OBVIOUS" and "Google has been using this patch ever since we
-switched to memcg" and flat out repetitions of the same points about
-reliable OOM notification that were already put into question.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+Hi,
 
-You still have not convinced me that the problem exists as you
-described it, apart from the aspects that Michal is now fixing
-separately because you did not show any signs of cooperating.
+This is the second version of the bq2415x binding documentation. The
+only changes since PATCHv1 are a rewording of the property descriptions
+as requested by Pavel Machek.
 
-None of this will change until you start working with us and actually
-address feedback and inquiries instead of just repeating your talking
-points over and over.
+I narrowed down the CCs for this patch, since there were no comments on
+PATCHv1 from omap or DT binding guys and Anton has applied the driver changes
+already. This patch is intended for 3.14, so that it gets merged together
+with the driver changes.
+
+-- Sebastian
+---
+ .../devicetree/bindings/power/bq2415x.txt          | 48 ++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/power/bq2415x.txt
+
+diff --git a/Documentation/devicetree/bindings/power/bq2415x.txt b/Documentation/devicetree/bindings/power/bq2415x.txt
+new file mode 100644
+index 0000000..64f4a7f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/bq2415x.txt
+@@ -0,0 +1,48 @@
++Binding for TI bq2415x Li-Ion Charger
++
++Required properties:
++- compatible: Should contain one of the following:
++ * "ti,bq24150"
++ * "ti,bq24150"
++ * "ti,bq24150a"
++ * "ti,bq24151"
++ * "ti,bq24151a"
++ * "ti,bq24152"
++ * "ti,bq24153"
++ * "ti,bq24153a"
++ * "ti,bq24155"
++ * "ti,bq24156"
++ * "ti,bq24156a"
++ * "ti,bq24158"
++- reg:			   integer, i2c address of the device.
++- ti,current-limit:	   integer, initial maximum current charger can pull
++			   from power supply in mA.
++- ti,weak-battery-voltage: integer, weak battery voltage threshold in mV.
++			   The chip will use slow precharge if battery voltage
++			   is below this value.
++- ti,battery-regulation-voltage: integer, maximum charging voltage in mV.
++- ti,charge-current:	   integer, maximum charging current in mA.
++- ti,termination-current:  integer, charge will be terminated when current in
++			   constant-voltage phase drops below this value (in
++			   mA), charge is terminated.
++- ti,resistor-sense:	   integer, value of sensing resistor in milliohm.
++
++Optional properties:
++- ti,usb-charger-detection: phandle to usb charger detection device.
++			    (required for auto mode)
++
++Example from Nokia N900:
++
++bq24150a {
++	compatible = "ti,bq24150a";
++	reg = <0x6b>;
++
++	ti,current-limit = <100>;
++	ti,weak-battery-voltage = <3400>;
++	ti,battery-regulation-voltage = <4200>;
++	ti,charge-current = <650>;
++	ti,termination-current = <100>;
++	ti,resistor-sense = <68>;
++
++	ti,usb-charger-detection = <&isp1704>;
++};
+-- 
+1.8.5.2
+
