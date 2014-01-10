@@ -1,74 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126AbaAJMUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:20:45 -0500
-Received: from mail-pb0-f68.google.com ([209.85.160.68]:57586 "EHLO
-	mail-pb0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaAJMUm (ORCPT
+	id S1752109AbaAJMYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:24:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58079 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaAJMYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:20:42 -0500
-Message-ID: <52CFE594.8010808@gmail.com>
-Date: Fri, 10 Jan 2014 17:50:36 +0530
-From: sohny thomas <sohny.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Fri, 10 Jan 2014 07:24:11 -0500
+Date: Fri, 10 Jan 2014 13:23:49 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: penberg@kernel.org
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, mpm@selenic.com
+Subject: [PATCH] slub: use lockdep_assert_held
+Message-ID: <20140110122349.GN31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org,
-        nicolas.dichtel@6wind.com, davem@davemloft.net,
-        kumuda <kumuda@linux.vnet.ibm.com>
-Subject: ipv6: default route for link local address is not added while assigning
- a address
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Default route for link local address is configured automatically if NETWORKING_IPV6=yes is in ifcfg-eth*.
-When the route table for the interface is flushed and a new address is added to the same device with out removing linklocal addr, default route for link local address has to added by default.
+Instead of using comments in an attempt at getting the locking right,
+use proper assertions that actively warn you if you got it wrong.
 
-I have found the issue to be caused by this checkin
+Also add extra braces in a few sites to comply with coding-style.
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/net/ipv6?id=62b54dd91567686a1cb118f76a72d5f4764a86dd
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ mm/slub.c | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
-According to this change :
-He removes adding a link local route if any other address is added , applicable across all interfaces though there's mentioned only lo interface
-So below patch fixes for other devices
-
-Signed-off-by: SOhny THomas <sohthoma@linux.vnet.ibm.com>
-
------
-
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index f62c72b..a8a4df9 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1763,6 +1763,16 @@ static int addrconf_ifid_infiniband(u8 *eui, struct net_device *dev)
-         return 0;
-  }
-  
-+static void addrconf_add_lroute(struct net_device *dev)
-+{
-+       struct in6_addr addr;
+diff --git a/mm/slub.c b/mm/slub.c
+index 545a170ebf9f..dc5be8c47633 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -985,23 +985,22 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
+ 
+ /*
+  * Tracking of fully allocated slabs for debugging purposes.
+- *
+- * list_lock must be held.
+  */
+ static void add_full(struct kmem_cache *s,
+ 	struct kmem_cache_node *n, struct page *page)
+ {
++	lockdep_assert_held(&n->list_lock);
 +
-+       ipv6_addr_set(&addr,  htonl(0xFE800000), 0, 0, 0);
-+       addrconf_prefix_route(&addr, 64, dev, 0, 0);
-+}
+ 	if (!(s->flags & SLAB_STORE_USER))
+ 		return;
+ 
+ 	list_add(&page->lru, &n->full);
+ }
+ 
+-/*
+- * list_lock must be held.
+- */
+-static void remove_full(struct kmem_cache *s, struct page *page)
++static void remove_full(struct kmem_cache *s, struct kmem_cache_node *n, struct page *page)
+ {
++	lockdep_assert_held(&n->list_lock);
 +
+ 	if (!(s->flags & SLAB_STORE_USER))
+ 		return;
+ 
+@@ -1250,7 +1249,8 @@ static inline int check_object(struct kmem_cache *s, struct page *page,
+ 			void *object, u8 val) { return 1; }
+ static inline void add_full(struct kmem_cache *s, struct kmem_cache_node *n,
+ 					struct page *page) {}
+-static inline void remove_full(struct kmem_cache *s, struct page *page) {}
++static inline void remove_full(struct kmem_cache *s, struct kmem_cache_node *n,
++					struct page *page) {}
+ static inline unsigned long kmem_cache_flags(unsigned long object_size,
+ 	unsigned long flags, const char *name,
+ 	void (*ctor)(void *))
+@@ -1504,12 +1504,12 @@ static void discard_slab(struct kmem_cache *s, struct page *page)
+ 
+ /*
+  * Management of partially allocated slabs.
+- *
+- * list_lock must be held.
+  */
+ static inline void add_partial(struct kmem_cache_node *n,
+ 				struct page *page, int tail)
+ {
++	lockdep_assert_held(&n->list_lock);
 +
+ 	n->nr_partial++;
+ 	if (tail == DEACTIVATE_TO_TAIL)
+ 		list_add_tail(&page->lru, &n->partial);
+@@ -1517,12 +1517,11 @@ static inline void add_partial(struct kmem_cache_node *n,
+ 		list_add(&page->lru, &n->partial);
+ }
+ 
+-/*
+- * list_lock must be held.
+- */
+ static inline void remove_partial(struct kmem_cache_node *n,
+ 					struct page *page)
+ {
++	lockdep_assert_held(&n->list_lock);
 +
-  static int __ipv6_isatap_ifid(u8 *eui, __be32 addr)
-  {
-         if (addr == 0)
-@@ -2010,8 +2020,10 @@ static struct inet6_dev *addrconf_add_dev(struct net_device *dev)
-                 return ERR_PTR(-EACCES);
-  
-         /* Add default multicast route */
--       if (!(dev->flags & IFF_LOOPBACK))
-+       if (!(dev->flags & IFF_LOOPBACK)){
-                 addrconf_add_mroute(dev);
-+               addrconf_add_lroute(dev);
-+       }
-  
-         return idev;
-  }
-
+ 	list_del(&page->lru);
+ 	n->nr_partial--;
+ }
+@@ -1532,8 +1531,6 @@ static inline void remove_partial(struct kmem_cache_node *n,
+  * return the pointer to the freelist.
+  *
+  * Returns a list of objects or NULL if it fails.
+- *
+- * Must hold list_lock since we modify the partial list.
+  */
+ static inline void *acquire_slab(struct kmem_cache *s,
+ 		struct kmem_cache_node *n, struct page *page,
+@@ -1543,6 +1540,8 @@ static inline void *acquire_slab(struct kmem_cache *s,
+ 	unsigned long counters;
+ 	struct page new;
+ 
++	lockdep_assert_held(&n->list_lock);
++
+ 	/*
+ 	 * Zap the freelist and set the frozen bit.
+ 	 * The old freelist is the list of objects for the
+@@ -1887,7 +1886,7 @@ static void deactivate_slab(struct kmem_cache *s, struct page *page,
+ 
+ 		else if (l == M_FULL)
+ 
+-			remove_full(s, page);
++			remove_full(s, n, page);
+ 
+ 		if (m == M_PARTIAL) {
+ 
+@@ -2541,7 +2540,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 		new.inuse--;
+ 		if ((!new.inuse || !prior) && !was_frozen) {
+ 
+-			if (kmem_cache_has_cpu_partial(s) && !prior)
++			if (kmem_cache_has_cpu_partial(s) && !prior) {
+ 
+ 				/*
+ 				 * Slab was on no list before and will be
+@@ -2551,7 +2550,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 				 */
+ 				new.frozen = 1;
+ 
+-			else { /* Needs to be taken off a list */
++			} else { /* Needs to be taken off a list */
+ 
+ 	                        n = get_node(s, page_to_nid(page));
+ 				/*
+@@ -2600,7 +2599,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 	 */
+ 	if (!kmem_cache_has_cpu_partial(s) && unlikely(!prior)) {
+ 		if (kmem_cache_debug(s))
+-			remove_full(s, page);
++			remove_full(s, n, page);
+ 		add_partial(n, page, DEACTIVATE_TO_TAIL);
+ 		stat(s, FREE_ADD_PARTIAL);
+ 	}
+@@ -2614,9 +2613,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 		 */
+ 		remove_partial(n, page);
+ 		stat(s, FREE_REMOVE_PARTIAL);
+-	} else
++	} else {
+ 		/* Slab must be on the full list */
+-		remove_full(s, page);
++		remove_full(s, n, page);
++	}
+ 
+ 	spin_unlock_irqrestore(&n->list_lock, flags);
+ 	stat(s, FREE_SLAB);
