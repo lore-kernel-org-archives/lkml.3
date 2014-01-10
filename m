@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006AbaAJP3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:29:41 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:13204 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaAJP3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:29:38 -0500
-Message-ID: <52D011C9.7000209@hp.com>
-Date: Fri, 10 Jan 2014 10:29:13 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1757502AbaAJPaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:30:13 -0500
+Received: from [85.220.129.33] ([85.220.129.33]:47184 "EHLO smtp2.goneo.de"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756176AbaAJPaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 10:30:11 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.846
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Gerhard Sittig <gsi@denx.de>
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, robh+dt@kernel.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, rob@landley.net, galak@codeaurora.org,
+        gnurou@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+Subject: Re: [PATCH v2] gpio: mcp23s08: Add irq functionality for i2c chips
+Date: Fri, 10 Jan 2014 16:29:36 +0100
+Message-ID: <29565656.1ncixD0qYE@lem-wkst-02>
+User-Agent: KMail/4.11.3 (Linux/3.11-2-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140110150836.GZ20094@book.gsilab.sittig.org>
+References: <1389363750-25989-1-git-send-email-larsi@wh2.tu-dresden.de> <20140110150836.GZ20094@book.gsilab.sittig.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: SIGSEGV when using "perf record -g" with 3.13-rc* kernel
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Friday 10 January 2014 16:08:36, Gerhard Sittig wrote:
+> On Fri, Jan 10, 2014 at 15:22 +0100, Lars Poeschel wrote:
+> > --- a/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> > +++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+> > 
+> > @@ -38,12 +38,37 @@ Required device specific properties (only for SPI 
+chips):
+> >      removed.
+> >  
+> >  - spi-max-frequency = The maximum frequency this chip is able to handle
+> > 
+> > -Example I2C:
+> > +Optional properties:
+> > +- #interrupt-cells : Should be two.
+> > +  - first cell is the pin number
+> > +  - second cell is used to specify flags.
+> > +- interrupt-controller: Marks the device node as a interrupt controller.
+> > +NOTE: The interrupt functionality is only supported for i2c versions of
+> > the +chips yet.
+> 
+> Is this "IRQ feature for I2C chips only" limitation specific to
+> the hardware or an implementation detail of the Linux driver?  I
+> could not determine this from either the binding text nor the
+> driver source.
 
-I recently encountered a strange problem using 3.13-rc* kernel that
-did not happen in a 3.12 kernel. When I ran the high_systime benchmark
-of the AIM7 test suite, I saw the following errors:
+Ok, you're right. My description is not 100% clear about this. I will update 
+this. It is currently an implementation detail of the linux driver. According 
+to the datasheet the spi chips should also be able to do the interrupts.
 
-   Child terminated by signal #11
+> If it's just the status of the Linux driver, then it should not
+> be in the binding document.  If it's a limitation of the
+> hardware, then it's appropriate in the binding but I suggest to
+> adjust the text to avoid the next person to ask the same
+> question. :)
 
-   core dumped
+I do not agree. I remember a rule that every binding has to be documented, so 
+this should be documented, but you are right: The description has to be a bit 
+more clear about this beeing a (current) limitation of the driver.
+I will update this and do a v3, but I will wait a bit for further comments.
 
-   Child terminated by signal #11
+> > --- a/drivers/gpio/Kconfig
+> > +++ b/drivers/gpio/Kconfig
+> > @@ -697,6 +697,7 @@ config GPIO_MCP23S08
+> > 
+> >  	  SPI/I2C driver for Microchip MCP23S08/MCP23S17/MCP23008/MCP23017
+> >  	  I/O expanders.
+> >  	  This provides a GPIO interface supporting inputs and outputs.
+> > 
+> > +	  The I2C versions of the chips can be used as interrupt-controller.
+> > 
+> >  config GPIO_MC33880
+> >  
+> >  	tristate "Freescale MC33880 high-side/low-side switch"
+> > 
+> > diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+> > index 2deb0c5..1346ea6 100644
+> > --- a/drivers/gpio/gpio-mcp23s08.c
+> > +++ b/drivers/gpio/gpio-mcp23s08.c
+> > @@ -1,5 +1,10 @@
+> > 
+> >  /*
+> > 
+> > - * MCP23S08 SPI/GPIO gpio expander driver
+> > + * MCP23S08 SPI/I2C GPIO gpio expander driver
+> > + *
+> > + * The inputs and outputs of the mcp23s08, mcp23s17, mcp23008 and
+> > mcp23017 are + * supported.
+> > + * For the I2C versions of the chips (mcp23008 and mcp23017) generation
+> > of
+> > + * interrupts is also supported.
+> > 
+> >   */
+> 
+> Adjust these as well to reflect whether it's hardware or software
+> which limits the feature.
 
-   Child process called exit(), status = 139
+Yes,I will do that too.
 
-   core dumped
-
-   Child terminated by signal #11
-
-This only happened when I monitored the running of the benchmark using
-"perf record -g". There was no problem if callchain was not enabled.
-Adding debug code to the kernel showed the following stack trace:
-
-Call Trace:
-<NMI>  [<ffffffff815710af>] dump_stack+0x49/0x62
-  [<ffffffff8104e3bc>] warn_slowpath_common+0x8c/0xc0
-  [<ffffffff8104e40a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff8105f1f1>] force_sig_info+0x131/0x140
-  [<ffffffff81042a4f>] force_sig_info_fault+0x5f/0x70
-  [<ffffffff8106d8da>] ? search_exception_tables+0x2a/0x50
-  [<ffffffff81043b3d>] ? fixup_exception+0x1d/0x70
-  [<ffffffff81042cc9>] no_context+0x159/0x1f0
-  [<ffffffff81042e8d>] __bad_area_nosemaphore+0x12d/0x230
-  [<ffffffff81042e8d>] ? __bad_area_nosemaphore+0x12d/0x230
-  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
-  [<ffffffff81578fc2>] ? __do_page_fault+0x362/0x480
-  [<ffffffff815791be>] do_page_fault+0xe/0x10
-  [<ffffffff81575962>] page_fault+0x22/0x30
-  [<ffffffff815817e4>] ? bad_to_user+0x5e/0x66b
-  [<ffffffff81285316>] copy_from_user_nmi+0x76/0x90
-  [<ffffffff81017a20>] perf_callchain_user+0xd0/0x360
-  [<ffffffff8111f64f>] perf_callchain+0x1af/0x1f0
-  [<ffffffff81117693>] perf_prepare_sample+0x2f3/0x3a0
-  [<ffffffff8111a2af>] __perf_event_overflow+0x10f/0x220
-  [<ffffffff8111ab14>] perf_event_overflow+0x14/0x20
-  [<ffffffff8101f69e>] intel_pmu_handle_irq+0x1de/0x3c0
-  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-  [<ffffffff81576e64>] perf_event_nmi_handler+0x34/0x60
-  [<ffffffff8157664a>] nmi_handle+0x8a/0x170
-  [<ffffffff81576848>] default_do_nmi+0x68/0x210
-  [<ffffffff81576a80>] do_nmi+0x90/0xe0
-  [<ffffffff81575c67>] end_repeat_nmi+0x1e/0x2e
-  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-<<EOE>>  [<ffffffff81042f7d>] __bad_area_nosemaphore+0x21d/0x230
-  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
-  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
-  [<ffffffff8113cfbc>] ? vm_mmap_pgoff+0xbc/0xe0
-  [<ffffffff815791be>] do_page_fault+0xe/0x10
-  [<ffffffff81575962>] page_fault+0x22/0x30
----[ end trace 037bf09d279751ec ]---
-
-So this is a double page faults. Looking at relevant changes in
-3.13 kernel, I spotted the following one patch that modified the
-perf_callchain_user() function shown up in the stack trace above:
-
-     perf: Fix arch_perf_out_copy_user default
-
-@@ -2041,7 +2041,7 @@ perf_callchain_user(struct perf_callchain_entry 
-*entry, struct pt_regs *regs)
-          frame.return_address = 0;
-
-          bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
--        if (bytes != sizeof(frame))
-+        if (bytes != 0)
-              break;
-
-          if (!valid_user_frame(fp, sizeof(frame)))
-
-I wondered if it was the cause of the SIGSEGV. Please let me know your
-thought on that.
-
--Longman
-
+Lars
