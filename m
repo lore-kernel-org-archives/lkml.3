@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953AbaAJMcR (ORCPT <rfc822;w@1wt.eu>);
+	id S1754378AbaAJMcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:32:23 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35595 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751784AbaAJMcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Jan 2014 07:32:17 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49803 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751784AbaAJMcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:32:14 -0500
-X-Sasl-enc: rjRBLb+bcBRhu/D8Bd0+b/xYsN+pDb+Ea76LgQjPaf67 1389357133
-Message-ID: <52CFE84A.9050107@ladisch.de>
-Date: Fri, 10 Jan 2014 13:32:10 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Stephan Mueller <stephan.mueller@atsec.com>
-CC: Rafael Aquini <aquini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [RFC PATCH] char: random: stir the output pools differently when
- the random_write lenght allows splitting the seed
-References: <42f6dc88535d5ecdab13b1376db7ccbbbc550600.1389297772.git.aquini@redhat.com> <1510904.XsOZgVgixq@tauon> <52CFDB76.2030207@ladisch.de> <5743525.Bz4yhBJ8Tl@tauon>
-In-Reply-To: <5743525.Bz4yhBJ8Tl@tauon>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,638,1384329600"; 
+   d="scan'208";a="464666395"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, eranian@google.com,
+        jolsa@redhat.com, fweisbec@gmail.com, mingo@kernel.org,
+        adrian.hunter@intel.com, dsahern@gmail.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/4] perf, tools: Add --branch-call-stack option to report
+Date: Fri, 10 Jan 2014 04:32:04 -0800
+Message-Id: <1389357126-3003-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
+References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephan Mueller wrote:
-> Am Freitag, 10. Januar 2014, 12:37:26 schrieb Clemens Ladisch:
->> Stephan Mueller wrote:
->>> Am Freitag, 10. Januar 2014, 09:13:57 schrieb Clemens Ladisch:
->>>> Rafael Aquini wrote:
->>>>> This patch introduces changes to the random_write method so it can
->>>>> split the given seed and completely stir the output pools with
->>>>> different halves of it, when seed lenght allows us doing so.
->>>>>
->>>>> -	ret = write_pool(&blocking_pool, buffer, count);
->>>>> +	ret = write_pool(pool1, buffer, count1);
->>>>>
->>>>>  	if (ret)
->>>>>  	
->>>>>  		return ret;
->>>>>
->>>>> -	ret = write_pool(&nonblocking_pool, buffer, count);
->>>>> +	ret = write_pool(pool2, buffer + offset, count2);
->>>>
->>>> Doesn't this assume that both halves of the buffer contain some
->>>> (uncredited) entropy?  In other words, wouldn't this result in worse
->>>> randomness for pool2 if the second half of the buffer contains just
->>>> zero padding?
->>>
->>> [...]
->>> Coming back to your concern: sure, the caller can pad any data
->>> injected into /dev/?random with zeros.
->>
->> Assume that the userspace of an embedded device wants to do the same
->> kind of initialization that a call to add_device_randomness() does, and
->> that it has some data like "char serial_number[256]".  The padding
->> wouldn't be done intentionally, it's just a property of the data (and
->> it wouldn't have mattered before this patch).
->>
->>> But as writing to the character files is allowed to every user, this
->>> per definition must not matter (e.g. an attacker may simply write
->>> zeros or other known data into the character file). And the random.c
->>> driver handles that case appropriately by not increasing the entropy
->>> estimator when receiving data.
->>
->> The problem is not with the entropy estimate.
->>
->>> All the patch tries to achieve is to ensure that both pools are not
->>> always mixed with the same values.
->>
->> Before this patch, both pools got mixed with the same values.  After
->> this patch, both pools indeed get mixed with different values, but now
->> one pool gets mixed with a known value if one half of the buffer
->> happens to be known.
->
-> Do you imply in your example above that the serial number is unknown?
-> Anything that unprivileged user space tries to inject into /dev/?random
-> should be considered data with known value.
+From: Andi Kleen <ak@linux.intel.com>
 
-Like the kernel's add_device_randomness() function, this example assumes
-that there is no persistent storage with a saved seed (or that it isn't
-yet available), and that mixing a device-specific value at least
-prevents multiple device instances from generating identical random
-numbers.
+Add a --branch-call-stack option toperf report that changes all
+the settings necessary for using the branches in callstacks.
 
-This indeed helps only against attackers that do not know that serial
-number.
+This is just a short cut to make this nicer to use.
 
-If the data written by unprivileged users to /dev/?random were
-considered known to *all* attackers, then it wouldn't make sense to
-allow such writes at all.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 25 ++++++++++++++++++++++---
+ 2 files changed, 27 insertions(+), 3 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 10a2798..77ec0b9 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -223,6 +223,11 @@ OPTIONS
+ 	branch stacks and it will automatically switch to the branch view mode,
+ 	unless --no-branch-stack is used.
+ 
++--branch-call-stack::
++	Add the addresses of sampled taken branches to the callstack.
++	This allows to examine the path the program took to each sample.
++	The data collection must have used -b or -j.	
++
+ --objdump=<path>::
+         Path to objdump binary.
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c2e6e43..c39d1ac 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -763,6 +763,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+ }
+ 
+ static int
++parse_branch_call_mode(const struct option *opt __maybe_unused,
++		  const char *str __maybe_unused, int unset)
++{
++	int *branch_mode = opt->value;
++
++	*branch_mode = !unset;
++	return 0;
++}
++
++static int
+ parse_percent_limit(const struct option *opt, const char *str,
+ 		    int unset __maybe_unused)
+ {
+@@ -777,7 +787,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_session *session;
+ 	struct stat st;
+ 	bool has_br_stack = false;
+-	int branch_mode = -1;
++	int branch_mode = -1, branch_call_mode = -1;
+ 	int ret = -1;
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const char * const report_usage[] = {
+@@ -883,7 +893,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+ 		    "Show event group information together"),
+ 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+-		    "use branch records for histogram filling", parse_branch_mode),
++		    "use branch records for per branch histogram filling", parse_branch_mode),
++	OPT_CALLBACK_NOOPT(0, "branch-call-stack", &branch_call_mode, "",
++		    "add last branch records to call stack",
++		    parse_branch_call_mode),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+@@ -931,8 +944,14 @@ repeat:
+ 	has_br_stack = perf_header__has_feat(&session->header,
+ 					     HEADER_BRANCH_STACK);
+ 
+-	if (branch_mode == -1 && has_br_stack)
++	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
+ 		sort__mode = SORT_MODE__BRANCH;
++	if (branch_call_mode != -1) {
++		callchain_param.branch_callstack = 1;
++		callchain_param.key = CCKEY_ADDRESS;
++		symbol_conf.use_callchain = true;
++		callchain_register_param(&callchain_param);
++	}
+ 
+ 	/* sort__mode could be NORMAL if --no-branch-stack */
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+-- 
+1.8.3.1
 
-Regards,
-Clemens
