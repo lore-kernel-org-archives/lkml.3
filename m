@@ -1,52 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAJH3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:29:18 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:1067 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaAJH3Q (ORCPT
+	id S1751483AbaAJHad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:30:33 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58991 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaAJHaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:29:16 -0500
-Message-ID: <52CFA140.5060700@hp.com>
-Date: Fri, 10 Jan 2014 15:29:04 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 10 Jan 2014 02:30:30 -0500
+X-AuditID: 9c93016f-b7c41ae000003ec1-4d-52cf9dc86bfb
+Date: Fri, 10 Jan 2014 16:14:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Luigi Semenzato <semenzato@google.com>
+Subject: Re: [PATCH -next] zram: do not pass rw argument to
+ __zram_make_request()
+Message-ID: <20140110071445.GK1992@bbox>
+References: <20140109132343.GB2246@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86/iommu: use bit structures for context_entry
-References: <1387529101-29769-1-git-send-email-zhen-hual@hp.com> <20140107144108.GF2742@8bytes.org>
-In-Reply-To: <20140107144108.GF2742@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140109132343.GB2246@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have not seen such a bug yet . but obviously a '=' should be used when 
-you want to set a value.
+On Thu, Jan 09, 2014 at 04:23:43PM +0300, Sergey Senozhatsky wrote:
+> Do not pass rw argument down the __zram_make_request() -> zram_bvec_rw()
+> chain, decode it in zram_bvec_rw() instead. Besides, this is the place
+> where we distinguish READ and WRITE bio data directions, so account zram
+> RW stats here, instead of __zram_make_request(). This also allows to
+> account a real number of zram READ/WRITE operations, not just requests
+> (RW request may end up in a number of zram RW ops with separate
+> locking, compression/decompression, slot free handling, etc).
 
-for example, if x != 0,
-	x=10
-and
-	x|=10
-will cause different result.
+Looks sane to me because other statistic variable accounts per bio, not
+request. But it changes current statistic's semantic so they could be
+regressed. Let's wait a bit for other's opinion.
 
-ZhenHua
+Thanks.
 
-On 01/07/2014 10:41 PM, Joerg Roedel wrote:
-> On Fri, Dec 20, 2013 at 04:45:01PM +0800, Li, Zhen-Hua wrote:
->> There is a structure named context_entry used by intel iommu, and there
->> are some bit operations on it. Use bit structure may make these operations
->> easy.
->> Also the function context_set_address_root may cause problem because it uses
->>   |= operation, not set the new value. And this patch can fix it.
->
-> What is the problem you are trying to fix here? Is it an actual bug?
->
->
-> 	Joerg
->
->
 
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+>  drivers/block/zram/zram_drv.c | 29 ++++++++++++-----------------
+>  1 file changed, 12 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 833d24f..798793f 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -534,22 +534,27 @@ static void handle_pending_slot_free(struct zram *zram)
+>  }
+>  
+>  static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> -			int offset, struct bio *bio, int rw)
+> +			int offset, struct bio *bio)
+>  {
+>  	int ret;
+> +	int rw = bio_data_dir(bio);
+> +
+> +	if (rw == READA)
+> +		rw = READ;
+>  
+>  	if (rw == READ) {
+> +		atomic64_inc(&zram->stats.num_reads);
+>  		down_read(&zram->lock);
+>  		handle_pending_slot_free(zram);
+>  		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+>  		up_read(&zram->lock);
+>  	} else {
+> +		atomic64_inc(&zram->stats.num_writes);
+>  		down_write(&zram->lock);
+>  		handle_pending_slot_free(zram);
+>  		ret = zram_bvec_write(zram, bvec, index, offset);
+>  		up_write(&zram->lock);
+>  	}
+> -
+>  	return ret;
+>  }
+>  
+> @@ -680,22 +685,13 @@ out:
+>  	return ret;
+>  }
+>  
+> -static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+> +static void __zram_make_request(struct zram *zram, struct bio *bio)
+>  {
+>  	int offset;
+>  	u32 index;
+>  	struct bio_vec bvec;
+>  	struct bvec_iter iter;
+>  
+> -	switch (rw) {
+> -	case READ:
+> -		atomic64_inc(&zram->stats.num_reads);
+> -		break;
+> -	case WRITE:
+> -		atomic64_inc(&zram->stats.num_writes);
+> -		break;
+> -	}
+> -
+>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>  	offset = (bio->bi_iter.bi_sector &
+>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+> @@ -714,16 +710,15 @@ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+>  			bv.bv_len = max_transfer_size;
+>  			bv.bv_offset = bvec.bv_offset;
+>  
+> -			if (zram_bvec_rw(zram, &bv, index, offset, bio, rw) < 0)
+> +			if (zram_bvec_rw(zram, &bv, index, offset, bio) < 0)
+>  				goto out;
+>  
+>  			bv.bv_len = bvec.bv_len - max_transfer_size;
+>  			bv.bv_offset += max_transfer_size;
+> -			if (zram_bvec_rw(zram, &bv, index+1, 0, bio, rw) < 0)
+> +			if (zram_bvec_rw(zram, &bv, index + 1, 0, bio) < 0)
+>  				goto out;
+>  		} else
+> -			if (zram_bvec_rw(zram, &bvec, index, offset, bio, rw)
+> -			    < 0)
+> +			if (zram_bvec_rw(zram, &bvec, index, offset, bio) < 0)
+>  				goto out;
+>  
+>  		update_position(&index, &offset, &bvec);
+> @@ -753,7 +748,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>  		goto error;
+>  	}
+>  
+> -	__zram_make_request(zram, bio, bio_data_dir(bio));
+> +	__zram_make_request(zram, bio);
+>  	up_read(&zram->init_lock);
+>  
+>  	return;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
