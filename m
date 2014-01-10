@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195AbaAJXKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 18:10:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaAJXK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 18:10:28 -0500
-Message-ID: <52D07DA5.7080508@redhat.com>
-Date: Fri, 10 Jan 2014 18:09:25 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1758238AbaAJXMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 18:12:53 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:57325 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbaAJXMt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 18:12:49 -0500
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Bob Liu <bob.liu@oracle.com>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Metin Doslu <metin@citusdata.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ozgun Erdogan <ozgun@citusdata.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
-References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org> <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52D06C0C.9020300@canonical.com>
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
+	<1386546869-31900-3-git-send-email-yinghai@kernel.org>
+	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
+	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
+	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
+	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
+	<52A8BAC5.70006@canonical.com>
+	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
+	<52D01D82.5070202@canonical.com>
+	<CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
+	<52D06C0C.9020300@canonical.com>
+Date: Fri, 10 Jan 2014 15:12:48 -0800
+X-Google-Sender-Auth: VXKBzn9Iy2KWlJwyL_zYTunsMCI
+Message-ID: <CAE9FiQV39fmZ8DF9=SfjmvrdEnS+7pX+dj5q2x5e3m4pSBiaBA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
+From: Yinghai Lu <yinghai@kernel.org>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 01:10 PM, Johannes Weiner wrote:
-> Previously, page cache radix tree nodes were freed after reclaim
-> emptied out their page pointers.  But now reclaim stores shadow
-> entries in their place, which are only reclaimed when the inodes
-> themselves are reclaimed.  This is problematic for bigger files that
-> are still in use after they have a significant amount of their cache
-> reclaimed, without any of those pages actually refaulting.  The shadow
-> entries will just sit there and waste memory.  In the worst case, the
-> shadow entries will accumulate until the machine runs out of memory.
-> 
-> To get this under control, the VM will track radix tree nodes
-> exclusively containing shadow entries on a per-NUMA node list.
-> Per-NUMA rather than global because we expect the radix tree nodes
-> themselves to be allocated node-locally and we want to reduce
-> cross-node references of otherwise independent cache workloads.  A
-> simple shrinker will then reclaim these nodes on memory pressure.
+On Fri, Jan 10, 2014 at 1:54 PM, Joseph Salisbury
+<joseph.salisbury@canonical.com> wrote:
+> On 01/10/2014 12:13 PM, Yinghai Lu wrote:
+>
+> In a prior email you mentioned: "Yes, if that works, we would not need
+> to put the patch in upstream for limiting realloc auto scope."  Is the
+> git tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> somehow different now?
 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+but you boot with "pci=realloc=off", right?
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Anyway please try pci/next to see if there is any help.
 
--- 
-All rights reversed
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/next
