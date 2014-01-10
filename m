@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbaAJF4a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 00:56:30 -0500
-Received: from mail.efficios.com ([78.47.125.74]:49518 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230AbaAJF42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 00:56:28 -0500
-Date: Fri, 10 Jan 2014 05:56:25 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <1593870977.5807.1389333385962.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1151498255.5788.1389332631491.JavaMail.zimbra@efficios.com>
-Subject: Intel MIC host driver: possible signed underflow (undefined
- behavior) in userspace API
+	id S1752530AbaAJGDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 01:03:11 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:37969 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750800AbaAJGDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 01:03:07 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linus.walleij@linaro.org>, <gnurou@gmail.com>,
+        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] gpio: pxa: normalize the return value for gpio_get
+Date: Fri, 10 Jan 2014 14:03:03 +0800
+Message-ID: <1389333783-3372-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF26 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Intel MIC host driver: possible signed underflow (undefined behavior) in userspace API
-Thread-Index: QeCHs/Yx1grPtGsMrULzdh0kKp+bSw==
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-10_02:2014-01-09,2014-01-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1401090264
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+It would be convenient to normalize the return value for gpio_get.
 
-Looking at this commit:
+I have checked mach-mmp / mach-pxa / plat-pxa / plat-orion / mach-orion5x.
+It's OK for all of them to change this function to return 0 and 1.
 
-commit f69bcbf3b4c4b333dcd7a48eaf868bf0c88edab5
-Author: Ashutosh Dixit <ashutosh.dixit@intel.com>
-Date:   Thu Sep 5 16:42:18 2013 -0700
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+---
+ drivers/gpio/gpio-pxa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-    Intel MIC Host Driver Changes for Virtio Devices.
-
-Especially at:
-
-+struct mic_copy_desc {
-+#ifdef __KERNEL__
-+       struct iovec __user *iov;
-+#else
-+       struct iovec *iov;
-+#endif
-+       int iovcnt;
-+       __u8 vr_idx;
-+       __u8 update_used;
-+       __u32 out_len;
-+};
-
-Seeing iovcnt being declared as a signed integer seems strange. The
-first question would be: why is it signed rather than unsigned ?
-
-Then, looking further into 
-
-drivers/misc/mic/host/mic_virtio.c:_mic_virtio_copy()
-
-We can see that the while() loop iterates until the local variable
-iovcnt reaches the value 0 (and iovcnt is also a signed integer). If
-user-space passes e.g. INT_MIN as iovcnt field, this loop then appears
-to depend on an undefined behavior (signed underflow) to complete.
-Wouldn't it be better to use an unsigned integers both in the
-userspace API and for the local variable ?
-
-Thanks,
-
-Mathieu
-
+diff --git a/drivers/gpio/gpio-pxa.c b/drivers/gpio/gpio-pxa.c
+index cc13d1b..42e6e64 100644
+--- a/drivers/gpio/gpio-pxa.c
++++ b/drivers/gpio/gpio-pxa.c
+@@ -263,7 +263,8 @@ static int pxa_gpio_direction_output(struct gpio_chip *chip,
+ 
+ static int pxa_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+-	return readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET) & (1 << offset);
++	u32 gplr = readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET);
++	return !!(gplr & (1 << offset));
+ }
+ 
+ static void pxa_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.7.9.5
+
