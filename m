@@ -1,34 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047AbaAJUZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 15:25:41 -0500
-Received: from forward15.mail.yandex.net ([95.108.130.119]:44659 "EHLO
-	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaAJUZi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 15:25:38 -0500
-From: Victor Porton <porton@narod.ru>
-Envelope-From: porton@yandex.ru
-To: linux-kernel@vger.kernel.org
-In-Reply-To: <70061389380178@web5j.yandex.ru>
-Subject: Fwd: Waiting for programs to stop
+	id S1758135AbaAJU0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 15:26:11 -0500
+Received: from mta-out.inet.fi ([195.156.147.13]:49541 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258AbaAJU0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 15:26:07 -0500
+Date: Fri, 10 Jan 2014 22:23:10 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
+Message-ID: <20140110202310.GB1421@node.dhcp.inet.fi>
+References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
 MIME-Version: 1.0
-Message-Id: <12671389385535@web5j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 10 Jan 2014 22:25:35 +0200
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I remind that we discuss sandboxing of untrusted programs.
+On Fri, Jan 10, 2014 at 01:55:18PM -0600, Alex Thorlton wrote:
+> This patch adds an mm flag (MMF_THP_DISABLE) to disable transparent
+> hugepages using prctl.  It is based on my original patch to add a
+> per-task_struct flag to disable THP:
+> 
+> v1 - https://lkml.org/lkml/2013/8/2/671
+> v2 - https://lkml.org/lkml/2013/8/2/703
+> 
+> After looking at alternate methods of modifying how THPs are handed out,
+> it sounds like people might be more in favor of this type of approach,
+> so I'm re-introducing the patch.
+> 
+> It seemed that everyone was in favor of moving this control over to the
+> mm_struct, if it is to be implemented.  That's the only major change
+> here, aside from the added ability to both set and clear the flag from
+> prctl.
+> 
+> The main motivation behind this patch is to provide a way to disable THP
+> for jobs where the code cannot be modified and using a malloc hook with
+> madvise is not an option (i.e. statically allocated data).  This patch
+> allows us to do just that, without affecting other jobs running on the
+> system.
+> 
+> Here are some results showing the improvement that my test case gets
+> when the MMF_THP_DISABLE flag is clear vs. set:
+> 
+> MMF_THP_DISABLE clear:
+> 
+> # perf stat -a -r 3 ./prctl_wrapper_mm 0 ./thp_pthread -C 0 -m 0 -c 512 -b 256g
+> 
+>  Performance counter stats for './prctl_wrapper_mm 0 ./thp_pthread -C 0 -m 0 -c 512 -b 256g' (3 runs):
+> 
+>   267694862.049279 task-clock                #  641.100 CPUs utilized            ( +-  0.23% ) [100.00%]
+>            908,846 context-switches          #    0.000 M/sec                    ( +-  0.23% ) [100.00%]
+>                874 CPU-migrations            #    0.000 M/sec                    ( +-  4.01% ) [100.00%]
+>            131,966 page-faults               #    0.000 M/sec                    ( +-  2.75% )
+> 351,127,909,744,906 cycles                    #    1.312 GHz                      ( +-  0.27% ) [100.00%]
+> 523,537,415,562,692 stalled-cycles-frontend   #  149.10% frontend cycles idle     ( +-  0.26% ) [100.00%]
+> 392,400,753,609,156 stalled-cycles-backend    #  111.75% backend  cycles idle     ( +-  0.29% ) [100.00%]
+> 147,467,956,557,895 instructions              #    0.42  insns per cycle
+>                                              #    3.55  stalled cycles per insn  ( +-  0.09% ) [100.00%]
+> 26,922,737,309,021 branches                  #  100.572 M/sec                    ( +-  0.24% ) [100.00%]
+>      1,308,714,545 branch-misses             #    0.00% of all branches          ( +-  0.18% )
+> 
+>      417.555688399 seconds time elapsed                                          ( +-  0.23% )
+> 
+> 
+> MMF_THP_DISABLE set:
+> 
+> # perf stat -a -r 3 ./prctl_wrapper_mm 1 ./thp_pthread -C 0 -m 0 -c 512 -b 256g
+> 
+>  Performance counter stats for './prctl_wrapper_mm 1 ./thp_pthread -C 0 -m 0 -c 512 -b 256g' (3 runs):
+> 
+>   141674994.160138 task-clock                #  642.107 CPUs utilized            ( +-  0.23% ) [100.00%]
+>          1,190,415 context-switches          #    0.000 M/sec                    ( +- 42.87% ) [100.00%]
+>                688 CPU-migrations            #    0.000 M/sec                    ( +-  2.47% ) [100.00%]
+>         62,394,646 page-faults               #    0.000 M/sec                    ( +-  0.00% )
+> 156,748,225,096,919 cycles                    #    1.106 GHz                      ( +-  0.20% ) [100.00%]
+> 211,440,354,290,433 stalled-cycles-frontend   #  134.89% frontend cycles idle     ( +-  0.40% ) [100.00%]
+> 114,304,536,881,102 stalled-cycles-backend    #   72.92% backend  cycles idle     ( +-  0.88% ) [100.00%]
+> 179,939,084,230,732 instructions              #    1.15  insns per cycle
+>                                              #    1.18  stalled cycles per insn  ( +-  0.26% ) [100.00%]
+> 26,659,099,949,509 branches                  #  188.171 M/sec                    ( +-  0.72% ) [100.00%]
+>        762,772,361 branch-misses             #    0.00% of all branches          ( +-  0.97% )
+> 
+>      220.640905073 seconds time elapsed                                          ( +-  0.23% )
+> 
+> As you can see, this particular test gets about a 2x performance boost
+> when THP is turned off. 
 
-My application needs to receive a signal when ALL direct and indirect children of a process (including this process itself) started in a sandbox exit (it should work even when they call setsid()).
+Do you know what cause the difference? I prefer to fix THP instead of
+adding new knob to disable it.
 
-You can assume that the sandboxing binary creates a new cgroup.
-
-Can this be done with the current kernel?
-
---
-Victor Porton - http://portonvictor.org
+-- 
+ Kirill A. Shutemov
