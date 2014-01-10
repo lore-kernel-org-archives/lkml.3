@@ -1,48 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082AbaAJCe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 21:34:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49388 "EHLO
+	id S1756408AbaAJCeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 21:34:50 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49399 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728AbaAJCe1 (ORCPT
+	with ESMTP id S1755458AbaAJCet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 21:34:27 -0500
-Date: Thu, 9 Jan 2014 19:34:25 -0700
+	Thu, 9 Jan 2014 21:34:49 -0500
+Date: Thu, 9 Jan 2014 19:34:47 -0700
 From: Jens Axboe <axboe@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-mq: use __smp_call_function_single directly
-Message-ID: <20140110023425.GF6780@kernel.dk>
-References: <20140108173337.GA29514@infradead.org>
- <52CDC3A3.5050203@kernel.dk>
- <20140109183507.GA23826@infradead.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Subject: Re: [GIT PULL] bcache for 3.14
+Message-ID: <20140110023447.GG6780@kernel.dk>
+References: <20140108211907.GD7291@kmo-pixel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109183507.GA23826@infradead.org>
+In-Reply-To: <20140108211907.GD7291@kmo-pixel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09 2014, Christoph Hellwig wrote:
-> On Wed, Jan 08, 2014 at 02:31:15PM -0700, Jens Axboe wrote:
-> > On 01/08/2014 10:33 AM, Christoph Hellwig wrote:
-> > > __smp_call_function_single already avoids multiple IPIs by internally
-> > > queing up the items, and now also is available for non-SMP builds as
-> > > a trivially correct stub, so there is no need to wrap it.  If the
-> > > additional lock roundtrip cause problems my patch to convert the
-> > > generic IPI code to llists is waiting to get merged will fix it.
-> > 
-> > Thanks Christoph, applied it.
-> 
-> Btw, the same should be done to the null_blk ipi completion
-> path in theory.  But given that it always tries to IPI the local
-> CPU __smp_call_function_single turns into a simple indirect function
-> call, so I don't really understand the point of that code path at all.
+On Wed, Jan 08 2014, Kent Overstreet wrote:
+> Jens, here's the updated bcache pull, rebased and retested on top of
+> your latest for-3.14/drivers branch. Only other change was a one liner
+> in the "bcache/md: Use raid stripe size" patch to update
+> blk_stack_limits(), as pointed out by Mike Snitzer.
 
-The idea would be to have it forced be remote, on the given CPU, not
-always just go local. So it just needs to be fixed up, it doesn't make
-a lot of sense as it stands as a separate completion method.
+Pulled, thanks!
 
 -- 
 Jens Axboe
