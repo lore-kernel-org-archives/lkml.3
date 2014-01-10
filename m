@@ -1,75 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289AbaAJPPO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:15:14 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:49156 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaAJPPL (ORCPT
+	id S1753555AbaAJPSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:18:08 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:48200 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaAJPSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:15:11 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-cc-52d00e7d1d9c
-Message-id: <52D00E76.8060001@samsung.com>
-Date: Fri, 10 Jan 2014 16:15:02 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 1/8 v3] crypto:s5p-sss: Use platform_get_irq() instead of
- _byname()
-References: <1389095509-14357-2-git-send-email-ch.naveen@samsung.com>
- <1389354102-31709-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1389354102-31709-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t/xq7q1fBeCDK5sUbO4+/wwo8XLQ5oW
-	c863sFh0v5KxuH/vJ5PF5V1z2CxmnN/HZLFo239mi1W7/jBanJ1ziMmBy2PLyptMHjtn3WX3
-	2HZA1aNvyypGj8+b5AJYo7hsUlJzMstSi/TtErgy5nf8Zivo5ajYNPMxYwPjdbYuRk4OCQET
-	iddP+tghbDGJC/fWA8W5OIQEljJK7Jr+lBUkISTwmVHi9x+DLkYODl4BLYkf1/xBwiwCqhLt
-	K/ezgNhsAmoSnxsegc0UFYiQ+DtvPSOIzSsgKPFj8j2wGhGBcol/N9aAzWcWOMoo8XnORSaQ
-	hLBApMSUqfNZIRY3MkpM27eCGSTBKeAm8e3+W7BJzALWEisnbYOy5SU2r3nLPIFRYBaSJbOQ
-	lM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkj4f93BuPSY1SFGAQ5GJR7eglnn
-	g4RYE8uKK3MPMUpwMCuJ8Nq/AgrxpiRWVqUW5ccXleakFh9iZOLglGpgPDN/4rdNpjun1Bhm
-	s4ny/46VUNiad/9K9V9lHsfrjwql7C8/XTH1kuSvOV9/1S4XEji4YZ3fpquX5v+OsLkU15c6
-	fe2+J72vE+d3ul36+T68ZunCXVcl2jaqVudbhZ8QO893Vna9BFPUyUMFZ85dzen4tsxhs8v/
-	qPaNHKJuKsxmueU2ZpdOSCmxFGckGmoxFxUnAgBYfG+CXQIAAA==
+	Fri, 10 Jan 2014 10:18:06 -0500
+Date: Fri, 10 Jan 2014 16:17:56 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] sched/nohz: add debugfs control over
+ sched_tick_max_deferment
+Message-ID: <20140110151753.GA15280@localhost.localdomain>
+References: <1387315388-31676-1-git-send-email-khilman@linaro.org>
+ <20140105132153.GA25212@localhost.localdomain>
+ <87eh4lez2w.fsf@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87eh4lez2w.fsf@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On Mon, Jan 06, 2014 at 10:37:27AM -0800, Kevin Hilman wrote:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+> 
+> > On Tue, Dec 17, 2013 at 01:23:07PM -0800, Kevin Hilman wrote:
+> >> Allow debugfs override of sched_tick_max_deferment in order to ease
+> >> finding/fixing the remaining issues with full nohz.
+> >> 
+> >> The value to be written is in jiffies, and -1 means the max deferment
+> >> is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
+> >> 
+> >> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> >> ---
+> >>  kernel/sched/core.c | 16 +++++++++++++++-
+> >>  1 file changed, 15 insertions(+), 1 deletion(-)
+> >> 
+> >> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> >> index 5ac63c9a995a..4b1fe3e69fe4 100644
+> >> --- a/kernel/sched/core.c
+> >> +++ b/kernel/sched/core.c
+> >> @@ -2175,6 +2175,8 @@ void scheduler_tick(void)
+> >>  }
+> >>  
+> >>  #ifdef CONFIG_NO_HZ_FULL
+> >> +static u32 sched_tick_max_deferment = HZ;
+> >> +
+> >>  /**
+> >>   * scheduler_tick_max_deferment
+> >>   *
+> >> @@ -2193,13 +2195,25 @@ u64 scheduler_tick_max_deferment(void)
+> >>  	struct rq *rq = this_rq();
+> >>  	unsigned long next, now = ACCESS_ONCE(jiffies);
+> >>  
+> >> -	next = rq->last_sched_tick + HZ;
+> >> +	if (sched_tick_max_deferment == -1)
+> >> +		return KTIME_MAX;
+> >> +
+> >> +	next = rq->last_sched_tick + sched_tick_max_deferment;
+> >>  
+> >>  	if (time_before_eq(next, now))
+> >>  		return 0;
+> >>  
+> >>  	return jiffies_to_usecs(next - now) * NSEC_PER_USEC;
+> >>  }
+> >> +
+> >> +static __init int sched_nohz_full_init_debug(void)
+> >> +{
+> >> +	debugfs_create_u32("sched_tick_max_deferment", 0644, NULL,
+> >> +			   &sched_tick_max_deferment);
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +late_initcall(sched_nohz_full_init_debug);
+> >
+> > If the goal is mostly to turn off sched_tick_max_deferment (set to -1), we should
+> > perhaps make it a boolean sched feature (see kernel/sched/features.h) as it's a pretty
+> > well consolidated interface.
+> 
+> Well, I suspect folks may want to set it to various values, depending on
+> workload to experiment with the results.
 
-On 10.01.2014 12:41, Naveen Krishna Chatradhi wrote:
-> From: Naveen Krishna Ch <ch.naveen@samsung.com>
->
-> This patch uses the platform_get_irq() instead of the
-> platform_get_irq_byname(). Making feeder control interrupt
-> as resource "0" and hash interrupt as "1".
->
-> reasons for this change.
-> 1. Cannot find any Arch which is currently using this driver
-> 2. Samsung Exynos4 and 5 SoCs only use the feeder control interrupt
-> 3. Patches adding support for DT and H/W version are in pipeline
->
-> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-> TO: <linux-crypto@vger.kernel.org>
-> CC: <linux-samsung-soc@vger.kernel.org>
-> ---
-> Changes since v2:
-> None
->
->   drivers/crypto/s5p-sss.c |   24 ++++++++++++------------
->   1 file changed, 12 insertions(+), 12 deletions(-)
+Another option is to add an integer file in sched_features/ debugfs directory. But all other
+files there are boolean, so that wouldn't integrate there very well.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+One of the things I would like to try is to offline sched_class(current[$CPU])::scheduler_tick()
+to the timekeeper or any housekeeping CPU.
 
-Best regards,
-Tomasz
+So the housekeeper could handle the periodic tick on behalf of full dynticks CPUs. And then
+being able to tune the frequency of this sounds interesting.
+
+So yeah having an tunable integer makes sense after all.
+
+> 
+> Also, my first attempt was to add control over this via sysctl[1] (though
+> not sched_features) and you suggested[2] I use debugfs instead since this
+> should be a temporary hack until we can remove the 1Hz residual tick.
+
+Right, but SCHED_FEAT are debugfs :)  And I thought we could either reuse it
+or reuse the sched feature debugfs directory. But again I realize it's all made of bool values
+so it's not very welcoming for consistency.
+
+Anyway thinking about it more, perhaps we should actually use your patch that use sysctl since
+the rest of the scheduler does that for tunable numbers.
+
+Now since it's sysctl, I'm kind of more picky about correctness limits: what if people set high values,
+thinking the kernel can handle them just fine, while it can't yet obviously? Should we ignore values that
+goes too far? And how to we draw the line?
+
+Thoughts?
+
+> Kevin
+> 
+> [1] http://marc.info/?l=linux-kernel&m=137159992306877&w=2
+> [2] http://marc.info/?l=linux-kernel&m=137166737830821&w=2
