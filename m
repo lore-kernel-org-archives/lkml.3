@@ -1,166 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaAJRtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 12:49:25 -0500
-Received: from fujitsu24.fnanic.fujitsu.com ([192.240.6.14]:56061 "EHLO
-	fujitsu24.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751327AbaAJRtU (ORCPT
+	id S1751544AbaAJR6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 12:58:43 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:34797 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaAJR6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 12:49:20 -0500
-From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
-        Nick Piggin <npiggin@suse.de>,
-        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date: Fri, 10 Jan 2014 09:48:54 -0800
-Subject: RE: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
-Thread-Topic: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
-Thread-Index: Ac8LuWRC6YlwtjWzQlW7/lclSrDc3gA8ZrUQ
-Message-ID: <6B2BA408B38BA1478B473C31C3D2074E2C386DF586@SV-EXCHANGE1.Corp.FC.LOCAL>
-References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>
-	<52B11765.8030005@oracle.com>
-	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>
-	<52B166CF.6080300@suse.cz>
-	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>
-	<20131218134316.977d5049209d9278e1dad225@linux-foundation.org>
-	<52C71ACC.20603@oracle.com>
-	<CA+55aFzDcFyyXwUUu5bLP3fsiuzxU7VPivpTPHgp8smvdTeESg@mail.gmail.com>
-	<52C74972.6050909@suse.cz>
- <CA+55aFzq1iQqddGo-m=vutwMYn5CPf65Ergov5svKR4AWC3rUQ@mail.gmail.com>
- <6B2BA408B38BA1478B473C31C3D2074E2BF812BC82@SV-EXCHANGE1.Corp.FC.LOCAL>
- <52CC16DC.9070308@suse.cz>
-In-Reply-To: <52CC16DC.9070308@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-10_05:2014-01-10,2014-01-10,1970-01-01 signatures=0
+	Fri, 10 Jan 2014 12:58:41 -0500
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Jon Medhurst <tixy@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Cc: patches@linaro.org, linaro-networking@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/5] ARM: kprobes: fix instruction fetch order with <asm/opcodes.h>
+Date: Fri, 10 Jan 2014 19:58:22 +0200
+Message-Id: <1389376706-30051-2-git-send-email-taras.kondratiuk@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389376706-30051-1-git-send-email-taras.kondratiuk@linaro.org>
+References: <1389376706-30051-1-git-send-email-taras.kondratiuk@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0AHnanH010840
 
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 068522d..b99c742 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1389,9 +1389,19 @@ static int try_to_unmap_cluster(unsigned long
-> cursor, unsigned int *mapcount,
->  		BUG_ON(!page || PageAnon(page));
-> 
->  		if (locked_vma) {
-> -			mlock_vma_page(page);   /* no-op if already
-> mlocked */
-> -			if (page == check_page)
-> +			if (page == check_page) {
-> +				/* we know we have check_page locked */
-> +				mlock_vma_page(page);
->  				ret = SWAP_MLOCK;
-> +			} else if (trylock_page(page)) {
-> +				/*
-> +				 * If we can lock the page, perform mlock.
-> +				 * Otherwise leave the page alone, it will be
-> +				 * eventually encountered again later.
-> +				 */
-> +				mlock_vma_page(page);
-> +				unlock_page(page);
-> +			}
->  			continue;	/* don't unmap */
->  		}
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
-I audited all related mm code. However I couldn't find any race that it can close.
+If we are running BE8, the data and instruction endianness do not
+match, so use <asm/opcodes.h> to correctly translate memory accesses
+into ARM instructions.
 
-First off,  current munlock code is crazy tricky.
+Acked-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+[taras.kondratiuk@linaro.org: fixed Thumb instruction fetch order]
+Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+---
+ arch/arm/kernel/kprobes-common.c |   19 +++++++++++--------
+ arch/arm/kernel/kprobes-thumb.c  |   20 ++++++++++++--------
+ arch/arm/kernel/kprobes.c        |    9 +++++----
+ 3 files changed, 28 insertions(+), 20 deletions(-)
 
-munlock
-	down_write(mmap_sem)
-	do_mlock()
-		mlock_fixup
-			munlock_vma_pages_range
-				__munlock_pagevec
-					spin_lock_irq(zone->lru_lock)
-					TestClearPageMlocked(page)
-					del_page_from_lru_list
-					spin_unlock_irq(zone->lru_lock)
-					lock_page
-					__munlock_isolated_page
-					unlock_page
-				
-	up_write(mmap_sem)
+diff --git a/arch/arm/kernel/kprobes-common.c b/arch/arm/kernel/kprobes-common.c
+index 18a7628..380c20f 100644
+--- a/arch/arm/kernel/kprobes-common.c
++++ b/arch/arm/kernel/kprobes-common.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/kprobes.h>
+ #include <asm/system_info.h>
++#include <asm/opcodes.h>
+ 
+ #include "kprobes.h"
+ 
+@@ -305,7 +306,8 @@ kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 
+ 	if (handler) {
+ 		/* We can emulate the instruction in (possibly) modified form */
+-		asi->insn[0] = (insn & 0xfff00000) | (rn << 16) | reglist;
++		asi->insn[0] = __opcode_to_mem_arm((insn & 0xfff00000) |
++						   (rn << 16) | reglist);
+ 		asi->insn_handler = handler;
+ 		return INSN_GOOD;
+ 	}
+@@ -334,13 +336,14 @@ prepare_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	if (thumb) {
+ 		u16 *thumb_insn = (u16 *)asi->insn;
+-		thumb_insn[1] = 0x4770; /* Thumb bx lr */
+-		thumb_insn[2] = 0x4770; /* Thumb bx lr */
++		/* Thumb bx lr */
++		thumb_insn[1] = __opcode_to_mem_thumb16(0x4770);
++		thumb_insn[2] = __opcode_to_mem_thumb16(0x4770);
+ 		return insn;
+ 	}
+-	asi->insn[1] = 0xe12fff1e; /* ARM bx lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe12fff1e); /* ARM bx lr */
+ #else
+-	asi->insn[1] = 0xe1a0f00e; /* mov pc, lr */
++	asi->insn[1] = __opcode_to_mem_arm(0xe1a0f00e); /* mov pc, lr */
+ #endif
+ 	/* Make an ARM instruction unconditional */
+ 	if (insn < 0xe0000000)
+@@ -360,12 +363,12 @@ set_emulated_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
+ 	if (thumb) {
+ 		u16 *ip = (u16 *)asi->insn;
+ 		if (is_wide_instruction(insn))
+-			*ip++ = insn >> 16;
+-		*ip++ = insn;
++			*ip++ = __opcode_to_mem_thumb16(insn >> 16);
++		*ip++ = __opcode_to_mem_thumb16(insn);
+ 		return;
+ 	}
+ #endif
+-	asi->insn[0] = insn;
++	asi->insn[0] = __opcode_to_mem_arm(insn);
+ }
+ 
+ /*
+diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
+index 6123daf..b82e798 100644
+--- a/arch/arm/kernel/kprobes-thumb.c
++++ b/arch/arm/kernel/kprobes-thumb.c
+@@ -163,9 +163,9 @@ t32_decode_ldmstm(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	enum kprobe_insn ret = kprobe_decode_ldmstm(insn, asi);
+ 
+ 	/* Fixup modified instruction to have halfwords in correct order...*/
+-	insn = asi->insn[0];
+-	((u16 *)asi->insn)[0] = insn >> 16;
+-	((u16 *)asi->insn)[1] = insn & 0xffff;
++	insn = __mem_to_opcode_arm(asi->insn[0]);
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn >> 16);
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0xffff);
+ 
+ 	return ret;
+ }
+@@ -1153,7 +1153,7 @@ t16_decode_hiregs(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ {
+ 	insn &= ~0x00ff;
+ 	insn |= 0x001; /* Set Rdn = R1 and Rm = R0 */
+-	((u16 *)asi->insn)[0] = insn;
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(insn);
+ 	asi->insn_handler = t16_emulate_hiregs;
+ 	return INSN_GOOD;
+ }
+@@ -1182,8 +1182,10 @@ t16_decode_push(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	 * and call it with R9=SP and LR in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe929;		/* 1st half STMDB R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half STMDB R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe929);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = t16_emulate_push;
+ 	return INSN_GOOD;
+ }
+@@ -1232,8 +1234,10 @@ t16_decode_pop(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+ 	 * and call it with R9=SP and PC in the register list represented
+ 	 * by R8.
+ 	 */
+-	((u16 *)asi->insn)[0] = 0xe8b9;		/* 1st half LDMIA R9!,{} */
+-	((u16 *)asi->insn)[1] = insn & 0x1ff;	/* 2nd half (register list) */
++	/* 1st half LDMIA R9!,{} */
++	((u16 *)asi->insn)[0] = __opcode_to_mem_thumb16(0xe8b9);
++	/* 2nd half (register list) */
++	((u16 *)asi->insn)[1] = __opcode_to_mem_thumb16(insn & 0x1ff);
+ 	asi->insn_handler = insn & 0x100 ? t16_emulate_pop_pc
+ 					 : t16_emulate_pop_nopc;
+ 	return INSN_GOOD;
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+index a7b621e..49a87b6 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -26,6 +26,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/stringify.h>
+ #include <asm/traps.h>
++#include <asm/opcodes.h>
+ #include <asm/cacheflush.h>
+ 
+ #include "kprobes.h"
+@@ -62,10 +63,10 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ #ifdef CONFIG_THUMB2_KERNEL
+ 	thumb = true;
+ 	addr &= ~1; /* Bit 0 would normally be set to indicate Thumb code */
+-	insn = ((u16 *)addr)[0];
++	insn = __mem_to_opcode_thumb16(((u16 *)addr)[0]);
+ 	if (is_wide_instruction(insn)) {
+-		insn <<= 16;
+-		insn |= ((u16 *)addr)[1];
++		u16 inst2 = __mem_to_opcode_thumb16(((u16 *)addr)[1]);
++		insn = __opcode_thumb32_compose(insn, inst2);
+ 		decode_insn = thumb32_kprobe_decode_insn;
+ 	} else
+ 		decode_insn = thumb16_kprobe_decode_insn;
+@@ -73,7 +74,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	thumb = false;
+ 	if (addr & 0x3)
+ 		return -EINVAL;
+-	insn = *p->addr;
++	insn = __mem_to_opcode_arm(*p->addr);
+ 	decode_insn = arm_kprobe_decode_insn;
+ #endif
+ 
+-- 
+1.7.9.5
 
-Look, TestClearPageMlocked(page) is not protected by lock_page. But this is still
-safe because Page_mocked mean one or more vma marked VM_LOCKED then we
-only need care about turning down final VM_LOCKED. I.e. mmap_sem protect them.
-
-And,
-
-					spin_lock_irq(zone->lru_lock)
-					del_page_from_lru_list
-					spin_unlock_irq(zone->lru_lock)
-
-This idiom ensures I or someone else isolate the page from lru and isolated pages
-will be put back by putback_lru_page in anycase. So, the pages will move the right
-lru eventually.
-
-And then, taking page-lock doesn't help to close vs munlock race.
-
-On the other hands, page migration has the following call stack. 
-
-some-caller [isolate_lru_page]
-	unmap_and_move
-		__unmap_and_move
-		trylock_page
-		try_to_unmap
-		move_to_new_page
-			migrate_page
-				migrate_page_copy
-		unlock_page
-
-The critical part (i.e. migrate_page_copy) is protected by both page isolation and page lock.
-Page fault path take lock page and doesn't use page isolation. This is correct.
-try_to_unmap_cluster doesn't take page lock, but it ensure the page is isolated. This is correct too.
-
-Plus, do_wp_page() has the following comment. But it is wrong. This lock is necessary to protect against
-page migration, but not lru manipulation.
-
-		if ((ret & VM_FAULT_WRITE) && (vma->vm_flags & VM_LOCKED)) {
-			lock_page(old_page);	/* LRU manipulation */
-			munlock_vma_page(old_page);
-			unlock_page(old_page);
-		}
-
-
-But, you know, this is crazy ugly lock design. I'm ok to change the rule to that PG_mlocked must be protected
-page lock. If so, I propose to add PageMlocked() like this
-
-			} else if (!PageMlocked() && trylock_page(page)) {
-				/*
-				 * If we can lock the page, perform mlock.
-				 * Otherwise leave the page alone, it will be
-				 * eventually encountered again later.
-				 */
-				mlock_vma_page(page);
-				unlock_page(page);
-
-This is safe. Even if race is happen and vmscan failed to mark PG_mlocked, that's no problem. Next vmscan may
-do the right job and will fix the mistake.
-
-Anyway,  I'm also sure this is not recent issue. It lived 5 years. It is no reason to rush.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
