@@ -1,35 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaAJS4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 13:56:54 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:36173 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaAJS4v convert rfc822-to-8bit (ORCPT
+	id S1757962AbaAJS5s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 13:57:48 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:50820 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaAJS5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 13:56:51 -0500
+	Fri, 10 Jan 2014 13:57:45 -0500
+Date: Fri, 10 Jan 2014 10:57:44 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Neil Leeder <nleeder@codeaurora.org>,
+        Ashwin Chaugule <ashwinc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        mark.rutland@arm.com
+Subject: Re: [PATCH 3/7] ARM: perf_event: Add basic support for Krait CPU
+ PMUs
+Message-ID: <20140110185744.GF14405@codeaurora.org>
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
+ <1389221984-10973-4-git-send-email-sboyd@codeaurora.org>
+ <20140109110440.GC17838@mudshark.cambridge.arm.com>
+ <52CEFF18.2070501@codeaurora.org>
+ <20140110110114.GC10455@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <310861389366000@web24m.yandex.ru>
-References: <223151389311706@web9g.yandex.ru> <52CF6129.4040308@amacapital.net>
- <310861389366000@web24m.yandex.ru>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 10 Jan 2014 10:56:29 -0800
-Message-ID: <CALCETrX=UOZSMb93sPpC+K6iYMkCuoYve=_m3Ho9WPTp3Qhj7w@mail.gmail.com>
-Subject: Re: [RFC] subreaper mode 2 (Re: A feature suggestion for sandboxing processes)
-To: Victor Porton <porton@narod.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110110114.GC10455@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 7:00 AM, Victor Porton <porton@narod.ru> wrote:
-> I don't quite understand your subreaper mode 2, but for me it looks like that this would break compatibility (sandboxed applications ideally should not be written in any special way, any application which does not open new files (or does similar things) should work in sandbox just like as if there would be no sandbox).
+On 01/10, Will Deacon wrote:
+> On Thu, Jan 09, 2014 at 07:57:12PM +0000, Stephen Boyd wrote:
+> > (Adding DT reviewers)
+> > 
+> > On 01/09/14 03:04, Will Deacon wrote:
+> > > On Wed, Jan 08, 2014 at 10:59:40PM +0000, Stephen Boyd wrote:
+> > >
+> > >> +static int krait_pmu_init(struct arm_pmu *cpu_pmu)
+> > >> +{
+> > >> +	u32 id = read_cpuid_id() & 0xffffff00;
+> > >> +
+> > >> +	armv7pmu_init(cpu_pmu);
+> > >> +	cpu_pmu->name		= "ARMv7 Krait";
+> > >> +	/* Some early versions of Krait don't support PC write events */
+> > >> +	if (id == 0x511f0400 || id == 0x510f0600)
+> > >> +		cpu_pmu->map_event	= krait_map_event_no_branch;
+> > > Hmm, I'd really rather this information came via the DT. In fact, you could
+> > > just drop the branch event from your main map_event_function and keep things
+> > > simple. It depends how badly you want to advertise it in perf list :)
+> > >
+> > 
+> > Not every version of Krait is missing support for this event, so I'd
+> > like to keep it so things like perf stat show branch counts. How about I
+> > add a bool property to the pmu node indicating that this PMU is missing
+> > support for the PC write events? Something like "no-pc-write"?
+> 
+> Perhaps, although I think it should be qualcomm-specific, so something like
+> "qcom,krait-no-pc-write"? Again, I'd be glad to hear something from a DT
+> reviewer on this.
+> 
 
-I'm suggesting that *sandbox*, not the application in the sandbox, use
-subreaper mode 2 (or whatever the new mechanism).  The sandboxed app
-should case, except insofar as as the sandbox can't double-fork to
-create long-lived subprocesses.
+Yes a vendor prefix is probably a good idea. I'll add that in.
 
---Andy
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
