@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207AbaAJQ6h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:58:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35940 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaAJQ6f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:58:35 -0500
-Date: Fri, 10 Jan 2014 17:58:22 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: SIGSEGV when using "perf record -g" with 3.13-rc* kernel
-Message-ID: <20140110165822.GI7572@laptop.programming.kicks-ass.net>
-References: <52D011C9.7000209@hp.com>
+	id S1757868AbaAJQ6x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:58:53 -0500
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:60256 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752668AbaAJQ6u convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 11:58:50 -0500
+From: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+To: Joe Perches <joe@perches.com>
+CC: Dept-Eng Linux Driver <Linux-Driver@qlogic.com>,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next] qlcnic: Convert vmalloc/memset to kcalloc
+Thread-Topic: [PATCH net-next] qlcnic: Convert vmalloc/memset to kcalloc
+Thread-Index: AQHPDQX4KC+gHBvYCEerlVsxtB0qg5p+MGQA
+Date: Fri, 10 Jan 2014 16:58:45 +0000
+Message-ID: <BECD8E8A1B550B48A1BF97C13991F60E46CF4795@avmb2.qlogic.org>
+References: <1389249745.24222.20.camel@joe-AO722>
+In-Reply-To: <1389249745.24222.20.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <ECFD097A845AE543A4A0CA0836D51133@qlogic.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D011C9.7000209@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7313 signatures=668874
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1401100105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 10:29:13AM -0500, Waiman Long wrote:
-> Peter,
-> 
-> Call Trace:
-> <NMI>  [<ffffffff815710af>] dump_stack+0x49/0x62
->  [<ffffffff8104e3bc>] warn_slowpath_common+0x8c/0xc0
->  [<ffffffff8104e40a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffff8105f1f1>] force_sig_info+0x131/0x140
->  [<ffffffff81042a4f>] force_sig_info_fault+0x5f/0x70
->  [<ffffffff8106d8da>] ? search_exception_tables+0x2a/0x50
->  [<ffffffff81043b3d>] ? fixup_exception+0x1d/0x70
->  [<ffffffff81042cc9>] no_context+0x159/0x1f0
->  [<ffffffff81042e8d>] __bad_area_nosemaphore+0x12d/0x230
->  [<ffffffff81042e8d>] ? __bad_area_nosemaphore+0x12d/0x230
->  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
->  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
->  [<ffffffff81578fc2>] ? __do_page_fault+0x362/0x480
->  [<ffffffff815791be>] do_page_fault+0xe/0x10
->  [<ffffffff81575962>] page_fault+0x22/0x30
->  [<ffffffff815817e4>] ? bad_to_user+0x5e/0x66b
->  [<ffffffff81285316>] copy_from_user_nmi+0x76/0x90
->  [<ffffffff81017a20>] perf_callchain_user+0xd0/0x360
->  [<ffffffff8111f64f>] perf_callchain+0x1af/0x1f0
->  [<ffffffff81117693>] perf_prepare_sample+0x2f3/0x3a0
->  [<ffffffff8111a2af>] __perf_event_overflow+0x10f/0x220
->  [<ffffffff8111ab14>] perf_event_overflow+0x14/0x20
->  [<ffffffff8101f69e>] intel_pmu_handle_irq+0x1de/0x3c0
->  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
->  [<ffffffff81576e64>] perf_event_nmi_handler+0x34/0x60
->  [<ffffffff8157664a>] nmi_handle+0x8a/0x170
->  [<ffffffff81576848>] default_do_nmi+0x68/0x210
->  [<ffffffff81576a80>] do_nmi+0x90/0xe0
->  [<ffffffff81575c67>] end_repeat_nmi+0x1e/0x2e
->  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
->  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
->  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-> <<EOE>>  [<ffffffff81042f7d>] __bad_area_nosemaphore+0x21d/0x230
->  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
->  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
->  [<ffffffff8113cfbc>] ? vm_mmap_pgoff+0xbc/0xe0
->  [<ffffffff815791be>] do_page_fault+0xe/0x10
->  [<ffffffff81575962>] page_fault+0x22/0x30
-> ---[ end trace 037bf09d279751ec ]---
-> 
-> So this is a double page faults. Looking at relevant changes in
-> 3.13 kernel, I spotted the following one patch that modified the
-> perf_callchain_user() function shown up in the stack trace above:
-> 
 
-Hurm, that's an expected double fault, not something we should take the
-process down for.
 
-I'll have to look at how all that works for a bit.
+On 1/8/14 10:42 PM, "Joe Perches" <joe@perches.com> wrote:
+
+>vmalloc is a limited resource.  Don't use it unnecessarily.
+>
+>It seems this allocation should work with kcalloc.
+>
+>Remove unnecessary memset(,0,) of buf as it's completely
+>overwritten as the previously only unset field in
+>struct qlcnic_pci_func_cfg is now set to 0.
+>
+>Use kfree instead of vfree.
+>Use ETH_ALEN instead of 6.
+>
+>Signed-off-by: Joe Perches <joe@perches.com>
+>---
+> drivers/net/ethernet/qlogic/qlcnic/qlcnic.h       |  2 +-
+> drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c | 16 ++++++----------
+> 2 files changed, 7 insertions(+), 11 deletions(-)
+
+Acked-by: Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+
+>
+>diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic.h
+>b/drivers/net/ethernet/qlogic/qlcnic/qlcnic.h
+>index 35d4876..8d7aa4c 100644
+>--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic.h
+>+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic.h
+>@@ -1267,7 +1267,7 @@ struct qlcnic_pci_func_cfg {
+> 	u16	port_num;
+> 	u8	pci_func;
+> 	u8	func_state;
+>-	u8	def_mac_addr[6];
+>+	u8	def_mac_addr[ETH_ALEN];
+> };
+> 
+> struct qlcnic_npar_func_cfg {
+>diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
+>b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
+>index b529667..c9b704d 100644
+>--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
+>+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c
+>@@ -6,7 +6,6 @@
+>  */
+> 
+> #include <linux/slab.h>
+>-#include <linux/vmalloc.h>
+> #include <linux/interrupt.h>
+> 
+> #include "qlcnic.h"
+>@@ -927,38 +926,35 @@ static ssize_t qlcnic_sysfs_read_pci_config(struct
+>file *file,
+> 	u32 pci_func_count = qlcnic_get_pci_func_count(adapter);
+> 	struct qlcnic_pci_func_cfg *pci_cfg;
+> 	struct qlcnic_pci_info *pci_info;
+>-	size_t pci_info_sz, pci_cfg_sz;
+>+	size_t pci_cfg_sz;
+> 	int i, ret;
+> 
+> 	pci_cfg_sz = pci_func_count * sizeof(*pci_cfg);
+> 	if (size != pci_cfg_sz)
+> 		return QL_STATUS_INVALID_PARAM;
+> 
+>-	pci_info_sz = pci_func_count * sizeof(*pci_info);
+>-	pci_info = vmalloc(pci_info_sz);
+>+	pci_info = kcalloc(pci_func_count, sizeof(*pci_info), GFP_KERNEL);
+> 	if (!pci_info)
+> 		return -ENOMEM;
+> 
+>-	memset(pci_info, 0, pci_info_sz);
+>-	memset(buf, 0, pci_cfg_sz);
+>-	pci_cfg = (struct qlcnic_pci_func_cfg *)buf;
+>-
+> 	ret = qlcnic_get_pci_info(adapter, pci_info);
+> 	if (ret) {
+>-		vfree(pci_info);
+>+		kfree(pci_info);
+> 		return ret;
+> 	}
+> 
+>+	pci_cfg = (struct qlcnic_pci_func_cfg *)buf;
+> 	for (i = 0; i < pci_func_count; i++) {
+> 		pci_cfg[i].pci_func = pci_info[i].id;
+> 		pci_cfg[i].func_type = pci_info[i].type;
+>+		pci_cfg[i].func_state = 0;
+> 		pci_cfg[i].port_num = pci_info[i].default_port;
+> 		pci_cfg[i].min_bw = pci_info[i].tx_min_bw;
+> 		pci_cfg[i].max_bw = pci_info[i].tx_max_bw;
+> 		memcpy(&pci_cfg[i].def_mac_addr, &pci_info[i].mac, ETH_ALEN);
+> 	}
+> 
+>-	vfree(pci_info);
+>+	kfree(pci_info);
+> 	return size;
+> }
+
+Thanks,
+Jiten
+
