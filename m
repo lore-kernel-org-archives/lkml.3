@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946AbaAJPYO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:24:14 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:23760 "EHLO SMTP.CITRIX.COM"
+	id S1757967AbaAJPYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:24:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797AbaAJPYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:24:08 -0500
-X-IronPort-AV: E=Sophos;i="4.95,638,1384300800"; 
-   d="scan'208";a="91705416"
-Message-ID: <52D01094.5060102@citrix.com>
-Date: Fri, 10 Jan 2014 15:24:04 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756797AbaAJPYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 10:24:15 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: [PATCH 0/6] Page I/O
+References: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 10 Jan 2014 10:24:07 -0500
+In-Reply-To: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
+	(Matthew Wilcox's message of "Thu, 9 Jan 2014 21:39:45 -0500")
+Message-ID: <x49ha9bhnc8.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v3 2/9] xen-netback: Change TX path from grant
- copy to mapping
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com> <1389139818-24458-3-git-send-email-zoltan.kiss@citrix.com> <20140109153015.GF12164@zion.uk.xensource.com> <52CFDAEC.5080708@citrix.com> <20140110114534.GE29180@zion.uk.xensource.com>
-In-Reply-To: <20140110114534.GE29180@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/14 11:45, Wei Liu wrote:
-> On Fri, Jan 10, 2014 at 11:35:08AM +0000, Zoltan Kiss wrote:
-> [...]
->>
->>>> @@ -920,6 +852,18 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
->>>>   	err = gop->status;
->>>>   	if (unlikely(err))
->>>>   		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
->>>> +	else {
->>>> +		if (vif->grant_tx_handle[pending_idx] !=
->>>> +			NETBACK_INVALID_HANDLE) {
->>>> +			netdev_err(vif->dev,
->>>> +				"Stale mapped handle! pending_idx %x handle %x\n",
->>>> +				pending_idx, vif->grant_tx_handle[pending_idx]);
->>>> +			BUG();
->>>> +		}
->>>> +		set_phys_to_machine(idx_to_pfn(vif, pending_idx),
->>>> +			FOREIGN_FRAME(gop->dev_bus_addr >> PAGE_SHIFT));
->>>
->>> What happens when you don't have this?
->> Your frags will be filled with garbage. I don't understand exactly
->> what this function does, someone might want to enlighten us? I've
->> took it's usage from classic kernel.
->> Also, it might be worthwhile to check the return value and BUG if
->> it's false, but I don't know what exactly that return value means.
->>
->
-> This is actually part of gnttab_map_refs. As you're using hypercall
-> directly this becomes very fragile.
->
-> So the right thing to do is to fix gnttab_map_refs.
-I agree, as I mentioned in other email in this thread, I think that 
-should be the topic of an another patchseries. In the meantime, I will 
-use gnttab_batch_map instead of the direct hypercall, it handles the 
-GNTST_eagain scenario, and I will use set_phys_to_machine the same way 
-as m2p_override does:
+Matthew Wilcox <matthew.r.wilcox@intel.com> writes:
 
-if (unlikely(!set_phys_to_machine(idx_to_pfn(vif, pending_idx), 
-FOREIGN_FRAME(gop->dev_bus_addr >> PAGE_SHIFT))
-			BUG();
+> This patch set implements pageio as I described in my talk at
+> Linux.Conf.AU.  It's for review more than application, I think
+> benchmarking is going to be required to see if it's a win.  We've done
+> some benchmarking with an earlier version of the patch and a Chatham card,
+> and it's a win for us.
+>
+> The fundamental point of these patches is that we *can* do I/O without
+> allocating a BIO (or request, or ...) and so we can end up doing fun
+> things like swapping out a page without allocating any memory.
+>
+> Possibly it would be interesting to do sub-page I/Os (ie change the
+> rw_page prototype to take a 'start' and 'length' instead of requiring the
+> I/O to be the entire page), but the problem then arises about what the
+> 'done' callback should be.
 
-Zoli
+For those of us who were not fortunate enough to attend your talk, would
+mind providing some background, like why you went down this path in the
+first place, and maybe what benchmarks you ran where you found it "a
+win?"
+
+Another code path making an end-run around the block layer is
+interesting, but may keep cgroup I/O throttling from working properly,
+for example.
+
+Cheers,
+Jeff
