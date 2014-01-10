@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967AbaAJPYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:24:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797AbaAJPYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:24:15 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: [PATCH 0/6] Page I/O
-References: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 10 Jan 2014 10:24:07 -0500
-In-Reply-To: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
-	(Matthew Wilcox's message of "Thu, 9 Jan 2014 21:39:45 -0500")
-Message-ID: <x49ha9bhnc8.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757570AbaAJPZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:25:25 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:13171 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaAJPZX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 10:25:23 -0500
+Message-ID: <1389367167.1792.148.camel@misato.fc.hp.com>
+Subject: Re: kdump failed because of hotplug memory adding in kdump kernel
+From: Toshi Kani <toshi.kani@hp.com>
+To: Baoquan <bhe@redhat.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        tangchen@cn.fujitsu.com, linux-acpi@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, dyoung@redhat.com
+Date: Fri, 10 Jan 2014 08:19:27 -0700
+In-Reply-To: <20140110091433.GA14074@dhcp-16-105.nay.redhat.com>
+References: <20140109145035.GB25897@redhat.com>
+	 <1389283439.1792.66.camel@misato.fc.hp.com>
+	 <20140109162427.GF25897@redhat.com>
+	 <1389288265.1792.108.camel@misato.fc.hp.com>
+	 <20140109182310.GG25897@redhat.com>
+	 <1389292470.1792.109.camel@misato.fc.hp.com>
+	 <20140109212705.GC12111@redhat.com>
+	 <1389304583.1792.139.camel@misato.fc.hp.com>
+	 <20140110071124.GA6464@dhcp-16-105.nay.redhat.com>
+	 <52CFAA20.2010109@jp.fujitsu.com>
+	 <20140110091433.GA14074@dhcp-16-105.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Wilcox <matthew.r.wilcox@intel.com> writes:
+On Fri, 2014-01-10 at 17:14 +0800, Baoquan wrote:
+ :
+> > 
+> > >Otherwise, any hotplug memory which is not reserved for 2nd kernel can
+> > >be parsed and need be added as hotplug memory, and add them into movable
+> > >zone.
+> > 
+> > wrong.
+> > The memory is allocated as normal zone and it is offline.
 
-> This patch set implements pageio as I described in my talk at
-> Linux.Conf.AU.  It's for review more than application, I think
-> benchmarking is going to be required to see if it's a win.  We've done
-> some benchmarking with an earlier version of the patch and a Chatham card,
-> and it's a win for us.
->
-> The fundamental point of these patches is that we *can* do I/O without
-> allocating a BIO (or request, or ...) and so we can end up doing fun
-> things like swapping out a page without allocating any memory.
->
-> Possibly it would be interesting to do sub-page I/Os (ie change the
-> rw_page prototype to take a 'start' and 'length' instead of requiring the
-> I/O to be the entire page), but the problem then arises about what the
-> 'done' callback should be.
+This is "logical" offline, which means that the memory is accessible,
+but the 1st kernel does not use it.
 
-For those of us who were not fortunate enough to attend your talk, would
-mind providing some background, like why you went down this path in the
-first place, and maybe what benchmarks you ran where you found it "a
-win?"
+> Hi,
+> 
+> Thanks for answering.
+> 
+> I am confused. Now the fact is in 1st kernel memory is reserved for
+> crashkernel and passed to 2nd kernel by exactmap. Then in 2nd kernel,
+> reserved memory regions are added into e820.
 
-Another code path making an end-run around the block layer is
-interesting, but may keep cgroup I/O throttling from working properly,
-for example.
+Right.  And this memory is accessible.  
 
-Cheers,
-Jeff
+>  Later hotplug memory still
+> trigger add_memory, and cause bug I reported.
+
+This is because the 2nd kernel gets all memory ranges from ACPI without
+your change.  This is bad, not only it causes the panic you reported but
+also it can overwrite the 1st kernel's memory.
+
+Thanks,
+-Toshi
+
