@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071AbaAJTr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 14:47:27 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:40669 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397AbaAJTrV (ORCPT
+	id S1758129AbaAJTrm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 14:47:42 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:54704 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397AbaAJTrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 14:47:21 -0500
-Message-ID: <52D05C5C.3030207@cogentembedded.com>
-Date: Fri, 10 Jan 2014 23:47:24 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 10 Jan 2014 14:47:39 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: msm_defconfig: Update for multi-platform
+References: <1389381128-28280-1-git-send-email-sboyd@codeaurora.org>
+Date: Fri, 10 Jan 2014 11:47:33 -0800
+In-Reply-To: <1389381128-28280-1-git-send-email-sboyd@codeaurora.org> (Stephen
+	Boyd's message of "Fri, 10 Jan 2014 11:12:08 -0800")
+Message-ID: <87d2jzaaay.fsf@linaro.org>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Mike Frysinger <vapier@gentoo.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, netdev@vger.kernel.org,
-        linux-sunxi@googlegroups.com, Rob Herring <rob.herring@calxeda.com>,
-        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 05/16] blackfin: Update stmmac callback signatures
-References: <1389337217-29032-1-git-send-email-wens@csie.org> <1389337217-29032-6-git-send-email-wens@csie.org>
-In-Reply-To: <1389337217-29032-6-git-send-email-wens@csie.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Stephen Boyd <sboyd@codeaurora.org> writes:
 
-On 01/10/2014 10:00 AM, Chen-Yu Tsai wrote:
+> ARCH_MSM is a hidden config option now so this defconfig needs to
+> be updated to select ARCH_MSM_DT instead. While we're here,
+> remove dead symbols (SSBI), drop selected symbols (ZRELADDR,
+> PHYLIB, USB_PHY) and enable the MSM random driver (HW_RANDOM_MSM).
+>
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-> stmmac callbacks have been extended for better seperation.
+Applied to next/soc, merged into for-next and pushed out.
 
-    Only "separation".
+Thanks for the quick fixup.
 
-> Update them to avoid breakage.
-
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-
-WBR, Sergei
-
+Kevin
