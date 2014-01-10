@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaAJJe1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 04:34:27 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:20964 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaAJJeX (ORCPT
+	id S1753283AbaAJJfZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 04:35:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:54843 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaAJJfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 04:34:23 -0500
-Message-ID: <52CFBE9C.8080204@atmel.com>
-Date: Fri, 10 Jan 2014 10:34:20 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 10 Jan 2014 04:35:21 -0500
+Date: Fri, 10 Jan 2014 10:34:58 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] perf: comment on usage of perf_invalid_context
+Message-ID: <20140110093458.GH31570@twins.programming.kicks-ass.net>
+References: <1389311492-5059-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1389311492-5059-2-git-send-email-cody@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Mark Roszko <mark.roszko@gmail.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        "Zhao, Leilei" <leilei.zhao@atmel.com>,
-        Mark Deneen <mdeneen@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, stable <stable@vger.kernel.org>
-Subject: Re: [RFC PATCH] tty/serial: at91: disable uart timer at start of
- shutdown
-References: <CAJjB1qLBoXA_XeEV+qU6pi0JVS+==kVA7mEDuAufrYup3htU2g@mail.gmail.com> <1389176916-6114-1-git-send-email-nicolas.ferre@atmel.com> <CAJjB1q+0cMqGRX8e5ssvvvo1pSw4KY7n38vWOh-PnE8GRC2Pug@mail.gmail.com> <CAJjB1qJez363RAaNg1bzE3QTsaGDFfAqOJux=VttNXCyaQTy3A@mail.gmail.com>
-In-Reply-To: <CAJjB1qJez363RAaNg1bzE3QTsaGDFfAqOJux=VttNXCyaQTy3A@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389311492-5059-2-git-send-email-cody@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 08:08, Mark Roszko :
-> Just to sumarize the bug after poking before the patch:
->    systemd calls open/close on /dev/ttyS0 per line
->    atmel_shutdown executes on close
->    uart_timer_callback may fire during shutdown before timer is killed
->    tasklet gets scheduled after tasklet_kill
->    atmel_shutdown returns back to uart_close
-> dice roll:
->    if the tasklet executes before uart_close kills the tty references,
-> the kernel is fine           <--- I saw this happening more often than
-> panics, around once every 3 resets
->    if the tasklet executes after uart_close kills the tty references, it panics
+On Thu, Jan 09, 2014 at 03:51:30PM -0800, Cody P Schafer wrote:
+> Context numbers less than 0 are treated specially within the events
+> code, add a comment to document this.
 > 
-> I tested the patch by old fashion way of manual board resets with a
-> total of 70 resets each on two individual SAMA5D34-EK boards I have in
-> my possession programmed with the same patched kernel image and
-> rootfs. They did not panic once with the patch applied. Typically
-> before the patch the panic would occur around once every 10 resets if
-> not more often to the point it occured for 4 resets straight.
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  include/linux/sched.h | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> I have been trying to automate the testing, even If I make sure
-> nothing is using ttyS0 and then run a program that spams open()
-> writev() and close() (systemd uses the syscalls) to print messages, it
-> will never panic so I'm possibly misunderstanding how the driver
-> startup/shutdown ops get triggered(which should just be open/close
-> respectively) or variable length of messages from systemd and timing
-> between messages contributes to being unlucky and having the timer
-> fire at the wrong time.
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 53f97eb..f574820 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1033,6 +1033,10 @@ struct sched_rt_entity {
+>  struct rcu_node;
+>  
+>  enum perf_event_task_context {
+> +	/*
+> +	 * When <0, allocate a pmu local pmu->pmu_cpu_context (instead
+> +	 * of sharing among pmus in the same context) and forbid task tracking.
+> +	 */
+
+Please explain things in terms of the existing enum names; we don't want
+people to start using randon negative values instead of
+'perf_invalid_context'.
+
+>  	perf_invalid_context = -1,
+>  	perf_hw_context = 0,
+>  	perf_sw_context,
+> -- 
+> 1.8.5.2
 > 
-> But from manual testing I'm pretty confident the bug is fixed.
-
-Nice, thanks for the detailed feedback.
-
-So I send the patch for inclusion to Greg.
-
-Thanks for your help Mark. Best regards,
--- 
-Nicolas Ferre
