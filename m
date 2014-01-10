@@ -1,142 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202AbaAJQiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:38:55 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:41206 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaAJQiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:38:50 -0500
-Message-ID: <52D0221B.9010107@gmail.com>
-Date: Sat, 11 Jan 2014 00:38:51 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1757396AbaAJQlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:41:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880AbaAJQlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 11:41:04 -0500
+Message-ID: <52D02293.9060304@redhat.com>
+Date: Fri, 10 Jan 2014 11:40:51 -0500
+From: Vlad Yasevich <vyasevic@redhat.com>
+Reply-To: vyasevic@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-metag@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggest] arch: metag: compiler: Are they compiler's issues?
-References: <52B8F33C.3030808@gmail.com> <52CA85FF.8050604@imgtec.com> <52CD6849.4050007@gmail.com> <52D01860.6060801@gmail.com> <52D019A2.9000705@imgtec.com> <52D01DBE.6010205@gmail.com> <52D02013.8030009@imgtec.com>
-In-Reply-To: <52D02013.8030009@imgtec.com>
+To: Jason Wang <jasowang@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net 1/2] macvlan: forbid L2 fowarding offload for macvtap
+References: <52CA5CDA.1020503@gmail.com>	<52CA612D.2000902@redhat.com>	<20140106122628.GA24280@hmsreliant.think-freely.org>	<52CB7009.2030903@redhat.com>	<52CB8D54.9090506@gmail.com>	<52CB9D1A.1050101@redhat.com>	<52CBAC2A.90005@intel.com>	<52CBC22D.3050002@redhat.com>	<20140108125528.GC14741@redhat.com>	<52CDA186.1080601@gmail.com>	<20140109071721.GD19559@redhat.com>	<52CE63EB.5000109@redhat.com> <20140109133908.354a4d73@nehalam.linuxnetplumber.net> <52CF9C0C.2020808@redhat.com>
+In-Reply-To: <52CF9C0C.2020808@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2014 12:30 AM, James Hogan wrote:
-> On 10/01/14 16:20, Chen Gang wrote:
->> On 01/11/2014 12:02 AM, James Hogan wrote:
->>> On 10/01/14 15:57, Chen Gang wrote:
->>>> On 01/08/2014 11:01 PM, Chen Gang wrote:
->>>>> On 01/06/2014 06:31 PM, James Hogan wrote:
->>>>>> I suspect this is due to bad assumptions in the code. The metag ABI is
->>>>>> unusual in padding the size of structs to a 32bit boundary even if all
->>>>>> members are <32bit. This is actually permitted by the C standard but
->>>>>> it's a bit of a pain. e.g.
->>>>>>
->>>>>> struct s {
->>>>>> 	short x
->>>>>> 	struct {
->>>>>> 		short x[3];
->>>>>> 	} y;
->>>>>> 	short z;
->>>>>> };
->>>>>>
->>>>>> on x86
->>>>>> 	alignof(s::y) == 2
->>>>>> 	s::y at offset 2
->>>>>> 	sizeof(s::y) == 6
->>>>>> 	s::z at offset 6+2 = 8
->>>>>> 	sizeof(struct s) == 10
->>>>>>
->>>>>> but on metag
->>>>>> 	alignof(s::y) == 4
->>>>>> 	s::y at offset 4
->>>>>> 	sizeof(s::y) == 8 (padding, this is what catches people out)
->>>>>> 	s::z at offset 4+8 = 12
->>>>>> 	sizeof(struct s) == 16 (and here too)
->>>>>>
->>>>>> Adding packed attribute on outer struct reduces sizeof(struct s) to 12
->>>>>> on metag:
->>>>>> 	alignof(s::y) == 4
->>>>>> 	s::y at offset 2 (packed)
->>>>>> 	sizeof(s::y) == 8 (still padded)
->>>>>
->>>>> In my memory, when packed(2), it breaks the C standard (although I am
->>>>> not quit sure).
->>>>>
->>>>> And I guess, all C programmers will assume it will be 6 when within
->>>>> pack(2) or pack(1).
->>>>>
->>>>>> 	s::z at offset 2+8 = 10
->>>>>> 	sizeof(struct s) == 12 (packed)
->>>>>>
->>>>>> Also reduced to 12 if only inner struct is marked packed:
->>>>>> 	alignof(s::y) == 2
->>>>>> 	s::y at offset 2
->>>>>> 	sizeof(s::y) == 6 (packed)
->>>>>> 	s::z at offset 2+6 = 8
->>>>>> 	sizeof(struct s) == 12 (still padded)
->>>>>>
->>>>>> Adding packed attribute on both outer and inner struct reduces
->>>>>> sizeof(struct s) to 10 to match x86.
->>>>>>
->>>>>> Unfortunately it's years too late to change this ABI, so we're stuck
->>>>>> with it.
->>>>>>
->>>>>
->>>>> Unfortunately too, most using cases are related with API (the related
->>>>> structure definition must be the same in binary data).
->>>>>
->>>>> I am sure there are still another ways to bypass this issue, but that
->>>>> will make the code looks very strange (especially they are API).
->>>>>
->>>>> :-(
->>>>>
->>>>
->>>> I guess most C programmers will use this way to describe protocol/data
->>>> format, and keep compatible for it (since it is API).
->>>>
->>>> So even if it really does not break C standard, I still recommend our
->>>> compiler to improve itself to support this features.
->>>
->>> The compiler cannot change this without breaking the ABI.
->>>
->>> If the structure describes a set-in-stone data layout (which it sounds
->>> like it does since it asserts the size of it) then the correct fix is to
->>> pack the structures in such a way as to guarantee the correct offsets
->>> and sizes on all compliant compilers. Otherwise if it's just an internal
->>> programming API it shouldn't be using compile time asserts to enforce
->>> things that vary between ABIs.
->>>
+On 01/10/2014 02:06 AM, Jason Wang wrote:
+> On 01/10/2014 05:39 AM, Stephen Hemminger wrote:
+>> On Thu, 09 Jan 2014 16:55:07 +0800
+>> Jason Wang <jasowang@redhat.com> wrote:
 >>
->> OK, thanks, I guess your meaning is:
->>
->> 	struct s {
->> 		short x;
->> 		struct {
->> 			short x[3];
->> 		} y __attribute__ ((packed));
->> 		short z;
->> 	} __attribute__ ((packed));
->>
->> That will satisfy all of compilers (include metag), is it correct?
+>>> What if use do want a qdisc and want to change the its queue length for
+>>> tun/macvlan? And the the name tx_queue_length is misleading. For tun it
+>>> may make sense since it was used in transmission path. For macvtap it
+>>> was not. So maybe what we need is just a new ioctl for both tun/macvtap
+>>> and a new feature flag. If user create the device with new feature flag,
+>>> the socket receive queue length could be changed by ioctl instead of
+>>> dev->tx_queue_length. If not, the old behaviour could be kept.
+>> The overloading of tx_queue_len in macvtap was the original design mistake.
+>> Can't this just be undone and expose rx_queue_len as sysfs attribute?
 > 
-> Yes, that's what I mean (although probably best to use the __packed
-> macro rather than __attribute__ ((packed)) ).
+> That works. But we current allow user to change the socket sndbuf
+> through TUNSNDBUF. Maybe we need a similar one for receive.
 > 
 
-OK, thanks, and excuse me, during these days, I have no quite enough
-time for upstream kernel.
+That would make sense.  Since the user interacts with tun fd almost as a
+socket and there is actually a socket hiding in the kernel, it almost
+begs for actual SO_SNDBUF/SO_RCVBUF support :)
 
-So, I plan that I will/should send related patches for it within next
-week end (2014-01-19), if it is too long to bear it, please help send
-related patches for it, thanks.
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+-vlad
