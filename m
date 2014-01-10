@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477AbaAJKRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 05:17:49 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:38135 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753455AbaAJKRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 05:17:47 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Shahed Shaikh'" <shahed.shaikh@qlogic.com>,
-        Martin Kaiser <martin@kaiser.cx>,
-        Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        "Rajesh Borundia" <rajesh.borundia@qlogic.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: [PATCH -next] qlcnic: fix compiler warning
-Thread-Topic: [PATCH -next] qlcnic: fix compiler warning
-Thread-Index: AQHPDWjikF1O4m47uESqJjMVu9vJI5p9i3AQgAAxNLA=
-Date: Fri, 10 Jan 2014 10:15:54 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45796C@AcuExch.aculab.com>
-References: <20140109155908.GA4351@reykholt.kaiser.cx>
- <262CB373A6D1F14F9B81E82F74F77D5A46F52B8E@avmb2.qlogic.org>
-In-Reply-To: <262CB373A6D1F14F9B81E82F74F77D5A46F52B8E@avmb2.qlogic.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1752479AbaAJKUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 05:20:42 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:58859 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaAJKUi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 05:20:38 -0500
+Message-ID: <52CFCB2D.7080104@linux.vnet.ibm.com>
+Date: Fri, 10 Jan 2014 15:57:57 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V4] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+References: <1389295490-28707-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140110083656.GC26378@quack.suse.cz> <20140110095222.GE26378@quack.suse.cz>
+In-Reply-To: <20140110095222.GE26378@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011010-1396-0000-0000-00000420442C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0AAHtk5008463
 
-From: Shahed Shaikh
-> Adding netdev.
-> 
-> > -----Original Message-----
-> > From: Martin Kaiser,,, [mailto:martin@reykholt.kaiser.cx] On Behalf Of
-> > Martin Kaiser
-> > Sent: Thursday, January 09, 2014 9:29 PM
-> > To: Himanshu Madhani; Rajesh Borundia
-> > Cc: linux-kernel; trivial@kernel.org
-> > Subject: [PATCH -next] qlcnic: fix compiler warning
-> >
-> > Add an explicit cast to fix the following warning (seen on Debian Wheezy, gcc
-> > 4.7.2)
-> >
-> > CC [M]  drivers/net/wireless/rtlwifi/rtl8192ce/trx.o
-> >     drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c: In function
-> > qlcnic_send_filter:
-> >     drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:349:3: warning:
-> >     passing argument 2 of ether_addr_equal from incompatible pointer type
-> > [enabled by default]
-> >     In file included from include/linux/if_vlan.h:16:0,
-> >     from drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:9:
-> >     include/linux/etherdevice.h:244:20: note: expected const u8 * but
-> > argument is of type u64 *
-> >
-> 
-> If I am not wrong, this patch should go to David's net-next tree.
-> 
-> > Signed-off-by: Martin Kaiser <martin@kaiser.cx>
-> 
-> Acked-by: Shahed Shaikh <shahed.shaikh@qlogic.com>
-> 
-> Thanks,
-> Shahed
-> > ---
-> >  drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > index 6373f60..3557154 100644
-> > --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
-> > @@ -346,7 +346,7 @@ static void qlcnic_send_filter(struct qlcnic_adapter
-> > *adapter,
-> >  	head = &(adapter->fhash.fhead[hindex]);
-> >
-> >  	hlist_for_each_entry_safe(tmp_fil, n, head, fnode) {
-> > -		if (ether_addr_equal(tmp_fil->faddr, &src_addr) &&
-> > +		if (ether_addr_equal(tmp_fil->faddr, (const u8 *)&src_addr)
-> > &&
-> >  		    tmp_fil->vlan_id == vlan_id) {
-> >  			if (jiffies > (QLCNIC_READD_AGE * HZ + tmp_fil-
-> > >ftime))
-> >  				qlcnic_change_filter(adapter, &src_addr,
-> > --
-> > 1.7.10.4
+On 01/10/2014 03:22 PM, Jan Kara wrote:
+> On Fri 10-01-14 09:36:56, Jan Kara wrote:
+>> On Fri 10-01-14 00:54:50, Raghavendra K T wrote:
+>>> We limit the number of readahead pages to 4k.
+>>>
+>>> max_sane_readahead returns zero on the cpu having no local memory
+>>> node. Fix that by returning a sanitized number of pages viz.,
+>>> minimum of (requested pages, 4k, number of local free pages)
+>>>
+>>> Result:
+>>> fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
+>>> 32GB* 4G RAM  numa machine ( 12 iterations) yielded
+>>>
+>>> kernel       Avg        Stddev
+>>> base         7.264      0.56%
+>>> patched      7.285      1.14%
+>>    OK, looks good to me. You can add:
+>> Reviewed-by: Jan Kara <jack@suse.cz>
+>    Hum, while doing some other work I've realized there may be still a
+> problem hiding with the 16 MB limitation. E.g. the dynamic linker is
+> doing MADV_WILLNEED on the shared libraries. If the library (or executable)
+> is larger than 16 MB, then it may cause performance problems since access
+> is random in nature and we don't really know which part of the file do we
+> need first.
+>
+> I'm not sure what others think about this but I'm now more inclined to a
+> bit more careful and introduce the 16 MB limit only for the NUMA case. I.e.
+> something like:
 
-A quick look at the code seems to imply that this code is somewhat buggy.
-'src_addr' is defined a u64 even though it is a 6 byte mac address.
-On big-endian systems the wrong bytes get accessed all over the place.
+Your suggestion makes sense. I do not have any strong preference.
+may be we shall wait for Linus/Andrew's comments (if any) since Linus
+suggested the 16MB idea.
 
-Also when ether_addr_equal() in inlined the code ends up accessing src_addr
-as 32bit and 16bit data - which don't have to be synchronised against
-and writes to the 64bit item.
+>
+> 	unsigned long local_free_page;
+> 	int nid;
+>
+> 	nid = numa_node_id();
+> 	if (node_present_pages(nid)) {
+> 		/*
+> 		 * We sanitize readahead size depending on free memory in
+> 		 * the local node.
+> 		 */
+> 		local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+> 				  + node_page_state(nid, NR_FREE_PAGES);
+> 		return min(nr, local_free_page / 2);
+> 	}
+> 	/*
+> 	 * Readahead onto remote memory is better than no readahead when local
+> 	 * numa node does not have memory. We limit the readahead to 4k
+> 	 * pages though to avoid trashing page cache.
+> 	 */
+> 	return min(nr, MAX_REMOTE_READAHEAD);
+>
 
-If might be that ether_addr_equal() (etc) should have a gcc asm
-statement with a "memory" constraint against the mac address buffers.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
