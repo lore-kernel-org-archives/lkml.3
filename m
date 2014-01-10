@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205AbaAJXAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 18:00:16 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:61964 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaAJXAO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 18:00:14 -0500
+	id S1757396AbaAJXDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 18:03:11 -0500
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:46514 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263AbaAJXDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 18:03:07 -0500
+Date: Fri, 10 Jan 2014 18:03:03 -0500
+From: Wakko Warner <wakko@animx.eu.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Unable to load modules from 9p filesystem with kmod 16
+Message-ID: <20140110230303.GA19369@animx.eu.org>
+Reply-To: Wakko Warner <wakko@animx.eu.org>
+References: <20140110023543.GA6131@animx.eu.org>
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-L4=uJmJfF67pR+jL1L532XP28FVmn=CTwWbDY2pUiPoA@mail.gmail.com>
-References: <CAK5ve-L4=uJmJfF67pR+jL1L532XP28FVmn=CTwWbDY2pUiPoA@mail.gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 10 Jan 2014 14:59:52 -0800
-Message-ID: <CAK5ve-LLdzEErKdDFoAb8kCLx7GMX5nXvO6opLzm4ZR0M-3dhw@mail.gmail.com>
-Subject: Re: [GIT PULL] LED fix for 3.13
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110023543.GA6131@animx.eu.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My email was bounced back by LKML and Linux LED mail list. I forget to
-use plain text mode. So I forward it again.
+Wakko Warner wrote:
+> Kernel 3.12.7 from kernel.org
+> With kmod-16, I'm unable to load any modules on my guest kvm machines.
+> The vm is booted via direct kernel boot.  The modules are located on the
+> host and is passed to the guest via the fsdev.
+> 
+> I have a mountpoint on the guest filesystem located at /kernel.  It is
+> mounted like this:
+> kernel /kernel 9p rw,sync,dirsync,relatime,trans=virtio,version=9p2000.L 0 0
+> 
+> /boot, /lib/modules, and /lib/firmware are tmpfs filesystems like this:
+> kboot /boot tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
+> kfirmware /lib/firmware tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
+> kmodules /lib/modules tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
+> 
+> /lib/modules/$(uname -r) is a symlink to /kernel/lib/modules/$(uname -r)
+> 
+> When trying to load any module, I get 
+> Error: could not insert module /lib/modules/3.12.7/kernel/crypto/af_alg.ko:
+> Invalid module format
+> 
+> This module was just one I picked at random, all modules fail the same way.
+> Strace shows this:
+> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
+> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
+> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f199aebd000
+> syscall_313(0x3, 0x7f199aaa2de0, 0, 0x3, 0, 0x7f199b7b2010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) = -1 (errno 8)
+> munmap(0x7f199aebd000, 13822)           = 0
+> close(3)                                = 0
+> 
+> If I use kmod-9, it works w/o problems.  An strace of kmod-9 shows:
+> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
+> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
+> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f658ba41000
+> init_module(0x7f658ba41000, 13822, "")  = 0
+> munmap(0x7f658ba41000, 13822)           = 0
+> close(3)                                = 0
+> 
+> If I copy the module to /tmp, kmod-16 loads it just fine.  It appears to be
+> related to the 9p filesystem.
+> 
+> I won't rule out a bug in kmod-16, but I was unable to figure out what the
+> cause of the error was.  I tried to search through kmod's source and the
+> kernel source, but I gave up because I don't understand what's going on.
 
-Thanks,
--Bryan
+I did some testing with the various kmod versions between kmod-9 and 16. 
+The problem was introduced in 13.  The change that broke this was the
+addition of finit_module().  Appears that the kernel cannot handle modules
+that is on the 9p filesystem.  On the line that checked err == 0 (around
+line libkmod-module.c:823), I added a test for ENOEXEC.  The finit_module
+still fails,but it uses the old method and works.
 
-On Fri, Jan 10, 2014 at 2:57 PM, Bryan Wu <cooloney@gmail.com> wrote:
->
-> Hi Linus,
->
-> Pali Rohár and Pavel Machek reported the LED of Nokia N900 doesn't work with our latest 3.13-rc6 kernel. Milo fixed the regression here.
->
-> So please consider the following changes since commit 802eee95bde72fd0cd0f3a5b2098375a487d1eda:
->
->   Linux 3.13-rc6 (2013-12-29 16:01:33 -0800)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git leds-fixes-for-3.13
->
-> for you to fetch changes up to e70988d1aaf73221355e06125c9937bd4b27761c:
->
->   leds: lp5521/5523: Remove duplicate mutex (2014-01-10 14:48:07 -0800)
->
-> ----------------------------------------------------------------
-> Milo Kim (1):
->       leds: lp5521/5523: Remove duplicate mutex
->
->  drivers/leds/leds-lp5521.c | 12 ++++--------
->  drivers/leds/leds-lp5523.c | 12 ++++--------
->  2 files changed, 8 insertions(+), 16 deletions(-)
+I would say from what I've seen, the problem is in the kernel for
+finit_module().  I don't know enough about the kernel to go any further.
