@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142AbaAJBzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 20:55:55 -0500
-Received: from ozlabs.org ([203.10.76.45]:40968 "EHLO ozlabs.org"
+	id S932138AbaAJB7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 20:59:37 -0500
+Received: from mga03.intel.com ([143.182.124.21]:52608 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaAJBzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 20:55:52 -0500
-Date: Fri, 10 Jan 2014 12:55:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-sh@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Paul Mundt <lethal@linux-sh.org>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bastian Hecht <hechtb@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Subject: Re: linux-next: manual merge of the sh tree with the tree
-Message-Id: <20140110125529.9843f450bf79223164031b02@canb.auug.org.au>
-In-Reply-To: <20140110004724.GA22965@verge.net.au>
-References: <20140106121317.bada4233ec3fec40f79735cc@canb.auug.org.au>
-	<CAOesGMgJe9KR2muA4F9EaXYpDFDLxVZsKOj-8qZFbDZTiRBuww@mail.gmail.com>
-	<20140110004724.GA22965@verge.net.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d"
+	id S1751745AbaAJB7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 20:59:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
+   d="scan'208";a="456440371"
+Message-ID: <52CF5402.70106@linux.intel.com>
+Date: Fri, 10 Jan 2014 09:59:30 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Len Brown <len.brown@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] intel_idle: close avn_cstates array with correct
+ marker
+References: <1389252628-1033-1-git-send-email-jiang.liu@linux.intel.com> <1389252628-1033-2-git-send-email-jiang.liu@linux.intel.com> <5913087.iUSSiA9xVP@vostro.rjw.lan>
+In-Reply-To: <5913087.iUSSiA9xVP@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
 
-On Fri, 10 Jan 2014 09:47:24 +0900 Simon Horman <horms@verge.net.au> wrote:
->
-> On Wed, Jan 08, 2014 at 11:11:03PM -0800, Olof Johansson wrote:
-> >
-> > The request to merge the sh code came through Simon with claimed
-> > agreement from SH maintainers to do so -- I didn't verify this since
-> > they have in the past been well-coordinated. Simon?
->=20
-> I spoke with Paul recently and my understanding is that
-> he hasn't been actively working in this area for over a year now.
->=20
-> I guess there are some stale patches in his tree.
+On 2014/1/9 21:31, Rafael J. Wysocki wrote:
+> On Thursday, January 09, 2014 03:30:27 PM Jiang Liu wrote:
+>> Close avn_cstates array with correct marker to avoid overflow
+>> in function intel_idle_cpu_init().
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> Cc: <stable@vger.kernel.org> # 3.13
+> 
+> Why did you mark it for 3.13-stable?  3.13 hasn't been released yet, so this
+> can be pushed for 3.13 still.
+> 
+> Is the problem present in 3.13-rc?  If so, has it been introduced by any
+> recent commits or was it there before?  In which case, do we need this patch
+> in stable as well?
+> 
+> Rafael
+Hi Rafael,
+	This issue is introduced in 3.13-rc2, and I feel it's too late
+to catch up with 3.13 window, so mark it for 3.13 speculatively.
+	After more thoughts, I feel this patch should be divided into
+two patches.
+	One is to temporarily remove the __initdata marker. The other
+is to correctly mark end of avn_cstates array. The second bug should
+be introduced when merging "22e580d intel_idle: Fixed C6 state on
+Avoton/Rangeley processors" with "eba682a intel_idle: shrink states tables".
+	Should I split it into two?
+Thanks!
+Gerry
 
-That is certainly what it looks like.  So, do I remove the sh{,.-current)
-trees (git://github.com/pmundt/linux-sh.git#sh-{latest,fixes-for-linus})
-from linux-next permanently?  Will it be cleaned up any time soon?
-
-Is anyone maintaining/supporting sh now?  Is it a candidate for pruning?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSz1MWAAoJEMDTa8Ir7ZwVnpIP/A+iKbAeswNZaczDSBECksLB
-52GnN8weDyFm6xgh3TnlQVK5ud5PJZWN/bG3d8IQaPTNWNXnqF8GGEVNzeNQ5mFT
-XPZ1voH143P3cFa8k9SYgRBuva8qWVlgaxAcM7dvoC2tUCOQ7FL9/pO0iMpDRjUk
-xoKGJpzxsHcbxyb30c07q75KHO4Z135jep0kOzc+GMSi5z6xhrtsOhX3AqIsGRC7
-8zu3OBsQmRHlEwRJhBR+mcXNdHn5dSOYj/HBC5LoqSj+3WWyvG2aoXslirzBe2P1
-bZPXBnX8F4WtKGb2zliQ37rhBE/pzaPRkxlVwC7t1UE275P2PCXuea58SqTi3VD3
-KluF2EfQNF3EDaukJ4s3nRjsLdJmCVwoiEAP2N6acI8WrmVxQUd8D5TJe+NVg9T9
-TbXtGpIrP6O2ocAXWZ1v8QKotXmg9Rh09nSeMihbaDGY7vl37StD0OKlJ9u/FAZh
-bPiZb9k3GG+E0WIBume0BKxFPnOEcnnMp/F6R0B/ZuM8w42NIg5tKtb6pYet/d6u
-j5iyRlbqvKsYSnHo459IETP+zUXTHhcW45PdSC2hTKT90Iu38SORe4bFnXOLjO2R
-9FUt9cNzZmGz0PMTYo/nV2jIl2V73EqZd1fI08q7bTr4CmtWvc34PfMcD7GpeUpC
-MLjs4xlUrT8pFfkQ3jcJ
-=KM7E
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Jan_2014_12_55_29_+1100_SvavUGTAcUyLk69d--
+> 
+> 
+>> ---
+>>  drivers/idle/intel_idle.c |    4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+>> index 6f456f0..797ed29 100644
+>> --- a/drivers/idle/intel_idle.c
+>> +++ b/drivers/idle/intel_idle.c
+>> @@ -329,7 +329,7 @@ static struct cpuidle_state atom_cstates[] = {
+>>  	{
+>>  		.enter = NULL }
+>>  };
+>> -static struct cpuidle_state avn_cstates[] __initdata = {
+>> +static struct cpuidle_state avn_cstates[] = {
+>>  	{
+>>  		.name = "C1-AVN",
+>>  		.desc = "MWAIT 0x00",
+>> @@ -344,6 +344,8 @@ static struct cpuidle_state avn_cstates[] __initdata = {
+>>  		.exit_latency = 15,
+>>  		.target_residency = 45,
+>>  		.enter = &intel_idle },
+>> +	{
+>> +		.enter = NULL }
+>>  };
+>>  
+>>  /**
+>>
+> 
