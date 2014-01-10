@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535AbaAJBjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 20:39:12 -0500
-Received: from mga14.intel.com ([143.182.124.37]:27036 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930AbaAJBjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 20:39:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
-   d="scan'208";a="456429465"
-Message-ID: <52CF4F35.3080805@linux.intel.com>
-Date: Fri, 10 Jan 2014 09:39:01 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S932099AbaAJBoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 20:44:20 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:46251 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027AbaAJBoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 20:44:17 -0500
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu/vt-d: fix compilation error for IA64 platform
-References: <1388989107-4795-20-git-send-email-jiang.liu@linux.intel.com> <1389171427-26223-1-git-send-email-jiang.liu@linux.intel.com> <20140109115501.GI29041@8bytes.org>
-In-Reply-To: <20140109115501.GI29041@8bytes.org>
+In-Reply-To: <CAOesGMgQgOUxbj=0=AYx2pN4mh5HoDcW4p1W89+kvNtXpFmYxA@mail.gmail.com>
+References: <aaadbfa341a881c8250f2d23bc77062228d2e70b.1389279793.git.viresh.kumar@linaro.org>
+	<CAOesGMgQgOUxbj=0=AYx2pN4mh5HoDcW4p1W89+kvNtXpFmYxA@mail.gmail.com>
+Date: Fri, 10 Jan 2014 07:14:16 +0530
+Message-ID: <CAKohpo=kpyEatDfc8GZ=660sB60co4gSwxCp_brQbm5xhynmyQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: SA1100: Create dummy clk_get_rate() to avoid
+ build failures
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joerg! Sorry for the inconvenience.
+On 9 January 2014 21:56, Olof Johansson <olof@lixom.net> wrote:
+> On Thu, Jan 9, 2014 at 7:08 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> There are some parts of common kernel which would be using routines like
+>> clk_get_rate() on some platforms. Currently these wouldn't be called for SA1100
+>> boards but we need these routines for successful builds of these boards.
+>>
+>> So, this patch creates a dummy clk_get_rate() routine which is being used by
+>> cpufreq core. More dummy routines might be added later if there is a need for
+>> that.
+>>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+>> Reported-by: <Olof Johansson> olof@lixom.net
+>
+> That's not the right format.
 
-On 2014/1/9 19:55, Joerg Roedel wrote:
-> On Wed, Jan 08, 2014 at 04:57:07PM +0800, Jiang Liu wrote:
->> Hi Joerg,
->> 	Could you please help to fold this into "[21/22] iommu/vt-d,
->> trivial: clean sparse warnings"?
-> 
-> Okay, I folded the two patches in, but that is something I'd like to
-> avoid because it requires a rebase. So next time please just send a
-> follow-up patch to my x86/vt-d branch to fix things up.
-> 
-> 
-> 	Joerg
-> 
-> 
+So sorry for that..
+@Rafael: Can you fix this up while applying? Or you want me to send
+this again?
