@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865AbaAJOBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:01:31 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:62904 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513AbaAJN5s (ORCPT
+	id S1757878AbaAJOBi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:01:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27851 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaAJOBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:57:48 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/14] kernfs: make kernfs_get_active() block if the node is deactivated but not removed
-Date: Fri, 10 Jan 2014 08:57:25 -0500
-Message-Id: <1389362251-8128-9-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389362251-8128-1-git-send-email-tj@kernel.org>
-References: <1389362251-8128-1-git-send-email-tj@kernel.org>
+	Fri, 10 Jan 2014 09:01:36 -0500
+Message-ID: <52CFFD1C.7050005@oracle.com>
+Date: Fri, 10 Jan 2014 22:01:00 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: fengguang.wu@intel.com, LKML <linux-kernel@vger.kernel.org>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>
+Subject: Re: [xfs] c91c46c12: xfstests generic/313 regression
+References: <20140110122700.GA12624@localhost> <52CFF402.5080409@oracle.com> <20140110133306.GA22918@infradead.org>
+In-Reply-To: <20140110133306.GA22918@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, kernfs_get_active() fails if the target node is
-deactivated.  This is fine as a node always gets removed after
-deactivation; however, we're gonna add reactivation so the assumption
-won't hold.  It'd be incorrect for kernfs_get_active() to fail for a
-node which was deactivated only temporarily.
+On 01/10 2014 21:33 PM, Christoph Hellwig wrote:
+> On Fri, Jan 10, 2014 at 09:22:10PM +0800, Jeff Liu wrote:
+>> Hi Fengguang,
+>>
+>> Thanks for help catching up this.  I think the below patch can fix it
+>> up, but maybe there would have a neater solution once Christoph is back.
+> 
+> I'd just remove the mask variable that caused the problem.  Untested
+> patch below:
+I also thought to fix this problem in this way, however I'm not sure
+if those flags can be set back to iattr->ia_valid internally...
 
-This patch makes kernfs_get_active() block if the node is deactivated
-but not removed.  If the node gets reactivated (not yet implemented),
-it will be retried and succeed.  If the node gets removed, it will be
-woken up and fail.
+Otherwise, this fix looks good to me.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/kernfs/dir.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 770d687..37dd640 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -149,12 +149,25 @@ struct kernfs_node *kernfs_get_active(struct kernfs_node *kn)
- 	if (unlikely(!kn))
- 		return NULL;
- 
--	if (!atomic_inc_unless_negative(&kn->active))
--		return NULL;
--
- 	if (kernfs_lockdep(kn))
- 		rwsem_acquire_read(&kn->dep_map, 0, 1, _RET_IP_);
--	return kn;
-+
-+	/*
-+	 * Try to obtain an active ref.  If @kn is deactivated, we block
-+	 * till either it's reactivated or killed.
-+	 */
-+	do {
-+		if (atomic_inc_unless_negative(&kn->active))
-+			return kn;
-+
-+		wait_event(kernfs_root(kn)->deactivate_waitq,
-+			   atomic_read(&kn->active) >= 0 ||
-+			   RB_EMPTY_NODE(&kn->rb));
-+	} while (!RB_EMPTY_NODE(&kn->rb));
-+
-+	if (kernfs_lockdep(kn))
-+		rwsem_release(&kn->dep_map, 1, _RET_IP_);
-+	return NULL;
- }
- 
- /**
-@@ -786,6 +799,7 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
- 
- static void __kernfs_remove(struct kernfs_node *kn)
- {
-+	struct kernfs_root *root = kernfs_root(kn);
- 	struct kernfs_node *pos;
- 
- 	lockdep_assert_held(&kernfs_mutex);
-@@ -837,6 +851,9 @@ static void __kernfs_remove(struct kernfs_node *kn)
- 
- 		kernfs_put(pos);
- 	} while (pos != kn);
-+
-+	/* some nodes killed, kick get_active waiters */
-+	wake_up_all(&root->deactivate_waitq);
- }
- 
- /**
--- 
-1.8.4.2
-
+Thanks,
+-Jeff
+> 
+> diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+> index 0ce1d75..ce966c5 100644
+> --- a/fs/xfs/xfs_iops.c
+> +++ b/fs/xfs/xfs_iops.c
+> @@ -714,7 +714,6 @@ xfs_setattr_size(
+>  {
+>  	struct xfs_mount	*mp = ip->i_mount;
+>  	struct inode		*inode = VFS_I(ip);
+> -	int			mask = iattr->ia_valid;
+>  	xfs_off_t		oldsize, newsize;
+>  	struct xfs_trans	*tp;
+>  	int			error;
+> @@ -735,8 +734,8 @@ xfs_setattr_size(
+>  
+>  	ASSERT(xfs_isilocked(ip, XFS_IOLOCK_EXCL));
+>  	ASSERT(S_ISREG(ip->i_d.di_mode));
+> -	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
+> -			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
+> +	ASSERT((iattr->ia_valid & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
+> +		ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
+>  
+>  	oldsize = inode->i_size;
+>  	newsize = iattr->ia_size;
+> @@ -745,7 +744,7 @@ xfs_setattr_size(
+>  	 * Short circuit the truncate case for zero length files.
+>  	 */
+>  	if (newsize == 0 && oldsize == 0 && ip->i_d.di_nextents == 0) {
+> -		if (!(mask & (ATTR_CTIME|ATTR_MTIME)))
+> +		if (!(iattr->ia_valid & (ATTR_CTIME|ATTR_MTIME)))
+>  			return 0;
+>  
+>  		/*
+> @@ -833,10 +832,11 @@ xfs_setattr_size(
+>  	 * these flags set.  For all other operations the VFS set these flags
+>  	 * explicitly if it wants a timestamp update.
+>  	 */
+> -	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME)))) {
+> +	if (newsize != oldsize &&
+> +	    !(iattr->ia_valid & (ATTR_CTIME | ATTR_MTIME))) {
+>  		iattr->ia_ctime = iattr->ia_mtime =
+>  			current_fs_time(inode->i_sb);
+> -		mask |= ATTR_CTIME | ATTR_MTIME;
+> +		iattr->ia_valid |= ATTR_CTIME | ATTR_MTIME;
+>  	}
+>  
+>  	/*
+> @@ -872,9 +872,9 @@ xfs_setattr_size(
+>  		xfs_inode_clear_eofblocks_tag(ip);
+>  	}
+>  
+> -	if (mask & ATTR_MODE)
+> +	if (iattr->ia_valid & ATTR_MODE)
+>  		xfs_setattr_mode(ip, iattr);
+> -	if (mask & (ATTR_ATIME|ATTR_CTIME|ATTR_MTIME))
+> +	if (iattr->ia_valid & (ATTR_ATIME|ATTR_CTIME|ATTR_MTIME))
+>  		xfs_setattr_time(ip, iattr);
+>  
+>  	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE);
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
+> 
