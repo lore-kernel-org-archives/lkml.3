@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaAJMFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:05:16 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52049 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaAJMFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:05:13 -0500
-Date: Fri, 10 Jan 2014 12:04:39 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: timur@tabi.org, alsa-devel@alsa-project.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        grant.likely@linaro.org, shawn.guo@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Message-ID: <20140110120439.GG29039@sirena.org.uk>
-References: <1389265078-16256-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140109184453.GP12858@sirena.org.uk>
- <20140110023252.GA16467@MrMyself>
- <20140110023537.GB16467@MrMyself>
+	id S1752851AbaAJMIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:08:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60155 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750956AbaAJMIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 07:08:40 -0500
+Message-ID: <52CFE2BB.8090004@ti.com>
+Date: Fri, 10 Jan 2014 14:08:27 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
+        <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+CC: <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH v4] video: add OpenCores VGA/LCD framebuffer driver
+References: <1385739911-6541-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+In-Reply-To: <1385739911-6541-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Enigmail-Version: 1.6
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fCcDWlUEdh43YKr8"
-Content-Disposition: inline
-In-Reply-To: <20140110023537.GB16467@MrMyself>
-X-Cookie: May I ask a question?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] ASoC: fsl_esai: Add ESAI CPU DAI driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	protocol="application/pgp-signature";
+	boundary="lnC0LCFNacpbQCeEtLxq3qLhp33CjaLtq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--lnC0LCFNacpbQCeEtLxq3qLhp33CjaLtq
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---fCcDWlUEdh43YKr8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi,
 
-On Fri, Jan 10, 2014 at 10:35:39AM +0800, Nicolin Chen wrote:
+On 2013-11-29 17:45, Stefan Kristiansson wrote:
+> This adds support for the VGA/LCD core available from OpenCores:
+> http://opencores.org/project,vga_lcd
+>=20
+> The driver have been tested together with both OpenRISC and
+> ARM (socfpga) processors.
+>=20
+> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
 
-> Resent this because of losing attached file.
+If I'm not mistaken, this driver has been designed so that there can
+only be one VGA/LCD core device on the system.
 
-I don't think your previous mail got sent at all, or at least it must've
-been caught by spam filters here...
+It would be better to get rid of those static structs, and have the
+driver data per device as it should. That way the driver works even with
+multiple VGA/LCD cores (although the video mode module option is a bit
+odd in that case).
 
-> On Fri, Jan 10, 2014 at 10:32:52AM +0800, Nicolin Chen wrote:
-> > On Thu, Jan 09, 2014 at 06:44:53PM +0000, Mark Brown wrote:
+ Tomi
 
-> > > Why does the machine driver have to do this by hand, being able to
-> > > override is fine but having sensible defaults is easier?  Or does it
-> > > actually do that and the comment just needs updating?
 
-> > The divider part of ESAI is pretty complicated due to caring about three
-> > configure bits - ETO, ETI, HCKD. (I've attached a diagram to this mail.)
-> > So setting sysclk() alone is not enough to take care all the configurations.
-> > That's why I designed these two interfaces at the first place. And it should
-> > be hard to find a default situation.
 
-Why is the machine driver going to be able to come up with a sensible
-configuration then?  It's OK to support overriding the configuration
-where needed, my concern is about providing a default.
-
-> > But there is one approach to omit this calling for machine driver is to do
-> > the set_bclk_ratio() at this CPU DAI driver. And this might be a good idea
-> > because we can then separate the settings between PLAYBACK and CAPTURE, even
-> > though we might then need to check the Master or Slave state to apply the
-> > settings accordingly.
-
-This is about what I'd expect but then surely the next step is for the
-driver to choose a defualt BCLK ratio - that's how most drivers work,
-they try to generate the exact rate that is needed to clock the data.
-Are the bit clock shared between playback and capture?
-
---fCcDWlUEdh43YKr8
+--lnC0LCFNacpbQCeEtLxq3qLhp33CjaLtq
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJSz+HUAAoJELSic+t+oim9oDYP/1b4VUYEQq2BGjz+hdjrx5XW
-Tv90KklVlfXZBxkMbusrvB04uuZiHTUipz7tVsSxK4hE56Ye5M5DUavS8cUeoOqU
-Lp4x0RbXGVLPncnX3Af7HXUg3Z7qXUrO+3lnX4nrll7pJJvggN0Uud7YYGvjxNZt
-rm0Wh78h272Oyb4ECdUtQivX6csLqj40E3KIiZfJ/GUmh2ji07GXNwbcr4Be6Twf
-bwE81FfgB1tJ0GZdl1emQTS/h7F8YQgEo72S0G5wY/XfXys+mECrfdtxXvVeLtVv
-Uzd3VPPVKsnYE4ZO0sSsgG7DpJP3pjQWah5xOZ7Vrg/vQreB7Ucdfvs8FhZvJO9l
-nSrGXKUwACAIsO/oedvJCaQ2zcFTGC9foGsuSNH/xaCKITdtA7RfwIJCiGf0vtF9
-i0qO48wkMf+KABaWYbuVX5EZehWoZj9rrrb1j+LZNVKx5UhIKnscls9CmIiSPLEw
-EwarmZ7AOovRTIgJWx6LyhXGiJzcfatugeKQVTkNFgruhlvNAfv49J5ZySBhvKI6
-zwmk8OLkUszFzDbwAoyJYh7JsTQsA6u1KL4O2pQ2CTdp7tmrm7GaBX//4uNydgl6
-NuVwIuHSrpl4thC9YpofAWo3bHF22zPZ8SGpLDbMQsYj809WwRWm2x71ItBPV7uT
-EXyp1eDAIpXyx0Jepi3S
-=vciL
+iQIcBAEBAgAGBQJSz+K7AAoJEPo9qoy8lh71S2gP/0Y3dGoTCXCdl9qd2Q2TWHZg
+qC6hEXHdoEtPKQ3/CbKLl81S17AScG0Vra+Z/eTFaC/Bn2iSTrn4WY6yScZkdikY
+qDHIGqhvmtbK8Pftc7xuGpGOAvvSF9ejKkF+I/ee5gXDLqlQzFgAWhi+Z68TA50t
+6AoCrWES+HoRruAbG4rBsryuz7vfaTSXOFpojEITSZUCeVxkGuM5q+F9iHJUQZiy
+efjWGDqbgBQ5yL79FcFhsSaF8CU48GPFQGSn3BYFNKTpv1dHSpFTGHq5sXrAk0eX
+I06YR7RLLrXvlMkaTcQtTySp0TwlNZ+D5IoI3RA3kMzgSP+v62OSo05Riz83M2v0
+frtqEo2fZ/mU8vrfxdTGBY1DLUQJ3++m2fI9gk8y2MYm6uXA8j6mAzdXny7nfhhu
+RPFbffyeBdnzR45UTOFeE9uIwgg/9MsmIKXpK0iHr9euArmoreoRVwlNOXmJGhfS
+odb64r17F/oMrmfy5Nv5BClX8tKmaPjTpuWfFvROUpDANAvw0U7N747RZNa4R1GR
+7C/UFI8kD+KhFVlV1pQ5kEsBp88xWYLHQwpgK0CKC8/LzHbvtg028jpf4Sixh+Hp
+DJ5pLIPjQmeOyJ0DLLWf3yesWnoj/mp3asfAXHgqIjWccAEBTGtetN9CyCJfKm9N
+CmNyK2iasCSpQlZjQ+ad
+=v/JJ
 -----END PGP SIGNATURE-----
 
---fCcDWlUEdh43YKr8--
+--lnC0LCFNacpbQCeEtLxq3qLhp33CjaLtq--
