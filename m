@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171AbaAJUk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 15:40:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27648 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109AbaAJUky (ORCPT
+	id S1758176AbaAJUnZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 15:43:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60689 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaAJUnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 15:40:54 -0500
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	<1389212157-14540-8-git-send-email-nab@daterainc.com>
-	<52CE78EB.60108@mellanox.com>
-	<1389334891.5567.373.camel@haakon3.risingtidesystems.com>
-Date: Fri, 10 Jan 2014 15:40:37 -0500
-In-Reply-To: <1389334891.5567.373.camel@haakon3.risingtidesystems.com>
-	(Nicholas A. Bellinger's message of "Thu, 09 Jan 2014 22:21:31 -0800")
-Message-ID: <yq1iotrr2nu.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	Fri, 10 Jan 2014 15:43:22 -0500
+Date: Fri, 10 Jan 2014 12:43:54 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Intel MIC host driver: possible signed underflow (undefined
+ behavior) in userspace API
+Message-ID: <20140110204354.GD10235@kroah.com>
+References: <1151498255.5788.1389332631491.JavaMail.zimbra@efficios.com>
+ <1593870977.5807.1389333385962.JavaMail.zimbra@efficios.com>
+ <20140110142116.GB7212@kroah.com>
+ <1389378175.83628.14.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389378175.83628.14.camel@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
+On Fri, Jan 10, 2014 at 10:22:55AM -0800, Sudeep Dutt wrote:
+> On Fri, 2014-01-10 at 06:21 -0800, Greg Kroah-Hartman wrote:
+> > On Fri, Jan 10, 2014 at 05:56:25AM +0000, Mathieu Desnoyers wrote:
+> > > Hi,
+> > > 
+> > > Looking at this commit:
+> > > 
+> > > commit f69bcbf3b4c4b333dcd7a48eaf868bf0c88edab5
+> > > Author: Ashutosh Dixit <ashutosh.dixit@intel.com>
+> > > Date:   Thu Sep 5 16:42:18 2013 -0700
+> > > 
+> > >     Intel MIC Host Driver Changes for Virtio Devices.
+> > > 
+> > > Especially at:
+> > > 
+> > > +struct mic_copy_desc {
+> > > +#ifdef __KERNEL__
+> > > +       struct iovec __user *iov;
+> > > +#else
+> > > +       struct iovec *iov;
+> > > +#endif
+> > > +       int iovcnt;
+> > > +       __u8 vr_idx;
+> > > +       __u8 update_used;
+> > > +       __u32 out_len;
+> > > +};
 
->> The backstore protection configuration is done at the target side via
->> configfs/targetcli, if you publish DIF support in
->> INQUERY_EVPD/READ_CAPACITY you need to accept protection information
->> format?
+Oh, there's also the obvious 32/64 bit userspace/kernel issue here as
+well, but I'm sure you all know how to handle that properly.  It would
+be nice to fix that up, if you can change the ABI still.
 
-nab> Mmmm, these two bits bits are following what scsi_debug is
-nab> currently exposing minus FORMAT_UNIT support..?
+thanks,
 
-PROT_EN and P_TYPE should be fine for now.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+greg k-h
