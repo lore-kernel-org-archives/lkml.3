@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447AbaAJJ5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 04:57:23 -0500
-Received: from mail.atsec.com ([195.30.99.214]:35345 "EHLO mail.atsec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658AbaAJJ5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 04:57:21 -0500
-X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jan 2014 04:57:21 EST
-From: Stephan Mueller <stephan.mueller@atsec.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Rafael Aquini <aquini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [RFC PATCH] char: random: stir the output pools differently when the random_write lenght allows splitting the seed
-Date: Fri, 10 Jan 2014 10:49:14 +0100
-Message-ID: <1510904.XsOZgVgixq@tauon>
-Organization: atsec information security GmbH
-User-Agent: KMail/4.11.4 (Linux/3.12.6-300.fc20.x86_64; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <52CFABC5.5030806@ladisch.de>
-References: <42f6dc88535d5ecdab13b1376db7ccbbbc550600.1389297772.git.aquini@redhat.com> <52CFABC5.5030806@ladisch.de>
+	id S1752593AbaAJKBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 05:01:11 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:40605 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaAJKBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 05:01:07 -0500
+Date: Fri, 10 Jan 2014 10:01:02 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/mfd/stw481x.c: fix a typo
+Message-ID: <20140110100102.GB28141@lee--X1>
+References: <1389202490-31506-1-git-send-email-lpapp@kde.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1389202490-31506-1-git-send-email-lpapp@kde.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 10. Januar 2014, 09:13:57 schrieb Clemens Ladisch:
+> The sentence is not proper English due to a minor typo of "addess". The 'r'
+> letter is missing which this change is now amending. This was caught while
+> reading the driver source for getting more information about it, and then I ran
+> the vim spellchecker to make sure there are no more typos in this file.
+> 
+> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> ---
+>  drivers/mfd/stw481x.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Hi Clemens,
+I'm feeling genorous today, so I'll apply it and change the subject
+line for you. This is the second time I've told you to do,
 
->Rafael Aquini wrote:
->> This patch introduces changes to the random_write method so it can
->> split the given seed and completely stir the output pools with
->> different halves of it, when seed lenght allows us doing so.
->> 
->> -	ret = write_pool(&blocking_pool, buffer, count);
->> +	ret = write_pool(pool1, buffer, count1);
->> 
->>  	if (ret)
->>  	
->>  		return ret;
->> 
->> -	ret = write_pool(&nonblocking_pool, buffer, count);
->> +	ret = write_pool(pool2, buffer + offset, count2);
->
->Doesn't this assume that both halves of the buffer contain some
->(uncredited) entropy?  In other words, wouldn't this result in worse
->randomness for pool2 if the second half of the buffer contains just
->zero padding?
+  `git log --oneline -- <subsystem>`
 
-The concern this patch addresses is the following:
+in order to find the correct commit log format for the subsystem
+you're applying patches to. Next time I'll just NACK the patch and
+you'll have to fix it yourself.
 
-Both pools have dissimilar use cases. Typically, the blocking_pool is 
-used for cases where more "secure" random numbers shall be generated 
-whereas the nonblocking_pool shall be used for any other case.
+Patch applied.
 
-The issue now is that both pools intended for different use cases are 
-always updated with the same data. That means, we effectively have two 
-different RNGs (the blocking and nonblocking pool) which are both 
-(re-)seeded with the same data every time when invoking a write on 
-/dev/?random.
-
-There is no way that the (re)seed operation mixes both pools with 
-different values.
-
-Coming back to your concern: sure, the caller can pad any data injected 
-into /dev/?random with zeros. But as writing to the character files is 
-allowed to every user, this per definition must not matter (e.g. an 
-attacker may simply write zeros or other known data into the character 
-file). And the random.c driver handles that case appropriately by not 
-increasing the entropy estimator when receiving data. All the patch 
-tries to achieve is to ensure that both pools are not always mixed with 
-the same values. Hence, the patch does not change the entropy estimator 
-operation.
-
-Ciao
-Stephan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
