@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572AbaAJPIs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:08:48 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:46011 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751746AbaAJPIr (ORCPT
+	id S1757642AbaAJPI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:08:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58324 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746AbaAJPIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:08:47 -0500
-X-Auth-Info: oE77gCJ6hFmyV3gMzyi9DIB98Q06e+1hEyWDK0Uug8A=
-Date: Fri, 10 Jan 2014 16:08:36 +0100
-From: Gerhard Sittig <gsi@denx.de>
-To: Lars Poeschel <larsi@wh2.tu-dresden.de>
-Cc: poeschel@lemonage.de, robh+dt@kernel.org, linus.walleij@linaro.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, rob@landley.net, galak@codeaurora.org,
-        gnurou@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-gpio@vger.kernel.org
-Subject: Re: [PATCH v2] gpio: mcp23s08: Add irq functionality for i2c chips
-Message-ID: <20140110150836.GZ20094@book.gsilab.sittig.org>
-References: <1389363750-25989-1-git-send-email-larsi@wh2.tu-dresden.de>
+	Fri, 10 Jan 2014 10:08:55 -0500
+Date: Fri, 10 Jan 2014 07:08:56 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
+        JBottomley@parallels.com, bhelgaas@google.com
+Subject: Re: [PATCHSET v3 driver-core-next] kernfs, sysfs, driver-core:
+ implement synchronous self-removal
+Message-ID: <20140110150856.GB22533@kroah.com>
+References: <1389362251-8128-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389363750-25989-1-git-send-email-larsi@wh2.tu-dresden.de>
-Organization: DENX Software Engineering GmbH
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389362251-8128-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 15:22 +0100, Lars Poeschel wrote:
+On Fri, Jan 10, 2014 at 08:57:17AM -0500, Tejun Heo wrote:
+> Hello,
 > 
-> --- a/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
-> @@ -38,12 +38,37 @@ Required device specific properties (only for SPI chips):
->      removed.
->  - spi-max-frequency = The maximum frequency this chip is able to handle
->  
-> -Example I2C:
-> +Optional properties:
-> +- #interrupt-cells : Should be two.
-> +  - first cell is the pin number
-> +  - second cell is used to specify flags.
-> +- interrupt-controller: Marks the device node as a interrupt controller.
-> +NOTE: The interrupt functionality is only supported for i2c versions of the
-> +chips yet.
+> This is v3 of kernfs self-removal patchset.  v2 posting mistakenly
+> sent out slightly old set of patches, so the v3.  Sorry about the
+> noise.  Changes from the first take[L] are,
 
-Is this "IRQ feature for I2C chips only" limitation specific to
-the hardware or an implementation detail of the Linux driver?  I
-could not determine this from either the binding text nor the
-driver source.
+It's really late in the -rc cycle for me to take this for 3.14, but I
+see patch 1 is a good one to have, so I'll take that now, and queue the
+rest up for after 3.14-rc1 is out for 3.15.  Is that ok with you, or do
+you have patches that depend on this series for 3.14?
 
-If it's just the status of the Linux driver, then it should not
-be in the binding document.  If it's a limitation of the
-hardware, then it's appropriate in the binding but I suggest to
-adjust the text to avoid the next person to ask the same
-question. :)
+thanks,
 
-
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -697,6 +697,7 @@ config GPIO_MCP23S08
->  	  SPI/I2C driver for Microchip MCP23S08/MCP23S17/MCP23008/MCP23017
->  	  I/O expanders.
->  	  This provides a GPIO interface supporting inputs and outputs.
-> +	  The I2C versions of the chips can be used as interrupt-controller.
->  
->  config GPIO_MC33880
->  	tristate "Freescale MC33880 high-side/low-side switch"
-> diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
-> index 2deb0c5..1346ea6 100644
-> --- a/drivers/gpio/gpio-mcp23s08.c
-> +++ b/drivers/gpio/gpio-mcp23s08.c
-> @@ -1,5 +1,10 @@
->  /*
-> - * MCP23S08 SPI/GPIO gpio expander driver
-> + * MCP23S08 SPI/I2C GPIO gpio expander driver
-> + *
-> + * The inputs and outputs of the mcp23s08, mcp23s17, mcp23008 and mcp23017 are
-> + * supported.
-> + * For the I2C versions of the chips (mcp23008 and mcp23017) generation of
-> + * interrupts is also supported.
->   */
-
-Adjust these as well to reflect whether it's hardware or software
-which limits the feature.
-
-
-virtually yours
-Gerhard Sittig
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+greg k-h
