@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889AbaAJRQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 12:16:17 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:54638 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaAJRQP (ORCPT
+	id S1752615AbaAJRbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 12:31:47 -0500
+Received: from mail-pd0-f196.google.com ([209.85.192.196]:60778 "EHLO
+	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaAJRbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 12:16:15 -0500
-Date: Fri, 10 Jan 2014 18:16:13 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: sohny thomas <sohny.kernel@gmail.com>, linux-kernel@vger.kernel.org,
-        yoshfuji@linux-ipv6.org, davem@davemloft.net,
-        kumuda <kumuda@linux.vnet.ibm.com>, netdev <netdev@vger.kernel.org>
-Subject: Re: ipv6: default route for link local address is not added while assigning a address
-Message-ID: <20140110171613.GA23647@order.stressinduktion.org>
-Mail-Followup-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-	sohny thomas <sohny.kernel@gmail.com>, linux-kernel@vger.kernel.org,
-	yoshfuji@linux-ipv6.org, davem@davemloft.net,
-	kumuda <kumuda@linux.vnet.ibm.com>, netdev <netdev@vger.kernel.org>
-References: <52CFE594.8010808@gmail.com> <52D020C4.30105@6wind.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52D020C4.30105@6wind.com>
+	Fri, 10 Jan 2014 12:31:33 -0500
+Message-ID: <52d02e73.2597420a.0a01.ffffdb61@mx.google.com>
+From: angel80200@googlemail.com
+To: linux-kernel@vger.kernel.org
+Reply-To: happier42165@gmail.com
+Subject: RE: LOCAL MAP OPTIMIZATION FOR : mail-archive.com (Less Than
+ $99/Month)
+Date: Fri, 10 Jan 2014 23:01:36 +0530
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 05:33:08PM +0100, Nicolas Dichtel wrote:
-> CC: netdev
-> 
-> Le 10/01/2014 13:20, sohny thomas a écrit :
-> >Default route for link local address is configured automatically if
-> >NETWORKING_IPV6=yes is in ifcfg-eth*.
-> >When the route table for the interface is flushed and a new address is 
-> >added to
-> >the same device with out removing linklocal addr, default route for link 
-> >local
-> >address has to added by default.
-> I would say that removing the link local route but not the link local 
-> address
-> is a configuration problem.
-> If you remove a connected route but not the associated address, you will 
-> have
-> the same problem.
+Good Morning Sir / Mam
 
-We have some user accessible routes that are essential for IPv6 stack
-to work at all. So I don't know if I can agree with that.
+Is your business ranking in local maps shown on PAGE 1 of google ? With new
+google policies they have specifically asked local business owners to
+optimize their website for local maps rather than JUST organics. Do you know
+the reason why you are not ranked well on google MAPs or why there is drop
+in your website rankings? Prime reason for bad rankings for a busniess is
+lack of local presence and local citations ie getting your business listed
+on directories like YELP, MANTA & Many more. These websites not just give
+your business a push but also help you Maintain a good Online Reputation.
 
-Maybe flush is a bit too aggressive?
+Why you need to optimize your website for local MAP Listings ?
 
+- MAP listings get 10 times more clicks than organic listings
+- Increased conversions because of real reviews posted on your Google Plus
+Page
+- Every year there is 30% increase in searches for local keywords
+- Increases legitimacy of a Business
+
+We will help you get your website ranked well on google for the related
+keywords in your niche. We specialize in LOCAL SEARCH ENGINE OPTIMIZATION
+increasing visibility for small businesses by ranking them for
+geographically-related keywords. Say for eg-: you want to search a plumber
+in your city, You will be typing in keywords like Plumbers + City Or
+Plumbers + IN + City. We make sure your website comes in google MAP listings
+shown on page 1 for each such keyword.
+
+Now Google believes in - BE ORIGINAL, HAVE ORIGINAL AND GIVE ORIGINAL which
+means that google wants to end up that frustrating experience of users who
+are searching for Service Or Product and seeing the results that are not
+even close to what they are looking for. Google only wants to give their
+user original and relevant results. This makes it even more important that
+we showcase our business in the best possible way and make sure our website
+in valued high by google.
+
+We at TheLOCALIST will make google feel the importance of your business by
+following their guidelines thus ranking your website higher in serach
+results. We are presently offering LOCAL OPTIMIZATION to more than 400
+websites and they all rank page 1 for all possible keywords !!! Each month
+your website is submitted to more than 50 citations and social presence is
+controlled by posting videos and blogs all over the web.
+
+Email us back with your website & phone number so we can discuss this
+further with you. Our Packages start from as low as 99$/month.
+
+
+Thanks For Taking Time To Read Our Email
+
+Polly Martin
+Local SEO Manager ( THE Localist )
+Address : 24 ST Suite 32 Downtown Provo Utah
+
+-------------------
+NOT INTERESTED ? REPLY WITH NOT INTERESTED IN THE SUBJECT LINE 
