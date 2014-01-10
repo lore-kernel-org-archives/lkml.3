@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaAJR70 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 12:59:26 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:56881 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaAJR6q (ORCPT
+	id S1753789AbaAJR7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 12:59:47 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:34696 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaAJR6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 12:58:46 -0500
+	Fri, 10 Jan 2014 12:58:42 -0500
 From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>,
         Ben Dooks <ben.dooks@codethink.co.uk>, Jon Medhurst <tixy@linaro.org>,
@@ -15,9 +15,9 @@ Cc: patches@linaro.org, linaro-networking@linaro.org,
         linaro-kernel@lists.linaro.org,
         Taras Kondratiuk <taras.kondratiuk@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/5] ARM: kprobes-test: Workaround GAS .align bug
-Date: Fri, 10 Jan 2014 19:58:26 +0200
-Message-Id: <1389376706-30051-6-git-send-email-taras.kondratiuk@linaro.org>
+Subject: [PATCH v2 2/5] ARM: kprobes-test: use <asm/opcodes.h> for instruction accesses
+Date: Fri, 10 Jan 2014 19:58:23 +0200
+Message-Id: <1389376706-30051-3-git-send-email-taras.kondratiuk@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389376706-30051-1-git-send-email-taras.kondratiuk@linaro.org>
 References: <1389376706-30051-1-git-send-email-taras.kondratiuk@linaro.org>
@@ -25,55 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default if no fill symbol is given to .align directive in a code
-section it fills gap with NOPs. If previous fragment is not
-instruction-aligned, additional pre-alignment is done by zero bytes
-before NOPs. These zero bytes are marked as data by special symbol $d in
-symbol table. Unfortunately GAS assumes that there is only code in the
-code section so it "puts back" code symbol $a at the end of this
-pre-alignment. So if there is some data after alignment it will be
-interpreted as code and will be swapped back to LE for BE8 system during
-a final linking.
+From: Ben Dooks <ben.dooks@codethink.co.uk>
 
-If explicit fill value is given to .align, the NOP-padding code is
-skipped and symbol table does not get messed-up.
-
-So the workaround for this issue:
-Use explicit fill value if data should be aligned in the code section.
+Ensure we read instructions in the correct endian-ness by using
+the <asm/opcodes.h> helper to transform them as necessary.
 
 Acked-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+[taras.kondratiuk@linaro.org: fix next_instruction() function]
 Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
 ---
- arch/arm/kernel/kprobes-test.c |    2 +-
- arch/arm/kernel/kprobes-test.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/kprobes-test.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-index 0850c72..d2c2174 100644
+index 0cd63d0..0850c72 100644
 --- a/arch/arm/kernel/kprobes-test.c
 +++ b/arch/arm/kernel/kprobes-test.c
-@@ -113,7 +113,7 @@
-  *	@ start of inline data...
-  *	.ascii "mov r0, r7"	@ text title for test case
-  *	.byte	0
-- *	.align	2
-+ *	.align	2, 0
-  *
-  *	@ TEST_ARG_REG
-  *	.byte	ARG_TYPE_REG
-diff --git a/arch/arm/kernel/kprobes-test.h b/arch/arm/kernel/kprobes-test.h
-index e28a869..eecc90a 100644
---- a/arch/arm/kernel/kprobes-test.h
-+++ b/arch/arm/kernel/kprobes-test.h
-@@ -115,7 +115,7 @@ struct test_arg_end {
- 	/* multiple strings to be concatenated.  */		\
- 	".ascii "#title"				\n\t"	\
- 	".byte	0					\n\t"	\
--	".align	2					\n\t"
-+	".align	2, 0					\n\t"
+@@ -1329,7 +1329,8 @@ static void test_case_failed(const char *message)
+ static unsigned long next_instruction(unsigned long pc)
+ {
+ #ifdef CONFIG_THUMB2_KERNEL
+-	if ((pc & 1) && !is_wide_instruction(*(u16 *)(pc - 1)))
++	if ((pc & 1) &&
++	    !is_wide_instruction(__mem_to_opcode_thumb16(*(u16 *)(pc - 1))))
+ 		return pc + 2;
+ 	else
+ #endif
+@@ -1374,13 +1375,13 @@ static uintptr_t __used kprobes_test_case_start(const char *title, void *stack)
  
- #define	TEST_ARG_REG(reg, val)					\
- 	".byte	"__stringify(ARG_TYPE_REG)"		\n\t"	\
+ 	if (test_case_is_thumb) {
+ 		u16 *p = (u16 *)(test_code & ~1);
+-		current_instruction = p[0];
++		current_instruction = __mem_to_opcode_thumb16(p[0]);
+ 		if (is_wide_instruction(current_instruction)) {
+-			current_instruction <<= 16;
+-			current_instruction |= p[1];
++			u16 instr2 = __mem_to_opcode_thumb16(p[1]);
++			current_instruction = __opcode_thumb32_compose(current_instruction, instr2);
+ 		}
+ 	} else {
+-		current_instruction = *(u32 *)test_code;
++		current_instruction = __mem_to_opcode_arm(*(u32 *)test_code);
+ 	}
+ 
+ 	if (current_title[0] == '.')
 -- 
 1.7.9.5
 
