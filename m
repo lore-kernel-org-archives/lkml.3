@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557AbaAJQcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:32:54 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46566 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124AbaAJQa1 (ORCPT
+	id S1757701AbaAJQdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:33:14 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:34226 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757006AbaAJQdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:30:27 -0500
-From: Roy Franz <roy.franz@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
-        linux@arm.linux.org.uk
-Cc: leif.lindholm@linaro.org, grant.likely@linaro.org, dave.martin@arm.com,
-        msalter@redhat.com, patches@linaro.org,
-        Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH V6 1/8] efi-stub.txt updates for ARM
-Date: Fri, 10 Jan 2014 08:30:10 -0800
-Message-Id: <1389371417-379-2-git-send-email-roy.franz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1389371417-379-1-git-send-email-roy.franz@linaro.org>
-References: <1389371417-379-1-git-send-email-roy.franz@linaro.org>
+	Fri, 10 Jan 2014 11:33:12 -0500
+Message-ID: <52D020C4.30105@6wind.com>
+Date: Fri, 10 Jan 2014 17:33:08 +0100
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: sohny thomas <sohny.kernel@gmail.com>
+CC: linux-kernel@vger.kernel.org, yoshfuji@linux-ipv6.org, davem@davemloft.net,
+        kumuda <kumuda@linux.vnet.ibm.com>, netdev <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+Subject: Re: ipv6: default route for link local address is not added while
+ assigning a address
+References: <52CFE594.8010808@gmail.com>
+In-Reply-To: <52CFE594.8010808@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update efi-stub.txt documentation to be more general
-and not x86 specific.  Add ARM only "dtb=" command
-line option description.
+CC: netdev
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
-Acked-by: Grant Likely <grant.likely@linaro.org>
----
- Documentation/efi-stub.txt |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+Le 10/01/2014 13:20, sohny thomas a écrit :
+> Default route for link local address is configured automatically if
+> NETWORKING_IPV6=yes is in ifcfg-eth*.
+> When the route table for the interface is flushed and a new address is added to
+> the same device with out removing linklocal addr, default route for link local
+> address has to added by default.
+I would say that removing the link local route but not the link local address
+is a configuration problem.
+If you remove a connected route but not the associated address, you will have
+the same problem.
 
-diff --git a/Documentation/efi-stub.txt b/Documentation/efi-stub.txt
-index 44e6bb6..a55a0cd 100644
---- a/Documentation/efi-stub.txt
-+++ b/Documentation/efi-stub.txt
-@@ -1,13 +1,16 @@
- 			  The EFI Boot Stub
- 		     ---------------------------
- 
--On the x86 platform, a bzImage can masquerade as a PE/COFF image,
--thereby convincing EFI firmware loaders to load it as an EFI
--executable. The code that modifies the bzImage header, along with the
--EFI-specific entry point that the firmware loader jumps to are
--collectively known as the "EFI boot stub", and live in
-+On the x86 and ARM platforms, a kernel zImage/bzImage can masquerade
-+as a PE/COFF image, thereby convincing EFI firmware loaders to load
-+it as an EFI executable. The code that modifies the bzImage header,
-+along with the EFI-specific entry point that the firmware loader
-+jumps to are collectively known as the "EFI boot stub", and live in
- arch/x86/boot/header.S and arch/x86/boot/compressed/eboot.c,
--respectively.
-+respectively. For ARM the EFI stub is implemented in
-+arch/arm/boot/compressed/efi-header.S and
-+arch/arm/boot/compressed/efi-stub.c. EFI stub code that is shared
-+between architectures is in drivers/firmware/efi/efi-stub-helper.c.
- 
- By using the EFI boot stub it's possible to boot a Linux kernel
- without the use of a conventional EFI boot loader, such as grub or
-@@ -23,7 +26,9 @@ The bzImage located in arch/x86/boot/bzImage must be copied to the EFI
- System Partiion (ESP) and renamed with the extension ".efi". Without
- the extension the EFI firmware loader will refuse to execute it. It's
- not possible to execute bzImage.efi from the usual Linux file systems
--because EFI firmware doesn't have support for them.
-+because EFI firmware doesn't have support for them. For ARM the
-+arch/arm/boot/zImage should be copied to the system partition, and it
-+may not need to be renamed.
- 
- 
- **** Passing kernel parameters from the EFI shell
-@@ -63,3 +68,11 @@ Notice how bzImage.efi can be specified with a relative path. That's
- because the image we're executing is interpreted by the EFI shell,
- which understands relative paths, whereas the rest of the command line
- is passed to bzImage.efi.
-+
-+
-+**** The "dtb=" option
-+
-+For the ARM architecture, we also need to be able to provide a device
-+tree to the kernel. This is done with the "dtb=" command line option,
-+and is processed in the same manner as the "initrd=" option that is
-+described above.
--- 
-1.7.10.4
-
+>
+> I have found the issue to be caused by this checkin
+>
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/net/ipv6?id=62b54dd91567686a1cb118f76a72d5f4764a86dd
+>
+>
+> According to this change :
+> He removes adding a link local route if any other address is added , applicable
+> across all interfaces though there's mentioned only lo interface
+> So below patch fixes for other devices
