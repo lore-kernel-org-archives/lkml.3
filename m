@@ -1,134 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaAJIbz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 03:31:55 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:19723 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaAJIby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 03:31:54 -0500
-Message-ID: <52CFAFED.1040505@hp.com>
-Date: Fri, 10 Jan 2014 16:31:41 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-CC: David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>, Kai Huang <dev.kai.huang@gmail.com>,
-        jiang.liu@linux.intel.com
-Subject: Re: [PATCH 1/1] x86/iommu: use bit structures for context_entry
-References: <1389342475-8540-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1389342475-8540-1-git-send-email-zhen-hual@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752500AbaAJIcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 03:32:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751471AbaAJIcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 03:32:19 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: mst@redhat.com, Jason Wang <jasowang@redhat.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH net V3 1/2] macvlan: forbid L2 fowarding offload for macvtap
+Date: Fri, 10 Jan 2014 16:18:25 +0800
+Message-Id: <1389341906-2367-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is sent again because a ';' was missed in my last mail.
+L2 fowarding offload will bypass the rx handler of real device. This will make
+the packet could not be forwarded to macvtap device. Another problem is the
+dev_hard_start_xmit() called for macvtap does not have any synchronization.
 
- > +	context->asr = value >> VTD_PAGE_SHIFT
+Fix this by forbidding L2 forwarding for macvtap.
 
-I corrected it and created a new one. And it is tested .
-Please use the latest one.
+Cc: John Fastabend <john.r.fastabend@intel.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/macvlan.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-
-Sorry for that.
-
-ZhenHua
-
-On 01/10/2014 04:27 PM, Li, Zhen-Hua wrote:
-> There is a structure named context_entry used by intel iommu, and there
-> are some bit operations on it. Use bit structure may make these operations
-> easy.
-> Also the function context_set_address_root may cause problem because it uses
->   |= operation, not set the new value. And this patch can fix it.
->
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->   drivers/iommu/intel-iommu.c | 37 +++++++++++++++++++++++++++----------
->   1 file changed, 27 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 43b9bfe..65cd480 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -221,47 +221,64 @@ get_context_addr_from_root(struct root_entry *root)
->    * 8-23: domain id
->    */
->   struct context_entry {
-> -	u64 lo;
-> -	u64 hi;
-> +	union {
-> +		struct {
-> +			u64	present:1,
-> +				fpd:1,
-> +				translation_type:2,
-> +				reserved_l:8,
-> +				asr:52;
-> +		};
-> +		u64 lo;
-> +	};
-> +	union {
-> +		struct {
-> +			u64	aw:3,
-> +				avail:4,
-> +				reserved_h1:1,
-> +				did:16,
-> +				reserved_h2:40;
-> +		};
-> +		u64 hi;
-> +	};
->   };
->
->   static inline bool context_present(struct context_entry *context)
->   {
-> -	return (context->lo & 1);
-> +	return context->present;
->   }
->   static inline void context_set_present(struct context_entry *context)
->   {
-> -	context->lo |= 1;
-> +	context->present = 1;
->   }
->
->   static inline void context_set_fault_enable(struct context_entry *context)
->   {
-> -	context->lo &= (((u64)-1) << 2) | 1;
-> +	context->fpd = 1;
->   }
->
->   static inline void context_set_translation_type(struct context_entry *context,
->   						unsigned long value)
->   {
-> -	context->lo &= (((u64)-1) << 4) | 3;
-> -	context->lo |= (value & 3) << 2;
-> +	context->translation_type = value;
->   }
->
->   static inline void context_set_address_root(struct context_entry *context,
->   					    unsigned long value)
->   {
-> -	context->lo |= value & VTD_PAGE_MASK;
-> +	context->asr = value >> VTD_PAGE_SHIFT;
->   }
->
->   static inline void context_set_address_width(struct context_entry *context,
->   					     unsigned long value)
->   {
-> -	context->hi |= value & 7;
-> +	context->aw  = value;
->   }
->
->   static inline void context_set_domain_id(struct context_entry *context,
->   					 unsigned long value)
->   {
-> -	context->hi |= (value & ((1 << 16) - 1)) << 8;
-> +	context->did = value;
->   }
->
->   static inline void context_clear_entry(struct context_entry *context)
->
+diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
+index 60406b0..5360f73 100644
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -338,6 +338,8 @@ static const struct header_ops macvlan_hard_header_ops = {
+ 	.cache_update	= eth_header_cache_update,
+ };
+ 
++static struct rtnl_link_ops macvlan_link_ops;
++
+ static int macvlan_open(struct net_device *dev)
+ {
+ 	struct macvlan_dev *vlan = netdev_priv(dev);
+@@ -353,7 +355,8 @@ static int macvlan_open(struct net_device *dev)
+ 		goto hash_add;
+ 	}
+ 
+-	if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD) {
++	if (lowerdev->features & NETIF_F_HW_L2FW_DOFFLOAD &&
++	    dev->rtnl_link_ops == &macvlan_link_ops) {
+ 		vlan->fwd_priv =
+ 		      lowerdev->netdev_ops->ndo_dfwd_add_station(lowerdev, dev);
+ 
+-- 
+1.7.1
 
