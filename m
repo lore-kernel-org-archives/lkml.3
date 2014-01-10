@@ -1,45 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232AbaAJCBD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 21:01:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21155 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361AbaAJCBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 21:01:00 -0500
-To: "Nicholas A. Bellinger" <nab@daterainc.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 00/14] target: Initial support for DIF Type1+Type3 emulation
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-Date: Thu, 09 Jan 2014 21:00:46 -0500
-In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com> (Nicholas
-	A. Bellinger's message of "Wed, 8 Jan 2014 20:15:43 +0000")
-Message-ID: <yq1mwj4sii9.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	id S932276AbaAJCBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 21:01:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51145 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753753AbaAJCBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 21:01:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
+   d="scan'208";a="456442134"
+Message-ID: <52CF5475.3050404@linux.intel.com>
+Date: Fri, 10 Jan 2014 10:01:25 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Len Brown <len.brown@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Revert "intel_idle: mark states tables with __initdata
+ tag"
+References: <1389252628-1033-1-git-send-email-jiang.liu@linux.intel.com> <2020575.F8Bg53kPyR@vostro.rjw.lan>
+In-Reply-To: <2020575.F8Bg53kPyR@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Nic" == Nicholas A Bellinger <nab@daterainc.com> writes:
 
-Nic> This series contains initial support for target mode DIF
-Nic> Type1+Type3 emulation within target core, RAMDISK_MCP device
-Nic> backend, and tcm_loop fabric driver.
 
-Super cool! Do you have a git tree so I can start tinkering with this?
+On 2014/1/9 21:29, Rafael J. Wysocki wrote:
+> On Thursday, January 09, 2014 03:30:26 PM Jiang Liu wrote:
+>> This reverts commit 9d046ccb98085f1d437585f84748c783a04ba240.
+>>
+>> Commit 9d046ccb98085 marks all state tables with __initdata, but
+>> the state table may be accessed when doing CPU online, which then
+>> causing system crash as below:
+>>
+>> [  204.188841] BUG: unable to handle kernel paging request at ffffffff8227cce8
+>> [  204.196844] IP: [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
+>> [  204.203996] PGD 1e11067 PUD 1e12063 PMD 455859063 PTE 800000000227c062
+>> [  204.211638] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+>> [  204.216975] Modules linked in: x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul ghash_clmulni_intel aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd gpio_ich microcode joydev sb_edac edac_core ipmi_si lpc_ich ipmi_msghandler lp tpm_tis parport wmi mac_hid acpi_pad hid_generic ixgbe isci usbhid dca hid libsas ptp ahci libahci scsi_transport_sas megaraid_sas pps_core mdio
+>> [  204.262815] CPU: 11 PID: 1489 Comm: bash Not tainted 3.13.0-rc7+ #48
+>> [  204.269993] Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS BRIVTIN1.86B.0047.L09.1312061514 12/06/2013
+>> [  204.281646] task: ffff8804303a24a0 ti: ffff880440fac000 task.ti: ffff880440fac000
+>> [  204.290311] RIP: 0010:[<ffffffff814aa1c0>]  [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
+>> [  204.300184] RSP: 0018:ffff880440fadd28  EFLAGS: 00010286
+>> [  204.306192] RAX: ffffffff8227cca0 RBX: ffffe8fff1a03400 RCX: 0000000000000007
+>> [  204.314244] RDX: ffff88045f400000 RSI: 0000000000000009 RDI: 0000000000001120
+>> [  204.322296] RBP: ffff880440fadd38 R08: 0000000000000000 R09: 0000000000000001
+>> [  204.330411] R10: 0000000000000001 R11: 0000000000000000 R12: 000000000000001e
+>> [  204.338482] R13: 00000000ffffffdb R14: 0000000000000001 R15: 0000000000000000
+>> [  204.346743] FS:  00007f64f7b0c740(0000) GS:ffff88045ce00000(0000) knlGS:0000000000000000
+>> [  204.355919] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [  204.362449] CR2: ffffffff8227cce8 CR3: 0000000444ab0000 CR4: 00000000001407e0
+>> [  204.370520] Stack:
+>> [  204.372853]  000000000000001e ffffffff81f10240 ffff880440fadd50 ffffffff814aa307
+>> [  204.381519]  ffffffff81ea80e0 ffff880440fadda0 ffffffff8185a230 0000000000000000
+>> [  204.390196]  000000000000001e 0000000000000002 0000000000000002 0000000000000000
+>> [  204.398856] Call Trace:
+>> [  204.401683]  [<ffffffff814aa307>] cpu_hotplug_notify+0x57/0x70
+>> [  204.408638]  [<ffffffff8185a230>] notifier_call_chain+0x100/0x150
+>> [  204.415553]  [<ffffffff810a7dae>] __raw_notifier_call_chain+0xe/0x10
+>> [  204.422772]  [<ffffffff81072163>] cpu_notify+0x23/0x50
+>> [  204.428616]  [<ffffffff810723b2>] _cpu_up+0x132/0x1a0
+>> [  204.434361]  [<ffffffff8107249d>] cpu_up+0x7d/0xa0
+>> [  204.439819]  [<ffffffff81836c9c>] cpu_subsys_online+0x3c/0x90
+>> [  204.446345]  [<ffffffff81554625>] device_online+0x45/0xa0
+>> [  204.452471]  [<ffffffff815546ce>] online_store+0x4e/0x80
+>> [  204.458511]  [<ffffffff815519a8>] dev_attr_store+0x18/0x30
+>> [  204.464744]  [<ffffffff812a68f1>] sysfs_write_file+0x151/0x1c0
+>> [  204.471681]  [<ffffffff81217ef1>] vfs_write+0xe1/0x160
+>> [  204.477524]  [<ffffffff8121889c>] SyS_write+0x4c/0x90
+>> [  204.483270]  [<ffffffff8185f2ed>] system_call_fastpath+0x1a/0x1f
+>> [  204.490081] Code: 41 54 41 89 fc 8b 3d 48 25 85 01 53 48 8b 1d 30 25 85 01 48 03 1c c5 40 90 fb 81 48 8b 05 19 25 85 01 c7 43 0c 01 00 00 00 66 90 <48> 83 78 48 00 74 4f 41 83 c0 01 41 39 f0 7e 10 48 c7 c7 38 79
+>> [  204.515723] RIP  [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
+>> [  204.522996]  RSP <ffff880440fadd28>
+>> [  204.526976] CR2: ffffffff8227cce8
+>> [  204.530766] ---[ end trace 336f56cc3d1cfc8c ]---
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> Cc: <stable@vger.kernel.org> # 3.12+
+> 
+> The commit in question is not in 3.12 as far as I can say, so this is a
+> regression in 3.13-rc actually.
+Hi Rafael,
+	"Git describe 9d046ccb98085" gives "v3.12-rc2-2-g9d046cc", so I marked
+it for v3.12 stable.
+Thanks!
+Gerry
 
-I'll start reviewing the pieces tomorrow.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+> 
+> Queued up as a fix for 3.13.
+> 
+> Thanks!
+> 
+>> ---
+>>  drivers/idle/intel_idle.c |   10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+>> index f80b700..6f456f0 100644
+>> --- a/drivers/idle/intel_idle.c
+>> +++ b/drivers/idle/intel_idle.c
+>> @@ -123,7 +123,7 @@ static struct cpuidle_state *cpuidle_state_table;
+>>   * which is also the index into the MWAIT hint array.
+>>   * Thus C0 is a dummy.
+>>   */
+>> -static struct cpuidle_state nehalem_cstates[] __initdata = {
+>> +static struct cpuidle_state nehalem_cstates[] = {
+>>  	{
+>>  		.name = "C1-NHM",
+>>  		.desc = "MWAIT 0x00",
+>> @@ -156,7 +156,7 @@ static struct cpuidle_state nehalem_cstates[] __initdata = {
+>>  		.enter = NULL }
+>>  };
+>>  
+>> -static struct cpuidle_state snb_cstates[] __initdata = {
+>> +static struct cpuidle_state snb_cstates[] = {
+>>  	{
+>>  		.name = "C1-SNB",
+>>  		.desc = "MWAIT 0x00",
+>> @@ -196,7 +196,7 @@ static struct cpuidle_state snb_cstates[] __initdata = {
+>>  		.enter = NULL }
+>>  };
+>>  
+>> -static struct cpuidle_state ivb_cstates[] __initdata = {
+>> +static struct cpuidle_state ivb_cstates[] = {
+>>  	{
+>>  		.name = "C1-IVB",
+>>  		.desc = "MWAIT 0x00",
+>> @@ -236,7 +236,7 @@ static struct cpuidle_state ivb_cstates[] __initdata = {
+>>  		.enter = NULL }
+>>  };
+>>  
+>> -static struct cpuidle_state hsw_cstates[] __initdata = {
+>> +static struct cpuidle_state hsw_cstates[] = {
+>>  	{
+>>  		.name = "C1-HSW",
+>>  		.desc = "MWAIT 0x00",
+>> @@ -297,7 +297,7 @@ static struct cpuidle_state hsw_cstates[] __initdata = {
+>>  		.enter = NULL }
+>>  };
+>>  
+>> -static struct cpuidle_state atom_cstates[] __initdata = {
+>> +static struct cpuidle_state atom_cstates[] = {
+>>  	{
+>>  		.name = "C1E-ATM",
+>>  		.desc = "MWAIT 0x00",
+>>
+> 
