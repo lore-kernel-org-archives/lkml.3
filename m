@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832AbaAJNsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:48:42 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21710 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaAJNsj (ORCPT
+	id S1757160AbaAJNtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:49:11 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:41307 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435AbaAJNr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:48:39 -0500
-Message-ID: <52CFFA23.3050300@oracle.com>
-Date: Fri, 10 Jan 2014 08:48:19 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, gregkh@linuxfoundation.org
-CC: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+	Fri, 10 Jan 2014 08:47:28 -0500
+From: Tejun Heo <tj@kernel.org>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: Re: [PATCH 01/12] kernfs: fix get_active failure handling in kernfs_seq_*()
-References: <1389117590-25705-1-git-send-email-tj@kernel.org> <1389117590-25705-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1389117590-25705-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+        JBottomley@parallels.com, bhelgaas@google.com,
+        Tejun Heo <tj@kernel.org>, linux-scsi@vger.kernel.org
+Subject: [PATCH 12/14] scsi: use device_remove_file_self() instead of device_schedule_callback()
+Date: Fri, 10 Jan 2014 08:46:58 -0500
+Message-Id: <1389361620-5086-13-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389361620-5086-1-git-send-email-tj@kernel.org>
+References: <1389361620-5086-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 12:59 PM, Tejun Heo wrote:
-> Sasha, I*think*  this chould be the fix for the problem you reported
-> with trinity fuzzying.  Is the problem reproducible?  If so, can you
-> please test it with this patch applied?
+driver-core now supports synchrnous self-deletion of attributes and
+the asynchrnous removal mechanism is scheduled for removal.  Use it
+instead of device_schedule_callback().  This makes "delete" behave
+synchronously.
 
-It didn't reproduce too often in the past. I've been running this patch
-and didn't see the issue happening, so it looks good so far.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+---
+ drivers/scsi/scsi_sysfs.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 8ff62c2..33e6199 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -635,23 +635,12 @@ store_rescan_field (struct device *dev, struct device_attribute *attr,
+ }
+ static DEVICE_ATTR(rescan, S_IWUSR, NULL, store_rescan_field);
+ 
+-static void sdev_store_delete_callback(struct device *dev)
+-{
+-	scsi_remove_device(to_scsi_device(dev));
+-}
+-
+ static ssize_t
+ sdev_store_delete(struct device *dev, struct device_attribute *attr,
+ 		  const char *buf, size_t count)
+ {
+-	int rc;
+-
+-	/* An attribute cannot be unregistered by one of its own methods,
+-	 * so we have to use this roundabout approach.
+-	 */
+-	rc = device_schedule_callback(dev, sdev_store_delete_callback);
+-	if (rc)
+-		count = rc;
++	if (device_remove_file_self(dev, attr))
++		scsi_remove_device(to_scsi_device(dev));
+ 	return count;
+ };
+ static DEVICE_ATTR(delete, S_IWUSR, NULL, sdev_store_delete);
+-- 
+1.8.4.2
 
-Thanks,
-Sasha
