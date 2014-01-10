@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244AbaAJWfO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:35:14 -0500
-Received: from ring0.de ([91.143.88.219]:47445 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356AbaAJWfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:35:12 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
-        pavel@ucw.cz
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv2] dt: binding documentation for bq2415x charger
-Date: Fri, 10 Jan 2014 23:34:46 +0100
-Message-Id: <1389393286-15263-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.5.2
+	id S1757939AbaAJWjN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:39:13 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:45990 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751214AbaAJWjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 17:39:12 -0500
+Date: Fri, 10 Jan 2014 16:39:09 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
+Message-ID: <20140110223909.GA8666@sgi.com>
+References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
+ <20140110202310.GB1421@node.dhcp.inet.fi>
+ <20140110220155.GD3066@sgi.com>
+ <20140110221010.GP31570@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110221010.GP31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree binding documentation for bq2415x charger.
+On Fri, Jan 10, 2014 at 11:10:10PM +0100, Peter Zijlstra wrote:
+> We already have the information to determine if a page is shared across
+> nodes, Mel even had some prototype code to do splits under those
+> conditions.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
----
-Hi,
+I'm aware that we can determine if pages are shared across nodes, but I
+thought that Mel's code to split pages under these conditions had some
+performance issues.  I know I've seen the code that Mel wrote to do
+this, but I can't seem to dig it up right now.  Could you point me to
+it?
 
-This is the second version of the bq2415x binding documentation. The
-only changes since PATCHv1 are a rewording of the property descriptions
-as requested by Pavel Machek.
-
-I narrowed down the CCs for this patch, since there were no comments on
-PATCHv1 from omap or DT binding guys and Anton has applied the driver changes
-already. This patch is intended for 3.14, so that it gets merged together
-with the driver changes.
-
--- Sebastian
----
- .../devicetree/bindings/power/bq2415x.txt          | 48 ++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/bq2415x.txt
-
-diff --git a/Documentation/devicetree/bindings/power/bq2415x.txt b/Documentation/devicetree/bindings/power/bq2415x.txt
-new file mode 100644
-index 0000000..64f4a7f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/bq2415x.txt
-@@ -0,0 +1,48 @@
-+Binding for TI bq2415x Li-Ion Charger
-+
-+Required properties:
-+- compatible: Should contain one of the following:
-+ * "ti,bq24150"
-+ * "ti,bq24150"
-+ * "ti,bq24150a"
-+ * "ti,bq24151"
-+ * "ti,bq24151a"
-+ * "ti,bq24152"
-+ * "ti,bq24153"
-+ * "ti,bq24153a"
-+ * "ti,bq24155"
-+ * "ti,bq24156"
-+ * "ti,bq24156a"
-+ * "ti,bq24158"
-+- reg:			   integer, i2c address of the device.
-+- ti,current-limit:	   integer, initial maximum current charger can pull
-+			   from power supply in mA.
-+- ti,weak-battery-voltage: integer, weak battery voltage threshold in mV.
-+			   The chip will use slow precharge if battery voltage
-+			   is below this value.
-+- ti,battery-regulation-voltage: integer, maximum charging voltage in mV.
-+- ti,charge-current:	   integer, maximum charging current in mA.
-+- ti,termination-current:  integer, charge will be terminated when current in
-+			   constant-voltage phase drops below this value (in
-+			   mA), charge is terminated.
-+- ti,resistor-sense:	   integer, value of sensing resistor in milliohm.
-+
-+Optional properties:
-+- ti,usb-charger-detection: phandle to usb charger detection device.
-+			    (required for auto mode)
-+
-+Example from Nokia N900:
-+
-+bq24150a {
-+	compatible = "ti,bq24150a";
-+	reg = <0x6b>;
-+
-+	ti,current-limit = <100>;
-+	ti,weak-battery-voltage = <3400>;
-+	ti,battery-regulation-voltage = <4200>;
-+	ti,charge-current = <650>;
-+	ti,termination-current = <100>;
-+	ti,resistor-sense = <68>;
-+
-+	ti,usb-charger-detection = <&isp1704>;
-+};
--- 
-1.8.5.2
-
+- Alex
