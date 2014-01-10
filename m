@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229AbaAJWH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:07:59 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43742 "EHLO
+	id S1758212AbaAJWHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:07:55 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43715 "EHLO
 	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758152AbaAJWHt (ORCPT
+	with ESMTP id S1751263AbaAJWHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:07:49 -0500
+	Fri, 10 Jan 2014 17:07:48 -0500
 From: Bill Sumner <bill.sumner@hp.com>
 To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
         joro@8bytes.org
@@ -15,9 +15,9 @@ Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, ddutile@redhat.com,
         ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
         doug.hatch@hp.com, zhenhua@hp.com
-Subject: [PATCHv3 5/6] Crashdump-Accepting-Active-IOMMU-Debug-Print-IOMMU
-Date: Fri, 10 Jan 2014 15:07:31 -0700
-Message-Id: <1389391652-52422-6-git-send-email-bill.sumner@hp.com>
+Subject: [PATCHv3 3/6] Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
+Date: Fri, 10 Jan 2014 15:07:29 -0700
+Message-Id: <1389391652-52422-4-git-send-email-bill.sumner@hp.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
 References: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
@@ -25,105 +25,324 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains a function to print the hardware registers of each
-IOMMU onto the system console during crashdump kernel initialization.
+---------.---------.---------.---------.---------.---------.---------.
+This patch contains functions called from among the mainline code
+to retrieve information from the translation tables that have been
+copied into the crashdump kernel from the panicked kernel.
 
-This function seemed far too useful to leave out.
+Most often this happens when the crashdump kernel is setting-up a new
+domain for a device.  The crashdump kernel will assign to the device
+(and to its new domain) the same IOVA addressing width and domain-id
+that were used for this device by the panicked kernel. In the new
+domain all of the IOVA addresses that were in-use by this device at
+the time of the panic will be marked as "in-use" so that the crashdump
+kernel will avoid re-using them.
+
+This patch also includes one function to retrieve a bitmap of all
+domain-ids in-use by the panicked kernel.  These are marked "in-use"
+so that if there is a device being used by the crashdump kernel that
+was not being used by the panicked kernel then that new device will
+receive a fresh, unused domain-id.
+
+The 'device_domain_values_list' is used during the operation of
+duplicating (copying) the translation tables from the panicked kernel
+into the crashdump kernel, to insure that all devices that were assigned
+to any specific domain-id in the panicked kernel are also assigned to
+that same domain-id in the crashdump kernel.  Additionally, all context
+entries (there is one per device) that contain the same domain-id *must*
+point to the same set of page-tables.  The 'device_domain_values_list'
+insures that if the copy operation has already seen 'this' domain-id,
+it will simply point the current context entry to the same top-level
+page-table that has been created previously for this domain-id.
+
+No locks are necessary for 'device_domain_values_list'.  Updates
+are done only during the initialization operation of copying the
+translation tables -- when only a single CPU is active.
+Accesses after Linux goes multi-CPU are all read-only.
 
 v1->v2:
 Updated patch description
-Fixed: "Advanced Fault Log register"
 
 v2->v3:
 No change
 
 Signed-off-by: Bill Sumner <bill.sumner@hp.com>
 ---
- drivers/iommu/intel-iommu.c | 76 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 76 insertions(+)
+ drivers/iommu/intel-iommu.c | 266 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 266 insertions(+)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 6737550..457ac80b 100644
+index 4172a2b..85e30e5 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -5325,3 +5325,79 @@ static int copy_intel_iommu_translation_tables(struct dmar_drhd_unit *drhd,
- 	return 0;
+@@ -4529,3 +4529,269 @@ static int oldcopy(void *to, void *from, int size)
+ 	return (int) ret;
  }
  #endif /* CONFIG_CRASH_DUMP */
 +#ifdef CONFIG_CRASH_DUMP
 +
 +
-+/* =========================================================================
-+ * Diagnostic print
++
++/* ------------------------------------------------------------------------
++ * Interfaces for when a new domain in the new kernel needs some values
++ * from the old kernel's context entries
 + * ------------------------------------------------------------------------
 + */
 +
-+static struct intel_iommu_register_print {
-+	int	len;		/* Length of register */
-+	int	idx;		/* Index to read register */
-+	char	reg[20];	/* Linux name of register */
-+	char	txt[40];	/* Description */
-+} intel_iommu_register_print_v[] = {
-+	{1, DMAR_VER_REG,	"DMAR_VER_REG",		"Arch version supported by this IOMMU"},
-+	{2, DMAR_CAP_REG,	"DMAR_CAP_REG",		"Hardware supported capabilities"},
-+	{2, DMAR_ECAP_REG,	"DMAR_ECAP_REG",	"Extended capabilities supported"},
-+	{1, DMAR_GCMD_REG,	"DMAR_GCMD_REG",	"Global command register"},
-+	{1, DMAR_GSTS_REG,	"DMAR_GSTS_REG",	"Global status register "},
-+	{2, DMAR_RTADDR_REG,	"DMAR_RTADDR_REG",	"Root entry table"},
-+	{2, DMAR_CCMD_REG,	"DMAR_CCMD_REG",	"Context command reg"},
-+	{1, DMAR_FSTS_REG,	"DMAR_FSTS_REG",	"Fault Status register"},
-+	{1, DMAR_FECTL_REG,	"DMAR_FECTL_REG",	"Fault control register"},
-+	{1, DMAR_FEDATA_REG,	"DMAR_FEDATA_REG",	"Fault event interrupt data register"},
-+	{1, DMAR_FEADDR_REG,	"DMAR_FEADDR_REG",	"Fault event interrupt addr register"},
-+	{1, DMAR_FEUADDR_REG,	"DMAR_FEUADDR_REG",	"Upper address register"},
-+	{2, DMAR_AFLOG_REG,	"DMAR_AFLOG_REG",	"Advanced Fault Log register"},
-+	{1, DMAR_PMEN_REG,	"DMAR_PMEN_REG",	"Enable Protected Memory Region"},
-+	{1, DMAR_PLMBASE_REG,	"DMAR_PLMBASE_REG",	"PMRR Low addr"},
-+	{1, DMAR_PLMLIMIT_REG,	"DMAR_PLMLIMIT_REG",	"PMRR low limit"},
-+	{2, DMAR_PHMBASE_REG,	"DMAR_PHMBASE_REG",	"pmrr high base addr"},
-+	{2, DMAR_PHMLIMIT_REG,	"DMAR_PHMLIMIT_REG",	"pmrr high limit"},
-+	{2, DMAR_IQH_REG,	"DMAR_IQH_REG",		"Invalidation queue head register"},
-+	{2, DMAR_IQT_REG,	"DMAR_IQT_REG",		"Invalidation queue tail register"},
-+	{2, DMAR_IQA_REG,	"DMAR_IQA_REG",		"Invalidation queue addr register"},
-+	{1, DMAR_ICS_REG,	"DMAR_ICS_REG",		"Invalidation complete status register"},
-+	{2, DMAR_IRTA_REG,	"DMAR_IRTA_REG",	"Interrupt remapping table addr register"},
-+};
++/* List to hold domain values found during the copy operation */
++static struct list_head *device_domain_values_list;
 +
-+static void print_intel_iommu_registers(struct dmar_drhd_unit *drhd)
++
++/* Utility function for interface functions that follow. */
++static int
++context_get_entry(struct context_entry *context_addr,
++			struct intel_iommu *iommu, u32 bus, int devfn)
 +{
-+	struct intel_iommu *iommu;	/* Virt adr(iommu hardware registers) */
 +	unsigned long long q;		/* quadword scratch */
-+	u32 ver;			/* DMAR_VER_REG */
++	struct root_entry *root_phys;	/* Phys adr (root table entry) */
++	struct root_entry  root_temp;	/* Local copy of root_entry */
++	struct context_entry *context_phys;	/* Phys adr */
 +
-+	int m = sizeof(intel_iommu_register_print_v) /
-+		sizeof(intel_iommu_register_print_v[0]);
-+	struct intel_iommu_register_print *p = &intel_iommu_register_print_v[0];
++	if (pr_dbg.domain_get)
++		pr_debug("ENTER %s B:D:F=%2.2x:%2.2x:%1.1x &context_entry:0x%llx &intel_iommu:0x%llx\n",
++			__func__, bus, devfn>>3, devfn&7,
++			(u64)context_addr, (u64)iommu);
 +
-+	iommu = drhd->iommu;
-+
-+	pr_debug("ENTER %s\n", __func__);
-+	ver = readl(iommu->reg + DMAR_VER_REG);
-+	pr_debug("IOMMU %d: reg_base_addr %llx ver %d:%d cap %llx ecap %llx\n",
-+		iommu->seq_id,
-+		(unsigned long long)drhd->reg_base_addr,
-+		DMAR_VER_MAJOR(ver), DMAR_VER_MINOR(ver),
-+		(unsigned long long)iommu->cap,
-+		(unsigned long long)iommu->ecap);
++	if (bus > 255)				/* Sanity check */
++		return -5;
++	if (devfn > 255 || devfn < 0)		/* Sanity check */
++		return -6;
 +
 +	q = readq(iommu->reg + DMAR_RTADDR_REG);
 +	pr_debug("IOMMU %d: DMAR_RTADDR_REG:0x%16.16llx\n", iommu->seq_id, q);
++	if (!q)
++		return -1;
 +
-+	for (; p < &intel_iommu_register_print_v[m]; p++)
-+		if (p->len == 2)
-+			pr_debug("0x%16.16llx %-20s %-40s\n",
-+				(u64)readq(iommu->reg + p->idx), p->reg,
-+						p->txt);
-+		else
-+			pr_debug("        0x%8.8x %-20s %-40s\n",
-+				(u32)readl(iommu->reg + p->idx), p->reg,
-+						p->txt);
++	root_phys = (struct root_entry *) q;	/* Adr(base of vector) */
++	root_phys += bus;			/* Adr(entry we want) */
++
++	oldcopy(&root_temp, root_phys, sizeof(root_temp));
++
++	pr_debug("root_temp.val:0x%llx .rsvd1:0x%llx root_phys:0x%llx\n",
++		root_temp.val, root_temp.rsvd1, (u64)root_phys);
++
++	if (!root_present(&root_temp))
++		return -2;
++
++	pr_debug("B:D:F=%2.2x:%2.2x:%1.1x root_temp.val: %llx .rsvd1: %llx\n",
++		bus, devfn >> 3, devfn & 7, root_temp.val, root_temp.rsvd1);
++
++	if (root_temp.rsvd1)			/* If (root_entry is bad) */
++		return -3;
++
++	context_phys = get_context_phys_from_root(&root_temp);
++	if (!context_phys)
++		return -4;
++
++	context_phys += devfn;			/* Adr(context_entry we want) */
++
++
++	oldcopy(context_addr, context_phys, sizeof(*context_addr));
++
++	if (pr_dbg.domain_get)
++		pr_debug("LEAVE %s returning: phys:0x%12.12llx hi:0x%16.16llx lo:0x%16.16llx\n",
++			__func__, (u64) context_phys,
++			context_addr->hi, context_addr->lo);
++	return 0;
++}
++
++
++/* Get address_width of iova for a device from old kernel (if device existed) */
++static int
++domain_get_gaw_from_old_kernel(struct intel_iommu *iommu, struct pci_dev *pdev)
++{
++	int ret;
++	struct context_entry context_temp;
++
++	if (pr_dbg.domain_get)
++		pr_debug("ENTER %s B:D:F=%2.2x:%2.2x:%1.1x iommu:%d\n",
++			__func__, pdev->bus->number,
++			pdev->devfn >> 3, pdev->devfn & 7,
++			iommu->seq_id);
++
++	ret = context_get_entry(&context_temp, iommu,
++				pdev->bus->number, pdev->devfn);
++	if (ret < 0)
++		return ret;
++
++	return (int) agaw_to_width(context_get_aw(&context_temp));
++}
++
++
++/* Get domain_id for a device from old kernel (if device existed) */
++static int
++domain_get_did_from_old_kernel(struct intel_iommu *iommu, struct pci_dev *pdev)
++{
++	int ret;
++	struct context_entry context_temp;
++
++	if (pr_dbg.domain_get)
++		pr_debug("ENTER %s B:D:F=%2.2x:%2.2x:%1.1x iommu:%d\n",
++			__func__, pdev->bus->number,
++			pdev->devfn >> 3, pdev->devfn & 7,
++			iommu->seq_id);
++
++	ret = context_get_entry(&context_temp, iommu,
++				pdev->bus->number, pdev->devfn);
++	if (ret < 0)
++		return ret;
++
++	return (int) context_get_did(&context_temp);
++}
++
++
++/* Get adr(top page_table) for a device from old kernel (if device exists) */
++static u64
++domain_get_pgd_from_old_kernel(struct intel_iommu *iommu, struct pci_dev *pdev)
++{
++	int ret;
++	struct context_entry context_temp;
++	u64 phys;
++	u64 virt;
++
++	if (pr_dbg.domain_get)
++		pr_debug("ENTER %s B:D:F=%2.2x:%2.2x:%1.1x iommu:%d\n",
++			__func__, pdev->bus->number,
++			pdev->devfn >> 3, pdev->devfn & 7,
++			iommu->seq_id);
++
++	ret = context_get_entry(&context_temp, iommu,
++				pdev->bus->number, pdev->devfn);
++	if (ret < 0)
++		return 0;
++	if (!context_get_p(&context_temp))
++		return 0;
++
++	phys = context_get_asr(&context_temp) << VTD_PAGE_SHIFT;
++	if (pr_dbg.domain_get)
++		pr_debug("%s, phys: 0x%16.16llx\n", __func__, (u64) phys);
++
++	if (!phys)
++		return 0;
++
++	virt = (u64) phys_to_virt(phys);
++	if (pr_dbg.domain_get)
++		pr_debug("%s, virt: 0x%16.16llx\n", __func__, (u64) virt);
++
++	return virt;
++}
++
++
++/* Mark IOVAs that are in-use at time of panic by a device of the old kernel.
++ * Mark IOVAs in the domain for that device in the new kernel
++ * so that all new requests from the device driver for an IOVA will avoid
++ * re-using any IOVA that was in-use by the old kernel.
++ */
++static void
++domain_get_ranges_from_old_kernel(struct dmar_domain *domain,
++				  struct intel_iommu *iommu,
++				  struct pci_dev *pdev)
++{
++	u32 bus = pdev->bus->number;
++	int devfn = pdev->devfn;
++	struct device_domain_info *i = NULL;    /* iterator for foreach */
++
++	pr_debug("ENTER %s, iommu=%d, B:D:F=%2.2x:%2.2x:%1.1x\n",
++			__func__, iommu->seq_id,
++			bus, devfn >> 3, devfn & 0x3);
++
++	list_for_each_entry(i, &device_domain_values_list[iommu->seq_id],
++				global) {
++		if (i->bus == bus && i->devfn == devfn) {
++			if (i->domain == NULL) {
++				pr_err("ERROR %s, iommu=%d, B:D:F=%2.2x:%2.2x:%1.1x\n",
++					__func__, iommu->seq_id,
++					bus, devfn >> 3, devfn & 0x3);
++
++				pr_err("FOUND B:D:F=%2.2x:%2.2x:%1.1x INFO domain-pointer is NULL\n",
++					bus, devfn >> 3, devfn & 0x3);
++				break;
++			}
++			pr_debug("FOUND B:D:F=%2.2x:%2.2x:%1.1x did:%4.4x\n",
++				bus, devfn >> 3, devfn & 0x3, i->domain->id);
++
++			copy_reserved_iova(&i->domain->iovad, &domain->iovad);
++			break;
++		}
++	}
 +
 +	pr_debug("LEAVE %s\n", __func__);
++}
++
++
++/* Mark domain-id's from old kernel as in-use on this iommu so that a new
++ * domain-id is allocated in the case where there is a device in the new kernel
++ * that was not in the old kernel -- and therefore a new domain-id is needed.
++ */
++static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu)
++{
++	unsigned long long q;		/* quadword scratch */
++	struct root_entry *root_phys;	/* Phys(in old kernel) */
++	struct root_entry *root_temp;	/* Virt(Local copy) */
++	struct root_entry *re;		/* Loop index */
++	struct context_entry *context_phys;	/* Phys(in old kernel) */
++	struct context_entry *context_temp;	/* Virt(Local copy) */
++	struct context_entry *ce;	/* Loop index */
++	int did;			/* Each domain-id found */
++	u32 bus;			/* Index into root-entry-table */
++	u32 devfn;			/* Index into context-entry-table */
++
++	pr_debug("ENTER %s iommu:%d\n", __func__, iommu->seq_id);
++
++	q = readq(iommu->reg + DMAR_RTADDR_REG);
++	pr_debug("IOMMU %d: DMAR_RTADDR_REG:0x%16.16llx\n", iommu->seq_id, q);
++	if (!q)
++		return -ENOMEM;
++
++	root_phys = (void *)q;
++	root_temp = (struct root_entry *)alloc_pgtable_page(iommu->node);
++	if (!root_temp)
++		return -ENOMEM;
++	oldcopy(root_temp, root_phys, PAGE_SIZE);
++
++	context_temp = (struct context_entry *)alloc_pgtable_page(iommu->node);
++	if (!context_temp) {
++		free_pgtable_page(root_temp);
++		return -ENOMEM;
++	}
++
++	for (bus = 0, re = root_temp; bus < 256; bus += 1, re += 1) {
++
++		if (!root_present(re))
++			continue;
++
++		pr_debug("ROOT B:%2.2x val: %16.16llx rsvd1: %16.16llx\n",
++			bus, re->val, re->rsvd1);
++
++		if (re->rsvd1)			/* If (root_entry is bad) */
++			continue;
++
++		context_phys = get_context_phys_from_root(re);
++		if (!context_phys)
++			continue;
++
++		oldcopy(context_temp, context_phys, PAGE_SIZE);
++
++		for (devfn = 0, ce = context_temp; devfn < 512; devfn++, ce++) {
++			if (!context_get_p(ce))
++				continue;
++
++			did = context_get_did(ce);
++			set_bit(did, iommu->domain_ids);
++			pr_debug("DID B:D:F:%2.2x:%2.2x:%1.1x did:%d(0x%4.4x)\n",
++				bus, devfn >> 3, devfn & 0x7, did, did);
++		}
++
++	}
++	free_pgtable_page(root_temp);
++	free_pgtable_page(context_temp);
++	pr_debug("LEAVE %s iommu:%d\n", __func__, iommu->seq_id);
++	return 0;
 +}
 +#endif /* CONFIG_CRASH_DUMP */
 -- 
