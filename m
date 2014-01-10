@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927AbaAJQUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:20:17 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:59159 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaAJQUN (ORCPT
+	id S1757916AbaAJQWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:22:16 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:34652 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757287AbaAJQWN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:20:13 -0500
-Message-ID: <52D01DBE.6010205@gmail.com>
-Date: Sat, 11 Jan 2014 00:20:14 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 10 Jan 2014 11:22:13 -0500
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-metag@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggest] arch: metag: compiler: Are they compiler's issues?
-References: <52B8F33C.3030808@gmail.com> <52CA85FF.8050604@imgtec.com> <52CD6849.4050007@gmail.com> <52D01860.6060801@gmail.com> <52D019A2.9000705@imgtec.com>
-In-Reply-To: <52D019A2.9000705@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <52CFB091.5040707@linaro.org>
+References: <CACUGKYMKe37F4VQVi9ZFL1ks+uCC8_ERN5O+y_MLV6G19uVjDw@mail.gmail.com>
+	<52CFB091.5040707@linaro.org>
+Date: Fri, 10 Jan 2014 08:22:08 -0800
+Message-ID: <CACUGKYO=934LR5r0UrPht10Lvkj2rnz7Un83G=D+w-jgYh8xTA@mail.gmail.com>
+Subject: Re: BUG: bad unlock balance detected
+From: John Tobias <john.tobias.ph@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Fabio Estevam <festevam@gmail.com>,
+        "<kernel@pengutronix.de>" <kernel@pengutronix.de>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "<linux@arm.linux.org.uk>" <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2014 12:02 AM, James Hogan wrote:
-> On 10/01/14 15:57, Chen Gang wrote:
->> On 01/08/2014 11:01 PM, Chen Gang wrote:
->>> On 01/06/2014 06:31 PM, James Hogan wrote:
->>>> I suspect this is due to bad assumptions in the code. The metag ABI is
->>>> unusual in padding the size of structs to a 32bit boundary even if all
->>>> members are <32bit. This is actually permitted by the C standard but
->>>> it's a bit of a pain. e.g.
->>>>
->>>> struct s {
->>>> 	short x
->>>> 	struct {
->>>> 		short x[3];
->>>> 	} y;
->>>> 	short z;
->>>> };
->>>>
->>>> on x86
->>>> 	alignof(s::y) == 2
->>>> 	s::y at offset 2
->>>> 	sizeof(s::y) == 6
->>>> 	s::z at offset 6+2 = 8
->>>> 	sizeof(struct s) == 10
->>>>
->>>> but on metag
->>>> 	alignof(s::y) == 4
->>>> 	s::y at offset 4
->>>> 	sizeof(s::y) == 8 (padding, this is what catches people out)
->>>> 	s::z at offset 4+8 = 12
->>>> 	sizeof(struct s) == 16 (and here too)
->>>>
->>>> Adding packed attribute on outer struct reduces sizeof(struct s) to 12
->>>> on metag:
->>>> 	alignof(s::y) == 4
->>>> 	s::y at offset 2 (packed)
->>>> 	sizeof(s::y) == 8 (still padded)
->>>
->>> In my memory, when packed(2), it breaks the C standard (although I am
->>> not quit sure).
->>>
->>> And I guess, all C programmers will assume it will be 6 when within
->>> pack(2) or pack(1).
->>>
->>>> 	s::z at offset 2+8 = 10
->>>> 	sizeof(struct s) == 12 (packed)
->>>>
->>>> Also reduced to 12 if only inner struct is marked packed:
->>>> 	alignof(s::y) == 2
->>>> 	s::y at offset 2
->>>> 	sizeof(s::y) == 6 (packed)
->>>> 	s::z at offset 2+6 = 8
->>>> 	sizeof(struct s) == 12 (still padded)
->>>>
->>>> Adding packed attribute on both outer and inner struct reduces
->>>> sizeof(struct s) to 10 to match x86.
->>>>
->>>> Unfortunately it's years too late to change this ABI, so we're stuck
->>>> with it.
->>>>
->>>
->>> Unfortunately too, most using cases are related with API (the related
->>> structure definition must be the same in binary data).
->>>
->>> I am sure there are still another ways to bypass this issue, but that
->>> will make the code looks very strange (especially they are API).
->>>
->>> :-(
->>>
+It happened once and I am not sure how to re-produce...
+
+On Fri, Jan 10, 2014 at 12:34 AM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 01/10/2014 03:52 AM, John Tobias wrote:
 >>
->> I guess most C programmers will use this way to describe protocol/data
->> format, and keep compatible for it (since it is API).
+>> Hi Shawn,
 >>
->> So even if it really does not break C standard, I still recommend our
->> compiler to improve itself to support this features.
-> 
-> The compiler cannot change this without breaking the ABI.
-> 
-> If the structure describes a set-in-stone data layout (which it sounds
-> like it does since it asserts the size of it) then the correct fix is to
-> pack the structures in such a way as to guarantee the correct offsets
-> and sizes on all compliant compilers. Otherwise if it's just an internal
-> programming API it shouldn't be using compile time asserts to enforce
-> things that vary between ABIs.
-> 
-
-OK, thanks, I guess your meaning is:
-
-	struct s {
-		short x;
-		struct {
-			short x[3];
-		} y __attribute__ ((packed));
-		short z;
-	} __attribute__ ((packed));
-
-That will satisfy all of compilers (include metag), is it correct?
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+>> Any idea on these bug?.
+>
+>
+> Is this bug happening systematically or randomly ?
+>
+>
+>
+>
+>> [ 559.972748] =====================================
+>> [ 559.977457] [ BUG: bad unlock balance detected! ]
+>> [ 559.982169] 3.13.0-rc1 #1 Tainted: G O
+>> [ 559.986790] -------------------------------------
+>> [ 559.991499] swapper/0 is trying to release lock (master_lock) at:
+>> [ 559.997642] <8001d708> imx6q_enter_wait+0x80/0x8c
+>> [ 560.002524] but there are no more locks to release!
+>> [ 560.007404]
+>> [ 560.007404] other info that might help us debug this:
+>> [ 560.013939] no locks held by swapper/0.
+>> [ 560.017779]
+>> [ 560.017779] stack backtrace:
+>> [ 560.022147] CPU: 0 PID: 0 Comm: swapper Tainted: G O 3.13.0-rc1 #1
+>> [ 560.029200] Backtrace:
+>> [ 560.031685] <80011fb4> (dump_backtrace+0x0/0x10c) from <80012150>
+>> (show_stack+0x18/0x1c)
+>> [ 560.040128] :806c00e8 :8001d708 :806bd1b0 :00000000
+>> [ 560.045869] <80012138> (show_stack+0x0/0x1c) from <804eeef0>
+>> (dump_stack+0x20/0x28)
+>> [ 560.053889] <804eeed0> (dump_stack+0x0/0x28) from <8004b2a8>
+>> (print_unlock_imbalance_bug+0xb4/0xe4)
+>> [ 560.063296] <8004b1f4> (print_unlock_imbalance_bug+0x0/0xe4) from
+>> <8004e338> (lock_release+0x184/0x1bc)
+>> [ 560.073037] :80be210c :806bd1b0 :806b2000 :00000000
+>> [ 560.078771] <8004e1b4> (lock_release+0x0/0x1bc) from <804f546c>
+>> (_raw_spin_unlock+0x20/0x2c)
+>> [ 560.087572] <804f544c> (_raw_spin_unlock+0x0/0x2c) from <8001d708>
+>> (imx6q_enter_wait+0x80/0x8c)
+>> [ 560.096620] :806f2f14 :806bd1b0
+>> [ 560.100246] <8001d688> (imx6q_enter_wait+0x0/0x8c) from <80305d84>
+>> (cpuidle_enter_state+0x44/0xfc)
+>> [ 560.109554] :806dcae0 :00000082 :6128317f :8001d688
+>> [ 560.115285] <80305d40> (cpuidle_enter_state+0x0/0xfc) from
+>> <80305f28> (cpuidle_idle_call+0xec/0x15c)
+>> [ 560.124767] :806b2000 :806dcae4 :806c00f8 :00000001 :80c37030
+>> :806dcae0
+>> [ 560.132701] <80305e3c> (cpuidle_idle_call+0x0/0x15c) from <8000fd08>
+>> (arch_cpu_idle+0x10/0x44)
+>> [ 560.141662] :00000001 :806e8d8a :806b2000 :806ba0dc :806b2000
+>> :00000000
+>> [ 560.149595] <8000fcf8> (arch_cpu_idle+0x0/0x44) from <80056be4>
+>> (cpu_startup_entry+0x50/0x114)
+>> [ 560.158568] <80056b94> (cpu_startup_entry+0x0/0x114) from <804ea1e0>
+>> (rest_init+0xb4/0xdc)
+>> [ 560.167181] :8181af00 :00000000
+>> [ 560.170808] <804ea12c> (rest_init+0x0/0xdc) from <80684a98>
+>> (start_kernel+0x2f0/0x348)
+>> [ 560.179074] :ffffffff :806f2b80 :806ba158
+>> [ 560.183750] <806847a8> (start_kernel+0x0/0x348) from <80008070>
+>> (0x80008070)
+>>
+>
+>
+> --
+>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
