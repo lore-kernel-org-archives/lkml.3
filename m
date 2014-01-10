@@ -1,156 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883AbaAJOCI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:02:08 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:44770 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaAJN5g (ORCPT
+	id S1752448AbaAJOJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:09:07 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46726 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaAJOJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:57:36 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: [PATCHSET v3 driver-core-next] kernfs, sysfs, driver-core: implement synchronous self-removal
-Date: Fri, 10 Jan 2014 08:57:17 -0500
-Message-Id: <1389362251-8128-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.4.2
+	Fri, 10 Jan 2014 09:09:03 -0500
+Message-ID: <52CFFEFB.7060202@cogentembedded.com>
+Date: Fri, 10 Jan 2014 18:08:59 +0400
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "anton@enomsg.org" <anton@enomsg.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "mk7.kang@samsung.com" <mk7.kang@samsung.com>
+Subject: Re: [PATCH 2/3] dt: Document ModelGauge gauge bindings
+References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com> <1389286145-15375-3-git-send-email-vladimir.barinov@cogentembedded.com> <20140110105621.GC6798@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140110105621.GC6798@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-This is v3 of kernfs self-removal patchset.  v2 posting mistakenly
-sent out slightly old set of patches, so the v3.  Sorry about the
-noise.  Changes from the first take[L] are,
+thank you for the review.
 
-* Patches reordered so that more trivial ones are in the front.
+On 01/10/2014 02:56 PM, Mark Rutland wrote:
+> On Thu, Jan 09, 2014 at 04:49:04PM +0000, Vladimir Barinov wrote:
+>> These bindings can be used to register Maxim ModelGauge ICs fuel gauge
+>> (MAX17040/41/43/44/48/49/58/59)
+>>
+>> Signed-off-by: Vladimir Barinov<vladimir.barinov@cogentembedded.com>
+>>
+>> ---
+>>   Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt |   82 ++++++++++
+>>   1 file changed, 82 insertions(+)
+>>
+>> Index: battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt
+>> ===================================================================
+>> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
+>> +++ battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt	2014-01-09 15:09:38.035138887 +0400
+>> @@ -0,0 +1,82 @@
+>> +modelgauge_battery
+>> +~~~~~~~~~~~~~~~~~~
+>> +
+>> +Required properties:
+>> + - compatible		: should contain one of the following:
+>> +			  - "maxim,max17040" for MAX17040
+>> +			  - "maxim,max17041" for MAX17041
+>> +			  - "maxim,max17043" for MAX17043
+>> +			  - "maxim,max17044" for MAX17044
+>> +			  - "maxim,max17048" for MAX17048
+>> +			  - "maxim,max17049" for MAX17049
+>> +			  - "maxim,max17058" for MAX17058
+>> +			  - "maxim,max17059" for MAX17059
+>> +
+>> +Optional properties:
+>> + - maxim,empty_alert_threshold	: Capacity threshold where an interrupt is
+>> +				  generated on the ALRT pin;
+> s/_/-/ in proeprty names please.
+I'll make this parameter configurable via sysfs in the driver. Is it ok?
+>
+> Why is this property in the dt at all?
+>
+> Surely the driver can choose the value it wants.
+>
+> The driver can choose a sensible value, surely?
+Ok. I'll exclude the platform data from DT and put into sysfs.
+>> +
+>> + - soc_change_alert		: /* alert for 1% soc change */
+> Likewise, surely the driver should decide if it wants this?
+Ditto.
+>
+>> + - hibernate_threshold		: Hibernate threshold (crate), where IC
+>> +				  enters hibernate mode
+>> + - active_threshold		: Active threshold (mV), where IC exits
+>> +				  hibernate mode
+>> + - undervoltage			: Voltage (mV), when IC alerts while battery
+>> +				  voltage less then undervoltage
+>> + - overvoltage			: Voltage (mV), when IC alerts while battery
+>> +				  voltage greater then overvoltage
+>> + - maxim,resetvoltage		: Voltage threshold (mV) below which the IC
+>> +				  resets itself. Used to detect battery removal
+>> +				  and reinsertion;
+> Could you elaborate on what these are for. How variable are these
+> between batteries?
+Ditto.
+>
+>> + - maxim,empty_adjustment	: Capacity charge empty design value;
+>> + - maxim,full_adjustment	: Capacity charge full design value;
+> These names are a bit odd.
+May be you are right. But I've got this from MAXIM documentation.
+>
+> How about maxim,charge-empty and maxim,charge-full (perhaps
+> maxim,charge-empty-design).
+I'll leave the original names to avoid misunderstanding between names in 
+MAXIM docs
+and driver's naming.
+>
+>> + - maxim,rcomp0			: ModelGauge RCOMP parameter, used for
+>> +				  temperature compensation;
+>> + - maxim,temp_co_up		: ModelGauge TempCoUp parameter, used for
+>> +				  temperature compensation;
+>> + - maxim,temp_co_down		: ModelGauge TempCoDown parameter, used for
+>> +				  temperature compensation;
+>> + - maxim,ocvtest		: ModelGauge OCVTest parameter, used for
+>> +				  verification of Custom Model calibration data
+>> +				  loaded into IC RAM;
+>> + - maxim,soc_check_a		: ModelGauge SOCCheckA parameter, used for
+>> +				  verification of Custom Model calibration data
+>> +				  loaded into IC RAM;
+>> + - maxim,soc_check_b		: ModelGauge SOCCheckB parameter, used for
+>> +				  verification of Custom Model calibration data
+>> +				  loaded into IC RAM;
+>> + - maxim,bits			: ModelGauge Bits parameter, used as
+>> +				  scaling parameter in Custom Model algorithm;
+>> + - maxim,model_data		: ModelGauge ModelData data,
+>> +				  Custom Model calibration data.
+> I have no idea what these properties mean, so I can't comment on them as
+> they are other than to say this looks a bit low-level. Are there any
+> docs?
+These are the calibration parameters for specific battery to be used in 
+ModelGauge algorithm inside MAXIM ICs.
+They are provided by MAXIM for unique battery once requested. So vendor 
+needs to send the battery to MAXIM in order
+to calibrate/adopt it for MAXIM's firmware algorithm that makes capacity 
+calculation more accurate.
+>
+>> +
+>> +Example:
+>> +
+>> +modelgauge@36 {
+>> +	compatible = "maxim,max17058";
+>> +	reg =<0x36>;
+>> +	interrupt-parent =<&msmgpio>;
+>> +	interrupts =<107 0x2>;
+> This portion of the example looks fine.
+>
+>> +
+>> +	maxim,empty_alert_threshold = /bits/ 8<15>;
+>> +	maxim,resetvoltage = /bits/ 16<0>;
+>> +	maxim,empty_adjustment = /bits/ 8<0>;
+>> +	maxim,full_adjustment = /bits/ 8<100>;
+>> +	maxim,rcomp0 = /bits/ 8<175>;
+> You did not describe that any of these were 8-bit values in the binding.
+As mentioned above, I'll move this portion out from DT, except rcomp0, 
+since this is battery unique value.
+>
+>> +	maxim,temp_co_up =<(-1100)>;
+>> +	maxim,temp_co_down =<(-4000)>;
+> These weren't described as signed.
+Will describe, thx.
+>
+>> +	maxim,ocvtest = /bits/ 16<56144>;
+>> +	maxim,soc_check_a = /bits/ 8<241>;
+>> +	maxim,soc_check_b = /bits/ 8<243>;
+>> +	maxim,bits = /bits/ 8<19>;
+> These weren't described as 8-bit either.
+Will describe.
+>
+>> +
+>> +	maxim,model_data = /bits/ 8<
+>> +		0x9B 0x70 0xAB 0x30 0xB5 0xA0 0xB9 0xD0
+>> +		0xBB 0xA0 0xBC 0x00 0xBC 0xB0 0xBD 0x00
+>> +		0xBD 0x60 0xBE 0x40 0xBF 0x40 0xC1 0xF0
+>> +		0xC5 0x60 0xC8 0xA0 0xCD 0x00 0xD1 0x50
+>> +		0x00 0xE0 0x01 0x80 0x18 0x60 0x1C 0x20
+>> +		0x54 0x00 0x6A 0xC0 0x79 0x20 0x65 0xC0
+>> +		0x0B 0xE0 0x2A 0xC0 0x1D 0x00 0x17 0xE0
+>> +		0x15 0xE0 0x11 0xE0 0x11 0x00 0x11 0x00>;
+>> +};
+> This looks scary.
+This is a calibration data provided by MAXIM vendor for specific battery.
+These are unique data for every battery and they are intended to be loaded
+into IC's RAM for further use by MAXIM MadelGauge algorithm.
 
-* Deactivation split into a separate stage instead of being part of
-  unlinking.  Deactivation is now exposed as kernfs API via four new
-  functions - kernfs_{de|re}activate[_self]().  These functions can
-  nest and allow implementation of "deactivate, lock subsys, try
-  removal, unlock subsys, reactivate" sequence where removal may or
-  may not succeed.  This will be used to convert cgroup to kernfs.
-  (prototype seems happy with this API)
+I do not know the internals for MAXIM's firmware, but I assume that 
+these data are
+reference offsets for Capacity on OCV dependency.
 
-* As this means that deactivation can be temporary,
-  kernfs_get_active() is updated to block if the node is deactivated
-  but not removed.
+The vendor can calibrate the battery by itself in s/w (Capacity(OCV) 
+dependency). The MAXIM
+allows to do it in h/w.
 
-* kernfs_remove_self() is now implemented using the new deactivation
-  API.  Its behavior remains the same.
-
-Original patch description follows.
-
-kernfs / sysfs implement the "sever" semantic for userland accesses.
-When a node is removed, no further userland operations are allowed and
-the in-flight ones are drained before removal is finished.  This makes
-policing post-mortem userland accesses trivial for its users;
-unfortunately, this comes with a drawback - a node which tries to
-delete oneself through one of its userland operations deadlocks.
-Removal wants to drain the active access that the operation itself is
-running on top of.
-
-This currently is worked around in the sysfs layer using
-sysfs_schedule_callback() which punts the actual removal to a work
-item.  While making the operation asynchronous kinda works, it's a bit
-cumbersome to use and its behavior isn't quite correct as the caller
-has no way of telling when or even whether the operation is actually
-complete.  If such self-removal is followed by another operation which
-expects the removed name to be available, there's no way to make the
-second operation reliable - e.g. something like "echo 1 > asdf/delete;
-echo asdf > create_new_child" can't work properly.
-
-This patchset improves kernfs removal path and implements
-kernfs_remove_self() which is to be called from an on-going kernfs
-operation and removes the self node.  The function can be called
-concurrently and only one will return %true and all others will wait
-until the winner's file operation is complete (not the
-kernfs_remove_self() call itself but the enclosing file operation
-which invoked the function).  This ensures that if there are multiple
-concurrent "echo 1 > asdf/delete", all of them would finish only after
-the whole store_delete() method is complete.
-
-kernfs_remove_self() is exposed to upper layers through
-sysfs_remove_file_self() and device_remove_file_self().  The existing
-users of device_schedule_callback() are converted to use remove_self
-and the unused async mechanism is removed.
-
-This patchset contains the following 14 patches.
-
- 0001-kernfs-fix-get_active-failure-handling-in-kernfs_seq.patch
- 0002-kernfs-replace-kernfs_node-u.completion-with-kernfs_.patch
- 0003-kernfs-remove-KERNFS_ACTIVE_REF-and-add-kernfs_lockd.patch
- 0004-kernfs-remove-KERNFS_REMOVED.patch
- 0005-kernfs-restructure-removal-path-to-fix-possible-prem.patch
- 0006-kernfs-invoke-kernfs_unmap_bin_file-directly-from-__.patch
- 0007-kernfs-remove-kernfs_addrm_cxt.patch
- 0008-kernfs-make-kernfs_get_active-block-if-the-node-is-d.patch
- 0009-kernfs-implement-kernfs_-de-re-activate-_self.patch
- 0010-kernfs-sysfs-driver-core-implement-kernfs_remove_sel.patch
- 0011-pci-use-device_remove_file_self-instead-of-device_sc.patch
- 0012-scsi-use-device_remove_file_self-instead-of-device_s.patch
- 0013-s390-use-device_remove_file_self-instead-of-device_s.patch
- 0014-sysfs-driver-core-remove-unused-sysfs-device-_schedu.patch
-
-0001 fixes -ENODEV failure handling in kernfs.  I *think* this could
-be the fix for the issue Sasha reported with trinity fuzzying.  Sasha,
-would it be possible to confirm whether the issue is reproducible with
-this patch applied?
-
-0002 replaces kernfs_node->u.completion with a hierarchy-wide
-wait_queue_head.  This will be used to fix concurrent removal
-behavior.
-
-0003-0004 simplifies removal path to prepare for restructuring.
-
-0005 fixes premature completion of node removal when multiple removers
-are competing.  This shouldn't matter for the existing sysfs users.
-
-0006-0007 cleans up removal path.  The size of kernfs_node gets
-reduced by one pointer.
-
-0008-0010 implement kernfs_{de|re}activate[_self](),
-kernfs_remove_self() and friends.
-
-0011-0014 convert the existing users of device_schedule_callback() to
-device_remove_file_self() and remove now unused async mechanism.
-
-After the changes, kernfs_node is shrunken by a pointer.
-Unfortunately, the addition of deactivation API makes LOC go up by
-above a hundred lines.  Oh well....
-
-The patchset is on top of the current driver-core-next eb4c69033fd1
-("Revert "kobject: introduce kobj_completion"") and also available in
-the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-suicide
-
-diffstat follows.
-
- arch/s390/include/asm/ccwgroup.h |    1 
- arch/s390/pci/pci_sysfs.c        |   18 -
- drivers/base/core.c              |   50 +--
- drivers/pci/pci-sysfs.c          |   24 -
- drivers/s390/block/dcssblk.c     |   14 
- drivers/s390/cio/ccwgroup.c      |   26 +
- drivers/scsi/scsi_sysfs.c        |   15 -
- fs/kernfs/dir.c                  |  585 ++++++++++++++++++++++++++-------------
- fs/kernfs/file.c                 |   62 +++-
- fs/kernfs/kernfs-internal.h      |   17 -
- fs/kernfs/symlink.c              |    6 
- fs/sysfs/file.c                  |  115 +------
- include/linux/device.h           |   13 
- include/linux/kernfs.h           |   24 +
- include/linux/sysfs.h            |   16 -
- 15 files changed, 555 insertions(+), 431 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-kernfs-suicide
+Regards,
+Vladimir
