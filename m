@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaAJORR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:17:17 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56720 "HELO
+	id S1757315AbaAJORm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:17:42 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59150 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752985AbaAJOQW (ORCPT
+	with SMTP id S1752809AbaAJOQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:16:22 -0500
+	Fri, 10 Jan 2014 09:16:21 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Yinghai Lu <yinghai@kernel.org>,
@@ -19,9 +19,9 @@ Cc: Yinghai Lu <yinghai@kernel.org>,
         Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-scsi@vger.kernel.org,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/9] PCI: Global rescan-remove lock
-Date: Fri, 10 Jan 2014 15:22:18 +0100
-Message-ID: <25738007.GvRlERVdx3@vostro.rjw.lan>
+Subject: [PATCH 3/9] ACPI / hotplug / PCI: Use global PCI rescan-remove locking
+Date: Fri, 10 Jan 2014 15:24:41 +0100
+Message-ID: <1889108.hSyl0lYrWr@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
 In-Reply-To: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
 References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1992931.Zv6xBcN8V4@vostro.rjw.lan> <20440867.YaQfKrcfsQ@vostro.rjw.lan>
@@ -34,161 +34,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-There are multiple PCI device addition and removal code paths that
-may be run concurrently with the generic PCI bus rescan and device
-removal that can be triggered via sysfs.  If that happens, it may
-lead to multiple different, potentially dangerous race conditions.
+Multiple race conditions are possible between the ACPI-based PCI
+hotplug (ACPIPHP) and the generic PCI bus rescan and device removal
+that can be triggered via sysfs.
 
-The most straightforward way to address those problems is to run
-the code in question under the same lock that is used by the
-generic rescan/remove code in pci-sysfs.c.  To prepare for those
-changes, move the definition of the global PCI remove/rescan lock
-to probe.c and provide global wrappers, pci_lock_rescan_remove()
-and pci_unlock_rescan_remove(), allowing drivers to manipulate
-that lock.  Also provide pci_stop_and_remove_bus_device_locked()
-for the callers of pci_stop_and_remove_bus_device() who only need
-to hold the rescan/remove lock around it.
+To avoid those race conditions make the ACPIPHP code use global PCI
+rescan-remove locking.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/pci-sysfs.c |   19 +++++++------------
- drivers/pci/probe.c     |   18 ++++++++++++++++++
- drivers/pci/remove.c    |    8 ++++++++
- include/linux/pci.h     |    3 +++
- 4 files changed, 36 insertions(+), 12 deletions(-)
+ drivers/pci/hotplug/acpiphp.h      |    5 +++-
+ drivers/pci/hotplug/acpiphp_core.c |    2 -
+ drivers/pci/hotplug/acpiphp_glue.c |   43 ++++++++++++++++++++++++++++++++-----
+ 3 files changed, 43 insertions(+), 7 deletions(-)
 
-Index: linux-pm/drivers/pci/pci-sysfs.c
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
 ===================================================================
---- linux-pm.orig/drivers/pci/pci-sysfs.c
-+++ linux-pm/drivers/pci/pci-sysfs.c
-@@ -297,7 +297,6 @@ msi_bus_store(struct device *dev, struct
- }
- static DEVICE_ATTR_RW(msi_bus);
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -77,6 +77,8 @@ struct acpiphp_bridge {
  
--static DEFINE_MUTEX(pci_remove_rescan_mutex);
- static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
- 				size_t count)
- {
-@@ -308,10 +307,10 @@ static ssize_t bus_rescan_store(struct b
- 		return -EINVAL;
- 
- 	if (val) {
--		mutex_lock(&pci_remove_rescan_mutex);
-+		pci_lock_rescan_remove();
- 		while ((b = pci_find_next_bus(b)) != NULL)
- 			pci_rescan_bus(b);
--		mutex_unlock(&pci_remove_rescan_mutex);
-+		pci_unlock_rescan_remove();
- 	}
- 	return count;
- }
-@@ -342,9 +341,9 @@ dev_rescan_store(struct device *dev, str
- 		return -EINVAL;
- 
- 	if (val) {
--		mutex_lock(&pci_remove_rescan_mutex);
-+		pci_lock_rescan_remove();
- 		pci_rescan_bus(pdev->bus);
--		mutex_unlock(&pci_remove_rescan_mutex);
-+		pci_unlock_rescan_remove();
- 	}
- 	return count;
- }
-@@ -354,11 +353,7 @@ static struct device_attribute dev_resca
- 
- static void remove_callback(struct device *dev)
- {
--	struct pci_dev *pdev = to_pci_dev(dev);
--
--	mutex_lock(&pci_remove_rescan_mutex);
--	pci_stop_and_remove_bus_device(pdev);
--	mutex_unlock(&pci_remove_rescan_mutex);
-+	pci_stop_and_remove_bus_device_locked(to_pci_dev(dev));
- }
- 
- static ssize_t
-@@ -395,12 +390,12 @@ dev_bus_rescan_store(struct device *dev,
- 		return -EINVAL;
- 
- 	if (val) {
--		mutex_lock(&pci_remove_rescan_mutex);
-+		pci_lock_rescan_remove();
- 		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
- 			pci_rescan_bus_bridge_resize(bus->self);
- 		else
- 			pci_rescan_bus(bus);
--		mutex_unlock(&pci_remove_rescan_mutex);
-+		pci_unlock_rescan_remove();
- 	}
- 	return count;
- }
-Index: linux-pm/drivers/pci/probe.c
-===================================================================
---- linux-pm.orig/drivers/pci/probe.c
-+++ linux-pm/drivers/pci/probe.c
-@@ -2014,6 +2014,24 @@ EXPORT_SYMBOL(pci_scan_slot);
- EXPORT_SYMBOL(pci_scan_bridge);
- EXPORT_SYMBOL_GPL(pci_scan_child_bus);
- 
-+/*
-+ * pci_rescan_bus(), pci_rescan_bus_bridge_resize() and PCI device removal
-+ * routines should always be executed under this mutex.
-+ */
-+static DEFINE_MUTEX(pci_rescan_remove_lock);
+ 	/* PCI-to-PCI bridge device */
+ 	struct pci_dev *pci_dev;
 +
-+void pci_lock_rescan_remove(void)
-+{
-+	mutex_lock(&pci_rescan_remove_lock);
-+}
-+EXPORT_SYMBOL_GPL(pci_lock_rescan_remove);
-+
-+void pci_unlock_rescan_remove(void)
-+{
-+	mutex_unlock(&pci_rescan_remove_lock);
-+}
-+EXPORT_SYMBOL_GPL(pci_unlock_rescan_remove);
-+
- static int __init pci_sort_bf_cmp(const struct device *d_a, const struct device *d_b)
- {
- 	const struct pci_dev *a = to_pci_dev(d_a);
-Index: linux-pm/include/linux/pci.h
-===================================================================
---- linux-pm.orig/include/linux/pci.h
-+++ linux-pm/include/linux/pci.h
-@@ -779,6 +779,7 @@ struct pci_dev *pci_dev_get(struct pci_d
- void pci_dev_put(struct pci_dev *dev);
- void pci_remove_bus(struct pci_bus *b);
- void pci_stop_and_remove_bus_device(struct pci_dev *dev);
-+void pci_stop_and_remove_bus_device_locked(struct pci_dev *dev);
- void pci_stop_root_bus(struct pci_bus *bus);
- void pci_remove_root_bus(struct pci_bus *bus);
- void pci_setup_cardbus(struct pci_bus *bus);
-@@ -1022,6 +1023,8 @@ void set_pcie_hotplug_bridge(struct pci_
- int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap);
- unsigned int pci_rescan_bus_bridge_resize(struct pci_dev *bridge);
- unsigned int pci_rescan_bus(struct pci_bus *bus);
-+void pci_lock_rescan_remove(void);
-+void pci_unlock_rescan_remove(void);
++	bool is_going_away;
+ };
  
- /* Vital product data routines */
- ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
-Index: linux-pm/drivers/pci/remove.c
+ 
+@@ -150,6 +152,7 @@ struct acpiphp_attention_info
+ /* slot flags */
+ 
+ #define SLOT_ENABLED		(0x00000001)
++#define SLOT_IS_GOING_AWAY	(0x00000002)
+ 
+ /* function flags */
+ 
+@@ -169,7 +172,7 @@ void acpiphp_unregister_hotplug_slot(str
+ typedef int (*acpiphp_callback)(struct acpiphp_slot *slot, void *data);
+ 
+ int acpiphp_enable_slot(struct acpiphp_slot *slot);
+-int acpiphp_disable_and_eject_slot(struct acpiphp_slot *slot);
++int acpiphp_disable_slot(struct acpiphp_slot *slot);
+ u8 acpiphp_get_power_status(struct acpiphp_slot *slot);
+ u8 acpiphp_get_attention_status(struct acpiphp_slot *slot);
+ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot);
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
---- linux-pm.orig/drivers/pci/remove.c
-+++ linux-pm/drivers/pci/remove.c
-@@ -114,6 +114,14 @@ void pci_stop_and_remove_bus_device(stru
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -432,6 +432,7 @@ static void cleanup_bridge(struct acpiph
+ 					pr_err("failed to remove notify handler\n");
+ 			}
+ 		}
++		slot->flags |= SLOT_IS_GOING_AWAY;
+ 		if (slot->slot)
+ 			acpiphp_unregister_hotplug_slot(slot);
+ 	}
+@@ -439,6 +440,8 @@ static void cleanup_bridge(struct acpiph
+ 	mutex_lock(&bridge_mutex);
+ 	list_del(&bridge->list);
+ 	mutex_unlock(&bridge_mutex);
++
++	bridge->is_going_away = true;
  }
- EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
  
-+void pci_stop_and_remove_bus_device_locked(struct pci_dev *dev)
-+{
+ /**
+@@ -757,6 +760,10 @@ static void acpiphp_check_bridge(struct
+ {
+ 	struct acpiphp_slot *slot;
+ 
++	/* Bail out if the bridge is going away. */
++	if (bridge->is_going_away)
++		return;
++
+ 	list_for_each_entry(slot, &bridge->slots, node) {
+ 		struct pci_bus *bus = slot->bus;
+ 		struct pci_dev *dev, *tmp;
+@@ -827,6 +834,8 @@ void acpiphp_check_host_bridge(acpi_hand
+ 	}
+ }
+ 
++static int acpiphp_disable_and_eject_slot(struct acpiphp_slot *slot);
++
+ static void hotplug_event(acpi_handle handle, u32 type, void *data)
+ {
+ 	struct acpiphp_context *context = data;
+@@ -856,6 +865,9 @@ static void hotplug_event(acpi_handle ha
+ 		} else {
+ 			struct acpiphp_slot *slot = func->slot;
+ 
++			if (slot->flags & SLOT_IS_GOING_AWAY)
++				break;
++
+ 			mutex_lock(&slot->crit_sect);
+ 			enable_slot(slot);
+ 			mutex_unlock(&slot->crit_sect);
+@@ -871,6 +883,9 @@ static void hotplug_event(acpi_handle ha
+ 			struct acpiphp_slot *slot = func->slot;
+ 			int ret;
+ 
++			if (slot->flags & SLOT_IS_GOING_AWAY)
++				break;
++
+ 			/*
+ 			 * Check if anything has changed in the slot and rescan
+ 			 * from the parent if that's the case.
+@@ -900,9 +915,11 @@ static void hotplug_event_work(void *dat
+ 	acpi_handle handle = context->handle;
+ 
+ 	acpi_scan_lock_acquire();
 +	pci_lock_rescan_remove();
-+	pci_stop_and_remove_bus_device(dev);
+ 
+ 	hotplug_event(handle, type, context);
+ 
 +	pci_unlock_rescan_remove();
-+}
-+EXPORT_SYMBOL_GPL(pci_stop_and_remove_bus_device_locked);
-+
- void pci_stop_root_bus(struct pci_bus *bus)
+ 	acpi_scan_lock_release();
+ 	acpi_evaluate_hotplug_ost(handle, type, ACPI_OST_SC_SUCCESS, NULL);
+ 	put_bridge(context->func.parent);
+@@ -1070,12 +1087,19 @@ void acpiphp_remove_slots(struct pci_bus
+  */
+ int acpiphp_enable_slot(struct acpiphp_slot *slot)
  {
- 	struct pci_dev *child, *tmp;
++	pci_lock_rescan_remove();
++
++	if (slot->flags & SLOT_IS_GOING_AWAY)
++		return -ENODEV;
++
+ 	mutex_lock(&slot->crit_sect);
+ 	/* configure all functions */
+ 	if (!(slot->flags & SLOT_ENABLED))
+ 		enable_slot(slot);
+ 
+ 	mutex_unlock(&slot->crit_sect);
++
++	pci_unlock_rescan_remove();
+ 	return 0;
+ }
+ 
+@@ -1083,10 +1107,12 @@ int acpiphp_enable_slot(struct acpiphp_s
+  * acpiphp_disable_and_eject_slot - power off and eject slot
+  * @slot: ACPI PHP slot
+  */
+-int acpiphp_disable_and_eject_slot(struct acpiphp_slot *slot)
++static int acpiphp_disable_and_eject_slot(struct acpiphp_slot *slot)
+ {
+ 	struct acpiphp_func *func;
+-	int retval = 0;
++
++	if (slot->flags & SLOT_IS_GOING_AWAY)
++		return -ENODEV;
+ 
+ 	mutex_lock(&slot->crit_sect);
+ 
+@@ -1104,9 +1130,18 @@ int acpiphp_disable_and_eject_slot(struc
+ 		}
+ 
+ 	mutex_unlock(&slot->crit_sect);
+-	return retval;
++	return 0;
+ }
+ 
++int acpiphp_disable_slot(struct acpiphp_slot *slot)
++{
++	int ret;
++
++	pci_lock_rescan_remove();
++	ret = acpiphp_disable_and_eject_slot(slot);
++	pci_unlock_rescan_remove();
++	return ret;
++}
+ 
+ /*
+  * slot enabled:  1
+@@ -1117,7 +1152,6 @@ u8 acpiphp_get_power_status(struct acpip
+ 	return (slot->flags & SLOT_ENABLED);
+ }
+ 
+-
+ /*
+  * latch   open:  1
+  * latch closed:  0
+@@ -1127,7 +1161,6 @@ u8 acpiphp_get_latch_status(struct acpip
+ 	return !(get_slot_status(slot) & ACPI_STA_DEVICE_UI);
+ }
+ 
+-
+ /*
+  * adapter presence : 1
+  *          absence : 0
+Index: linux-pm/drivers/pci/hotplug/acpiphp_core.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_core.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_core.c
+@@ -156,7 +156,7 @@ static int disable_slot(struct hotplug_s
+ 	pr_debug("%s - physical_slot = %s\n", __func__, slot_name(slot));
+ 
+ 	/* disable the specified slot */
+-	return acpiphp_disable_and_eject_slot(slot->acpi_slot);
++	return acpiphp_disable_slot(slot->acpi_slot);
+ }
+ 
+ 
 
