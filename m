@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaAJKBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 05:01:11 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:40605 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaAJKBH (ORCPT
+	id S1753562AbaAJKDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 05:03:55 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:40877 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaAJKDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 05:01:07 -0500
-Date: Fri, 10 Jan 2014 10:01:02 +0000
+	Fri, 10 Jan 2014 05:03:48 -0500
+Date: Fri, 10 Jan 2014 10:03:42 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/mfd/stw481x.c: fix a typo
-Message-ID: <20140110100102.GB28141@lee--X1>
-References: <1389202490-31506-1-git-send-email-lpapp@kde.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mark.rutland@arm.com, sbkim73@samsung.com, lgirdwood@gmail.com,
+        broonie@kernel.org, patches@linaro.org
+Subject: Re: [PATCH v2 1/3] mfd: Add support for S2MPA01 device
+Message-ID: <20140110100342.GC28141@lee--X1>
+References: <1389266554-23463-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1389202490-31506-1-git-send-email-lpapp@kde.org>
+In-Reply-To: <1389266554-23463-1-git-send-email-sachin.kamat@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The sentence is not proper English due to a minor typo of "addess". The 'r'
-> letter is missing which this change is now amending. This was caught while
-> reading the driver source for getting more information about it, and then I ran
-> the vim spellchecker to make sure there are no more typos in this file.
+> Add the necessary entries required for S2MPA01 multi-function
+> device. While at it also convert whitespaces to tabs in core.h.
 > 
-> Signed-off-by: Laszlo Papp <lpapp@kde.org>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 > ---
->  drivers/mfd/stw481x.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> * Fixed nits pointed out by Lee.
+> ---
+>  drivers/mfd/sec-core.c              |   45 +++++++-
+>  include/linux/mfd/samsung/core.h    |   16 ++-
+>  include/linux/mfd/samsung/irq.h     |   50 +++++++++
+>  include/linux/mfd/samsung/s2mpa01.h |  192 +++++++++++++++++++++++++++++++++++
+>  4 files changed, 295 insertions(+), 8 deletions(-)
+>  create mode 100644 include/linux/mfd/samsung/s2mpa01.h
 
-I'm feeling genorous today, so I'll apply it and change the subject
-line for you. This is the second time I've told you to do,
-
-  `git log --oneline -- <subsystem>`
-
-in order to find the correct commit log format for the subsystem
-you're applying patches to. Next time I'll just NACK the patch and
-you'll have to fix it yourself.
-
-Patch applied.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
 Lee Jones
