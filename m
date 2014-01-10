@@ -1,121 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147AbaAJW7B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:59:01 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:64170 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226AbaAJW7A (ORCPT
+	id S1758205AbaAJXAQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 18:00:16 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:61964 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074AbaAJXAO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:59:00 -0500
-Date: Fri, 10 Jan 2014 23:57:59 +0100
-From: Tim Jester-Pfadt <t.jp@gmx.de>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, standby24x7@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: rtl8188eu: Fixed whitespace related coding style
- issues
-Message-ID: <20140110225759.GA8720@archlinux.uni-trier.de>
+	Fri, 10 Jan 2014 18:00:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAK5ve-L4=uJmJfF67pR+jL1L532XP28FVmn=CTwWbDY2pUiPoA@mail.gmail.com>
+References: <CAK5ve-L4=uJmJfF67pR+jL1L532XP28FVmn=CTwWbDY2pUiPoA@mail.gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Fri, 10 Jan 2014 14:59:52 -0800
+Message-ID: <CAK5ve-LLdzEErKdDFoAb8kCLx7GMX5nXvO6opLzm4ZR0M-3dhw@mail.gmail.com>
+Subject: Re: [GIT PULL] LED fix for 3.13
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes two spaces at the start of the line aswell as all space after
-opening parenthesis and space before closeing parenthesis checkpatch.pl warnings
-in rtw_mlme.h
+My email was bounced back by LKML and Linux LED mail list. I forget to
+use plain text mode. So I forward it again.
 
-Signed-off-by: Tim Jester-Pfadt <t.jp@gmx.de>
----
- drivers/staging/rtl8188eu/include/rtw_mlme.h | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+Thanks,
+-Bryan
 
-diff --git a/drivers/staging/rtl8188eu/include/rtw_mlme.h b/drivers/staging/rtl8188eu/include/rtw_mlme.h
-index 33965ca..144f79c 100644
---- a/drivers/staging/rtl8188eu/include/rtw_mlme.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_mlme.h
-@@ -129,17 +129,17 @@ struct rt_link_detect {
- 
- struct profile_info {
- 	u8	ssidlen;
--	u8	ssid[ WLAN_SSID_MAXLEN ];
--	u8	peermac[ ETH_ALEN ];
-+	u8	ssid[WLAN_SSID_MAXLEN];
-+	u8	peermac[ETH_ALEN];
- };
- 
- struct tx_invite_req_info {
- 	u8	token;
- 	u8	benable;
--	u8	go_ssid[ WLAN_SSID_MAXLEN ];
-+	u8	go_ssid[WLAN_SSID_MAXLEN];
- 	u8	ssidlen;
--	u8	go_bssid[ ETH_ALEN ];
--	u8	peer_macaddr[ ETH_ALEN ];
-+	u8	go_bssid[ETH_ALEN];
-+	u8	peer_macaddr[ETH_ALEN];
- 	u8	operating_ch;	/* This information will be set by using the
- 				 * p2p_set op_ch=x */
- 	u8	peer_ch;	/* The listen channel for peer P2P device */
-@@ -182,9 +182,9 @@ struct tx_nego_req_info {
- };
- 
- struct group_id_info {
--	u8	go_device_addr[ ETH_ALEN ];	/* The GO's device address of
-+	u8	go_device_addr[ETH_ALEN];	/* The GO's device address of
- 						 * this P2P group */
--	u8	ssid[ WLAN_SSID_MAXLEN ];	/* The SSID of this P2P group */
-+	u8	ssid[WLAN_SSID_MAXLEN];	/* The SSID of this P2P group */
- };
- 
- struct scan_limit_info {
-@@ -388,7 +388,7 @@ struct mlme_priv {
- 	u8 *assoc_rsp;
- 	u32 assoc_rsp_len;
- 
--#if defined (CONFIG_88EU_AP_MODE)
-+#if defined(CONFIG_88EU_AP_MODE)
- 	/* Number of associated Non-ERP stations (i.e., stations using 802.11b
- 	 * in 802.11g BSS) */
- 	int num_sta_non_erp;
-@@ -472,7 +472,7 @@ void rtw_join_timeout_handler(void *FunctionContext);
- void _rtw_scan_timeout_handler(void *FunctionContext);
- void rtw_free_network_queue(struct adapter *adapter, u8 isfreeall);
- int rtw_init_mlme_priv(struct adapter *adapter);
--void rtw_free_mlme_priv (struct mlme_priv *pmlmepriv);
-+void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv);
- int rtw_select_and_join_from_scanned_queue(struct mlme_priv *pmlmepriv);
- int rtw_set_key(struct adapter *adapter, struct security_priv *psecuritypriv,
- 		int keyid, u8 set_tx);
-@@ -572,7 +572,7 @@ struct wlan_network *rtw_get_oldest_wlan_network(struct __queue *scanned_queue);
- void rtw_free_assoc_resources(struct adapter *adapter, int lock_scanned_queue);
- void rtw_indicate_disconnect(struct adapter *adapter);
- void rtw_indicate_connect(struct adapter *adapter);
--void rtw_indicate_scan_done( struct adapter *padapter, bool aborted);
-+void rtw_indicate_scan_done(struct adapter *padapter, bool aborted);
- void rtw_scan_abort(struct adapter *adapter);
- 
- int rtw_restruct_sec_ie(struct adapter *adapter, u8 *in_ie, u8 *out_ie,
-@@ -588,7 +588,7 @@ void rtw_get_encrypt_decrypt_from_registrypriv(struct adapter *adapter);
- void _rtw_join_timeout_handler(struct adapter *adapter);
- void rtw_scan_timeout_handler(struct adapter *adapter);
- 
-- void rtw_dynamic_check_timer_handlder(struct adapter *adapter);
-+void rtw_dynamic_check_timer_handlder(struct adapter *adapter);
- #define rtw_is_scan_deny(adapter) false
- #define rtw_clear_scan_deny(adapter) do {} while (0)
- #define rtw_set_scan_deny_timer_hdl(adapter) do {} while (0)
-@@ -605,7 +605,7 @@ int _rtw_enqueue_network(struct __queue *queue, struct wlan_network *pnetwork);
- 
- struct wlan_network *_rtw_dequeue_network(struct __queue *queue);
- 
-- struct wlan_network *_rtw_alloc_network(struct mlme_priv *pmlmepriv);
-+struct wlan_network *_rtw_alloc_network(struct mlme_priv *pmlmepriv);
- 
- 
- void _rtw_free_network(struct mlme_priv *pmlmepriv,
--- 
-1.8.5.2
-
+On Fri, Jan 10, 2014 at 2:57 PM, Bryan Wu <cooloney@gmail.com> wrote:
+>
+> Hi Linus,
+>
+> Pali Rohár and Pavel Machek reported the LED of Nokia N900 doesn't work with our latest 3.13-rc6 kernel. Milo fixed the regression here.
+>
+> So please consider the following changes since commit 802eee95bde72fd0cd0f3a5b2098375a487d1eda:
+>
+>   Linux 3.13-rc6 (2013-12-29 16:01:33 -0800)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git leds-fixes-for-3.13
+>
+> for you to fetch changes up to e70988d1aaf73221355e06125c9937bd4b27761c:
+>
+>   leds: lp5521/5523: Remove duplicate mutex (2014-01-10 14:48:07 -0800)
+>
+> ----------------------------------------------------------------
+> Milo Kim (1):
+>       leds: lp5521/5523: Remove duplicate mutex
+>
+>  drivers/leds/leds-lp5521.c | 12 ++++--------
+>  drivers/leds/leds-lp5523.c | 12 ++++--------
+>  2 files changed, 8 insertions(+), 16 deletions(-)
