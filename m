@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaAJJwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 04:52:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22571 "EHLO mga01.intel.com"
+	id S1753019AbaAJJwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 04:52:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41463 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658AbaAJJwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 04:52:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,637,1384329600"; 
-   d="scan'208";a="463092181"
-Date: Fri, 10 Jan 2014 10:52:09 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: micky <micky_ching@realsil.com.cn>, wwang <wei_wang@realsil.com.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Jingoo Han <jg1.han@samsung.com>,
-        "'Chris Ball'" <cjb@laptop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "'Borislav Petkov'" <bp@alien8.de>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: 3.12: kernel panic when resuming from suspend to RAM (x86_64)
-Message-ID: <20140110095209.GU6003@zurbaran>
-References: <alpine.DEB.2.02.1311290958560.30673@ionos.tec.linutronix.de>
- <5299FF38.7060203@gmail.com>
- <alpine.DEB.2.02.1312021145190.30673@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1312021219090.30673@ionos.tec.linutronix.de>
- <529D92D6.8050409@gmail.com>
- <20131209221721.GB8612@zurbaran>
- <52A670E4.5050501@realsil.com.cn>
- <52A674E0.2080407@realsil.com.cn>
- <20131210082955.GG8612@zurbaran>
- <52CFA095.3000709@gmail.com>
+	id S1751216AbaAJJwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 04:52:25 -0500
+Date: Fri, 10 Jan 2014 10:52:22 +0100
+From: Jan Kara <jack@suse.cz>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, jack@suse.cz,
+        Linus <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V4] mm readahead: Fix readahead fail for no local
+ memory and limit readahead pages
+Message-ID: <20140110095222.GE26378@quack.suse.cz>
+References: <1389295490-28707-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+ <20140110083656.GC26378@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52CFA095.3000709@gmail.com>
+In-Reply-To: <20140110083656.GC26378@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Francis,
-
-On Fri, Jan 10, 2014 at 08:26:13AM +0100, Francis Moreau wrote:
-> Hi.
-> 
-> On 12/10/2013 09:29 AM, Samuel Ortiz wrote:
-> > Hi Micky,
+On Fri 10-01-14 09:36:56, Jan Kara wrote:
+> On Fri 10-01-14 00:54:50, Raghavendra K T wrote:
+> > We limit the number of readahead pages to 4k.
 > > 
-> > On Tue, Dec 10, 2013 at 09:56:48AM +0800, micky wrote:
-> >> Hi Francis:
-> >> On 12/10/2013 09:39 AM, wwang wrote:
-> >>> which is based on Thomas' patch.
-> >>
-> >> Can you help us test this patch, we disable irq while suspend here.
-> > I already pushed a patch from Thomas to mfd-fixes that seems to fix the
-> > resume breakage:
+> > max_sane_readahead returns zero on the cpu having no local memory
+> > node. Fix that by returning a sanitized number of pages viz.,
+> > minimum of (requested pages, 4k, number of local free pages)
 > > 
-> > https://git.kernel.org/cgit/linux/kernel/git/sameo/mfd-fixes.git/commit/?id=19e49e445e198197c5e243f92d333d076e23d032
+> > Result:
+> > fadvise experiment with FADV_WILLNEED on a x240 machine with 1GB testfile
+> > 32GB* 4G RAM  numa machine ( 12 iterations) yielded
 > > 
-> 
-> I still can see any traces of this fix in Linus' tree.
-> 
-> Shouldn't this get merged before 3.13 is out ?
-Yes, it should. I just sent a pull request to Linus for that.
+> > kernel       Avg        Stddev
+> > base         7.264      0.56%
+> > patched      7.285      1.14%
+>   OK, looks good to me. You can add:
+> Reviewed-by: Jan Kara <jack@suse.cz>
+  Hum, while doing some other work I've realized there may be still a
+problem hiding with the 16 MB limitation. E.g. the dynamic linker is
+doing MADV_WILLNEED on the shared libraries. If the library (or executable)
+is larger than 16 MB, then it may cause performance problems since access
+is random in nature and we don't really know which part of the file do we
+need first.
 
-Cheers,
-Samuel.
+I'm not sure what others think about this but I'm now more inclined to a
+bit more careful and introduce the 16 MB limit only for the NUMA case. I.e.
+something like:
 
+	unsigned long local_free_page;
+	int nid;
+
+	nid = numa_node_id();
+	if (node_present_pages(nid)) {
+		/*
+		 * We sanitize readahead size depending on free memory in
+		 * the local node.
+		 */
+		local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+				  + node_page_state(nid, NR_FREE_PAGES);
+		return min(nr, local_free_page / 2);
+	}
+	/*
+	 * Readahead onto remote memory is better than no readahead when local
+	 * numa node does not have memory. We limit the readahead to 4k
+	 * pages though to avoid trashing page cache.
+	 */
+	return min(nr, MAX_REMOTE_READAHEAD);
+
+								Honza
+
+> > Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> > ---
+> >  mm/readahead.c | 20 ++++++++++++++++++--
+> >  1 file changed, 18 insertions(+), 2 deletions(-)
+> > 
+> > V4:  incorporated 16MB limit suggested by Linus for readahead and
+> > fixed transitioning to large readahead anomaly pointed by Andrew Morton with
+> > Honza's suggestion.
+> > 
+> > Test results shows no significant overhead with the current changes.
+> > 
+> > (Do I have to break patches into two??)
+> > 
+> > Suggestions/Comments please let me know.
+> > 
+> > diff --git a/mm/readahead.c b/mm/readahead.c
+> > index 7cdbb44..2f561a0 100644
+> > --- a/mm/readahead.c
+> > +++ b/mm/readahead.c
+> > @@ -237,14 +237,30 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
+> >  	return ret;
+> >  }
+> >  
+> > +#define MAX_REMOTE_READAHEAD   4096UL
+> >  /*
+> >   * Given a desired number of PAGE_CACHE_SIZE readahead pages, return a
+> >   * sensible upper limit.
+> >   */
+> >  unsigned long max_sane_readahead(unsigned long nr)
+> >  {
+> > -	return min(nr, (node_page_state(numa_node_id(), NR_INACTIVE_FILE)
+> > -		+ node_page_state(numa_node_id(), NR_FREE_PAGES)) / 2);
+> > +	unsigned long local_free_page;
+> > +	unsigned long sane_nr;
+> > +	int nid;
+> > +
+> > +	nid = numa_node_id();
+> > +	sane_nr = min(nr, MAX_REMOTE_READAHEAD);
+> > +
+> > +	local_free_page = node_page_state(nid, NR_INACTIVE_FILE)
+> > +			  + node_page_state(nid, NR_FREE_PAGES);
+> > +
+> > +	/*
+> > +	 * Readahead onto remote memory is better than no readahead when local
+> > +	 * numa node does not have memory. We sanitize readahead size depending
+> > +	 * on free memory in the local node but limiting to 4k pages.
+> > +	 */
+> > +	return node_present_pages(nid) ?
+> > +				min(sane_nr, local_free_page / 2) : sane_nr;
+> >  }
+> >  
+> >  /*
+> > -- 
+> > 1.7.11.7
+> > 
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
