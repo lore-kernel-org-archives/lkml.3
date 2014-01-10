@@ -1,118 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaAJLrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 06:47:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6495 "EHLO mga01.intel.com"
+	id S1752092AbaAJLuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 06:50:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37878 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877AbaAJLrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 06:47:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,638,1384329600"; 
-   d="scan'208";a="463127928"
-Message-ID: <1389354435.2293.32.camel@loki>
-Subject: Re: [alsa-devel] [PATCH] ASoC: dpcm: don't do hw_param when BE has
- done	hw_param
-From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
-To: Nenghua Cao <nhcao@marvell.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 10 Jan 2014 11:47:15 +0000
-In-Reply-To: <52CFD7BE.5030907@marvell.com>
-References: <1389332195-15900-1-git-send-email-nhcao@marvell.com>
-	 <s5htxdcxg0q.wl%tiwai@suse.de> <52CFD7BE.5030907@marvell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750962AbaAJLuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 06:50:16 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        kosaki.motohiro@gmail.com, dyoung@redhat.com,
+        linux-acpi@vger.kernel.org, kexec@lists.infradead.org
+Subject: [PATCH] acpi memory hotplug, add parameter to disable memory hotplug
+Date: Fri, 10 Jan 2014 06:49:37 -0500
+Message-Id: <1389354577-9927-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-01-10 at 19:21 +0800, Nenghua Cao wrote:
-> On 01/10/2014 06:55 PM, Takashi Iwai wrote:
-> > [Corrected mail addresses of both Mark and Liam]
-> > 
-> Hi, Takashi:
-> Thanks for correcting my mistake.
-> > At Fri, 10 Jan 2014 13:36:35 +0800,
-> > Nenghua Cao wrote:
-> >>
-> >> From: Nenghua Cao <nhcao@marvell.com>
-> >>
-> >>     It fixes the following case:
-> >>     Two FEs connects the same BE; FE1 & BE path has been opened and hw_paramed.
-> >> At this momment, FE2 & BE path is being opened and hw_paramed. The BE
-> >> dai will do hw_param again even if it has done hw_param. It is not
-> >> reasonable.
-> >> FE1------------>BE
-> >> FE2-------------^
-> > 
-> > What happens if FE2 tries to set up an incompatible hw_params?
-> > (Through a quick glance, it won't work properly well, too, though...)
-> > 
+When booting a kexec/kdump kernel on a system that has specific memory hotplug
+regions the boot will fail with warnings like:
 
-The intention in this case would be for the DSP FE driver to determine
-if it can perform format conversion or SRC to the running BE. If the DSP
-cant do the conversion then it should fail.
+[    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
+[    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+3.10.0-65.el7.x86_64 #1
+[    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
+QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+[    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
+ffff8800341bd950
+[    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
+00000000000084d0
+[    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
+0000000000000200
+[    2.989821] Call Trace:
+[    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+[    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+[    3.004817]  [<ffffffff815b87ee>] ?
+__alloc_pages_direct_compact+0xac/0x196
+[    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+[    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+[    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+[    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+[    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+[    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+[    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+[    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+[    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+[    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+[    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+[    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
+[    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+[    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+[    3.181956] Mem-Info:
+[    3.184490] Node 0 DMA per-cpu:
+[    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
+[    3.193353] Node 0 DMA32 per-cpu:
+[    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
+[    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
+[    3.202410]  active_file:0 inactive_file:0 isolated_file:0
+[    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
+[    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+[    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
+[    3.202410]  free_cma:0
 
-> If FE2 uses an incompatible param, it will make FE1 doesn't work. Maybe
-> FE2 works well.
-> If FE2 uses the same param, BE hw_param function will be called twice
-> (This is the most happening case).
-> So we can't get benefits from it.
+because the system has run out of memory at boot time.  This occurs
+because of the following sequence in the boot:
 
-We shouldn't be calling the hw_params() on the BE when it's already
-configured in this case. So this seems like a bug. However :-
+Main kernel boots and sets E820 map.  The second kernel is booted with a
+map generated by the kdump service using memmap= and memmap=exactmap.
+These parameters are added to the kernel parameters of the kexec/kdump
+kernel.   The kexec/kdump kernel has limited memory resources so as not
+to severely impact the main kernel.
 
-/* only allow hw_params() if no connected FEs are running */
-		if (!snd_soc_dpcm_can_be_params(fe, be, stream))
-			continue;
+The system then panics and the kdump/kexec kernel boots (which is a
+completely new kernel boot).  During this boot ACPI is initialized and the
+kernel (as can be seen above) traverses the ACPI namespace and finds an
+entry for a memory device to be hotadded.
 
-		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
-		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
-		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
-			continue;
+ie)
 
-We do do a test to check if any connected FEs are running (i.e.
-triggered) prior to calling hw_params() on the BE. Can you confirm if
-the FE was running in your case ?
+[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
 
-Thanks
+At this point the kernel adds page table information and the the kexec/kdump
+kernel runs out of memory.
 
-Liam
+This can also be reproduced by using the memmap=exactmap and mem=X
+parameters on the main kernel and booting.
 
-> > 
-> > Takashi
-> > 
-> >>
-> >> Signed-off-by: Nenghua Cao <nhcao@marvell.com>
-> >> ---
-> >>  sound/soc/soc-pcm.c |    1 -
-> >>  1 files changed, 0 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
-> >> index 891b9a9..ec07e37 100644
-> >> --- a/sound/soc/soc-pcm.c
-> >> +++ b/sound/soc/soc-pcm.c
-> >> @@ -1339,7 +1339,6 @@ static int dpcm_be_dai_hw_params(struct snd_soc_pcm_runtime *fe, int stream)
-> >>  			continue;
-> >>  
-> >>  		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
-> >> -		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
-> >>  		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
-> >>  			continue;
-> >>  
-> >> -- 
-> >> 1.7.0.4
-> >>
-> >> _______________________________________________
-> >> Alsa-devel mailing list
-> >> Alsa-devel@alsa-project.org
-> >> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
-> >>
-> 
+This patchset resolves the problem by adding a kernel parameter,
+acpi_no_memhotplug, to disable ACPI memory hotplug.
 
+[v2]: changed to acpi_no_memhotplug
 
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: kosaki.motohiro@gmail.com
+Cc: dyoung@redhat.com
+Cc: linux-acpi@vger.kernel.org
+Cc: kexec@lists.infradead.org
+---
+ Documentation/kernel-parameters.txt |    3 +++
+ drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index b9e9bd8..41374f9 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2117,6 +2117,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	nomce		[X86-32] Machine Check Exception
+ 
++	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
++			   and kdump kernels.
++
+ 	nomfgpt		[X86-32] Disable Multi-Function General Purpose
+ 			Timer usage (for AMD Geode machines).
+ 
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 551dad7..669f590 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+ 	acpi_memory_device_free(mem_device);
+ }
+ 
++static int acpi_no_memhotplug;
++
+ void __init acpi_memory_hotplug_init(void)
+ {
++	if (acpi_no_memhotplug)
++		return;
++
+ 	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+ }
++
++static int __init disable_acpi_memory_hotplug(char *str)
++{
++	acpi_no_memhotplug = 1;
++	return 1;
++}
++__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
+-- 
+1.7.9.3
 
