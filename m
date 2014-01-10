@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113AbaAJT6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 14:58:18 -0500
-Received: from mail.lang.hm ([64.81.33.126]:42089 "EHLO bifrost.lang.hm"
+	id S1758142AbaAJT7m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 14:59:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62474 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258AbaAJT6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 14:58:16 -0500
-Date: Fri, 10 Jan 2014 11:58:09 -0800 (PST)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Victor Porton <porton@narod.ru>
-cc: selinux@tycho.nsa.gov, linux-kernel@vger.kernel.org
-Subject: Re: Create new NetFilter table
-In-Reply-To: <1171389381947@web15m.yandex.ru>
-Message-ID: <alpine.DEB.2.02.1401101151390.23713@nftneq.ynat.uz>
-References: <1171389381947@web15m.yandex.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751258AbaAJT7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 14:59:38 -0500
+Message-ID: <52D0488B.9080806@redhat.com>
+Date: Fri, 10 Jan 2014 14:22:51 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Bob Liu <bob.liu@oracle.com>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/9] mm: filemap: move radix tree hole searching here
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org> <1389377443-11755-5-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1389377443-11755-5-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jan 2014, Victor Porton wrote:
+On 01/10/2014 01:10 PM, Johannes Weiner wrote:
+> The radix tree hole searching code is only used for page cache, for
+> example the readahead code trying to get a a picture of the area
+> surrounding a fault.
+> 
+> It sufficed to rely on the radix tree definition of holes, which is
+> "empty tree slot".  But this is about to change, though, as shadow
+> page descriptors will be stored in the page cache after the actual
+> pages get evicted from memory.
+> 
+> Move the functions over to mm/filemap.c and make them native page
+> cache operations, where they can later be adapted to handle the new
+> definition of "page cache hole".
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-> I propose to create a new NetFilter table dedicated to rules created programmatically (not by explicit admin's iptables command).
->
-> Otherwise an admin could be tempted to say `iptables -F security` which would probably break rules created for example by sandboxing software (which may follow same-origin policy to restrict one particular program to certain domain and port only). Note that in this case `iptables -F security` is a security risk (sandbox breaking)?
->
-> New table could be possibly be called:
->
-> - temp
-> - temporary
-> - auto
-> - automatic
-> - volatile
-> - daemon
-> - system
-> - sys
->
-> In iptables docs it should be said that this table should not be manipulated manually.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-I would disagree with this idea.
 
-If you make one special table, why would you not want others?
-
-You would then need to define all the conditions where this table is used 
-instead of, or in addition to, the existing tables.
-
-Yes admins can shoot themselves in the foot with iptables, and any admin who 
-flushes rules without understanding what is affected will probably be causing 
-significant problems anyway.
-
-Rather than doing this, have the tools that are programmatically creating rules 
-also maintain a file that can be used to recreate all those rules. Then the 
-Admins or init scripts can recreate things easily.
-
-David Lang
+-- 
+All rights reversed
