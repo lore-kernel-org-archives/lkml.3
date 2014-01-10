@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaAJABW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:01:22 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:39840 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaAJABT (ORCPT
+	id S1756930AbaAJACg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:02:36 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:55466 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751583AbaAJACe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:01:19 -0500
-Date: Thu, 9 Jan 2014 16:01:15 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-In-Reply-To: <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
-References: <20131210103827.GB20242@dhcp22.suse.cz> <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com> <20131217162342.GG28991@dhcp22.suse.cz> <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com> <20131218200434.GA4161@dhcp22.suse.cz> <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz> <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org> <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com> <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 9 Jan 2014 19:02:34 -0500
+Date: Thu, 9 Jan 2014 16:02:33 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: pv-drivers@vmware.com, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>, Andy King <acking@vmware.com>
+Subject: [PATCH] VMCI: fix error handling path when registering guest driver
+Message-ID: <20140110000232.GA16959@dtor-ws.eng.vmware.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014, Andrew Morton wrote:
+When host capabilities check failed or when we were unable to register doorbell
+bitmap we were forgetting to set error code and were returning 0 which would
+make upper layers believe that probe was successful.
 
-> > I'm not sure why this was dropped since it's vitally needed for any sane 
-> > userspace oom handler to be effective.
-> 
-> It was dropped because the other memcg developers disagreed with it.
-> 
+Reported-by: Julia Lawall <julia.lawall@lip6.fr>
+Acked-by: Andy King <acking@vmware.com>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+---
+ drivers/misc/vmw_vmci/vmci_guest.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-It was acked-by Michal.
-
-> I'd really prefer not to have to spend a great amount of time parsing
-> argumentative and repetitive emails to make a tie-break decision which
-> may well be wrong anyway.
-> 
-> Please work with the other guys to find an acceptable implementation. 
-> There must be *something* we can do?
-> 
-
-We REQUIRE this behavior for a sane userspace oom handler implementation.  
-You've snipped my email quite extensively, but I'd like to know 
-specifically how you would implement a userspace oom handler described by 
-Section 10 of Documentation/cgroups/memory.txt without this patch?
-
-Are you suggesting that userspace is supposed to wait for successive 
-wakeups over some arbitrarily defined period of time to determine whether 
-memory freeing (i.e. a process in the exit() path or with a pending 
-SIGKILL making forward progress to free its memory) can be done or whether 
-it needs to do something to free memory?  If not, how else is userspace 
-supposed to know that it should act?
-
-How do you prevent unnecessary oom killing if the userspace oom handler 
-wakes up and kills something concurrent with the process triggering the 
-notification getting access to memory reserves, exiting, and freeing its 
-memory?  Userspace just killed a process unnecessarily.  This is the exact 
-reason why the kernel oom killer doesn't do a damn thing in these 
-conditions, because it's NOT ACTIONABLE by the oom killer, a process 
-simply needs to exit.
+diff --git a/drivers/misc/vmw_vmci/vmci_guest.c b/drivers/misc/vmw_vmci/vmci_guest.c
+index c98b03b..d35cda0 100644
+--- a/drivers/misc/vmw_vmci/vmci_guest.c
++++ b/drivers/misc/vmw_vmci/vmci_guest.c
+@@ -165,7 +165,7 @@ static void vmci_guest_cid_update(u32 sub_id,
+  * true if required hypercalls (or fallback hypercalls) are
+  * supported by the host, false otherwise.
+  */
+-static bool vmci_check_host_caps(struct pci_dev *pdev)
++static int vmci_check_host_caps(struct pci_dev *pdev)
+ {
+ 	bool result;
+ 	struct vmci_resource_query_msg *msg;
+@@ -176,7 +176,7 @@ static bool vmci_check_host_caps(struct pci_dev *pdev)
+ 	check_msg = kmalloc(msg_size, GFP_KERNEL);
+ 	if (!check_msg) {
+ 		dev_err(&pdev->dev, "%s: Insufficient memory\n", __func__);
+-		return false;
++		return -ENOMEM;
+ 	}
+ 
+ 	check_msg->dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
+@@ -196,7 +196,7 @@ static bool vmci_check_host_caps(struct pci_dev *pdev)
+ 		__func__, result ? "PASSED" : "FAILED");
+ 
+ 	/* We need the vector. There are no fallbacks. */
+-	return result;
++	return result ? 0 : -ENXIO;
+ }
+ 
+ /*
+@@ -564,12 +564,14 @@ static int vmci_guest_probe_device(struct pci_dev *pdev,
+ 			dev_warn(&pdev->dev,
+ 				 "VMCI device unable to register notification bitmap with PPN 0x%x\n",
+ 				 (u32) bitmap_ppn);
++			error = -ENXIO;
+ 			goto err_remove_vmci_dev_g;
+ 		}
+ 	}
+ 
+ 	/* Check host capabilities. */
+-	if (!vmci_check_host_caps(pdev))
++	error = vmci_check_host_caps(pdev);
++	if (error)
+ 		goto err_remove_bitmap;
+ 
+ 	/* Enable device. */
