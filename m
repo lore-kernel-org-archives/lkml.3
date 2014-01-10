@@ -1,71 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaAJMyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:54:47 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52081 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaAJMyp (ORCPT
+	id S1752897AbaAJM74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:59:56 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47734 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaAJM7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:54:45 -0500
-Date: Fri, 10 Jan 2014 12:52:31 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: timur@tabi.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, lgirdwood@gmail.com,
-        perex@perex.cz, tiwai@suse.de, grant.likely@linaro.org,
-        shawn.guo@linaro.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org
-Message-ID: <20140110125231.GK29039@sirena.org.uk>
-References: <1389347646-20432-1-git-send-email-Guangyu.Chen@freescale.com>
+	Fri, 10 Jan 2014 07:59:53 -0500
+Message-ID: <52CFEEC4.8000002@cogentembedded.com>
+Date: Fri, 10 Jan 2014 16:59:48 +0400
+From: Vladimir Barinov <vladimir.barinov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VJJoKLVEFXdmHQwR"
-Content-Disposition: inline
-In-Reply-To: <1389347646-20432-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: May I ask a question?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: fsl_esai: Add ESAI CPU DAI driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Kyungmin Park <kmpark@infradead.org>
+CC: anton@enomsg.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, mk7.kang@samsung.com,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: Re: [PATCH 2/3] dt: Document ModelGauge gauge bindings
+References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com> <1389286145-15375-3-git-send-email-vladimir.barinov@cogentembedded.com> <CAH9JG2XC0mhXMPJc7DzJCE9B+CZnHhczCAQbMWd4QRkXeD2kfg@mail.gmail.com>
+In-Reply-To: <CAH9JG2XC0mhXMPJc7DzJCE9B+CZnHhczCAQbMWd4QRkXeD2kfg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---VJJoKLVEFXdmHQwR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 01/10/2014 05:00 AM, Kyungmin Park wrote:
+> On Fri, Jan 10, 2014 at 1:49 AM, Vladimir Barinov
+> <vladimir.barinov@cogentembedded.com>  wrote:
+>> These bindings can be used to register Maxim ModelGauge ICs fuel gauge
+>> (MAX17040/41/43/44/48/49/58/59)
+>>
+>> Signed-off-by: Vladimir Barinov<vladimir.barinov@cogentembedded.com>
+>>
+>> ---
+>>   Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt |   82 ++++++++++
+>>   1 file changed, 82 insertions(+)
+>>
+>> Index: battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt
+>> ===================================================================
+>> --- /dev/null   1970-01-01 00:00:00.000000000 +0000
+>> +++ battery-2.6/Documentation/devicetree/bindings/power_supply/modelgauge_battery.txt   2014-01-09 15:09:38.035138887 +0400
+>> @@ -0,0 +1,82 @@
+>> +modelgauge_battery
+>> +~~~~~~~~~~~~~~~~~~
+>> +
+>> +Required properties:
+>> + - compatible          : should contain one of the following:
+>> +                         - "maxim,max17040" for MAX17040
+>> +                         - "maxim,max17041" for MAX17041
+>> +                         - "maxim,max17043" for MAX17043
+>> +                         - "maxim,max17044" for MAX17044
+>> +                         - "maxim,max17048" for MAX17048
+>> +                         - "maxim,max17049" for MAX17049
+>> +                         - "maxim,max17058" for MAX17058
+>> +                         - "maxim,max17059" for MAX17059
+>> +
+>> +Optional properties:
+>> + - maxim,empty_alert_threshold : Capacity threshold where an interrupt is
+>> +                                 generated on the ALRT pin;
+>> +
+>> + - soc_change_alert            : /* alert for 1% soc change */
+>> + - hibernate_threshold         : Hibernate threshold (crate), where IC
+>> +                                 enters hibernate mode
+>> + - active_threshold            : Active threshold (mV), where IC exits
+>> +                                 hibernate mode
+>> + - undervoltage                        : Voltage (mV), when IC alerts while battery
+>> +                                 voltage less then undervoltage
+>> + - overvoltage                 : Voltage (mV), when IC alerts while battery
+>> +                                 voltage greater then overvoltage
+>> + - maxim,resetvoltage          : Voltage threshold (mV) below which the IC
+>> +                                 resets itself. Used to detect battery removal
+>> +                                 and reinsertion;
+>> + - maxim,empty_adjustment      : Capacity charge empty design value;
+>> + - maxim,full_adjustment       : Capacity charge full design value;
+>> + - maxim,rcomp0                        : ModelGauge RCOMP parameter, used for
+>> +                                 temperature compensation;
+>> + - maxim,temp_co_up            : ModelGauge TempCoUp parameter, used for
+>> +                                 temperature compensation;
+>> + - maxim,temp_co_down          : ModelGauge TempCoDown parameter, used for
+>> +                                 temperature compensation;
+>> + - maxim,ocvtest               : ModelGauge OCVTest parameter, used for
+>> +                                 verification of Custom Model calibration data
+>> +                                 loaded into IC RAM;
+>> + - maxim,soc_check_a           : ModelGauge SOCCheckA parameter, used for
+>> +                                 verification of Custom Model calibration data
+>> +                                 loaded into IC RAM;
+>> + - maxim,soc_check_b           : ModelGauge SOCCheckB parameter, used for
+>> +                                 verification of Custom Model calibration data
+>> +                                 loaded into IC RAM;
+>> + - maxim,bits                  : ModelGauge Bits parameter, used as
+>> +                                 scaling parameter in Custom Model algorithm;
+>> + - maxim,model_data            : ModelGauge ModelData data,
+>> +                                 Custom Model calibration data.
+> Dose it open to vendor? we're using this chip. we don't need to setup
+> it at all. most of property except "rcomp" doesn't used.
+Some parameters are open to vendor in open documentation, except the 
+following:
 
-On Fri, Jan 10, 2014 at 05:54:06PM +0800, Nicolin Chen wrote:
-> This patch implements a device-tree-only CPU DAI driver for Freescale ESAI
-> controller that supports:
+rcomp0, temp_co_up, temp_co_down, ocvtest, soc_check_a, soc_check_b, bits, model_data,
 
-Applied, thanks.
+because these are the unique (vendor's) battery parameters to be used in 
+MAXIM ModelGauge
+Algorithm for accurate capacity calculation.
 
---VJJoKLVEFXdmHQwR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Actually, all above properties are optional, and can be skipped.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+In accordance to MAXIM documentation the RCOMP can be adjusted using 
+linear formula from
+RCOMP0, TempCoUp and TempCoDown parameters, which are unique for every 
+battery.
+It is explicitly noted that you have to connect to MAXIM in order to get 
+these parameters for your
+specific battery.
+I wonder how you able to adjust RCOMP without help of MAXIM vendor.
 
-iQIcBAEBAgAGBQJSz+0LAAoJELSic+t+oim91akP/2mtB/1hNpiDcevh1qECfDrT
-EbvzZIEfN5bJQCjSsA1j4uv/2wz7u3teazfK1SmQHcBv7IF6McpQktdZD5KaP0LO
-sXmV3o6qCfm7ZflKt2fjU2CtnVO1/PFwxfdNhxG+BZ7n8IqwW7EF/Oyvg0a8FAbx
-jI9wxpur/hnqBbQGCi+g/NZ5RFouoH9EJ6W2YnSuCqMT/h/ifTX2gjf0GLlDJ/ip
-Q0fqFfwZPaxFJzUQrEHl7THfEr9MkZswgD6eY8a/bw9Nb5R3a6d1TsToFipco6Zl
-XedQyIBU33hgbq/l471+YH3RtNNQW2PTYP75+Aj1glQxxY0n1MplF7A06obKnBpe
-f9m2WD+6j1fVX0nQVsLXpdN5mcKTk1H0NumOWqi+CQpk9ZYivupXNoKDdq8pk+bX
-DRaQ0yGuheuPCr9BSnK20c1PRnPRwgpaqBfhbd4vZHiuIZFH+TMFz2q2w6IXnE4z
-NDuLj2oAy6BNGb0hCK9FVXXmHnGCKdXaugVoWkp8EG47D2DI2D4sU2Cx1Y/kzbot
-U54pvApJaKaADtFyAm2Z0t1GzCN1TgmAsJa4K1J/tF3S7/0IrD49XzGGQtPB5QP5
-3ZvYG9iemHZoEfJiPzhQQZRCHCO6WCEuLgqFRMk3p75ZAx3FYxdv3XCRH6FMgR11
-JA6UEdXSAb+Gl9OMKVLX
-=yaEU
------END PGP SIGNATURE-----
+Regards,
+Vladimir
+>
+> Thank you,
+> Kyungmin Park
+>> +
+>> +Example:
+>> +
+>> +modelgauge@36 {
+>> +       compatible = "maxim,max17058";
+>> +       reg =<0x36>;
+>> +       interrupt-parent =<&msmgpio>;
+>> +       interrupts =<107 0x2>;
+>> +
+>> +       maxim,empty_alert_threshold = /bits/ 8<15>;
+>> +       maxim,resetvoltage = /bits/ 16<0>;
+>> +       maxim,empty_adjustment = /bits/ 8<0>;
+>> +       maxim,full_adjustment = /bits/ 8<100>;
+>> +       maxim,rcomp0 = /bits/ 8<175>;
+>> +       maxim,temp_co_up =<(-1100)>;
+>> +       maxim,temp_co_down =<(-4000)>;
+>> +       maxim,ocvtest = /bits/ 16<56144>;
+>> +       maxim,soc_check_a = /bits/ 8<241>;
+>> +       maxim,soc_check_b = /bits/ 8<243>;
+>> +       maxim,bits = /bits/ 8<19>;
+>> +
+>> +       maxim,model_data = /bits/ 8<
+>> +               0x9B 0x70 0xAB 0x30 0xB5 0xA0 0xB9 0xD0
+>> +               0xBB 0xA0 0xBC 0x00 0xBC 0xB0 0xBD 0x00
+>> +               0xBD 0x60 0xBE 0x40 0xBF 0x40 0xC1 0xF0
+>> +               0xC5 0x60 0xC8 0xA0 0xCD 0x00 0xD1 0x50
+>> +               0x00 0xE0 0x01 0x80 0x18 0x60 0x1C 0x20
+>> +               0x54 0x00 0x6A 0xC0 0x79 0x20 0x65 0xC0
+>> +               0x0B 0xE0 0x2A 0xC0 0x1D 0x00 0x17 0xE0
+>> +               0x15 0xE0 0x11 0xE0 0x11 0x00 0x11 0x00>;
+>> +};
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---VJJoKLVEFXdmHQwR--
