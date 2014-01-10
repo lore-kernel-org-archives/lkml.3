@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582AbaAJQGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:06:06 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:38633 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbaAJQGE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:06:04 -0500
-Message-ID: <52D01A6B.2020105@gmail.com>
-Date: Sat, 11 Jan 2014 00:06:03 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1757732AbaAJQIn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:08:43 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:64582 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294AbaAJQIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 11:08:39 -0500
+X-IronPort-AV: E=Sophos;i="4.95,639,1384300800"; 
+   d="scan'208";a="91726545"
+Date: Fri, 10 Jan 2014 16:08:31 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <jonathan.davies@citrix.com>,
+        <ian.campbell@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH net-next v3 2/9] xen-netback: Change TX path
+ from grant copy to mapping
+Message-ID: <20140110160830.GG30581@zion.uk.xensource.com>
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+ <1389139818-24458-3-git-send-email-zoltan.kiss@citrix.com>
+ <20140109153015.GF12164@zion.uk.xensource.com>
+ <52CFDAEC.5080708@citrix.com>
+ <20140110114534.GE29180@zion.uk.xensource.com>
+ <52D01094.5060102@citrix.com>
+ <52D0198C.6000600@citrix.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: Hannes Reinecke <hare@suse.de>, James Hogan <james.hogan@imgtec.com>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
- instead of operator '%' for u64
-References: <52B4F837.1010403@gmail.com>  <1387680997.5567.91.camel@haakon3.risingtidesystems.com>  <52B6AE19.80401@gmail.com>  <1387781487.5567.147.camel@haakon3.risingtidesystems.com>  <52B90111.5050203@gmail.com> <52CCFF0C.7070704@suse.de>  <1389223117.5567.271.camel@haakon3.risingtidesystems.com>  <52CE7720.6060809@suse.de> <1389332871.5567.358.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1389332871.5567.358.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52D0198C.6000600@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 01:47 PM, Nicholas A. Bellinger wrote:
-> On Thu, 2014-01-09 at 11:17 +0100, Hannes Reinecke wrote:
->> On 01/09/2014 12:18 AM, Nicholas A. Bellinger wrote:
->>> On Wed, 2014-01-08 at 08:32 +0100, Hannes Reinecke wrote:
+On Fri, Jan 10, 2014 at 04:02:20PM +0000, David Vrabel wrote:
+> On 10/01/14 15:24, Zoltan Kiss wrote:
+> > On 10/01/14 11:45, Wei Liu wrote:
+> >> On Fri, Jan 10, 2014 at 11:35:08AM +0000, Zoltan Kiss wrote:
+> >> [...]
+> >>>
+> >>>>> @@ -920,6 +852,18 @@ static int xenvif_tx_check_gop(struct xenvif
+> >>>>> *vif,
+> >>>>>       err = gop->status;
+> >>>>>       if (unlikely(err))
+> >>>>>           xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
+> >>>>> +    else {
+> >>>>> +        if (vif->grant_tx_handle[pending_idx] !=
+> >>>>> +            NETBACK_INVALID_HANDLE) {
+> >>>>> +            netdev_err(vif->dev,
+> >>>>> +                "Stale mapped handle! pending_idx %x handle %x\n",
+> >>>>> +                pending_idx, vif->grant_tx_handle[pending_idx]);
+> >>>>> +            BUG();
+> >>>>> +        }
+> >>>>> +        set_phys_to_machine(idx_to_pfn(vif, pending_idx),
+> >>>>> +            FOREIGN_FRAME(gop->dev_bus_addr >> PAGE_SHIFT));
+> >>>>
+> >>>> What happens when you don't have this?
+> >>> Your frags will be filled with garbage. I don't understand exactly
+> >>> what this function does, someone might want to enlighten us? I've
+> >>> took it's usage from classic kernel.
+> >>> Also, it might be worthwhile to check the return value and BUG if
+> >>> it's false, but I don't know what exactly that return value means.
+> >>>
+> >>
+> >> This is actually part of gnttab_map_refs. As you're using hypercall
+> >> directly this becomes very fragile.
+> >>
+> >> So the right thing to do is to fix gnttab_map_refs.
+> > I agree, as I mentioned in other email in this thread, I think that
+> > should be the topic of an another patchseries. In the meantime, I will
+> > use gnttab_batch_map instead of the direct hypercall, it handles the
+> > GNTST_eagain scenario, and I will use set_phys_to_machine the same way
+> > as m2p_override does:
 > 
-> <SNIP>
+> If the grant table code doesn't provide the API calls you need you can
+> either:
 > 
->>>> Other than that the sector_div() patch is correct.
->>>>
->>>
->>> <nod> Thanks for confirming that sector_div() is correct here vs. the
->>> original code using modulo that Chen had pointed out.
->>>
->> Ah, _that_ was the issue.
->> I was wondering why you kept on poking me ...
->>
->> Well.
->> No, that's actually _not_ correct.
->> The correct fix would be
->>
->> diff --git a/drivers/target/target_core_alua.c 
->> b/drivers/target/target_core_alua.c
->> index 54b1e52..12da9b3 100644
->> --- a/drivers/target/target_core_alua.c
->> +++ b/drivers/target/target_core_alua.c
->> @@ -500,8 +500,7 @@ static inline int core_alua_state_lba_dependent(
->>
->>                          if (segment_mult) {
->>                                  u64 tmp = lba;
->> -                               sector_div(tmp, segment_size * segment_mult);
->> -                               start_lba = tmp;
->> +                               start_lba = sector_div(tmp, segment_size * segment_mult);
->>
->>                                  last_lba = first_lba + segment_size - 1;
->>                                  if (start_lba >= first_lba &&
->> (beware of line breaks ...)
->> Thing is, we need to calculate the offset into the segment to figure out 
->> which map entry to use.
->> The actual number of the segment (as had been calculated with the 
->> original fix) is immaterial here.
->>
->> Sorry for this. The email thread just flew past me during Xmas
->> with me not paying real attention.
->>
+> a) add the new API as a prerequisite patch.
+> b) use the existing API calls and live with the performance problem,
+> until you can refactor the API later on.
 > 
-> Applied + squashed.  Apologies for the initial pre-holiday BUG..
-> 
-> Thanks Hannes!
+> Adding a netback-specific hack isn't a valid option.
 > 
 
-Thank all of you.
+Agreed.
 
--- 
-Chen Gang
+Wei.
 
-Open, share and attitude like air, water and life which God blessed
+> David
