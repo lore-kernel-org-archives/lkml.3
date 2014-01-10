@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090AbaAJUJt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 15:09:49 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:39082 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753182AbaAJUJq (ORCPT
+	id S1758163AbaAJUKb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 15:10:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40384 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182AbaAJUK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 15:09:46 -0500
+	Fri, 10 Jan 2014 15:10:27 -0500
+Date: Fri, 10 Jan 2014 21:10:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: SIGSEGV when using "perf record -g" with 3.13-rc* kernel
+Message-ID: <20140110201020.GK7572@laptop.programming.kicks-ass.net>
+References: <52D011C9.7000209@hp.com>
+ <20140110165822.GI7572@laptop.programming.kicks-ass.net>
+ <20140110170223.GD8224@laptop.programming.kicks-ass.net>
+ <52D04BE6.9050907@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <20140110165847.GG925@arm.com>
-References: <1389325833-16535-1-git-send-email-msalter@redhat.com>
-	<1389325833-16535-5-git-send-email-msalter@redhat.com>
-	<CAL_JsqLZQ=3gph4yaNSrZ5oPL3kasQKqA5C5+my0GwjGHsvMeQ@mail.gmail.com>
-	<20140110165847.GG925@arm.com>
-Date: Fri, 10 Jan 2014 14:09:46 -0600
-Message-ID: <CAL_JsqKZawTKC2pvyR8_Fu0GsixkvvKLSwhkFghZ9rTuE8O3Lw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/6] arm: add early_ioremap support
-From: Rob Herring <robherring2@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "msalter@redhat.com" <msalter@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D04BE6.9050907@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 10:58 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Fri, Jan 10, 2014 at 04:11:03PM +0000, Rob Herring wrote:
->> On Thu, Jan 9, 2014 at 9:50 PM, Mark Salter <msalter@redhat.com> wrote:
->> > This patch uses the generic early_ioremap code to implement
->> > early_ioremap for ARM. The ARM-specific bits come mostly from
->> > an earlier patch from Leif Lindholm <leif.lindholm@linaro.org>
->> > here:
->> >
->> >   https://lkml.org/lkml/2013/10/3/279
->>
->> I think this will be useful to implement an arm64 style earlycon for
->> arm as the current DEBUG_LL doesn't really work with multi-platform
->> kernels. I started on this and quickly realized I needed the fixmap
->> support.
->
-> It would be even better if you can make it more generic
-> (drivers/tty/serial/) and keep DEBUG_LL as a specialised case for
-> arch/arm (when !multi-platform).
+On Fri, Jan 10, 2014 at 02:37:10PM -0500, Waiman Long wrote:
+> >@@ -641,7 +641,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+> >
+> >  	/* Are we prepared to handle this kernel fault? */
+> >  	if (fixup_exception(regs)) {
+> >-		if (current_thread_info()->sig_on_uaccess_error&&  signal) {
+> >+		if (!in_nmi()&&  current_thread_info()->sig_on_uaccess_error&&  signal) {
+> >  			tsk->thread.trap_nr = X86_TRAP_PF;
+> >  			tsk->thread.error_code = error_code | PF_USER;
+> >  			tsk->thread.cr2 = address;
+> 
+> Yes, this change fixed the error that I got. I no longer see SIGSEGV when I
+> run the test.
 
-Yes, probably can do that. Perhaps DEBUG_LL can go back to just really
-early debug as Russell desires.
+Awesome, just send a more elaborate version that should have the same
+effect.
 
-Rob
+> I did tried to back out your "perf: Fix arch_perf_out_copy_user default"
+> patch, but it didn't fix the problem.
+
+The culprit was: e00b12e64be9 ("perf/x86: Further optimize
+copy_from_user_nmi()")
+
+
