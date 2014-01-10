@@ -1,57 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557AbaAJTEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 14:04:13 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:39276 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750983AbaAJTEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 14:04:11 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS bugfixes for 3.13-rc8
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20140110190406.DAB254266DC@whiskey.americas.sgi.com>
-Date: Fri, 10 Jan 2014 13:04:06 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1757685AbaAJTFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 14:05:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37717 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753182AbaAJTFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 14:05:31 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        kosaki.motohiro@gmail.com, dyoung@redhat.com,
+        linux-acpi@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 1/2] acpi memory hotplug, add parameter to disable memory hotplug [v2]
+Date: Fri, 10 Jan 2014 14:04:57 -0500
+Message-Id: <1389380698-19361-3-git-send-email-prarit@redhat.com>
+In-Reply-To: <1389380698-19361-1-git-send-email-prarit@redhat.com>
+References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+When booting a kexec/kdump kernel on a system that has specific memory hotplug
+regions the boot will fail with warnings like:
 
-Please pull these fixes for XFS.  Here we have a bugfix for an
-off-by-one in the remote attribute verifier that results in a forced
-shutdown which you can hit with v5 superblock by creating a 64k xattr,
-and a fix for a missing destroy_work_on_stack() in the allocation
-worker.  It's a bit late, but they are both fairly straightforward.
+[    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
+[    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+3.10.0-65.el7.x86_64 #1
+[    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
+QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+[    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
+ffff8800341bd950
+[    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
+00000000000084d0
+[    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
+0000000000000200
+[    2.989821] Call Trace:
+[    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+[    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+[    3.004817]  [<ffffffff815b87ee>] ?
+__alloc_pages_direct_compact+0xac/0x196
+[    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+[    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+[    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+[    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+[    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+[    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+[    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+[    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+[    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+[    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+[    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+[    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
+[    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+[    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+[    3.181956] Mem-Info:
+[    3.184490] Node 0 DMA per-cpu:
+[    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
+[    3.193353] Node 0 DMA32 per-cpu:
+[    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
+[    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
+[    3.202410]  active_file:0 inactive_file:0 isolated_file:0
+[    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
+[    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+[    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
+[    3.202410]  free_cma:0
 
-Thanks,
-	Ben
+because the system has run out of memory at boot time.  This occurs
+because of the following sequence in the boot:
 
-The following changes since commit ac8809f9ab01a73de1a47b5a37bd8dcca8712fb3:
+Main kernel boots and sets E820 map.  The second kernel is booted with a
+map generated by the kdump service using memmap= and memmap=exactmap.
+These parameters are added to the kernel parameters of the kexec/kdump
+kernel.   The kexec/kdump kernel has limited memory resources so as not
+to severely impact the main kernel.
 
-  xfs: abort metadata writeback on permanent errors (2013-12-17 09:40:23 -0600)
+The system then panics and the kdump/kexec kernel boots (which is a
+completely new kernel boot).  During this boot ACPI is initialized and the
+kernel (as can be seen above) traverses the ACPI namespace and finds an
+entry for a memory device to be hotadded.
 
-are available in the git repository at:
+ie)
 
-  git://oss.sgi.com/xfs/xfs.git tags/xfs-for-linus-v3.13-rc8
+[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
 
-for you to fetch changes up to 1f4a63bf019524c96e79f088cd717b96ef00a249:
+At this point the kernel adds page table information and the the kexec/kdump
+kernel runs out of memory.
 
-  xfs: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK() (2014-01-10 12:39:38 -0600)
+This can also be reproduced by using the memmap=exactmap and mem=X
+parameters on the main kernel and booting.
 
-----------------------------------------------------------------
-xfs: bugfixes for 3.13-rc8
+This patchset resolves the problem by adding a kernel parameter,
+acpi_no_memhotplug, to disable ACPI memory hotplug.
 
-- fix off-by-one in xfs_attr3_rmt_verify
-- fix missing destroy_work_on_stack() in xfs_bmapi_allocate
+[v2]: changed acpi_no_memhotplug to bool
 
-----------------------------------------------------------------
-Chuansheng Liu (1):
-      xfs: Calling destroy_work_on_stack() to pair with INIT_WORK_ONSTACK()
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linn Crosetto <linn@hp.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: kosaki.motohiro@gmail.com
+Cc: dyoung@redhat.com
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org
+Cc: linux-mm@kvack.org
+---
+ Documentation/kernel-parameters.txt |    3 +++
+ drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
+ 2 files changed, 15 insertions(+)
 
-Jie Liu (1):
-      xfs: fix off-by-one error in xfs_attr3_rmt_verify
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index b9e9bd8..41374f9 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2117,6 +2117,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	nomce		[X86-32] Machine Check Exception
+ 
++	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
++			   and kdump kernels.
++
+ 	nomfgpt		[X86-32] Disable Multi-Function General Purpose
+ 			Timer usage (for AMD Geode machines).
+ 
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 551dad7..4a0fa94 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+ 	acpi_memory_device_free(mem_device);
+ }
+ 
++static bool acpi_no_memhotplug;
++
+ void __init acpi_memory_hotplug_init(void)
+ {
++	if (acpi_no_memhotplug)
++		return;
++
+ 	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+ }
++
++static int __init disable_acpi_memory_hotplug(char *str)
++{
++	acpi_no_memhotplug = true;
++	return 1;
++}
++__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
+-- 
+1.7.9.3
 
- fs/xfs/xfs_attr_remote.c | 2 +-
- fs/xfs/xfs_bmap_util.c   | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
