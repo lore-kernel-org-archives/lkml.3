@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaAJAmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:42:37 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:53496 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaAJAmf (ORCPT
+	id S1756414AbaAJAoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:44:21 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41045 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499AbaAJAoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:42:35 -0500
+	Thu, 9 Jan 2014 19:44:18 -0500
+Date: Thu, 9 Jan 2014 16:44:11 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
+        Eric Paris <eparis@parisplace.org>, stable <stable@vger.kernel.org>,
+        Paul Moore <paul@paul-moore.com>, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
+ inode_permission()
+Message-ID: <20140110004411.GS10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140109162731.12500986@gandalf.local.home>
+ <20140109214239.GD29910@parisc-linux.org>
+ <20140109165012.391db81e@gandalf.local.home>
+ <20140109223127.GM10323@ZenIV.linux.org.uk>
+ <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+ <20140109182523.5b50131f@gandalf.local.home>
+ <20140109182756.17abaaa8@gandalf.local.home>
+ <20140109234537.GR10038@linux.vnet.ibm.com>
+ <20140109185907.20cddb57@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20140109225815.GI11594@pd.tnic>
-References: <52C0C9F4.50101@zytor.com>
-	<52C196C3.1040300@halfdog.net>
-	<52C31027.2030101@zytor.com>
-	<20131231192106.GA22535@phenom.dumpdata.com>
-	<52C347F0.8070902@zytor.com>
-	<52CD022E.9040107@halfdog.net>
-	<52CD8E10.3010204@zytor.com>
-	<20140108193655.GD5098@pd.tnic>
-	<52CDC316.4050503@halfdog.net>
-	<52CDD3AE.4030301@zytor.com>
-	<20140109225815.GI11594@pd.tnic>
-Date: Fri, 10 Jan 2014 08:42:33 +0800
-X-Google-Sender-Auth: m3Ew6sk1YIyTMVjb-g12BQ-O_cQ
-Message-ID: <CA+55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com>
-Subject: Re: Sanitize CPU-state when switching tasks (was sanitize CPU-state
- when switching from virtual-8086 mode to other task)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, halfdog <me@halfdog.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: multipart/mixed; boundary=001a11c290de767d9904ef9300e4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140109185907.20cddb57@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011000-1542-0000-0000-0000050FEF2B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c290de767d9904ef9300e4
-Content-Type: text/plain; charset=UTF-8
+On Thu, Jan 09, 2014 at 06:59:07PM -0500, Steven Rostedt wrote:
+> On Thu, 9 Jan 2014 15:45:37 -0800
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > >  static void inode_free_security(struct inode *inode)
+> > >  {
+> > >  	struct inode_security_struct *isec = inode->i_security;
+> > > @@ -244,8 +252,7 @@ static void inode_free_security(struct i
+> > >  		list_del_init(&isec->list);
+> > >  	spin_unlock(&sbsec->isec_lock);
+> > > 
+> > > -	inode->i_security = NULL;
+> > > -	kmem_cache_free(sel_inode_cache, isec);
+> > > +	call_rcu(&isec->rcu, inode_free_rcu);
+> > 
+> > Does not clearing ->i_security mean that RCU readers can traverse
+> > this pointer after the invocation of call_rcu()?  If so, this is
+> > problematic.  (If something else already prevents readers from getting
+> > here, no problem.)
+> 
+> This is called when we are about to free the inode. Look at
+> destroy_inode(). Basically, this is the same as doing:
+> 
+> 	call_rcu(&isec->rcu, inode_free_rcu);
+> 	call_rcu(&inode->i_rcu, i_callback);
+> 
+> Where i_callback() does the free of the inode.
+> 
+> If you can access inode->i_security, after a call_rcu, then you can
+> also access the inode itself that has just been freed.
+> 
+> Yes, technically, having two separate call_rcu(), the first grace
+> period can end before the second, but everything to remove the inode
+> from sight has already been set up before that first call_rcu() is
+> made. That means when the first call_rcu() is executed, the inode
+> should already be invisible to the readers.
 
-On Fri, Jan 10, 2014 at 6:58 AM, Borislav Petkov <bp@alien8.de> wrote:
->
-> Ok, I was able to reproduce
+Got it, should be fine then, sorry for the noise.
 
-Looking at this, I think this is just a bug in our
-restore_fpu_checking() hackery for X86_FEATURE_FXSAVE_LEAK..
+							Thanx, Paul
 
-Which also explains why it only triggers on E-350 - it's only relevant
-for those K7/K8 CPU's that use this.
-
-Maybe just add a fcnlex to before the emms? Something like this
-(TOTALLY UNTESTED!!) attached patch.
-
-                 Linus
-
---001a11c290de767d9904ef9300e4
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hq8pxcn00
-
-IGFyY2gveDg2L2luY2x1ZGUvYXNtL2ZwdS1pbnRlcm5hbC5oIHwgMTMgKysrKysrKy0tLS0tLQog
-MSBmaWxlIGNoYW5nZWQsIDcgaW5zZXJ0aW9ucygrKSwgNiBkZWxldGlvbnMoLSkKCmRpZmYgLS1n
-aXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9mcHUtaW50ZXJuYWwuaCBiL2FyY2gveDg2L2luY2x1
-ZGUvYXNtL2ZwdS1pbnRlcm5hbC5oCmluZGV4IGM0OWE2MTNjNjQ1Mi4uY2VhMWM3NmQ0OWJmIDEw
-MDY0NAotLS0gYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9mcHUtaW50ZXJuYWwuaAorKysgYi9hcmNo
-L3g4Ni9pbmNsdWRlL2FzbS9mcHUtaW50ZXJuYWwuaApAQCAtMjkzLDEyICsyOTMsMTMgQEAgc3Rh
-dGljIGlubGluZSBpbnQgcmVzdG9yZV9mcHVfY2hlY2tpbmcoc3RydWN0IHRhc2tfc3RydWN0ICp0
-c2spCiAJLyogQU1EIEs3L0s4IENQVXMgZG9uJ3Qgc2F2ZS9yZXN0b3JlIEZEUC9GSVAvRk9QIHVu
-bGVzcyBhbiBleGNlcHRpb24KIAkgICBpcyBwZW5kaW5nLiAgQ2xlYXIgdGhlIHg4NyBzdGF0ZSBo
-ZXJlIGJ5IHNldHRpbmcgaXQgdG8gZml4ZWQKIAkgICB2YWx1ZXMuICJtIiBpcyBhIHJhbmRvbSB2
-YXJpYWJsZSB0aGF0IHNob3VsZCBiZSBpbiBMMSAqLwotCWFsdGVybmF0aXZlX2lucHV0KAotCQlB
-U01fTk9QOCBBU01fTk9QMiwKLQkJImVtbXNcblx0IgkJLyogY2xlYXIgc3RhY2sgdGFncyAqLwot
-CQkiZmlsZGwgJVBbYWRkcl0iLAkvKiBzZXQgRj9QIHRvIGRlZmluZWQgdmFsdWUgKi8KLQkJWDg2
-X0ZFQVRVUkVfRlhTQVZFX0xFQUssCi0JCVthZGRyXSAibSIgKHRzay0+dGhyZWFkLmZwdS5oYXNf
-ZnB1KSk7CisJaWYgKHVubGlrZWx5KHN0YXRpY19jcHVfaGFzKFg4Nl9GRUFUVVJFX0ZYU0FWRV9M
-RUFLKSkpIHsKKwkJYXNtIHZvbGF0aWxlKAorCQkJImZuY2xleFxuXHQiCisJCQkiZW1tc1xuXHQi
-CisJCQkiZmlsZGwgJVBbYWRkcl0iCS8qIHNldCBGP1AgdG8gZGVmaW5lZCB2YWx1ZSAqLworCQkJ
-OiA6IFthZGRyXSAibSIgKHRzay0+dGhyZWFkLmZwdS5oYXNfZnB1KSk7CisJfQogCiAJcmV0dXJu
-IGZwdV9yZXN0b3JlX2NoZWNraW5nKCZ0c2stPnRocmVhZC5mcHUpOwogfQo=
---001a11c290de767d9904ef9300e4--
