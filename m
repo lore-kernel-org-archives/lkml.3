@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989AbaAJLpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 06:45:21 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:32581 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaAJLpP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 06:45:15 -0500
-X-AuditID: cbfee68f-b7f156d00000276c-f6-52cfdd4a52bb
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com
-Subject: [PATCH 8/8 v3] crypto:s5p-sss: Use clk_prepare/clk_unprepare
-Date: Fri, 10 Jan 2014 17:15:31 +0530
-Message-id: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsWyRsSkWtfr7vkgg86n3BYvD2ladL+Ssbh/
-	7yeTxeVdc9gsZpzfx2SxaNt/ZotVu/4wWpydc4jJgcNj56y77B7bDqh69G1ZxejxeZNcAEsU
-	l01Kak5mWWqRvl0CV8be1lUsBXM4K7rfHGVuYLzI3sXIySEhYCIxbcJxFghbTOLCvfVsXYxc
-	HEICSxkl9pw8xAJT1Lj2NVRiOqPEw7X7WSGcfiaJmdc+MINUsQmYSRxctBpsrIiAs8Tv5jVg
-	RcwCc4A6lrSDjRIWcJX4sWgCK4jNIqAq8W3CQiYQmxco/r19JVAzB9A6BYk5k2xAeiUEfrNJ
-	9CzbwgZRLyDxbTLISSA1shKbDjBDXCcpcXDFDZYJjIILGBlWMYqmFiQXFCelFxnrFSfmFpfm
-	pesl5+duYgSG7Ol/z/p3MN49YH2IMRlo3ERmKdHkfGDI55XEGxqbGVmYmpgaG5lbmpEmrCTO
-	e/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxtUVed3zdp+yilSfYvetR0769ocbZ+SU
-	/3DFxL7pzCwIuH1VVedm236DhhABace1rVfeXZp1/XPS8/BLrlGvX1yuyg7W3DovqU9pRnqu
-	YvkT7stvpRZ2rw/Q8k1P09q/PPA1495uo3nbX8VtldnxsUPqx+5f86KFPl5r3G8cyLFvYqy/
-	2eQGGyWW4oxEQy3mouJEANlMi15vAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQV2vu+eDDF7uZbZ4eUjTovuVjMX9
-	ez+ZLC7vmsNmMeP8PiaLRdv+M1us2vWH0eLsnENMDhweO2fdZffYdkDVo2/LKkaPz5vkAlii
-	GhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4COUFIo
-	S8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm7G1dxVIwh7Oi+81R5gbGi+xd
-	jJwcEgImEo1rX7NB2GISF+6tB7K5OIQEpjNKPFy7nxXC6WeSmHntAzNIFZuAmcTBRavBukUE
-	nCV+N68BK2IWmAPUsaSdBSQhLOAq8WPRBFYQm0VAVeLbhIVMIDYvUPx7+0qgZg6gdQoScybZ
-	TGDkXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOCKeSe9gXNVgcYhRgINRiYe3YNb5
-	ICHWxLLiytxDjBIczEoivOYXgEK8KYmVValF+fFFpTmpxYcYk4GWT2SWEk3OB0ZrXkm8obGJ
-	uamxqaWJhYmZJWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwLv6TmKLWs2O2Zkhcr8HH
-	5VKb0kRVOj0DFb98ZksVenHpsKbk++Wvqsy32i0XFWJVZ5x7wXbZD7ai07a9JbuvnD87jZNx
-	hsKNI6+MyjkvHXxhVKJx4LLn76T0ydtYrq7JPnrtl/Dat6tbe2u3uTO2sf83PsAbaMP+ySqn
-	YRfTspPt+y4u+HPUSYmlOCPRUIu5qDgRAGUTSMLMAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1757347AbaAJLpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 06:45:42 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:58582 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757201AbaAJLpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 06:45:36 -0500
+X-IronPort-AV: E=Sophos;i="4.95,638,1384300800"; 
+   d="scan'208";a="91636255"
+Date: Fri, 10 Jan 2014 11:45:34 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next v3 2/9] xen-netback: Change TX path from grant
+ copy to mapping
+Message-ID: <20140110114534.GE29180@zion.uk.xensource.com>
+References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com>
+ <1389139818-24458-3-git-send-email-zoltan.kiss@citrix.com>
+ <20140109153015.GF12164@zion.uk.xensource.com>
+ <52CFDAEC.5080708@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52CFDAEC.5080708@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds use of clk_prepare/clk_unprepare as
-required by generic clock framework.
+On Fri, Jan 10, 2014 at 11:35:08AM +0000, Zoltan Kiss wrote:
+[...]
+> 
+> >>@@ -920,6 +852,18 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
+> >>  	err = gop->status;
+> >>  	if (unlikely(err))
+> >>  		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
+> >>+	else {
+> >>+		if (vif->grant_tx_handle[pending_idx] !=
+> >>+			NETBACK_INVALID_HANDLE) {
+> >>+			netdev_err(vif->dev,
+> >>+				"Stale mapped handle! pending_idx %x handle %x\n",
+> >>+				pending_idx, vif->grant_tx_handle[pending_idx]);
+> >>+			BUG();
+> >>+		}
+> >>+		set_phys_to_machine(idx_to_pfn(vif, pending_idx),
+> >>+			FOREIGN_FRAME(gop->dev_bus_addr >> PAGE_SHIFT));
+> >
+> >What happens when you don't have this?
+> Your frags will be filled with garbage. I don't understand exactly
+> what this function does, someone might want to enlighten us? I've
+> took it's usage from classic kernel.
+> Also, it might be worthwhile to check the return value and BUG if
+> it's false, but I don't know what exactly that return value means.
+> 
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
-Changes since v2:
-New change to fix a WARN_ON during the bootup
+This is actually part of gnttab_map_refs. As you're using hypercall
+directly this becomes very fragile.
 
- drivers/crypto/s5p-sss.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+So the right thing to do is to fix gnttab_map_refs.
 
-diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
-index 7058bb6..3db7e52 100644
---- a/drivers/crypto/s5p-sss.c
-+++ b/drivers/crypto/s5p-sss.c
-@@ -653,7 +653,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	clk_enable(pdata->clk);
-+	clk_prepare_enable(pdata->clk);
- 
- 	spin_lock_init(&pdata->lock);
- 	pdata->ioaddr = devm_ioremap(dev, res->start,
-@@ -714,7 +714,7 @@ static int s5p_aes_probe(struct platform_device *pdev)
- 	tasklet_kill(&pdata->tasklet);
- 
-  err_irq:
--	clk_disable(pdata->clk);
-+	clk_disable_unprepare(pdata->clk);
- 
- 	s5p_dev = NULL;
- 
-@@ -734,7 +734,7 @@ static int s5p_aes_remove(struct platform_device *pdev)
- 
- 	tasklet_kill(&pdata->tasklet);
- 
--	clk_disable(pdata->clk);
-+	clk_disable_unprepare(pdata->clk);
- 
- 	s5p_dev = NULL;
- 
--- 
-1.7.9.5
+> >
+> >>  		if (skb_is_nonlinear(skb) && skb_headlen(skb) < PKT_PROT_LEN) {
+> >>  			int target = min_t(int, skb->len, PKT_PROT_LEN);
+> >>@@ -1581,6 +1541,8 @@ static int xenvif_tx_submit(struct xenvif *vif)
+> >>  		if (checksum_setup(vif, skb)) {
+> >>  			netdev_dbg(vif->dev,
+> >>  				   "Can't setup checksum in net_tx_action\n");
+> >>+			if (skb_shinfo(skb)->destructor_arg)
+> >>+				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+> >
+> >Do you still care setting the flag even if this skb is not going to be
+> >delivered? If so can you state clearly the reason just like the
+> >following hunk?
+> Of course, otherwise the pages wouldn't be sent back to the guest.
+> I've added a comment.
+> 
 
+OK, Thanks! That means whenever SKB leaves netback we need to add this
+flag.
+
+> >>@@ -1715,7 +1685,7 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+> >>  int xenvif_tx_action(struct xenvif *vif, int budget)
+> >>  {
+> >>  	unsigned nr_gops;
+> >>-	int work_done;
+> >>+	int work_done, ret;
+> >>
+> >>  	if (unlikely(!tx_work_todo(vif)))
+> >>  		return 0;
+> >>@@ -1725,7 +1695,10 @@ int xenvif_tx_action(struct xenvif *vif, int budget)
+> >>  	if (nr_gops == 0)
+> >>  		return 0;
+> >>
+> >>-	gnttab_batch_copy(vif->tx_copy_ops, nr_gops);
+> >>+	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
+> >>+			vif->tx_map_ops,
+> >>+			nr_gops);
+> >
+> >Why do you need to replace gnttab_batch_copy with hypercall? In the
+> >ideal situation gnttab_batch_copy should behave the same as directly
+> >hypercall but it also handles GNTST_eagain for you.
+> 
+> I don't need gnttab_batch_copy at all, I'm using the grant mapping
+> hypercall here.
+> 
+
+Oops, my bad! Ignore that one.
+
+Wei.
+
+> Regards,
+> 
+> Zoli
