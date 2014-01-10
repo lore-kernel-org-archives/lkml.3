@@ -1,144 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaAJGmt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 01:42:49 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48624 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaAJGmo (ORCPT
+	id S1751173AbaAJGvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 01:51:01 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45091 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaAJGu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 01:42:44 -0500
-Date: Thu, 9 Jan 2014 22:42:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH v8 0/4] qrwlock: Introducing a queue read/write lock
- implementation
-Message-ID: <20140110064236.GV10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1389200376-62792-1-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389200376-62792-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011006-3532-0000-0000-0000049D8ED0
+	Fri, 10 Jan 2014 01:50:59 -0500
+Message-ID: <1389336761.5567.403.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 13/14] target/rd: Add DIF protection into rd_execute_rw
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@mellanox.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Date: Thu, 09 Jan 2014 22:52:41 -0800
+In-Reply-To: <52CE7ABA.9080403@mellanox.com>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	 <1389212157-14540-14-git-send-email-nab@daterainc.com>
+	 <52CE7ABA.9080403@mellanox.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 11:59:32AM -0500, Waiman Long wrote:
-> v7->v8:
->  - Use atomic_t functions (which are implemented in all arch's) to
->    modify reader counts.
->  - Use smp_load_acquire() & smp_store_release() for barriers.
->  - Further tuning in slowpath performance.
+On Thu, 2014-01-09 at 12:32 +0200, Sagi Grimberg wrote:
+> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This patch adds support for DIF protection into rd_execute_rw() code
+> > for WRITE/READ I/O using sbc_dif_verify_[write,read]() logic.
+> >
+> > It also adds rd_get_prot_table() for locating protection SGLs
+> > assoicated with the ramdisk backend device.
+> >
+> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> > Cc: Christoph Hellwig <hch@lst.de>
+> > Cc: Hannes Reinecke <hare@suse.de>
+> > Cc: Sagi Grimberg <sagig@mellanox.com>
+> > Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > ---
+> >   drivers/target/target_core_rd.c |   67 +++++++++++++++++++++++++++++++++++++++
+> >   1 file changed, 67 insertions(+)
+> >
+> > diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
+> > index dd99844..3fd51eb 100644
+> > --- a/drivers/target/target_core_rd.c
+> > +++ b/drivers/target/target_core_rd.c
+> > @@ -363,6 +363,26 @@ static struct rd_dev_sg_table *rd_get_sg_table(struct rd_dev *rd_dev, u32 page)
+> >   	return NULL;
+> >   }
+> >   
+> > +static struct rd_dev_sg_table *rd_get_prot_table(struct rd_dev *rd_dev, u32 page)
+> > +{
+> > +	struct rd_dev_sg_table *sg_table;
+> > +	u32 i, sg_per_table = (RD_MAX_ALLOCATION_SIZE /
+> > +				sizeof(struct scatterlist));
+> > +
+> > +	i = page / sg_per_table;
+> > +	if (i < rd_dev->sg_prot_count) {
+> > +		sg_table = &rd_dev->sg_prot_array[i];
+> > +		if ((sg_table->page_start_offset <= page) &&
+> > +		     (sg_table->page_end_offset >= page))
+> > +			return sg_table;
+> > +	}
+> > +
+> > +	pr_err("Unable to locate struct prot rd_dev_sg_table for page: %u\n",
+> > +			page);
+> > +
+> > +	return NULL;
+> > +}
+> > +
+> >   static sense_reason_t
+> >   rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+> >   	      enum dma_data_direction data_direction)
+> > @@ -377,6 +397,7 @@ rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+> >   	u32 rd_page;
+> >   	u32 src_len;
+> >   	u64 tmp;
+> > +	sense_reason_t rc;
+> >   
+> >   	if (dev->rd_flags & RDF_NULLIO) {
+> >   		target_complete_cmd(cmd, SAM_STAT_GOOD);
+> > @@ -399,6 +420,29 @@ rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+> >   			data_direction == DMA_FROM_DEVICE ? "Read" : "Write",
+> >   			cmd->t_task_lba, rd_size, rd_page, rd_offset);
+> >   
+> > +	if ((cmd->se_cmd_flags & SCF_PROT) && se_dev->dev_attrib.pi_prot_type &&
+> > +	    data_direction == DMA_TO_DEVICE) {
+> > +		sector_t sector = cmd->data_length / se_dev->dev_attrib.block_size;
+> > +		struct rd_dev_sg_table *prot_table;
+> > +		struct scatterlist *prot_sg;
+> > +		u32 prot_offset, prot_page;
+> > +
+> > +		tmp = cmd->t_task_lba * se_dev->prot_length;
+> > +		prot_offset = do_div(tmp, PAGE_SIZE);
+> > +		prot_page = tmp;
+> > +
+> > +		prot_table = rd_get_prot_table(dev, prot_page);
+> > +		if (!prot_table)
+> > +			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+> > +
+> > +		prot_sg = &prot_table->sg_table[prot_page - prot_table->page_start_offset];
+> > +
+> > +		rc = sbc_dif_verify_write(cmd, cmd->t_task_lba, sector, 0,
+> > +					  prot_sg, prot_offset);
+> > +		if (rc)
+> > +			return rc;
+> > +	}
+> > +
+> >   	src_len = PAGE_SIZE - rd_offset;
+> >   	sg_miter_start(&m, sgl, sgl_nents,
+> >   			data_direction == DMA_FROM_DEVICE ?
+> > @@ -460,6 +504,29 @@ rd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
+> >   	}
+> >   	sg_miter_stop(&m);
+> >   
+> > +	if ((cmd->se_cmd_flags & SCF_PROT) && se_dev->dev_attrib.pi_prot_type &&
+> > +	    data_direction == DMA_FROM_DEVICE) {
+> > +		sector_t sector = cmd->data_length / se_dev->dev_attrib.block_size;
+> > +		struct rd_dev_sg_table *prot_table;
+> > +		struct scatterlist *prot_sg;
+> > +		u32 prot_offset, prot_page;
+> > +
+> > +		tmp = cmd->t_task_lba * se_dev->prot_length;
+> > +		prot_offset = do_div(tmp, PAGE_SIZE);
+> > +		prot_page = tmp;
+> > +
+> > +		prot_table = rd_get_prot_table(dev, prot_page);
+> > +		if (!prot_table)
+> > +			return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+> > +
+> > +		prot_sg = &prot_table->sg_table[prot_page - prot_table->page_start_offset];
+> > +
+> > +		rc = sbc_dif_verify_read(cmd, cmd->t_task_lba, sector, 0,
+> > +					 prot_sg, prot_offset);
+> > +		if (rc)
+> > +			return rc;
+> > +	}
+> > +
+> >   	target_complete_cmd(cmd, SAM_STAT_GOOD);
+> >   	return 0;
+> >   }
+> 
+> I wander how we can skip  sbc_dif_verify_xxxx if the transport already 
+> offloaded DIF verify.
+> I think that the transport should signal the core layer that it is able 
+> to offload DIF (ADD/STRIP/PASS/VERIFY), in which case the core should 
+> turn off the backstore DIF verify emulation to sustain performance.
 
-This version looks good to me.  You now have my Reviewed-by on all
-the patches.
+So IBLOCK + PSCSI backends will need to be a non interleaved protection
+PASS for fast path operation, and backend protection emulation is
+reserved for RAMDISK and perhaps a special FILEIO full emulation mode.
 
-							Thanx, Paul
+>  I assume that if backstore DIF verify is offloaded as well it does not 
+> really matter.
 
-> v6->v7:
->  - Remove support for unfair lock, so only fair qrwlock will be provided.
->  - Move qrwlock.c to the kernel/locking directory.
-> 
-> v5->v6:
->  - Modify queue_read_can_lock() to avoid false positive result.
->  - Move the two slowpath functions' performance tuning change from
->    patch 4 to patch 1.
->  - Add a new optional patch to use the new smp_store_release() function 
->    if that is merged.
-> 
-> v4->v5:
->  - Fix wrong definitions for QW_MASK_FAIR & QW_MASK_UNFAIR macros.
->  - Add an optional patch 4 which should only be applied after the
->    mcs_spinlock.h header file is merged.
-> 
-> v3->v4:
->  - Optimize the fast path with better cold cache behavior and
->    performance.
->  - Removing some testing code.
->  - Make x86 use queue rwlock with no user configuration.
-> 
-> v2->v3:
->  - Make read lock stealing the default and fair rwlock an option with
->    a different initializer.
->  - In queue_read_lock_slowpath(), check irq_count() and force spinning
->    and lock stealing in interrupt context.
->  - Unify the fair and classic read-side code path, and make write-side
->    to use cmpxchg with 2 different writer states. This slows down the
->    write lock fastpath to make the read side more efficient, but is
->    still slightly faster than a spinlock.
-> 
-> v1->v2:
->  - Improve lock fastpath performance.
->  - Optionally provide classic read/write lock behavior for backward
->    compatibility.
->  - Use xadd instead of cmpxchg for fair reader code path to make it
->    immute to reader contention.
->  - Run more performance testing.
-> 
-> As mentioned in the LWN article http://lwn.net/Articles/364583/,
-> the read/write lock suffer from an unfairness problem that it is
-> possible for a stream of incoming readers to block a waiting writer
-> from getting the lock for a long time. Also, a waiting reader/writer
-> contending a rwlock in local memory will have a higher chance of
-> acquiring the lock than a reader/writer in remote node.
-> 
-> This patch set introduces a queue-based read/write lock implementation
-> that can largely solve this unfairness problem.
-> 
-> The read lock slowpath will check if the reader is in an interrupt
-> context. If so, it will force lock spinning and stealing without
-> waiting in a queue. This is to ensure the read lock will be granted
-> as soon as possible.
-> 
-> The queue write lock can also be used as a replacement for ticket
-> spinlocks that are highly contended if lock size increase is not
-> an issue.
-> 
-> This patch set currently provides queue read/write lock support on
-> x86 architecture only. Support for other architectures can be added
-> later on once architecture specific support infrastructure is added
-> and proper testing is done.
-> 
-> The optional patch 3 has a dependency on the the mcs_spinlock.h
-> header file which has not been merged yet. So this patch should only
-> be applied after the mcs_spinlock.h header file is merged.
-> 
-> The optional patch 4 use the new smp_store_release() and
-> smp_load_acquire() functions which are being reviewed & not merged yet.
-> 
-> Waiman Long (4):
->   qrwlock: A queue read/write lock implementation
->   qrwlock x86: Enable x86 to use queue read/write lock
->   qrwlock: Use the mcs_spinlock helper functions for MCS queuing
->   qrwlock: Use smp_store_release() in write_unlock()
-> 
->  arch/x86/Kconfig                      |    1 +
->  arch/x86/include/asm/spinlock.h       |    2 +
->  arch/x86/include/asm/spinlock_types.h |    4 +
->  include/asm-generic/qrwlock.h         |  203 +++++++++++++++++++++++++++++++++
->  kernel/Kconfig.locks                  |    7 +
->  kernel/locking/Makefile               |    1 +
->  kernel/locking/qrwlock.c              |  191 +++++++++++++++++++++++++++++++
->  7 files changed, 409 insertions(+), 0 deletions(-)
->  create mode 100644 include/asm-generic/qrwlock.h
->  create mode 100644 kernel/locking/qrwlock.c
-> 
+That is my assumption of well..
+
+--nab
+
 
