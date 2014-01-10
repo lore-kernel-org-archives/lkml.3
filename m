@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaAJLfO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 06:35:14 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:2673 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaAJLfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 06:35:11 -0500
-X-IronPort-AV: E=Sophos;i="4.95,638,1384300800"; 
-   d="scan'208";a="89494472"
-Message-ID: <52CFDAEC.5080708@citrix.com>
-Date: Fri, 10 Jan 2014 11:35:08 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752570AbaAJLhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 06:37:34 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37480 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752441AbaAJLhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 06:37:32 -0500
+X-Sasl-enc: N/QfwEVPGnkRZHXcOqM1yVixvkqQhNNfCMKCIA2YQYN9 1389353848
+Message-ID: <52CFDB76.2030207@ladisch.de>
+Date: Fri, 10 Jan 2014 12:37:26 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next v3 2/9] xen-netback: Change TX path from grant
- copy to mapping
-References: <1389139818-24458-1-git-send-email-zoltan.kiss@citrix.com> <1389139818-24458-3-git-send-email-zoltan.kiss@citrix.com> <20140109153015.GF12164@zion.uk.xensource.com>
-In-Reply-To: <20140109153015.GF12164@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Stephan Mueller <stephan.mueller@atsec.com>
+CC: Rafael Aquini <aquini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [RFC PATCH] char: random: stir the output pools differently when
+ the random_write lenght allows splitting the seed
+References: <42f6dc88535d5ecdab13b1376db7ccbbbc550600.1389297772.git.aquini@redhat.com> <52CFABC5.5030806@ladisch.de> <1510904.XsOZgVgixq@tauon>
+In-Reply-To: <1510904.XsOZgVgixq@tauon>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/14 15:30, Wei Liu wrote:
-> On Wed, Jan 08, 2014 at 12:10:11AM +0000, Zoltan Kiss wrote:
->> v3:
->> - delete a surplus checking from tx_action
->> - remove stray line
->> - squash xenvif_idx_unmap changes into the first patch
->> - init spinlocks
->> - call map hypercall directly instead of gnttab_map_refs()
->
-> I suppose this is to avoid touching m2p override as well, just as
-> previous patch uses unmap hypercall directly.
-
-Yes.
-
->> --- a/drivers/net/xen-netback/interface.c
->> +++ b/drivers/net/xen-netback/interface.c
->> @@ -122,7 +122,9 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
->>   	BUG_ON(skb->dev != dev);
+Stephan Mueller wrote:
+> Am Freitag, 10. Januar 2014, 09:13:57 schrieb Clemens Ladisch:
+>> Rafael Aquini wrote:
+>>> This patch introduces changes to the random_write method so it can
+>>> split the given seed and completely stir the output pools with
+>>> different halves of it, when seed lenght allows us doing so.
+>>>
+>>> -	ret = write_pool(&blocking_pool, buffer, count);
+>>> +	ret = write_pool(pool1, buffer, count1);
+>>>  	if (ret)
+>>>  		return ret;
+>>> -	ret = write_pool(&nonblocking_pool, buffer, count);
+>>> +	ret = write_pool(pool2, buffer + offset, count2);
 >>
->>   	/* Drop the packet if vif is not ready */
->> -	if (vif->task == NULL || !xenvif_schedulable(vif))
->> +	if (vif->task == NULL ||
->> +		vif->dealloc_task == NULL ||
->> +		!xenvif_schedulable(vif))
+>> Doesn't this assume that both halves of the buffer contain some
+>> (uncredited) entropy?  In other words, wouldn't this result in worse
+>> randomness for pool2 if the second half of the buffer contains just
+>> zero padding?
 >
-> Indentation.
-Fixed, and the later ones as well
+> [...]
+> Coming back to your concern: sure, the caller can pad any data injected
+> into /dev/?random with zeros.
 
->> @@ -920,6 +852,18 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
->>   	err = gop->status;
->>   	if (unlikely(err))
->>   		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
->> +	else {
->> +		if (vif->grant_tx_handle[pending_idx] !=
->> +			NETBACK_INVALID_HANDLE) {
->> +			netdev_err(vif->dev,
->> +				"Stale mapped handle! pending_idx %x handle %x\n",
->> +				pending_idx, vif->grant_tx_handle[pending_idx]);
->> +			BUG();
->> +		}
->> +		set_phys_to_machine(idx_to_pfn(vif, pending_idx),
->> +			FOREIGN_FRAME(gop->dev_bus_addr >> PAGE_SHIFT));
->
-> What happens when you don't have this?
-Your frags will be filled with garbage. I don't understand exactly what 
-this function does, someone might want to enlighten us? I've took it's 
-usage from classic kernel.
-Also, it might be worthwhile to check the return value and BUG if it's 
-false, but I don't know what exactly that return value means.
+Assume that the userspace of an embedded device wants to do the same
+kind of initialization that a call to add_device_randomness() does, and
+that it has some data like "char serial_number[256]".  The padding
+wouldn't be done intentionally, it's just a property of the data (and it
+wouldn't have mattered before this patch).
 
->
->>   		if (skb_is_nonlinear(skb) && skb_headlen(skb) < PKT_PROT_LEN) {
->>   			int target = min_t(int, skb->len, PKT_PROT_LEN);
->> @@ -1581,6 +1541,8 @@ static int xenvif_tx_submit(struct xenvif *vif)
->>   		if (checksum_setup(vif, skb)) {
->>   			netdev_dbg(vif->dev,
->>   				   "Can't setup checksum in net_tx_action\n");
->> +			if (skb_shinfo(skb)->destructor_arg)
->> +				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
->
-> Do you still care setting the flag even if this skb is not going to be
-> delivered? If so can you state clearly the reason just like the
-> following hunk?
-Of course, otherwise the pages wouldn't be sent back to the guest. I've 
-added a comment.
+> But as writing to the character files is allowed to every user, this
+> per definition must not matter (e.g. an attacker may simply write
+> zeros or other known data into the character file). And the random.c
+> driver handles that case appropriately by not increasing the entropy
+> estimator when receiving data.
 
->> @@ -1715,7 +1685,7 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
->>   int xenvif_tx_action(struct xenvif *vif, int budget)
->>   {
->>   	unsigned nr_gops;
->> -	int work_done;
->> +	int work_done, ret;
->>
->>   	if (unlikely(!tx_work_todo(vif)))
->>   		return 0;
->> @@ -1725,7 +1695,10 @@ int xenvif_tx_action(struct xenvif *vif, int budget)
->>   	if (nr_gops == 0)
->>   		return 0;
->>
->> -	gnttab_batch_copy(vif->tx_copy_ops, nr_gops);
->> +	ret = HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref,
->> +			vif->tx_map_ops,
->> +			nr_gops);
->
-> Why do you need to replace gnttab_batch_copy with hypercall? In the
-> ideal situation gnttab_batch_copy should behave the same as directly
-> hypercall but it also handles GNTST_eagain for you.
+The problem is not with the entropy estimate.
 
-I don't need gnttab_batch_copy at all, I'm using the grant mapping 
-hypercall here.
+> All the patch tries to achieve is to ensure that both pools are not
+> always mixed with the same values.
+
+Before this patch, both pools got mixed with the same values.  After
+this patch, both pools indeed get mixed with different values, but now
+one pool gets mixed with a known value if one half of the buffer happens
+to be known.
+
 
 Regards,
-
-Zoli
+Clemens
