@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaAJHAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:00:30 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34805 "EHLO
+	id S1751807AbaAJHA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:00:28 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34809 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaAJHAW (ORCPT
+	with ESMTP id S1750877AbaAJHAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Jan 2014 02:00:22 -0500
 From: Chen-Yu Tsai <wens@csie.org>
@@ -16,9 +16,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
         Emilio Lopez <emilio@elopez.com.ar>,
         Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v2 02/16] net: stmmac: Enable stmmac main clock when probing hardware
-Date: Fri, 10 Jan 2014 15:00:03 +0800
-Message-Id: <1389337217-29032-3-git-send-email-wens@csie.org>
+Subject: [PATCH v2 04/16] net: stmmac: Allocate and pass soc/board specific data to callbacks
+Date: Fri, 10 Jan 2014 15:00:05 +0800
+Message-Id: <1389337217-29032-5-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1389337217-29032-1-git-send-email-wens@csie.org>
 References: <1389337217-29032-1-git-send-email-wens@csie.org>
@@ -26,95 +26,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guiseppe previously stated that the "stmmaceth" clock is the main clock
-that drives the IP. The stmmac driver does not enable this clock during
-the probe phase. If the clock was not enabled by the boot loader or
-disabled by the kernel, hardware features and the MDIO bus would not be
-probed properly.
+The current .init and .exit callbacks requires access to driver
+private data structures. This is not a good seperation and abstraction.
+
+Instead, we add a new .setup callback for allocating private data, and
+pass the returned pointer to the other callbacks.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 26 +++++++++++------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ Documentation/networking/stmmac.txt                   | 12 ++++++++----
+ drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c | 18 ++++++++++++++----
+ include/linux/stmmac.h                                |  6 ++++--
+ 3 files changed, 26 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 8a7a23a..786b51c 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -1604,8 +1604,6 @@ static int stmmac_open(struct net_device *dev)
- 	struct stmmac_priv *priv = netdev_priv(dev);
- 	int ret;
- 
--	clk_prepare_enable(priv->stmmac_clk);
--
- 	stmmac_check_ether_addr(priv);
- 
- 	if (priv->pcs != STMMAC_PCS_RGMII && priv->pcs != STMMAC_PCS_TBI &&
-@@ -1796,7 +1794,6 @@ static int stmmac_release(struct net_device *dev)
- #ifdef CONFIG_STMMAC_DEBUG_FS
- 	stmmac_exit_fs();
- #endif
--	clk_disable_unprepare(priv->stmmac_clk);
- 
- 	stmmac_release_ptp(priv);
- 
-@@ -2682,10 +2679,18 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
- 	if ((phyaddr >= 0) && (phyaddr <= 31))
- 		priv->plat->phy_addr = phyaddr;
- 
-+	priv->stmmac_clk = devm_clk_get(priv->device, STMMAC_RESOURCE_NAME);
-+	if (IS_ERR(priv->stmmac_clk)) {
-+		dev_warn(priv->device, "%s: warning: cannot get CSR clock\n",
-+			 __func__);
-+		goto error_clk_get;
-+	}
-+	clk_prepare_enable(priv->stmmac_clk);
-+
- 	/* Init MAC and get the capabilities */
- 	ret = stmmac_hw_init(priv);
- 	if (ret)
--		goto error_free_netdev;
-+		goto error_hw_init;
- 
- 	ndev->netdev_ops = &stmmac_netdev_ops;
- 
-@@ -2723,12 +2728,6 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
- 		goto error_netdev_register;
+diff --git a/Documentation/networking/stmmac.txt b/Documentation/networking/stmmac.txt
+index cdd916d..2090895 100644
+--- a/Documentation/networking/stmmac.txt
++++ b/Documentation/networking/stmmac.txt
+@@ -127,8 +127,9 @@ struct plat_stmmacenet_data {
+ 	int riwt_off;
+ 	void (*fix_mac_speed)(void *priv, unsigned int speed);
+ 	void (*bus_setup)(void __iomem *ioaddr);
+-	int (*init)(struct platform_device *pdev);
+-	void (*exit)(struct platform_device *pdev);
++	void *(*setup)(struct platform_device *pdev);
++	int (*init)(struct platform_device *pdev, void *priv);
++	void (*exit)(struct platform_device *pdev, void *priv);
+ 	void *custom_cfg;
+ 	void *custom_data;
+ 	void *bsp_priv;
+@@ -169,10 +170,13 @@ Where:
+  o bus_setup: perform HW setup of the bus. For example, on some ST platforms
+ 	     this field is used to configure the AMBA  bridge to generate more
+ 	     efficient STBus traffic.
+- o init/exit: callbacks used for calling a custom initialization;
++ o setup/init/exit: callbacks used for calling a custom initialization;
+ 	     this is sometime necessary on some platforms (e.g. ST boxes)
+ 	     where the HW needs to have set some PIO lines or system cfg
+-	     registers.
++	     registers. setup should return a pointer to private data,
++	     which will be stored in bsp_priv, and then passed to init and
++	     exit callbacks. init/exit callbacks should not use or modify
++	     platform data.
+  o custom_cfg/custom_data: this is a custom configuration that can be passed
+ 			   while initializing the resources.
+  o bsp_priv: another private pointer.
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 3974586..86ee903 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -140,9 +140,16 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
+ 		}
  	}
  
--	priv->stmmac_clk = clk_get(priv->device, STMMAC_RESOURCE_NAME);
--	if (IS_ERR(priv->stmmac_clk)) {
--		pr_warn("%s: warning: cannot get CSR clock\n", __func__);
--		goto error_clk_get;
--	}
--
- 	/* If a specific clk_csr value is passed from the platform
- 	 * this means that the CSR Clock Range selection cannot be
- 	 * changed at run-time and it is fixed. Viceversa the driver'll try to
-@@ -2756,12 +2755,12 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
- 	return priv;
++	/* Custom setup (if needed) */
++	if (plat_dat->setup) {
++		plat_dat->bsp_priv = plat_dat->setup(pdev);
++		if (IS_ERR(plat_dat->bsp_priv))
++			return PTR_ERR(plat_dat->bsp_priv);
++	}
++
+ 	/* Custom initialisation (if needed)*/
+ 	if (plat_dat->init) {
+-		ret = plat_dat->init(pdev);
++		ret = plat_dat->init(pdev, plat_dat->bsp_priv);
+ 		if (unlikely(ret))
+ 			return ret;
+ 	}
+@@ -199,7 +206,10 @@ static int stmmac_pltfr_remove(struct platform_device *pdev)
+ 	int ret = stmmac_dvr_remove(ndev);
  
- error_mdio_register:
--	clk_put(priv->stmmac_clk);
--error_clk_get:
- 	unregister_netdev(ndev);
- error_netdev_register:
- 	netif_napi_del(&priv->napi);
--error_free_netdev:
-+error_hw_init:
-+	clk_disable_unprepare(priv->stmmac_clk);
-+error_clk_get:
- 	free_netdev(ndev);
+ 	if (priv->plat->exit)
+-		priv->plat->exit(pdev);
++		priv->plat->exit(pdev, priv->plat->bsp_priv);
++
++	if (priv->plat->free)
++		priv->plat->free(pdev, priv->plat->bsp_priv);
  
- 	return NULL;
-@@ -2788,6 +2787,7 @@ int stmmac_dvr_remove(struct net_device *ndev)
- 		stmmac_mdio_unregister(ndev);
- 	netif_carrier_off(ndev);
- 	unregister_netdev(ndev);
-+	clk_disable_unprepare(priv->stmmac_clk);
- 	free_netdev(ndev);
+ 	return ret;
+ }
+@@ -228,7 +238,7 @@ int stmmac_pltfr_freeze(struct device *dev)
  
- 	return 0;
+ 	ret = stmmac_freeze(ndev);
+ 	if (plat_dat->exit)
+-		plat_dat->exit(pdev);
++		plat_dat->exit(pdev, plat_dat->bsp_priv);
+ 
+ 	return ret;
+ }
+@@ -240,7 +250,7 @@ int stmmac_pltfr_restore(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 
+ 	if (plat_dat->init)
+-		plat_dat->init(pdev);
++		plat_dat->init(pdev, plat_dat->bsp_priv);
+ 
+ 	return stmmac_restore(ndev);
+ }
+diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
+index bb5deb0..c407791 100644
+--- a/include/linux/stmmac.h
++++ b/include/linux/stmmac.h
+@@ -112,8 +112,10 @@ struct plat_stmmacenet_data {
+ 	int riwt_off;
+ 	void (*fix_mac_speed)(void *priv, unsigned int speed);
+ 	void (*bus_setup)(void __iomem *ioaddr);
+-	int (*init)(struct platform_device *pdev);
+-	void (*exit)(struct platform_device *pdev);
++	void *(*setup)(struct platform_device *pdev);
++	void (*free)(struct platform_device *pdev, void *priv);
++	int (*init)(struct platform_device *pdev, void *priv);
++	void (*exit)(struct platform_device *pdev, void *priv);
+ 	void *custom_cfg;
+ 	void *custom_data;
+ 	void *bsp_priv;
 -- 
 1.8.5.2
 
