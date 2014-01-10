@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009AbaAJQFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:05:08 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:51182 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342AbaAJQFB (ORCPT
+	id S1757582AbaAJQGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:06:06 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38633 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257AbaAJQGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:05:01 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-bd-52d01a2bf66a
-Message-id: <52D01A24.10603@samsung.com>
-Date: Fri, 10 Jan 2014 17:04:52 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com
-Subject: Re: [PATCH 8/8 v3] crypto:s5p-sss: Use clk_prepare/clk_unprepare
-References: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
-In-reply-to: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xK7raUheCDL5vE7O4+/wwo8XLQ5oW
-	3a9kLO7f+8lkcXnXHDaLGef3MVks2vaf2WLVrj+MFmfnHGJy4PTYOesuu8e2A6oefVtWMXp8
-	3iQXwBLFZZOSmpNZllqkb5fAlXH5zgrmghfMFQvb9rE0MHYwdzFyckgImEj0rnvMAmGLSVy4
-	t56ti5GLQ0hgKaPEy0Wr2CGcz4wSK3e+BevgFdCQ6P7ykwnEZhFQlVh97wQjiM0moCbxueER
-	G4gtKhAh8XfeekaIekGJH5PvgW0QESiX+HdjDdgGZoE5jBIPl7SDJYQFPCWWPl8NZgsJuEo8
-	nDqBFcTmFHCTuD/jFVicWcBaYuWkbYwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRNLU0u
-	KE5KzzXUK07MLS7NS9dLzs/dxAgJ9i87GBcfszrEKMDBqMTDGyByIUiINbGsuDL3EKMEB7OS
-	CO81QaAQb0piZVVqUX58UWlOavEhRiYOTqkGRieXt47nNptNuiErxM7M1md8+Pnzz03Nk5ad
-	FKrf/vSHoXjbY4bayJwnc9Z1xc+fceGydciHa/0LFr3rnGK5Y3aYLdeNgH8xS/aIvFtb+Pyg
-	iWxUo/vSpmoZo4AGX85DO+OuL1Bdll05kW/RUt3JoXciWKfwrFgou19XU4P7p9Dn9pMpHr3h
-	s5VYijMSDbWYi4oTATSDLz1UAgAA
+	Fri, 10 Jan 2014 11:06:04 -0500
+Message-ID: <52D01A6B.2020105@gmail.com>
+Date: Sat, 11 Jan 2014 00:06:03 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Hannes Reinecke <hare@suse.de>, James Hogan <james.hogan@imgtec.com>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] drivers: target: target_core_mod: use div64_u64_rem()
+ instead of operator '%' for u64
+References: <52B4F837.1010403@gmail.com>  <1387680997.5567.91.camel@haakon3.risingtidesystems.com>  <52B6AE19.80401@gmail.com>  <1387781487.5567.147.camel@haakon3.risingtidesystems.com>  <52B90111.5050203@gmail.com> <52CCFF0C.7070704@suse.de>  <1389223117.5567.271.camel@haakon3.risingtidesystems.com>  <52CE7720.6060809@suse.de> <1389332871.5567.358.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1389332871.5567.358.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Naveen,
+On 01/10/2014 01:47 PM, Nicholas A. Bellinger wrote:
+> On Thu, 2014-01-09 at 11:17 +0100, Hannes Reinecke wrote:
+>> On 01/09/2014 12:18 AM, Nicholas A. Bellinger wrote:
+>>> On Wed, 2014-01-08 at 08:32 +0100, Hannes Reinecke wrote:
+> 
+> <SNIP>
+> 
+>>>> Other than that the sector_div() patch is correct.
+>>>>
+>>>
+>>> <nod> Thanks for confirming that sector_div() is correct here vs. the
+>>> original code using modulo that Chen had pointed out.
+>>>
+>> Ah, _that_ was the issue.
+>> I was wondering why you kept on poking me ...
+>>
+>> Well.
+>> No, that's actually _not_ correct.
+>> The correct fix would be
+>>
+>> diff --git a/drivers/target/target_core_alua.c 
+>> b/drivers/target/target_core_alua.c
+>> index 54b1e52..12da9b3 100644
+>> --- a/drivers/target/target_core_alua.c
+>> +++ b/drivers/target/target_core_alua.c
+>> @@ -500,8 +500,7 @@ static inline int core_alua_state_lba_dependent(
+>>
+>>                          if (segment_mult) {
+>>                                  u64 tmp = lba;
+>> -                               sector_div(tmp, segment_size * segment_mult);
+>> -                               start_lba = tmp;
+>> +                               start_lba = sector_div(tmp, segment_size * segment_mult);
+>>
+>>                                  last_lba = first_lba + segment_size - 1;
+>>                                  if (start_lba >= first_lba &&
+>> (beware of line breaks ...)
+>> Thing is, we need to calculate the offset into the segment to figure out 
+>> which map entry to use.
+>> The actual number of the segment (as had been calculated with the 
+>> original fix) is immaterial here.
+>>
+>> Sorry for this. The email thread just flew past me during Xmas
+>> with me not paying real attention.
+>>
+> 
+> Applied + squashed.  Apologies for the initial pre-holiday BUG..
+> 
+> Thanks Hannes!
+> 
 
-On 10.01.2014 12:45, Naveen Krishna Chatradhi wrote:
-> This patch set adds use of clk_prepare/clk_unprepare as
-> required by generic clock framework.
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> ---
-> Changes since v2:
-> New change to fix a WARN_ON during the bootup
->
->   drivers/crypto/s5p-sss.c |    6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
+Thank all of you.
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+-- 
+Chen Gang
 
-Best regards,
-Tomasz
+Open, share and attitude like air, water and life which God blessed
