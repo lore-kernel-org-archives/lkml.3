@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446AbaAJAci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:32:38 -0500
-Received: from ring0.de ([91.143.88.219]:42279 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752150AbaAJAce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:32:34 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Fri, 10 Jan 2014 01:32:31 +0100
-From: Sebastian Reichel <sre@ring0.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>
-Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
-Message-ID: <20140110003231.GA14141@earth.universe>
-Mail-Followup-To: Pavel Machek <pavel@ucw.cz>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
-	"Gustavo F. Padovan" <gustavo@padovan.org>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	"linux-bluetooth@vger.kernel.org development" <linux-bluetooth@vger.kernel.org>,
-	Ville Tervo <ville.tervo@nokia.com>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <20140102161824.GA8204@amd.pavel.ucw.cz>
- <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
- <20140103001753.GA21023@amd.pavel.ucw.cz>
- <20140103013640.GB27678@earth.universe>
- <20140109233843.GB19974@amd.pavel.ucw.cz>
+	id S1756643AbaAJAee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:34:34 -0500
+Received: from mail-gg0-f175.google.com ([209.85.161.175]:33230 "EHLO
+	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaAJAeb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 19:34:31 -0500
+Date: Thu, 9 Jan 2014 16:34:26 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20131209230527.GL21724@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1401091629540.24832@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1311261648570.21003@chino.kir.corp.google.com> <20131127163435.GA3556@cmpxchg.org> <20131202200221.GC5524@dhcp22.suse.cz> <20131202212500.GN22729@cmpxchg.org> <20131203120454.GA12758@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312031544530.5946@chino.kir.corp.google.com> <20131204111318.GE8410@dhcp22.suse.cz> <alpine.DEB.2.02.1312041606260.6329@chino.kir.corp.google.com> <20131209124840.GC3597@dhcp22.suse.cz> <alpine.DEB.2.02.1312091328550.11026@chino.kir.corp.google.com>
+ <20131209230527.GL21724@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-In-Reply-To: <20140109233843.GB19974@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrew requested I reply to this email, so it's old, but here it is.
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Pavel,
+On Mon, 9 Dec 2013, Johannes Weiner wrote:
 
-On Fri, Jan 10, 2014 at 12:38:43AM +0100, Pavel Machek wrote:
-> > Here are some cleanup suggestions for probe, removal & module
-> > initialization functions.
->=20
-> ...and here's the patch implementing those suggestions. Thanks!
+> We check for fatal signals during the repeated charge attempts and
+> reclaim.  Should we be checking for PF_EXITING too?
+> 
 
-That looks right, but you forgot to cleanup hci_h4p_remove. Also I
-suggest to simply merge this as v5.
+Michal has proposed that patch and I question whether we should be doing 
+that because if significant memory allocation can be done in the exit() 
+path after PF_EXITING either now or in the future, then it does not allow 
+memory to be set aside for system oom handlers given the suggested memcg 
+configuration from Tejun that limits the amount of "user" memory to a 
+top-level memcg limit that can be overcommitted below it and bypasses 
+these charges to root that would disallow the userspace oom handlers from 
+getting memory that they have been reserved.  In other words, if a 64GB 
+machine has top-level memcgs "user" with limit of 62GB and "oom" with 
+limit of 2GB for system oom handlers, that 2GB cannot be guaranteed with 
+all of these bypasses (uncharged memory, such as unaccounted kernel 
+memory, memory reserves).
 
--- Sebastian
+> You even re-inforced this motivation by suggesting the separate memcg
+> margin check right before the OOM kill, so don't blame us for
+> misunderstanding the exact placement of this check as your main
+> argument when you repeated it over and over.
+> 
 
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We've talked about a lot of stuff in these threads, yes.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+> All I object to is that the OOM killer is riddled with last-second
+> checks of whether the OOM situation is still existant.  We establish
+> that the context is OOM and once we are certain we are executing,
+> period.
+> 
 
-iQIcBAEBCAAGBQJSzz+eAAoJENju1/PIO/qa4FoP/Ayooh8mXhiIC/1ZmsEiw8qZ
-o9UV40lamiJINCzIErKqdjzoStPHBNGTO424WMPkpsrLrPDcpq0SCcnPnYsSrMR9
-YFgfjVI7REeRrOdJx8N/XX9xRhFnHuZ4RcfdhUa+oUXJ/QvBtC6ml6zuI1gOy8f4
-DADhpAGB9mdubVNDBcfiCEiiS3J6NWbroSsZakcgdEC98u40Hu5OK5sCyr2FZwtb
-LJeAIZe0jRQA3crP0E/2UKtfAKhfgvvaMhgSAKfM2TuH0dfKe79Fyo8KFBGQZxtz
-aOVgKzzeZ6+dVg1Tt3unvISHEBJcN0iXne6v+t7baigS7blaa2xzX6MwGFpTaUew
-Pvc/Z0iNVlH5WOQS8HMbW8T3y1iOz192eXDF6Gic3b7SW09Uac6ZgTO2JnmnAndf
-nAkibtiYVOG2QPeKYmoBESDZXCLgufqImUuOCzWPES2oF2gQ2cnV0EU7VoueKdqo
-ScD3Vq3i6wzDz73qnNtPKT2h/CvbqKdsOjaJHpljm6LekquC498wjwJTJLrAM9z6
-p4Jc2MYZ3YMtCwTS2/+4Pc7A4HVt7k3v1LXEOUjaHPYQOUu9JCXp/RlV3iSU6Tb0
-d5/03R507La5Q4x0ZApzVWLVi6BNHAIzpluA9s/zXPX8JTcBx1pTiuyPNX7nROb8
-qj9ah+pghf2LNclT04bk
-=8NWn
------END PGP SIGNATURE-----
+This patch moves a check from being "last second" to actually before the 
+oom killer is called at all, you should be pleased.
 
---gKMricLos+KVdGMg--
+> Not catching PF_EXITING in the long window between the first reclaim
+> and going OOM is a separate issue and I can see that this should be
+> fixed but it should be checked before we start invoking OOM.
+> 
+
+Doesn't seem like an issue with this patch.
