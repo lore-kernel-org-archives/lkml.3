@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482AbaAJRGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 12:06:51 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:53737 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbaAJRGr (ORCPT
+	id S1757910AbaAJRHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 12:07:05 -0500
+Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:18885
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757593AbaAJRG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 12:06:47 -0500
+	Fri, 10 Jan 2014 12:06:58 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(z551biz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h1155h)
+Date: Sat, 11 Jan 2014 00:45:44 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: <timur@tabi.org>, <alsa-devel@alsa-project.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <lgirdwood@gmail.com>, <perex@perex.cz>,
+        <tiwai@suse.de>, <grant.likely@linaro.org>, <shawn.guo@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2] ASoC: fsl_esai: Add ESAI CPU DAI driver
+Message-ID: <20140110164543.GB17609@MrMyself>
+References: <1389265078-16256-1-git-send-email-Guangyu.Chen@freescale.com>
+ <20140109184453.GP12858@sirena.org.uk>
+ <20140110023252.GA16467@MrMyself>
+ <20140110023537.GB16467@MrMyself>
+ <20140110120439.GG29039@sirena.org.uk>
+ <20140110130338.GA17392@MrMyself>
+ <20140110132642.GM29039@sirena.org.uk>
+ <20140110154824.GA17609@MrMyself>
+ <20140110165229.GP29039@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140110094132.GC3444@yanx>
-References: <1387485843-17403-1-git-send-email-yinghai@kernel.org>
-	<1387485843-17403-3-git-send-email-yinghai@kernel.org>
-	<CAErSpo5VWREGptW0MU0wLJUa3h23DXMZPGkdJFMTx5WAGL8J6Q@mail.gmail.com>
-	<CAE9FiQU88EO=e+CR7RKnZ6r7ofSwi9J1QisnrnDyDz6Qh367YQ@mail.gmail.com>
-	<CAE9FiQVZ9yrcViFNx5q65ot=nNP=JBuvotpEjUis2FF11wjg6w@mail.gmail.com>
-	<20140110094132.GC3444@yanx>
-Date: Fri, 10 Jan 2014 09:06:46 -0800
-X-Google-Sender-Auth: azT37pEPaLvSyeU_Rkz-vIyT0Uw
-Message-ID: <CAE9FiQUw7pubrKcK6yubSXtV60BZaH+ZhsDKieiyQ0api=peXA@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] PCI: Try best to allocate pref mmio 64bit above 4g
-From: Yinghai Lu <yinghai@kernel.org>
-To: Guo Chao <yan@linux.vnet.ibm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140110165229.GP29039@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 1:41 AM, Guo Chao <yan@linux.vnet.ibm.com> wrote:
-> On Wed, Jan 08, 2014 at 03:34:54PM -0800, Yinghai Lu wrote:
-> Just FYI, a Mellanox net card failed after exactly this patch.
->
-> 3.13-rc7 + bjorn's series is OK. After this patch applied, Mellanox
-> driver complains:
->
->  |mlx4_core 0003:05:00.0: Multiple PFs not yet supported.  Skipping PF.
->  |mlx4_core: probe of 0003:05:00.0 failed with error -22
->
-> This is caused by MMIO read from BAR 0 (64-bit non-prefetchable) returns
-> non-zore value.
->
-> Resource assignment, as far as we can see, works fine. The noticable
-> effect of this patch is putting ROM BAR under non-prefetachable. I try
-> to revert this effect by adding MEM_64 to its ROM resource and it works
-> again (system does not expose 4G above aperture yet). Not sure what's
-> the root cause, looks like a driver/firmware/hardware defect.
+On Fri, Jan 10, 2014 at 04:52:29PM +0000, Mark Brown wrote:
+> On Fri, Jan 10, 2014 at 11:48:25PM +0800, Nicolin Chen wrote:
+> 
+> > I think I start to understand the point here: If a user only needs to playback
+> > the default case - 44.1KHz for example, the driver can just configure all the
+> > dividers once at the beginning, not every time, so that we can save further
+> > register overriding operation or even complicated clock selection and divisor
+> > calculation, which obviously makes the procedure clean and reduces the system
+> > loading even if it might be just in a slight level.
+> 
+> > Is this the reason, or maybe one of the reasons, to the defaults providing?
+> 
+> The main thing is that if the DAI driver does it then it's less code in
+> the machine drivers using it - what tends to happen otherwise is that
+> quite a few machine drivers end up replicating the same logic.  Hardware
+> designers tend to do a lot of cut'n'paste with these things so even if
+> the CODEC is different the clocking is often very similar.
 
-Interesting. Can you  post boot log with "debug ignore_loglevel initcall_debug"
-and with/without this patch?
+Point taken. And it also depends on how common the defaults would be.
+I think I should try to figure out a comparably generic template for
+the clock selection and its rate settings here and also check other
+redundant places.
 
-Thanks
+I learned another lesson today. Thank you indeed.
+Nicolin
 
-Yinghai
