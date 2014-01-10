@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070AbaAJVye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 16:54:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36095 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaAJVyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 16:54:31 -0500
-Message-ID: <52D06C0C.9020300@canonical.com>
-Date: Fri, 10 Jan 2014 16:54:20 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1757955AbaAJWAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:00:23 -0500
+Received: from smtpfreer104.163vip.net ([211.100.40.146]:47998 "HELO
+	smtp.tom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752615AbaAJWAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 17:00:19 -0500
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jan 2014 17:00:19 EST
+Authentication-Results: bjsd-antispam2 smtp.user=gdlgkj@tom.com; auth=pass (LOGIN)
+Date: Sat, 11 Jan 2014 05:49:57 +0800
+From: "Numberone Biotech Inc." <gdlgkj@tom.com>
+Reply-To: cnrocket020@126.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Steroid Products Manufacturer--Numberone Biotech Inc.
+Message-ID: <201401110549573592356@tom.com>
+X-Priority: 3
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.87[cn]
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
- mmio
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com>	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>	<52D01D82.5070202@canonical.com> <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0AM0V32012199
 
-On 01/10/2014 12:13 PM, Yinghai Lu wrote:
-> On Fri, Jan 10, 2014 at 8:19 AM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> On 12/11/2013 02:55 PM, Yinghai Lu wrote:
->>> On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
->>> <joseph.salisbury@canonical.com> wrote:
->>>> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
->>>>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>>>> That doesn't answer my question at all.
->>>>>>
->>>>>> I understand that this change makes it so Joseph doesn't have to use
->>>>>> "pci=realloc=off".  But why should auto-reallocation be limited to
->>>>>> buses that have resources above 4GB?  That doesn't make any sense.
->>>>>>
->>>>>> We should fix the reallocation code so it can deal with this case.  If
->>>>>> there's not enough space for everything, obviously we have to leave
->>>>>> something unassigned.  A ROM BAR is a good candidate for leaving
->>>>>> unassigned, because most of the time we can get along without it.
->>>>> Yes, that is ideal and not that simple.
->>>>> but that would be hard to backport to old kernels.
->>>>>
->>>>> BTW, Joseph, can you try
->>>>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>>>> for-pci-3.14
->>>>> with pci=realloc=on
->>>>>
->>>>> on that system?
->>>>>
->>>>> Thanks
->>>>>
->>>>> Yinghai
->>>> I noticed there was some back and forth on this thread.  Do you still
->>>> want me to test this version, Yinghai?
->>> Yes, if that works, we would not need to put the patch in upstream for limiting
->>> realloc auto scope.
->>>
->> Another user has confirmed that at test kernel from your branch[0] does
->> resolve the bug.
-> Hi, Joe,
->
-> Bjorn does not want to limit auto realloc, so this patch can not make
-> to upstream at this point.
->
-> so we may have to ask user to append "pci=realloc=off" before we find
-> more smart way to realloc
-> resource.
->
-> Thanks
->
-> Yinghai
-Hi Yinghai,
+Dear,
+We supply products-injection steroids, oral steroids.
+Min. order quantity: As your request.
+Payment type: Western Union, Bank Transfer.
+Delivery time: within 10 working days after get payment.
+Shipping term: express mail (with registered tracking number, door delivery).
+Supplying ability: 5000 vials(bottles) per week.
+Return policy: we will return your money if our products don¡¯t have good effect.
+We can develop and product the injectable steroids as your request too.
+You can learn the details of our products on our web: <numberone-cn.com>.
+If you are interested in our products, we are pleased to send you our price quote for them.
+We hope to receiving orders from you and build a long lasting working relation with you.
 
-In a prior email you mentioned: "Yes, if that works, we would not need
-to put the patch in upstream for limiting realloc auto scope."  Is the
-git tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-somehow different now?
+Sincerely,
 
-Thanks,
-
-Joe
-
+Overseas Sales Division
+Numberone Biotech Co., Ltd.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
