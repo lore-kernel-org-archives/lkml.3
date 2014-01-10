@@ -1,393 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaAJPFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 10:05:36 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:48701 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaAJPFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 10:05:33 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-db-52d00c3bc238
-Message-id: <52D00C33.4060305@samsung.com>
-Date: Fri, 10 Jan 2014 16:05:23 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.1.1
-MIME-version: 1.0
-To: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>, kishon@ti.com,
-        kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>
-Cc: mark.rutland@arm.com, jg1.han@samsung.com, b.zolnierkie@samsung.com,
-        joshi@samsung.com, swarren@wwwdotorg.org, grant.likely@linaro.org,
-        christoffer.dall@linaro.org, linux-ide@vger.kernel.org,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Girish K S <ks.giri@samsung.com>,
-        Vasanth Ananthan <vasanth.a@samsung.com>
-Subject: Re: [PATCH V6 1/2] PHY: Exynos: Add Exynos5250 SATA PHY driver
-References: <1389337208-11325-1-git-send-email-yuvaraj.cd@samsung.com>
- <1389337208-11325-2-git-send-email-yuvaraj.cd@samsung.com>
-In-reply-to: <1389337208-11325-2-git-send-email-yuvaraj.cd@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42I5/e/4NV1rngtBBpuWc1hsnLGe1eLF63+M
-	FvOPnGO1OPBnB6PF5YWXWC2+7/rCbtG74CqbxYWnPWwW84/uYLLY9Pgaq8XCtiUsFsd2PGKy
-	uLxrDpvF0usXmSxeHWxjsVi17jCbxcoTs5gtHh7tZrU4e6rcQdhjzbw1jB47Z91l97hzbQ+b
-	x+Yl9R59W1Yxepw89YTF4/iN7UwenzfJeWycGxrAGcVlk5Kak1mWWqRvl8CV0XLmIVvBpKCK
-	voWdLA2MR5y6GDk4JARMJJ6dje1i5AQyxSQu3FvP1sXIxSEksJRR4uPepcwQzmdGiZYfh1lA
-	qngFtCTO9R9gBLFZBFQl5i/exQZiswmoSXxueARmiwpESPydt54Rol5Q4sfkeywgg0QEvjJK
-	THt5hRHEYRY4xCTRseIWI8gZwgLuEhueZUJsa2aUeH/sPtg2TqD439vXWEFsZgFriZWTtjFC
-	2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkBr/u
-	YFx6zOoQowAHoxIPb8Gs80FCrIllxZW5hxglOJiVRHjtXwGFeFMSK6tSi/Lji0pzUosPMTJx
-	cEo1MDLvdrMJbF/RG+CzLunTp50LXtxae+TshmechmXvDzyYLdqonyK+IURxlfLO7BU2Pv4y
-	K3Y2cy3Y/nXf5Vent9ql7txgobhwRs2u8zVFPtVMF4uav2+RWlr2ffvvjOxrm8stgj6f3Xwj
-	bXXp7itpnBKJKQbHD5Z8kFWpq3CsMzO498j1SDmr9DIlluKMREMt5qLiRACfwKYBnwIAAA==
+	id S1756557AbaAJPGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 10:06:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1188 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677AbaAJPGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 10:06:20 -0500
+Date: Fri, 10 Jan 2014 10:05:49 -0500
+From: Dave Jones <davej@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: task_ctx_sched_out WARN_ON triggered.
+Message-ID: <20140110150549.GA9040@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20140109154707.GB3714@redhat.com>
+ <20140110104837.GL31570@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110104837.GL31570@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yuvaraj,
+On Fri, Jan 10, 2014 at 11:48:37AM +0100, Peter Zijlstra wrote:
+ > On Thu, Jan 09, 2014 at 10:47:07AM -0500, Dave Jones wrote:
+ > > This is my fuzz tester, but this looks to be part of normal operation,
+ > > not actually fuzzing a syscall. This looks to be the bit that
+ > > sets the task_comm name in the child process to 'trinity-cN'.  Which appears to have
+ > > succeeded judging by the Comm:, but the follow-on perf stuff seems to
+ > > be screwed up.
+ > > 
+ > > WARNING: CPU: 1 PID: 13500 at kernel/events/core.c:2379 task_ctx_sched_out+0x6b/0x80()
+ > > Modules linked in: 8021q garp stp snd_seq_dummy tun fuse rfcomm hidp sctp bnep can_raw scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth can_bcm can llc2 pppoe pppox ppp_generic slhc nfnetlink irda ipt_ULOG crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm xfs snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep libcrc32c snd_seq e1000e snd_seq_device crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_pcm ptp snd_page_alloc shpchp snd_timer snd microcode serio_raw soundcore usb_debug pcspkr pps_core
+ > > CPU: 1 PID: 13500 Comm: trinity-c5 Not tainted 3.13.0-rc7+ #14 
+ > >  ffffffff81a240ac ffff88002e0c7df8 ffffffff816de2ee 0000000000000000
+ > >  ffff88002e0c7e30 ffffffff81052ddd ffff88024d0975f8 ffff880214d7bb10
+ > >  0000000000000282 ffff88015b3b24c0 ffff880214d7bb10 ffff88002e0c7e40
+ > > Call Trace:
+ > >  [<ffffffff816de2ee>] dump_stack+0x4e/0x7a
+ > >  [<ffffffff81052ddd>] warn_slowpath_common+0x7d/0xa0
+ > >  [<ffffffff81052eba>] warn_slowpath_null+0x1a/0x20
+ > >  [<ffffffff81128d5b>] task_ctx_sched_out+0x6b/0x80
+ > >  [<ffffffff8112ba78>] perf_event_comm+0x108/0x260
+ > >  [<ffffffff8112b970>] ? perf_event_fork+0x20/0x20
+ > >  [<ffffffff811a3815>] ? set_task_comm+0x25/0xc0
+ > >  [<ffffffff811a383f>] set_task_comm+0x4f/0xc0
+ > >  [<ffffffff8106b039>] SyS_prctl+0x229/0x3d0
+ > >  [<ffffffff816f0b24>] tracesys+0xdd/0xe2
+ > > ---[ end trace d6e98e080907af47 ]---
+ > > 
+ > > 
+ > > 2379         if (WARN_ON_ONCE(ctx != cpuctx->task_ctx))
+ > > 2380                 return;
+ > 
+ > Hmm, you wouldn't happen to have the perf_event_attr for all active
+ > events, would you?
 
-In general this version looks pretty good, but I have some questions inline.
+I don't. I'll start adding some code soon to log the contents of the
+structures being passed to syscalls as well as just the address.
 
-On 10.01.2014 08:00, Yuvaraj Kumar C D wrote:
-[snip]
-> diff --git a/drivers/phy/phy-exynos5250-sata-i2c.c b/drivers/phy/phy-exynos5250-sata-i2c.c
-> new file mode 100644
-> index 0000000..206e337
-> --- /dev/null
-> +++ b/drivers/phy/phy-exynos5250-sata-i2c.c
-> @@ -0,0 +1,40 @@
-> +/*
-> + * Copyright (C) 2013 Samsung Electronics Co.Ltd
-> + * Author:
-> + *	Yuvaraj C D <yuvaraj.cd@samsung.com>
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +
-> +static int exynos_sata_i2c_probe(struct i2c_client *client,
-> +		const struct i2c_device_id *i2c_id)
-> +{
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id sataphy_i2c_device_match[] = {
-> +	{ "exynos-sataphy-i2c", 0 },
-> +};
-> +
-> +static struct i2c_driver sataphy_i2c_driver = {
-> +	.probe		= exynos_sata_i2c_probe,
-> +	.id_table	= sataphy_i2c_device_match,
-> +	.driver   = {
-> +		.name = "exynos-sataphy-i2c",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init exynos5250_phy_i2c_init(void)
-> +{
-> +	return i2c_add_driver(&sataphy_i2c_driver);
-> +}
-> +module_init(exynos5250_phy_i2c_init);
+I've hit this bug twice in the last 24 hrs though, which is promising.
 
-Hmm, is this driver even necessary now?
+	Dave
 
-Wolfram, would it be possible to use an i2c_client without a driver 
-bound to it?
-
-> diff --git a/drivers/phy/phy-exynos5250-sata.c b/drivers/phy/phy-exynos5250-sata.c
-> new file mode 100644
-> index 0000000..6e5ff8d
-> --- /dev/null
-> +++ b/drivers/phy/phy-exynos5250-sata.c
-> @@ -0,0 +1,238 @@
-> +/*
-> + * Samsung SATA SerDes(PHY) driver
-> + *
-> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> + * Authors: Girish K S <ks.giri@samsung.com>
-> + *         Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/delay.h>
-> +#include <linux/io.h>
-> +#include <linux/i2c.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/mfd/syscon.h>
-> +
-> +#define EXYNOS5_SATA_RESET		0x4
-> +#define RESET_CMN_RST_N			(1 << 1)
-> +#define LINK_RESET			0xF0000
-
-nit: Lowercase is preferred in hexadecimal notation.
-+ all other occurrences in this file.
-
-> +#define EXYNOS5_SATA_MODE0		0x10
-> +#define EXYNOS5_SATAPHY_PMU_ENABLE	(1 << 0)
-> +#define SATA_SPD_GEN3			(2 << 0)
-> +#define EXYNOS5_SATA_CTRL0		0x14
-> +#define CTRL0_P0_PHY_CALIBRATED_SEL	(1 << 9)
-> +#define CTRL0_P0_PHY_CALIBRATED		(1 << 8)
-> +#define EXYNOS5_SATA_PHSATA_CTRLM	0xE0
-> +#define PHCTRLM_REF_RATE		(1 << 1)
-> +#define PHCTRLM_HIGH_SPEED		(1 << 0)
-> +#define EXYNOS5_SATA_PHSATA_STATM	0xF0
-> +#define PHSTATM_PLL_LOCKED		(1 << 0)
-> +#define EXYNOS_SATA_PHY_EN		(1 << 0)
-> +#define SATAPHY_CONTROL_OFFSET		0x0724
-> +
-> +struct exynos_sata_phy {
-> +	struct phy *phy;
-> +	struct clk *phyclk;
-> +	void __iomem *regs;
-> +	void __iomem *pmureg;
-> +	struct i2c_client *client;
-> +};
-> +
-> +static bool wait_for_reg_status(void __iomem *base, u32 reg, u32 checkbit,
-> +				u32 status)
-> +{
-> +	unsigned long timeout = jiffies + usecs_to_jiffies(1000);
-
-nit: It would be better to define the timeout using a macro to not use 
-magic numbers.
-
-> +
-> +	while (time_before(jiffies, timeout)) {
-> +		if ((readl(base + reg) & checkbit) == status)
-> +			return true;
-> +	}
-> +
-> +	return false;
-> +}
-> +
-> +static int exynos_sata_phy_power_on(struct phy *phy)
-> +{
-> +	struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
-> +
-> +	regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
-> +			EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
-
-regmap_update_bits can return an error. Wouldn't it be better to return 
-it as return value of this function instead of returning 0 all the time? 
-As a side effect, this would make the function smaller by two lines.
-
-> +
-> +	return 0;
-> +}
-> +
-> +static int exynos_sata_phy_power_off(struct phy *phy)
-> +{
-> +	struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
-> +
-> +	regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
-> +			EXYNOS5_SATAPHY_PMU_ENABLE, ~EXYNOS_SATA_PHY_EN);
-
-Same here.
-
-> +
-> +	return 0;
-> +}
-> +
-> +static int exynos_sata_phy_init(struct phy *phy)
-> +{
-> +	u32 val = 0;
-> +	int ret = 0;
-> +	u8 buf[] = { 0x3A, 0x0B };
-> +	struct exynos_sata_phy *sata_phy = phy_get_drvdata(phy);
-> +
-> +	regmap_update_bits(sata_phy->pmureg, SATAPHY_CONTROL_OFFSET,
-> +			EXYNOS5_SATAPHY_PMU_ENABLE, EXYNOS_SATA_PHY_EN);
-
-regmap_update_bits returns an error code.
-
-> +
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-> +	val |= 0xFF;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-> +	val |= LINK_RESET;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-> +	val |= RESET_CMN_RST_N;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-> +	val &= ~PHCTRLM_REF_RATE;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-> +
-> +	/* High speed enable for Gen3 */
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-> +	val |= PHCTRLM_HIGH_SPEED;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_PHSATA_CTRLM);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_CTRL0);
-> +	val |= CTRL0_P0_PHY_CALIBRATED_SEL | CTRL0_P0_PHY_CALIBRATED;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_CTRL0);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_MODE0);
-> +	val |= SATA_SPD_GEN3;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_MODE0);
-> +
-> +	ret = i2c_master_send(sata_phy->client, buf, sizeof(buf));
-> +	if (ret < 0)
-> +		return -ENXIO;
-
-Wouldn't it be better to return the same error code as i2c_master_send 
-returned?
-
-> +
-> +	/* release cmu reset */
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-> +	val &= ~RESET_CMN_RST_N;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-> +
-> +	val = readl(sata_phy->regs + EXYNOS5_SATA_RESET);
-> +	val |= RESET_CMN_RST_N;
-> +	writel(val, sata_phy->regs + EXYNOS5_SATA_RESET);
-> +
-> +	return (wait_for_reg_status(sata_phy->regs, EXYNOS5_SATA_PHSATA_STATM,
-> +		PHSTATM_PLL_LOCKED, 1)) ? 0 : -EINVAL;
-> +
-
-nit: Stray blank line.
-
-Also it might be more readable after making wait_for_reg_status() return 
-an integer error code (0 and e.g. -EFAULT) and rewriting the last line to:
-
-	ret = wait_for_reg_status(sata_phy->regs, 		
-					EXYNOS5_SATA_PHSATA_STATM,
-					PHSTATM_PLL_LOCKED, 1);
-	if (ret < 0)
-		dev_err(&sata_phy->client->dev,
-			"PHY PLL locking failed\n");
-
-	return ret;
-
-By the way, isn't this initialization really needed whenever the PHY is 
-powered on?
-
-> +}
-> +
-> +static struct phy_ops exynos_sata_phy_ops = {
-> +	.init		= exynos_sata_phy_init,
-> +	.power_on	= exynos_sata_phy_power_on,
-> +	.power_off	= exynos_sata_phy_power_off,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static int exynos_sata_phy_probe(struct platform_device *pdev)
-> +{
-> +	struct exynos_sata_phy *sata_phy;
-> +	struct device *dev = &pdev->dev;
-> +	struct resource *res;
-> +	struct phy_provider *phy_provider;
-> +	struct device_node *node;
-> +	int ret = 0;
-> +
-> +	sata_phy = devm_kzalloc(dev, sizeof(*sata_phy), GFP_KERNEL);
-> +	if (!sata_phy)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +
-> +	sata_phy->regs = devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(sata_phy->regs))
-> +		return PTR_ERR(sata_phy->regs);
-> +
-> +	sata_phy->pmureg = syscon_regmap_lookup_by_phandle(dev->of_node,
-> +					"samsung,syscon-phandle");
-
-pmureg is defined as (void __iomem *) in struct exynos_sata_phy, but 
-syscon_regmap_lookup_by_phandle() returns (struct regmap *). Moreover it 
-does not return NULL on error, but rather ERR_PTR(). Please correct this.
-
-> +	if (!sata_phy->pmureg) {
-> +		dev_err(dev, "syscon regmap lookup failed.\n");
-> +		return PTR_ERR(sata_phy->pmureg);
-> +	}
-> +
-> +	node = of_parse_phandle(dev->of_node,
-> +			"samsung,exynos-sataphy-i2c-phandle", 0);
-> +	if (!node)
-> +		return -ENODEV;
-
-An error here means that a required DT property was not specified or was 
-specified incorrectly. IMHO -EINVAL would be better here.
-
-> +
-> +	sata_phy->client = of_find_i2c_device_by_node(node);
-> +	if (!sata_phy->client)
-> +		return -EPROBE_DEFER;
-> +
-> +	dev_set_drvdata(dev, sata_phy);
-> +
-> +	sata_phy->phyclk = devm_clk_get(dev, "sata_phyctrl");
-> +	if (IS_ERR(sata_phy->phyclk)) {
-> +		dev_err(dev, "failed to get clk for PHY\n");
-> +		return PTR_ERR(sata_phy->phyclk);
-> +	}
-> +
-> +	ret = clk_prepare_enable(sata_phy->phyclk);
-> +	if (ret < 0) {
-> +		dev_err(dev, "failed to enable source clk\n");
-> +		return ret;
-> +	}
-> +
-> +	sata_phy->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
-> +	if (IS_ERR(sata_phy->phy)) {
-> +		clk_disable_unprepare(sata_phy->phyclk);
-> +		dev_err(dev, "failed to create PHY\n");
-> +		return PTR_ERR(sata_phy->phy);
-> +	}
-> +
-> +	phy_set_drvdata(sata_phy->phy, sata_phy);
-> +
-> +	phy_provider = devm_of_phy_provider_register(dev,
-> +					of_phy_simple_xlate);
-> +	if (IS_ERR(phy_provider)) {
-> +		clk_disable_unprepare(sata_phy->phyclk);
-> +		return PTR_ERR(phy_provider);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id exynos_sata_phy_of_match[] = {
-> +	{ .compatible = "samsung,exynos5250-sata-phy" },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, exynos_sata_phy_of_match);
-> +
-> +static struct platform_driver exynos_sata_phy_driver = {
-> +	.probe	= exynos_sata_phy_probe,
-
-If this driver can be compiled as module, don't you also need remove?
-
-Best regards,
-Tomasz
