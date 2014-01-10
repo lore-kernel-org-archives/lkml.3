@@ -1,156 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaAJHCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:02:23 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34869 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaAJHAY (ORCPT
+	id S1752918AbaAJHCg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:02:36 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:36941 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaAJHAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:00:24 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v2 07/16] net: stmmac: Use driver data and callbacks tied with compatible strings
-Date: Fri, 10 Jan 2014 15:00:08 +0800
-Message-Id: <1389337217-29032-8-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389337217-29032-1-git-send-email-wens@csie.org>
-References: <1389337217-29032-1-git-send-email-wens@csie.org>
+	Fri, 10 Jan 2014 02:00:25 -0500
+From: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
+To: kishon@ti.com, kgene.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: mark.rutland@arm.com, jg1.han@samsung.com, b.zolnierkie@samsung.com,
+        joshi@samsung.com, t.figa@samsung.com, swarren@wwwdotorg.org,
+        grant.likely@linaro.org, christoffer.dall@linaro.org,
+        linux-ide@vger.kernel.org, Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>
+Subject: [PATCH V6 0/2] Exynos5250 SATA Support
+Date: Fri, 10 Jan 2014 12:30:05 +0530
+Message-Id: <1389337208-11325-1-git-send-email-yuvaraj.cd@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The stmmac driver core allows passing feature flags and callbacks via
-platform data. Add a similar stmmac_of_data to pass flags and callbacks
-tied to compatible strings. This allows us to extend stmmac with glue
-layers for different SoCs.
+This patch series enable the SATA support on Exynos5250 based boards.
+It incorporates the generic phy framework to deal with sata phy.
 
-Also deprecate device tree "snps,phy-addr" property, and default to PHY
-address auto-detection.
+This patch depends on the below patches
+	[1]. drivers: phy: add generic PHY framework
+		by Kishon Vijay Abraham I<kishon@ti.com>
+	[2]. ata: ahci_platform: Manage SATA PHY
+		by Roger Quadros <rogerq@ti.com>
+	[3].ARM: dts: Add pmu sysreg node to exynos5250 and
+		exynos5420 dtsi files
+		by Leela Krishna Amudala <l.krishna@samsung.com>
+	[4]. i2c: s3c2410 : Add polling mode support
+		by Vasanth Ananthan <vasanth.a@samsung.com>
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- .../net/ethernet/stmicro/stmmac/stmmac_platform.c  | 46 +++++++++++++++++-----
- include/linux/stmmac.h                             | 18 +++++++++
- 2 files changed, 54 insertions(+), 10 deletions(-)
+Changes from V5:
+	1.Rebased on latest generic PHY framework for-next tree.
+	2.Minor nits such as indentations.
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index 92627e0..2e554e3 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@ -26,8 +26,20 @@
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_net.h>
-+#include <linux/of_device.h>
- #include "stmmac.h"
- 
-+static const struct of_device_id stmmac_dt_ids[] = {
-+	/* SoC specific glue layers should come before generic bindings */
-+	{ .compatible = "st,spear600-gmac"},
-+	{ .compatible = "snps,dwmac-3.610"},
-+	{ .compatible = "snps,dwmac-3.70a"},
-+	{ .compatible = "snps,dwmac-3.710"},
-+	{ .compatible = "snps,dwmac"},
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
-+
- #ifdef CONFIG_OF
- static int stmmac_probe_config_dt(struct platform_device *pdev,
- 				  struct plat_stmmacenet_data *plat,
-@@ -35,10 +47,32 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
- {
- 	struct device_node *np = pdev->dev.of_node;
- 	struct stmmac_dma_cfg *dma_cfg;
-+	const struct of_device_id *device;
- 
- 	if (!np)
- 		return -ENODEV;
- 
-+	device = of_match_device(stmmac_dt_ids, &pdev->dev);
-+	if (!device)
-+		return -ENODEV;
-+
-+	if (device->data) {
-+		const struct stmmac_of_data *data = device->data;
-+		plat->has_gmac = data->has_gmac;
-+		plat->enh_desc = data->enh_desc;
-+		plat->tx_coe = data->tx_coe;
-+		plat->rx_coe = data->rx_coe;
-+		plat->bugged_jumbo = data->bugged_jumbo;
-+		plat->pmt = data->pmt;
-+		plat->riwt_off = data->riwt_off;
-+		plat->fix_mac_speed = data->fix_mac_speed;
-+		plat->bus_setup = data->bus_setup;
-+		plat->setup = data->setup;
-+		plat->free = data->free;
-+		plat->init = data->init;
-+		plat->exit = data->exit;
-+	}
-+
- 	*mac = of_get_mac_address(np);
- 	plat->interface = of_get_phy_mode(np);
- 
-@@ -46,6 +80,8 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
- 	if (plat->bus_id < 0)
- 		plat->bus_id = 0;
- 
-+	/* Default to phy auto-detection */
-+	plat->phy_addr = -1;
- 	of_property_read_u32(np, "snps,phy-addr", &plat->phy_addr);
- 
- 	plat->mdio_bus_data = devm_kzalloc(&pdev->dev,
-@@ -268,16 +304,6 @@ static const struct dev_pm_ops stmmac_pltfr_pm_ops = {
- static const struct dev_pm_ops stmmac_pltfr_pm_ops;
- #endif /* CONFIG_PM */
- 
--static const struct of_device_id stmmac_dt_ids[] = {
--	{ .compatible = "st,spear600-gmac"},
--	{ .compatible = "snps,dwmac-3.610"},
--	{ .compatible = "snps,dwmac-3.70a"},
--	{ .compatible = "snps,dwmac-3.710"},
--	{ .compatible = "snps,dwmac"},
--	{ /* sentinel */ }
--};
--MODULE_DEVICE_TABLE(of, stmmac_dt_ids);
--
- struct platform_driver stmmac_pltfr_driver = {
- 	.probe = stmmac_pltfr_probe,
- 	.remove = stmmac_pltfr_remove,
-diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
-index c407791..10a9e2a 100644
---- a/include/linux/stmmac.h
-+++ b/include/linux/stmmac.h
-@@ -120,4 +120,22 @@ struct plat_stmmacenet_data {
- 	void *custom_data;
- 	void *bsp_priv;
- };
-+
-+/* of_data for SoC glue layer device tree bindings */
-+
-+struct stmmac_of_data {
-+	int has_gmac;
-+	int enh_desc;
-+	int tx_coe;
-+	int rx_coe;
-+	int bugged_jumbo;
-+	int pmt;
-+	int riwt_off;
-+	void (*fix_mac_speed)(void *priv, unsigned int speed);
-+	void (*bus_setup)(void __iomem *ioaddr);
-+	void *(*setup)(struct platform_device *pdev);
-+	void (*free)(struct platform_device *pdev, void *priv);
-+	int (*init)(struct platform_device *pdev, void *priv);
-+	void (*exit)(struct platform_device *pdev, void *priv);
-+};
- #endif
+Changes from V4:
+	1.Made Exynos5250 SATA PHY driver by default selects
+	CONFIG_I2C and CONFIG_I2C_S3C2410, as SATA PHY driver
+	depends on I2C.
+	2.Used the new phandle "sata_phy_i2c" in the DT entry. 
+	3.struct i2c_driver sataphy_i2c_driver made static which
+	was earlier global type. 
+
+Changes from V3:
+	1.Moved the devicetree binding documentation
+	from /bindings/ata/ to bindings/phy/ .
+	2.Moved devm_phy_create call before to 
+	the devm_phy_provider_register. 
+
+Changes from V2:
+	1.Removed of_match_table
+	2.Moved to syscon interface for PMU handling.
+
+Changes from V1:
+	1. Dropped the patch 
+	ahci: exynos: add ahci sata support on Exynos platform
+
+	2.Adapt to latest generic PHY framework available in 
+	git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git next
+
+
+
+Yuvaraj Kumar C D (2):
+  PHY: Exynos: Add Exynos5250 SATA PHY driver
+  ARM: dts: Enable ahci sata and sata phy
+
+ .../devicetree/bindings/ata/exynos-sata-phy.txt    |   14 --
+ .../devicetree/bindings/ata/exynos-sata.txt        |   25 +-
+ .../devicetree/bindings/phy/samsung-phy.txt        |   36 +++
+ arch/arm/boot/dts/exynos5250-arndale.dts           |   11 +
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |    8 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |   17 +-
+ drivers/phy/Kconfig                                |   13 ++
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-exynos5250-sata-i2c.c              |   40 ++++
+ drivers/phy/phy-exynos5250-sata.c                  |  238 ++++++++++++++++++++
+ 10 files changed, 370 insertions(+), 33 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/ata/exynos-sata-phy.txt
+ create mode 100644 drivers/phy/phy-exynos5250-sata-i2c.c
+ create mode 100644 drivers/phy/phy-exynos5250-sata.c
+
 -- 
-1.8.5.2
+1.7.9.5
 
