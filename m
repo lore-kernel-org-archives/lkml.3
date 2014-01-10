@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaAJDWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 22:22:15 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:61872 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424AbaAJDVO (ORCPT
+	id S1752467AbaAJDVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 22:21:10 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39423 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaAJDVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 22:21:14 -0500
-Message-ID: <52CF6727.8050804@gmail.com>
-Date: Fri, 10 Jan 2014 04:21:11 +0100
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Robert Richter <rric@kernel.org>
-CC: Robert Richter <robert.richter@amd.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector
- 0x400
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Jan 2014 22:21:05 -0500
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/3] percpu-ida/iscsi-target: Address connection reset starved tag hang
+Date: Fri, 10 Jan 2014 03:00:44 +0000
+Message-Id: <1389322847-6570-1-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Robert, is there a patch for this case?
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1152484/comments/12
+Hi folks,
 
-3.10.2 - 3.13.0-0.rc7:
-ACPI: Low-level resume complete
-PM: Restoring platform NVS memory
-microcode: CPU0: new patch_level=0x010000c8
-Enabling non-boot CPUs ...
-x86: Booting SMP configuration:
-smpboot: Booting Node 0 Processor 1 APIC 0x1
-[Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector
-0x400, but the register is already in use for vector 0xf9 on another cpu
-perf: IBS APIC setup failed on cpu #1
-kvm: enabling virtualization on CPU1
-process: Switch to broadcast mode on CPU1
-microcode: CPU1: new patch_level=0x010000c8
-CPU1 is up
-smpboot: Booting Node 0 Processor 2 APIC 0x2
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-0.rc7.git2.2.fc21.x86_64 #1
-[Firmware Bug]: cpu 2, try to use APIC500 (LVT offset 0) for vector
-0x400, but the register is already in use for vector 0xf9 on another cpu
-perf: IBS APIC setup failed on cpu #2
-kvm: enabling virtualization on CPU2
-process: Switch to broadcast mode on CPU2
-microcode: CPU2: new patch_level=0x010000c8
-CPU2 is up
-smpboot: Booting Node 0 Processor 3 APIC 0x3
-[Firmware Bug]: cpu 3, try to use APIC500 (LVT offset 0) for vector
-0x400, but the register is already in use for vector 0xf9 on another cpu
-perf: IBS APIC setup failed on cpu #3
-kvm: enabling virtualization on CPU3
-process: Switch to broadcast mode on CPU3
-microcode: CPU3: new patch_level=0x010000c8
-CPU3 is up
-ACPI: Waking up from system sleep state S3
+This short series addresses a bug in >= v3.12 iscsi-target code where
+a connection reset occuring once percpu_ida_alloc() goes into starved
+tag uninterruptible sleep mode causes an indefinate hang, due to the
+SIGINT being ignored that normally forces the sleeping rx thread into
+connection cleanup state.
 
+This includes modifying existing percpu_ida_alloc() to allow an state
+to be passed so that TASK_INTERRUPTIBLE may be optionally set to
+address this particular case with iscsi-target, and also includes a
+simple backwards compatibility wrapper for existing consumers.
 
-poma
+It also bumps the number of pre-allocated tags by double the allowed
+per session CmdSN queue_depth in order to avoid the percpu_ida_alloc()
+straved tags slow path during normal ExpStatSN acknowledgement if at
+all possible.
+
+Thank you,
+
+--nab
+
+Kent Overstreet (1):
+  percpu_ida: Add tag alloc interface for interruptible sleep
+
+Nicholas Bellinger (2):
+  iscsi-target: Fix connection reset hang with percpu_ida_alloc
+  iscsi-target: Pre-allocate more tags to avoid ack starvation
+
+ drivers/target/iscsi/iscsi_target_nego.c |    2 +-
+ drivers/target/iscsi/iscsi_target_util.c |    8 ++++++--
+ include/linux/percpu_ida.h               |   11 ++++++++++-
+ lib/percpu_ida.c                         |   13 +++++++++----
+ 4 files changed, 26 insertions(+), 8 deletions(-)
+
+-- 
+1.7.10.4
 
