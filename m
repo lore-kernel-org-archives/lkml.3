@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207AbaAJN6D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:58:03 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:49409 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379AbaAJN5r (ORCPT
+	id S1757438AbaAJN6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:58:47 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:62071 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaAJN55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:57:47 -0500
+	Fri, 10 Jan 2014 08:57:57 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/14] kernfs: remove kernfs_addrm_cxt
-Date: Fri, 10 Jan 2014 08:57:24 -0500
-Message-Id: <1389362251-8128-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 14/14] sysfs, driver-core: remove unused {sysfs|device}_schedule_callback_owner()
+Date: Fri, 10 Jan 2014 08:57:31 -0500
+Message-Id: <1389362251-8128-15-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389362251-8128-1-git-send-email-tj@kernel.org>
 References: <1389362251-8128-1-git-send-email-tj@kernel.org>
@@ -23,353 +23,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs_addrm_cxt and the accompanying kernfs_addrm_start/finish() were
-added because there were operations which should be performed outside
-kernfs_mutex after adding and removing kernfs_nodes.  The necessary
-operations were recorded in kernfs_addrm_cxt and performed by
-kernfs_addrm_finish(); however, after the recent changes which
-relocated deactivation and unmapping so that they're performed
-directly during removal, the only operation kernfs_addrm_finish()
-performs is kernfs_put(), which can be moved inside the removal path
-too.
-
-This patch moves the kernfs_put() of the base ref to __kernfs_remove()
-and remove kernfs_addrm_cxt and kernfs_addrm_start/finish().
-
-* kernfs_add_one() is updated to grab and release the parent's active
-  ref and kernfs_mutex itself.  kernfs_get/put_active() and
-  kernfs_addrm_start/finish() invocations around it are removed from
-  all users.
-
-* __kernfs_remove() puts an unlinked node directly instead of chaining
-  it to kernfs_addrm_cxt.  Its callers are updated to grab and release
-  kernfs_mutex instead of calling kernfs_addrm_start/finish() around
-  it.
-
-v2: Updated to fit the v2 restructuring of removal path.
+All device_schedule_callback_owner() users are converted to use
+device_remove_file_self().  Remove now unused
+{sysfs|device}_schedule_callback_owner().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c             | 114 ++++++++++----------------------------------
- fs/kernfs/file.c            |  10 +---
- fs/kernfs/kernfs-internal.h |  12 +----
- fs/kernfs/symlink.c         |  10 +---
- include/linux/kernfs.h      |   4 --
- 5 files changed, 29 insertions(+), 121 deletions(-)
+ drivers/base/core.c    | 33 ------------------
+ fs/sysfs/file.c        | 92 --------------------------------------------------
+ include/linux/device.h | 11 +-----
+ include/linux/sysfs.h  |  9 -----
+ 4 files changed, 1 insertion(+), 144 deletions(-)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index f878e4f..770d687 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -399,28 +399,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 9db57af..4195364 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -615,39 +615,6 @@ void device_remove_bin_file(struct device *dev,
  }
+ EXPORT_SYMBOL_GPL(device_remove_bin_file);
  
- /**
-- *	kernfs_addrm_start - prepare for kernfs_node add/remove
-- *	@acxt: pointer to kernfs_addrm_cxt to be used
-- *
-- *	This function is called when the caller is about to add or remove
-- *	kernfs_node.  This function acquires kernfs_mutex.  @acxt is used
-- *	to keep and pass context to other addrm functions.
-- *
-- *	LOCKING:
-- *	Kernel thread context (may sleep).  kernfs_mutex is locked on
-- *	return.
-- */
--void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt)
--	__acquires(kernfs_mutex)
--{
--	memset(acxt, 0, sizeof(*acxt));
--
--	mutex_lock(&kernfs_mutex);
--}
--
 -/**
-  *	kernfs_add_one - add kernfs_node to parent without warning
-- *	@acxt: addrm context to use
-  *	@kn: kernfs_node to be added
-  *	@parent: the parent kernfs_node to add @kn to
-  *
-@@ -428,34 +407,29 @@ void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt)
-  *	parent inode if @kn is a directory and link into the children list
-  *	of the parent.
-  *
-- *	This function should be called between calls to
-- *	kernfs_addrm_start() and kernfs_addrm_finish() and should be passed
-- *	the same @acxt as passed to kernfs_addrm_start().
+- * device_schedule_callback_owner - helper to schedule a callback for a device
+- * @dev: device.
+- * @func: callback function to invoke later.
+- * @owner: module owning the callback routine
 - *
-- *	LOCKING:
-- *	Determined by kernfs_addrm_start().
+- * Attribute methods must not unregister themselves or their parent device
+- * (which would amount to the same thing).  Attempts to do so will deadlock,
+- * since unregistration is mutually exclusive with driver callbacks.
 - *
-  *	RETURNS:
-  *	0 on success, -EEXIST if entry with the given name already
-  *	exists.
-  */
--int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
--		  struct kernfs_node *parent)
-+int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
- {
--	bool has_ns = kernfs_ns_enabled(parent);
- 	struct kernfs_iattrs *ps_iattr;
-+	bool has_ns;
- 	int ret;
- 
--	WARN_ON_ONCE(atomic_read(&parent->active) < 0);
-+	if (!kernfs_get_active(parent))
-+		return -ENOENT;
- 
--	if (has_ns != (bool)kn->ns) {
--		WARN(1, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
--		     has_ns ? "required" : "invalid", parent->name, kn->name);
--		return -EINVAL;
--	}
-+	mutex_lock(&kernfs_mutex);
-+
-+	ret = -EINVAL;
-+	has_ns = kernfs_ns_enabled(parent);
-+	if (WARN(has_ns != (bool)kn->ns, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
-+		 has_ns ? "required" : "invalid", parent->name, kn->name))
-+		goto out_unlock;
- 
- 	if (kernfs_type(parent) != KERNFS_DIR)
--		return -EINVAL;
-+		goto out_unlock;
- 
- 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
- 	kn->parent = parent;
-@@ -463,7 +437,7 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
- 
- 	ret = kernfs_link_sibling(kn);
- 	if (ret)
--		return ret;
-+		goto out_unlock;
- 
- 	/* Update timestamps on the parent */
- 	ps_iattr = parent->iattr;
-@@ -474,34 +448,11 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
- 
- 	/* Mark the entry added into directory tree */
- 	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
--	return 0;
--}
--
--/**
-- *	kernfs_addrm_finish - finish up kernfs_node add/remove
-- *	@acxt: addrm context to finish up
+- * Instead methods can call this routine, which will attempt to allocate
+- * and schedule a workqueue request to call back @func with @dev as its
+- * argument in the workqueue's process context.  @dev will be pinned until
+- * @func returns.
 - *
-- *	Finish up kernfs_node add/remove.  Resources acquired by
-- *	kernfs_addrm_start() are released and removed kernfs_nodes are
-- *	cleaned up.
+- * This routine is usually called via the inline device_schedule_callback(),
+- * which automatically sets @owner to THIS_MODULE.
 - *
-- *	LOCKING:
-- *	kernfs_mutex is released.
+- * Returns 0 if the request was submitted, -ENOMEM if storage could not
+- * be allocated, -ENODEV if a reference to @owner isn't available.
+- *
+- * NOTE: This routine won't work if CONFIG_SYSFS isn't set!  It uses an
+- * underlying sysfs routine (since it is intended for use by attribute
+- * methods), and if sysfs isn't available you'll get nothing but -ENOSYS.
 - */
--void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
--	__releases(kernfs_mutex)
+-int device_schedule_callback_owner(struct device *dev,
+-		void (*func)(struct device *), struct module *owner)
 -{
--	/* release resources acquired by kernfs_addrm_start() */
-+	ret = 0;
-+out_unlock:
- 	mutex_unlock(&kernfs_mutex);
+-	return sysfs_schedule_callback(&dev->kobj,
+-			(void (*)(void *)) func, dev, owner);
+-}
+-EXPORT_SYMBOL_GPL(device_schedule_callback_owner);
 -
--	/* kill removed kernfs_nodes */
--	while (acxt->removed) {
--		struct kernfs_node *kn = acxt->removed;
--
--		acxt->removed = kn->u.removed_list;
--
--		kernfs_put(kn);
--	}
-+	kernfs_put_active(parent);
-+	return ret;
+ static void klist_children_get(struct klist_node *n)
+ {
+ 	struct device_private *p = to_device_private_parent(n);
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index 1b8b91b..28cc1acd 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -453,95 +453,3 @@ void sysfs_remove_bin_file(struct kobject *kobj,
+ 	kernfs_remove_by_name(kobj->sd, attr->attr.name);
  }
- 
- /**
-@@ -633,7 +584,6 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
- 					 const char *name, umode_t mode,
- 					 void *priv, const void *ns)
- {
--	struct kernfs_addrm_cxt acxt;
- 	struct kernfs_node *kn;
- 	int rc;
- 
-@@ -648,14 +598,7 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
- 	kn->priv = priv;
- 
- 	/* link in */
--	rc = -ENOENT;
--	if (kernfs_get_active(parent)) {
--		kernfs_addrm_start(&acxt);
--		rc = kernfs_add_one(&acxt, kn, parent);
--		kernfs_addrm_finish(&acxt);
--		kernfs_put_active(parent);
--	}
+ EXPORT_SYMBOL_GPL(sysfs_remove_bin_file);
 -
-+	rc = kernfs_add_one(kn, parent);
- 	if (!rc)
- 		return kn;
- 
-@@ -841,8 +784,7 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
- 	}
- }
- 
--static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
--			    struct kernfs_node *kn)
-+static void __kernfs_remove(struct kernfs_node *kn)
- {
- 	struct kernfs_node *pos;
- 
-@@ -890,8 +832,7 @@ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
- 				ps_iattr->ia_iattr.ia_mtime = CURRENT_TIME;
- 			}
- 
--			pos->u.removed_list = acxt->removed;
--			acxt->removed = pos;
-+			kernfs_put(pos);
- 		}
- 
- 		kernfs_put(pos);
-@@ -906,11 +847,9 @@ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
-  */
- void kernfs_remove(struct kernfs_node *kn)
- {
--	struct kernfs_addrm_cxt acxt;
--
--	kernfs_addrm_start(&acxt);
--	__kernfs_remove(&acxt, kn);
--	kernfs_addrm_finish(&acxt);
-+	mutex_lock(&kernfs_mutex);
-+	__kernfs_remove(kn);
-+	mutex_unlock(&kernfs_mutex);
- }
- 
- /**
-@@ -925,7 +864,6 @@ void kernfs_remove(struct kernfs_node *kn)
- int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
- 			     const void *ns)
- {
--	struct kernfs_addrm_cxt acxt;
- 	struct kernfs_node *kn;
- 
- 	if (!parent) {
-@@ -934,13 +872,13 @@ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
- 		return -ENOENT;
- 	}
- 
--	kernfs_addrm_start(&acxt);
-+	mutex_lock(&kernfs_mutex);
- 
- 	kn = kernfs_find_ns(parent, name, ns);
- 	if (kn)
--		__kernfs_remove(&acxt, kn);
-+		__kernfs_remove(kn);
- 
--	kernfs_addrm_finish(&acxt);
-+	mutex_unlock(&kernfs_mutex);
- 
- 	if (kn)
- 		return 0;
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index 404ffd2..ffe1beb 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -817,7 +817,6 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
- 					 bool name_is_static,
- 					 struct lock_class_key *key)
- {
--	struct kernfs_addrm_cxt acxt;
- 	struct kernfs_node *kn;
- 	unsigned flags;
- 	int rc;
-@@ -853,14 +852,7 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
- 	if (ops->mmap)
- 		kn->flags |= KERNFS_HAS_MMAP;
- 
--	rc = -ENOENT;
--	if (kernfs_get_active(parent)) {
--		kernfs_addrm_start(&acxt);
--		rc = kernfs_add_one(&acxt, kn, parent);
--		kernfs_addrm_finish(&acxt);
--		kernfs_put_active(parent);
--	}
--
-+	rc = kernfs_add_one(kn, parent);
- 	if (rc) {
- 		kernfs_put(kn);
- 		return ERR_PTR(rc);
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index e9ec38c..4bc5784 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -46,13 +46,6 @@ static inline struct kernfs_root *kernfs_root(struct kernfs_node *kn)
- }
- 
- /*
-- * Context structure to be used while adding/removing nodes.
-- */
--struct kernfs_addrm_cxt {
--	struct kernfs_node	*removed;
+-struct sysfs_schedule_callback_struct {
+-	struct list_head	workq_list;
+-	struct kobject		*kobj;
+-	void			(*func)(void *);
+-	void			*data;
+-	struct module		*owner;
+-	struct work_struct	work;
 -};
 -
--/*
-  * mount.c
-  */
- struct kernfs_super_info {
-@@ -101,10 +94,7 @@ extern const struct inode_operations kernfs_dir_iops;
- 
- struct kernfs_node *kernfs_get_active(struct kernfs_node *kn);
- void kernfs_put_active(struct kernfs_node *kn);
--void kernfs_addrm_start(struct kernfs_addrm_cxt *acxt);
--int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
--		   struct kernfs_node *parent);
--void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt);
-+int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent);
- struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
- 				    umode_t mode, unsigned flags);
- 
-diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
-index b2c106c..3a939c2 100644
---- a/fs/kernfs/symlink.c
-+++ b/fs/kernfs/symlink.c
-@@ -27,7 +27,6 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 				       struct kernfs_node *target)
- {
- 	struct kernfs_node *kn;
--	struct kernfs_addrm_cxt acxt;
- 	int error;
- 
- 	kn = kernfs_new_node(kernfs_root(parent), name, S_IFLNK|S_IRWXUGO,
-@@ -40,14 +39,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 	kn->symlink.target_kn = target;
- 	kernfs_get(target);	/* ref owned by symlink */
- 
--	error = -ENOENT;
--	if (kernfs_get_active(parent)) {
--		kernfs_addrm_start(&acxt);
--		error = kernfs_add_one(&acxt, kn, parent);
--		kernfs_addrm_finish(&acxt);
--		kernfs_put_active(parent);
+-static struct workqueue_struct *sysfs_workqueue;
+-static DEFINE_MUTEX(sysfs_workq_mutex);
+-static LIST_HEAD(sysfs_workq);
+-static void sysfs_schedule_callback_work(struct work_struct *work)
+-{
+-	struct sysfs_schedule_callback_struct *ss = container_of(work,
+-			struct sysfs_schedule_callback_struct, work);
+-
+-	(ss->func)(ss->data);
+-	kobject_put(ss->kobj);
+-	module_put(ss->owner);
+-	mutex_lock(&sysfs_workq_mutex);
+-	list_del(&ss->workq_list);
+-	mutex_unlock(&sysfs_workq_mutex);
+-	kfree(ss);
+-}
+-
+-/**
+- * sysfs_schedule_callback - helper to schedule a callback for a kobject
+- * @kobj: object we're acting for.
+- * @func: callback function to invoke later.
+- * @data: argument to pass to @func.
+- * @owner: module owning the callback code
+- *
+- * sysfs attribute methods must not unregister themselves or their parent
+- * kobject (which would amount to the same thing).  Attempts to do so will
+- * deadlock, since unregistration is mutually exclusive with driver
+- * callbacks.
+- *
+- * Instead methods can call this routine, which will attempt to allocate
+- * and schedule a workqueue request to call back @func with @data as its
+- * argument in the workqueue's process context.  @kobj will be pinned
+- * until @func returns.
+- *
+- * Returns 0 if the request was submitted, -ENOMEM if storage could not
+- * be allocated, -ENODEV if a reference to @owner isn't available,
+- * -EAGAIN if a callback has already been scheduled for @kobj.
+- */
+-int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+-		void *data, struct module *owner)
+-{
+-	struct sysfs_schedule_callback_struct *ss, *tmp;
+-
+-	if (!try_module_get(owner))
+-		return -ENODEV;
+-
+-	mutex_lock(&sysfs_workq_mutex);
+-	list_for_each_entry_safe(ss, tmp, &sysfs_workq, workq_list)
+-		if (ss->kobj == kobj) {
+-			module_put(owner);
+-			mutex_unlock(&sysfs_workq_mutex);
+-			return -EAGAIN;
+-		}
+-	mutex_unlock(&sysfs_workq_mutex);
+-
+-	if (sysfs_workqueue == NULL) {
+-		sysfs_workqueue = create_singlethread_workqueue("sysfsd");
+-		if (sysfs_workqueue == NULL) {
+-			module_put(owner);
+-			return -ENOMEM;
+-		}
 -	}
 -
-+	error = kernfs_add_one(kn, parent);
- 	if (!error)
- 		return kn;
- 
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 61bd7ae..9b5a4bb 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -89,10 +89,6 @@ struct kernfs_node {
- 
- 	struct rb_node		rb;
- 
--	union {
--		struct kernfs_node	*removed_list;
--	} u;
+-	ss = kmalloc(sizeof(*ss), GFP_KERNEL);
+-	if (!ss) {
+-		module_put(owner);
+-		return -ENOMEM;
+-	}
+-	kobject_get(kobj);
+-	ss->kobj = kobj;
+-	ss->func = func;
+-	ss->data = data;
+-	ss->owner = owner;
+-	INIT_WORK(&ss->work, sysfs_schedule_callback_work);
+-	INIT_LIST_HEAD(&ss->workq_list);
+-	mutex_lock(&sysfs_workq_mutex);
+-	list_add_tail(&ss->workq_list, &sysfs_workq);
+-	mutex_unlock(&sysfs_workq_mutex);
+-	queue_work(sysfs_workqueue, &ss->work);
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(sysfs_schedule_callback);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 1ff3f16..fb1ba13 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -566,12 +566,6 @@ extern int __must_check device_create_bin_file(struct device *dev,
+ 					const struct bin_attribute *attr);
+ extern void device_remove_bin_file(struct device *dev,
+ 				   const struct bin_attribute *attr);
+-extern int device_schedule_callback_owner(struct device *dev,
+-		void (*func)(struct device *dev), struct module *owner);
 -
- 	const void		*ns;	/* namespace tag */
- 	unsigned int		hash;	/* ns + name hash */
- 	union {
+-/* This is a macro to avoid include problems with THIS_MODULE */
+-#define device_schedule_callback(dev, func)			\
+-	device_schedule_callback_owner(dev, func, THIS_MODULE)
+ 
+ /* device resource management */
+ typedef void (*dr_release_t)(struct device *dev, void *res);
+@@ -931,10 +925,7 @@ extern int device_online(struct device *dev);
+ extern struct device *__root_device_register(const char *name,
+ 					     struct module *owner);
+ 
+-/*
+- * This is a macro to avoid include problems with THIS_MODULE,
+- * just as per what is done for device_schedule_callback() above.
+- */
++/* This is a macro to avoid include problems with THIS_MODULE */
+ #define root_device_register(name) \
+ 	__root_device_register(name, THIS_MODULE)
+ 
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index bd96c60..14df054 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -178,9 +178,6 @@ struct sysfs_ops {
+ 
+ #ifdef CONFIG_SYSFS
+ 
+-int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+-			    void *data, struct module *owner);
+-
+ int __must_check sysfs_create_dir_ns(struct kobject *kobj, const void *ns);
+ void sysfs_remove_dir(struct kobject *kobj);
+ int __must_check sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
+@@ -249,12 +246,6 @@ int __must_check sysfs_init(void);
+ 
+ #else /* CONFIG_SYSFS */
+ 
+-static inline int sysfs_schedule_callback(struct kobject *kobj,
+-		void (*func)(void *), void *data, struct module *owner)
+-{
+-	return -ENOSYS;
+-}
+-
+ static inline int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ {
+ 	return 0;
 -- 
 1.8.4.2
 
