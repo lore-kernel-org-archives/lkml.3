@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaAJH75 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:59:57 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:48519 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaAJH7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:59:55 -0500
-Date: Fri, 10 Jan 2014 08:59:39 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benson Leung <bleung@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Duncan Laurie <dlaurie@chromium.org>
-Subject: Re: [PATCH 2/2] i2c-designware-pci: Index Haswell ULT bus names
- from 0
-Message-ID: <20140110085939.3d96c7e6@endymion.delvare>
-In-Reply-To: <CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
-References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
-	<1382326010-4554-3-git-send-email-bleung@chromium.org>
-	<20131021065804.GX3521@intel.com>
-	<CANLzEksGqD30Cefh3r2urH-ToxWzkxAnTJZiY07yX2Py58FQPw@mail.gmail.com>
-	<20131114180538.GK11022@katana>
-	<CANLzEksP1nRfBaQ3-sSouOYL4C+oLKiE75eHfFdEzLmrQKn3dQ@mail.gmail.com>
-	<20131126130959.GI7427@katana>
-	<20140103155217.GG7132@katana>
-	<CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751694AbaAJIFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 03:05:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39821 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151AbaAJIFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 03:05:06 -0500
+Date: Fri, 10 Jan 2014 09:05:04 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-ID: <20140110080504.GA9437@dhcp22.suse.cz>
+References: <20140101002935.GA15683@localhost.localdomain>
+ <52C5AA61.8060701@intel.com>
+ <20140103033303.GB4106@localhost.localdomain>
+ <52C6FED2.7070700@intel.com>
+ <20140105003501.GC4106@localhost.localdomain>
+ <20140106164604.GC27602@dhcp22.suse.cz>
+ <20140108101611.GD27937@dhcp22.suse.cz>
+ <20140109073259.GK4106@localhost.localdomain>
+ <alpine.DEB.2.02.1401091310510.31538@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1401091310510.31538@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Jan 2014 16:12:14 -0800, Benson Leung wrote:
-> Our devices and our platforms have some other requirements which
-> turned me away from using i2c_register_board_info.
+On Thu 09-01-14 13:15:54, David Rientjes wrote:
+> On Thu, 9 Jan 2014, Han Pingtian wrote:
 > 
-> i2c_register_board_info looks to create predeclarations for a specific
-> i2c bus... However, right now, the chromeos_laptop driver is
-> structured to do explicit declaration (using i2c_new_probed_device)
-> *after* the busses have come up.
+> > min_free_kbytes may be raised during THP's initialization. Sometimes,
+> > this will change the value being set by user. Showing message will
+> > clarify this confusion.
+> > 
+> > Only show this message when changing the value set by user according to
+> > Michal Hocko's suggestion.
+> > 
+> > Showing the old value of min_free_kbytes according to Dave Hansen's
+> > suggestion. This will give user the chance to restore old value of
+> > min_free_kbytes.
+> > 
+> > Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
+> > ---
+> >  mm/huge_memory.c |    9 ++++++++-
+> >  mm/page_alloc.c  |    2 +-
+> >  2 files changed, 9 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > index 7de1bf8..e0e4e29 100644
+> > --- a/mm/huge_memory.c
+> > +++ b/mm/huge_memory.c
+> > @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
+> >  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
+> >  };
+> >  
+> > +extern int user_min_free_kbytes;
+> >  
 > 
-> Specifically, we have a class of atmel_mxt i2c touchpad/touchscreen
-> devices that may appear at different addresses depending on whether
-> the touch device is in bootloader mode or operational mode.
-> 
-> For that reason, the chromeos_laptop driver uses i2c_new_probed_device
-> with a list of possible addresses when dealing with the atmel touch
-> device.
-> 
-> You can see the driver here :
-> drivers/platform/chrome/chromeos_laptop.c
-> 
-> Is there some way of getting the "probe" behavior while using
-> i2c_register_board_info?
+> We don't add extern declarations to .c files.  How many other examples of 
+> this can you find in mm/?
 
-No, i2c_register_board_info works only for devices which are always
-present at a known address.
+I have suggested this because general visibility is not needed. But if
+you think that it should then include/linux/mm.h sounds like a proper
+place.
+
+> >  static int set_recommended_min_free_kbytes(void)
+> >  {
+> > @@ -130,8 +131,14 @@ static int set_recommended_min_free_kbytes(void)
+> >  			      (unsigned long) nr_free_buffer_pages() / 20);
+> >  	recommended_min <<= (PAGE_SHIFT-10);
+> >  
+> > -	if (recommended_min > min_free_kbytes)
+> > +	if (recommended_min > min_free_kbytes) {
+> > +		if (user_min_free_kbytes >= 0)
+> > +			pr_info("raising min_free_kbytes from %d to %lu "
+> > +				"to help transparent hugepage allocations\n",
+> > +				min_free_kbytes, recommended_min);
+> > +
+> >  		min_free_kbytes = recommended_min;
+> > +	}
+> >  	setup_per_zone_wmarks();
+> >  	return 0;
+> >  }
+> 
+> Does this even ever trigger since set_recommended_min_free_kbytes() is 
+> called via late_initcall()?
+
+This is called whenever THP is enabled so it might be called later after
+boot. The point is AFAIU to warn user that the admin decision about
+min_free_kbytes is overridden.
 
 -- 
-Jean Delvare
+Michal Hocko
+SUSE Labs
