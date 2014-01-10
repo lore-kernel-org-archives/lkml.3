@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649AbaAJAi7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:38:59 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:34070 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaAJAi4 (ORCPT
+	id S1754536AbaAJAmh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:42:37 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:53496 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929AbaAJAmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:38:56 -0500
+	Thu, 9 Jan 2014 19:42:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAA3XUr0A2jK0y-kfkpGE4mDNOCAhDi7AY0y9Fvmu5dgNygXXQQ@mail.gmail.com>
-References: <1387816927-4313-1-git-send-email-taras.kondratiuk@linaro.org>
-	<CAA3XUr0A2jK0y-kfkpGE4mDNOCAhDi7AY0y9Fvmu5dgNygXXQQ@mail.gmail.com>
-Date: Fri, 10 Jan 2014 02:38:55 +0200
-Message-ID: <CAArO44uXBmnz3Cn9n5bBCfw_AHcX2B0OqPZpVzbOT9Nu5sEq2A@mail.gmail.com>
-Subject: Re: [LNG] [PATCH] ARM: traps: fix opcode endianness when read from
- user memory
-From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-To: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Patch Tracking <patches@linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140109225815.GI11594@pd.tnic>
+References: <52C0C9F4.50101@zytor.com>
+	<52C196C3.1040300@halfdog.net>
+	<52C31027.2030101@zytor.com>
+	<20131231192106.GA22535@phenom.dumpdata.com>
+	<52C347F0.8070902@zytor.com>
+	<52CD022E.9040107@halfdog.net>
+	<52CD8E10.3010204@zytor.com>
+	<20140108193655.GD5098@pd.tnic>
+	<52CDC316.4050503@halfdog.net>
+	<52CDD3AE.4030301@zytor.com>
+	<20140109225815.GI11594@pd.tnic>
+Date: Fri, 10 Jan 2014 08:42:33 +0800
+X-Google-Sender-Auth: m3Ew6sk1YIyTMVjb-g12BQ-O_cQ
+Message-ID: <CA+55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com>
+Subject: Re: Sanitize CPU-state when switching tasks (was sanitize CPU-state
+ when switching from virtual-8086 mode to other task)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, halfdog <me@halfdog.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Content-Type: multipart/mixed; boundary=001a11c290de767d9904ef9300e4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've just put it into tracker with your Reviewed-by.
+--001a11c290de767d9904ef9300e4
+Content-Type: text/plain; charset=UTF-8
 
-On 10 January 2014 02:09, Victor Kamensky <victor.kamensky@linaro.org> wrote:
-> Taras, it looks good. Did you submit it into Russell's patch system? It
-> would be good to have this fix in main line tree.
+On Fri, Jan 10, 2014 at 6:58 AM, Borislav Petkov <bp@alien8.de> wrote:
 >
-> Anyone, is there any concerns about this patch? It is quite simple
-> change.
->
-> Thanks,
-> Victor
->
-> On 23 December 2013 08:42, Taras Kondratiuk <taras.kondratiuk@linaro.org> wrote:
->> Currently code has an inverted logic: opcode from user memory
->> is swapped to a proper endianness only in case of read error.
->> While normally opcode should be swapped only if it was read
->> correctly from user memory.
->>
->> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
->> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->> ---
->>  arch/arm/kernel/traps.c |    5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
->> index 7940241..36a844e 100644
->> --- a/arch/arm/kernel/traps.c
->> +++ b/arch/arm/kernel/traps.c
->> @@ -425,9 +425,10 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
->>                         instr2 = __mem_to_opcode_thumb16(instr2);
->>                         instr = __opcode_thumb32_compose(instr, instr2);
->>                 }
->> -       } else if (get_user(instr, (u32 __user *)pc)) {
->> +       } else {
->> +               if (get_user(instr, (u32 __user *)pc))
->> +                       goto die_sig;
->>                 instr = __mem_to_opcode_arm(instr);
->> -               goto die_sig;
->>         }
->>
->>         if (call_undef_hook(regs, instr) == 0)
->> --
->> 1.7.9.5
->>
->> --
->> You received this message because you are subscribed to the Google Groups "Linaro Networking" group.
->> To unsubscribe from this group and stop receiving emails from it, send an email to linaro-networking+unsubscribe@linaro.org.
->> To post to this group, send email to linaro-networking@linaro.org.
->
-> --
-> You received this message because you are subscribed to the Google Groups "Linaro Networking" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to linaro-networking+unsubscribe@linaro.org.
-> To post to this group, send email to linaro-networking@linaro.org.
+> Ok, I was able to reproduce
 
+Looking at this, I think this is just a bug in our
+restore_fpu_checking() hackery for X86_FEATURE_FXSAVE_LEAK..
 
+Which also explains why it only triggers on E-350 - it's only relevant
+for those K7/K8 CPU's that use this.
 
--- 
-Regards,
-Taras Kondratiuk
+Maybe just add a fcnlex to before the emms? Something like this
+(TOTALLY UNTESTED!!) attached patch.
+
+                 Linus
+
+--001a11c290de767d9904ef9300e4
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hq8pxcn00
+
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL2ZwdS1pbnRlcm5hbC5oIHwgMTMgKysrKysrKy0tLS0tLQog
+MSBmaWxlIGNoYW5nZWQsIDcgaW5zZXJ0aW9ucygrKSwgNiBkZWxldGlvbnMoLSkKCmRpZmYgLS1n
+aXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9mcHUtaW50ZXJuYWwuaCBiL2FyY2gveDg2L2luY2x1
+ZGUvYXNtL2ZwdS1pbnRlcm5hbC5oCmluZGV4IGM0OWE2MTNjNjQ1Mi4uY2VhMWM3NmQ0OWJmIDEw
+MDY0NAotLS0gYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9mcHUtaW50ZXJuYWwuaAorKysgYi9hcmNo
+L3g4Ni9pbmNsdWRlL2FzbS9mcHUtaW50ZXJuYWwuaApAQCAtMjkzLDEyICsyOTMsMTMgQEAgc3Rh
+dGljIGlubGluZSBpbnQgcmVzdG9yZV9mcHVfY2hlY2tpbmcoc3RydWN0IHRhc2tfc3RydWN0ICp0
+c2spCiAJLyogQU1EIEs3L0s4IENQVXMgZG9uJ3Qgc2F2ZS9yZXN0b3JlIEZEUC9GSVAvRk9QIHVu
+bGVzcyBhbiBleGNlcHRpb24KIAkgICBpcyBwZW5kaW5nLiAgQ2xlYXIgdGhlIHg4NyBzdGF0ZSBo
+ZXJlIGJ5IHNldHRpbmcgaXQgdG8gZml4ZWQKIAkgICB2YWx1ZXMuICJtIiBpcyBhIHJhbmRvbSB2
+YXJpYWJsZSB0aGF0IHNob3VsZCBiZSBpbiBMMSAqLwotCWFsdGVybmF0aXZlX2lucHV0KAotCQlB
+U01fTk9QOCBBU01fTk9QMiwKLQkJImVtbXNcblx0IgkJLyogY2xlYXIgc3RhY2sgdGFncyAqLwot
+CQkiZmlsZGwgJVBbYWRkcl0iLAkvKiBzZXQgRj9QIHRvIGRlZmluZWQgdmFsdWUgKi8KLQkJWDg2
+X0ZFQVRVUkVfRlhTQVZFX0xFQUssCi0JCVthZGRyXSAibSIgKHRzay0+dGhyZWFkLmZwdS5oYXNf
+ZnB1KSk7CisJaWYgKHVubGlrZWx5KHN0YXRpY19jcHVfaGFzKFg4Nl9GRUFUVVJFX0ZYU0FWRV9M
+RUFLKSkpIHsKKwkJYXNtIHZvbGF0aWxlKAorCQkJImZuY2xleFxuXHQiCisJCQkiZW1tc1xuXHQi
+CisJCQkiZmlsZGwgJVBbYWRkcl0iCS8qIHNldCBGP1AgdG8gZGVmaW5lZCB2YWx1ZSAqLworCQkJ
+OiA6IFthZGRyXSAibSIgKHRzay0+dGhyZWFkLmZwdS5oYXNfZnB1KSk7CisJfQogCiAJcmV0dXJu
+IGZwdV9yZXN0b3JlX2NoZWNraW5nKCZ0c2stPnRocmVhZC5mcHUpOwogfQo=
+--001a11c290de767d9904ef9300e4--
