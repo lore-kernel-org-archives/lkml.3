@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaAJJ46 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 04:56:58 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:35258 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaAJJ4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 04:56:55 -0500
-Date: Fri, 10 Jan 2014 09:56:48 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: MAX6650/6651 support
-Message-ID: <20140110095648.GA28141@lee--X1>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
- <1387814889-16670-2-git-send-email-lpapp@kde.org>
- <20140108223933.GD18611@lee--X1>
- <CAOMwXhPhOGn2n2ca1aenxS_-b0pYiZ_KvX7bR666MsoxaQeL9g@mail.gmail.com>
+	id S1754447AbaAJJ5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 04:57:23 -0500
+Received: from mail.atsec.com ([195.30.99.214]:35345 "EHLO mail.atsec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658AbaAJJ5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 04:57:21 -0500
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Jan 2014 04:57:21 EST
+From: Stephan Mueller <stephan.mueller@atsec.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Rafael Aquini <aquini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [RFC PATCH] char: random: stir the output pools differently when the random_write lenght allows splitting the seed
+Date: Fri, 10 Jan 2014 10:49:14 +0100
+Message-ID: <1510904.XsOZgVgixq@tauon>
+Organization: atsec information security GmbH
+User-Agent: KMail/4.11.4 (Linux/3.12.6-300.fc20.x86_64; KDE/4.11.4; x86_64; ; )
+In-Reply-To: <52CFABC5.5030806@ladisch.de>
+References: <42f6dc88535d5ecdab13b1376db7ccbbbc550600.1389297772.git.aquini@redhat.com> <52CFABC5.5030806@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMwXhPhOGn2n2ca1aenxS_-b0pYiZ_KvX7bR666MsoxaQeL9g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Jan 2014, Laszlo Papp wrote:
+Am Freitag, 10. Januar 2014, 09:13:57 schrieb Clemens Ladisch:
 
-> >> +int max6651_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
-> >> +{
-> >
-> > Probably best to use Regmap instead.
-> >
-> > regmap_i2c_read()
-> 
-> >> +int max6651_write_reg(struct i2c_client *i2c, u8 reg, u8 value)
-> >> +{
-> >> +    struct max6651_dev *max6651 = i2c_get_clientdata(i2c);
-> >> +    int ret;
-> >
-> > Same here.
-> >
-> > regmap_i2c_write()
-> 
-> Hmm, but what Linus linked is using regmap_read/write(...) instead of
-> regmap_i2c_read/write(...).
-> 
-> I thought I would need to be using the former. Perhaps, I
-> misunderstand something?
-> 
-> I do not even find the aforementioend functions used by drivers based
-> on this LXR result:
-> http://lxr.free-electrons.com/ident?i=regmap_i2c_write
+Hi Clemens,
 
-Linus is in a better position to know, use his suggestion.
+>Rafael Aquini wrote:
+>> This patch introduces changes to the random_write method so it can
+>> split the given seed and completely stir the output pools with
+>> different halves of it, when seed lenght allows us doing so.
+>> 
+>> -	ret = write_pool(&blocking_pool, buffer, count);
+>> +	ret = write_pool(pool1, buffer, count1);
+>> 
+>>  	if (ret)
+>>  	
+>>  		return ret;
+>> 
+>> -	ret = write_pool(&nonblocking_pool, buffer, count);
+>> +	ret = write_pool(pool2, buffer + offset, count2);
+>
+>Doesn't this assume that both halves of the buffer contain some
+>(uncredited) entropy?  In other words, wouldn't this result in worse
+>randomness for pool2 if the second half of the buffer contains just
+>zero padding?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+The concern this patch addresses is the following:
+
+Both pools have dissimilar use cases. Typically, the blocking_pool is 
+used for cases where more "secure" random numbers shall be generated 
+whereas the nonblocking_pool shall be used for any other case.
+
+The issue now is that both pools intended for different use cases are 
+always updated with the same data. That means, we effectively have two 
+different RNGs (the blocking and nonblocking pool) which are both 
+(re-)seeded with the same data every time when invoking a write on 
+/dev/?random.
+
+There is no way that the (re)seed operation mixes both pools with 
+different values.
+
+Coming back to your concern: sure, the caller can pad any data injected 
+into /dev/?random with zeros. But as writing to the character files is 
+allowed to every user, this per definition must not matter (e.g. an 
+attacker may simply write zeros or other known data into the character 
+file). And the random.c driver handles that case appropriately by not 
+increasing the entropy estimator when receiving data. All the patch 
+tries to achieve is to ensure that both pools are not always mixed with 
+the same values. Hence, the patch does not change the entropy estimator 
+operation.
+
+Ciao
+Stephan
