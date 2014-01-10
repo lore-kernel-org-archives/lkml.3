@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279AbaAJKeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 05:34:10 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:39807 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751932AbaAJKeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 05:34:06 -0500
-Message-ID: <52CFCC9B.2090204@mev.co.uk>
-Date: Fri, 10 Jan 2014 10:34:03 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756519AbaAJKgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 05:36:48 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:48406 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaAJKgo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 05:36:44 -0500
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH] Staging: comedi: fix spacing coding style issue in 8255.c.
-References: <1389326381-8526-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1389326381-8526-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140110093623.GD26378@quack.suse.cz>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz> <20140107155830.GA28395@infradead.org>
+ <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
+ <20140108140307.GA588@infradead.org> <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
+ <20140108152610.GA5863@infradead.org> <CA+QCeVRXAXAk2Zv2gtdvT+c80hbpcvezz_dvk9aUjwPbVp7pnQ@mail.gmail.com>
+ <20140108205524.GA15313@quack.suse.cz> <CA+QCeVQuq4hM+kVfb8a2iMAUtF6QrR4sy=O-AuAgMoCWUsDg4w@mail.gmail.com>
+ <20140110093623.GD26378@quack.suse.cz>
+From: Sergey Meirovich <rathamahata@gmail.com>
+Date: Fri, 10 Jan 2014 12:36:22 +0200
+Message-ID: <CA+QCeVSen0d4=Yx1QWoH-TZ1c=g7jdG=rLq+FKg_ejBxFsR0sg@mail.gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+To: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-10 03:59, Chase Southwood wrote:
-> This patch for 8255.c fixes a spacing warning found by checkpatch.pl.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
->   drivers/staging/comedi/drivers/8255.c | 6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/8255.c b/drivers/staging/comedi/drivers/8255.c
-> index b4009e8..48817f0 100644
-> --- a/drivers/staging/comedi/drivers/8255.c
-> +++ b/drivers/staging/comedi/drivers/8255.c
-> @@ -94,7 +94,7 @@ I/O port base address can be found in the output of 'lspci -v'.
->
->   struct subdev_8255_private {
->   	unsigned long iobase;
-> -	int (*io) (int, int, int, unsigned long);
-> +	int (*io)(int, int, int, unsigned long);
->   };
->
->   static int subdev_8255_io(int dir, int port, int data, unsigned long iobase)
-> @@ -262,7 +262,7 @@ static int subdev_8255_cancel(struct comedi_device *dev,
->   }
->
->   int subdev_8255_init(struct comedi_device *dev, struct comedi_subdevice *s,
-> -		     int (*io) (int, int, int, unsigned long),
-> +		     int (*io)(int, int, int, unsigned long),
->   		     unsigned long iobase)
->   {
->   	struct subdev_8255_private *spriv;
-> @@ -289,7 +289,7 @@ int subdev_8255_init(struct comedi_device *dev, struct comedi_subdevice *s,
->   EXPORT_SYMBOL_GPL(subdev_8255_init);
->
->   int subdev_8255_init_irq(struct comedi_device *dev, struct comedi_subdevice *s,
-> -			 int (*io) (int, int, int, unsigned long),
-> +			 int (*io)(int, int, int, unsigned long),
->   			 unsigned long iobase)
->   {
->   	int ret;
->
+Hi Jan,
 
-Harmless.  (Good!)
+On 10 January 2014 11:36, Jan Kara <jack@suse.cz> wrote:
+> On Thu 09-01-14 12:11:16, Sergey Meirovich wrote:
+...
+>> I've done preallocation on fnic/XtremIO as Christoph suggested.
+>>
+>> [root@dca-poc-gtsxdb3 mnt]# sysbench --max-requests=0
+>> --file-extra-flags=direct  --test=fileio --num-threads=4
+>> --file-total-size=10G --file-io-mode=async --file-async-backlog=1024
+>> --file-rw-ratio=1 --file-fsync-freq=0 --max-requests=0
+>> --file-test-mode=seqwr --max-time=100 --file-block-size=4K prepare
+>> sysbench 0.4.12:  multi-threaded system evaluation benchmark
+>>
+>> 128 files, 81920Kb each, 10240Mb total
+>> Creating files for the test...
+>> [root@dca-poc-gtsxdb3 mnt]# du -k test_file.* | awk '{print $1}' |sort |uniq
+>> 81920
+>> [root@dca-poc-gtsxdb3 mnt]# fallocate -l 81920k test_file.*
+>>
+>>              Results: 13.042Mb/sec 3338.73 Requests/sec
+>>
+>> Probably sysbench is still triggering append DIO scenario. Will say
+>> simple wrapper over io_submit() against already preallocated (and even
+>> filled with data) file provide much better throughput if your theory
+>> is valid?
+>   So I was experimenting a bit. "sysbench prepare" seems to always do
+> synchronous IO from a single thread in the 'prepare' phase regardless of
+> the arguments. So there the reported throughput isn't really relevant.
+>
+> In the 'run' phase it obeys the arguments and indeed when I run fallocate
+> to preallocate files during 'run' phase, it significantly helps the
+> throughput (from 20 MB/s to 55 MB/s on my SATA drive).
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Sorry, Jan. Seems that I presented my findings in a previous mail in
+ambiguous style . I know that prepare phase of sysbench is
+synchronous/probably buffered (because I saw 512k chunks sent down to
+HBA)? IO. I played with blocktrace and have seen that myself during
+prepare:
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+[root@dca-poc-gtsxdb3 mnt]# sysbench --max-requests=0
+--file-extra-flags=direct  --test=fileio --num-threads=4
+--file-total-size=10G --file-io-mode=async --file-async-backlog=1024
+--file-rw-ratio=1 --file-fsync-freq=0 --max-requests=0
+--file-test-mode=seqwr --max-time=100 --file-block-size=4K prepare
+...
+
+Leads to:
+
+[root@dca-poc-gtsxdb3 mnt]# blktrace -d /dev/sdg -o - | blkparse -i -
+| grep 'D  W'
+  8,96  14      604    53.129805520 28114  D  WS 1116160 + 1024 [sysbench]
+  8,96  14      607    53.129843345 28114  D  WS 1120256 + 1024 [sysbench]
+  8,96  14      610    53.129873782 28114  D  WS 1124352 + 1024 [sysbench]
+  8,96  14      613    53.129903703 28114  D  WS 1128448 + 1024 [sysbench]
+  8,96  14      616    53.130957213 28114  D  WS 1132544 + 1024 [sysbench]
+  8,96  14      619    53.130988835 28114  D  WS 1136640 + 1024 [sysbench]
+  8,96  14      622    53.131018854 28114  D  WS 1140736 + 1024 [sysbench]
+...
+
+That result  "13.042Mb/sec 3338.73 Requests/sec" was from run phase
+and before it fallocate had been made.
+
+blktrace from run phase looks very different. 4k as expected.
+[root@dca-poc-gtsxdb3 ~]# blktrace -d /dev/sdg -o - | blkparse -i -  |
+grep 'D  W'
+  8,96   5        3     0.000001874 28212  D  WS 1847296 + 8 [sysbench]
+  8,96   5        7     0.001213728 28212  D  WS 1847304 + 8 [sysbench]
+  8,96   5       11     0.002779304 28212  D  WS 1847312 + 8 [sysbench]
+  8,96   5       15     0.004486445 28212  D  WS 1847320 + 8 [sysbench]
+  8,96   5       19     0.006012133 28212  D  WS 22691864 + 8 [sysbench]
+  8,96   5       23     0.007781553 28212  D  WS 22691896 + 8 [sysbench]
+  8,96   5       27     0.009043404 28212  D  WS 22691928 + 8 [sysbench]
+  8,96   5       31     0.010546829 28212  D  WS 22691960 + 8 [sysbench]
+  8,96   5       35     0.012214468 28212  D  WS 22691992 + 8 [sysbench]
+  8,96   5       39     0.013792616 28212  D  WS 22692024 + 8 [sysbench]
+...
