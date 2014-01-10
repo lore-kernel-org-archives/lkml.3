@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757392AbaAJNtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:49:32 -0500
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:40900 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaAJNrX (ORCPT
+	id S1753031AbaAJNrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:47:21 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:54264 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbaAJNrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:47:23 -0500
+	Fri, 10 Jan 2014 08:47:16 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/14] kernfs: implement kernfs_{de|re}activate[_self]()
-Date: Fri, 10 Jan 2014 08:46:55 -0500
-Message-Id: <1389361620-5086-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/14] kernfs: restructure removal path to fix possible premature return
+Date: Fri, 10 Jan 2014 08:46:51 -0500
+Message-Id: <1389361620-5086-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389361620-5086-1-git-send-email-tj@kernel.org>
 References: <1389361620-5086-1-git-send-email-tj@kernel.org>
@@ -23,228 +23,266 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements four functions to manipulate deactivation state
-- deactivate, reactivate and the _self suffixed pair.  A new fields
-kernfs_node->deact_depth is added so that concurrent and nested
-deactivations are handled properly.  kernfs_node->hash is moved so
-that it's paired with the new field so that it doesn't increase the
-size of kernfs_node.
+The recursive nature of kernfs_remove() means that, even if
+kernfs_remove() is not allowed to be called multiple times on the same
+node, there may be race conditions between removal of parent and its
+descendants.  While we can claim that kernfs_remove() shouldn't be
+called on one of the descendants while the removal of an ancestor is
+in progress, such rule is unnecessarily restrictive and very difficult
+to enforce.  It's better to simply allow invoking kernfs_remove() as
+the caller sees fit as long as the caller ensures that the node is
+accessible.
 
-A kernfs user's lock would normally nest inside active ref but during
-removal the user may want to perform kernfs_remove() while holding the
-said lock, which would introduce a reverse locking dependency.  This
-function can be used to break such reverse dependency by allowing
-deactivation step to performed separately outside user's critical
-section.
+The current behavior in such situations is broken.  Whoever enters
+removal path first takes the node off the hierarchy and then
+deactivates.  Following removers either return as soon as it notices
+that it's not the first one or can't even find the target node as it
+has already been removed from the hierarchy.  In both cases, the
+following removers may finish prematurely while the nodes which should
+be removed and drained are still being processed by the first one.
 
-This will also be used implement kernfs_remove_self().
+This patch restructures so that multiple removers, whether through
+recursion or direction invocation, always follow the following rules.
+
+* When there are multiple concurrent removers, only one puts the base
+  ref.
+
+* Regardless of which one puts the base ref, all removers are blocked
+  until the target node is fully deactivated and removed.
+
+To achieve the above, removal path now first deactivates the subtree,
+drains it and then unlinks one-by-one.  __kernfs_deactivate() is
+called directly from __kernfs_removal() and drops and regrabs
+kernfs_mutex for each descendant to drain active refs.  As this means
+that multiple removers can enter __kernfs_deactivate() for the same
+node, the function is updated so that it can handle multiple
+deactivators of the same node - only one actually deactivates but all
+wait till drain completion.
+
+The restructured removal path guarantees that a removed node gets
+unlinked only after the node is deactivated and drained.  Combined
+with proper multiple deactivator handling, this guarantees that any
+invocation of kernfs_remove() returns only after the node itself and
+all its descendants are deactivated, drained and removed.
+
+v2: Draining separated into a separate loop (used to be in the same
+    loop as unlink) and done from __kernfs_deactivate().  This is to
+    allow exposing deactivation as a separate interface later.
+
+    Root node removal was broken in v1 patch.  Fixed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- fs/kernfs/dir.c        | 120 ++++++++++++++++++++++++++++++++++++++++++++++---
- include/linux/kernfs.h |   7 ++-
- 2 files changed, 121 insertions(+), 6 deletions(-)
+ fs/kernfs/dir.c        | 139 ++++++++++++++++++++++++++++++-------------------
+ include/linux/kernfs.h |   1 +
+ 2 files changed, 87 insertions(+), 53 deletions(-)
 
 diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index f18fc5e..cc76af4 100644
+index 7f8afc1..e565ec0 100644
 --- a/fs/kernfs/dir.c
 +++ b/fs/kernfs/dir.c
-@@ -396,6 +396,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
+@@ -181,14 +181,38 @@ void kernfs_put_active(struct kernfs_node *kn)
+  * kernfs_drain - drain kernfs_node
+  * @kn: kernfs_node to drain
+  *
+- * Drain existing usages.
++ * Drain existing usages of @kn.  Mutiple removers may invoke this function
++ * concurrently on @kn and all will return after draining is complete.
++ * Returns %true if drain is performed and kernfs_mutex was temporarily
++ * released.  %false if @kn was already drained and no operation was
++ * necessary.
++ *
++ * The caller is responsible for ensuring @kn stays pinned while this
++ * function is in progress even if it gets removed by someone else.
+  */
+-static void kernfs_drain(struct kernfs_node *kn)
++static bool kernfs_drain(struct kernfs_node *kn)
++	__releases(&kernfs_mutex) __acquires(&kernfs_mutex)
+ {
+ 	struct kernfs_root *root = kernfs_root(kn);
  
- 	atomic_set(&kn->count, 1);
- 	atomic_set(&kn->active, KN_DEACTIVATED_BIAS);
-+	kn->deact_depth = 1;
- 	RB_CLEAR_NODE(&kn->rb);
++	lockdep_assert_held(&kernfs_mutex);
+ 	WARN_ON_ONCE(atomic_read(&kn->active) >= 0);
  
- 	kn->name = name;
-@@ -461,6 +462,7 @@ int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
- 
- 	/* Mark the entry added into directory tree */
- 	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
-+	kn->deact_depth--;
- 	ret = 0;
- out_unlock:
- 	mutex_unlock(&kernfs_mutex);
-@@ -561,6 +563,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
++	/*
++	 * We want to go through the active ref lockdep annotation at least
++	 * once for all node removals, but the lockdep annotation can't be
++	 * nested inside kernfs_mutex and deactivation can't make forward
++	 * progress if we keep dropping the mutex.  Use JUST_ACTIVATED to
++	 * force the slow path once for each deactivation if lockdep is
++	 * enabled.
++	 */
++	if ((!kernfs_lockdep(kn) || !(kn->flags & KERNFS_JUST_DEACTIVATED)) &&
++	    atomic_read(&kn->active) == KN_DEACTIVATED_BIAS)
++		return false;
++
++	kn->flags &= ~KERNFS_JUST_DEACTIVATED;
++	mutex_unlock(&kernfs_mutex);
++
+ 	if (kernfs_lockdep(kn)) {
+ 		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
+ 		if (atomic_read(&kn->active) != KN_DEACTIVATED_BIAS)
+@@ -202,6 +226,9 @@ static void kernfs_drain(struct kernfs_node *kn)
+ 		lock_acquired(&kn->dep_map, _RET_IP_);
+ 		rwsem_release(&kn->dep_map, 1, _RET_IP_);
  	}
- 
- 	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
-+	kn->deact_depth--;
- 	kn->priv = priv;
- 	kn->dir.root = root;
- 
-@@ -773,7 +776,8 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
- 	/* prevent any new usage under @kn by deactivating all nodes */
- 	pos = NULL;
- 	while ((pos = kernfs_next_descendant_post(pos, kn))) {
--		if (atomic_read(&pos->active) >= 0) {
-+		if (!pos->deact_depth++) {
-+			WARN_ON_ONCE(atomic_read(&pos->active) < 0);
- 			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
- 			pos->flags |= KERNFS_JUST_DEACTIVATED;
- 		}
-@@ -797,9 +801,118 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
- 	}
++
++	mutex_lock(&kernfs_mutex);
++	return true;
  }
  
-+static void __kernfs_reactivate(struct kernfs_node *kn)
+ /**
+@@ -447,49 +474,6 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
+ }
+ 
+ /**
+- *	kernfs_remove_one - remove kernfs_node from parent
+- *	@acxt: addrm context to use
+- *	@kn: kernfs_node to be removed
+- *
+- *	Mark @kn removed and drop nlink of parent inode if @kn is a
+- *	directory.  @kn is unlinked from the children list.
+- *
+- *	This function should be called between calls to
+- *	kernfs_addrm_start() and kernfs_addrm_finish() and should be
+- *	passed the same @acxt as passed to kernfs_addrm_start().
+- *
+- *	LOCKING:
+- *	Determined by kernfs_addrm_start().
+- */
+-static void kernfs_remove_one(struct kernfs_addrm_cxt *acxt,
+-			      struct kernfs_node *kn)
+-{
+-	struct kernfs_iattrs *ps_iattr;
+-
+-	/*
+-	 * Removal can be called multiple times on the same node.  Only the
+-	 * first invocation is effective and puts the base ref.
+-	 */
+-	if (atomic_read(&kn->active) < 0)
+-		return;
+-
+-	if (kn->parent) {
+-		kernfs_unlink_sibling(kn);
+-
+-		/* Update timestamps on the parent */
+-		ps_iattr = kn->parent->iattr;
+-		if (ps_iattr) {
+-			ps_iattr->ia_iattr.ia_ctime = CURRENT_TIME;
+-			ps_iattr->ia_iattr.ia_mtime = CURRENT_TIME;
+-		}
+-	}
+-
+-	atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
+-	kn->u.removed_list = acxt->removed;
+-	acxt->removed = kn;
+-}
+-
+-/**
+  *	kernfs_addrm_finish - finish up kernfs_node add/remove
+  *	@acxt: addrm context to finish up
+  *
+@@ -512,7 +496,6 @@ void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
+ 
+ 		acxt->removed = kn->u.removed_list;
+ 
+-		kernfs_drain(kn);
+ 		kernfs_unmap_bin_file(kn);
+ 		kernfs_put(kn);
+ 	}
+@@ -822,23 +805,73 @@ static struct kernfs_node *kernfs_next_descendant_post(struct kernfs_node *pos,
+ 	return pos->parent;
+ }
+ 
++static void __kernfs_deactivate(struct kernfs_node *kn)
 +{
 +	struct kernfs_node *pos;
 +
++	lockdep_assert_held(&kernfs_mutex);
++
++	/* prevent any new usage under @kn by deactivating all nodes */
 +	pos = NULL;
 +	while ((pos = kernfs_next_descendant_post(pos, kn))) {
-+		if (!--pos->deact_depth) {
-+			WARN_ON_ONCE(atomic_read(&pos->active) >= 0);
-+			atomic_sub(KN_DEACTIVATED_BIAS, &pos->active);
++		if (atomic_read(&pos->active) >= 0) {
++			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
++			pos->flags |= KERNFS_JUST_DEACTIVATED;
 +		}
-+		WARN_ON_ONCE(pos->deact_depth < 0);
 +	}
 +
-+	/* some nodes reactivated, kick get_active waiters */
-+	wake_up_all(&kernfs_root(kn)->deactivate_waitq);
-+}
-+
-+static void __kernfs_deactivate_self(struct kernfs_node *kn)
-+{
 +	/*
-+	 * Take out ourself out of the active ref dependency chain and
-+	 * deactivate.  If we're called without an active ref, lockdep will
-+	 * complain.
++	 * Drain the subtree.  If kernfs_drain() blocked to drain, which is
++	 * indicated by %true return, it temporarily released kernfs_mutex
++	 * and the rbtree might have been modified inbetween breaking our
++	 * future walk.  Restart the walk after each %true return.
 +	 */
-+	kernfs_put_active(kn);
-+	__kernfs_deactivate(kn);
++	pos = NULL;
++	while ((pos = kernfs_next_descendant_post(pos, kn))) {
++		bool drained;
++
++		kernfs_get(pos);
++		drained = kernfs_drain(pos);
++		kernfs_put(pos);
++		if (drained)
++			pos = NULL;
++	}
 +}
 +
-+static void __kernfs_reactivate_self(struct kernfs_node *kn)
-+{
-+	__kernfs_reactivate(kn);
-+	/*
-+	 * Restore active ref dropped by deactivate_self() so that it's
-+	 * balanced on return.  put_active() will soon be called on @kn, so
-+	 * this can't break anything regardless of @kn's state.
-+	 */
-+	atomic_inc(&kn->active);
-+	if (kernfs_lockdep(kn))
-+		rwsem_acquire(&kn->dep_map, 0, 1, _RET_IP_);
-+}
-+
-+/**
-+ * kernfs_deactivate - deactivate subtree of a node
-+ * @kn: kernfs_node to deactivate subtree of
-+ *
-+ * Deactivate the subtree of @kn.  On return, there's no active operation
-+ * going on under @kn and creation or renaming of a node under @kn is
-+ * blocked until @kn is reactivated or removed.  This function can be
-+ * called multiple times and nests properly.  Each invocation should be
-+ * paired with kernfs_reactivate().
-+ *
-+ * For a kernfs user which uses simple locking, the subsystem lock would
-+ * nest inside active reference.  This becomes problematic if the user
-+ * tries to remove nodes while holding the subystem lock as it would create
-+ * a reverse locking dependency from the subsystem lock to active ref.
-+ * This function can be used to break such reverse dependency.  The user
-+ * can call this function outside the subsystem lock and then proceed to
-+ * invoke kernfs_remove() while holding the subsystem lock without
-+ * introducing such reverse dependency.
-+ */
-+void kernfs_deactivate(struct kernfs_node *kn)
-+{
-+	mutex_lock(&kernfs_mutex);
-+	__kernfs_deactivate(kn);
-+	mutex_unlock(&kernfs_mutex);
-+}
-+
-+/**
-+ * kernfs_reactivate - reactivate subtree of a node
-+ * @kn: kernfs_node to reactivate subtree of
-+ *
-+ * Undo kernfs_deactivate().
-+ */
-+void kernfs_reactivate(struct kernfs_node *kn)
-+{
-+	mutex_lock(&kernfs_mutex);
-+	__kernfs_reactivate(kn);
-+	mutex_unlock(&kernfs_mutex);
-+}
-+
-+/**
-+ * kernfs_deactivate_self - deactivate subtree of a node from its own method
-+ * @kn: the self kernfs_node to deactivate subtree of
-+ *
-+ * The caller must be running off of a kernfs operation which is invoked
-+ * with an active reference - e.g. one of kernfs_ops.  Once this function
-+ * is called, @kn may be removed by someone else while the enclosing method
-+ * is in progress.  Other than that, this function is equivalent to
-+ * kernfs_deactivate() and should be paired with kernfs_reactivate_self().
-+ */
-+void kernfs_deactivate_self(struct kernfs_node *kn)
-+{
-+	mutex_lock(&kernfs_mutex);
-+	__kernfs_deactivate_self(kn);
-+	mutex_unlock(&kernfs_mutex);
-+}
-+
-+/**
-+ * kernfs_reactivate_self - reactivate subtree of a node from its own method
-+ * @kn: the self kernfs_node to reactivate subtree of
-+ *
-+ * Undo kernfs_deactivate_self().
-+ */
-+void kernfs_reactivate_self(struct kernfs_node *kn)
-+{
-+	mutex_lock(&kernfs_mutex);
-+	__kernfs_reactivate_self(kn);
-+	mutex_unlock(&kernfs_mutex);
-+}
-+
- static void __kernfs_remove(struct kernfs_node *kn)
+ static void __kernfs_remove(struct kernfs_addrm_cxt *acxt,
+ 			    struct kernfs_node *kn)
  {
--	struct kernfs_root *root = kernfs_root(kn);
- 	struct kernfs_node *pos;
+-	struct kernfs_node *pos, *next;
++	struct kernfs_node *pos;
++
++	lockdep_assert_held(&kernfs_mutex);
  
- 	lockdep_assert_held(&kernfs_mutex);
-@@ -844,9 +957,6 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 	if (!kn)
+ 		return;
  
- 		kernfs_put(pos);
- 	} while (pos != kn);
--
--	/* some nodes killed, kick get_active waiters */
--	wake_up_all(&root->deactivate_waitq);
+ 	pr_debug("kernfs %s: removing\n", kn->name);
+ 
+-	next = NULL;
++	__kernfs_deactivate(kn);
++
++	/* unlink the subtree node-by-node */
+ 	do {
+-		pos = next;
+-		next = kernfs_next_descendant_post(pos, kn);
+-		if (pos)
+-			kernfs_remove_one(acxt, pos);
+-	} while (next);
++		struct kernfs_iattrs *ps_iattr;
++
++		pos = kernfs_leftmost_descendant(kn);
++
++		if (pos->parent) {
++			kernfs_unlink_sibling(pos);
++
++			/* update timestamps on the parent */
++			ps_iattr = pos->parent->iattr;
++			if (ps_iattr) {
++				ps_iattr->ia_iattr.ia_ctime = CURRENT_TIME;
++				ps_iattr->ia_iattr.ia_mtime = CURRENT_TIME;
++			}
++		}
++
++		pos->u.removed_list = acxt->removed;
++		acxt->removed = pos;
++	} while (pos != kn);
  }
  
  /**
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 9b5a4bb..ac86930 100644
+index 289d4f6..61bd7ae 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -80,6 +80,8 @@ struct kernfs_elem_attr {
- struct kernfs_node {
- 	atomic_t		count;
- 	atomic_t		active;
-+	int			deact_depth;
-+	unsigned int		hash;	/* ns + name hash */
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map	dep_map;
- #endif
-@@ -90,7 +92,6 @@ struct kernfs_node {
- 	struct rb_node		rb;
+@@ -37,6 +37,7 @@ enum kernfs_node_type {
+ #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
  
- 	const void		*ns;	/* namespace tag */
--	unsigned int		hash;	/* ns + name hash */
- 	union {
- 		struct kernfs_elem_dir		dir;
- 		struct kernfs_elem_symlink	symlink;
-@@ -233,6 +234,10 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
- struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 				       const char *name,
- 				       struct kernfs_node *target);
-+void kernfs_deactivate(struct kernfs_node *kn);
-+void kernfs_reactivate(struct kernfs_node *kn);
-+void kernfs_deactivate_self(struct kernfs_node *kn);
-+void kernfs_reactivate_self(struct kernfs_node *kn);
- void kernfs_remove(struct kernfs_node *kn);
- int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
- 			     const void *ns);
+ enum kernfs_node_flag {
++	KERNFS_JUST_DEACTIVATED	= 0x0010, /* used to aid lockdep annotation */
+ 	KERNFS_NS		= 0x0020,
+ 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
+ 	KERNFS_HAS_MMAP		= 0x0080,
 -- 
 1.8.4.2
 
