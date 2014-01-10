@@ -1,270 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaAJOc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:32:56 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:45928 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaAJOcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:32:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140110104837.GG26378@quack.suse.cz>
-References: <20140107155830.GA28395@infradead.org> <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
- <20140108140307.GA588@infradead.org> <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
- <20140108152610.GA5863@infradead.org> <CA+QCeVRXAXAk2Zv2gtdvT+c80hbpcvezz_dvk9aUjwPbVp7pnQ@mail.gmail.com>
- <20140108205524.GA15313@quack.suse.cz> <CA+QCeVQuq4hM+kVfb8a2iMAUtF6QrR4sy=O-AuAgMoCWUsDg4w@mail.gmail.com>
- <20140110093623.GD26378@quack.suse.cz> <CA+QCeVSen0d4=Yx1QWoH-TZ1c=g7jdG=rLq+FKg_ejBxFsR0sg@mail.gmail.com>
- <20140110104837.GG26378@quack.suse.cz>
-From: Sergey Meirovich <rathamahata@gmail.com>
-Date: Fri, 10 Jan 2014 16:32:31 +0200
-Message-ID: <CA+QCeVSC_tmB0_ka3fad-J+4GkYrDXUF1149oQ3HBTFwxfm4xw@mail.gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751880AbaAJOgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:36:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202AbaAJOf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 09:35:57 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        kosaki.motohiro@gmail.com, dyoung@redhat.com,
+        linux-acpi@vger.kernel.org, kexec@lists.infradead.org
+Subject: [PATCH] acpi memory hotplug, add parameter to disable memory hotplug
+Date: Fri, 10 Jan 2014 09:34:59 -0500
+Message-Id: <1389364499-13219-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+When booting a kexec/kdump kernel on a system that has specific memory hotplug
+regions the boot will fail with warnings like:
 
-On 10 January 2014 12:48, Jan Kara <jack@suse.cz> wrote:
-> On Fri 10-01-14 12:36:22, Sergey Meirovich wrote:
->> Hi Jan,
->>
->> On 10 January 2014 11:36, Jan Kara <jack@suse.cz> wrote:
->> > On Thu 09-01-14 12:11:16, Sergey Meirovich wrote:
->> ...
->> >> I've done preallocation on fnic/XtremIO as Christoph suggested.
->> >>
->> >> [root@dca-poc-gtsxdb3 mnt]# sysbench --max-requests=0
->> >> --file-extra-flags=direct  --test=fileio --num-threads=4
->> >> --file-total-size=10G --file-io-mode=async --file-async-backlog=1024
->> >> --file-rw-ratio=1 --file-fsync-freq=0 --max-requests=0
->> >> --file-test-mode=seqwr --max-time=100 --file-block-size=4K prepare
->> >> sysbench 0.4.12:  multi-threaded system evaluation benchmark
->> >>
->> >> 128 files, 81920Kb each, 10240Mb total
->> >> Creating files for the test...
->> >> [root@dca-poc-gtsxdb3 mnt]# du -k test_file.* | awk '{print $1}' |sort |uniq
->> >> 81920
->> >> [root@dca-poc-gtsxdb3 mnt]# fallocate -l 81920k test_file.*
->> >>
->> >>              Results: 13.042Mb/sec 3338.73 Requests/sec
->> >>
->> >> Probably sysbench is still triggering append DIO scenario. Will say
->> >> simple wrapper over io_submit() against already preallocated (and even
->> >> filled with data) file provide much better throughput if your theory
->> >> is valid?
->> >   So I was experimenting a bit. "sysbench prepare" seems to always do
->> > synchronous IO from a single thread in the 'prepare' phase regardless of
->> > the arguments. So there the reported throughput isn't really relevant.
->> >
->> > In the 'run' phase it obeys the arguments and indeed when I run fallocate
->> > to preallocate files during 'run' phase, it significantly helps the
->> > throughput (from 20 MB/s to 55 MB/s on my SATA drive).
->>
->> Sorry, Jan. Seems that I presented my findings in a previous mail in
->> ambiguous style . I know that prepare phase of sysbench is
->> synchronous/probably buffered (because I saw 512k chunks sent down to
->> HBA)? IO. I played with blocktrace and have seen that myself during
->> prepare:
->>
->> [root@dca-poc-gtsxdb3 mnt]# sysbench --max-requests=0
->> --file-extra-flags=direct  --test=fileio --num-threads=4
->> --file-total-size=10G --file-io-mode=async --file-async-backlog=1024
->> --file-rw-ratio=1 --file-fsync-freq=0 --max-requests=0
->> --file-test-mode=seqwr --max-time=100 --file-block-size=4K prepare
->> ...
->>
->> Leads to:
->>
->> [root@dca-poc-gtsxdb3 mnt]# blktrace -d /dev/sdg -o - | blkparse -i -
->> | grep 'D  W'
->>   8,96  14      604    53.129805520 28114  D  WS 1116160 + 1024 [sysbench]
->>   8,96  14      607    53.129843345 28114  D  WS 1120256 + 1024 [sysbench]
->>   8,96  14      610    53.129873782 28114  D  WS 1124352 + 1024 [sysbench]
->>   8,96  14      613    53.129903703 28114  D  WS 1128448 + 1024 [sysbench]
->>   8,96  14      616    53.130957213 28114  D  WS 1132544 + 1024 [sysbench]
->>   8,96  14      619    53.130988835 28114  D  WS 1136640 + 1024 [sysbench]
->>   8,96  14      622    53.131018854 28114  D  WS 1140736 + 1024 [sysbench]
->> ...
->   Ah, ok. I misuderstood what you wrote then.
->
->> That result  "13.042Mb/sec 3338.73 Requests/sec" was from run phase
->> and before it fallocate had been made.
->>
->> blktrace from run phase looks very different. 4k as expected.
->> [root@dca-poc-gtsxdb3 ~]# blktrace -d /dev/sdg -o - | blkparse -i -  |
->> grep 'D  W'
->>   8,96   5        3     0.000001874 28212  D  WS 1847296 + 8 [sysbench]
->>   8,96   5        7     0.001213728 28212  D  WS 1847304 + 8 [sysbench]
->>   8,96   5       11     0.002779304 28212  D  WS 1847312 + 8 [sysbench]
->>   8,96   5       15     0.004486445 28212  D  WS 1847320 + 8 [sysbench]
->>   8,96   5       19     0.006012133 28212  D  WS 22691864 + 8 [sysbench]
->>   8,96   5       23     0.007781553 28212  D  WS 22691896 + 8 [sysbench]
->>   8,96   5       27     0.009043404 28212  D  WS 22691928 + 8 [sysbench]
->>   8,96   5       31     0.010546829 28212  D  WS 22691960 + 8 [sysbench]
->>   8,96   5       35     0.012214468 28212  D  WS 22691992 + 8 [sysbench]
->>   8,96   5       39     0.013792616 28212  D  WS 22692024 + 8 [sysbench]
->> ...
->   Strange - I see:
->   8,32   7        2     0.000086080     0  D  WS 1869752 + 1024 [swapper]
->   8,32   7        7     0.041126425     0  D  WS 1874712 + 24 [swapper]
->   8,32   7        6     0.041054543     0  D  WS 1871792 + 416 [swapper]
->   8,32   7        7     0.041126425     0  D  WS 1874712 + 24 [swapper]
->   8,32   6      118     0.042761949 28952  D  WS 1875416 + 528 [sysbench]
->   8,32   6      143     0.042995928 28952  D  WS 1876888 + 48 [sysbench]
->   8,32   5      352     0.045154160 28955  D  WS 1876936 + 168 [sysbench]
->   8,32   6      444     0.045527660 28952  D  WS 1878296 + 992 [sysbench]
->   ...
->
->   Not ideal but significantly better. The only idea I have: Didn't you run
-> fallocate(1) before you started the 'run' phase? Because 'run' phase
-> truncates the files before doing io to them. Can you check that during run
-> phase (after fallocate is run) the file size is constantly at 80MB?
+[    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
+[    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+3.10.0-65.el7.x86_64 #1
+[    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
+QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+[    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
+ffff8800341bd950
+[    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
+00000000000084d0
+[    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
+0000000000000200
+[    2.989821] Call Trace:
+[    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+[    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+[    3.004817]  [<ffffffff815b87ee>] ?
+__alloc_pages_direct_compact+0xac/0x196
+[    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+[    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+[    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+[    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+[    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+[    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+[    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+[    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+[    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+[    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+[    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+[    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
+[    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+[    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+[    3.181956] Mem-Info:
+[    3.184490] Node 0 DMA per-cpu:
+[    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
+[    3.193353] Node 0 DMA32 per-cpu:
+[    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
+[    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
+[    3.202410]  active_file:0 inactive_file:0 isolated_file:0
+[    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
+[    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+[    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
+[    3.202410]  free_cma:0
 
-Jan, I believe your initial theory that append AIO is equal to
-Synchronous DIO is absolutely correct. I've given up  sysbench and
-written simple dirty wrapper around io_submit() and run it against
-preallocated file.. XtremIO is doing online deduplication so results
-were wonderful
+because the system has run out of memory at boot time.  This occurs
+because of the following sequence in the boot:
 
-694.25 MB/s  177728.84 Req/sec
+Main kernel boots and sets E820 map.  The second kernel is booted with a
+map generated by the kdump service using memmap= and memmap=exactmap.
+These parameters are added to the kernel parameters of the kexec/kdump
+kernel.   The kexec/kdump kernel has limited memory resources so as not
+to severely impact the main kernel.
 
-[root@dca-poc-gtsxdb3 mnt]# dd if=/dev/zero of=4k.data bs=4096 count=524288
-524288+0 records in
-524288+0 records out
-2147483648 bytes (2.1 GB) copied, 5.75357 s, 373 MB/s
-[root@dca-poc-gtsxdb3 mnt]# ./4k
-io_submit() accepted 524288 IOs
-io_getevents() returned 524288 events
-time elapsed (sec.):    2.949932
-bandwidth (MiB/s):    694.25
-IOps:            177728.84
-[root@dca-poc-gtsxdb3 mnt]#
-...
-[root@dca-poc-gtsxdb3 ~]# vmstat 1
-procs -----------memory---------- ---swap-- -----io---- --system-- -----cpu-----
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
- 0  0      0 260598160 260540 1896032    0    0     3    24   11   12
-0  0 100  0  0
- 0  0      0 260598256 260544 1896032    0    0     0    16 1106  378
-0  0 100  0  0
- 0  0      0 260598288 260544 1896032    0    0     0     0 1093  373
-0  0 100  0  0
- 1  0      0 260499536 260544 1928368    0    0     0 293820 2782 1438
- 0  1 99  0  0
- 2  0      0 260484816 260544 1928804    0    0     0 820152 5575 3146
- 0  3 97  0  0
- 1  0      0 260481680 260544 1928804    0    0     0 710028 4844 2947
- 0  3 97  0  0
- 1  0      0 260548384 260544 1928804    0    0     0 273168 2187 1744
- 0  2 98  0  0
- 0  0      0 260549088 260544 1928804    0    0     0     4 1156  426
-0  0 100  0  0
- 0  0      0 260549472 260544 1928804    0    0     0     0 1082  328
-0  0 100  0  0
-^C
-[root@dca-poc-gtsxdb3 ~]#
+The system then panics and the kdump/kexec kernel boots (which is a
+completely new kernel boot).  During this boot ACPI is initialized and the
+kernel (as can be seen above) traverses the ACPI namespace and finds an
+entry for a memory device to be hotadded.
 
+ie)
 
-========================== io_submit() wrapper =============================
-#define _GNU_SOURCE
+[    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+[    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+[    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+[    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+[    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+[    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+[    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+[    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+[    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+[    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+[    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
 
-#include <errno.h>
-#include <libaio.h>
+At this point the kernel adds page table information and the the kexec/kdump
+kernel runs out of memory.
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+This can also be reproduced by using the memmap=exactmap and mem=X
+parameters on the main kernel and booting.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+This patchset resolves the problem by adding a kernel parameter,
+acpi_no_memhotplug, to disable ACPI memory hotplug.
 
-#include <unistd.h>
-#include <sys/time.h>
+[v2]: changed to acpi_no_memhotplug
 
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Len Brown <lenb@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: kosaki.motohiro@gmail.com
+Cc: dyoung@redhat.com
+Cc: linux-acpi@vger.kernel.org
+Cc: kexec@lists.infradead.org
+---
+ Documentation/kernel-parameters.txt |    3 +++
+ drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
+ 2 files changed, 15 insertions(+)
 
-#define FNAME           "4k.data"
-#define IOSIZE          4096
-#define    REQUESTS    524288
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index b9e9bd8..41374f9 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2117,6 +2117,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	nomce		[X86-32] Machine Check Exception
+ 
++	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
++			   and kdump kernels.
++
+ 	nomfgpt		[X86-32] Disable Multi-Function General Purpose
+ 			Timer usage (for AMD Geode machines).
+ 
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 551dad7..669f590 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+ 	acpi_memory_device_free(mem_device);
+ }
+ 
++static int acpi_no_memhotplug;
++
+ void __init acpi_memory_hotplug_init(void)
+ {
++	if (acpi_no_memhotplug)
++		return;
++
+ 	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+ }
++
++static int __init disable_acpi_memory_hotplug(char *str)
++{
++	acpi_no_memhotplug = 1;
++	return 1;
++}
++__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
+-- 
+1.7.9.3
 
-/*  gcc 4k.c -std=gnu99 -laio -o 4k */
-
-int main(void) {
-    io_context_t ctx;
-    int ret;
-
-    int flag = O_RDWR | O_DIRECT;
-    int fd = open(FNAME, flag);
-        if (fd == -1) {
-            printf("open(%s, %d) - failed!\nExiting.\n"
-            "If file doesn't exist please precreate it "
-            "with dd if=/dev/zero of=%s bs=%d count=%d\n",
-            FNAME, flag, FNAME, IOSIZE, REQUESTS);
-                return errno;
-        }
-
-    memset(&ctx, 0, sizeof(io_context_t));
-    if (io_setup(REQUESTS, &ctx)) {
-        printf("io_setup(%d, &ctx) failed\n", REQUESTS);
-        return -ret;
-    }
-
-    void *mem = NULL;
-    posix_memalign(&mem, 4096, IOSIZE);
-        memset(mem, 9, IOSIZE);
-    struct iocb *aio = malloc(sizeof(struct iocb) * REQUESTS);
-    memset(aio, 0, sizeof(struct iocb) * REQUESTS);
-    struct iocb **lio = malloc(sizeof(void *) * REQUESTS);
-        memset(lio, 0, sizeof(void *) * REQUESTS);
-    struct io_event *event = malloc(sizeof(struct io_event) * REQUESTS);
-    memset(event, 0, sizeof(struct io_event) * REQUESTS);
-
-    for (int i = 0; i < REQUESTS; i++) {
-        io_prep_pwrite(&aio[i], fd, mem, IOSIZE, i * IOSIZE);
-        lio[i] = &aio[i];
-    }
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-    ret = io_submit(ctx, REQUESTS, lio);
-    printf("io_submit() accepted %d IOs\n", ret);
-    fdatasync(fd);
-
-    ret = io_getevents(ctx, REQUESTS, REQUESTS, event, NULL);
-    printf("io_getevents() returned %d events\n", ret);
-    gettimeofday(&end, NULL);
-
-    double elapsed = (end.tv_sec - start.tv_sec) +
-              ((end.tv_usec - start.tv_usec)/1000000.0);
-    printf("time elapsed (sec.):\t%2f\n", elapsed);
-        printf("bandwidth (MiB/s):\t%.2f\n",
-        (double) (((long long) IOSIZE * REQUESTS) / (1024 * 1024))
-            / elapsed);
-        printf("IOps:\t\t\t%.2f\n", (double) REQUESTS
-            / elapsed);
-
-    if (io_destroy(ctx)) {
-                perror("io_destroy");
-                return -1;
-        }
-
-    free(aio);
-    free(lio);
-    free(event);
-
-    return 0;
-}
-
-
->
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
