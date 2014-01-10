@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577AbaAJOSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:18:44 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53881 "HELO
+	id S1757659AbaAJOTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:19:05 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57610 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752727AbaAJOQU (ORCPT
+	with SMTP id S1752385AbaAJOQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:16:20 -0500
+	Fri, 10 Jan 2014 09:16:19 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Yinghai Lu <yinghai@kernel.org>,
@@ -19,9 +19,9 @@ Cc: Yinghai Lu <yinghai@kernel.org>,
         Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-scsi@vger.kernel.org,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 4/9] PCMCIA / cardbus: Use global PCI rescan-remove locking
-Date: Fri, 10 Jan 2014 15:25:34 +0100
-Message-ID: <2463755.ZN6tpTxA86@vostro.rjw.lan>
+Subject: [PATCH 6/9] platform / x86: Use global PCI rescan-remove locking
+Date: Fri, 10 Jan 2014 15:27:08 +0100
+Message-ID: <1493412.bZ2k5bhngZ@vostro.rjw.lan>
 User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
 In-Reply-To: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
 References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <1992931.Zv6xBcN8V4@vostro.rjw.lan> <20440867.YaQfKrcfsQ@vostro.rjw.lan>
@@ -34,48 +34,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Multiple race conditions are possible between the cardbus PCI
-device addition and removal and the generic PCI bus rescan and device
-removal that can be triggered via sysfs.
+Multiple race conditions are possible between the rfkill hotplug in
+the asus-wmi and eeepc-laptop drivers and the generic PCI bus rescan
+and device removal that can be triggered via sysfs.
 
-To avoid those race conditions make the cardbus code use global
-PCI rescan-remove locking.
+To avoid those race conditions make asus-wmi and eeepc-laptop use
+global PCI rescan-remove locking around the rfkill hotplug.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pcmcia/cardbus.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/platform/x86/asus-wmi.c     |    2 ++
+ drivers/platform/x86/eeepc-laptop.c |    2 ++
+ 2 files changed, 4 insertions(+)
 
-Index: linux-pm/drivers/pcmcia/cardbus.c
+Index: linux-pm/drivers/platform/x86/asus-wmi.c
 ===================================================================
---- linux-pm.orig/drivers/pcmcia/cardbus.c
-+++ linux-pm/drivers/pcmcia/cardbus.c
-@@ -70,6 +70,8 @@ int __ref cb_alloc(struct pcmcia_socket
- 	struct pci_dev *dev;
- 	unsigned int max, pass;
+--- linux-pm.orig/drivers/platform/x86/asus-wmi.c
++++ linux-pm/drivers/platform/x86/asus-wmi.c
+@@ -605,6 +605,7 @@ static void asus_rfkill_hotplug(struct a
+ 	mutex_unlock(&asus->wmi_lock);
  
+ 	mutex_lock(&asus->hotplug_lock);
 +	pci_lock_rescan_remove();
-+
- 	s->functions = pci_scan_slot(bus, PCI_DEVFN(0, 0));
- 	pci_fixup_cardbus(bus);
  
-@@ -93,6 +95,7 @@ int __ref cb_alloc(struct pcmcia_socket
+ 	if (asus->wlan.rfkill)
+ 		rfkill_set_sw_state(asus->wlan.rfkill, blocked);
+@@ -655,6 +656,7 @@ static void asus_rfkill_hotplug(struct a
+ 	}
  
- 	pci_bus_add_devices(bus);
- 
+ out_unlock:
 +	pci_unlock_rescan_remove();
- 	return 0;
+ 	mutex_unlock(&asus->hotplug_lock);
  }
  
-@@ -115,6 +118,10 @@ void cb_free(struct pcmcia_socket *s)
- 	if (!bus)
- 		return;
+Index: linux-pm/drivers/platform/x86/eeepc-laptop.c
+===================================================================
+--- linux-pm.orig/drivers/platform/x86/eeepc-laptop.c
++++ linux-pm/drivers/platform/x86/eeepc-laptop.c
+@@ -591,6 +591,7 @@ static void eeepc_rfkill_hotplug(struct
+ 		rfkill_set_sw_state(eeepc->wlan_rfkill, blocked);
  
+ 	mutex_lock(&eeepc->hotplug_lock);
 +	pci_lock_rescan_remove();
-+
- 	list_for_each_entry_safe(dev, tmp, &bus->devices, bus_list)
- 		pci_stop_and_remove_bus_device(dev);
-+
+ 
+ 	if (eeepc->hotplug_slot) {
+ 		port = acpi_get_pci_dev(handle);
+@@ -648,6 +649,7 @@ out_put_dev:
+ 	}
+ 
+ out_unlock:
 +	pci_unlock_rescan_remove();
+ 	mutex_unlock(&eeepc->hotplug_lock);
  }
+ 
 
