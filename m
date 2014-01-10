@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaAJEX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 23:23:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55372 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaAJEX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 23:23:57 -0500
-Date: Thu, 9 Jan 2014 20:23:57 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
-        Jesse Barker <jesse.barker@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 0/2] ION dummy driver
-Message-ID: <20140110042357.GA4031@kroah.com>
-References: <1389325255-31534-1-git-send-email-john.stultz@linaro.org>
+	id S1751327AbaAJEeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 23:34:17 -0500
+Received: from mail.efficios.com ([78.47.125.74]:49259 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702AbaAJEeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 23:34:14 -0500
+Date: Fri, 10 Jan 2014 04:34:12 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <40484806.5780.1389328452206.JavaMail.zimbra@efficios.com>
+In-Reply-To: <607356267.5770.1389328173087.JavaMail.zimbra@efficios.com>
+Subject: powerpc: possible access beyond TASK_SIZE in start_thread
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389325255-31534-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF26 (Linux)/8.0.5_GA_5839)
+Thread-Topic: powerpc: possible access beyond TASK_SIZE in start_thread
+Thread-Index: I0QZQyMoQ9+tiPdpVvLF+/QTSIxN8Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 07:40:53PM -0800, John Stultz wrote:
-> Greg: I realize this is after the usual -rc6 cutoff for staging,
-> so no pressure if you want to defer this for 3.15, but I saw you've
-> picked up a few things recently, so I figured I'd send it out so
-> I'm not just sitting on it while we wait for LCA to finish.
+Hi Rusty,
 
-I would have merged it, but I just tried and got a ton of errors when
-building:
+I was looking at the diff between kernel v3.12 and recent master (after 3.13-rc7),
+and noticed that in the following commit:
 
-ERROR: "ion_device_destroy" [drivers/staging/android/ion/ion_dummy_driver.ko] undefined!
-ERROR: "ion_heap_destroy" [drivers/staging/android/ion/ion_dummy_driver.ko] undefined!
-ERROR: "ion_device_add_heap" [drivers/staging/android/ion/ion_dummy_driver.ko] undefined!
-ERROR: "ion_heap_create" [drivers/staging/android/ion/ion_dummy_driver.ko] undefined!
-ERROR: "ion_device_create" [drivers/staging/android/ion/ion_dummy_driver.ko] undefined!
+commit 94af3abf995b17f6a008b00152c94841242ec6c7
+Author: Rusty Russell <rusty@rustcorp.com.au>
+Date:   Wed Nov 20 22:15:02 2013 +1100
 
-So, I'll just drop these patches and forget you ever sent them to me :)
+    powerpc: ELF2 binaries launched directly.
 
-greg k-h
+on powerpc, those lines appear in start_thread():
 
-p.s.  Feel free to resend them when they work.
++                       /* start is a relocated pointer to the function
++                        * descriptor for the elf _start routine.  The first
++                        * entry in the function descriptor is the entry
++                        * address of _start and the second entry is the TOC
++                        * value we need to use.
++                        */
++                       __get_user(entry, (unsigned long __user *)start);
++                       __get_user(toc, (unsigned long __user *)start+1);
+
+Note the "__" before get_user(), which bypass any kind of validation on the
+addresses.
+
+Amongst the callers, if we look at fs/binfmt_elf.c:load_elf_binary(), we see:
+
+                elf_entry = loc->elf_ex.e_entry;
+                if (BAD_ADDR(elf_entry)) {
+                        force_sig(SIGSEGV, current);
+                        retval = -EINVAL;
+                        goto out_free_dentry;
+                }
+
+and the elf_entry gets passed to start_thread().
+
+If we craft a binary with elf_entry address of
+
+TASK_SIZE - 1  (1 byte before TASK_SIZE), then I think we could make both
+__get_user() calls access data beyond TASK_SIZE, because elf_entry address
+is verified, but there is no validation on its range AFAIU. Is it expected ?
+Am I missing something ?
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
