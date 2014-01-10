@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaAJGTz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 01:19:55 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:47843 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaAJGTu (ORCPT
+	id S1754927AbaAJGUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 01:20:16 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:42859 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550AbaAJGUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 01:19:50 -0500
-Message-ID: <1389334891.5567.373.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to
- READ_CAPACITY_16
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Sagi Grimberg <sagig@mellanox.com>
-Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Date: Thu, 09 Jan 2014 22:21:31 -0800
-In-Reply-To: <52CE78EB.60108@mellanox.com>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	 <1389212157-14540-8-git-send-email-nab@daterainc.com>
-	 <52CE78EB.60108@mellanox.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Jan 2014 01:20:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAHfPSqA=xkHX1kajjYfNz2KMrnfHGdWzu9GWvSE4ZjWWZb-hQA@mail.gmail.com>
+References: <1389095509-14357-3-git-send-email-ch.naveen@samsung.com>
+	<1389243541-13122-1-git-send-email-ch.naveen@samsung.com>
+	<52CEAEB0.80304@samsung.com>
+	<CAHfPSqA=xkHX1kajjYfNz2KMrnfHGdWzu9GWvSE4ZjWWZb-hQA@mail.gmail.com>
+Date: Fri, 10 Jan 2014 11:50:13 +0530
+Message-ID: <CAK9yfHymqqKTdmvV0CcfzKGceQLpJJOnVYUD_GqbwJeqLLJZRA@mail.gmail.com>
+Subject: Re: [PATCH 2/6 v2] crypto:s5p-sss: Add device tree support
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Vladimir Zapolskiy <vzapolskiy@gmail.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-01-09 at 12:24 +0200, Sagi Grimberg wrote:
-> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> >
-> > This patch updates sbc_emulate_readcapacity_16() to set
-> > P_TYPE and PROT_EN bits when DIF emulation is enabled by
-> > the backend device.
-> >
-> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> > Cc: Christoph Hellwig <hch@lst.de>
-> > Cc: Hannes Reinecke <hare@suse.de>
-> > Cc: Sagi Grimberg <sagig@mellanox.com>
-> > Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> > ---
-> >   drivers/target/target_core_sbc.c |    5 +++++
-> >   1 file changed, 5 insertions(+)
-> >
-> > diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-> > index 366b9bb..22599e8 100644
-> > --- a/drivers/target/target_core_sbc.c
-> > +++ b/drivers/target/target_core_sbc.c
-> > @@ -106,6 +106,11 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
-> >   	buf[9] = (dev->dev_attrib.block_size >> 16) & 0xff;
-> >   	buf[10] = (dev->dev_attrib.block_size >> 8) & 0xff;
-> >   	buf[11] = dev->dev_attrib.block_size & 0xff;
-> > +	/*
-> > +	 * Set P_TYPE and PROT_EN bits for DIF support
-> > +	 */
-> > +	if (dev->dev_attrib.pi_prot_type)
-> > +		buf[12] = (dev->dev_attrib.pi_prot_type - 1) << 1 | 0x1;
-> >   
-> >   	if (dev->transport->get_lbppbe)
-> >   		buf[13] = dev->transport->get_lbppbe(dev) & 0x0f;
-> 
-> Hey Nic,
-> 
-> What about FORMAT_UNIT emulation?
+Hi Naveen,
 
-Would certainly be useful to have..
+On 10 January 2014 11:37, Naveen Krishna Ch <naveenkrishna.ch@gmail.com> wrote:
+> Hello Tomasz,
+>
 
-> The backstore protection configuration is done at the target side via 
-> configfs/targetcli, if you publish DIF support in 
-> INQUERY_EVPD/READ_CAPACITY you need to accept protection information format?
+[snip]
+>>> *pdev)
+>>>   static struct platform_driver s5p_aes_crypto = {
+>>>         .probe  = s5p_aes_probe,
+>>>         .remove = s5p_aes_remove,
+>>> +       .id_table       = s5p_sss_ids,
+>>>         .driver = {
+>>>                 .owner  = THIS_MODULE,
+>>>                 .name   = "s5p-secss",
+>>> +               .of_match_table = s5p_sss_dt_match,
+>>
+>>
+>> .of_match_table = of_match_ptr(s5p_sss_dt_match),
+> I dint use it, Some time back there was a patchset from Sachin
+> https://lkml.org/lkml/2013/9/28/61
+> Please suggest me on this.
 
-Mmmm, these two bits bits are following what scsi_debug is currently
-exposing minus FORMAT_UNIT support..?
+In those cases the structure was always compiled in. i.e., it was not protected
+by #ifdef CONFIG_OF. Hence use of of_match_ptr was not required. of_match_ptr
+abstracts this check depending on OF is enabled or not. In the case of
+this (sss) driver,
+since you are using CONFIG_OF to selectively compile out the code (and esp.
+s5p_sss_dt_match structure), use of of_match_ptr will make the code
+simpler as it
+avoids the use of a dummy structure definition (the #else part of the
+struct definition) when OF is
+disabled. Hope this clarifies.
 
-MKP..?
-
---nab
-
+-- 
+With warm regards,
+Sachin
