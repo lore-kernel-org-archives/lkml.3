@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160AbaAJNtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:49:11 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:41307 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaAJNr2 (ORCPT
+	id S1757392AbaAJNtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:49:32 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:40900 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaAJNrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:47:28 -0500
+	Fri, 10 Jan 2014 08:47:23 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
-        Tejun Heo <tj@kernel.org>, linux-scsi@vger.kernel.org
-Subject: [PATCH 12/14] scsi: use device_remove_file_self() instead of device_schedule_callback()
-Date: Fri, 10 Jan 2014 08:46:58 -0500
-Message-Id: <1389361620-5086-13-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 09/14] kernfs: implement kernfs_{de|re}activate[_self]()
+Date: Fri, 10 Jan 2014 08:46:55 -0500
+Message-Id: <1389361620-5086-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389361620-5086-1-git-send-email-tj@kernel.org>
 References: <1389361620-5086-1-git-send-email-tj@kernel.org>
@@ -23,48 +23,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-driver-core now supports synchrnous self-deletion of attributes and
-the asynchrnous removal mechanism is scheduled for removal.  Use it
-instead of device_schedule_callback().  This makes "delete" behave
-synchronously.
+This patch implements four functions to manipulate deactivation state
+- deactivate, reactivate and the _self suffixed pair.  A new fields
+kernfs_node->deact_depth is added so that concurrent and nested
+deactivations are handled properly.  kernfs_node->hash is moved so
+that it's paired with the new field so that it doesn't increase the
+size of kernfs_node.
+
+A kernfs user's lock would normally nest inside active ref but during
+removal the user may want to perform kernfs_remove() while holding the
+said lock, which would introduce a reverse locking dependency.  This
+function can be used to break such reverse dependency by allowing
+deactivation step to performed separately outside user's critical
+section.
+
+This will also be used implement kernfs_remove_self().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
 ---
- drivers/scsi/scsi_sysfs.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ fs/kernfs/dir.c        | 120 ++++++++++++++++++++++++++++++++++++++++++++++---
+ include/linux/kernfs.h |   7 ++-
+ 2 files changed, 121 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 8ff62c2..33e6199 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -635,23 +635,12 @@ store_rescan_field (struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR(rescan, S_IWUSR, NULL, store_rescan_field);
+diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
+index f18fc5e..cc76af4 100644
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -396,6 +396,7 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
  
--static void sdev_store_delete_callback(struct device *dev)
--{
--	scsi_remove_device(to_scsi_device(dev));
--}
--
- static ssize_t
- sdev_store_delete(struct device *dev, struct device_attribute *attr,
- 		  const char *buf, size_t count)
+ 	atomic_set(&kn->count, 1);
+ 	atomic_set(&kn->active, KN_DEACTIVATED_BIAS);
++	kn->deact_depth = 1;
+ 	RB_CLEAR_NODE(&kn->rb);
+ 
+ 	kn->name = name;
+@@ -461,6 +462,7 @@ int kernfs_add_one(struct kernfs_node *kn, struct kernfs_node *parent)
+ 
+ 	/* Mark the entry added into directory tree */
+ 	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
++	kn->deact_depth--;
+ 	ret = 0;
+ out_unlock:
+ 	mutex_unlock(&kernfs_mutex);
+@@ -561,6 +563,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
+ 	}
+ 
+ 	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
++	kn->deact_depth--;
+ 	kn->priv = priv;
+ 	kn->dir.root = root;
+ 
+@@ -773,7 +776,8 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
+ 	/* prevent any new usage under @kn by deactivating all nodes */
+ 	pos = NULL;
+ 	while ((pos = kernfs_next_descendant_post(pos, kn))) {
+-		if (atomic_read(&pos->active) >= 0) {
++		if (!pos->deact_depth++) {
++			WARN_ON_ONCE(atomic_read(&pos->active) < 0);
+ 			atomic_add(KN_DEACTIVATED_BIAS, &pos->active);
+ 			pos->flags |= KERNFS_JUST_DEACTIVATED;
+ 		}
+@@ -797,9 +801,118 @@ static void __kernfs_deactivate(struct kernfs_node *kn)
+ 	}
+ }
+ 
++static void __kernfs_reactivate(struct kernfs_node *kn)
++{
++	struct kernfs_node *pos;
++
++	pos = NULL;
++	while ((pos = kernfs_next_descendant_post(pos, kn))) {
++		if (!--pos->deact_depth) {
++			WARN_ON_ONCE(atomic_read(&pos->active) >= 0);
++			atomic_sub(KN_DEACTIVATED_BIAS, &pos->active);
++		}
++		WARN_ON_ONCE(pos->deact_depth < 0);
++	}
++
++	/* some nodes reactivated, kick get_active waiters */
++	wake_up_all(&kernfs_root(kn)->deactivate_waitq);
++}
++
++static void __kernfs_deactivate_self(struct kernfs_node *kn)
++{
++	/*
++	 * Take out ourself out of the active ref dependency chain and
++	 * deactivate.  If we're called without an active ref, lockdep will
++	 * complain.
++	 */
++	kernfs_put_active(kn);
++	__kernfs_deactivate(kn);
++}
++
++static void __kernfs_reactivate_self(struct kernfs_node *kn)
++{
++	__kernfs_reactivate(kn);
++	/*
++	 * Restore active ref dropped by deactivate_self() so that it's
++	 * balanced on return.  put_active() will soon be called on @kn, so
++	 * this can't break anything regardless of @kn's state.
++	 */
++	atomic_inc(&kn->active);
++	if (kernfs_lockdep(kn))
++		rwsem_acquire(&kn->dep_map, 0, 1, _RET_IP_);
++}
++
++/**
++ * kernfs_deactivate - deactivate subtree of a node
++ * @kn: kernfs_node to deactivate subtree of
++ *
++ * Deactivate the subtree of @kn.  On return, there's no active operation
++ * going on under @kn and creation or renaming of a node under @kn is
++ * blocked until @kn is reactivated or removed.  This function can be
++ * called multiple times and nests properly.  Each invocation should be
++ * paired with kernfs_reactivate().
++ *
++ * For a kernfs user which uses simple locking, the subsystem lock would
++ * nest inside active reference.  This becomes problematic if the user
++ * tries to remove nodes while holding the subystem lock as it would create
++ * a reverse locking dependency from the subsystem lock to active ref.
++ * This function can be used to break such reverse dependency.  The user
++ * can call this function outside the subsystem lock and then proceed to
++ * invoke kernfs_remove() while holding the subsystem lock without
++ * introducing such reverse dependency.
++ */
++void kernfs_deactivate(struct kernfs_node *kn)
++{
++	mutex_lock(&kernfs_mutex);
++	__kernfs_deactivate(kn);
++	mutex_unlock(&kernfs_mutex);
++}
++
++/**
++ * kernfs_reactivate - reactivate subtree of a node
++ * @kn: kernfs_node to reactivate subtree of
++ *
++ * Undo kernfs_deactivate().
++ */
++void kernfs_reactivate(struct kernfs_node *kn)
++{
++	mutex_lock(&kernfs_mutex);
++	__kernfs_reactivate(kn);
++	mutex_unlock(&kernfs_mutex);
++}
++
++/**
++ * kernfs_deactivate_self - deactivate subtree of a node from its own method
++ * @kn: the self kernfs_node to deactivate subtree of
++ *
++ * The caller must be running off of a kernfs operation which is invoked
++ * with an active reference - e.g. one of kernfs_ops.  Once this function
++ * is called, @kn may be removed by someone else while the enclosing method
++ * is in progress.  Other than that, this function is equivalent to
++ * kernfs_deactivate() and should be paired with kernfs_reactivate_self().
++ */
++void kernfs_deactivate_self(struct kernfs_node *kn)
++{
++	mutex_lock(&kernfs_mutex);
++	__kernfs_deactivate_self(kn);
++	mutex_unlock(&kernfs_mutex);
++}
++
++/**
++ * kernfs_reactivate_self - reactivate subtree of a node from its own method
++ * @kn: the self kernfs_node to reactivate subtree of
++ *
++ * Undo kernfs_deactivate_self().
++ */
++void kernfs_reactivate_self(struct kernfs_node *kn)
++{
++	mutex_lock(&kernfs_mutex);
++	__kernfs_reactivate_self(kn);
++	mutex_unlock(&kernfs_mutex);
++}
++
+ static void __kernfs_remove(struct kernfs_node *kn)
  {
--	int rc;
+-	struct kernfs_root *root = kernfs_root(kn);
+ 	struct kernfs_node *pos;
+ 
+ 	lockdep_assert_held(&kernfs_mutex);
+@@ -844,9 +957,6 @@ static void __kernfs_remove(struct kernfs_node *kn)
+ 
+ 		kernfs_put(pos);
+ 	} while (pos != kn);
 -
--	/* An attribute cannot be unregistered by one of its own methods,
--	 * so we have to use this roundabout approach.
--	 */
--	rc = device_schedule_callback(dev, sdev_store_delete_callback);
--	if (rc)
--		count = rc;
-+	if (device_remove_file_self(dev, attr))
-+		scsi_remove_device(to_scsi_device(dev));
- 	return count;
- };
- static DEVICE_ATTR(delete, S_IWUSR, NULL, sdev_store_delete);
+-	/* some nodes killed, kick get_active waiters */
+-	wake_up_all(&root->deactivate_waitq);
+ }
+ 
+ /**
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 9b5a4bb..ac86930 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -80,6 +80,8 @@ struct kernfs_elem_attr {
+ struct kernfs_node {
+ 	atomic_t		count;
+ 	atomic_t		active;
++	int			deact_depth;
++	unsigned int		hash;	/* ns + name hash */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+ #endif
+@@ -90,7 +92,6 @@ struct kernfs_node {
+ 	struct rb_node		rb;
+ 
+ 	const void		*ns;	/* namespace tag */
+-	unsigned int		hash;	/* ns + name hash */
+ 	union {
+ 		struct kernfs_elem_dir		dir;
+ 		struct kernfs_elem_symlink	symlink;
+@@ -233,6 +234,10 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
+ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       const char *name,
+ 				       struct kernfs_node *target);
++void kernfs_deactivate(struct kernfs_node *kn);
++void kernfs_reactivate(struct kernfs_node *kn);
++void kernfs_deactivate_self(struct kernfs_node *kn);
++void kernfs_reactivate_self(struct kernfs_node *kn);
+ void kernfs_remove(struct kernfs_node *kn);
+ int kernfs_remove_by_name_ns(struct kernfs_node *parent, const char *name,
+ 			     const void *ns);
 -- 
 1.8.4.2
 
