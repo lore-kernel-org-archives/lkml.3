@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363AbaAJClD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 21:41:03 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:53718 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaAJCkR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 21:40:17 -0500
-From: John Tobias <john.tobias.ph@gmail.com>
-To: rjw@rjwysocki.net, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
-        festevam@gmail.com
-Cc: John Tobias <john.tobias.ph@gmail.com>
-Subject: [PATCH v4 1/2] ARM: imx: add select on ARCH_MXC for cpufreq support
-Date: Thu,  9 Jan 2014 18:39:51 -0800
-Message-Id: <1389321592-33220-1-git-send-email-john.tobias.ph@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754878AbaAJCkQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 21:40:16 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56944 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702AbaAJCkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 21:40:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
+   d="scan'208";a="462953186"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Subject: [PATCH 4/6] brd: Add support for rw_page
+Date: Thu,  9 Jan 2014 21:39:49 -0500
+Message-Id: <1389321591-25455-4-git-send-email-matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
+References: <1389321591-25455-1-git-send-email-matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1387748522.git.matthew.r.wilcox@intel.com>
+References: <cover.1387748522.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved ARCH_HAS_CPUFREQ, HAVE_IMX_ANATOP and PM_OPP on ARCH_MXC so that
-the user can enable the cpufreq support for iMX6Q and/or iMX6SL.
-
-Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- arch/arm/mach-imx/Kconfig | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/block/brd.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 7a6e6f7..d6aa34d 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -1,5 +1,6 @@
- config ARCH_MXC
- 	bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7
-+	select ARCH_HAS_CPUFREQ
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_CPU_SUSPEND if PM
- 	select ARM_PATCH_PHYS_VIRT
-@@ -9,8 +10,10 @@ config ARCH_MXC
- 	select GENERIC_ALLOCATOR
- 	select GENERIC_CLOCKEVENTS
- 	select GENERIC_IRQ_CHIP
-+	select HAVE_IMX_ANATOP if SOC_IMX6Q || SOC_IMX6SL
- 	select MIGHT_HAVE_CACHE_L2X0 if ARCH_MULTI_V6_V7
- 	select MULTI_IRQ_HANDLER
-+	select PM_OPP if PM
- 	select SOC_BUS
- 	select SPARSE_IRQ
- 	select USE_OF
-@@ -779,16 +782,14 @@ config	SOC_IMX53
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index d91f1a5..320d041 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -360,6 +360,15 @@ out:
+ 	bio_endio(bio, err);
+ }
  
- config SOC_IMX6Q
- 	bool "i.MX6 Quad/DualLite support"
--	select ARCH_HAS_CPUFREQ
--	select ARCH_HAS_OPP
-+	select ARCH_HAS_OPP	
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_764369 if SMP
- 	select ARM_ERRATA_775420
- 	select ARM_GIC
- 	select CPU_V7
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if SMP
--	select HAVE_IMX_ANATOP
-+	select HAVE_ARM_TWD if SMP	
- 	select HAVE_IMX_GPC
- 	select HAVE_IMX_MMDC
- 	select HAVE_IMX_SRC
-@@ -800,8 +801,7 @@ config SOC_IMX6Q
- 	select PINCTRL_IMX6Q
- 	select PL310_ERRATA_588369 if CACHE_PL310
- 	select PL310_ERRATA_727915 if CACHE_PL310
--	select PL310_ERRATA_769419 if CACHE_PL310
--	select PM_OPP if PM
-+	select PL310_ERRATA_769419 if CACHE_PL310	
++static int brd_rw_page(struct block_device *bdev, sector_t sector,
++		       struct page *page, int rw)
++{
++	struct brd_device *brd = bdev->bd_disk->private_data;
++	int err = brd_do_bvec(brd, page, PAGE_CACHE_SIZE, 0, rw, sector);
++	page_endio(page, rw & WRITE, err);
++	return err;
++}
++
+ #ifdef CONFIG_BLK_DEV_XIP
+ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+ 			void **kaddr, unsigned long *pfn)
+@@ -419,6 +428,7 @@ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
  
- 	help
- 	  This enables support for Freescale i.MX6 Quad processor.
-@@ -812,7 +812,6 @@ config SOC_IMX6SL
- 	select ARM_ERRATA_775420
- 	select ARM_GIC
- 	select CPU_V7
--	select HAVE_IMX_ANATOP
- 	select HAVE_IMX_GPC
- 	select HAVE_IMX_MMDC
- 	select HAVE_IMX_SRC
+ static const struct block_device_operations brd_fops = {
+ 	.owner =		THIS_MODULE,
++	.rw_page =		brd_rw_page,
+ 	.ioctl =		brd_ioctl,
+ #ifdef CONFIG_BLK_DEV_XIP
+ 	.direct_access =	brd_direct_access,
 -- 
-1.8.3.2
+1.8.5.2
 
