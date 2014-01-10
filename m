@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296AbaAJOtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 09:49:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9995 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931AbaAJOti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 09:49:38 -0500
-Date: Fri, 10 Jan 2014 09:49:10 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, kosaki.motohiro@gmail.com,
-        dyoung@redhat.com, linux-acpi@vger.kernel.org,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
- hotplug [v2]
-Message-ID: <20140110144910.GB19115@redhat.com>
-References: <1389364615-13320-1-git-send-email-prarit@redhat.com>
+	id S1752727AbaAJOuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 09:50:23 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:54444 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaAJOuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 09:50:21 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <xen-devel@lists.xenproject.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH-next] xen: delete new instances of __cpuinit usage
+Date: Fri, 10 Jan 2014 09:50:08 -0500
+Message-ID: <1389365408-24034-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389364615-13320-1-git-send-email-prarit@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 09:36:55AM -0500, Prarit Bhargava wrote:
+Commit 1fe565517b57676884349dccfd6ce853ec338636 ("xen/events: use
+the FIFO-based ABI if available") added new instances of __cpuinit
+macro usage.
 
-[..]
-> This can also be reproduced by using the memmap=exactmap and mem=X
-> parameters on the main kernel and booting.
-> 
-> This patchset resolves the problem by adding a kernel parameter,
-> acpi_no_memhotplug, to disable ACPI memory hotplug.
+We removed this a couple versions ago; we now want to remove
+the compat no-op stubs.  Introducing new users is not what
+we want to see at this point in time, as it will break once
+the stubs are gone.
 
-Hi Prarit,
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
 
-People seem to like the idea of disabling hotplug automatically if
-memmap=exactmap or mem=X is passed on command line. Can you please take
-care of that too. That way we would not have to modify kexec-tools and
-kernel update will fix this issue.
+[Patch based on today's linux-next tree, so if xen/tip.git#linux-next
+ gets rebased, then the above commit ID will be invalidated; if it
+ _does_ get rebased, then feel free to squash this fix into the orig.]
 
-Thanks
-Vivek
+diff --git a/drivers/xen/events/events_fifo.c b/drivers/xen/events/events_fifo.c
+index 5b2c039f16c5..1de2a191b395 100644
+--- a/drivers/xen/events/events_fifo.c
++++ b/drivers/xen/events/events_fifo.c
+@@ -359,7 +359,7 @@ static const struct evtchn_ops evtchn_ops_fifo = {
+ 	.resume            = evtchn_fifo_resume,
+ };
+ 
+-static int __cpuinit evtchn_fifo_init_control_block(unsigned cpu)
++static int evtchn_fifo_init_control_block(unsigned cpu)
+ {
+ 	struct page *control_block = NULL;
+ 	struct evtchn_init_control init_control;
+@@ -386,7 +386,7 @@ static int __cpuinit evtchn_fifo_init_control_block(unsigned cpu)
+ 	return ret;
+ }
+ 
+-static int __cpuinit evtchn_fifo_cpu_notification(struct notifier_block *self,
++static int evtchn_fifo_cpu_notification(struct notifier_block *self,
+ 						  unsigned long action,
+ 						  void *hcpu)
+ {
+@@ -404,7 +404,7 @@ static int __cpuinit evtchn_fifo_cpu_notification(struct notifier_block *self,
+ 	return ret < 0 ? NOTIFY_BAD : NOTIFY_OK;
+ }
+ 
+-static struct notifier_block evtchn_fifo_cpu_notifier __cpuinitdata = {
++static struct notifier_block evtchn_fifo_cpu_notifier = {
+ 	.notifier_call	= evtchn_fifo_cpu_notification,
+ };
+ 
+-- 
+1.8.5.2
+
