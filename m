@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaAJDVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 22:21:13 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39428 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaAJDVF (ORCPT
+	id S1755054AbaAJDWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 22:22:15 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:61872 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424AbaAJDVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 22:21:05 -0500
-From: "Nicholas A. Bellinger" <nab@daterainc.com>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 2/3] iscsi-target: Fix connection reset hang with percpu_ida_alloc
-Date: Fri, 10 Jan 2014 03:00:46 +0000
-Message-Id: <1389322847-6570-3-git-send-email-nab@daterainc.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1389322847-6570-1-git-send-email-nab@daterainc.com>
-References: <1389322847-6570-1-git-send-email-nab@daterainc.com>
+	Thu, 9 Jan 2014 22:21:14 -0500
+Message-ID: <52CF6727.8050804@gmail.com>
+Date: Fri, 10 Jan 2014 04:21:11 +0100
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Robert Richter <rric@kernel.org>
+CC: Robert Richter <robert.richter@amd.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector
+ 0x400
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch addresses a bug where connection reset would hang
-indefinately when percpu_ida_alloc() was starved for tags,
-and always assumed uninterruptible sleep mode.
+Robert, is there a patch for this case?
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1152484/comments/12
 
-So now with percpu_ida_alloc_state() available to make
-interruptible sleep optional, convert iscsit_allocate_cmd()
-to set TASK_INTERRUPTIBLE when GFP_KERNEL is passed, or
-set TASK_RUNNING when GFP_ATOMIC is passed.
+3.10.2 - 3.13.0-0.rc7:
+ACPI: Low-level resume complete
+PM: Restoring platform NVS memory
+microcode: CPU0: new patch_level=0x010000c8
+Enabling non-boot CPUs ...
+x86: Booting SMP configuration:
+smpboot: Booting Node 0 Processor 1 APIC 0x1
+[Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector
+0x400, but the register is already in use for vector 0xf9 on another cpu
+perf: IBS APIC setup failed on cpu #1
+kvm: enabling virtualization on CPU1
+process: Switch to broadcast mode on CPU1
+microcode: CPU1: new patch_level=0x010000c8
+CPU1 is up
+smpboot: Booting Node 0 Processor 2 APIC 0x2
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-0.rc7.git2.2.fc21.x86_64 #1
+[Firmware Bug]: cpu 2, try to use APIC500 (LVT offset 0) for vector
+0x400, but the register is already in use for vector 0xf9 on another cpu
+perf: IBS APIC setup failed on cpu #2
+kvm: enabling virtualization on CPU2
+process: Switch to broadcast mode on CPU2
+microcode: CPU2: new patch_level=0x010000c8
+CPU2 is up
+smpboot: Booting Node 0 Processor 3 APIC 0x3
+[Firmware Bug]: cpu 3, try to use APIC500 (LVT offset 0) for vector
+0x400, but the register is already in use for vector 0xf9 on another cpu
+perf: IBS APIC setup failed on cpu #3
+kvm: enabling virtualization on CPU3
+process: Switch to broadcast mode on CPU3
+microcode: CPU3: new patch_level=0x010000c8
+CPU3 is up
+ACPI: Waking up from system sleep state S3
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/iscsi/iscsi_target_util.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index 0819e68..6cf1d95 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -156,9 +156,13 @@ struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *conn, gfp_t gfp_mask)
- {
- 	struct iscsi_cmd *cmd;
- 	struct se_session *se_sess = conn->sess->se_sess;
--	int size, tag;
-+	int size, tag, state = (gfp_mask & __GFP_WAIT) ? TASK_INTERRUPTIBLE :
-+				TASK_RUNNING;
-+
-+	tag = percpu_ida_alloc_state(&se_sess->sess_tag_pool, state);
-+	if (tag < 0)
-+		return NULL;
- 
--	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, gfp_mask);
- 	size = sizeof(struct iscsi_cmd) + conn->conn_transport->priv_size;
- 	cmd = (struct iscsi_cmd *)(se_sess->sess_cmd_map + (tag * size));
- 	memset(cmd, 0, size);
--- 
-1.7.10.4
+poma
 
