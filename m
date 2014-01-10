@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993AbaAJQE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 11:04:58 -0500
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:16582
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755342AbaAJQEy (ORCPT
+	id S1758009AbaAJQFI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 11:05:08 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:51182 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342AbaAJQFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 11:04:54 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(z551biz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h1155h)
-Date: Fri, 10 Jan 2014 23:48:25 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <timur@tabi.org>, <alsa-devel@alsa-project.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <grant.likely@linaro.org>, <shawn.guo@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2] ASoC: fsl_esai: Add ESAI CPU DAI driver
-Message-ID: <20140110154824.GA17609@MrMyself>
-References: <1389265078-16256-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140109184453.GP12858@sirena.org.uk>
- <20140110023252.GA16467@MrMyself>
- <20140110023537.GB16467@MrMyself>
- <20140110120439.GG29039@sirena.org.uk>
- <20140110130338.GA17392@MrMyself>
- <20140110132642.GM29039@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140110132642.GM29039@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 10 Jan 2014 11:05:01 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-bd-52d01a2bf66a
+Message-id: <52D01A24.10603@samsung.com>
+Date: Fri, 10 Jan 2014 17:04:52 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.1.1
+MIME-version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, tomasz.figa@gmail.com
+Subject: Re: [PATCH 8/8 v3] crypto:s5p-sss: Use clk_prepare/clk_unprepare
+References: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
+In-reply-to: <1389354331-32142-1-git-send-email-ch.naveen@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xK7raUheCDL5vE7O4+/wwo8XLQ5oW
+	3a9kLO7f+8lkcXnXHDaLGef3MVks2vaf2WLVrj+MFmfnHGJy4PTYOesuu8e2A6oefVtWMXp8
+	3iQXwBLFZZOSmpNZllqkb5fAlXH5zgrmghfMFQvb9rE0MHYwdzFyckgImEj0rnvMAmGLSVy4
+	t56ti5GLQ0hgKaPEy0Wr2CGcz4wSK3e+BevgFdCQ6P7ykwnEZhFQlVh97wQjiM0moCbxueER
+	G4gtKhAh8XfeekaIekGJH5PvgW0QESiX+HdjDdgGZoE5jBIPl7SDJYQFPCWWPl8NZgsJuEo8
+	nDqBFcTmFHCTuD/jFVicWcBaYuWkbYwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRNLU0u
+	KE5KzzXUK07MLS7NS9dLzs/dxAgJ9i87GBcfszrEKMDBqMTDGyByIUiINbGsuDL3EKMEB7OS
+	CO81QaAQb0piZVVqUX58UWlOavEhRiYOTqkGRieXt47nNptNuiErxM7M1md8+Pnzz03Nk5ad
+	FKrf/vSHoXjbY4bayJwnc9Z1xc+fceGydciHa/0LFr3rnGK5Y3aYLdeNgH8xS/aIvFtb+Pyg
+	iWxUo/vSpmoZo4AGX85DO+OuL1Bdll05kW/RUt3JoXciWKfwrFgou19XU4P7p9Dn9pMpHr3h
+	s5VYijMSDbWYi4oTATSDLz1UAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 01:26:42PM +0000, Mark Brown wrote:
-> On Fri, Jan 10, 2014 at 09:03:39PM +0800, Nicolin Chen wrote:
-> > On Fri, Jan 10, 2014 at 12:04:39PM +0000, Mark Brown wrote:
-> 
-> > > This is about what I'd expect but then surely the next step is for the
-> > > driver to choose a defualt BCLK ratio - that's how most drivers work,
-> > > they try to generate the exact rate that is needed to clock the data.
-> 
-> > Does that mean I should call set_bclk() once in the startup() when !active
-> > to set a default bit clock rate to suit a common sample rate like 44100Hz?
-> > I'm a bit confused if so. Because the driver would call set_bclk() any way
-> > in the hw_params().
-> 
-> Right, any choice here needs to be deferred to hw_params() as you say.
-> 
-> > But your suggestion just reminds me of the slave mode in SSI driver as
-> > default mode. And I should patch ESAI to slave mode for default as well,
-> > shouldn't I?
-> 
-> master/slave selection is kind of orthogonal here - the two bits of
-> information that are normally needed are the MCLK to use (and its rate)
-> and the sample rate/format (which give you the BCLK that is needed).
-> Normally it's then possible to caculate a divider which generates BCLK
-> from MCLK.  Overriding is normally only needed if there are additional
-> constraints on BCLK due to something like limitations in one of the
-> devices or sample rates for the opposite direction if the BCLK is shared
-> but LRCLK isn't.
+Hi Naveen,
 
-I think I start to understand the point here: If a user only needs to playback
-the default case - 44.1KHz for example, the driver can just configure all the
-dividers once at the beginning, not every time, so that we can save further
-register overriding operation or even complicated clock selection and divisor
-calculation, which obviously makes the procedure clean and reduces the system
-loading even if it might be just in a slight level.
+On 10.01.2014 12:45, Naveen Krishna Chatradhi wrote:
+> This patch set adds use of clk_prepare/clk_unprepare as
+> required by generic clock framework.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+> Changes since v2:
+> New change to fix a WARN_ON during the bootup
+>
+>   drivers/crypto/s5p-sss.c |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
 
-Is this the reason, or maybe one of the reasons, to the defaults providing?
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-Thank you,
-Nicolin Chen
-
+Best regards,
+Tomasz
