@@ -1,86 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaAJMPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:15:44 -0500
-Received: from mail.atsec.com ([195.30.99.214]:37406 "EHLO mail.atsec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaAJMPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:15:41 -0500
-From: Stephan Mueller <stephan.mueller@atsec.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Rafael Aquini <aquini@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [RFC PATCH] char: random: stir the output pools differently when the random_write lenght allows splitting the seed
-Date: Fri, 10 Jan 2014 13:15:34 +0100
-Message-ID: <5743525.Bz4yhBJ8Tl@tauon>
-Organization: atsec information security GmbH
-User-Agent: KMail/4.11.4 (Linux/3.12.6-300.fc20.x86_64; KDE/4.11.4; x86_64; ; )
-In-Reply-To: <52CFDB76.2030207@ladisch.de>
-References: <42f6dc88535d5ecdab13b1376db7ccbbbc550600.1389297772.git.aquini@redhat.com> <1510904.XsOZgVgixq@tauon> <52CFDB76.2030207@ladisch.de>
+	id S1752964AbaAJMSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:18:11 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60144 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaAJMSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 07:18:09 -0500
+Date: Fri, 10 Jan 2014 13:18:05 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org development" 
+	<linux-bluetooth@vger.kernel.org>,
+        Ville Tervo <ville.tervo@nokia.com>
+Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
+Message-ID: <20140110121805.GA21117@amd.pavel.ucw.cz>
+References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
+ <1727897.LBX8128hIo@izba>
+ <20140102161824.GA8204@amd.pavel.ucw.cz>
+ <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
+ <20140103001753.GA21023@amd.pavel.ucw.cz>
+ <20140103013640.GB27678@earth.universe>
+ <20140109233843.GB19974@amd.pavel.ucw.cz>
+ <20140110003231.GA14141@earth.universe>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110003231.GA14141@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 10. Januar 2014, 12:37:26 schrieb Clemens Ladisch:
+On Fri 2014-01-10 01:32:31, Sebastian Reichel wrote:
+> Hi Pavel,
+> 
+> On Fri, Jan 10, 2014 at 12:38:43AM +0100, Pavel Machek wrote:
+> > > Here are some cleanup suggestions for probe, removal & module
+> > > initialization functions.
+> > 
+> > ...and here's the patch implementing those suggestions. Thanks!
+> 
+> That looks right, but you forgot to cleanup hci_h4p_remove. Also I
+> suggest to simply merge this as v5.
 
-Hi Clemens,
+Here it goes, now with hci_h4p_remove fixed. v5 will follow.
 
->Stephan Mueller wrote:
->> Am Freitag, 10. Januar 2014, 09:13:57 schrieb Clemens Ladisch:
->>> Rafael Aquini wrote:
->>>> This patch introduces changes to the random_write method so it can
->>>> split the given seed and completely stir the output pools with
->>>> different halves of it, when seed lenght allows us doing so.
->>>> 
->>>> -	ret = write_pool(&blocking_pool, buffer, count);
->>>> +	ret = write_pool(pool1, buffer, count1);
->>>> 
->>>>  	if (ret)
->>>>  	
->>>>  		return ret;
->>>> 
->>>> -	ret = write_pool(&nonblocking_pool, buffer, count);
->>>> +	ret = write_pool(pool2, buffer + offset, count2);
->>> 
->>> Doesn't this assume that both halves of the buffer contain some
->>> (uncredited) entropy?  In other words, wouldn't this result in worse
->>> randomness for pool2 if the second half of the buffer contains just
->>> zero padding?
->> 
->> [...]
->> Coming back to your concern: sure, the caller can pad any data
->> injected into /dev/?random with zeros.
->
->Assume that the userspace of an embedded device wants to do the same
->kind of initialization that a call to add_device_randomness() does, and
->that it has some data like "char serial_number[256]".  The padding
->wouldn't be done intentionally, it's just a property of the data (and
->it wouldn't have mattered before this patch).
->
->> But as writing to the character files is allowed to every user, this
->> per definition must not matter (e.g. an attacker may simply write
->> zeros or other known data into the character file). And the random.c
->> driver handles that case appropriately by not increasing the entropy
->> estimator when receiving data.
->
->The problem is not with the entropy estimate.
->
->> All the patch tries to achieve is to ensure that both pools are not
->> always mixed with the same values.
->
->Before this patch, both pools got mixed with the same values.  After
->this patch, both pools indeed get mixed with different values, but now
->one pool gets mixed with a known value if one half of the buffer
->happens to be known.
+commit b77cc9dd6f6897183d97717cec63aaa248317f95
+Author: Pavel <pavel@ucw.cz>
+Date:   Fri Jan 10 13:14:45 2014 +0100
 
-Do you imply in your example above that the serial number is unknown? 
-Anything that unprivileged user space tries to inject into /dev/?random 
-should be considered data with known value.
+    Switch to devm_ functions to make code cleaner.
+    
+    Reported-by: Sebastian Reichel <sre@ring0.de>
+    Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Ciao
-Stephan
+diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
+index 5c7acad..d6b0701 100644
+--- a/drivers/bluetooth/nokia_core.c
+v+++ b/drivers/bluetooth/nokia_core.c
+@@ -39,6 +39,7 @@
+ #include <linux/gpio.h>
+ #include <linux/timer.h>
+ #include <linux/kthread.h>
++#include <linux/io.h>
+ 
+ #include <net/bluetooth/bluetooth.h>
+ #include <net/bluetooth/hci_core.h>
+@@ -1079,7 +1080,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 	int err;
+ 
+ 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
+-	info = kzalloc(sizeof(struct hci_h4p_info), GFP_KERNEL);
++	info = devm_kzalloc(&pdev->dev, sizeof(struct hci_h4p_info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+@@ -1092,7 +1093,6 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 
+ 	if (pdev->dev.platform_data == NULL) {
+ 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
+-		kfree(info);
+ 		return -ENODATA;
+ 	}
+ 
+@@ -1113,67 +1113,59 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 	complete_all(&info->test_completion);
+ 
+ 	if (!info->reset_gpio_shared) {
+-		err = gpio_request(info->reset_gpio, "bt_reset");
++		err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
++					    GPIOF_OUT_INIT_LOW, "bt_reset");
+ 		if (err < 0) {
+ 			dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
+ 				info->reset_gpio);
+-			goto cleanup_setup;
++			return err;
+ 		}
+ 	}
+ 
+-	err = gpio_request(info->bt_wakeup_gpio, "bt_wakeup");
++	err = devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
++				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
++
+ 	if (err < 0) {
+ 		dev_err(info->dev, "Cannot get GPIO line 0x%d",
+ 			info->bt_wakeup_gpio);
+-		if (!info->reset_gpio_shared)
+-			gpio_free(info->reset_gpio);
+-		goto cleanup_setup;
++		return err;
+ 	}
+ 
+-	err = gpio_request(info->host_wakeup_gpio, "host_wakeup");
++	err = devm_gpio_request_one(&pdev->dev, info->host_wakeup_gpio,
++				    GPIOF_DIR_IN, "host_wakeup");
+ 	if (err < 0) {
+ 		dev_err(info->dev, "Cannot get GPIO line %d",
+ 		       info->host_wakeup_gpio);
+-		if (!info->reset_gpio_shared)
+-			gpio_free(info->reset_gpio);
+-		gpio_free(info->bt_wakeup_gpio);
+-		goto cleanup_setup;
++		return err;
+ 	}
+ 
+-	gpio_direction_output(info->reset_gpio, 0);
+-	gpio_direction_output(info->bt_wakeup_gpio, 0);
+-	gpio_direction_input(info->host_wakeup_gpio);
+-
+ 	info->irq = bt_plat_data->uart_irq;
+-	info->uart_base = ioremap(bt_plat_data->uart_base, SZ_2K);
+-	info->uart_iclk = clk_get(NULL, bt_plat_data->uart_iclk);
+-	info->uart_fclk = clk_get(NULL, bt_plat_data->uart_fclk);
++	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base, SZ_2K);
++	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
++	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
+ 
+ 	err = request_irq(info->irq, hci_h4p_interrupt, IRQF_DISABLED, "hci_h4p",
+ 			  info);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "hci_h4p: unable to get IRQ %d\n", info->irq);
+-		goto cleanup;
++		return err;
+ 	}
+ 
+-	err = request_irq(gpio_to_irq(info->host_wakeup_gpio),
++	err = devm_request_irq(&pdev->dev, gpio_to_irq(info->host_wakeup_gpio),
+ 			  hci_h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
+ 			  IRQF_TRIGGER_RISING | IRQF_DISABLED,
+ 			  "hci_h4p_wkup", info);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "hci_h4p: unable to get wakeup IRQ %d\n",
+ 			  gpio_to_irq(info->host_wakeup_gpio));
+-		free_irq(info->irq, info);
+-		goto cleanup;
++		return err;
+ 	}
+ 
+ 	err = irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
+ 	if (err < 0) {
+ 		dev_err(info->dev, "hci_h4p: unable to set wakeup for IRQ %d\n",
+ 				gpio_to_irq(info->host_wakeup_gpio));
+-		free_irq(info->irq, info);
+-		free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+-		goto cleanup;
++		return err;
+ 	}
+ 
+ 	init_timer_deferrable(&info->lazy_release);
+@@ -1182,7 +1174,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
+ 	err = hci_h4p_reset_uart(info);
+ 	if (err < 0)
+-		goto cleanup_irq;
++		return err;
+ 	gpio_set_value(info->reset_gpio, 0);
+ 	hci_h4p_set_clk(info, &info->tx_clocks_en, 0);
+ 
+@@ -1190,23 +1182,10 @@ static int hci_h4p_probe(struct platform_device *pdev)
+ 
+ 	if (hci_h4p_register_hdev(info) < 0) {
+ 		dev_err(info->dev, "failed to register hci_h4p hci device\n");
+-		goto cleanup_irq;
++		return -EINVAL;
+ 	}
+ 
+ 	return 0;
+-
+-cleanup_irq:
+-	free_irq(info->irq, (void *)info);
+-	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+-cleanup:
+-	gpio_set_value(info->reset_gpio, 0);
+-	if (!info->reset_gpio_shared)
+-		gpio_free(info->reset_gpio);
+-	gpio_free(info->bt_wakeup_gpio);
+-	gpio_free(info->host_wakeup_gpio);
+-cleanup_setup:
+-	kfree(info);
+-	return err;
+ }
+ 
+ static int hci_h4p_remove(struct platform_device *pdev)
+@@ -1217,15 +1196,11 @@ static int hci_h4p_remove(struct platform_device *pdev)
+ 
+ 	hci_h4p_sysfs_remove_files(info->dev);
+ 	hci_h4p_hci_close(info->hdev);
+-	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
+ 	hci_unregister_dev(info->hdev);
+ 	hci_free_dev(info->hdev);
+-	if (!info->reset_gpio_shared)
+-		gpio_free(info->reset_gpio);
+ 	gpio_free(info->bt_wakeup_gpio);
+ 	gpio_free(info->host_wakeup_gpio);
+ 	free_irq(info->irq, (void *) info);
+-	kfree(info);
+ 
+ 	return 0;
+ }
+@@ -1238,25 +1213,7 @@ static struct platform_driver hci_h4p_driver = {
+ 	},
+ };
+ 
+-static int __init hci_h4p_init(void)
+-{
+-	int err = 0;
+-
+-	/* Register the driver with LDM */
+-	err = platform_driver_register(&hci_h4p_driver);
+-	if (err < 0)
+-		printk(KERN_WARNING "failed to register hci_h4p driver\n");
+-
+-	return err;
+-}
+-
+-static void __exit hci_h4p_exit(void)
+-{
+-	platform_driver_unregister(&hci_h4p_driver);
+-}
+-
+-module_init(hci_h4p_init);
+-module_exit(hci_h4p_exit);
++module_platform_driver(hci_h4p_driver);
+ 
+ MODULE_ALIAS("platform:hci_h4p");
+ MODULE_DESCRIPTION("Bluetooth h4 driver with nokia extensions");
+
+
+
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
