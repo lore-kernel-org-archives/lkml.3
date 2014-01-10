@@ -1,156 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276AbaAJCBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 21:01:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51145 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753753AbaAJCBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 21:01:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
-   d="scan'208";a="456442134"
-Message-ID: <52CF5475.3050404@linux.intel.com>
-Date: Fri, 10 Jan 2014 10:01:25 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755450AbaAJCEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 21:04:31 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:49681 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751745AbaAJCE3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 21:04:29 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Gerhard Sittig <gsi@denx.de>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 9 Jan 2014 18:04:18 -0800
+Subject: RE: [PATCH] gpio: pxa: fix bug when get gpio value
+Thread-Topic: [PATCH] gpio: pxa: fix bug when get gpio value
+Thread-Index: Ac8NKAOINAv3OekORZaoM6zWeueMugAfw67Q
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE540BD53A96@SC-VEXCH4.marvell.com>
+References: <1389259557-1731-1-git-send-email-zhangwm@marvell.com>
+ <20140109104604.GT20094@book.gsilab.sittig.org>
+In-Reply-To: <20140109104604.GT20094@book.gsilab.sittig.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Len Brown <len.brown@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Revert "intel_idle: mark states tables with __initdata
- tag"
-References: <1389252628-1033-1-git-send-email-jiang.liu@linux.intel.com> <2020575.F8Bg53kPyR@vostro.rjw.lan>
-In-Reply-To: <2020575.F8Bg53kPyR@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-09_07:2014-01-09,2014-01-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1401090208
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0A24ZAl006111
 
+Gerhard
 
+Firstly thanks for your comments.
 
-On 2014/1/9 21:29, Rafael J. Wysocki wrote:
-> On Thursday, January 09, 2014 03:30:26 PM Jiang Liu wrote:
->> This reverts commit 9d046ccb98085f1d437585f84748c783a04ba240.
->>
->> Commit 9d046ccb98085 marks all state tables with __initdata, but
->> the state table may be accessed when doing CPU online, which then
->> causing system crash as below:
->>
->> [  204.188841] BUG: unable to handle kernel paging request at ffffffff8227cce8
->> [  204.196844] IP: [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
->> [  204.203996] PGD 1e11067 PUD 1e12063 PMD 455859063 PTE 800000000227c062
->> [  204.211638] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
->> [  204.216975] Modules linked in: x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul ghash_clmulni_intel aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd gpio_ich microcode joydev sb_edac edac_core ipmi_si lpc_ich ipmi_msghandler lp tpm_tis parport wmi mac_hid acpi_pad hid_generic ixgbe isci usbhid dca hid libsas ptp ahci libahci scsi_transport_sas megaraid_sas pps_core mdio
->> [  204.262815] CPU: 11 PID: 1489 Comm: bash Not tainted 3.13.0-rc7+ #48
->> [  204.269993] Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS BRIVTIN1.86B.0047.L09.1312061514 12/06/2013
->> [  204.281646] task: ffff8804303a24a0 ti: ffff880440fac000 task.ti: ffff880440fac000
->> [  204.290311] RIP: 0010:[<ffffffff814aa1c0>]  [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
->> [  204.300184] RSP: 0018:ffff880440fadd28  EFLAGS: 00010286
->> [  204.306192] RAX: ffffffff8227cca0 RBX: ffffe8fff1a03400 RCX: 0000000000000007
->> [  204.314244] RDX: ffff88045f400000 RSI: 0000000000000009 RDI: 0000000000001120
->> [  204.322296] RBP: ffff880440fadd38 R08: 0000000000000000 R09: 0000000000000001
->> [  204.330411] R10: 0000000000000001 R11: 0000000000000000 R12: 000000000000001e
->> [  204.338482] R13: 00000000ffffffdb R14: 0000000000000001 R15: 0000000000000000
->> [  204.346743] FS:  00007f64f7b0c740(0000) GS:ffff88045ce00000(0000) knlGS:0000000000000000
->> [  204.355919] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [  204.362449] CR2: ffffffff8227cce8 CR3: 0000000444ab0000 CR4: 00000000001407e0
->> [  204.370520] Stack:
->> [  204.372853]  000000000000001e ffffffff81f10240 ffff880440fadd50 ffffffff814aa307
->> [  204.381519]  ffffffff81ea80e0 ffff880440fadda0 ffffffff8185a230 0000000000000000
->> [  204.390196]  000000000000001e 0000000000000002 0000000000000002 0000000000000000
->> [  204.398856] Call Trace:
->> [  204.401683]  [<ffffffff814aa307>] cpu_hotplug_notify+0x57/0x70
->> [  204.408638]  [<ffffffff8185a230>] notifier_call_chain+0x100/0x150
->> [  204.415553]  [<ffffffff810a7dae>] __raw_notifier_call_chain+0xe/0x10
->> [  204.422772]  [<ffffffff81072163>] cpu_notify+0x23/0x50
->> [  204.428616]  [<ffffffff810723b2>] _cpu_up+0x132/0x1a0
->> [  204.434361]  [<ffffffff8107249d>] cpu_up+0x7d/0xa0
->> [  204.439819]  [<ffffffff81836c9c>] cpu_subsys_online+0x3c/0x90
->> [  204.446345]  [<ffffffff81554625>] device_online+0x45/0xa0
->> [  204.452471]  [<ffffffff815546ce>] online_store+0x4e/0x80
->> [  204.458511]  [<ffffffff815519a8>] dev_attr_store+0x18/0x30
->> [  204.464744]  [<ffffffff812a68f1>] sysfs_write_file+0x151/0x1c0
->> [  204.471681]  [<ffffffff81217ef1>] vfs_write+0xe1/0x160
->> [  204.477524]  [<ffffffff8121889c>] SyS_write+0x4c/0x90
->> [  204.483270]  [<ffffffff8185f2ed>] system_call_fastpath+0x1a/0x1f
->> [  204.490081] Code: 41 54 41 89 fc 8b 3d 48 25 85 01 53 48 8b 1d 30 25 85 01 48 03 1c c5 40 90 fb 81 48 8b 05 19 25 85 01 c7 43 0c 01 00 00 00 66 90 <48> 83 78 48 00 74 4f 41 83 c0 01 41 39 f0 7e 10 48 c7 c7 38 79
->> [  204.515723] RIP  [<ffffffff814aa1c0>] intel_idle_cpu_init+0x40/0x130
->> [  204.522996]  RSP <ffff880440fadd28>
->> [  204.526976] CR2: ffffffff8227cce8
->> [  204.530766] ---[ end trace 336f56cc3d1cfc8c ]---
->>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> Cc: <stable@vger.kernel.org> # 3.12+
+> -----Original Message-----
+> From: Gerhard Sittig [mailto:gsi@denx.de]
+> Sent: 2014Äê1ÔÂ9ÈÕ 18:46
+> To: Neil Zhang
+> Cc: linus.walleij@linaro.org; gnurou@gmail.com; linux-gpio@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] gpio: pxa: fix bug when get gpio value
 > 
-> The commit in question is not in 3.12 as far as I can say, so this is a
-> regression in 3.13-rc actually.
-Hi Rafael,
-	"Git describe 9d046ccb98085" gives "v3.12-rc2-2-g9d046cc", so I marked
-it for v3.12 stable.
-Thanks!
-Gerry
+> On Thu, Jan 09, 2014 at 17:25 +0800, Neil Zhang wrote:
+> >
+> > gpio_get_value should return 0 or 1.
+> >
+> > I have checked mach-mmp / mach-pxa / plat-pxa / plat-orion / mach-orion5x.
+> > It's OK for all of them to change this function to return 0 and 1.
+> >
+> > [ ... ]
+> >
+> >  static int pxa_gpio_get(struct gpio_chip *chip, unsigned offset)  {
+> > -	return readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET) & (1 <<
+> offset);
+> > +	u32 gplr = readl_relaxed(gpio_chip_base(chip) + GPLR_OFFSET);
+> > +	return !!(gplr & (1 << offset));
+> >  }
+> 
+> This may be a stupid question, but isn't the "!!value" syntax just replacing one
+> kind of "zero or non-zero" with another kind of "zero or non-zero"?  This
+> phrase is used to normalize booleans, but ISTR there is no guarantee that true
+> needs to equal the value of 1.
+> 
+> Here is why I'm asking:  Is there a need from GPIO get_value() routines to
+> return normalized values, and if so should not more drivers receive an update?
+> Or need get_value() routines just return the usual integer zero/non-zero values
+> (as is the convention in the C programming language) and GPIO using callers
+> should know that they are not exactly 0 and 1?
+>
+> The latter would make this change for PXA unneeded (nice to have but not
+> essential), and both the commit message as well as the subject line at least need
+> to get re-phrased, as the "bug" is in the caller's expectation and not in the GPIO
+> chip driver.
+>
 
+Yes, the API doesn't mandatory expect 0 and 1 as I can see.
+But actually many driver will return a normalized value.
+So people may think it's return value is 0 or 1.
+It would be convenient to normalized the return value for gpio-pxa too.
+
+You are right, it's not appropriate to use "bug" in the patch title, thanks.
+
+> Please note that I'm not questioning the patches' being applicable, but am trying
+> to find out what else needs to be done which previously may have gone
+> unnoticed.  A doc update maybe, to make GPIO users aware that the return
+> value may not be exactly 1, and to clear up where such an assumption is wrongly
+> made.
 > 
-> Queued up as a fix for 3.13.
+> If the GPIO subsystem's API wants to guarantee values of 0 and 1 (which I think it
+> doesn't), then I feel the adjustment should be done in the gpio_get_value()
+> routines (in all its public variants, or a common routine which all of them pass
+> through), and certainly not in individual chip drivers.
 > 
-> Thanks!
 > 
->> ---
->>  drivers/idle/intel_idle.c |   10 +++++-----
->>  1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
->> index f80b700..6f456f0 100644
->> --- a/drivers/idle/intel_idle.c
->> +++ b/drivers/idle/intel_idle.c
->> @@ -123,7 +123,7 @@ static struct cpuidle_state *cpuidle_state_table;
->>   * which is also the index into the MWAIT hint array.
->>   * Thus C0 is a dummy.
->>   */
->> -static struct cpuidle_state nehalem_cstates[] __initdata = {
->> +static struct cpuidle_state nehalem_cstates[] = {
->>  	{
->>  		.name = "C1-NHM",
->>  		.desc = "MWAIT 0x00",
->> @@ -156,7 +156,7 @@ static struct cpuidle_state nehalem_cstates[] __initdata = {
->>  		.enter = NULL }
->>  };
->>  
->> -static struct cpuidle_state snb_cstates[] __initdata = {
->> +static struct cpuidle_state snb_cstates[] = {
->>  	{
->>  		.name = "C1-SNB",
->>  		.desc = "MWAIT 0x00",
->> @@ -196,7 +196,7 @@ static struct cpuidle_state snb_cstates[] __initdata = {
->>  		.enter = NULL }
->>  };
->>  
->> -static struct cpuidle_state ivb_cstates[] __initdata = {
->> +static struct cpuidle_state ivb_cstates[] = {
->>  	{
->>  		.name = "C1-IVB",
->>  		.desc = "MWAIT 0x00",
->> @@ -236,7 +236,7 @@ static struct cpuidle_state ivb_cstates[] __initdata = {
->>  		.enter = NULL }
->>  };
->>  
->> -static struct cpuidle_state hsw_cstates[] __initdata = {
->> +static struct cpuidle_state hsw_cstates[] = {
->>  	{
->>  		.name = "C1-HSW",
->>  		.desc = "MWAIT 0x00",
->> @@ -297,7 +297,7 @@ static struct cpuidle_state hsw_cstates[] __initdata = {
->>  		.enter = NULL }
->>  };
->>  
->> -static struct cpuidle_state atom_cstates[] __initdata = {
->> +static struct cpuidle_state atom_cstates[] = {
->>  	{
->>  		.name = "C1E-ATM",
->>  		.desc = "MWAIT 0x00",
->>
-> 
+> virtually yours
+> Gerhard Sittig
+> --
+> DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+> HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+> Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
