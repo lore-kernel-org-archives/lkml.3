@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaAJASX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:18:23 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:49198 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaAJASU (ORCPT
+	id S1755458AbaAJAMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:12:19 -0500
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:51172 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaAJAMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:18:20 -0500
+	Thu, 9 Jan 2014 19:12:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <20140110000642.GN10323@ZenIV.linux.org.uk>
-References: <20140109162731.12500986@gandalf.local.home>
-	<20140109214239.GD29910@parisc-linux.org>
-	<20140109165012.391db81e@gandalf.local.home>
-	<20140109223127.GM10323@ZenIV.linux.org.uk>
-	<CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
-	<20140109182523.5b50131f@gandalf.local.home>
-	<20140109182756.17abaaa8@gandalf.local.home>
-	<1389310626.15209.92.camel@localhost>
-	<CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
-	<20140110000642.GN10323@ZenIV.linux.org.uk>
-Date: Fri, 10 Jan 2014 08:18:18 +0800
-X-Google-Sender-Auth: ig9ZWLsxN7jpB910lwwyIJjBh4E
-Message-ID: <CA+55aFwVNAKAqyR8gA+pewz2qSjDCq2w+NwN-vmChoMKSz-idg@mail.gmail.com>
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in inode_permission()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
-        stable <stable@vger.kernel.org>, Paul Moore <paul@paul-moore.com>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
-        Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <20140103155217.GG7132@katana>
+References: <1382326010-4554-1-git-send-email-bleung@chromium.org>
+	<1382326010-4554-3-git-send-email-bleung@chromium.org>
+	<20131021065804.GX3521@intel.com>
+	<CANLzEksGqD30Cefh3r2urH-ToxWzkxAnTJZiY07yX2Py58FQPw@mail.gmail.com>
+	<20131114180538.GK11022@katana>
+	<CANLzEksP1nRfBaQ3-sSouOYL4C+oLKiE75eHfFdEzLmrQKn3dQ@mail.gmail.com>
+	<20131126130959.GI7427@katana>
+	<20140103155217.GG7132@katana>
+Date: Thu, 9 Jan 2014 16:12:14 -0800
+X-Google-Sender-Auth: 9O6FTYqPJ8WGUJKaDBGaQ3aOj_w
+Message-ID: <CANLzEkvgYQtkEyOMNpPcS9BeYzX3zJn7hvtsyhFzbDpViS8-2Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c-designware-pci: Index Haswell ULT bus names from 0
+From: Benson Leung <bleung@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>, khali@linux-fr.org,
+        andriy.shevchenko@linux.intel.com, jacmet@sunsite.dk,
+        linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Duncan Laurie <dlaurie@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 8:06 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+Hi Wolfram,
+
+Thank you for the advice. Sorry for the delay in my response.
+(sorry for the duplicated message. I neglected to set plain text in my
+email editor).
+
+On Fri, Jan 3, 2014 at 7:52 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> > I am not sure I get the problem. If you use i2c_register_board_info() to
+> > register the known devices on the designware busses the dynamically
+> > assigned numbers are guaranteed to be enumarated higer than the static
+> > ones. Check drivers/i2c/i2c-boardinfo.c.
 >
-> Sure, we can separate the simple "just do call_rcu(...->free_inode)" case
-> and hit it whenever full ->free_inode is there and ->destroy_inode isn't.
-> Not too pretty, but removal of tons of boilerplate might be worth doing
-> that anyway.
+> Ping. Was this helpful or do you still have the issue?
 
-Yeah.
+Our devices and our platforms have some other requirements which
+turned me away from using i2c_register_board_info.
 
-> But ->destroy_inode() is still needed for cases where fs
-> has its own idea of inode lifetime rules.  Again, check what XFS is doing
-> in that area...
+i2c_register_board_info looks to create predeclarations for a specific
+i2c bus... However, right now, the chromeos_laptop driver is
+structured to do explicit declaration (using i2c_new_probed_device)
+*after* the busses have come up.
 
-Ok, so we can't change destroy_inode, and we'd need to add a new op
-for just freeing it.
+Specifically, we have a class of atmel_mxt i2c touchpad/touchscreen
+devices that may appear at different addresses depending on whether
+the touch device is in bootloader mode or operational mode.
 
-Painful mainly because there are so many filesystems, but it shouldn't
-be *complicated*.
+For that reason, the chromeos_laptop driver uses i2c_new_probed_device
+with a list of possible addresses when dealing with the atmel touch
+device.
 
-> There's an extra source of headache, BTW - what about the "LSM stacking"
-> crowd and their plans?
+You can see the driver here :
+drivers/platform/chrome/chromeos_laptop.c
 
-LSM stacking is a pipedream right  now anyway, isn't it? It's been
-talked about for years and years, I've never seen a patch-set that is
-even remotely something we'd seriously consider.
+Is there some way of getting the "probe" behavior while using
+i2c_register_board_info?
 
-            Linus
+
+
+-- 
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
