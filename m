@@ -1,107 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979AbaAJWkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:40:23 -0500
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:45256 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751720AbaAJWkT (ORCPT
+	id S1753574AbaAJWtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:49:36 -0500
+Received: from mo4-p04-ob.smtp.rzone.de ([81.169.146.179]:34125 "EHLO
+	mo4-p04-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247AbaAJWte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:40:19 -0500
+	Fri, 10 Jan 2014 17:49:34 -0500
+X-RZG-CLASS-ID: mo04
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ4Kkzc/qnW2/7iWQ==
+Date: Fri, 10 Jan 2014 23:49:27 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: david.vrabel@citrix.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen-blkfront: remove type check from
+ blkfront_setup_discard
+Message-ID: <20140110224927.GA14824@aepfle.de>
+References: <1389371301-29532-1-git-send-email-olaf@aepfle.de>
+ <52D036FC.6000308@oracle.com>
+ <20140110213746.GA933@aepfle.de>
+ <52D073F0.5020400@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <CAN1v_PsaAeDiLaiP7FfTHFbNRG=UHuom6-2L6NMwzyOOyB+5cA@mail.gmail.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com>
-	<1441245.xPZLG2iNZ6@wuerfel>
-	<CAN1v_PtFz42crHW5=cUgw-fAnPn3rQht=o0t3nmjJRamYSLDMg@mail.gmail.com>
-	<201401051911.12349.arnd@arndb.de>
-	<CAN1v_PsaAeDiLaiP7FfTHFbNRG=UHuom6-2L6NMwzyOOyB+5cA@mail.gmail.com>
-Date: Fri, 10 Jan 2014 14:40:16 -0800
-Message-ID: <CAN1v_PuySRzi6r9aT_SJrQRMBh9gj-5yXOOY1QpyZ6V4wXyZCA@mail.gmail.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue
- Manager/Traffic Manager
-From: Ravi Patel <rapatel@apm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Loc Ho <lho@apm.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52D073F0.5020400@oracle.com>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 5, 2014 at 12:48 PM, Ravi Patel <rapatel@apm.com> wrote:
-> On Sun, Jan 5, 2014 at 10:11 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Sunday 05 January 2014, Ravi Patel wrote:
->>> On Sat, Dec 21, 2013 at 11:03 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> >
->>> > Please describe here what the purpose of the qmtm is, as this is not
->>> > entirely clear from the code or from your reply.
->>> >
->>> > Greg was guessing that it's a bus controller, my best guess is a DMA
->>> > engine. If it's something completely different, you have to let
->>> > us know what it is so we can do a proper review rather than guessing.
->>> >
->>> > Please provide a link to the data sheet if you are unable to explain.
->>>
->>> Here is URL to a text document explaining role of QMTM device with CPU, Ethernet
->>> subsystem.
->>>
->>> https://drive.google.com/file/d/0B28TgQZ3JLoRRGNnbjJoUGNHWW8/edit?usp=sharing
->>>
->>> For simplicity, I have shown only Ethernet.
->>> PktDMA and Security subsystem interfaces with QMTM in the same way as Ethernet.
->>
->> Thanks, that helps a lot. Please add this file to an appropriate place
->> in the Documentation directory in the next version of your patches.
->>
->> There is still one central aspect that remains unclear to me, which is
->> what the QMTM is actually good for, as opposed to how it gets used from
->> the OS.
->
-> The document shows the run-time flow of messages between CPU, QMTM and Ethernet.
-> QMTM is a centralized resource manager/driver which exports APIs to
-> 1. Initialize & allocate queue & pbn to the Ethernet, PktDMA and
-> Security subsystem.
-> 2. Read queue state so that subsystems driver knows how much more work
-> it can offload
->     to its subsystem.
-> 3. Apply QoS for subsystems on their queues.
->
->> In the text description, it sounds like the ethernet is the DMA
->> master and performs DMA all by itself but from that it's not clear why
->> a message to and from the QMTM is needed. From your drawing on the other
->> hand, it seems like the QMTM is really the DMA master and performs the
->> DMA on behalf of the ethernet device, which isn't connected to the
->> coherent interface itself. If this is correct, it seems that QMTM is more
->> like a DMA engine after all that should use the existing slave API to
->> provide services to slave drivers.
->
-> Each subsystem defines their own format of work message.
-> A message (or queue descriptor) has attribute fields (QMTM specific)
-> which is common
->  for all subsystem work messages.
-> The remaining fields of a message are specific to subsystem.
-> QMTM device doesn't have any knowledge of these subsystem specific
-> fields and the data
-> operation which subsystem is going to perform using these fields.
-> e.g.
-> 1. Ethernet work message includes data address & length which is used
-> by Ethernet
-> DMA engine for copying the data to/from its internal FIFO
-> 2. PktDMA work message includes multiple data addresses & lengths for
-> doing scatter/gather,
-> XOR operations and result data address/es to give back result to the
-> CPU (driver)
-> 3. Security work message includes data address & length for doing
-> encryption or decryption,
-> the type of encryption or decryption and result data address to give
-> back result to the CPU (driver)
+On Fri, Jan 10, Boris Ostrovsky wrote:
 
-Do you want any further clarification or document related to QMTM.
-We want to make sure everyone is on same page, understand and
-conclude upon that QMTM is a device and and not a bus or a dma
-engine.
+> I think we should at clear feature_discard and print an error in the log if
+> *either* of xenbus_gather() calls fail.
+
+Are you sure about that? AFAIK many other properties are optional as
+well. I dont think there is a formal spec about the discard related
+properties. Should every backend be required to provide all four
+properties? 
+
+Olaf
