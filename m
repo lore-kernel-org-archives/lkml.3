@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052AbaAJThE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 14:37:04 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:53940 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483AbaAJTg7 (ORCPT
+	id S1758073AbaAJThk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 14:37:40 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:24834 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483AbaAJThi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 14:36:59 -0500
-Date: Fri, 10 Jan 2014 11:36:57 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/7] ARM: perf_event: Support percpu irqs for the CPU
- PMU
-Message-ID: <20140110193657.GG14405@codeaurora.org>
-References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
- <1389221984-10973-3-git-send-email-sboyd@codeaurora.org>
- <20140109104943.GB17838@mudshark.cambridge.arm.com>
- <52CEF5C9.1010701@codeaurora.org>
- <20140110105813.GB10455@mudshark.cambridge.arm.com>
+	Fri, 10 Jan 2014 14:37:38 -0500
+Message-ID: <52D04BE6.9050907@hp.com>
+Date: Fri, 10 Jan 2014 14:37:10 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110105813.GB10455@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: SIGSEGV when using "perf record -g" with 3.13-rc* kernel
+References: <52D011C9.7000209@hp.com> <20140110165822.GI7572@laptop.programming.kicks-ass.net> <20140110170223.GD8224@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140110170223.GD8224@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Will Deacon wrote:
-> On Thu, Jan 09, 2014 at 07:17:29PM +0000, Stephen Boyd wrote:
-> 
-> > We can avoid the hacky cast of the per-cpu dev token by using the
-> > cpu_pmu pointer directly, but we'll still need to pass something to the
-> > percpu interrupt handler otherwise the genirq layer doesn't allow us to
-> > request the PPI. I can pass hw_events I guess. Is that what you're
-> > thinking? Or were you thinking that we could just use
-> > cpu_pmu->handle_irq as the handler argument in request_percpu_irq()? I
-> > can't figure out how that is supposed to work.
-> 
-> Actually, I was thinking you could remove cpu_pmu_dispatch_irq completely
-> and just pass the actual handler straight through to request_percpu_irq. On
-> arm64 we pass the hw_events as the pcpu token, so I'd be inclined to do the
-> same here unless there's a good reason not to.
-> 
+On 01/10/2014 12:02 PM, Peter Zijlstra wrote:
+> On Fri, Jan 10, 2014 at 05:58:22PM +0100, Peter Zijlstra wrote:
+>> On Fri, Jan 10, 2014 at 10:29:13AM -0500, Waiman Long wrote:
+>>> Peter,
+>>>
+>>> Call Trace:
+>>> <NMI>   [<ffffffff815710af>] dump_stack+0x49/0x62
+>>>   [<ffffffff8104e3bc>] warn_slowpath_common+0x8c/0xc0
+>>>   [<ffffffff8104e40a>] warn_slowpath_null+0x1a/0x20
+>>>   [<ffffffff8105f1f1>] force_sig_info+0x131/0x140
+>>>   [<ffffffff81042a4f>] force_sig_info_fault+0x5f/0x70
+>>>   [<ffffffff8106d8da>] ? search_exception_tables+0x2a/0x50
+>>>   [<ffffffff81043b3d>] ? fixup_exception+0x1d/0x70
+>>>   [<ffffffff81042cc9>] no_context+0x159/0x1f0
+>>>   [<ffffffff81042e8d>] __bad_area_nosemaphore+0x12d/0x230
+>>>   [<ffffffff81042e8d>] ? __bad_area_nosemaphore+0x12d/0x230
+>>>   [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
+>>>   [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
+>>>   [<ffffffff81578fc2>] ? __do_page_fault+0x362/0x480
+>>>   [<ffffffff815791be>] do_page_fault+0xe/0x10
+>>>   [<ffffffff81575962>] page_fault+0x22/0x30
+>>>   [<ffffffff815817e4>] ? bad_to_user+0x5e/0x66b
+>>>   [<ffffffff81285316>] copy_from_user_nmi+0x76/0x90
+>>>   [<ffffffff81017a20>] perf_callchain_user+0xd0/0x360
+>>>   [<ffffffff8111f64f>] perf_callchain+0x1af/0x1f0
+>>>   [<ffffffff81117693>] perf_prepare_sample+0x2f3/0x3a0
+>>>   [<ffffffff8111a2af>] __perf_event_overflow+0x10f/0x220
+>>>   [<ffffffff8111ab14>] perf_event_overflow+0x14/0x20
+>>>   [<ffffffff8101f69e>] intel_pmu_handle_irq+0x1de/0x3c0
+>>>   [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+>>>   [<ffffffff81576e64>] perf_event_nmi_handler+0x34/0x60
+>>>   [<ffffffff8157664a>] nmi_handle+0x8a/0x170
+>>>   [<ffffffff81576848>] default_do_nmi+0x68/0x210
+>>>   [<ffffffff81576a80>] do_nmi+0x90/0xe0
+>>>   [<ffffffff81575c67>] end_repeat_nmi+0x1e/0x2e
+>>>   [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+>>>   [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+>>>   [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+>>> <<EOE>>   [<ffffffff81042f7d>] __bad_area_nosemaphore+0x21d/0x230
+>>>   [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
+>>>   [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
+>>>   [<ffffffff8113cfbc>] ? vm_mmap_pgoff+0xbc/0xe0
+>>>   [<ffffffff815791be>] do_page_fault+0xe/0x10
+>>>   [<ffffffff81575962>] page_fault+0x22/0x30
+>>> ---[ end trace 037bf09d279751ec ]---
+>>>
+>>> So this is a double page faults. Looking at relevant changes in
+>>> 3.13 kernel, I spotted the following one patch that modified the
+>>> perf_callchain_user() function shown up in the stack trace above:
+>>>
+>> Hurm, that's an expected double fault, not something we should take the
+>> process down for.
+>>
+>> I'll have to look at how all that works for a bit.
+> How easily can you reproduce this? Could you test something like the
+> below, which would allow us to take double faults from NMI context.
 
-Passing the hw_events as the pcpu token here is kind of hacky.
-The reason is because the token is dereferenced into cpu_pmu in
-armv7pmu_handle_irq() like so:
+The error can be readily reproducible in my current setup.
 
-	struct arm_pmu *cpu_pmu = (struct arm_pmu *)dev;
+> ---
+>   arch/x86/mm/fault.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 9ff85bb8dd69..18c498d4274d 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -641,7 +641,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
+>
+>   	/* Are we prepared to handle this kernel fault? */
+>   	if (fixup_exception(regs)) {
+> -		if (current_thread_info()->sig_on_uaccess_error&&  signal) {
+> +		if (!in_nmi()&&  current_thread_info()->sig_on_uaccess_error&&  signal) {
+>   			tsk->thread.trap_nr = X86_TRAP_PF;
+>   			tsk->thread.error_code = error_code | PF_USER;
+>   			tsk->thread.cr2 = address;
 
-It would be great if we could pass cpu_pmu directly to the
-request call like so:
+Yes, this change fixed the error that I got. I no longer see SIGSEGV 
+when I run the test.
 
-	request_percpu_irq(irq, cpu_pmu->handle_irq, "arm-pmu", &cpu_pmu);
+I did tried to back out your "perf: Fix arch_perf_out_copy_user default" 
+patch, but it didn't fix the problem.
 
-but no. request_percpu_irq() wants a percpu pointer so this won't
-work. If cpu_pmu was declared as DEFINE_PER_CPU, this would work
-out just fine.
+Thank for the quick turnaround!
 
-Should the cpu_pmu become a per-cpu variable? That sounds rather
-invasive.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+-Longman
