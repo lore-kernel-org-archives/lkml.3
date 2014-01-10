@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414AbaAJAoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:44:21 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:41045 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499AbaAJAoS (ORCPT
+	id S1756369AbaAJArb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:47:31 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:59229 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158AbaAJAr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:44:18 -0500
-Date: Thu, 9 Jan 2014 16:44:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
-        Eric Paris <eparis@parisplace.org>, stable <stable@vger.kernel.org>,
-        Paul Moore <paul@paul-moore.com>, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
- inode_permission()
-Message-ID: <20140110004411.GS10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140109162731.12500986@gandalf.local.home>
- <20140109214239.GD29910@parisc-linux.org>
- <20140109165012.391db81e@gandalf.local.home>
- <20140109223127.GM10323@ZenIV.linux.org.uk>
- <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
- <20140109182523.5b50131f@gandalf.local.home>
- <20140109182756.17abaaa8@gandalf.local.home>
- <20140109234537.GR10038@linux.vnet.ibm.com>
- <20140109185907.20cddb57@gandalf.local.home>
+	Thu, 9 Jan 2014 19:47:27 -0500
+Date: Fri, 10 Jan 2014 09:47:24 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mundt <lethal@linux-sh.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bastian Hecht <hechtb@gmail.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: Re: linux-next: manual merge of the sh tree with the tree
+Message-ID: <20140110004724.GA22965@verge.net.au>
+References: <20140106121317.bada4233ec3fec40f79735cc@canb.auug.org.au>
+ <CAOesGMgJe9KR2muA4F9EaXYpDFDLxVZsKOj-8qZFbDZTiRBuww@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109185907.20cddb57@gandalf.local.home>
+In-Reply-To: <CAOesGMgJe9KR2muA4F9EaXYpDFDLxVZsKOj-8qZFbDZTiRBuww@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011000-1542-0000-0000-0000050FEF2B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 06:59:07PM -0500, Steven Rostedt wrote:
-> On Thu, 9 Jan 2014 15:45:37 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, Jan 08, 2014 at 11:11:03PM -0800, Olof Johansson wrote:
+> On Sun, Jan 5, 2014 at 5:13 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi Paul,
+> >
+> > Today's linux-next merge of the sh tree got conflicts in
+> > drivers/tty/serial/sh-sci.c and include/linux/serial_sci.h between
+> > commits 8fb9631c517b ("serial: sh-sci: Sort headers alphabetically"),
+> > 20bdcab8268c ("serial: sh-sci: Add OF support") and probably others from
+> > the arm-soc tree and commits ada80ee7fa60 ("serial: sh-sci: Add OF
+> > support") and b19ef75c56e9 ("serial: sh-sci: OF definitions need
+> > linux/of.h") from the sh tree.
+> >
+> > The arm-soc tree version is dated much more recently than
+> > the sh tree version and conflicts badly, so for today I have just dropped
+> > the sh tree (everything in there was committed before April 2013).  Please
+> > figure this out.
 > 
-> > >  static void inode_free_security(struct inode *inode)
-> > >  {
-> > >  	struct inode_security_struct *isec = inode->i_security;
-> > > @@ -244,8 +252,7 @@ static void inode_free_security(struct i
-> > >  		list_del_init(&isec->list);
-> > >  	spin_unlock(&sbsec->isec_lock);
-> > > 
-> > > -	inode->i_security = NULL;
-> > > -	kmem_cache_free(sel_inode_cache, isec);
-> > > +	call_rcu(&isec->rcu, inode_free_rcu);
-> > 
-> > Does not clearing ->i_security mean that RCU readers can traverse
-> > this pointer after the invocation of call_rcu()?  If so, this is
-> > problematic.  (If something else already prevents readers from getting
-> > here, no problem.)
-> 
-> This is called when we are about to free the inode. Look at
-> destroy_inode(). Basically, this is the same as doing:
-> 
-> 	call_rcu(&isec->rcu, inode_free_rcu);
-> 	call_rcu(&inode->i_rcu, i_callback);
-> 
-> Where i_callback() does the free of the inode.
-> 
-> If you can access inode->i_security, after a call_rcu, then you can
-> also access the inode itself that has just been freed.
-> 
-> Yes, technically, having two separate call_rcu(), the first grace
-> period can end before the second, but everything to remove the inode
-> from sight has already been set up before that first call_rcu() is
-> made. That means when the first call_rcu() is executed, the inode
-> should already be invisible to the readers.
+> The request to merge the sh code came through Simon with claimed
+> agreement from SH maintainers to do so -- I didn't verify this since
+> they have in the past been well-coordinated. Simon?
 
-Got it, should be fine then, sorry for the noise.
+I spoke with Paul recently and my understanding is that
+he hasn't been actively working in this area for over a year now.
 
-							Thanx, Paul
-
+I guess there are some stale patches in his tree.
