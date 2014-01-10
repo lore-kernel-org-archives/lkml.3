@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaAJDA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 22:00:58 -0500
-Received: from ozlabs.org ([203.10.76.45]:52125 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142AbaAJDAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 22:00:55 -0500
-Date: Fri, 10 Jan 2014 14:00:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: linux-next: build failure after merge of the kvm tree
-Message-Id: <20140110140043.1e090e614df48b230202ab3d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m"
+	id S1754789AbaAJDBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 22:01:34 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:42893 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753405AbaAJDBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 22:01:03 -0500
+Message-ID: <52CF6269.8030105@gmail.com>
+Date: Fri, 10 Jan 2014 04:00:57 +0100
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Olaf Hering <olaf@aepfle.de>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-pm@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:667
+References: <52157D88.3070701@gmail.com> <20131017093854.GA19052@aepfle.de>
+In-Reply-To: <20131017093854.GA19052@aepfle.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 17.10.2013 11:38, Olaf Hering wrote:
+>> Waking up from system sleep state S3:
+> 
+>> ------------[ cut here ]------------
+>> WARNING: CPU: 2 PID: 0 at kernel/time/tick-broadcast.c:667
+>> tick_broadcast_oneshot_control+0x181/0x190()
+> 
+> 
+> Thomas,
+> 
+> this WARN_ON_ONCE happens on resume on my HP ProBook 6555b.
+> Is it still needed to be verbose in such case? It was introduced with
+> commit 26517f3e99248668315aee9460dcea21628cdd7f ("tick: Avoid
+> programming the local cpu timer if broadcast pending").
 
-Hi all,
+3.10.2 - 3.13.0-0.rc7:
+------------[ cut here ]------------
+WARNING: CPU: 1 PID: 0 at kernel/time/tick-broadcast.c:668
+tick_broadcast_oneshot_control+0x17d/0x190()
+CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-0.rc7.git2.2.fc21.x86_64 #1
+Call Trace:
+ [<ffffffff81680a6a>] dump_stack+0x45/0x56
+ [<ffffffff8106841d>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff810684fa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff810cf16d>] tick_broadcast_oneshot_control+0x17d/0x190
+ [<ffffffff810cdcb8>] clockevents_notify+0x178/0x1a0
+ [<ffffffff8101c17b>] amd_e400_idle+0x7b/0x100
+ [<ffffffff8101c916>] arch_cpu_idle+0x26/0x30
+ [<ffffffff810bb425>] cpu_startup_entry+0xc5/0x290
+ [<ffffffff81040bab>] start_secondary+0x22b/0x2e0
+---[ end trace a6717546b328eaba ]---
 
-After merging the kvm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
 
-arch/powerpc/kvm/../../../virt/kvm/kvm_main.c: In function 'kvm_vcpu_on_spi=
-n':
-arch/powerpc/kvm/../../../virt/kvm/kvm_main.c:1807:4: error: implicit decla=
-ration of function 'kvm_vcpu_eligible_for_directed_yield' [-Werror=3Dimplic=
-it-function-declaration]
-    if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
-    ^
+poma
 
-Caused by commit 7940876e1330 ("kvm: make local functions static").
 
-I have used the kvm tree from next-20140109 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSz2JfAAoJEMDTa8Ir7ZwVn6AP/jp6XvkSCua3h4cyT692ULzU
-xm1valW1vKADwnYhEBkxqbRGwU0QRhtPHe/j6I4/S1IZajysSSpoSq2AYGwQlMoM
-N3kmJ3g0wAB63ElYstFsNuOY1j10iYK8E2dfON2fV5v3RuF/3/ELo4lfAi+C1s/e
-lFLQqe3WnddCBYa7B0pG5j9ziYFWbvVsUvlQWXRmevznqvog9jVcScvS/ov09PoM
-f1Dmxw51ocTv7O4yf5TTP8tty5Zxcn2jLd66nWgkpw/+HWgme9Iaa29xNT4XNogS
-9/CYhhwBWkAa6WCB6/qG0OSkl4mMTFS/z2ocCwR2DTHi37OTmR0ujkEz4HvFTfeY
-/UwKvunhM6NzuS9ydyH8iR6rfWQenDrm/cNcBHUeRiEBs6s+H8NRXnJ15nARXxrK
-i1SJWQYERi90FhYCYyQGTEzwRAaBpsUEVcCSEdA+arIe7gAJ8Myw3jHz5QKri123
-MjAekUwHenM69tl5h6D21TN6oXIjVqv+9Pq9ZfOnOKXDs52QoaZ8w/T7pNw8qs5u
-XaEDavi4doPkEUkJ4X45hBNZv4dAVrQ+Ex/ykN8IC5udWjlVsb2VQBPw32a39ZzA
-iOg2TE0GeEa49brR8bljhs1T3zmzpJMUO6XlqBIBusCiISB+SuPsTABQoqstrBLp
-A2fx5IqYe0lpydz+WUfu
-=IyZI
------END PGP SIGNATURE-----
-
---Signature=_Fri__10_Jan_2014_14_00_43_+1100_GFrMiVIS9qh/SP1m--
