@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488AbaAJN54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:57:56 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:64224 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaAJN5n (ORCPT
+	id S1757537AbaAJN7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:59:11 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:37251 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaAJN5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:57:43 -0500
+	Fri, 10 Jan 2014 08:57:55 -0500
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
         JBottomley@parallels.com, bhelgaas@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/14] kernfs: remove KERNFS_REMOVED
-Date: Fri, 10 Jan 2014 08:57:21 -0500
-Message-Id: <1389362251-8128-5-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: [PATCH 13/14] s390: use device_remove_file_self() instead of device_schedule_callback()
+Date: Fri, 10 Jan 2014 08:57:30 -0500
+Message-Id: <1389362251-8128-14-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1389362251-8128-1-git-send-email-tj@kernel.org>
 References: <1389362251-8128-1-git-send-email-tj@kernel.org>
@@ -23,358 +24,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KERNFS_REMOVED is used to mark half-initialized and dying nodes so
-that they don't show up in lookups and deny adding new nodes under or
-renaming it; however, its role overlaps those of deactivation and
-removal from rbtree.
+driver-core now supports synchrnous self-deletion of attributes and
+the asynchrnous removal mechanism is scheduled for removal.  Use it
+instead of device_schedule_callback().
 
-It's necessary to deny addition of new children while removal is in
-progress; however, this role considerably intersects with deactivation
-- KERNFS_REMOVED prevents new children while deactivation prevents new
-file operations.  There's no reason to have them separate making
-things more complex than necessary.
+* Conversions in arch/s390/pci/pci_sysfs.c and
+  drivers/s390/block/dcssblk.c are straightforward.
 
-KERNFS_REMOVED is also used to decide whether a node is still visible
-to vfs layer, which is rather redundant as equivalent determination
-can be made by testing whether the node is on its parent's children
-rbtree or not.
+* drivers/s390/cio/ccwgroup.c is a bit more tricky because
+  ccwgroup_notifier() was (ab)using device_schedule_callback() to
+  purely obtain a process context to kick off ungroup operation which
+  may block from a notifier callback.
 
-This patch removes KERNFS_REMOVED.
+  Rename ccwgroup_ungroup_callback() to ccwgroup_ungroup() and make it
+  take ccwgroup_device * instead.  The new function is now called
+  directly from ccwgroup_ungroup_store().
 
-* Instead of KERNFS_REMOVED, each node now starts its life
-  deactivated.  This means that we now use both atomic_add() and
-  atomic_sub() on KN_DEACTIVATED_BIAS, which is INT_MIN.  The compiler
-  generates an overflow warnings when negating INT_MIN as the negation
-  can't be represented as a positive number.  Nothing is actually
-  broken but let's bump BIAS by one to avoid the warnings for archs
-  which negates the subtrahend..
+  ccwgroup_notifier() chain is updated to explicitly bounce through
+  ccwgroup_device->ungroup_work.  This also removes possible failure
+  from memory pressure.
 
-* KERNFS_REMOVED tests in add and rename paths are replaced with
-  kernfs_get/put_active() of the target nodes.  Due to the way the add
-  path is structured now, active ref handling is done in the callers
-  of kernfs_add_one().  This will be consolidated up later.
-
-* kernfs_remove_one() is updated to deactivate instead of setting
-  KERNFS_REMOVED.  This removes deactivation from kernfs_deactivate(),
-  which is now renamed to kernfs_drain().
-
-* kernfs_dop_revalidate() now tests RB_EMPTY_NODE(&kn->rb) instead of
-  KERNFS_REMOVED and KERNFS_REMOVED test in kernfs_dir_pos() is
-  dropped.  A node which is removed from the children rbtree is not
-  included in the iteration in the first place.  This means that a
-  node may be visible through vfs a bit longer - it's now also visible
-  after deactivation until the actual removal.  This slightly enlarged
-  window difference doesn't make any difference to the userland.
-
-* Sanity check on KERNFS_REMOVED in kernfs_put() is replaced with
-  checks on the active ref.
-
-* Some comment style updates in the affected area.
-
-v2: Reordered before removal path restructuring.  kernfs_active()
-    dropped and kernfs_get/put_active() used instead.  RB_EMPTY_NODE()
-    used in the lookup paths.
+Only compile-tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
 ---
- fs/kernfs/dir.c             | 79 +++++++++++++++++++++++++--------------------
- fs/kernfs/file.c            | 10 ++++--
- fs/kernfs/kernfs-internal.h |  3 +-
- fs/kernfs/symlink.c         | 10 ++++--
- include/linux/kernfs.h      |  1 -
- 5 files changed, 60 insertions(+), 43 deletions(-)
+ arch/s390/include/asm/ccwgroup.h |  1 +
+ arch/s390/pci/pci_sysfs.c        | 18 ++++++++----------
+ drivers/s390/block/dcssblk.c     | 14 +++++++-------
+ drivers/s390/cio/ccwgroup.c      | 26 ++++++++++++++++----------
+ 4 files changed, 32 insertions(+), 27 deletions(-)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 1c9130a..7f8afc1 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -127,6 +127,7 @@ static void kernfs_unlink_sibling(struct kernfs_node *kn)
- 		kn->parent->dir.subdirs--;
- 
- 	rb_erase(&kn->rb, &kn->parent->dir.children);
-+	RB_CLEAR_NODE(&kn->rb);
- }
- 
- /**
-@@ -177,18 +178,16 @@ void kernfs_put_active(struct kernfs_node *kn)
- }
- 
- /**
-- *	kernfs_deactivate - deactivate kernfs_node
-- *	@kn: kernfs_node to deactivate
-+ * kernfs_drain - drain kernfs_node
-+ * @kn: kernfs_node to drain
-  *
-- *	Deny new active references and drain existing ones.
-+ * Drain existing usages.
-  */
--static void kernfs_deactivate(struct kernfs_node *kn)
-+static void kernfs_drain(struct kernfs_node *kn)
- {
- 	struct kernfs_root *root = kernfs_root(kn);
- 
--	BUG_ON(!(kn->flags & KERNFS_REMOVED));
--
--	atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
-+	WARN_ON_ONCE(atomic_read(&kn->active) >= 0);
- 
- 	if (kernfs_lockdep(kn)) {
- 		rwsem_acquire(&kn->dep_map, 0, 0, _RET_IP_);
-@@ -233,13 +232,15 @@ void kernfs_put(struct kernfs_node *kn)
- 		return;
- 	root = kernfs_root(kn);
-  repeat:
--	/* Moving/renaming is always done while holding reference.
-+	/*
-+	 * Moving/renaming is always done while holding reference.
- 	 * kn->parent won't change beneath us.
- 	 */
- 	parent = kn->parent;
- 
--	WARN(!(kn->flags & KERNFS_REMOVED), "kernfs: free using entry: %s/%s\n",
--	     parent ? parent->name : "", kn->name);
-+	WARN_ONCE(atomic_read(&kn->active) != KN_DEACTIVATED_BIAS,
-+		  "kernfs_put: %s/%s: released with incorrect active_ref %d\n",
-+		  parent ? parent->name : "", kn->name, atomic_read(&kn->active));
- 
- 	if (kernfs_type(kn) == KERNFS_LINK)
- 		kernfs_put(kn->symlink.target_kn);
-@@ -281,8 +282,8 @@ static int kernfs_dop_revalidate(struct dentry *dentry, unsigned int flags)
- 	kn = dentry->d_fsdata;
- 	mutex_lock(&kernfs_mutex);
- 
--	/* The kernfs node has been deleted */
--	if (kn->flags & KERNFS_REMOVED)
-+	/* Force fresh lookup if removed */
-+	if (kn->parent && RB_EMPTY_NODE(&kn->rb))
- 		goto out_bad;
- 
- 	/* The kernfs node has been moved? */
-@@ -350,11 +351,12 @@ struct kernfs_node *kernfs_new_node(struct kernfs_root *root, const char *name,
- 	kn->ino = ret;
- 
- 	atomic_set(&kn->count, 1);
--	atomic_set(&kn->active, 0);
-+	atomic_set(&kn->active, KN_DEACTIVATED_BIAS);
-+	RB_CLEAR_NODE(&kn->rb);
- 
- 	kn->name = name;
- 	kn->mode = mode;
--	kn->flags = flags | KERNFS_REMOVED;
-+	kn->flags = flags;
- 
- 	return kn;
- 
-@@ -413,6 +415,8 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
- 	struct kernfs_iattrs *ps_iattr;
- 	int ret;
- 
-+	WARN_ON_ONCE(atomic_read(&parent->active) < 0);
-+
- 	if (has_ns != (bool)kn->ns) {
- 		WARN(1, KERN_WARNING "kernfs: ns %s in '%s' for '%s'\n",
- 		     has_ns ? "required" : "invalid", parent->name, kn->name);
-@@ -422,9 +426,6 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
- 	if (kernfs_type(parent) != KERNFS_DIR)
- 		return -EINVAL;
- 
--	if (parent->flags & KERNFS_REMOVED)
--		return -ENOENT;
--
- 	kn->hash = kernfs_name_hash(kn->name, kn->ns);
- 	kn->parent = parent;
- 	kernfs_get(parent);
-@@ -441,8 +442,7 @@ int kernfs_add_one(struct kernfs_addrm_cxt *acxt, struct kernfs_node *kn,
- 	}
- 
- 	/* Mark the entry added into directory tree */
--	kn->flags &= ~KERNFS_REMOVED;
--
-+	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
- 	return 0;
- }
- 
-@@ -470,7 +470,7 @@ static void kernfs_remove_one(struct kernfs_addrm_cxt *acxt,
- 	 * Removal can be called multiple times on the same node.  Only the
- 	 * first invocation is effective and puts the base ref.
- 	 */
--	if (kn->flags & KERNFS_REMOVED)
-+	if (atomic_read(&kn->active) < 0)
- 		return;
- 
- 	if (kn->parent) {
-@@ -484,7 +484,7 @@ static void kernfs_remove_one(struct kernfs_addrm_cxt *acxt,
- 		}
- 	}
- 
--	kn->flags |= KERNFS_REMOVED;
-+	atomic_add(KN_DEACTIVATED_BIAS, &kn->active);
- 	kn->u.removed_list = acxt->removed;
- 	acxt->removed = kn;
- }
-@@ -512,7 +512,7 @@ void kernfs_addrm_finish(struct kernfs_addrm_cxt *acxt)
- 
- 		acxt->removed = kn->u.removed_list;
- 
--		kernfs_deactivate(kn);
-+		kernfs_drain(kn);
- 		kernfs_unmap_bin_file(kn);
- 		kernfs_put(kn);
- 	}
-@@ -610,7 +610,7 @@ struct kernfs_root *kernfs_create_root(struct kernfs_dir_ops *kdops, void *priv)
- 		return ERR_PTR(-ENOMEM);
- 	}
- 
--	kn->flags &= ~KERNFS_REMOVED;
-+	atomic_sub(KN_DEACTIVATED_BIAS, &kn->active);
- 	kn->priv = priv;
- 	kn->dir.root = root;
- 
-@@ -662,9 +662,13 @@ struct kernfs_node *kernfs_create_dir_ns(struct kernfs_node *parent,
- 	kn->priv = priv;
- 
- 	/* link in */
--	kernfs_addrm_start(&acxt);
--	rc = kernfs_add_one(&acxt, kn, parent);
--	kernfs_addrm_finish(&acxt);
-+	rc = -ENOENT;
-+	if (kernfs_get_active(parent)) {
-+		kernfs_addrm_start(&acxt);
-+		rc = kernfs_add_one(&acxt, kn, parent);
-+		kernfs_addrm_finish(&acxt);
-+		kernfs_put_active(parent);
-+	}
- 
- 	if (!rc)
- 		return kn;
-@@ -899,27 +903,29 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
- {
- 	int error;
- 
--	mutex_lock(&kernfs_mutex);
--
- 	error = -ENOENT;
--	if ((kn->flags | new_parent->flags) & KERNFS_REMOVED)
-+	if (!kernfs_get_active(new_parent))
- 		goto out;
-+	if (!kernfs_get_active(kn))
-+		goto out_put_new_parent;
-+
-+	mutex_lock(&kernfs_mutex);
- 
- 	error = 0;
- 	if ((kn->parent == new_parent) && (kn->ns == new_ns) &&
- 	    (strcmp(kn->name, new_name) == 0))
--		goto out;	/* nothing to rename */
-+		goto out_unlock;	/* nothing to rename */
- 
- 	error = -EEXIST;
- 	if (kernfs_find_ns(new_parent, new_name, new_ns))
--		goto out;
-+		goto out_unlock;
- 
- 	/* rename kernfs_node */
- 	if (strcmp(kn->name, new_name) != 0) {
- 		error = -ENOMEM;
- 		new_name = kstrdup(new_name, GFP_KERNEL);
- 		if (!new_name)
--			goto out;
-+			goto out_unlock;
- 
- 		if (kn->flags & KERNFS_STATIC_NAME)
- 			kn->flags &= ~KERNFS_STATIC_NAME;
-@@ -941,8 +947,12 @@ int kernfs_rename_ns(struct kernfs_node *kn, struct kernfs_node *new_parent,
- 	kernfs_link_sibling(kn);
- 
- 	error = 0;
-- out:
-+out_unlock:
- 	mutex_unlock(&kernfs_mutex);
-+	kernfs_put_active(kn);
-+out_put_new_parent:
-+	kernfs_put_active(new_parent);
-+out:
- 	return error;
- }
- 
-@@ -962,8 +972,7 @@ static struct kernfs_node *kernfs_dir_pos(const void *ns,
- 	struct kernfs_node *parent, loff_t hash, struct kernfs_node *pos)
- {
- 	if (pos) {
--		int valid = !(pos->flags & KERNFS_REMOVED) &&
--			pos->parent == parent && hash == pos->hash;
-+		int valid = pos->parent == parent && hash == pos->hash;
- 		kernfs_put(pos);
- 		if (!valid)
- 			pos = NULL;
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index bdd3885..231a171 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -856,9 +856,13 @@ struct kernfs_node *__kernfs_create_file(struct kernfs_node *parent,
- 	if (ops->mmap)
- 		kn->flags |= KERNFS_HAS_MMAP;
- 
--	kernfs_addrm_start(&acxt);
--	rc = kernfs_add_one(&acxt, kn, parent);
--	kernfs_addrm_finish(&acxt);
-+	rc = -ENOENT;
-+	if (kernfs_get_active(parent)) {
-+		kernfs_addrm_start(&acxt);
-+		rc = kernfs_add_one(&acxt, kn, parent);
-+		kernfs_addrm_finish(&acxt);
-+		kernfs_put_active(parent);
-+	}
- 
- 	if (rc) {
- 		kernfs_put(kn);
-diff --git a/fs/kernfs/kernfs-internal.h b/fs/kernfs/kernfs-internal.h
-index c6ba5bc..57a93f4 100644
---- a/fs/kernfs/kernfs-internal.h
-+++ b/fs/kernfs/kernfs-internal.h
-@@ -26,7 +26,8 @@ struct kernfs_iattrs {
- 	struct simple_xattrs	xattrs;
+diff --git a/arch/s390/include/asm/ccwgroup.h b/arch/s390/include/asm/ccwgroup.h
+index 23723ce..6e670f8 100644
+--- a/arch/s390/include/asm/ccwgroup.h
++++ b/arch/s390/include/asm/ccwgroup.h
+@@ -23,6 +23,7 @@ struct ccwgroup_device {
+ 	unsigned int count;
+ 	struct device	dev;
+ 	struct ccw_device *cdev[0];
++	struct work_struct ungroup_work;
  };
  
--#define KN_DEACTIVATED_BIAS		INT_MIN
-+/* +1 to avoid triggering overflow warning when negating it */
-+#define KN_DEACTIVATED_BIAS		(INT_MIN + 1)
+ /**
+diff --git a/arch/s390/pci/pci_sysfs.c b/arch/s390/pci/pci_sysfs.c
+index cf8a12f..ab4a913 100644
+--- a/arch/s390/pci/pci_sysfs.c
++++ b/arch/s390/pci/pci_sysfs.c
+@@ -48,29 +48,27 @@ static ssize_t show_pfgid(struct device *dev, struct device_attribute *attr,
+ }
+ static DEVICE_ATTR(pfgid, S_IRUGO, show_pfgid, NULL);
  
- /* KERNFS_TYPE_MASK and types are defined in include/linux/kernfs.h */
+-static void recover_callback(struct device *dev)
++static ssize_t store_recover(struct device *dev, struct device_attribute *attr,
++			     const char *buf, size_t count)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct zpci_dev *zdev = get_zdev(pdev);
+ 	int ret;
  
-diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
-index a03e260..b2c106c 100644
---- a/fs/kernfs/symlink.c
-+++ b/fs/kernfs/symlink.c
-@@ -40,9 +40,13 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
- 	kn->symlink.target_kn = target;
- 	kernfs_get(target);	/* ref owned by symlink */
++	if (!device_remove_file_self(dev, attr))
++		return count;
++
+ 	pci_stop_and_remove_bus_device(pdev);
+ 	ret = zpci_disable_device(zdev);
+ 	if (ret)
+-		return;
++		return ret;
  
--	kernfs_addrm_start(&acxt);
--	error = kernfs_add_one(&acxt, kn, parent);
--	kernfs_addrm_finish(&acxt);
-+	error = -ENOENT;
-+	if (kernfs_get_active(parent)) {
-+		kernfs_addrm_start(&acxt);
-+		error = kernfs_add_one(&acxt, kn, parent);
-+		kernfs_addrm_finish(&acxt);
-+		kernfs_put_active(parent);
+ 	ret = zpci_enable_device(zdev);
+ 	if (ret)
+-		return;
++		return ret;
+ 
+ 	pci_rescan_bus(zdev->bus);
+-}
+-
+-static ssize_t store_recover(struct device *dev, struct device_attribute *attr,
+-			     const char *buf, size_t count)
+-{
+-	int rc = device_schedule_callback(dev, recover_callback);
+-	return rc ? rc : count;
++	return count;
+ }
+ static DEVICE_ATTR(recover, S_IWUSR, NULL, store_recover);
+ 
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 6eca019..2e2f454 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -304,12 +304,6 @@ dcssblk_load_segment(char *name, struct segment_info **seg_info)
+ 	return rc;
+ }
+ 
+-static void dcssblk_unregister_callback(struct device *dev)
+-{
+-	device_unregister(dev);
+-	put_device(dev);
+-}
+-
+ /*
+  * device attribute for switching shared/nonshared (exclusive)
+  * operation (show + store)
+@@ -397,7 +391,13 @@ removeseg:
+ 	blk_cleanup_queue(dev_info->dcssblk_queue);
+ 	dev_info->gd->queue = NULL;
+ 	put_disk(dev_info->gd);
+-	rc = device_schedule_callback(dev, dcssblk_unregister_callback);
++	up_write(&dcssblk_devices_sem);
++
++	if (device_remove_file_self(dev, attr)) {
++		device_unregister(dev);
++		put_device(dev);
 +	}
++	return rc;
+ out:
+ 	up_write(&dcssblk_devices_sem);
+ 	return rc;
+diff --git a/drivers/s390/cio/ccwgroup.c b/drivers/s390/cio/ccwgroup.c
+index 959135a..67b9dc9 100644
+--- a/drivers/s390/cio/ccwgroup.c
++++ b/drivers/s390/cio/ccwgroup.c
+@@ -168,14 +168,12 @@ static ssize_t ccwgroup_online_show(struct device *dev,
+  * Provide an 'ungroup' attribute so the user can remove group devices no
+  * longer needed or accidentially created. Saves memory :)
+  */
+-static void ccwgroup_ungroup_callback(struct device *dev)
++static void ccwgroup_ungroup(struct ccwgroup_device *gdev)
+ {
+-	struct ccwgroup_device *gdev = to_ccwgroupdev(dev);
+-
+ 	mutex_lock(&gdev->reg_mutex);
+ 	if (device_is_registered(&gdev->dev)) {
+ 		__ccwgroup_remove_symlinks(gdev);
+-		device_unregister(dev);
++		device_unregister(&gdev->dev);
+ 		__ccwgroup_remove_cdev_refs(gdev);
+ 	}
+ 	mutex_unlock(&gdev->reg_mutex);
+@@ -195,10 +193,9 @@ static ssize_t ccwgroup_ungroup_store(struct device *dev,
+ 		rc = -EINVAL;
+ 		goto out;
+ 	}
+-	/* Note that we cannot unregister the device from one of its
+-	 * attribute methods, so we have to use this roundabout approach.
+-	 */
+-	rc = device_schedule_callback(dev, ccwgroup_ungroup_callback);
++
++	if (device_remove_file_self(dev, attr))
++		ccwgroup_ungroup(gdev);
+ out:
+ 	if (rc) {
+ 		if (rc != -EAGAIN)
+@@ -224,6 +221,14 @@ static const struct attribute_group *ccwgroup_attr_groups[] = {
+ 	NULL,
+ };
  
- 	if (!error)
- 		return kn;
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 42ad32f..289d4f6 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -37,7 +37,6 @@ enum kernfs_node_type {
- #define KERNFS_FLAG_MASK	~KERNFS_TYPE_MASK
++static void ccwgroup_ungroup_workfn(struct work_struct *work)
++{
++	struct ccwgroup_device *gdev =
++		container_of(work, struct ccwgroup_device, ungroup_work);
++
++	ccwgroup_ungroup(gdev);
++}
++
+ static void ccwgroup_release(struct device *dev)
+ {
+ 	kfree(to_ccwgroupdev(dev));
+@@ -323,6 +328,7 @@ int ccwgroup_create_dev(struct device *parent, struct ccwgroup_driver *gdrv,
+ 	atomic_set(&gdev->onoff, 0);
+ 	mutex_init(&gdev->reg_mutex);
+ 	mutex_lock(&gdev->reg_mutex);
++	INIT_WORK(&gdev->ungroup_work, ccwgroup_ungroup_workfn);
+ 	gdev->count = num_devices;
+ 	gdev->dev.bus = &ccwgroup_bus_type;
+ 	gdev->dev.parent = parent;
+@@ -404,10 +410,10 @@ EXPORT_SYMBOL(ccwgroup_create_dev);
+ static int ccwgroup_notifier(struct notifier_block *nb, unsigned long action,
+ 			     void *data)
+ {
+-	struct device *dev = data;
++	struct ccwgroup_device *gdev = to_ccwgroupdev(data);
  
- enum kernfs_node_flag {
--	KERNFS_REMOVED		= 0x0010,
- 	KERNFS_NS		= 0x0020,
- 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
- 	KERNFS_HAS_MMAP		= 0x0080,
+ 	if (action == BUS_NOTIFY_UNBIND_DRIVER)
+-		device_schedule_callback(dev, ccwgroup_ungroup_callback);
++		schedule_work(&gdev->ungroup_work);
+ 
+ 	return NOTIFY_OK;
+ }
 -- 
 1.8.4.2
 
