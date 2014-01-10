@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaAJAJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:09:10 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:33826 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319AbaAJAJI (ORCPT
+	id S1755293AbaAJAJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:09:27 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40168 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203AbaAJAJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:09:08 -0500
+	Thu, 9 Jan 2014 19:09:24 -0500
+Date: Fri, 10 Jan 2014 00:09:18 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
+        stable <stable@vger.kernel.org>, Paul Moore <paul@paul-moore.com>,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
+ inode_permission()
+Message-ID: <20140110000918.GO10323@ZenIV.linux.org.uk>
+References: <20140109162731.12500986@gandalf.local.home>
+ <20140109214239.GD29910@parisc-linux.org>
+ <20140109165012.391db81e@gandalf.local.home>
+ <20140109223127.GM10323@ZenIV.linux.org.uk>
+ <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+ <20140109182523.5b50131f@gandalf.local.home>
+ <20140109182756.17abaaa8@gandalf.local.home>
+ <1389310626.15209.92.camel@localhost>
+ <CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
+ <20140110000642.GN10323@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1387816927-4313-1-git-send-email-taras.kondratiuk@linaro.org>
-References: <1387816927-4313-1-git-send-email-taras.kondratiuk@linaro.org>
-Date: Thu, 9 Jan 2014 16:09:06 -0800
-Message-ID: <CAA3XUr0A2jK0y-kfkpGE4mDNOCAhDi7AY0y9Fvmu5dgNygXXQQ@mail.gmail.com>
-Subject: Re: [LNG] [PATCH] ARM: traps: fix opcode endianness when read from
- user memory
-From: Victor Kamensky <victor.kamensky@linaro.org>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Patch Tracking <patches@linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110000642.GN10323@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Taras, it looks good. Did you submit it into Russell's patch system? It
-would be good to have this fix in main line tree.
+On Fri, Jan 10, 2014 at 12:06:42AM +0000, Al Viro wrote:
 
-Anyone, is there any concerns about this patch? It is quite simple
-change.
+> and hit it whenever full ->free_inode is there and ->destroy_inode isn't.
 
-Thanks,
-Victor
-
-On 23 December 2013 08:42, Taras Kondratiuk <taras.kondratiuk@linaro.org> wrote:
-> Currently code has an inverted logic: opcode from user memory
-> is swapped to a proper endianness only in case of read error.
-> While normally opcode should be swapped only if it was read
-> correctly from user memory.
->
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> ---
->  arch/arm/kernel/traps.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> index 7940241..36a844e 100644
-> --- a/arch/arm/kernel/traps.c
-> +++ b/arch/arm/kernel/traps.c
-> @@ -425,9 +425,10 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
->                         instr2 = __mem_to_opcode_thumb16(instr2);
->                         instr = __opcode_thumb32_compose(instr, instr2);
->                 }
-> -       } else if (get_user(instr, (u32 __user *)pc)) {
-> +       } else {
-> +               if (get_user(instr, (u32 __user *)pc))
-> +                       goto die_sig;
->                 instr = __mem_to_opcode_arm(instr);
-> -               goto die_sig;
->         }
->
->         if (call_undef_hook(regs, instr) == 0)
-> --
-> 1.7.9.5
->
-> --
-> You received this message because you are subscribed to the Google Groups "Linaro Networking" group.
-> To unsubscribe from this group and stop receiving emails from it, send an email to linaro-networking+unsubscribe@linaro.org.
-> To post to this group, send email to linaro-networking@linaro.org.
+Grr... "whenever ->free_inode is there and full ->destroy_inode isn't".
+Apologies for sloppy editing...
