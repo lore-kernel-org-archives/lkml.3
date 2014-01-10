@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128AbaAJA2v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:28:51 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:62095 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751266AbaAJA2t (ORCPT
+	id S1754911AbaAJAaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:30:08 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:19166 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaAJAaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:28:49 -0500
-Message-ID: <1389313726.2039.9.camel@x220>
-Subject: [PATCH] kvm: vfio: silence GCC warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 10 Jan 2014 01:28:46 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Jan 2014 00:28:47.0689 (UTC) FILETIME=[ED72EB90:01CF0D9A]
-X-RcptDomain: vger.kernel.org
+	Thu, 9 Jan 2014 19:30:05 -0500
+X-AuditID: cbfee68d-b7fcd6d00000315b-d9-52cf3f0b548c
+Message-id: <52CF3F0B.8030006@samsung.com>
+Date: Fri, 10 Jan 2014 09:30:03 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jesper Falk <jesperfalk94@gmail.com>
+Cc: anton@enomsg.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Power: charger-manager: Fixed coding style
+References: <1389023175-11872-1-git-send-email-jesperfalk94@gmail.com>
+In-reply-to: <1389023175-11872-1-git-send-email-jesperfalk94@gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsWyRsSkWJfb/nyQwe+pshYHt2paTFw5mdmi
+	sX0hk8XlXXPYHFg8JvR/YvTYOesuu8fmFVoenzfJBbBEcdmkpOZklqUW6dslcGV0zdjKXNDK
+	XPF/zSLGBsadTF2MnBwSAiYSxx5chbLFJC7cW8/WxcjFISSwlFHi/4ROuKK7N18yQySmM0os
+	WjqXBcJ5xSixsn8KexcjBwevgJZEb7MzSAOLgKrEp0v/WEFsNqDw/hc32EBsUYEwiZXTr7CA
+	2LwCghI/Jt8Ds0UENCQW/u0Gq2cWcJfY2/iTEcQWFrCXaNjRCNYrJOAm8f3iV7AaTqCaD8/X
+	M0HU60jsb53GBmHLS2xe8xbsUAmBdewSq341sUAcJCDxbfIhFpA7JQRkJTYdYIZ4TFLi4Iob
+	LBMYxWYhOWkWkrGzkIxdwMi8ilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMwlk7/e9a7g/H2
+	AetDjMlAKycyS4km5wNjMa8k3tDYzMjC1MTU2Mjc0ow0YSVx3qSHSUFCAumJJanZqakFqUXx
+	RaU5qcWHGJk4OKUaGIPlVnz6kbX+3ZFC1sexJkyXm7jlnsq+k3+RL1/k+ulHhOmWSTPXJe9V
+	KXePXLI0WHYa8/kvk5wyiwsuTnypwbPUOG9fl8cxkesnk+2mCC6ZzPJjl/+UkydDj+lsnRSx
+	Y8W0vG9Jq+QNk9NKL02QfqHLXNFl9etpgrVt6MGge5sdmIoO9Nq1CSuxFGckGmoxFxUnAgAD
+	4yKeuwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+xoC63/fkgg755YhYHt2paTFw5mdmi
+	sX0hk8XlXXPYHFg8JvR/YvTYOesuu8fmFVoenzfJBbBENTDaZKQmpqQWKaTmJeenZOal2yp5
+	B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gBtVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHT
+	GKHrGxIE12NkgAYS1jBmdM3YylzQylzxf80ixgbGnUxdjJwcEgImEndvvmSGsMUkLtxbz9bF
+	yMUhJDCdUWLR0rksEM4rRomV/VPYuxg5OHgFtCR6m51BGlgEVCU+XfrHCmKzAYX3v7jBBmKL
+	CoRJrJx+hQXE5hUQlPgx+R6YLSKgIbHwbzdYPbOAu8Texp+MILawgL1Ew45GsF4hATeJ7xe/
+	gtVwAtV8eL6eCaJeR2J/6zQ2CFteYvOat8wTGAVmIVkxC0nZLCRlCxiZVzGKphYkFxQnpeca
+	6RUn5haX5qXrJefnbmIER+oz6R2MqxosDjEKcDAq8fCuKD4bJMSaWFZcmXuIUYKDWUmEN83q
+	fJAQb0piZVVqUX58UWlOavEhxmRgCExklhJNzgcmkbySeENjEzMjSyNzQwsjY3PShJXEeQ+2
+	WgcKCaQnlqRmp6YWpBbBbGHi4JRqYMyS9pojHxHCMu/1HhWtn/dW+k38umNRRGBw9/bymnvr
+	zCXSn1gcNfU1D1IK2T6fZaPJjOZZpatf3c4QPy2h6PR9qdbdb+pRxsmfj4hkm33N9pivkmOy
+	qeVHrgdTfCLP5p8CG9fnXt7oejq565mA4YkqqYp9MZPEfj0Iu6RV9WxjfPrb8s59G5RYijMS
+	DbWYi4oTAY7mWxYYAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building vfio.o triggers a GCC warning (when building for 32 bits x86):
-    arch/x86/kvm/../../../virt/kvm/vfio.c: In function 'kvm_vfio_set_group':
-    arch/x86/kvm/../../../virt/kvm/vfio.c:104:22: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-      void __user *argp = (void __user *)arg;
-                          ^
+On 01/07/2014 12:46 AM, Jesper Falk wrote:
+> Removed apaces before semicolon and fixed brackets on if statements
+> 
+> Signed-off-by: Jesper Falk <jesperfalk94@gmail.com>
+> ---
+>  drivers/power/charger-manager.c | 19 ++++++++-----------
+>  1 file changed, 8 insertions(+), 11 deletions(-)
+> 
 
-Silence this warning by casting arg to unsigned long.
+Acked-by: Chanwoo Choi
 
-argp's current type, "void __user *", is always casted to "int32_t
-__user *". So its type might as well be changed to "int32_t __user *".
+I reviewed and tested this patch.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested on both 32 and 64 bits x86. I've no KVM capable hardware
-that is already running v3.13-rc* at hand. Besides, I wouldn't know how
-to test the codepaths I'm changing here.
-
- virt/kvm/vfio.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-index ca4260e..b4f9507 100644
---- a/virt/kvm/vfio.c
-+++ b/virt/kvm/vfio.c
-@@ -101,14 +101,14 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
- 	struct kvm_vfio *kv = dev->private;
- 	struct vfio_group *vfio_group;
- 	struct kvm_vfio_group *kvg;
--	void __user *argp = (void __user *)arg;
-+	int32_t __user *argp = (int32_t __user *)(unsigned long)arg;
- 	struct fd f;
- 	int32_t fd;
- 	int ret;
- 
- 	switch (attr) {
- 	case KVM_DEV_VFIO_GROUP_ADD:
--		if (get_user(fd, (int32_t __user *)argp))
-+		if (get_user(fd, argp))
- 			return -EFAULT;
- 
- 		f = fdget(fd);
-@@ -148,7 +148,7 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
- 		return 0;
- 
- 	case KVM_DEV_VFIO_GROUP_DEL:
--		if (get_user(fd, (int32_t __user *)argp))
-+		if (get_user(fd, argp))
- 			return -EFAULT;
- 
- 		f = fdget(fd);
--- 
-1.8.4.2
+Thanks,
+Chanwoo Choi
 
