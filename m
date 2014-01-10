@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930AbaAJACg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:02:36 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:55466 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751583AbaAJACe (ORCPT
+	id S1755342AbaAJAG4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:06:56 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40141 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaAJAGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:02:34 -0500
-Date: Thu, 9 Jan 2014 16:02:33 -0800
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: pv-drivers@vmware.com, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>, Andy King <acking@vmware.com>
-Subject: [PATCH] VMCI: fix error handling path when registering guest driver
-Message-ID: <20140110000232.GA16959@dtor-ws.eng.vmware.com>
+	Thu, 9 Jan 2014 19:06:51 -0500
+Date: Fri, 10 Jan 2014 00:06:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, "Theodore Ts'o" <tytso@mit.edu>,
+        stable <stable@vger.kernel.org>, Paul Moore <paul@paul-moore.com>,
+        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
+ inode_permission()
+Message-ID: <20140110000642.GN10323@ZenIV.linux.org.uk>
+References: <20140109162731.12500986@gandalf.local.home>
+ <20140109214239.GD29910@parisc-linux.org>
+ <20140109165012.391db81e@gandalf.local.home>
+ <20140109223127.GM10323@ZenIV.linux.org.uk>
+ <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
+ <20140109182523.5b50131f@gandalf.local.home>
+ <20140109182756.17abaaa8@gandalf.local.home>
+ <1389310626.15209.92.camel@localhost>
+ <CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When host capabilities check failed or when we were unable to register doorbell
-bitmap we were forgetting to set error code and were returning 0 which would
-make upper layers believe that probe was successful.
+On Fri, Jan 10, 2014 at 07:53:41AM +0800, Linus Torvalds wrote:
+> On Fri, Jan 10, 2014 at 7:37 AM, Eric Paris <eparis@redhat.com> wrote:
+> >
+> > but at least from an SELinux PoV, I think it's quick and easy, but wrong
+> > for maintainability...
+> 
+> Yeah, it's a hack, and it's wrong, and we should figure out how to do
+> it right. Likely we should just tie the lifetime of the i_security
+> member directly to the lifetime of the inode itself, and just make the
+> rule be that security_inode_free() gets called from whatever frees the
+> inode itself, and *not* have an extra rcu callback etc. But that
+> sounds like a bigger change than I'm comfy with right now, so the
+> hacky one might be the band-aid to do for stable..
+> 
+> The problem, of course, is that all the different filesystems have
+> their own inode allocations/freeing. Of course, they all tend to share
+> the same pattern ("call_rcu xyz_i_callback"), so maybe we could try to
+> make that a more generic thing? Like have a "free_inode" vfs callback,
+> and do the call_rcu delaying at the VFS level..
+> 
+> And maybe, just maybe, we could just say that that is what
+> "destroy_inode()" is, and that we will just call it from rcu context.
+> All the IO has hopefully been done earlier  Yes/no?
 
-Reported-by: Julia Lawall <julia.lawall@lip6.fr>
-Acked-by: Andy King <acking@vmware.com>
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
----
- drivers/misc/vmw_vmci/vmci_guest.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Check what XFS is doing ;-/  That's where those call_rcu() have come from.
+Sure, we can separate the simple "just do call_rcu(...->free_inode)" case
+and hit it whenever full ->free_inode is there and ->destroy_inode isn't.
+Not too pretty, but removal of tons of boilerplate might be worth doing
+that anyway.  But ->destroy_inode() is still needed for cases where fs
+has its own idea of inode lifetime rules.  Again, check what XFS is doing
+in that area...
 
-diff --git a/drivers/misc/vmw_vmci/vmci_guest.c b/drivers/misc/vmw_vmci/vmci_guest.c
-index c98b03b..d35cda0 100644
---- a/drivers/misc/vmw_vmci/vmci_guest.c
-+++ b/drivers/misc/vmw_vmci/vmci_guest.c
-@@ -165,7 +165,7 @@ static void vmci_guest_cid_update(u32 sub_id,
-  * true if required hypercalls (or fallback hypercalls) are
-  * supported by the host, false otherwise.
-  */
--static bool vmci_check_host_caps(struct pci_dev *pdev)
-+static int vmci_check_host_caps(struct pci_dev *pdev)
- {
- 	bool result;
- 	struct vmci_resource_query_msg *msg;
-@@ -176,7 +176,7 @@ static bool vmci_check_host_caps(struct pci_dev *pdev)
- 	check_msg = kmalloc(msg_size, GFP_KERNEL);
- 	if (!check_msg) {
- 		dev_err(&pdev->dev, "%s: Insufficient memory\n", __func__);
--		return false;
-+		return -ENOMEM;
- 	}
- 
- 	check_msg->dst = vmci_make_handle(VMCI_HYPERVISOR_CONTEXT_ID,
-@@ -196,7 +196,7 @@ static bool vmci_check_host_caps(struct pci_dev *pdev)
- 		__func__, result ? "PASSED" : "FAILED");
- 
- 	/* We need the vector. There are no fallbacks. */
--	return result;
-+	return result ? 0 : -ENXIO;
- }
- 
- /*
-@@ -564,12 +564,14 @@ static int vmci_guest_probe_device(struct pci_dev *pdev,
- 			dev_warn(&pdev->dev,
- 				 "VMCI device unable to register notification bitmap with PPN 0x%x\n",
- 				 (u32) bitmap_ppn);
-+			error = -ENXIO;
- 			goto err_remove_vmci_dev_g;
- 		}
- 	}
- 
- 	/* Check host capabilities. */
--	if (!vmci_check_host_caps(pdev))
-+	error = vmci_check_host_caps(pdev);
-+	if (error)
- 		goto err_remove_bitmap;
- 
- 	/* Enable device. */
+There's an extra source of headache, BTW - what about the "LSM stacking"
+crowd and their plans?
