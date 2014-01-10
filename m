@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaAJHCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:02:34 -0500
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34884 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaAJHAZ (ORCPT
+	id S1753615AbaAJHDb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:03:31 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:60682 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274AbaAJHCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:00:25 -0500
-From: Chen-Yu Tsai <wens@csie.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v2 13/16] ARM: dts: sun7i: cubietruck: Enable the GMAC
-Date: Fri, 10 Jan 2014 15:00:14 +0800
-Message-Id: <1389337217-29032-14-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389337217-29032-1-git-send-email-wens@csie.org>
-References: <1389337217-29032-1-git-send-email-wens@csie.org>
+	Fri, 10 Jan 2014 02:02:33 -0500
+Message-ID: <1389337456.5567.412.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 03/14] target/sbc: Add sbc_check_prot + update
+ sbc_parse_cdb for DIF
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sagi Grimberg <sagig@mellanox.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>, oren Duer <oren@mellanox.com>
+Date: Thu, 09 Jan 2014 23:04:16 -0800
+In-Reply-To: <52CEB901.6030504@mellanox.com>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	 <1389212157-14540-4-git-send-email-nab@daterainc.com>
+	 <52CEB901.6030504@mellanox.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CubieTruck uses the GMAC with an RGMII phy.
+On Thu, 2014-01-09 at 16:58 +0200, Sagi Grimberg wrote:
+> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> >
+> > This patch adds sbc_check_prot() for performing various DIF
+> > related CDB sanity checks, along with setting SCF_PROT once
+> > sanity checks have passed.
+> >
+> > Also, add calls in sbc_parse_cdb() for READ_[10,12,16] +
+> > WRITE_[10,12,16] to perform DIF sanity checking.
+> >
+> > Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> > Cc: Christoph Hellwig <hch@lst.de>
+> > Cc: Hannes Reinecke <hare@suse.de>
+> > Cc: Sagi Grimberg <sagig@mellanox.com>
+> > Cc: Or Gerlitz <ogerlitz@mellanox.com>
+> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > ---
+> >   drivers/target/target_core_sbc.c |   39 ++++++++++++++++++++++++++++++++++++++
+> >   1 file changed, 39 insertions(+)
+> >
+> > diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+> > index 52ae54e..600ffcb 100644
+> > --- a/drivers/target/target_core_sbc.c
+> > +++ b/drivers/target/target_core_sbc.c
+> > @@ -563,6 +563,27 @@ sbc_compare_and_write(struct se_cmd *cmd)
+> >   	return TCM_NO_SENSE;
+> >   }
+> >   
+> > +bool
+> > +sbc_check_prot(struct se_device *dev, struct se_cmd *cmd, unsigned char *cdb)
+> > +{
+> > +	if (!dev->dev_attrib.pi_prot_type)
+> > +		return true;
+> > +
+> > +	if (dev->dev_attrib.pi_prot_type == TARGET_DIF_TYPE2_PROT &&
+> > +	   (cdb[1] & 0xe0))
+> > +		return false;
+> > +
+> > +	if (!(cdb[1] & 0xe0)) {
+> > +		pr_warn("Target: Unprotected READ/WRITE to DIF device\n");
+> > +		return true;
+> > +	}
+> > +	if (!cmd->t_prot_sg || !cmd->t_prot_nents)
+> > +		return true;
+> > +
+> > +	cmd->se_cmd_flags |= SCF_PROT;
+> 
+> Isn't this the place to fill the se_cmd DIF execution parameters? 
+> prot_op, prot_type, guard_type, initial_reftag, apptag etc...
+> Next, all parties interested in DIF execution should look in se_cmd 
+> (backstore, transport).
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Yes, working on this for -v2 as well.  :)
 
-diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-index f9dcb61..025ce52 100644
---- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-@@ -51,6 +51,18 @@
- 			pinctrl-0 = <&i2c2_pins_a>;
- 			status = "okay";
- 		};
-+
-+		gmac: ethernet@01c50000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&gmac_pins_rgmii_a>;
-+			phy = <&phy1>;
-+			phy-mode = "rgmii";
-+			status = "okay";
-+
-+			phy1: ethernet-phy@1 {
-+				reg = <1>;
-+			};
-+		};
- 	};
- 
- 	leds {
--- 
-1.8.5.2
+--nab
 
