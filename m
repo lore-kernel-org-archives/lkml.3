@@ -1,162 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaAJNbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:31:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45056 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaAJNbB (ORCPT
+	id S1756746AbaAJNdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:33:16 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:40611 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaAJNdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:31:01 -0500
-Message-ID: <1389360637.5854.53.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v2 01/16] reset: add non CONFIG_RESET_CONTROLLER routines
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Barry Song <Baohua.Song@csr.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Date: Fri, 10 Jan 2014 14:30:37 +0100
-In-Reply-To: <1389337217-29032-2-git-send-email-wens@csie.org>
-References: <1389337217-29032-1-git-send-email-wens@csie.org>
-	 <1389337217-29032-2-git-send-email-wens@csie.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 10 Jan 2014 08:33:14 -0500
+Date: Fri, 10 Jan 2014 05:33:06 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: fengguang.wu@intel.com, Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>
+Subject: Re: [xfs] c91c46c12: xfstests generic/313 regression
+Message-ID: <20140110133306.GA22918@infradead.org>
+References: <20140110122700.GA12624@localhost>
+ <52CFF402.5080409@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CFF402.5080409@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-[Added Ivan, Stephen and Barry to Cc:]
-
-Am Freitag, den 10.01.2014, 15:00 +0800 schrieb Chen-Yu Tsai:
-> Some drivers are shared between platforms that may or may not
-> have RESET_CONTROLLER selected for them.
-
-I expected that drivers compiled for platforms without reset controllers
-but use the reset API should select or depend on RESET_CONTROLLER.
-Stubbing out device_reset and reset_control_get will turn a compile time
-error into a runtime error for everyone forgetting to do this when
-writing a new driver that needs the reset.
-
->  Add dummy functions
-> when RESET_CONTROLLER is not selected, thereby eliminating the
-> need for drivers to enclose reset_control_*() calls within
-> #ifdef CONFIG_RESET_CONTROLLER, #endif
+On Fri, Jan 10, 2014 at 09:22:10PM +0800, Jeff Liu wrote:
+> Hi Fengguang,
 > 
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> Thanks for help catching up this.  I think the below patch can fix it
+> up, but maybe there would have a neater solution once Christoph is back.
 
-This was already proposed by Ivan and Barry earlier, and so far we
-didn't get to a proper conclusion:
+I'd just remove the mask variable that caused the problem.  Untested
+patch below:
 
-https://lkml.org/lkml/2013/10/10/179
-http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/174758.html
-
-If included, the stubs should at least return an error to indicate a
-reset couldn't be performed, but then I lose the compile time error for
-drivers which should select RESET_CONTROLLER but don't.
-
-Also this alone won't help you if you build multi-arch kernels where one
-platform enables RESET_CONTROLLER and the other expects it to be
-disabled.
-
-regards
-Philipp
-
-> ---
->  include/linux/reset.h | 39 +++++++++++++++++++++++++++++++++++++++
->  1 file changed, 39 insertions(+)
-> 
-> diff --git a/include/linux/reset.h b/include/linux/reset.h
-> index 6082247..38aa616 100644
-> --- a/include/linux/reset.h
-> +++ b/include/linux/reset.h
-> @@ -4,6 +4,8 @@
->  struct device;
->  struct reset_control;
->  
-> +#ifdef CONFIG_RESET_CONTROLLER
-> +
->  int reset_control_reset(struct reset_control *rstc);
->  int reset_control_assert(struct reset_control *rstc);
->  int reset_control_deassert(struct reset_control *rstc);
-> @@ -14,4 +16,41 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
->  
->  int device_reset(struct device *dev);
->  
-> +#else /* !CONFIG_RESET_CONTROLLER */
-> +
-> +static inline int reset_control_reset(struct reset_control *rstc)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int reset_control_assert(struct reset_control *rstc)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline int reset_control_deassert(struct reset_control *rstc)
-> +{
-> +	return 0;
-> +}
-
-Those should probably have a WARN_ON(1) like the GPIO API stubs.
-
-> +
-> +static inline struct reset_control *reset_control_get(struct device *dev,
-> +		const char *id)
-> +{
-> +	return NULL;
-> +}
-[...]
-> +static inline struct reset_control *devm_reset_control_get(struct device *dev,
-> +		const char *id)
-> +{
-> +	return NULL;
-> +}
-
-These should return ERR_PTR(-ENOSYS).
-
-> +
-> +static inline int device_reset(struct device *dev)
-> +{
-> +	return 0;
-> +}
-
-And this should return -ENOSYS.
-
-Drivers that also need to run on platforms with CONFIG_RESET_CONTROLLER
-disabled (and that don't need the reset) should ignore -ENOSYS and
--ENOENT return values from device_reset/(devm_)reset_control_get.
-
-I wonder if it might be a good idea to add a RESET_CONTROLLER_OPTIONAL
-that drivers need to select to enable the API stubs? That way we could
-keep the compile time error for new drivers that need resets but forget
-to select RESET_CONTROLLER.
-Or add a
-#warning If this driver can work without reset, please select CONFIG_RESET_CONTROLLER_OPTIONAL
-
-Another possibility would be to add device_reset_optional and
-(devm_)reset_control_get_optional variants and only provide stubs for
-those, but not for device_reset/(devm_)reset_control_get. Then drivers
-that need to work on platforms without the reset controller API enabled
-could explicitly use the _optional variants, and all other drivers would
-still be checked at compile time.
-
-regards
-Philipp
-
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index 0ce1d75..ce966c5 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -714,7 +714,6 @@ xfs_setattr_size(
+ {
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	struct inode		*inode = VFS_I(ip);
+-	int			mask = iattr->ia_valid;
+ 	xfs_off_t		oldsize, newsize;
+ 	struct xfs_trans	*tp;
+ 	int			error;
+@@ -735,8 +734,8 @@ xfs_setattr_size(
+ 
+ 	ASSERT(xfs_isilocked(ip, XFS_IOLOCK_EXCL));
+ 	ASSERT(S_ISREG(ip->i_d.di_mode));
+-	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
+-			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
++	ASSERT((iattr->ia_valid & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
++		ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
+ 
+ 	oldsize = inode->i_size;
+ 	newsize = iattr->ia_size;
+@@ -745,7 +744,7 @@ xfs_setattr_size(
+ 	 * Short circuit the truncate case for zero length files.
+ 	 */
+ 	if (newsize == 0 && oldsize == 0 && ip->i_d.di_nextents == 0) {
+-		if (!(mask & (ATTR_CTIME|ATTR_MTIME)))
++		if (!(iattr->ia_valid & (ATTR_CTIME|ATTR_MTIME)))
+ 			return 0;
+ 
+ 		/*
+@@ -833,10 +832,11 @@ xfs_setattr_size(
+ 	 * these flags set.  For all other operations the VFS set these flags
+ 	 * explicitly if it wants a timestamp update.
+ 	 */
+-	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME)))) {
++	if (newsize != oldsize &&
++	    !(iattr->ia_valid & (ATTR_CTIME | ATTR_MTIME))) {
+ 		iattr->ia_ctime = iattr->ia_mtime =
+ 			current_fs_time(inode->i_sb);
+-		mask |= ATTR_CTIME | ATTR_MTIME;
++		iattr->ia_valid |= ATTR_CTIME | ATTR_MTIME;
+ 	}
+ 
+ 	/*
+@@ -872,9 +872,9 @@ xfs_setattr_size(
+ 		xfs_inode_clear_eofblocks_tag(ip);
+ 	}
+ 
+-	if (mask & ATTR_MODE)
++	if (iattr->ia_valid & ATTR_MODE)
+ 		xfs_setattr_mode(ip, iattr);
+-	if (mask & (ATTR_ATIME|ATTR_CTIME|ATTR_MTIME))
++	if (iattr->ia_valid & (ATTR_ATIME|ATTR_CTIME|ATTR_MTIME))
+ 		xfs_setattr_time(ip, iattr);
+ 
+ 	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE);
