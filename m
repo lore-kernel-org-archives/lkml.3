@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaAJRCi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 12:02:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36120 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaAJRCg (ORCPT
+	id S1757482AbaAJRGv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 12:06:51 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53737 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaAJRGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 12:02:36 -0500
-Date: Fri, 10 Jan 2014 18:02:24 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: SIGSEGV when using "perf record -g" with 3.13-rc* kernel
-Message-ID: <20140110170223.GD8224@laptop.programming.kicks-ass.net>
-References: <52D011C9.7000209@hp.com>
- <20140110165822.GI7572@laptop.programming.kicks-ass.net>
+	Fri, 10 Jan 2014 12:06:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110165822.GI7572@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140110094132.GC3444@yanx>
+References: <1387485843-17403-1-git-send-email-yinghai@kernel.org>
+	<1387485843-17403-3-git-send-email-yinghai@kernel.org>
+	<CAErSpo5VWREGptW0MU0wLJUa3h23DXMZPGkdJFMTx5WAGL8J6Q@mail.gmail.com>
+	<CAE9FiQU88EO=e+CR7RKnZ6r7ofSwi9J1QisnrnDyDz6Qh367YQ@mail.gmail.com>
+	<CAE9FiQVZ9yrcViFNx5q65ot=nNP=JBuvotpEjUis2FF11wjg6w@mail.gmail.com>
+	<20140110094132.GC3444@yanx>
+Date: Fri, 10 Jan 2014 09:06:46 -0800
+X-Google-Sender-Auth: azT37pEPaLvSyeU_Rkz-vIyT0Uw
+Message-ID: <CAE9FiQUw7pubrKcK6yubSXtV60BZaH+ZhsDKieiyQ0api=peXA@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] PCI: Try best to allocate pref mmio 64bit above 4g
+From: Yinghai Lu <yinghai@kernel.org>
+To: Guo Chao <yan@linux.vnet.ibm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 05:58:22PM +0100, Peter Zijlstra wrote:
-> On Fri, Jan 10, 2014 at 10:29:13AM -0500, Waiman Long wrote:
-> > Peter,
-> > 
-> > Call Trace:
-> > <NMI>  [<ffffffff815710af>] dump_stack+0x49/0x62
-> >  [<ffffffff8104e3bc>] warn_slowpath_common+0x8c/0xc0
-> >  [<ffffffff8104e40a>] warn_slowpath_null+0x1a/0x20
-> >  [<ffffffff8105f1f1>] force_sig_info+0x131/0x140
-> >  [<ffffffff81042a4f>] force_sig_info_fault+0x5f/0x70
-> >  [<ffffffff8106d8da>] ? search_exception_tables+0x2a/0x50
-> >  [<ffffffff81043b3d>] ? fixup_exception+0x1d/0x70
-> >  [<ffffffff81042cc9>] no_context+0x159/0x1f0
-> >  [<ffffffff81042e8d>] __bad_area_nosemaphore+0x12d/0x230
-> >  [<ffffffff81042e8d>] ? __bad_area_nosemaphore+0x12d/0x230
-> >  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
-> >  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
-> >  [<ffffffff81578fc2>] ? __do_page_fault+0x362/0x480
-> >  [<ffffffff815791be>] do_page_fault+0xe/0x10
-> >  [<ffffffff81575962>] page_fault+0x22/0x30
-> >  [<ffffffff815817e4>] ? bad_to_user+0x5e/0x66b
-> >  [<ffffffff81285316>] copy_from_user_nmi+0x76/0x90
-> >  [<ffffffff81017a20>] perf_callchain_user+0xd0/0x360
-> >  [<ffffffff8111f64f>] perf_callchain+0x1af/0x1f0
-> >  [<ffffffff81117693>] perf_prepare_sample+0x2f3/0x3a0
-> >  [<ffffffff8111a2af>] __perf_event_overflow+0x10f/0x220
-> >  [<ffffffff8111ab14>] perf_event_overflow+0x14/0x20
-> >  [<ffffffff8101f69e>] intel_pmu_handle_irq+0x1de/0x3c0
-> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-> >  [<ffffffff81576e64>] perf_event_nmi_handler+0x34/0x60
-> >  [<ffffffff8157664a>] nmi_handle+0x8a/0x170
-> >  [<ffffffff81576848>] default_do_nmi+0x68/0x210
-> >  [<ffffffff81576a80>] do_nmi+0x90/0xe0
-> >  [<ffffffff81575c67>] end_repeat_nmi+0x1e/0x2e
-> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
-> > <<EOE>>  [<ffffffff81042f7d>] __bad_area_nosemaphore+0x21d/0x230
-> >  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
-> >  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
-> >  [<ffffffff8113cfbc>] ? vm_mmap_pgoff+0xbc/0xe0
-> >  [<ffffffff815791be>] do_page_fault+0xe/0x10
-> >  [<ffffffff81575962>] page_fault+0x22/0x30
-> > ---[ end trace 037bf09d279751ec ]---
-> > 
-> > So this is a double page faults. Looking at relevant changes in
-> > 3.13 kernel, I spotted the following one patch that modified the
-> > perf_callchain_user() function shown up in the stack trace above:
-> > 
-> 
-> Hurm, that's an expected double fault, not something we should take the
-> process down for.
-> 
-> I'll have to look at how all that works for a bit.
+On Fri, Jan 10, 2014 at 1:41 AM, Guo Chao <yan@linux.vnet.ibm.com> wrote:
+> On Wed, Jan 08, 2014 at 03:34:54PM -0800, Yinghai Lu wrote:
+> Just FYI, a Mellanox net card failed after exactly this patch.
+>
+> 3.13-rc7 + bjorn's series is OK. After this patch applied, Mellanox
+> driver complains:
+>
+>  |mlx4_core 0003:05:00.0: Multiple PFs not yet supported.  Skipping PF.
+>  |mlx4_core: probe of 0003:05:00.0 failed with error -22
+>
+> This is caused by MMIO read from BAR 0 (64-bit non-prefetchable) returns
+> non-zore value.
+>
+> Resource assignment, as far as we can see, works fine. The noticable
+> effect of this patch is putting ROM BAR under non-prefetachable. I try
+> to revert this effect by adding MEM_64 to its ROM resource and it works
+> again (system does not expose 4G above aperture yet). Not sure what's
+> the root cause, looks like a driver/firmware/hardware defect.
 
-How easily can you reproduce this? Could you test something like the
-below, which would allow us to take double faults from NMI context.
+Interesting. Can you  post boot log with "debug ignore_loglevel initcall_debug"
+and with/without this patch?
 
----
- arch/x86/mm/fault.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 9ff85bb8dd69..18c498d4274d 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -641,7 +641,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 
- 	/* Are we prepared to handle this kernel fault? */
- 	if (fixup_exception(regs)) {
--		if (current_thread_info()->sig_on_uaccess_error && signal) {
-+		if (!in_nmi() && current_thread_info()->sig_on_uaccess_error && signal) {
- 			tsk->thread.trap_nr = X86_TRAP_PF;
- 			tsk->thread.error_code = error_code | PF_USER;
- 			tsk->thread.cr2 = address;
+Yinghai
