@@ -1,119 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894AbaAJWFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:05:39 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:12545 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaAJWFh (ORCPT
+	id S1758119AbaAJWHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:07:47 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43681 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaAJWHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:05:37 -0500
-Date: Fri, 10 Jan 2014 23:05:25 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Wu <lekensteyn@gmail.com>
-Subject: Re: Freeing of dev->p
-Message-ID: <20140110230525.20de7b3e@endymion.delvare>
-In-Reply-To: <20140110152402.GC22533@kroah.com>
-References: <20140108164058.059cf461@endymion.delvare>
-	<20140108165628.GA15820@kroah.com>
-	<20140108213330.2efbc84c@endymion.delvare>
-	<20140110041853.GA32018@kroah.com>
-	<20140110153907.08297202@endymion.delvare>
-	<20140110152402.GC22533@kroah.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Jan 2014 17:07:45 -0500
+From: Bill Sumner <bill.sumner@hp.com>
+To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
+        joro@8bytes.org
+Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
+        doug.hatch@hp.com, zhenhua@hp.com
+Subject: [PATCHv3 0/6] Crashdump Accepting Active IOMMU
+Date: Fri, 10 Jan 2014 15:07:26 -0700
+Message-Id: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+v2->v3:
+1. Commented-out "#define DEBUG 1" to eliminate debug messages
+2. Updated the comments about changes in each version in all patches in the set.
+3. Fixed: one-line added to Copy-Translations" patch to initialize the iovad
+          struct as recommended by Baoquan He [bhe@redhat.com]
+          init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
 
-On Fri, 10 Jan 2014 07:24:02 -0800, Greg Kroah-Hartman wrote:
-> On Fri, Jan 10, 2014 at 03:39:07PM +0100, Jean Delvare wrote:
-> > + * @driver_data: Private pointer for driver specific info.  Will turn into a
-> > + *		list soon.
-> 
-> Ah, this comment reminds me of why I originally did this.  I was working
-> on moving for a way to have multiple drivers bound to the same device,
-> as people needed that type of thing for something that I can't remember
-> at the moment.
+v1->v2:
+The following series implements a fix for:
+A kdump problem about DMA that has been discussed for a long time. That is,
+when a kernel panics and boots into the kdump kernel, DMA started by the 
+panicked kernel is not stopped before the kdump kernel is booted and the 
+kdump kernel disables the IOMMU while this DMA continues.  This causes the
+IOMMU to stop translating the DMA addresses as IOVAs and begin to treat them 
+as physical memory addresses -- which causes the DMA to either:
+(1) generate DMAR errors or (2) generate PCI SERR errors or (3) transfer  
+data to or from incorrect areas of memory. Often this causes the dump to fail.
 
-Presumably this was to handle multifunction devices. But now we have
-the MFD infrastructure which deals with the problem gracefully, so
-indeed there no longer is any point in making driver_data a list. The
-second part of the comment above can go away.
+This patch set modifies the behavior of the iommu in the (new) crashdump kernel: 
+1. to accept the iommu hardware in an active state, 
+2. to leave the current translations in-place so that legacy DMA will continue
+   using its current buffers until the device drivers in the crashdump kernel
+   initialize and initialize their devices,
+3. to use different portions of the iova address ranges for the device drivers
+   in the crashdump kernel than the iova ranges that were in-use at the time
+   of the panic.  
 
-> As it's been years now with no real movement forward on that idea, I
-> guess it's not going to happen :)
+Advantages of this approach:
+1. All manipulation of the IO-device is done by the Linux device-driver
+   for that device.
+2. This approach behaves in a manner very similar to operation without an
+   active iommu.
+3. Any activity between the IO-device and its RMRR areas is handled by the
+   device-driver in the same manner as during a non-kdump boot.
+4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+   This supports the practice of creating a special kdump kernel without
+   drivers for any devices that are not required for taking a crashdump. 
 
-Agreed, problem was simply solved differently.
+Changes since the RFC version of this patch:
+1. Consolidated all of the operational code into the "copy..." functions.
+   The "process..." functions were primarily used for diagnostics and
+   exploration; however, there was a small amount of operational code that
+   used the "process..." functions.
+   This operational code has been moved into the "copy..." functions.
 
-> >   * @power:	For device power management.
-> >   * 		See Documentation/power/devices.txt for details.
-> >   * @pm_domain:	Provide callbacks that are executed during system suspend,
-> > @@ -737,6 +739,8 @@ struct device {
-> >  					   device */
-> >  	void		*platform_data;	/* Platform specific data, device
-> >  					   core doesn't touch it */
-> > +	void		*driver_data;	/* Driver data, set and get with
-> > +					   dev_set/get_drvdata */
-> >  	struct dev_pm_info	power;
-> >  	struct dev_pm_domain	*pm_domain;
-> >  
-> > 
-> > For performance I'd even question the point of the dev check in
-> > dev_get_drvdata(), especially when there is no such check in
-> > dev_set_drvdata() which presumably is always called first.
-> 
-> It's nice to not oops if a NULL pointer is passed in :)
+2. Removed the "Process ..." functions and the diagnostic code that ran
+   on that function set.  This removed about 1/4 of the code -- which this
+   operational patch set no longer needs.  These portions of the RFC patch
+   could be formatted as a separate patch and submitted independently
+   at a later date. 
 
-Or not. Is there any case where passing NULL could be desirable? If not
-and passing NULL is always going to be a bug (which I think is the
-case) then a oops is the right answer to bogus code. This ensure the
-bug will be caught and fixed early. Not oopsing here most certainly
-means oopsing at the next line in the driver anyway when it tries to
-access the driver data and certainly doesn't expect it to be NULL
-either.
+3. Re-formatted the code to the Linux Coding Standards.
+   The checkpatch script still finds some lines to complain about;
+   however most of these lines are either (1) lines that I did not change,
+   or (2) lines that only changed by adding a level of indent which pushed
+   them over 80-characters, or (3) new lines whose intent is far clearer when
+   longer than 80-characters.
 
-> > Plus dev_set_drvdata() can no longer fail (something only 3 drivers in
-> > the whole kernel tree were checking for anyway) so it could return
-> > void instead of int.
-> 
-> True.
-> 
-> > Then I suppose we could inline both functions
-> > again, for performance. Well, put in short, really revering
-> > b4028437876866aba4747a655ede00f892089e14 would be the way to go IMHO.
-> 
-> Almost, the copyright lines should stay :)
+4. Updated the remaining debug print to be significantly more flexible.
+   This allows control over the amount of debug print to the console --
+   which can vary widely.
 
-As you wish :)
+5. Fixed a couple of minor bugs found by testing on a machine with a
+   very large IO configuration.
 
-> > Really, while I understand your envy to protect driver core internals
-> > from unwanted access, the cost here was simply too high IMHO, both in
-> > terms of getting things right and performance. Some drivers are calling
-> > dev_get_drvdata() directly or indirectly repeatedly at run-time. They
-> > had no reason not to as this used to be so fast, and now it is no
-> > longer an inline function, it has conditionals and a double pointer
-> > indirection...
-> > 
-> > Plus, I can't think of anything really bad that could result from
-> > accessing driver_data directly, contrary to the other members of struct
-> > device_private.
-> 
-> See first response above for why I did this, it wasn't to just make
-> things "harder" to mess up, I actually had a reason to do it (imagine
-> that!)
+At a high level, this code operates primarily during iommu initialization
+and device-driver initialization
 
-Shocking! :D
+During intel-iommu hardware initialization:
+In intel_iommu_init(void)
+* If (This is the crash kernel)
+  .  Set flag: crashdump_accepting_active_iommu (all changes below check this)
+  .  Skip disabling the iommu hardware translations
 
-> Thanks for the detailed response, I think I'll just revert most of that
-> patch and see if it's still workable.
+In init_dmars()
+* Duplicate the intel iommu translation tables from the old kernel
+  in the new kernel
+  . The root-entry table, all context-entry tables,
+    and all page-translation-entry tables
+  . The duplicate tables contain updated physical addresses to link them together.
+  . The duplicate tables are mapped into kernel virtual addresses
+    in the new kernel which allows most of the existing iommu code
+    to operate without change.
+  . Do some minimal sanity-checks during the copy
+  . Place the address of the new root-entry structure into "struct intel_iommu"
 
-Sounds like a good plan, yeah.
+* Skip setting-up new domains for 'si', 'rmrr', 'isa' 
+  . Translations for 'rmrr' and 'isa' ranges have been copied from the old kernel
+  . This patch has not yet been tested with iommu pass-through enabled
 
-Thanks,
+* Existing (unchanged) code near the end of dmar_init:
+  . Loads the address of the (now new) root-entry structure from
+    "struct intel_iommu" into the iommu hardware and does the hardware flushes.
+    This changes the active translation tables from the ones in the old kernel
+    to the copies in the new kernel.
+  . This is legal because the translations in the two sets of tables are
+    currently identical:
+      Virtualization Technology for Directed I/O. Architecture Specification,
+      February 2011, Rev. 1.3  (section 11.2, paragraph 2) 
+
+In iommu_init_domains()
+* Mark as in-use all domain-id's from the old kernel
+  . In case the new kernel contains a device that was not in the old kernel
+    and a new, unused domain-id is actually needed, the bitmap will give us one.
+
+When a new domain is created for a device:
+* If (this device has a context in the old kernel)
+  . Get domain-id, address-width, and IOVA ranges from the old kernel context;
+  . Get address(page-entry-tables) from the copy in the new kernel;
+  . And apply all of the above values to the new domain structure.
+* Else
+  . Create a new domain as normal
+
+
+Bill Sumner (6):
+  Crashdump-Accepting-Active-IOMMU-Flags-and-Prototype
+  Crashdump-Accepting-Active-IOMMU-Utility-functions
+  Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
+  Crashdump-Accepting-Active-IOMMU-Copy-Translations
+  Crashdump-Accepting-Active-IOMMU-Debug-Print-IOMMU
+  Crashdump-Accepting-Active-IOMMU-Call-From-Mainline
+
+ drivers/iommu/intel-iommu.c | 1293 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 1225 insertions(+), 68 deletions(-)
+
 -- 
-Jean Delvare
+Bill Sumner <bill.sumner@hp.com>
+
