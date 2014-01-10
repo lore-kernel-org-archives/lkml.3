@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119AbaAJWHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:07:47 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43681 "EHLO
+	id S1758250AbaAJWIC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:08:02 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:43730 "EHLO
 	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaAJWHp (ORCPT
+	with ESMTP id S1758129AbaAJWHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:07:45 -0500
+	Fri, 10 Jan 2014 17:07:49 -0500
 From: Bill Sumner <bill.sumner@hp.com>
 To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
         joro@8bytes.org
@@ -15,139 +15,599 @@ Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, ddutile@redhat.com,
         ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
         doug.hatch@hp.com, zhenhua@hp.com
-Subject: [PATCHv3 0/6] Crashdump Accepting Active IOMMU
-Date: Fri, 10 Jan 2014 15:07:26 -0700
-Message-Id: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
+Subject: [PATCHv3 4/6] Crashdump-Accepting-Active-IOMMU-Copy-Translations
+Date: Fri, 10 Jan 2014 15:07:30 -0700
+Message-Id: <1389391652-52422-5-git-send-email-bill.sumner@hp.com>
 X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
+References: <1389391652-52422-1-git-send-email-bill.sumner@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2->v3:
-1. Commented-out "#define DEBUG 1" to eliminate debug messages
-2. Updated the comments about changes in each version in all patches in the set.
-3. Fixed: one-line added to Copy-Translations" patch to initialize the iovad
-          struct as recommended by Baoquan He [bhe@redhat.com]
-          init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
+---------.---------.---------.---------.---------.---------.---------.
+This patch contains a set of functions that duplicate into the
+crashdump kernel the IOMMU translation tables that were in-use by the
+panicked kernel at the time of the panic.  Note that all of these
+tables (pages) are linked together by physical memory addresses --
+beginning with the address of the root-entry-table which is obtained
+from the IOMMU hardware.  These functions are located in reverse order
+of being called -- from the highest-level (copying the root entry table)
+to the lowest-level (accumulating each IOVA address range) -- while the
+copy operation works its way down the tree of tables from the root-entry
+to the lowest-level page-table.
+
+During the traversal up and down this set of functions the structure
+'copy_page_addr_parms' is passed as an anonymous structure via a void*
+since most of the functions do not need it. Those functions that do
+need it cast the pointer appropriately.
+
+Entry to this set of functions from the mainline code is only through
+the interface function 'copy_intel_iommu_translation_tables' which
+instantiates the 'copy_page_addr_parms' structure on its stack, initializes
+the global lists of domain-id structures (once only) and begins the copy.
+
+The function that copies the individual page tables is recursive (max 6)
+to accomodate various IOVA address widths.  It stops either when the
+address width reaches 12 bits (4k page addresses) or earlier when a
+page table contains superpage addresses.
+
+Note: The copying of the translation tables into the crashdump kernel
+is done during system initialization when there is only one CPU active;
+therefore no locks are necessary during the copy.  After the copied
+translation tables become active, the locks within the existing code
+protect them.
 
 v1->v2:
-The following series implements a fix for:
-A kdump problem about DMA that has been discussed for a long time. That is,
-when a kernel panics and boots into the kdump kernel, DMA started by the 
-panicked kernel is not stopped before the kdump kernel is booted and the 
-kdump kernel disables the IOMMU while this DMA continues.  This causes the
-IOMMU to stop translating the DMA addresses as IOVAs and begin to treat them 
-as physical memory addresses -- which causes the DMA to either:
-(1) generate DMAR errors or (2) generate PCI SERR errors or (3) transfer  
-data to or from incorrect areas of memory. Often this causes the dump to fail.
+Updated patch description
 
-This patch set modifies the behavior of the iommu in the (new) crashdump kernel: 
-1. to accept the iommu hardware in an active state, 
-2. to leave the current translations in-place so that legacy DMA will continue
-   using its current buffers until the device drivers in the crashdump kernel
-   initialize and initialize their devices,
-3. to use different portions of the iova address ranges for the device drivers
-   in the crashdump kernel than the iova ranges that were in-use at the time
-   of the panic.  
+v2->v3
+Added "init_iova_domain(&domain->iovad, DMA_32BIT_PFN);" as recommended
+by Baoquan He [bhe@redhat.com]
 
-Advantages of this approach:
-1. All manipulation of the IO-device is done by the Linux device-driver
-   for that device.
-2. This approach behaves in a manner very similar to operation without an
-   active iommu.
-3. Any activity between the IO-device and its RMRR areas is handled by the
-   device-driver in the same manner as during a non-kdump boot.
-4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
-   This supports the practice of creating a special kdump kernel without
-   drivers for any devices that are not required for taking a crashdump. 
+Signed-off-by: Bill Sumner <bill.sumner@hp.com>
+---
+ drivers/iommu/intel-iommu.c | 530 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 530 insertions(+)
 
-Changes since the RFC version of this patch:
-1. Consolidated all of the operational code into the "copy..." functions.
-   The "process..." functions were primarily used for diagnostics and
-   exploration; however, there was a small amount of operational code that
-   used the "process..." functions.
-   This operational code has been moved into the "copy..." functions.
-
-2. Removed the "Process ..." functions and the diagnostic code that ran
-   on that function set.  This removed about 1/4 of the code -- which this
-   operational patch set no longer needs.  These portions of the RFC patch
-   could be formatted as a separate patch and submitted independently
-   at a later date. 
-
-3. Re-formatted the code to the Linux Coding Standards.
-   The checkpatch script still finds some lines to complain about;
-   however most of these lines are either (1) lines that I did not change,
-   or (2) lines that only changed by adding a level of indent which pushed
-   them over 80-characters, or (3) new lines whose intent is far clearer when
-   longer than 80-characters.
-
-4. Updated the remaining debug print to be significantly more flexible.
-   This allows control over the amount of debug print to the console --
-   which can vary widely.
-
-5. Fixed a couple of minor bugs found by testing on a machine with a
-   very large IO configuration.
-
-At a high level, this code operates primarily during iommu initialization
-and device-driver initialization
-
-During intel-iommu hardware initialization:
-In intel_iommu_init(void)
-* If (This is the crash kernel)
-  .  Set flag: crashdump_accepting_active_iommu (all changes below check this)
-  .  Skip disabling the iommu hardware translations
-
-In init_dmars()
-* Duplicate the intel iommu translation tables from the old kernel
-  in the new kernel
-  . The root-entry table, all context-entry tables,
-    and all page-translation-entry tables
-  . The duplicate tables contain updated physical addresses to link them together.
-  . The duplicate tables are mapped into kernel virtual addresses
-    in the new kernel which allows most of the existing iommu code
-    to operate without change.
-  . Do some minimal sanity-checks during the copy
-  . Place the address of the new root-entry structure into "struct intel_iommu"
-
-* Skip setting-up new domains for 'si', 'rmrr', 'isa' 
-  . Translations for 'rmrr' and 'isa' ranges have been copied from the old kernel
-  . This patch has not yet been tested with iommu pass-through enabled
-
-* Existing (unchanged) code near the end of dmar_init:
-  . Loads the address of the (now new) root-entry structure from
-    "struct intel_iommu" into the iommu hardware and does the hardware flushes.
-    This changes the active translation tables from the ones in the old kernel
-    to the copies in the new kernel.
-  . This is legal because the translations in the two sets of tables are
-    currently identical:
-      Virtualization Technology for Directed I/O. Architecture Specification,
-      February 2011, Rev. 1.3  (section 11.2, paragraph 2) 
-
-In iommu_init_domains()
-* Mark as in-use all domain-id's from the old kernel
-  . In case the new kernel contains a device that was not in the old kernel
-    and a new, unused domain-id is actually needed, the bitmap will give us one.
-
-When a new domain is created for a device:
-* If (this device has a context in the old kernel)
-  . Get domain-id, address-width, and IOVA ranges from the old kernel context;
-  . Get address(page-entry-tables) from the copy in the new kernel;
-  . And apply all of the above values to the new domain structure.
-* Else
-  . Create a new domain as normal
-
-
-Bill Sumner (6):
-  Crashdump-Accepting-Active-IOMMU-Flags-and-Prototype
-  Crashdump-Accepting-Active-IOMMU-Utility-functions
-  Crashdump-Accepting-Active-IOMMU-Domain-Interfaces
-  Crashdump-Accepting-Active-IOMMU-Copy-Translations
-  Crashdump-Accepting-Active-IOMMU-Debug-Print-IOMMU
-  Crashdump-Accepting-Active-IOMMU-Call-From-Mainline
-
- drivers/iommu/intel-iommu.c | 1293 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 1225 insertions(+), 68 deletions(-)
-
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 85e30e5..6737550 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4795,3 +4795,533 @@ static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu)
+ 	return 0;
+ }
+ #endif /* CONFIG_CRASH_DUMP */
++#ifdef CONFIG_CRASH_DUMP
++
++
++
++/* ========================================================================
++ * Copy iommu translation tables from old kernel into new  kernel
++ * Entry to this set of functions is: copy_intel_iommu_translation_tables()
++ * ------------------------------------------------------------------------
++ */
++
++/*
++ * Struct copy_page_addr_parms is used to allow copy_page_addr()
++ * to accumulate values across multiple calls and returns.
++ */
++struct copy_page_addr_parms {
++	u32 first;	/* flag: first-time  */
++	u32 last;	/* flag: last-time */
++	u32 bus;	/* last bus number we saw */
++	u32 devfn;	/* last devfn we saw */
++	u32 shift;	/* last shift we saw */
++	u64 pte;	/* Page Table Entry */
++	u64 next_addr;	/* next-expected page_addr */
++
++	u64 page_addr;	/* page_addr accumulating size */
++	u64 page_size;	/* page_size accumulated */
++
++	struct dmar_domain *domain;	/* to accumulate iova ranges */
++};
++
++/*
++ * constant for initializing instances of copy_page_addr_parms properly.
++ */
++static struct copy_page_addr_parms copy_page_addr_parms_init = {1, 0};
++
++
++
++/*
++ * Lowest-level function in the 'Copy Page Tables' set
++ * Called once for each page_addr present in an iommu page-address table.
++ */
++static int copy_page_addr(u64 page_addr, u32 shift, u32 bus, u32 devfn,
++				u64 pte, struct dmar_domain *domain,
++				void *parms)
++{
++	struct copy_page_addr_parms *ppap = parms;
++
++	u64 page_size = ((u64)1 << shift);	/* page_size */
++	u64 pfn_lo;				/* For reserving IOVA range */
++	u64 pfn_hi;				/* For reserving IOVA range */
++	struct iova *iova_p;			/* For reserving IOVA range */
++
++	if (!ppap) {
++		pr_err("ERROR: ppap is NULL: 0x%3.3x(%3.3d) DevFn: 0x%3.3x(%3.3d) Page: 0x%16.16llx Size: 0x%16.16llx(%lld)\n",
++			bus, bus, devfn, devfn,  page_addr,
++			page_size, page_size);
++		return 0;
++	}
++
++	if (!ppap->last) {			/* If (Not last time) */
++		if (pr_dbg.copy_page_addr)
++			pr_debug("ADDR::B:D:F=%2.2x:%2.2x:%1.1x Addr:0x%12.12llx Size:0x%12.12llx(%lld) Pte:0x%16.16llx\n",
++			bus, devfn >> 3, devfn & 0x7,
++			page_addr, page_size, page_size, pte);
++
++		/* If (only extending current addr range) */
++		if (ppap->first     == 0      &&
++		    ppap->bus       == bus    &&
++		    ppap->devfn     == devfn  &&
++		    ppap->shift     == shift  &&
++		    (ppap->pte & ~VTD_PAGE_MASK) == (pte & ~VTD_PAGE_MASK) &&
++		    ppap->next_addr == page_addr) {
++
++			/* Update page size and next-expected address */
++			ppap->next_addr += page_size;
++			ppap->page_size += page_size;
++			return 0;
++		}
++	}
++
++	if (!ppap->first) {
++		/* Print out the accumulated address range */
++
++		if (pr_dbg.addr_ranges)
++			pr_debug("DATA B:D:F=%2.2x:%2.2x:%1.1x Addr:0x%12.12llx Size:0x%12.12llx(%lld) Pte:0x%16.16llx\n",
++			ppap->bus, ppap->devfn >> 3, ppap->devfn & 0x7,
++			ppap->page_addr,
++			ppap->page_size, ppap->page_size, ppap->pte);
++
++		if (!ppap->domain) {
++			pr_err("%s ERROR: Domain is NULL -- needed to reserve range for B:D:F=%2.2x:%2.2x:%1.1x\n",
++				__func__,
++				ppap->bus, ppap->devfn >> 3, ppap->devfn & 0x7);
++			return 0;
++		}
++		pfn_lo = IOVA_PFN(ppap->page_addr);
++		pfn_hi = IOVA_PFN(ppap->page_addr + ppap->page_size);
++		iova_p = reserve_iova(&ppap->domain->iovad, pfn_lo, pfn_hi);
++
++		if (iova_p)
++			if (pr_dbg.reserved_ranges)
++				pr_debug("RSVD B:D:F=%2.2x:%2.2x:%1.1x (0x%16.16lx, 0x%16.16lx) did=0x%4.4x\n",
++					ppap->bus,
++					ppap->devfn >> 3, ppap->devfn & 0x7,
++					iova_p->pfn_lo, iova_p->pfn_hi,
++					ppap->domain->id);
++	}
++
++	/* Prepare for a new page */
++	ppap->first     = 0;		/* Not first-time anymore */
++	ppap->bus       = bus;
++	ppap->devfn     = devfn;
++	ppap->shift     = shift;
++	ppap->pte       = pte;
++	ppap->next_addr = page_addr + page_size; /* Next-expected page_addr */
++
++	ppap->page_addr = page_addr;	/* Addr(new page) */
++	ppap->page_size = page_size;	/* Size(new page) */
++
++	ppap->domain    = domain;	/* adr(domain for the new range) */
++
++	return 0;
++}
++
++/*
++ * Recursive function to copy the tree of page tables (max 6 recursions)
++ * Parameter 'shift' controls the recursion
++ */
++static int copy_page_table(struct dma_pte **dma_pte_new_p,
++			   struct dma_pte *dma_pte_phys,
++			   u32 shift, u64 page_addr,
++			   struct intel_iommu *iommu,
++			   u32 bus, u32 devfn,
++			   struct dmar_domain *domain, void *ppap)
++{
++	int ret;			/* Integer return code */
++	struct dma_pte *p;		/* Physical adr(each entry) iterator */
++	struct dma_pte *pgt_new_virt;	/* Adr(dma_pte in new kernel) */
++	struct dma_pte *dma_pte_next;	/* Adr(next table down)  */
++	u64 u;				/* index(each entry in page_table) */
++
++	if (pr_dbg.copy_page_table)
++		pr_debug("ENTER %s B:D:F:%2.2x:%2.2x:%1.1x phys:%16.16llx shift:%d addr:%16.16llx\n",
++			__func__, bus, devfn >> 3, devfn & 0x7,
++			(u64)dma_pte_phys, shift, page_addr);
++
++	/* If (already done all levels -- problem) */
++	if (shift < 12) {
++		pr_err("ERROR %s shift < 12 %p\n", __func__, dma_pte_phys);
++		pr_err("shift %d, page_addr %16.16llu bus %3.3u devfn %3.3u\n",
++			shift, page_addr, bus, devfn);
++		return 2;
++	}
++
++	/* allocate a page table in the new kernel
++	 * copy contents from old kernel
++	 * then update each entry in the table in the new kernel
++	 */
++
++	pgt_new_virt = (struct dma_pte *)alloc_pgtable_page(iommu->node);
++	if (!pgt_new_virt)
++		return -ENOMEM;
++
++	ret = oldcopy(pgt_new_virt, dma_pte_phys, VTD_PAGE_SIZE);
++	if (ret <= 0)
++		return ret;
++
++	for (u = 0, p = pgt_new_virt; u < 512; u++, p++) {
++
++		if (((p->val & DMA_PTE_READ) == 0) &&
++		    ((p->val & DMA_PTE_WRITE) == 0))
++			continue;
++
++		if (dma_pte_superpage(p) || (shift == 12)) {
++
++			ret = copy_page_addr(page_addr | (u << shift),
++				shift, bus, devfn, p->val, domain, ppap);
++			if (ret)
++				return ret;
++			continue;
++		}
++
++		ret = copy_page_table(&dma_pte_next,
++				(struct dma_pte *)(p->val & VTD_PAGE_MASK),
++				shift-9, page_addr | (u << shift),
++				iommu, bus, devfn, domain, ppap);
++		if (ret)
++			return ret;
++
++		p->val &= ~VTD_PAGE_MASK;	/* Clear old and set new pgd */
++		p->val |= ((u64)dma_pte_next & VTD_PAGE_MASK);
++	}
++
++	*dma_pte_new_p = (struct dma_pte *)virt_to_phys(pgt_new_virt);
++	__iommu_flush_cache(iommu, pgt_new_virt, VTD_PAGE_SIZE);
++
++	if (pr_dbg.copy_page_table)
++		pr_debug("LEAVE %s new page:%16.16llx(phys) %16.16llx(virt)\n",
++			__func__, (u64)(*dma_pte_new_p), (u64)pgt_new_virt);
++
++	return 0;
++}
++
++
++
++static int copy_context_entry(struct intel_iommu *iommu, u32 bus, u32 devfn,
++			      void *ppap, struct context_entry *ce)
++{
++	int ret = 0;			/* Integer Return Code */
++	u32 shift = 0;			/* bits to shift page_addr  */
++	u64 page_addr = 0;		/* Address of translated page */
++	struct dma_pte *pgt_old_phys;	/* Adr(page_table in the old kernel) */
++	struct dma_pte *pgt_new_phys;	/* Adr(page_table in the new kernel) */
++	unsigned long asr;		/* New asr value for new context */
++	u8  t;				/* Translation-type from context */
++	u8  aw;				/* Address-width from context */
++	u32 aw_shift[8] = {
++		12+9+9,		/* [000b] 30-bit AGAW (2-level page table) */
++		12+9+9+9,	/* [001b] 39-bit AGAW (3-level page table) */
++		12+9+9+9+9,	/* [010b] 48-bit AGAW (4-level page table) */
++		12+9+9+9+9+9,	/* [011b] 57-bit AGAW (5-level page table) */
++		12+9+9+9+9+9+9,	/* [100b] 64-bit AGAW (6-level page table) */
++		0,		/* [111b] Reserved */
++		0,		/* [110b] Reserved */
++		0,		/* [111b] Reserved */
++	};
++
++	struct dmar_domain *domain = NULL;	/* To hold domain & device */
++						/*    values from old kernel */
++	struct device_domain_info *info = NULL;	/* adr(new for this device) */
++	struct device_domain_info *i = NULL;	/* iterator for foreach */
++
++
++	pr_debug("CTXT B:D:F:%2.2x:%2.2x:%1.1x at virt: 0x%16.16llx  hi:%16.16llx lo:%16.16llx\n",
++		bus, devfn >> 3, devfn & 0x7,
++		(u64) ce, ce->hi, ce->lo);
++
++	if (!context_get_p(ce)) {	/* If (context not present) */
++		ret = 0;		/* Skip it */
++		goto exit;
++	}
++
++	pr_debug("CTXT B:D:F:%2.2x:%2.2x:%1.1x p=%d fpd=%d t=%d asr=%16.16llx aw=%d aval=%d did=0x%4.4x\n",
++		bus, devfn >> 3, devfn & 0x7,
++		(int) context_get_p(ce),
++		(int) context_get_fpdi(ce),
++		(int) context_get_t(ce),
++		(u64) context_get_asr(ce),
++		(int) context_get_aw(ce),
++		(int) context_get_aval(ce),
++		(u32) context_get_did(ce));
++
++	info = alloc_devinfo_mem();
++	if (!info) {
++		ret = -ENOMEM;
++		goto exit;
++	}
++	/* info->segment = segment;	 May need this later */
++	info->bus = bus;
++	info->devfn = devfn;
++	info->iommu = iommu;
++
++	list_for_each_entry(i, &device_domain_values_list[iommu->seq_id],
++				global) {
++		if (i->domain->id == (int) context_get_did(ce)) {
++			domain = i->domain;
++			pr_debug("CTXT B:D:F:%2.2x:%2.2x:%1.1x Found did=0x%4.4x\n",
++				bus, devfn >> 3, devfn & 0x7, i->domain->id);
++			break;
++		}
++	}
++
++	if (!domain) {
++		domain = alloc_domain();
++		if (!domain) {
++			ret = -ENOMEM;
++			goto exit;
++		}
++		INIT_LIST_HEAD(&domain->devices);
++		domain->id = (int) context_get_did(ce);
++		domain->agaw = (int) context_get_aw(ce);
++		domain->pgd = NULL;
++		init_iova_domain(&domain->iovad, DMA_32BIT_PFN);
++
++		pr_debug("CTXT Allocated new list entry, did:%d\n",
++			domain->id);
++	}
++
++	info->domain = domain;
++	list_add(&info->link, &domain->devices);
++	list_add(&info->global, &device_domain_values_list[iommu->seq_id]);
++
++	if (domain->pgd) {
++		asr = virt_to_phys(domain->pgd) >> VTD_PAGE_SHIFT;
++		context_put_asr(ce, asr);
++		ret = 4;
++		goto exit;
++	}
++
++	t = context_get_t(ce);
++
++	if (t == 0 || t == 1) {		/* If (context has page tables) */
++		aw = context_get_aw(ce);
++		shift = aw_shift[aw];
++
++		pgt_old_phys = (struct dma_pte *)(context_get_asr(ce) << 12);
++
++		ret = copy_page_table(&pgt_new_phys, pgt_old_phys,
++			shift-9, page_addr, iommu, bus, devfn, domain, ppap);
++
++		if (ret)		/* if (problem) bail out */
++			goto exit;
++
++		asr = ((unsigned long)(pgt_new_phys)) >> VTD_PAGE_SHIFT;
++		context_put_asr(ce, asr);
++		domain->pgd = phys_to_virt((unsigned long)pgt_new_phys);
++		ret = 1;
++		goto exit;
++	}
++
++	if (t == 2) {		/* If (Identity mapped pass-through) */
++		ret = 2;	/*	REVISIT: Skip for now */
++		goto exit;
++	}
++
++	ret = 3;		/* Else ce->t is a Reserved value */
++
++exit:	/* all returns come through here to insure good clean-up */
++
++	if (ret < 0) {
++		if (info)
++			free_devinfo_mem(info);
++		if (domain)
++			free_domain_mem(domain);
++	}
++	return ret;
++}
++
++
++static int copy_context_entry_table(struct intel_iommu *iommu,
++				    u32 bus, void *ppap,
++				    struct context_entry **context_new_p,
++				    struct context_entry *context_old_phys)
++{
++	int ret = 0;				/* Integer return code */
++	struct context_entry *ce;		/* Iterator */
++	struct context_entry *context_new_phys;	/* adr(table in new kernel) */
++	struct context_entry *context_new_virt;	/* adr(table in new kernel) */
++	u32 devfn = 0;				/* PCI Device & function */
++
++	/* allocate a context-entry table in the new kernel
++	 * copy contents from old kernel
++	 * then update each entry in the table in the new kernel
++	 */
++	context_new_virt =
++		(struct context_entry *)alloc_pgtable_page(iommu->node);
++	if (!context_new_virt)
++		return -ENOMEM;
++
++	context_new_phys =
++		(struct context_entry *)virt_to_phys(context_new_virt);
++
++	oldcopy(context_new_virt, context_old_phys, VTD_PAGE_SIZE);
++
++	for (devfn = 0, ce = context_new_virt; devfn < 256; devfn++, ce++) {
++
++		if (!context_get_p(ce))		/* If (context not present) */
++			continue;		/* Skip it */
++
++		ret = copy_context_entry(iommu, bus, devfn, ppap, ce);
++		if (ret == 0)		/* if (Entry not present) */
++			continue;
++		if (ret == 1)		/* If (Identity mapped pass-through) */
++			continue;	/*    REVISIT -- Skip for now */
++		if (ret == 2)		/* If (ce->t was reserved value) */
++			continue;	/*    REVISIT -- Skip for now */
++		if (ret < 0)		/* if (problem) */
++			return ret;
++	}
++
++	*context_new_p = context_new_phys;
++	__iommu_flush_cache(iommu, context_new_virt, VTD_PAGE_SIZE);
++	return 0;
++}
++
++
++
++static int copy_root_entry_table(struct intel_iommu *iommu, void *ppap,
++				 struct root_entry  **root_new_virt_p,
++				 struct root_entry  *root_old_phys)
++{
++	int ret = 0;				/* Integer return code */
++	u32 bus;				/* Index: root-entry-table */
++	struct root_entry  *re;			/* Virt(iterator: new table) */
++	struct root_entry  *root_new_virt;	/* Virt(table in new kernel) */
++	struct context_entry *context_old_phys;	/* Phys(context table entry) */
++	struct context_entry *context_new_phys;	/* Phys(new context_entry) */
++
++	/*
++	 * allocate a root-entry table in the new kernel
++	 * copy contents from old kernel
++	 * then update each entry in the table in the new kernel
++	 */
++
++	root_new_virt = (struct root_entry *)alloc_pgtable_page(iommu->node);
++	if (!root_new_virt)
++		return -ENOMEM;
++
++	oldcopy(root_new_virt, root_old_phys, VTD_PAGE_SIZE);
++
++	for (bus = 0, re = root_new_virt; bus < 256; bus += 1, re += 1) {
++
++		if (!root_present(re))
++			continue;
++
++		pr_debug("ROOT Bus: %2.2x re->val: %llx rsvd1: %llx\n",
++			bus, re->val, re->rsvd1);
++
++		context_old_phys = get_context_phys_from_root(re);
++
++		if (!context_old_phys)
++			continue;
++
++		ret = copy_context_entry_table(iommu, bus, ppap,
++						&context_new_phys,
++						context_old_phys);
++		if (ret)
++			return ret;
++
++		re->val &= ~VTD_PAGE_MASK;
++		set_root_value(re, (unsigned long)context_new_phys);
++	}
++
++	*root_new_virt_p = root_new_virt;
++	__iommu_flush_cache(iommu, root_new_virt, VTD_PAGE_SIZE);
++	return 0;
++}
++
++/*
++ * Interface to the "copy translation tables" set of functions
++ * from mainline code.
++ */
++static int copy_intel_iommu_translation_tables(struct dmar_drhd_unit *drhd,
++		struct root_entry **root_old_phys_p,
++		struct root_entry **root_new_virt_p)
++{
++	struct intel_iommu *iommu;	/* Virt(iommu hardware registers) */
++	unsigned long long q;		/* quadword scratch */
++	struct root_entry *root_phys;	/* Phys(table in old kernel) */
++	struct root_entry *root_new;	/* Virt(table in new kernel) */
++	int ret = 0;			/* Integer return code */
++	int i = 0;			/* Loop index */
++
++	/* Structure so copy_page_addr() can accumulate things
++	 * over multiple calls and returns
++	 */
++	struct copy_page_addr_parms ppa_parms = copy_page_addr_parms_init;
++	struct copy_page_addr_parms *ppap = &ppa_parms;
++
++
++	pr_debug("ENTER %s\n", __func__);
++
++	iommu = drhd->iommu;
++	q = readq(iommu->reg + DMAR_RTADDR_REG);
++	pr_debug("IOMMU %d: DMAR_RTADDR_REG:0x%16.16llx\n", iommu->seq_id, q);
++
++	if (!q)
++		return -1;
++
++	*root_old_phys_p = (struct root_entry *)q;	/* Returned to caller */
++
++	/* If (list needs initializing) do it here */
++	if (!device_domain_values_list) {
++		device_domain_values_list =
++			 kcalloc(g_num_of_iommus, sizeof(struct list_head),
++					GFP_KERNEL);
++
++		if (!device_domain_values_list) {
++			pr_err("Allocation failed for device_domain_values_list array\n");
++			return -ENOMEM;
++		}
++		for (i = 0; i < g_num_of_iommus; i++)
++			INIT_LIST_HEAD(&device_domain_values_list[i]);
++	}
++
++	/* Copy the root-entry table from the old kernel
++	 * foreach context_entry_table in root_entry
++	 *    foreach context_entry in context_entry_table
++	 *       foreach level-1 page_table_entry in context_entry
++	 *          foreach level-2 page_table_entry in level 1 page_table_entry
++	 *             Above pattern continues up to 6 levels of page tables
++	 *                Sanity-check the entry
++	 *                Process the bus, devfn, page_address, page_size
++	 */
++
++	root_phys = (struct root_entry *)q;
++	ret = copy_root_entry_table(iommu, ppap, &root_new, root_phys);
++	if (ret)
++		return ret;
++
++
++	ppa_parms.last = 1;
++	copy_page_addr(0, 0, 0, 0, 0, NULL, ppap);
++	*root_new_virt_p = root_new;			/* Returned to caller */
++
++	/* The translation tables in the new kernel should now contain
++	 * the same translations as the tables in the old kernel.
++	 * This will allow us to update the iommu hdw to use the new tables.
++	 *
++	 * NOTE: Neither the iommu hardware nor the iommu->root_entry
++	 *       struct-value is updated herein.
++	 *       These are left for the caller to do.
++	 */
++
++	{	/* Dump the new root-entry table on the console */
++		u64 *p;
++		int  i;
++
++		pr_debug("ROOT_ENTRY TABLE (NEW) START\n");
++
++		for (p = (void *)root_new, i = 0; i < 256; p += 2, i++)
++			if (p[1] != 0 || p[0] != 0 || i == 255)
++				pr_debug("i:%3.3d, p:0x%12.12llx %16.16llx %16.16llx\n",
++					i, (u64)p, p[1], p[0]);
++
++		pr_debug("ROOT_ENTRY TABLE (NEW) END\n");
++	}
++	pr_debug("LEAVE %s\n", __func__);
++	return 0;
++}
++#endif /* CONFIG_CRASH_DUMP */
 -- 
 Bill Sumner <bill.sumner@hp.com>
 
