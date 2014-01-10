@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519AbaAJKgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 05:36:48 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48406 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaAJKgo (ORCPT
+	id S1755491AbaAJKiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 05:38:00 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50147 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751364AbaAJKh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 05:36:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140110093623.GD26378@quack.suse.cz>
-References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
- <20140106201032.GA13491@quack.suse.cz> <20140107155830.GA28395@infradead.org>
- <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
- <20140108140307.GA588@infradead.org> <CA+QCeVQy08m9oBM1ULE_KAjd-36ao35p7-BCWErJewyr3m6NGg@mail.gmail.com>
- <20140108152610.GA5863@infradead.org> <CA+QCeVRXAXAk2Zv2gtdvT+c80hbpcvezz_dvk9aUjwPbVp7pnQ@mail.gmail.com>
- <20140108205524.GA15313@quack.suse.cz> <CA+QCeVQuq4hM+kVfb8a2iMAUtF6QrR4sy=O-AuAgMoCWUsDg4w@mail.gmail.com>
- <20140110093623.GD26378@quack.suse.cz>
-From: Sergey Meirovich <rathamahata@gmail.com>
-Date: Fri, 10 Jan 2014 12:36:22 +0200
-Message-ID: <CA+QCeVSen0d4=Yx1QWoH-TZ1c=g7jdG=rLq+FKg_ejBxFsR0sg@mail.gmail.com>
-Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
- environment. ~3 times slower then Solars 10 with the same HBA/Storage.
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gluk <git.user@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 10 Jan 2014 05:37:57 -0500
+Message-ID: <1389350275.2528.10.camel@x41>
+Subject: [PATCH] drm/nouveau/fb: mark ramfuc_reg() noinline
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Fri, 10 Jan 2014 11:37:55 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Jan 2014 10:37:55.0715 (UTC) FILETIME=[05C51D30:01CF0DF0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+Building ramnve0.o triggers a GCC warning on 32 bits x86:
+    drivers/gpu/drm/nouveau/core/subdev/fb/ramnve0.c: In function 'nve0_ram_ctor':
+    drivers/gpu/drm/nouveau/core/subdev/fb/ramnve0.c:1253:1: warning: the frame size of 1496 bytes is larger than 1024 bytes [-Wframe-larger-than=]
 
-On 10 January 2014 11:36, Jan Kara <jack@suse.cz> wrote:
-> On Thu 09-01-14 12:11:16, Sergey Meirovich wrote:
-...
->> I've done preallocation on fnic/XtremIO as Christoph suggested.
->>
->> [root@dca-poc-gtsxdb3 mnt]# sysbench --max-requests=0
->> --file-extra-flags=direct  --test=fileio --num-threads=4
->> --file-total-size=10G --file-io-mode=async --file-async-backlog=1024
->> --file-rw-ratio=1 --file-fsync-freq=0 --max-requests=0
->> --file-test-mode=seqwr --max-time=100 --file-block-size=4K prepare
->> sysbench 0.4.12:  multi-threaded system evaluation benchmark
->>
->> 128 files, 81920Kb each, 10240Mb total
->> Creating files for the test...
->> [root@dca-poc-gtsxdb3 mnt]# du -k test_file.* | awk '{print $1}' |sort |uniq
->> 81920
->> [root@dca-poc-gtsxdb3 mnt]# fallocate -l 81920k test_file.*
->>
->>              Results: 13.042Mb/sec 3338.73 Requests/sec
->>
->> Probably sysbench is still triggering append DIO scenario. Will say
->> simple wrapper over io_submit() against already preallocated (and even
->> filled with data) file provide much better throughput if your theory
->> is valid?
->   So I was experimenting a bit. "sysbench prepare" seems to always do
-> synchronous IO from a single thread in the 'prepare' phase regardless of
-> the arguments. So there the reported throughput isn't really relevant.
->
-> In the 'run' phase it obeys the arguments and indeed when I run fallocate
-> to preallocate files during 'run' phase, it significantly helps the
-> throughput (from 20 MB/s to 55 MB/s on my SATA drive).
+This warning is caused by ramfuc_reg(), which is inlined 74 times in
+nve0_ram_ctor(). Mark it noinline to silence this warning.
 
-Sorry, Jan. Seems that I presented my findings in a previous mail in
-ambiguous style . I know that prepare phase of sysbench is
-synchronous/probably buffered (because I saw 512k chunks sent down to
-HBA)? IO. I played with blocktrace and have seen that myself during
-prepare:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Compile tested (on 32 bits x86) only. I've no Nvidia cards at hand, so I
+can't really test it.
 
-[root@dca-poc-gtsxdb3 mnt]# sysbench --max-requests=0
---file-extra-flags=direct  --test=fileio --num-threads=4
---file-total-size=10G --file-io-mode=async --file-async-backlog=1024
---file-rw-ratio=1 --file-fsync-freq=0 --max-requests=0
---file-test-mode=seqwr --max-time=100 --file-block-size=4K prepare
-...
+This assumes this function - a constructor, apparently - isn't called
+often, so the overhead calling of 74 functions is acceptable. (The same
+goes for the similar functions in [...]/ramnva3.c and in
+[...]/ramnvc0.c, though these call ramfuc_reg() not quite as often.)
+Perhaps there are other downsides to not inlining this function too. So
+proper testing will probably be needed.
 
-Leads to:
+ drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[root@dca-poc-gtsxdb3 mnt]# blktrace -d /dev/sdg -o - | blkparse -i -
-| grep 'D  W'
-  8,96  14      604    53.129805520 28114  D  WS 1116160 + 1024 [sysbench]
-  8,96  14      607    53.129843345 28114  D  WS 1120256 + 1024 [sysbench]
-  8,96  14      610    53.129873782 28114  D  WS 1124352 + 1024 [sysbench]
-  8,96  14      613    53.129903703 28114  D  WS 1128448 + 1024 [sysbench]
-  8,96  14      616    53.130957213 28114  D  WS 1132544 + 1024 [sysbench]
-  8,96  14      619    53.130988835 28114  D  WS 1136640 + 1024 [sysbench]
-  8,96  14      622    53.131018854 28114  D  WS 1140736 + 1024 [sysbench]
-...
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h b/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h
+index 0f57fcf..04e3849 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h
++++ b/drivers/gpu/drm/nouveau/core/subdev/fb/ramfuc.h
+@@ -26,7 +26,7 @@ ramfuc_reg2(u32 addr1, u32 addr2)
+ 	};
+ }
+ 
+-static inline struct ramfuc_reg
++static noinline struct ramfuc_reg
+ ramfuc_reg(u32 addr)
+ {
+ 	return ramfuc_reg2(addr, addr);
+-- 
+1.8.4.2
 
-That result  "13.042Mb/sec 3338.73 Requests/sec" was from run phase
-and before it fallocate had been made.
-
-blktrace from run phase looks very different. 4k as expected.
-[root@dca-poc-gtsxdb3 ~]# blktrace -d /dev/sdg -o - | blkparse -i -  |
-grep 'D  W'
-  8,96   5        3     0.000001874 28212  D  WS 1847296 + 8 [sysbench]
-  8,96   5        7     0.001213728 28212  D  WS 1847304 + 8 [sysbench]
-  8,96   5       11     0.002779304 28212  D  WS 1847312 + 8 [sysbench]
-  8,96   5       15     0.004486445 28212  D  WS 1847320 + 8 [sysbench]
-  8,96   5       19     0.006012133 28212  D  WS 22691864 + 8 [sysbench]
-  8,96   5       23     0.007781553 28212  D  WS 22691896 + 8 [sysbench]
-  8,96   5       27     0.009043404 28212  D  WS 22691928 + 8 [sysbench]
-  8,96   5       31     0.010546829 28212  D  WS 22691960 + 8 [sysbench]
-  8,96   5       35     0.012214468 28212  D  WS 22691992 + 8 [sysbench]
-  8,96   5       39     0.013792616 28212  D  WS 22692024 + 8 [sysbench]
-...
