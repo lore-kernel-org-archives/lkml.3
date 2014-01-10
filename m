@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464AbaAJAA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 19:00:27 -0500
-Received: from forward19.mail.yandex.net ([95.108.253.144]:36085 "EHLO
-	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977AbaAJAAY (ORCPT
+	id S1756734AbaAJABW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 19:01:22 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:39840 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaAJABT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 19:00:24 -0500
-X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Jan 2014 19:00:24 EST
-From: Victor Porton <porton@narod.ru>
-Envelope-From: porton@yandex.ru
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: A feature suggestion for sandboxing processes
+	Thu, 9 Jan 2014 19:01:19 -0500
+Date: Thu, 9 Jan 2014 16:01:15 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
+References: <20131210103827.GB20242@dhcp22.suse.cz> <alpine.DEB.2.02.1312101655430.22701@chino.kir.corp.google.com> <20131211095549.GA18741@dhcp22.suse.cz> <alpine.DEB.2.02.1312111434200.7354@chino.kir.corp.google.com> <20131212103159.GB2630@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1312131551220.28704@chino.kir.corp.google.com> <20131217162342.GG28991@dhcp22.suse.cz> <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com> <20131218200434.GA4161@dhcp22.suse.cz> <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
+ <20131219144134.GH10855@dhcp22.suse.cz> <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org> <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com> <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Message-Id: <223151389311706@web9g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 10 Jan 2014 01:55:06 +0200
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Fedora there is bin/sandbox command which runs a specified command in so called 'sandbox'. Program running in sandbox cannot open new files (it is commonly used with preopen stdin and stdout) and possibly its access to network is limited. It is intended to run potentially malicious software safely.
+On Thu, 9 Jan 2014, Andrew Morton wrote:
 
-This Fedora sandbox is not perfect however.
+> > I'm not sure why this was dropped since it's vitally needed for any sane 
+> > userspace oom handler to be effective.
+> 
+> It was dropped because the other memcg developers disagreed with it.
+> 
 
-One problem is:
+It was acked-by Michal.
 
-Suppose the sandboxed program spawned some child processes and exited itself.
+> I'd really prefer not to have to spend a great amount of time parsing
+> argumentative and repetitive emails to make a tie-break decision which
+> may well be wrong anyway.
+> 
+> Please work with the other guys to find an acceptable implementation. 
+> There must be *something* we can do?
+> 
 
-Suppose we want to kill the sandboxed program after 30 second, if it has not exited voluntarily.
+We REQUIRE this behavior for a sane userspace oom handler implementation.  
+You've snipped my email quite extensively, but I'd like to know 
+specifically how you would implement a userspace oom handler described by 
+Section 10 of Documentation/cgroups/memory.txt without this patch?
 
-The trouble is that the software cannot figure out which processes have appeared from the sandboxed binary. So we are unable to kill these processes automatically. This means that a hacker can in this way create thousands (or more) processes which would overload the system.
+Are you suggesting that userspace is supposed to wait for successive 
+wakeups over some arbitrarily defined period of time to determine whether 
+memory freeing (i.e. a process in the exit() path or with a pending 
+SIGKILL making forward progress to free its memory) can be done or whether 
+it needs to do something to free memory?  If not, how else is userspace 
+supposed to know that it should act?
 
-Also note that the sandboxed program may run setsid() and thus its identity may be lost completely.
-
-I propose to add parameter sandbox_id to each process in the kernel. It would be 0 for normal processes and allocated like PID or GID for processes we create in sandbox. Children inherit sandbox_id. There should be an API call using which a process makes it sandboxed_id non-zero (which returns EPERM if it is already non-zero).
-
-Then there should be API to enumerate all processes with given sandbox_id, so that we would be able to kill them (-TERM or -KILL). Or maybe we should also have the function which sends the given signal to all processes with given sandbox_id (otherwise we would war with a hacker which could possibly create new children faster than we kill them).
-
-Please add me in CC: (I am not subscribed for this mailing list.)
-
--- 
-Victor Porton - http://portonvictor.org
+How do you prevent unnecessary oom killing if the userspace oom handler 
+wakes up and kills something concurrent with the process triggering the 
+notification getting access to memory reserves, exiting, and freeing its 
+memory?  Userspace just killed a process unnecessarily.  This is the exact 
+reason why the kernel oom killer doesn't do a damn thing in these 
+conditions, because it's NOT ACTIONABLE by the oom killer, a process 
+simply needs to exit.
