@@ -1,262 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaAJMSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 07:18:11 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60144 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaAJMSJ (ORCPT
+	id S1755218AbaAJMTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 07:19:55 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:6250 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750956AbaAJMTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 07:18:09 -0500
-Date: Fri, 10 Jan 2014 13:18:05 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>
-Subject: Re: [PATCH v4] Bluetooth: Add hci_h4p driver
-Message-ID: <20140110121805.GA21117@amd.pavel.ucw.cz>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <20140102161824.GA8204@amd.pavel.ucw.cz>
- <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
- <20140103001753.GA21023@amd.pavel.ucw.cz>
- <20140103013640.GB27678@earth.universe>
- <20140109233843.GB19974@amd.pavel.ucw.cz>
- <20140110003231.GA14141@earth.universe>
+	Fri, 10 Jan 2014 07:19:51 -0500
+Message-ID: <52CFE623.7090403@marvell.com>
+Date: Fri, 10 Jan 2014 20:22:59 +0800
+From: Nenghua Cao <nhcao@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110003231.GA14141@earth.universe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Takashi Iwai <tiwai@suse.de>
+CC: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: dpcm: don't do hw_param when BE has
+ done	hw_param
+References: <1389332195-15900-1-git-send-email-nhcao@marvell.com> <s5htxdcxg0q.wl%tiwai@suse.de>	<52CFD7BE.5030907@marvell.com> <1389354435.2293.32.camel@loki>	<52CFE0AE.1030606@marvell.com> <s5hk3e8xcz2.wl%tiwai@suse.de>
+In-Reply-To: <s5hk3e8xcz2.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-10_04:2014-01-10,2014-01-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1401100045
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-01-10 01:32:31, Sebastian Reichel wrote:
-> Hi Pavel,
+On 01/10/2014 08:01 PM, Takashi Iwai wrote:
+> At Fri, 10 Jan 2014 19:59:42 +0800,
+> Nenghua Cao wrote:
+>>
+>> On 01/10/2014 07:47 PM, Liam Girdwood wrote:
+>>> On Fri, 2014-01-10 at 19:21 +0800, Nenghua Cao wrote:
+>>>> On 01/10/2014 06:55 PM, Takashi Iwai wrote:
+>>>>> [Corrected mail addresses of both Mark and Liam]
+>>>>>
+>>>> Hi, Takashi:
+>>>> Thanks for correcting my mistake.
+>>>>> At Fri, 10 Jan 2014 13:36:35 +0800,
+>>>>> Nenghua Cao wrote:
+>>>>>>
+>>>>>> From: Nenghua Cao <nhcao@marvell.com>
+>>>>>>
+>>>>>>     It fixes the following case:
+>>>>>>     Two FEs connects the same BE; FE1 & BE path has been opened and hw_paramed.
+>>>>>> At this momment, FE2 & BE path is being opened and hw_paramed. The BE
+>>>>>> dai will do hw_param again even if it has done hw_param. It is not
+>>>>>> reasonable.
+>>>>>> FE1------------>BE
+>>>>>> FE2-------------^
+>>>>>
+>>>>> What happens if FE2 tries to set up an incompatible hw_params?
+>>>>> (Through a quick glance, it won't work properly well, too, though...)
+>>>>>
+>>>
+>>> The intention in this case would be for the DSP FE driver to determine
+>>> if it can perform format conversion or SRC to the running BE. If the DSP
+>>> cant do the conversion then it should fail.
+>>>
+>>>> If FE2 uses an incompatible param, it will make FE1 doesn't work. Maybe
+>>>> FE2 works well.
+>>>> If FE2 uses the same param, BE hw_param function will be called twice
+>>>> (This is the most happening case).
+>>>> So we can't get benefits from it.
+>>>
+>>> We shouldn't be calling the hw_params() on the BE when it's already
+>>> configured in this case. So this seems like a bug. However :-
+>>>
+>>> /* only allow hw_params() if no connected FEs are running */
+>>> 		if (!snd_soc_dpcm_can_be_params(fe, be, stream))
+>>> 			continue;
+>>>
+>>> 		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
+>>> 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
+>>> 		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
+>>> 			continue;
+>>>
+>>> We do do a test to check if any connected FEs are running (i.e.
+>>> triggered) prior to calling hw_params() on the BE. Can you confirm if
+>>> the FE was running in your case ?
+>>>
+>> Hi, Liam:
+>>    I am so glad to hear from you. In my case, FE1 has called hw_param,
+>> and before FE1 calls prepare/trigger function, the scheduler switches to
+>> do FE2 open, hw_param. So hw_param is called twice.
 > 
-> On Fri, Jan 10, 2014 at 12:38:43AM +0100, Pavel Machek wrote:
-> > > Here are some cleanup suggestions for probe, removal & module
-> > > initialization functions.
-> > 
-> > ...and here's the patch implementing those suggestions. Thanks!
+> So basically the current implementation is racy about this.
 > 
-> That looks right, but you forgot to cleanup hci_h4p_remove. Also I
-> suggest to simply merge this as v5.
+> OTOH, not calling hw_params twice is also buggy.  hw_params may be
+> called multiple times without hw_free for the same stream if user
+> wants to re-setup/update the parameters.  OSS emulation layer does it,
+> for example.
+>
+Hi, Takashi
 
-Here it goes, now with hci_h4p_remove fixed. v5 will follow.
+  On current alsa framework, the hw_param can be called multiple time.
+Here, FE1 also can call do it. But here we should add constraint to
+avoid another FE call it due to FE1 has choose it priority.
 
-commit b77cc9dd6f6897183d97717cec63aaa248317f95
-Author: Pavel <pavel@ucw.cz>
-Date:   Fri Jan 10 13:14:45 2014 +0100
+> 
+> Takashi
+> 
+>>
+>>> Thanks
+>>>
+>>> Liam
+>>>
+>>>>>
+>>>>> Takashi
+>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Nenghua Cao <nhcao@marvell.com>
+>>>>>> ---
+>>>>>>  sound/soc/soc-pcm.c |    1 -
+>>>>>>  1 files changed, 0 insertions(+), 1 deletions(-)
+>>>>>>
+>>>>>> diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
+>>>>>> index 891b9a9..ec07e37 100644
+>>>>>> --- a/sound/soc/soc-pcm.c
+>>>>>> +++ b/sound/soc/soc-pcm.c
+>>>>>> @@ -1339,7 +1339,6 @@ static int dpcm_be_dai_hw_params(struct snd_soc_pcm_runtime *fe, int stream)
+>>>>>>  			continue;
+>>>>>>  
+>>>>>>  		if ((be->dpcm[stream].state != SND_SOC_DPCM_STATE_OPEN) &&
+>>>>>> -		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_PARAMS) &&
+>>>>>>  		    (be->dpcm[stream].state != SND_SOC_DPCM_STATE_HW_FREE))
+>>>>>>  			continue;
+>>>>>>  
+>>>>>> -- 
+>>>>>> 1.7.0.4
+>>>>>>
+>>>>>> _______________________________________________
+>>>>>> Alsa-devel mailing list
+>>>>>> Alsa-devel@alsa-project.org
+>>>>>> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+>>>>>>
+>>>>
+>>>
+>>>
+>>>
+>>
 
-    Switch to devm_ functions to make code cleaner.
-    
-    Reported-by: Sebastian Reichel <sre@ring0.de>
-    Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
-diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
-index 5c7acad..d6b0701 100644
---- a/drivers/bluetooth/nokia_core.c
-v+++ b/drivers/bluetooth/nokia_core.c
-@@ -39,6 +39,7 @@
- #include <linux/gpio.h>
- #include <linux/timer.h>
- #include <linux/kthread.h>
-+#include <linux/io.h>
- 
- #include <net/bluetooth/bluetooth.h>
- #include <net/bluetooth/hci_core.h>
-@@ -1079,7 +1080,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 	int err;
- 
- 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
--	info = kzalloc(sizeof(struct hci_h4p_info), GFP_KERNEL);
-+	info = devm_kzalloc(&pdev->dev, sizeof(struct hci_h4p_info), GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -1092,7 +1093,6 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 
- 	if (pdev->dev.platform_data == NULL) {
- 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
--		kfree(info);
- 		return -ENODATA;
- 	}
- 
-@@ -1113,67 +1113,59 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 	complete_all(&info->test_completion);
- 
- 	if (!info->reset_gpio_shared) {
--		err = gpio_request(info->reset_gpio, "bt_reset");
-+		err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
-+					    GPIOF_OUT_INIT_LOW, "bt_reset");
- 		if (err < 0) {
- 			dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
- 				info->reset_gpio);
--			goto cleanup_setup;
-+			return err;
- 		}
- 	}
- 
--	err = gpio_request(info->bt_wakeup_gpio, "bt_wakeup");
-+	err = devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
-+				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
-+
- 	if (err < 0) {
- 		dev_err(info->dev, "Cannot get GPIO line 0x%d",
- 			info->bt_wakeup_gpio);
--		if (!info->reset_gpio_shared)
--			gpio_free(info->reset_gpio);
--		goto cleanup_setup;
-+		return err;
- 	}
- 
--	err = gpio_request(info->host_wakeup_gpio, "host_wakeup");
-+	err = devm_gpio_request_one(&pdev->dev, info->host_wakeup_gpio,
-+				    GPIOF_DIR_IN, "host_wakeup");
- 	if (err < 0) {
- 		dev_err(info->dev, "Cannot get GPIO line %d",
- 		       info->host_wakeup_gpio);
--		if (!info->reset_gpio_shared)
--			gpio_free(info->reset_gpio);
--		gpio_free(info->bt_wakeup_gpio);
--		goto cleanup_setup;
-+		return err;
- 	}
- 
--	gpio_direction_output(info->reset_gpio, 0);
--	gpio_direction_output(info->bt_wakeup_gpio, 0);
--	gpio_direction_input(info->host_wakeup_gpio);
--
- 	info->irq = bt_plat_data->uart_irq;
--	info->uart_base = ioremap(bt_plat_data->uart_base, SZ_2K);
--	info->uart_iclk = clk_get(NULL, bt_plat_data->uart_iclk);
--	info->uart_fclk = clk_get(NULL, bt_plat_data->uart_fclk);
-+	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base, SZ_2K);
-+	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
-+	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
- 
- 	err = request_irq(info->irq, hci_h4p_interrupt, IRQF_DISABLED, "hci_h4p",
- 			  info);
- 	if (err < 0) {
- 		dev_err(info->dev, "hci_h4p: unable to get IRQ %d\n", info->irq);
--		goto cleanup;
-+		return err;
- 	}
- 
--	err = request_irq(gpio_to_irq(info->host_wakeup_gpio),
-+	err = devm_request_irq(&pdev->dev, gpio_to_irq(info->host_wakeup_gpio),
- 			  hci_h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
- 			  IRQF_TRIGGER_RISING | IRQF_DISABLED,
- 			  "hci_h4p_wkup", info);
- 	if (err < 0) {
- 		dev_err(info->dev, "hci_h4p: unable to get wakeup IRQ %d\n",
- 			  gpio_to_irq(info->host_wakeup_gpio));
--		free_irq(info->irq, info);
--		goto cleanup;
-+		return err;
- 	}
- 
- 	err = irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
- 	if (err < 0) {
- 		dev_err(info->dev, "hci_h4p: unable to set wakeup for IRQ %d\n",
- 				gpio_to_irq(info->host_wakeup_gpio));
--		free_irq(info->irq, info);
--		free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
--		goto cleanup;
-+		return err;
- 	}
- 
- 	init_timer_deferrable(&info->lazy_release);
-@@ -1182,7 +1174,7 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 	hci_h4p_set_clk(info, &info->tx_clocks_en, 1);
- 	err = hci_h4p_reset_uart(info);
- 	if (err < 0)
--		goto cleanup_irq;
-+		return err;
- 	gpio_set_value(info->reset_gpio, 0);
- 	hci_h4p_set_clk(info, &info->tx_clocks_en, 0);
- 
-@@ -1190,23 +1182,10 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 
- 	if (hci_h4p_register_hdev(info) < 0) {
- 		dev_err(info->dev, "failed to register hci_h4p hci device\n");
--		goto cleanup_irq;
-+		return -EINVAL;
- 	}
- 
- 	return 0;
--
--cleanup_irq:
--	free_irq(info->irq, (void *)info);
--	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
--cleanup:
--	gpio_set_value(info->reset_gpio, 0);
--	if (!info->reset_gpio_shared)
--		gpio_free(info->reset_gpio);
--	gpio_free(info->bt_wakeup_gpio);
--	gpio_free(info->host_wakeup_gpio);
--cleanup_setup:
--	kfree(info);
--	return err;
- }
- 
- static int hci_h4p_remove(struct platform_device *pdev)
-@@ -1217,15 +1196,11 @@ static int hci_h4p_remove(struct platform_device *pdev)
- 
- 	hci_h4p_sysfs_remove_files(info->dev);
- 	hci_h4p_hci_close(info->hdev);
--	free_irq(gpio_to_irq(info->host_wakeup_gpio), info);
- 	hci_unregister_dev(info->hdev);
- 	hci_free_dev(info->hdev);
--	if (!info->reset_gpio_shared)
--		gpio_free(info->reset_gpio);
- 	gpio_free(info->bt_wakeup_gpio);
- 	gpio_free(info->host_wakeup_gpio);
- 	free_irq(info->irq, (void *) info);
--	kfree(info);
- 
- 	return 0;
- }
-@@ -1238,25 +1213,7 @@ static struct platform_driver hci_h4p_driver = {
- 	},
- };
- 
--static int __init hci_h4p_init(void)
--{
--	int err = 0;
--
--	/* Register the driver with LDM */
--	err = platform_driver_register(&hci_h4p_driver);
--	if (err < 0)
--		printk(KERN_WARNING "failed to register hci_h4p driver\n");
--
--	return err;
--}
--
--static void __exit hci_h4p_exit(void)
--{
--	platform_driver_unregister(&hci_h4p_driver);
--}
--
--module_init(hci_h4p_init);
--module_exit(hci_h4p_exit);
-+module_platform_driver(hci_h4p_driver);
- 
- MODULE_ALIAS("platform:hci_h4p");
- MODULE_DESCRIPTION("Bluetooth h4 driver with nokia extensions");
-
-
-
-
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
