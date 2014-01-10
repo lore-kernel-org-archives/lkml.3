@@ -1,150 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026AbaAJXwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 18:52:38 -0500
-Received: from ring0.de ([91.143.88.219]:47764 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737AbaAJXwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 18:52:35 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Sat, 11 Jan 2014 00:52:09 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        "=?iso-8859-1?Q?'Beno=EEt?= Cousson'" <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [RFCv4 05/11] Documentation: DT: omap-ssi binding documentation
-Message-ID: <20140110235208.GA16048@earth.universe>
-Mail-Followup-To: Tony Lindgren <tony@atomide.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-	Carlos Chinea <cch.devel@gmail.com>,
-	Grant Likely <grant.likely@linaro.org>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>,
-	=?iso-8859-1?Q?'Beno=EEt?= Cousson' <bcousson@baylibre.com>,
-	devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-omap@vger.kernel.org,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-	=?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= <freemangordon@abv.bg>,
-	Joni Lapilainen <joni.lapilainen@gmail.com>,
-	Aaro Koskinen <aaro.koskinen@iki.fi>
-References: <1387150085-23173-1-git-send-email-sre@debian.org>
- <1387150085-23173-6-git-send-email-sre@debian.org>
- <20131219190344.GW27438@atomide.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
-Content-Disposition: inline
-In-Reply-To: <20131219190344.GW27438@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758159AbaAJX75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 18:59:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33780 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaAJX7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 18:59:55 -0500
+Date: Fri, 10 Jan 2014 15:59:52 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: pavel@ucw.cz, joe@perches.com, keescook@chromium.org, geert@linux-m68k.org,
+        jkosina@suse.cz, viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT format specifier
+Message-Id: <20140110155952.b376106ab7b76403af99111b@linux-foundation.org>
+In-Reply-To: <201401092151.FIB00084.SJFOLVOMQHtFOF@I-love.SAKURA.ne.jp>
+References: <201401092151.FIB00084.SJFOLVOMQHtFOF@I-love.SAKURA.ne.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 9 Jan 2014 21:52:00 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hello.
+> 
+> Since addition of %pT itself seems to be agreed,
 
-Hi Tony,
+sort-of.  The reason I suggested inventing a new token was code
+density: avoid pointlessly passing current all the time.
 
-On Thu, Dec 19, 2013 at 11:03:44AM -0800, Tony Lindgren wrote:
-> > +Required properties:
-> > +- compatible:		Should include "ti,omap3-ssi".
-> > +- reg-names:		Contains the values "sys" and "gdd".
->=20
-> Do you need the reg-names? The order won't change so you can just
-> document the order in the binding?
+Oh well, whatever - this patch has other intentions.
+	
+> I refreshed this patch using
+> linux-next-20140109. Please pick up if this patch is OK for you; I will start
+> making patches for killing most of direct ->comm readers.
+> 
+> Regards.
+> ----------------------------------------
+> >From 0d1f03d59a477459f3d3c190593d9e78f5d67de8 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Thu, 9 Jan 2014 21:32:22 +0900
+> Subject: [PATCH] lib/vsprintf: add %pT format specifier
+> 
+> Since task_struct->comm can be modified by other threads while the current
+> thread is reading it, it is recommended to use get_task_comm() for reading it.
+> 
+> However, since get_task_comm() holds task_struct->alloc_lock spinlock,
+> some users cannot use get_task_comm(). Also, a lot of users are directly
+> reading from task_struct->comm even if they can use get_task_comm().
+> Such users might obtain inconsistent result.
+> 
+> This patch introduces %pT format specifier for printing task_struct->comm.
+> Currently %pT does not provide consistency. I'm planning to change to use RCU
+> in the future. By using RCU, the comm name read from task_struct->comm will be
+> guaranteed to be consistent.
 
-The names are not needed, but I like self-documenting code/bindings.
+Not completely accurate - RCU won't protect code which accesses ->comm
+from interrupts.  Printing current->comm from irq is quite daft, but I
+bet there's code that does it :(
 
-Also the examples in Documentation/devicetree/bindings/resource-names.txt
-look similar to this case.
+As long as the kernel doesn't crash or otherwise misbehave when this
+happens, I think we're OK.
 
-What do you have against the -names properties?
+(And I guess there's also non-daft code which accesses current->comm
+from interrupt context: oops, panic, etc).
 
-The same statement goes for the following -names comments, so I will
-skip them ;)
+> But before modifying set_task_comm() to use RCU,
+> we need to kill direct ->comm users who do not use get_task_comm().
+> 
+> An example for converting direct ->comm users is shown below. Since many debug
+> printings use p == current, you can pass NULL instead of p if p == current.
+> 
+>   pr_info("comm=%s\n", p->comm);       => pr_info("comm=%pT\n", p);
+>   pr_info("comm=%s\n", current->comm); => pr_info("comm=%pT\n", NULL);
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> ---
+>  Documentation/printk-formats.txt |    6 ++++++
+>  lib/vsprintf.c                   |   20 +++++++++++++++++++-
+>  2 files changed, 25 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+> index 6f4eb32..94459b4 100644
+> --- a/Documentation/printk-formats.txt
+> +++ b/Documentation/printk-formats.txt
+> @@ -184,6 +184,12 @@ dentry names:
+>  	equivalent of %s dentry->d_name.name we used to use, %pd<n> prints
+>  	n last components.  %pD does the same thing for struct file.
+>  
+> +task_struct comm name:
+> +
+> +        %pT
+> +
+> +        For printing task_struct->comm.
+> +
+>  struct va_format:
+>  
+>  	%pV
+> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> index 185b6d3..a97f18b 100644
+> --- a/lib/vsprintf.c
+> +++ b/lib/vsprintf.c
+> @@ -1179,6 +1179,21 @@ char *address_val(char *buf, char *end, const void *addr,
+>  	return number(buf, end, num, spec);
+>  }
+>  
+> +static noinline_for_stack
 
-> [...]
-> > +- ti,ssi-cawake-gpio:	Defines which GPIO pin is used to signify CAWAKE
-> > +			events for the port. This is an optional board-specific
-> > +			property. If it's missing the port will not be
-> > +			enabled.
->=20
-> Hmm this might be just a wake-up GPIO? If so, you should be able to
-> just set it up as an interrupt and do a request_irq on the pinctrl-single
-> entry for it.
+hm, does noinline_for_stack actually do anything useful here?  I
+suspect it *increases* stack depth in the way comm_name() is used here.
 
-Yes, this gpio is used as interrupt in the driver, but its also read
-directly. I already considered making it an irq in the DT data
-(since its mainly used as irq), but I could not find out how to read
-the current status of an irq line.
+> +char *comm_name(char *buf, char *end, struct task_struct *tsk,
+> +		struct printf_spec spec, const char *fmt)
+> +{
+> +	char name[TASK_COMM_LEN];
+> +
+> +	/* Caller can pass NULL instead of current. */
+> +	if (!tsk)
+> +		tsk = current;
+> +	/* Not using get_task_comm() in case I'm in IRQ context. */
+> +	memcpy(name, tsk->comm, TASK_COMM_LEN);
+> +	name[sizeof(name) - 1] = '\0';
 
-> It might even be one of the already mapped interrupt lines that the code =
-is
-> remuxing to a GPIO for idle? If so, then you can just use the new binding
-> for interrupts-extended to handle the wake-up events.
->=20
-> If you post the GPIO number for ti,ssi-cawake-gpio and the interrupt
-> numbers I can check if there's a need to handle it separately as a GPIO
-> pin or if it already can be automatically handled for the wake-up events.
+get_task_comm() uses strncpy()?
 
-You can see it in one of the next patches, which adds the needed
-nodes in omap3-n900.dts. The used GPIO on N900 is 151 (gpio5 23)
-and I use the following pinmux configuration:
+> +	return string(buf, end, name, spec);
+> +}
+> +
 
-0x152 (PIN_INPUT | WAKEUP_EN | MUX_MODE4)
-
-P.S.: I intend to get this into 3.15. Before I will send an updated
-      series, which uses the omap clock DT bindings as requested by
-      DT binding maintainers.
-
--- Sebastian
-
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS0IeoAAoJENju1/PIO/qaho0P/jlMVmcDtQcefvXZb/gJtvOo
-sXPoAqLbBYKumZrJnaGPoI5AamZA3UQurXq4Z9Ljl9W1uSYE4kqnJ+Ez2o1UUoTF
-Sy4wK84FcAqD07Bzz8nuIvjpDoHr/lVplNx/BwvCnSYF9XfsH1lEVzgirXVX9T9E
-Q8eMt1V23/rpLXvLkrq9B8rOGULwgEYszhbGbBt6w0hDsDZg126eytiW9DvItwWv
-Uf6V6WSzTKsiLYHJUD874+tZ3msGXYmfJgywLwaDLF6Lq6l9I+FNBXJafKQEbHzU
-EIO9OOQvJF1PTr4l3PNvkm8PdbDLYs1y4x43u0wXRWeAd9qPUBAS0dPK/sg7t6Ue
-PApcZxwbjQiDzfZu1zEqvlc4GCiCGclGe+dvOXwBne5MjpQ40S+7MfTqkFoI5Sv+
-pLAFfaAWb6mmL576avHNEKzbGtqCsEFlMr06tmq/tD6nX4sFNiVkP7/J1O2FIeBy
-rFZLh+5jZEEXmAq1Xt5FgfhTLcKnYHtie9C2OtDuT37/+6HBVzjPCqpLXrrpfVez
-PLLhqlluyaVjahiZOoxEKfwFOxFcQwmaIdCxXgKrj/jAVrAlRFy+GcPWFQuGVrAr
-kEaiF4uoaqJ+mEZYCis+4GEAYnGATnq3I60lV040zOMdQMzKzDviCcgAGftoll5L
-5OmJ4RHHHfJzg9fu+2CO
-=Ni59
------END PGP SIGNATURE-----
-
---OXfL5xGRrasGEqWY--
