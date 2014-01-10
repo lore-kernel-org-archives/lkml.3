@@ -1,161 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaAJDl0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 22:41:26 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:35663 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935AbaAJDlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 22:41:07 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Jesse Barker <jesse.barker@arm.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH 2/2] ion: Add carveout and chunk heaps to dummy driver
-Date: Thu,  9 Jan 2014 19:40:55 -0800
-Message-Id: <1389325255-31534-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389325255-31534-1-git-send-email-john.stultz@linaro.org>
-References: <1389325255-31534-1-git-send-email-john.stultz@linaro.org>
+	id S1753044AbaAJDvW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 22:51:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800AbaAJDvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 22:51:20 -0500
+From: Mark Salter <msalter@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Young <dyoung@redhat.com>, Mark Salter <msalter@redhat.com>
+Subject: [PATCH v3 1/6] x86/mm: sparse warning fix for early_memremap
+Date: Thu,  9 Jan 2014 22:50:28 -0500
+Message-Id: <1389325833-16535-2-git-send-email-msalter@redhat.com>
+In-Reply-To: <1389325833-16535-1-git-send-email-msalter@redhat.com>
+References: <1389325833-16535-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support to the dummy driver for basic carveout and chunk heaps.
+From: Dave Young <dyoung@redhat.com>
 
-Since we're generating these heaps at module_init, and we want
-this driver to be generic enough to be tested on any arch, we
-don't have the ability to alloc bootmem, so both of these heaps
-are conventionally allocated using alloc_pages(), which limits us
-to 4M in size.
+There's a lot of sparse warnings for code like below:
+void *a = early_memremap(phys_addr, size);
 
-Should look into using CMA for heap allocation eventually, but
-this provides enough to test the basic functionality of the
-heaps.
+early_memremap intend to map kernel memory with ioremap facility, the return
+pointer should be a kernel ram pointer instead of iomem one.
 
-Cc: Colin Cross <ccross@android.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jesse Barker <jesse.barker@arm.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+For making the function clearer and supressing sparse warnings this patch
+do below two things:
+1. cast to (__force void *) for the return value of early_memremap
+2. add early_memunmap function and pass (__force void __iomem *) to iounmap
+
+>From Boris:
+> Ingo told me yesterday, it makes sense too. I'd guess we can try it.
+> FWIW, all callers of early_memremap use the memory they get remapped as
+> normal memory so we should be safe.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Mark Salter <msalter@redhat.com>
 ---
- drivers/staging/android/ion/ion_dummy_driver.c | 67 +++++++++++++++++++++++++-
- 1 file changed, 66 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/io.h |  3 ++-
+ arch/x86/mm/ioremap.c     | 10 +++++++---
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
-index 6749d29..55b2002 100644
---- a/drivers/staging/android/ion/ion_dummy_driver.c
-+++ b/drivers/staging/android/ion/ion_dummy_driver.c
-@@ -26,6 +26,9 @@
- struct ion_device *idev;
- struct ion_heap **heaps;
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 34f69cb..1db414f 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -325,9 +325,10 @@ extern void early_ioremap_init(void);
+ extern void early_ioremap_reset(void);
+ extern void __iomem *early_ioremap(resource_size_t phys_addr,
+ 				   unsigned long size);
+-extern void __iomem *early_memremap(resource_size_t phys_addr,
++extern void *early_memremap(resource_size_t phys_addr,
+ 				    unsigned long size);
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
++extern void early_memunmap(void *addr, unsigned long size);
+ extern void fixup_early_ioremap(void);
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
  
-+void *carveout_ptr;
-+void *chunk_ptr;
-+
- struct ion_platform_heap dummy_heaps[] = {
- 		{
- 			.id	= ION_HEAP_TYPE_SYSTEM,
-@@ -37,10 +40,24 @@ struct ion_platform_heap dummy_heaps[] = {
- 			.type	= ION_HEAP_TYPE_SYSTEM_CONTIG,
- 			.name	= "system contig",
- 		},
-+		{
-+			.id	= ION_HEAP_TYPE_CARVEOUT,
-+			.type	= ION_HEAP_TYPE_CARVEOUT,
-+			.name	= "carveout",
-+			.size	= SZ_4M,
-+		},
-+		{
-+			.id	= ION_HEAP_TYPE_CHUNK,
-+			.type	= ION_HEAP_TYPE_CHUNK,
-+			.name	= "chunk",
-+			.size	= SZ_4M,
-+			.align	= SZ_16K,
-+			.priv	= (void *)(SZ_16K),
-+		},
- };
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 799580c..bbb4504 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -562,10 +562,9 @@ early_ioremap(resource_size_t phys_addr, unsigned long size)
+ }
  
- struct ion_platform_data dummy_ion_pdata = {
--	.nr = 2,
-+	.nr = 4,
- 	.heaps = dummy_heaps,
- };
+ /* Remap memory */
+-void __init __iomem *
+-early_memremap(resource_size_t phys_addr, unsigned long size)
++void __init *early_memremap(resource_size_t phys_addr, unsigned long size)
+ {
+-	return __early_ioremap(phys_addr, size, PAGE_KERNEL);
++	return (__force void *)__early_ioremap(phys_addr, size, PAGE_KERNEL);
+ }
  
-@@ -54,9 +71,36 @@ static int __init ion_dummy_init(void)
- 	if (!heaps)
- 		return PTR_ERR(heaps);
- 
-+
-+	/* Allocate a dummy carveout heap */
-+	carveout_ptr = alloc_pages_exact(
-+				dummy_heaps[ION_HEAP_TYPE_CARVEOUT].size,
-+				GFP_KERNEL);
-+	if (carveout_ptr)
-+		dummy_heaps[ION_HEAP_TYPE_CARVEOUT].base =
-+						virt_to_phys(carveout_ptr);
-+	else
-+		pr_err("ion_dummy: Could not allocate carveout\n");
-+
-+	/* Allocate a dummy chunk heap */
-+	chunk_ptr = alloc_pages_exact(
-+				dummy_heaps[ION_HEAP_TYPE_CHUNK].size,
-+				GFP_KERNEL);
-+	if (chunk_ptr)
-+		dummy_heaps[ION_HEAP_TYPE_CHUNK].base = virt_to_phys(chunk_ptr);
-+	else
-+		pr_err("ion_dummy: Could not allocate chunk\n");
-+
- 	for (i = 0; i < dummy_ion_pdata.nr; i++) {
- 		struct ion_platform_heap *heap_data = &dummy_ion_pdata.heaps[i];
- 
-+		if (heap_data->type == ION_HEAP_TYPE_CARVEOUT &&
-+							!heap_data->base)
-+			continue;
-+
-+		if (heap_data->type == ION_HEAP_TYPE_CHUNK && !heap_data->base)
-+			continue;
-+
- 		heaps[i] = ion_heap_create(heap_data);
- 		if (IS_ERR_OR_NULL(heaps[i])) {
- 			err = PTR_ERR(heaps[i]);
-@@ -72,6 +116,16 @@ err:
+ void __init early_iounmap(void __iomem *addr, unsigned long size)
+@@ -620,3 +619,8 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
  	}
- 	kfree(heaps);
- 
-+	if (carveout_ptr) {
-+		free_pages_exact(carveout_ptr,
-+				dummy_heaps[ION_HEAP_TYPE_CARVEOUT].size);
-+		carveout_ptr = NULL;
-+	}
-+	if (chunk_ptr) {
-+		free_pages_exact(chunk_ptr,
-+				dummy_heaps[ION_HEAP_TYPE_CHUNK].size);
-+		chunk_ptr = NULL;
-+	}
- 	return err;
+ 	prev_map[slot] = NULL;
  }
- 
-@@ -85,6 +139,17 @@ static void __exit ion_dummy_exit(void)
- 		ion_heap_destroy(heaps[i]);
- 	kfree(heaps);
- 
-+	if (carveout_ptr) {
-+		free_pages_exact(carveout_ptr,
-+				dummy_heaps[ION_HEAP_TYPE_CARVEOUT].size);
-+		carveout_ptr = NULL;
-+	}
-+	if (chunk_ptr) {
-+		free_pages_exact(chunk_ptr,
-+				dummy_heaps[ION_HEAP_TYPE_CHUNK].size);
-+		chunk_ptr = NULL;
-+	}
 +
- 	return;
- }
- 
++void __init early_memunmap(void *addr, unsigned long size)
++{
++	early_iounmap((__force void __iomem *)addr, size);
++}
 -- 
-1.8.3.2
+1.8.3.1
 
