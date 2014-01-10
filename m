@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaAJILJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 03:11:09 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:56158 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750793AbaAJILH (ORCPT
+	id S1752218AbaAJIMd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 03:12:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56362 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaAJIMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 03:11:07 -0500
-Message-ID: <1389341463.4578.4.camel@x220>
-Subject: Re: Last depmod fails with 3.13-rc6
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>
-Cc: =?ISO-8859-1?Q?S=E9bastien?= Luttringer <seblu@seblu.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 10 Jan 2014 09:11:03 +0100
-In-Reply-To: <la50g5$n4j$1@ger.gmane.org>
-References: <la4v6a$a94$1@ger.gmane.org> <la50g5$n4j$1@ger.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+	Fri, 10 Jan 2014 03:12:30 -0500
+Date: Fri, 10 Jan 2014 00:13:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-Id: <20140110001344.2af08f11.akpm@linux-foundation.org>
+In-Reply-To: <20140110080504.GA9437@dhcp22.suse.cz>
+References: <20140101002935.GA15683@localhost.localdomain>
+	<52C5AA61.8060701@intel.com>
+	<20140103033303.GB4106@localhost.localdomain>
+	<52C6FED2.7070700@intel.com>
+	<20140105003501.GC4106@localhost.localdomain>
+	<20140106164604.GC27602@dhcp22.suse.cz>
+	<20140108101611.GD27937@dhcp22.suse.cz>
+	<20140109073259.GK4106@localhost.localdomain>
+	<alpine.DEB.2.02.1401091310510.31538@chino.kir.corp.google.com>
+	<20140110080504.GA9437@dhcp22.suse.cz>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 10 Jan 2014 08:11:04.0217 (UTC) FILETIME=[81B53890:01CF0DDB]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding maintainers and linux-bluetooth.
+On Fri, 10 Jan 2014 09:05:04 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 
-On Fri, 2014-01-03 at 01:33 +0100, Sébastien Luttringer wrote:
-> On 03/01/2014 01:11, Sébastien Luttringer wrote:
-> > Hello,
+> > > --- a/mm/huge_memory.c
+> > > +++ b/mm/huge_memory.c
+> > > @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
+> > >  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
+> > >  };
+> > >  
+> > > +extern int user_min_free_kbytes;
+> > >  
 > > 
-> > Trying to run depmod (from kmod 16) on the 3.13-rc6, I got this error
-> > message:
-> > 
-> > # depmod 3.13.0-rc6-seblu
-> > depmod: ERROR: Module 'hci_vhci' has devname (vhci) but lacks major and
-> > minor information. Ignoring.
-> > 
-> > The message and error code seem to be on purpose[2] but they break tools
-> > which rely on depmod return 0 (like kernel-install).
-> > 
-> > 
-> > [1] http://git.kernel.org/cgit/utils/kernel/kmod/kmod.git/commit/?id=6506ddf
-> > 
-> Forget about the return code and their consequences. I made a mistake.
+> > We don't add extern declarations to .c files.  How many other examples of 
+> > this can you find in mm/?
 > 
-> The missing informations in hci_vhci is still relevant.
-> 
-> # depmod 3.13.0-rc6-seblu
-> depmod: ERROR: Module 'hci_vhci' has devname (vhci) but lacks major and
-> minor information. Ignoring.
-> 
-> Regards,
-> 
+> I have suggested this because general visibility is not needed.
 
+It's best to use a common declaration which is seen by the definition
+site and all references, so everyone agrees on the variable's type. 
+Otherwise we could have "long foo;" in one file and "extern char foo;"
+in another and the compiler won't tell us.  I think the linker could
+tell us, but it doesn't, afaik.  Perhaps there's an option...
 
-Paul Bolle
+> But if
+> you think that it should then include/linux/mm.h sounds like a proper
+> place.
 
+mm/internal.h might suit.
