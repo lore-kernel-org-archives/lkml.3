@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaAJJdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 04:33:18 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:20677 "EHLO
+	id S1753160AbaAJJe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 04:34:27 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:20964 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaAJJdN (ORCPT
+	with ESMTP id S1751013AbaAJJeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 04:33:13 -0500
+	Fri, 10 Jan 2014 04:34:23 -0500
+Message-ID: <52CFBE9C.8080204@atmel.com>
+Date: Fri, 10 Jan 2014 10:34:20 +0100
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-serial@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Marek Roszko <mark.roszko@gmail.com>, stable <stable@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] tty/serial: at91: disable uart timer at start of shutdown
-Date: Fri, 10 Jan 2014 10:33:11 +0100
-Message-ID: <1389346391-26145-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Roszko <mark.roszko@gmail.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "Zhao, Leilei" <leilei.zhao@atmel.com>,
+        Mark Deneen <mdeneen@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: [RFC PATCH] tty/serial: at91: disable uart timer at start of
+ shutdown
+References: <CAJjB1qLBoXA_XeEV+qU6pi0JVS+==kVA7mEDuAufrYup3htU2g@mail.gmail.com> <1389176916-6114-1-git-send-email-nicolas.ferre@atmel.com> <CAJjB1q+0cMqGRX8e5ssvvvo1pSw4KY7n38vWOh-PnE8GRC2Pug@mail.gmail.com> <CAJjB1qJez363RAaNg1bzE3QTsaGDFfAqOJux=VttNXCyaQTy3A@mail.gmail.com>
+In-Reply-To: <CAJjB1qJez363RAaNg1bzE3QTsaGDFfAqOJux=VttNXCyaQTy3A@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Roszko <mark.roszko@gmail.com>
+On 09/01/2014 08:08, Mark Roszko :
+> Just to sumarize the bug after poking before the patch:
+>    systemd calls open/close on /dev/ttyS0 per line
+>    atmel_shutdown executes on close
+>    uart_timer_callback may fire during shutdown before timer is killed
+>    tasklet gets scheduled after tasklet_kill
+>    atmel_shutdown returns back to uart_close
+> dice roll:
+>    if the tasklet executes before uart_close kills the tty references,
+> the kernel is fine           <--- I saw this happening more often than
+> panics, around once every 3 resets
+>    if the tasklet executes after uart_close kills the tty references, it panics
+> 
+> I tested the patch by old fashion way of manual board resets with a
+> total of 70 resets each on two individual SAMA5D34-EK boards I have in
+> my possession programmed with the same patched kernel image and
+> rootfs. They did not panic once with the patch applied. Typically
+> before the patch the panic would occur around once every 10 resets if
+> not more often to the point it occured for 4 resets straight.
+> 
+> I have been trying to automate the testing, even If I make sure
+> nothing is using ttyS0 and then run a program that spams open()
+> writev() and close() (systemd uses the syscalls) to print messages, it
+> will never panic so I'm possibly misunderstanding how the driver
+> startup/shutdown ops get triggered(which should just be open/close
+> respectively) or variable length of messages from systemd and timing
+> between messages contributes to being unlucky and having the timer
+> fire at the wrong time.
+> 
+> But from manual testing I'm pretty confident the bug is fixed.
 
-The uart timer will schedule a tasklet when it fires. It is possible that it
-can fire inside _shutdown before it is killed in the dma and pdc cleanup
-routines. This causes a tasklet that exists after the port is shutdown, so when
-the kernel finally executes it, it panics as the tty port is NULL.
+Nice, thanks for the detailed feedback.
 
-This is a somewhat rare condition but its possible if a program keeps on
-opening/closing the port. It has been observed in particular with systemd
-boot messages that were causing a kernel panic because of this behavior.
+So I send the patch for inclusion to Greg.
 
-Moving the timer deletion to the beginning of the function stops a tasklet from
-being scheduled unexpectedly.
-
-Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
-Cc: stable <stable@vger.kernel.org> # v3.12
-[nicolas.ferre@atmel.com: modify commit message, call setup_timer() in any case]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/tty/serial/atmel_serial.c | 22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index 2b6ac1be00d3..a49f10d269b2 100644
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -825,9 +825,6 @@ static void atmel_release_rx_dma(struct uart_port *port)
- 	atmel_port->desc_rx = NULL;
- 	atmel_port->chan_rx = NULL;
- 	atmel_port->cookie_rx = -EINVAL;
--
--	if (!atmel_port->is_usart)
--		del_timer_sync(&atmel_port->uart_timer);
- }
- 
- static void atmel_rx_from_dma(struct uart_port *port)
-@@ -1229,9 +1226,6 @@ static void atmel_release_rx_pdc(struct uart_port *port)
- 				 DMA_FROM_DEVICE);
- 		kfree(pdc->buf);
- 	}
--
--	if (!atmel_port->is_usart)
--		del_timer_sync(&atmel_port->uart_timer);
- }
- 
- static void atmel_rx_from_pdc(struct uart_port *port)
-@@ -1604,12 +1598,13 @@ static int atmel_startup(struct uart_port *port)
- 	/* enable xmit & rcvr */
- 	UART_PUT_CR(port, ATMEL_US_TXEN | ATMEL_US_RXEN);
- 
-+	setup_timer(&atmel_port->uart_timer,
-+			atmel_uart_timer_callback,
-+			(unsigned long)port);
-+
- 	if (atmel_use_pdc_rx(port)) {
- 		/* set UART timeout */
- 		if (!atmel_port->is_usart) {
--			setup_timer(&atmel_port->uart_timer,
--					atmel_uart_timer_callback,
--					(unsigned long)port);
- 			mod_timer(&atmel_port->uart_timer,
- 					jiffies + uart_poll_timeout(port));
- 		/* set USART timeout */
-@@ -1624,9 +1619,6 @@ static int atmel_startup(struct uart_port *port)
- 	} else if (atmel_use_dma_rx(port)) {
- 		/* set UART timeout */
- 		if (!atmel_port->is_usart) {
--			setup_timer(&atmel_port->uart_timer,
--					atmel_uart_timer_callback,
--					(unsigned long)port);
- 			mod_timer(&atmel_port->uart_timer,
- 					jiffies + uart_poll_timeout(port));
- 		/* set USART timeout */
-@@ -1652,6 +1644,12 @@ static void atmel_shutdown(struct uart_port *port)
- 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
- 
- 	/*
-+	 * Prevent any tasklets being scheduled during
-+	 * cleanup
-+	 */
-+	del_timer_sync(&atmel_port->uart_timer);
-+
-+	/*
- 	 * Clear out any scheduled tasklets before
- 	 * we destroy the buffers
- 	 */
+Thanks for your help Mark. Best regards,
 -- 
-1.8.2.2
-
+Nicolas Ferre
