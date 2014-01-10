@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041AbaAJRBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 12:01:24 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:55822 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758020AbaAJRBV (ORCPT
+	id S1756042AbaAJRCi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 12:02:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36120 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaAJRCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 12:01:21 -0500
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>, Joe Perches <joe@perches.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v4 RESEND] checkpatch: add DT compatible string documentation checks
-Date: Fri, 10 Jan 2014 11:00:58 -0600
-Message-Id: <1389373258-19493-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 10 Jan 2014 12:02:36 -0500
+Date: Fri, 10 Jan 2014 18:02:24 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Scott J Norton <scott.norton@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: SIGSEGV when using "perf record -g" with 3.13-rc* kernel
+Message-ID: <20140110170223.GD8224@laptop.programming.kicks-ass.net>
+References: <52D011C9.7000209@hp.com>
+ <20140110165822.GI7572@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140110165822.GI7572@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+On Fri, Jan 10, 2014 at 05:58:22PM +0100, Peter Zijlstra wrote:
+> On Fri, Jan 10, 2014 at 10:29:13AM -0500, Waiman Long wrote:
+> > Peter,
+> > 
+> > Call Trace:
+> > <NMI>  [<ffffffff815710af>] dump_stack+0x49/0x62
+> >  [<ffffffff8104e3bc>] warn_slowpath_common+0x8c/0xc0
+> >  [<ffffffff8104e40a>] warn_slowpath_null+0x1a/0x20
+> >  [<ffffffff8105f1f1>] force_sig_info+0x131/0x140
+> >  [<ffffffff81042a4f>] force_sig_info_fault+0x5f/0x70
+> >  [<ffffffff8106d8da>] ? search_exception_tables+0x2a/0x50
+> >  [<ffffffff81043b3d>] ? fixup_exception+0x1d/0x70
+> >  [<ffffffff81042cc9>] no_context+0x159/0x1f0
+> >  [<ffffffff81042e8d>] __bad_area_nosemaphore+0x12d/0x230
+> >  [<ffffffff81042e8d>] ? __bad_area_nosemaphore+0x12d/0x230
+> >  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
+> >  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
+> >  [<ffffffff81578fc2>] ? __do_page_fault+0x362/0x480
+> >  [<ffffffff815791be>] do_page_fault+0xe/0x10
+> >  [<ffffffff81575962>] page_fault+0x22/0x30
+> >  [<ffffffff815817e4>] ? bad_to_user+0x5e/0x66b
+> >  [<ffffffff81285316>] copy_from_user_nmi+0x76/0x90
+> >  [<ffffffff81017a20>] perf_callchain_user+0xd0/0x360
+> >  [<ffffffff8111f64f>] perf_callchain+0x1af/0x1f0
+> >  [<ffffffff81117693>] perf_prepare_sample+0x2f3/0x3a0
+> >  [<ffffffff8111a2af>] __perf_event_overflow+0x10f/0x220
+> >  [<ffffffff8111ab14>] perf_event_overflow+0x14/0x20
+> >  [<ffffffff8101f69e>] intel_pmu_handle_irq+0x1de/0x3c0
+> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+> >  [<ffffffff81576e64>] perf_event_nmi_handler+0x34/0x60
+> >  [<ffffffff8157664a>] nmi_handle+0x8a/0x170
+> >  [<ffffffff81576848>] default_do_nmi+0x68/0x210
+> >  [<ffffffff81576a80>] do_nmi+0x90/0xe0
+> >  [<ffffffff81575c67>] end_repeat_nmi+0x1e/0x2e
+> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+> >  [<ffffffff81008e44>] ? emulate_vsyscall+0x144/0x390
+> > <<EOE>>  [<ffffffff81042f7d>] __bad_area_nosemaphore+0x21d/0x230
+> >  [<ffffffff81042fa3>] bad_area_nosemaphore+0x13/0x20
+> >  [<ffffffff81578fc2>] __do_page_fault+0x362/0x480
+> >  [<ffffffff8113cfbc>] ? vm_mmap_pgoff+0xbc/0xe0
+> >  [<ffffffff815791be>] do_page_fault+0xe/0x10
+> >  [<ffffffff81575962>] page_fault+0x22/0x30
+> > ---[ end trace 037bf09d279751ec ]---
+> > 
+> > So this is a double page faults. Looking at relevant changes in
+> > 3.13 kernel, I spotted the following one patch that modified the
+> > perf_callchain_user() function shown up in the stack trace above:
+> > 
+> 
+> Hurm, that's an expected double fault, not something we should take the
+> process down for.
+> 
+> I'll have to look at how all that works for a bit.
 
-This adds a simple check that any compatible strings in DeviceTree dts
-files are present in Documentation/devicetree/bindings. Vendor prefixes
-are also checked for existing in vendor-prefixes.txt These should be
-temporary checks until we have more sophisticated binding schema checking.
+How easily can you reproduce this? Could you test something like the
+below, which would allow us to take double faults from NMI context.
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Signed-off-by: Joe Perches <joe@perches.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
-Andrew,
+ arch/x86/mm/fault.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Can you please apply this or I can take it via the DT tree.
-
-Rob
-
-v4:
-- Fix handling of no source tree or user-specified source tree
-- Check for presence of vendor-prefixes.txt
-
-v3:
-- Use a single message type UNDOCUMENTED_DT_STRING
-- Ensure '+' is at beginning of the line
-- Move vendor-prefixes.txt to variable
-
-v2:
-- Add vendor string checking against vendor-prefixes.txt
-- Add '_', '.' and '+' as valid compatible string characters
-- Use 'grep -E' instead of egrep
-
- scripts/checkpatch.pl | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 9c98100..e6635bb 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2034,6 +2034,33 @@ sub process {
- 			     "Use of $flag is deprecated, please use \`$replacement->{$flag} instead.\n" . $herecurr) if ($replacement->{$flag});
- 		}
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 9ff85bb8dd69..18c498d4274d 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -641,7 +641,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
  
-+# check for DT compatible documentation
-+		if (defined $root && $realfile =~ /\.dts/ &&
-+		    $rawline =~ /^\+\s*compatible\s*=/) {
-+			my @compats = $rawline =~ /\"([a-zA-Z0-9\-\,\.\+_]+)\"/g;
-+
-+			foreach my $compat (@compats) {
-+				my $compat2 = $compat;
-+				my $dt_path =  $root . "/Documentation/devicetree/bindings/";
-+				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
-+				`grep -Erq "$compat|$compat2" $dt_path`;
-+				if ( $? >> 8 ) {
-+					WARN("UNDOCUMENTED_DT_STRING",
-+					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
-+				}
-+
-+				my $vendor = $compat;
-+				my $vendor_path = $dt_path . "vendor-prefixes.txt";
-+				next if (! -f $vendor_path);
-+				$vendor =~ s/^([a-zA-Z0-9]+)\,.*/$1/;
-+				`grep -Eq "$vendor" $vendor_path`;
-+				if ( $? >> 8 ) {
-+					WARN("UNDOCUMENTED_DT_STRING",
-+					     "DT compatible string vendor \"$vendor\" appears un-documented -- check $vendor_path\n" . $herecurr);
-+				}
-+			}
-+		}
-+
- # check we are in a valid source file if not then ignore this hunk
- 		next if ($realfile !~ /\.(h|c|s|S|pl|sh)$/);
- 
--- 
-1.8.3.2
-
+ 	/* Are we prepared to handle this kernel fault? */
+ 	if (fixup_exception(regs)) {
+-		if (current_thread_info()->sig_on_uaccess_error && signal) {
++		if (!in_nmi() && current_thread_info()->sig_on_uaccess_error && signal) {
+ 			tsk->thread.trap_nr = X86_TRAP_PF;
+ 			tsk->thread.error_code = error_code | PF_USER;
+ 			tsk->thread.cr2 = address;
