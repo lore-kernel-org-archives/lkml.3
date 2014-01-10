@@ -1,142 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaAJHDo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:03:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980AbaAJHDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:03:39 -0500
-Message-ID: <52CF9B25.7020909@redhat.com>
-Date: Fri, 10 Jan 2014 15:03:01 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, John Fastabend <john.r.fastabend@intel.com>,
-        e1000-devel@lists.sourceforge.net
-Subject: Re: [PATCH net V2 2/2] net: core: explicitly select a txq before
- doing l2 forwarding
-References: <1389260252-48591-1-git-send-email-jasowang@redhat.com> <1389260252-48591-2-git-send-email-jasowang@redhat.com> <20140109123144.GC16701@hmsreliant.think-freely.org>
-In-Reply-To: <20140109123144.GC16701@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751304AbaAJHCb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:02:31 -0500
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:34885 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaAJHAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 02:00:25 -0500
+From: Chen-Yu Tsai <wens@csie.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v2 15/16] ARM: dts: sun7i: olinuxino-micro: Enable GMAC instead of EMAC
+Date: Fri, 10 Jan 2014 15:00:16 +0800
+Message-Id: <1389337217-29032-16-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389337217-29032-1-git-send-email-wens@csie.org>
+References: <1389337217-29032-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 08:31 PM, Neil Horman wrote:
-> On Thu, Jan 09, 2014 at 05:37:32PM +0800, Jason Wang wrote:
->> Currently, the tx queue were selected implicitly in ndo_dfwd_start_xmit(). The
->> will cause several issues:
->>
->> - NETIF_F_LLTX were removed for macvlan, so txq lock were done for macvlan
->>   instead of lower device which misses the necessary txq synchronization for
->>   lower device such as txq stopping or frozen required by dev watchdog or
->>   control path.
->> - dev_hard_start_xmit() was called with NULL txq which bypasses the net device
->>   watchdog.
->> - dev_hard_start_xmit() does not check txq everywhere which will lead a crash
->>   when tso is disabled for lower device.
->>
->> Fix this by explicitly introducing a new param for .ndo_select_queue() for just
->> selecting queues in the case of l2 forwarding offload. And also introducing
->> dfwd_direct_xmit() to do the queue selecting, txq holding and transmitting for
->> l2 forwarding.
->>
->> With this fixes, NETIF_F_LLTX could be preserved for macvlan and there's no need
->> to check txq against NULL in dev_hard_start_xmit(). Also there's no need to keep
->> a dedicated ndo_dfwd_start_xmit().
->>
->> In the future, it was also required for macvtap l2 forwarding support since it
->> provides a necessary synchronization method.
->>
->> Cc: John Fastabend <john.r.fastabend@intel.com>
->> Cc: Neil Horman <nhorman@tuxdriver.com>
->> Cc: e1000-devel@lists.sourceforge.net
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>
->> ---
->> Changes from V1:
->> - Adding a new parameter to ndo_select_queue instead of a new method to select
->>   queue for l2 forwarding.
->> - Remove the unnecessary ndo_dfwd_start_xmit() since txq was selected
->>   explicitly.
->> - Keep NETIF_F_LLTX when netdev feature is changed.
->> - Shape the commit log
-> A few minor nits inline.
->> <snip>
->>  }
->> diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
->> index 5360f73..7eb4c82 100644
->> --- a/drivers/net/macvlan.c
->> +++ b/drivers/net/macvlan.c
->> @@ -299,7 +299,7 @@ netdev_tx_t macvlan_start_xmit(struct sk_buff *skb,
->>  
->>  	if (vlan->fwd_priv) {
->>  		skb->dev = vlan->lowerdev;
->> -		ret = dev_hard_start_xmit(skb, skb->dev, NULL, vlan->fwd_priv);
->> +		ret = dfwd_direct_xmit(skb, skb->dev, vlan->fwd_priv);
->>  	} else {
->>  		ret = macvlan_queue_xmit(skb, dev);
->>  	}
->> @@ -366,7 +366,6 @@ static int macvlan_open(struct net_device *dev)
->>  		if (IS_ERR_OR_NULL(vlan->fwd_priv)) {
->>  			vlan->fwd_priv = NULL;
->>  		} else {
->> -			dev->features &= ~NETIF_F_LLTX;
->>  			return 0;
->>  		}
-> After removing the features flag operation here, you don't need the braces
-> around the else statement either.
+GMAC has better performance and fewer hardware issues.
+Use the GMAC in MII mode for ethernet instead of the EMAC.
 
-Ok.
->> <snip>
->> +int dfwd_direct_xmit(struct sk_buff *skb, struct net_device *dev,
->> +		     void *accel_priv)
->> +{
->> +	struct netdev_queue *txq;
->> +	int ret = NETDEV_TX_BUSY;
->> +	int index;
->> +
->> +	BUG_ON(!dev->netdev_ops->ndo_select_queue);
->> +	index =	dev->netdev_ops->ndo_select_queue(dev, skb, accel_priv);
->> +
->> +	local_bh_disable();
->> +
->> +	skb_set_queue_mapping(skb, index);
->> +	txq = netdev_get_tx_queue(dev, index);
->> +
->> +	HARD_TX_LOCK(dev, txq, smp_processor_id());
->> +	if (!netif_xmit_frozen_or_stopped(txq))
->> +		ret = dev_hard_start_xmit(skb, dev, txq);
->> +	HARD_TX_UNLOCK(dev, txq);
->> +
->> +	local_bh_enable();
->> +	return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(dfwd_direct_xmit);
->> +
-> Now that we're using the common path to select a queue, can we just use
-> dev_queue_xmit here instead of creating our own transmit function?  The txq we
-> select from the ixgbe card will just have a pfifo_fast queue on it (if not a
-> noop queue), so dev_queue_xmit should just fall into the dev_hard_start_xmit
-> path, and save us this extra coding.
->
-> Neil
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts | 27 +++++++++++--------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
-Ture, and this will make no difference with the case without l2
-forwarding. To not trouble other parts too much, I will keep the current
-dev_queue_xmit() API and rename the current dev_queue_xmit() to
-__dev_queue_xmit() can make it can accept a accel_priv parameter. So
-dev_queue_xmit() will call this will NULL accel_priv and introduce a
-dev_queue_xmit_accel() that can accept a accel_priv parameter.
-
-Thanks
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+index ead3013..b02a796 100644
+--- a/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
++++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts
+@@ -19,21 +19,6 @@
+ 	compatible = "olimex,a20-olinuxino-micro", "allwinner,sun7i-a20";
+ 
+ 	soc@01c00000 {
+-		emac: ethernet@01c0b000 {
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&emac_pins_a>;
+-			phy = <&phy1>;
+-			status = "okay";
+-		};
+-
+-		mdio@01c0b080 {
+-			status = "okay";
+-
+-			phy1: ethernet-phy@1 {
+-				reg = <1>;
+-			};
+-		};
+-
+ 		pinctrl@01c20800 {
+ 			led_pins_olinuxino: led_pins@0 {
+ 				allwinner,pins = "PH2";
+@@ -78,6 +63,18 @@
+ 			pinctrl-0 = <&i2c2_pins_a>;
+ 			status = "okay";
+ 		};
++
++		gmac: ethernet@01c50000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&gmac_pins_mii_a>;
++			phy = <&phy1>;
++			phy-mode = "mii";
++			status = "okay";
++
++			phy1: ethernet-phy@1 {
++				reg = <1>;
++			};
++		};
+ 	};
+ 
+ 	leds {
+-- 
+1.8.5.2
 
