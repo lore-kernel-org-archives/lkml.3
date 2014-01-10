@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAJSHm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 13:07:42 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:16974 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbaAJSHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 13:07:40 -0500
-Message-ID: <52D036FC.6000308@oracle.com>
-Date: Fri, 10 Jan 2014 13:07:56 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Olaf Hering <olaf@aepfle.de>
-CC: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com
-Subject: Re: [PATCH] xen-blkfront: remove type check from blkfront_setup_discard
-References: <1389371301-29532-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1389371301-29532-1-git-send-email-olaf@aepfle.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1753074AbaAJSL7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 13:11:59 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:60104 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751263AbaAJSLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 13:11:53 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Bob Liu <bob.liu@oracle.com>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 2/9] lib: radix-tree: radix_tree_delete_item()
+Date: Fri, 10 Jan 2014 13:10:36 -0500
+Message-Id: <1389377443-11755-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 11:28 AM, Olaf Hering wrote:
-> In its initial implementation a check for "type" was added, but only phy
-> and file are handled. This breaks advertised discard support for other
-> type values such as qdisk.
->
-> Fix and simplify this function: If the backend advertises discard
-> support it is supposed to implement it properly, so enable
-> feature_discard unconditionally. If the backend advertises the need for
-> a certain granularity and alignment then propagate both properties to
-> the blocklayer. The discard-secure property is a boolean, update the code
-> to reflect that.
->
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> ---
->   drivers/block/xen-blkfront.c | 40 ++++++++++++++--------------------------
->   1 file changed, 14 insertions(+), 26 deletions(-)
->
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index c4a4c90..c9e96b9 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -1635,36 +1635,24 @@ blkfront_closing(struct blkfront_info *info)
->   static void blkfront_setup_discard(struct blkfront_info *info)
->   {
->   	int err;
-> -	char *type;
->   	unsigned int discard_granularity;
->   	unsigned int discard_alignment;
->   	unsigned int discard_secure;
->   
-> -	type = xenbus_read(XBT_NIL, info->xbdev->otherend, "type", NULL);
-> -	if (IS_ERR(type))
-> -		return;
-> -
-> -	info->feature_secdiscard = 0;
-> -	if (strncmp(type, "phy", 3) == 0) {
-> -		err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-> -			"discard-granularity", "%u", &discard_granularity,
-> -			"discard-alignment", "%u", &discard_alignment,
-> -			NULL);
-> -		if (!err) {
-> -			info->feature_discard = 1;
-> -			info->discard_granularity = discard_granularity;
-> -			info->discard_alignment = discard_alignment;
-> -		}
-> -		err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-> -			    "discard-secure", "%d", &discard_secure,
-> -			    NULL);
-> -		if (!err)
-> -			info->feature_secdiscard = discard_secure;
-> -
-> -	} else if (strncmp(type, "file", 4) == 0)
-> -		info->feature_discard = 1;
-> -
-> -	kfree(type);
-> +	info->feature_discard = 1;
+Provide a function that does not just delete an entry at a given
+index, but also allows passing in an expected item.  Delete only if
+that item is still located at the specified index.
 
-If the call below fails, is it safe to continue using discard feature? 
-At the least, are discard_granularity and discard_alignment guaranteed 
-to have sane/safe values?
+This is handy when lockless tree traversals want to delete entries as
+well because they don't have to do an second, locked lookup to verify
+the slot has not changed under them before deleting the entry.
 
-> +	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-> +		"discard-granularity", "%u", &discard_granularity,
-> +		"discard-alignment", "%u", &discard_alignment,
-> +		NULL);
-> +	if (!err) {
-> +		info->discard_granularity = discard_granularity;
-> +		info->discard_alignment = discard_alignment;
-> +	}
-> +	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-> +		    "discard-secure", "%d", &discard_secure,
-> +		    NULL);
-> +	if (!err)
-> +		info->feature_secdiscard = !!discard_secure;
->   }
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/radix-tree.h |  1 +
+ lib/radix-tree.c           | 31 +++++++++++++++++++++++++++----
+ 2 files changed, 28 insertions(+), 4 deletions(-)
 
-err variable is not really necessary so you can drop it.
-
-
--boris
->   
->   static int blkfront_setup_indirect(struct blkfront_info *info)
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 403940787be1..1bf0a9c388d9 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -219,6 +219,7 @@ static inline void radix_tree_replace_slot(void **pslot, void *item)
+ int radix_tree_insert(struct radix_tree_root *, unsigned long, void *);
+ void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
+ void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
++void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
+ void *radix_tree_delete(struct radix_tree_root *, unsigned long);
+ unsigned int
+ radix_tree_gang_lookup(struct radix_tree_root *root, void **results,
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 7811ed3b4e70..f442e3243607 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -1335,15 +1335,18 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
+ }
+ 
+ /**
+- *	radix_tree_delete    -    delete an item from a radix tree
++ *	radix_tree_delete_item    -    delete an item from a radix tree
+  *	@root:		radix tree root
+  *	@index:		index key
++ *	@item:		expected item
+  *
+- *	Remove the item at @index from the radix tree rooted at @root.
++ *	Remove @item at @index from the radix tree rooted at @root.
+  *
+- *	Returns the address of the deleted item, or NULL if it was not present.
++ *	Returns the address of the deleted item, or NULL if it was not present
++ *	or the entry at the given @index was not @item.
+  */
+-void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
++void *radix_tree_delete_item(struct radix_tree_root *root,
++			     unsigned long index, void *item)
+ {
+ 	struct radix_tree_node *node = NULL;
+ 	struct radix_tree_node *slot = NULL;
+@@ -1378,6 +1381,11 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+ 	if (slot == NULL)
+ 		goto out;
+ 
++	if (item && slot != item) {
++		slot = NULL;
++		goto out;
++	}
++
+ 	/*
+ 	 * Clear all tags associated with the item to be deleted.
+ 	 * This way of doing it would be inefficient, but seldom is any set.
+@@ -1422,6 +1430,21 @@ void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
+ out:
+ 	return slot;
+ }
++EXPORT_SYMBOL(radix_tree_delete_item);
++
++/**
++ *	radix_tree_delete    -    delete an item from a radix tree
++ *	@root:		radix tree root
++ *	@index:		index key
++ *
++ *	Remove the item at @index from the radix tree rooted at @root.
++ *
++ *	Returns the address of the deleted item, or NULL if it was not present.
++ */
++void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
++{
++	return radix_tree_delete_item(root, index, NULL);
++}
+ EXPORT_SYMBOL(radix_tree_delete);
+ 
+ /**
+-- 
+1.8.4.2
 
