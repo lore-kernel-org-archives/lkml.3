@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396AbaAJXDL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 18:03:11 -0500
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:46514 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263AbaAJXDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 18:03:07 -0500
-Date: Fri, 10 Jan 2014 18:03:03 -0500
-From: Wakko Warner <wakko@animx.eu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Unable to load modules from 9p filesystem with kmod 16
-Message-ID: <20140110230303.GA19369@animx.eu.org>
-Reply-To: Wakko Warner <wakko@animx.eu.org>
-References: <20140110023543.GA6131@animx.eu.org>
+	id S1757614AbaAJXJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 18:09:36 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61266 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751840AbaAJXJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 18:09:34 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52D07DAD.30105@roeck-us.net>
+Date: Fri, 10 Jan 2014 15:09:33 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110023543.GA6131@animx.eu.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        lm-sensors@lm-sensors.org
+CC: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH] hwmon: (max197) add include guard
+References: <1389390286-6287-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+In-Reply-To: <1389390286-6287-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wakko Warner wrote:
-> Kernel 3.12.7 from kernel.org
-> With kmod-16, I'm unable to load any modules on my guest kvm machines.
-> The vm is booted via direct kernel boot.  The modules are located on the
-> host and is passed to the guest via the fsdev.
-> 
-> I have a mountpoint on the guest filesystem located at /kernel.  It is
-> mounted like this:
-> kernel /kernel 9p rw,sync,dirsync,relatime,trans=virtio,version=9p2000.L 0 0
-> 
-> /boot, /lib/modules, and /lib/firmware are tmpfs filesystems like this:
-> kboot /boot tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
-> kfirmware /lib/firmware tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
-> kmodules /lib/modules tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
-> 
-> /lib/modules/$(uname -r) is a symlink to /kernel/lib/modules/$(uname -r)
-> 
-> When trying to load any module, I get 
-> Error: could not insert module /lib/modules/3.12.7/kernel/crypto/af_alg.ko:
-> Invalid module format
-> 
-> This module was just one I picked at random, all modules fail the same way.
-> Strace shows this:
-> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
-> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
-> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f199aebd000
-> syscall_313(0x3, 0x7f199aaa2de0, 0, 0x3, 0, 0x7f199b7b2010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) = -1 (errno 8)
-> munmap(0x7f199aebd000, 13822)           = 0
-> close(3)                                = 0
-> 
-> If I use kmod-9, it works w/o problems.  An strace of kmod-9 shows:
-> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
-> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
-> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f658ba41000
-> init_module(0x7f658ba41000, 13822, "")  = 0
-> munmap(0x7f658ba41000, 13822)           = 0
-> close(3)                                = 0
-> 
-> If I copy the module to /tmp, kmod-16 loads it just fine.  It appears to be
-> related to the 9p filesystem.
-> 
-> I won't rule out a bug in kmod-16, but I was unable to figure out what the
-> cause of the error was.  I tried to search through kmod's source and the
-> kernel source, but I gave up because I don't understand what's going on.
+On 01/10/2014 01:44 PM, Vivien Didelot wrote:
+> Add include guard to include/linux/platform_data/max197.h to prevent
+> multiple inclusion.
+>
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> ---
 
-I did some testing with the various kmod versions between kmod-9 and 16. 
-The problem was introduced in 13.  The change that broke this was the
-addition of finit_module().  Appears that the kernel cannot handle modules
-that is on the 9p filesystem.  On the line that checked err == 0 (around
-line libkmod-module.c:823), I added a test for ENOEXEC.  The finit_module
-still fails,but it uses the old method and works.
+Applied to hwmon-next.
 
-I would say from what I've seen, the problem is in the kernel for
-finit_module().  I don't know enough about the kernel to go any further.
+Thanks,
+Guenter
+
+>   include/linux/platform_data/max197.h | 5 +++++
+>   1 file changed, 5 insertions(+)
+>
+> diff --git a/include/linux/platform_data/max197.h b/include/linux/platform_data/max197.h
+> index e2a41dd..8da8f94 100644
+> --- a/include/linux/platform_data/max197.h
+> +++ b/include/linux/platform_data/max197.h
+> @@ -11,6 +11,9 @@
+>    * For further information, see the Documentation/hwmon/max197 file.
+>    */
+>
+> +#ifndef _PDATA_MAX197_H
+> +#define _PDATA_MAX197_H
+> +
+>   /**
+>    * struct max197_platform_data - MAX197 connectivity info
+>    * @convert:	Function used to start a conversion with control byte ctrl.
+> @@ -19,3 +22,5 @@
+>   struct max197_platform_data {
+>   	int (*convert)(u8 ctrl);
+>   };
+> +
+> +#endif /* _PDATA_MAX197_H */
+>
+
