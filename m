@@ -1,118 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972AbaAJBiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Jan 2014 20:38:52 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50058 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752920AbaAJBit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Jan 2014 20:38:49 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: print error message and bail out early if failed to parse APIC ID for CPU
-Date: Fri, 10 Jan 2014 02:52:40 +0100
-Message-ID: <2486715.U8PQu7xGGe@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <52CF4E4C.7080909@linux.intel.com>
-References: <1389255320-1563-1-git-send-email-jiang.liu@linux.intel.com> <5603175.k76fij1bcj@vostro.rjw.lan> <52CF4E4C.7080909@linux.intel.com>
+	id S1757535AbaAJBjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Jan 2014 20:39:12 -0500
+Received: from mga14.intel.com ([143.182.124.37]:27036 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755930AbaAJBjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Jan 2014 20:39:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,635,1384329600"; 
+   d="scan'208";a="456429465"
+Message-ID: <52CF4F35.3080805@linux.intel.com>
+Date: Fri, 10 Jan 2014 09:39:01 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Joerg Roedel <joro@8bytes.org>
+CC: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iommu/vt-d: fix compilation error for IA64 platform
+References: <1388989107-4795-20-git-send-email-jiang.liu@linux.intel.com> <1389171427-26223-1-git-send-email-jiang.liu@linux.intel.com> <20140109115501.GI29041@8bytes.org>
+In-Reply-To: <20140109115501.GI29041@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 10, 2014 09:35:08 AM Jiang Liu wrote:
+Thanks Joerg! Sorry for the inconvenience.
+
+On 2014/1/9 19:55, Joerg Roedel wrote:
+> On Wed, Jan 08, 2014 at 04:57:07PM +0800, Jiang Liu wrote:
+>> Hi Joerg,
+>> 	Could you please help to fold this into "[21/22] iommu/vt-d,
+>> trivial: clean sparse warnings"?
 > 
-> On 2014/1/9 20:12, Rafael J. Wysocki wrote:
-> > On Thursday, January 09, 2014 04:15:19 PM Jiang Liu wrote:
-> >> Enhance ACPI CPU hotplug driver to print clear error message and
-> >> bail out early if BIOS returns wrong value in ACPI MADT table or
-> >> _MAT method. Otherwise it will add the CPU device even if failed
-> >> to get APIC ID and fails any operations against sysfs interface:
-> >> /sys/devices/system/cpu/cpux/online
-> >>
-> >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> > 
-> > Do you have any pointers to bug reports regarding this etc.?  If so,
-> > it would be good to add links to them to the commit log.
-> Hi Rafael,
-> 	I have no bug id for this. It was found during verifying an
-> internal BIOS version, so no external bug id for it yet.
-
-OK
-
-I'm going to queue it up for 3.14.
-
-Thanks!
-
-
-> >> ---
-> >>  drivers/acpi/acpi_processor.c |   24 ++++++++++++++----------
-> >>  1 file changed, 14 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-> >> index 3c1d6b0..6ce71b0 100644
-> >> --- a/drivers/acpi/acpi_processor.c
-> >> +++ b/drivers/acpi/acpi_processor.c
-> >> @@ -212,7 +212,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
-> >>  	union acpi_object object = { 0 };
-> >>  	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
-> >>  	struct acpi_processor *pr = acpi_driver_data(device);
-> >> -	int cpu_index, device_declaration = 0;
-> >> +	int apic_id, cpu_index, device_declaration = 0;
-> >>  	acpi_status status = AE_OK;
-> >>  	static int cpu0_initialized;
-> >>  	unsigned long long value;
-> >> @@ -258,18 +258,21 @@ static int acpi_processor_get_info(struct acpi_device *device)
-> >>  		device_declaration = 1;
-> >>  		pr->acpi_id = value;
-> >>  	}
-> >> -	pr->apic_id = acpi_get_apicid(pr->handle, device_declaration,
-> >> -					pr->acpi_id);
-> >> -	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
-> >>  
-> >> -	/* Handle UP system running SMP kernel, with no LAPIC in MADT */
-> >> -	if (!cpu0_initialized && (cpu_index == -1) &&
-> >> -	    (num_online_cpus() == 1)) {
-> >> -		cpu_index = 0;
-> >> +	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
-> >> +	if (apic_id < 0) {
-> >> +		acpi_handle_err(pr->handle, "failed to get CPU APIC ID.\n");
-> >> +		return -ENODEV;
-> >>  	}
-> >> +	pr->apic_id = apic_id;
-> >>  
-> >> -	cpu0_initialized = 1;
-> >> -
-> >> +	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
-> >> +	if (!cpu0_initialized) {
-> >> +		cpu0_initialized = 1;
-> >> +		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
-> >> +		if ((cpu_index == -1) && (num_online_cpus() == 1))
-> >> +			cpu_index = 0;
-> >> +	}
-> >>  	pr->id = cpu_index;
-> >>  
-> >>  	/*
-> >> @@ -282,6 +285,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
-> >>  		if (ret)
-> >>  			return ret;
-> >>  	}
-> >> +
-> >>  	/*
-> >>  	 * On some boxes several processors use the same processor bus id.
-> >>  	 * But they are located in different scope. For example:
-> >>
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Okay, I folded the two patches in, but that is something I'd like to
+> avoid because it requires a rebase. So next time please just send a
+> follow-up patch to my x86/vt-d branch to fix things up.
+> 
+> 
+> 	Joerg
+> 
+> 
