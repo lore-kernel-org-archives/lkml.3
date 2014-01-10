@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaAJHpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 02:45:18 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:58218 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaAJHod (ORCPT
+	id S1751557AbaAJHxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 02:53:51 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:1127 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750877AbaAJHxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 02:44:33 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Andrew Duggan <aduggan@synaptics.com>,
-        Vincent Huang <vincent.huang@tw.synaptics.com>,
-        Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] Input: synaptics-rmi4 - fix I2C functionality check
-Date: Thu,  9 Jan 2014 23:44:26 -0800
-Message-Id: <1389339867-8399-3-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389339867-8399-1-git-send-email-dmitry.torokhov@gmail.com>
-References: <1389339867-8399-1-git-send-email-dmitry.torokhov@gmail.com>
+	Fri, 10 Jan 2014 02:53:48 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h2146h1202h1fd0h1e76h2189h1d1ah1cabh1d2ah21a7h1fc6hzdchz1de098h8275bh1de097hz31h87h2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1ad9h1b0ah1b2fh224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h129fi1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: <shh.xie@gmail.com>
+To: <davem@davemloft.net>, <jg1.han@samsung.com>, <mugunthanvnm@ti.com>,
+        <f.fainelli@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <Shaohui.Xie@freescale.com>, Andy Fleming <afleming@gmail.com>
+Subject: [PATCH 1/6] [v6] phylib: Add Clause 45 read/write functions
+Date: Fri, 10 Jan 2014 14:25:09 +0800
+Message-ID: <1389335109-28179-1-git-send-email-shh.xie@gmail.com>
+X-Mailer: git-send-email 1.8.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When adapter does not support required functionality (I2C_FUNC_I2C) we were
-returning 0 to the upper layers, making them believe that device bound
-successfully.
+From: Andy Fleming <afleming@gmail.com>
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Need an extra parameter to read or write Clause 45 PHYs, so
+need a different API with the extra parameter.
+
+Signed-off-by: Andy Fleming <afleming@gmail.com>
+Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
 ---
- drivers/input/rmi4/rmi_i2c.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+changes for v6:
+rebased on top of 'net-next' tree. commit id 11b57f90257c1.
 
-diff --git a/drivers/input/rmi4/rmi_i2c.c b/drivers/input/rmi4/rmi_i2c.c
-index cdc8527..c176218 100644
---- a/drivers/input/rmi4/rmi_i2c.c
-+++ b/drivers/input/rmi4/rmi_i2c.c
-@@ -193,11 +193,10 @@ static int rmi_i2c_probe(struct i2c_client *client,
- 		pdata->sensor_name ? pdata->sensor_name : "-no name-",
- 		client->addr, pdata->attn_gpio);
+ include/linux/phy.h | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/include/linux/phy.h b/include/linux/phy.h
+index 7c81dd8..3eda43c 100644
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -488,6 +488,24 @@ struct phy_fixup {
+ };
  
--	retval = i2c_check_functionality(client->adapter, I2C_FUNC_I2C);
--	if (!retval) {
--		dev_err(&client->dev, "i2c_check_functionality error %d.\n",
--			retval);
--		return retval;
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		dev_err(&client->dev,
-+			"adapter does not support required functionality.\n");
-+		return -ENODEV;
- 	}
+ /**
++ * phy_read_mmd - Convenience function for reading a register
++ * from an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ *
++ * Same rules as for phy_read();
++ */
++static inline int phy_read_mmd(struct phy_device *phydev, int devad, u32 regnum)
++{
++	if (!phydev->is_c45)
++		return -EOPNOTSUPP;
++
++	return mdiobus_read(phydev->bus, phydev->addr,
++			    MII_ADDR_C45 | (devad << 16) | (regnum & 0xffff));
++}
++
++/**
+  * phy_read - Convenience function for reading a given PHY register
+  * @phydev: the phy_device struct
+  * @regnum: register number to read
+@@ -537,6 +555,27 @@ static inline bool phy_is_internal(struct phy_device *phydev)
+ 	return phydev->is_internal;
+ }
  
- 	if (pdata->gpio_config) {
++/**
++ * phy_write_mmd - Convenience function for writing a register
++ * on an MMD on a given PHY.
++ * @phydev: The phy_device struct
++ * @devad: The MMD to read from
++ * @regnum: The register on the MMD to read
++ * @val: value to write to @regnum
++ *
++ * Same rules as for phy_write();
++ */
++static inline int phy_write_mmd(struct phy_device *phydev, int devad,
++				u32 regnum, u16 val)
++{
++	if (!phydev->is_c45)
++		return -EOPNOTSUPP;
++
++	regnum = MII_ADDR_C45 | ((devad & 0x1f) << 16) | (regnum & 0xffff);
++
++	return mdiobus_write(phydev->bus, phydev->addr, regnum, val);
++}
++
+ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, int phy_id,
+ 				     bool is_c45,
+ 				     struct phy_c45_device_ids *c45_ids);
 -- 
-1.8.4.2
+1.8.4.1
+
 
