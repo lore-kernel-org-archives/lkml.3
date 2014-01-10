@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaAJNyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 08:54:22 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:47316 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaAJNyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 08:54:19 -0500
-Date: Fri, 10 Jan 2014 08:54:16 -0500
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, stern@rowland.harvard.edu,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: Re: [PATCHSET v2 driver-core-next] kernfs, sysfs, driver-core:
- implement synchronous self-removal
-Message-ID: <20140110135416.GA8752@htj.dyndns.org>
-References: <1389361620-5086-1-git-send-email-tj@kernel.org>
+	id S1752409AbaAJN5h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 08:57:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751388AbaAJN5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 08:57:35 -0500
+Date: Fri, 10 Jan 2014 14:58:02 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pedro Alves <palves@redhat.com>
+Cc: Sergio Durigan Junior <sergiodj@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Tom Tromey <tromey@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC/PATCH] Implement new PTRACE_EVENT_SYSCALL_{ENTER,EXIT}
+Message-ID: <20140110135802.GA26953@redhat.com>
+References: <m3wqic205t.fsf@redhat.com> <20140107153036.GA4749@redhat.com> <52CEEF1F.90803@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389361620-5086-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52CEEF1F.90803@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 08:46:46AM -0500, Tejun Heo wrote:
-> Hello,
-> 
-> This is the second take of kernfs self-removal patchset.  Changes from
-> the last take[L] are,
+On 01/09, Pedro Alves wrote:
+>
+> On 01/07/2014 03:30 PM, Oleg Nesterov wrote:
+> >
+> > This way PTRACE_O_SYSCALL_* will work like other ptrace options which
+> > ask to report an event.
+>
+> +10^6.  With PTRACE_SYSCALL/sysgood, we don't have a way to trace
+> syscalls when single-stepping, which isn't much of a problem for
+> strace, but of course is for GDB.  That is one of the things the
+> new API should definitely sort out.
 
-Ugh... I'm hating myself.  These are slightly stale patches.  I got
-confused between two trees.  Please ignore this thread.  I'll post v3
-right away.
+Hmm. I think this is a good point, but this needs more discussion.
 
-Sorry about the trouble.
+So suppose that gdb does ptrace(PTRACE_SINGLESTEP) and the tracee
+executes the "syscall" insn. What it should report?
 
--- 
-tejun
+syscall-entry looks obvious, PTRACE_EVENT_SYSCALL_ENTER should be
+reported if PTRACE_O_SYSCALL_ENTER was set.
+
+But what should syscall-exit do? Should it still report SIGSEGV as
+it currently does, or should it report _SYSCALL_EXIT instead (if
+PTRACE_O_SYSCALL_EXIT of course), or should it report both?
+
+Oleg.
+
