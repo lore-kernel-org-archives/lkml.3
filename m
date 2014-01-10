@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007AbaAJVMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 16:12:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51796 "EHLO mx1.redhat.com"
+	id S1756761AbaAJVWd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 16:22:33 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:56073 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaAJVMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 16:12:21 -0500
-Date: Fri, 10 Jan 2014 16:12:04 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
-        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, kosaki.motohiro@gmail.com,
-        dyoung@redhat.com, linux-acpi@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory
- mapping is specified by user [v2]
-Message-ID: <20140110211204.GC19115@redhat.com>
-References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
- <1389380698-19361-4-git-send-email-prarit@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389380698-19361-4-git-send-email-prarit@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751466AbaAJVWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 16:22:30 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] staging: wlan-ng: fix leaks on failure paths in prism2sta_probe_usb()
+Date: Sat, 11 Jan 2014 01:22:11 +0400
+Message-Id: <1389388931-18832-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 02:04:58PM -0500, Prarit Bhargava wrote:
+There are leaks of resources allocated by wlan_setup() and usb_dev refcnt
+on failure paths in prism2sta_probe_usb().
 
-> kdump uses memmap=exactmap and mem=X values
+The patch adds appropriate deallocations and removes invalid code
+from hfa384x_corereset() failure handling.
+unregister_wlandev() is wrong because it is not registered yet.
+hfa384x_destroy() is just noop in init state.
 
-Minor nit. Kdump only uses memmap=exactmap and not mem=X. mem=X is there
-for debugging. So lets fix the changelog.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-[..]
->  static int __init parse_memmap_opt(char *str)
->  {
-> +	int ret;
-> +
->  	while (str) {
->  		char *k = strchr(str, ',');
->  
->  		if (k)
->  			*k++ = 0;
->  
-> -		parse_memmap_one(str);
-> +		ret = parse_memmap_one(str);
-> +		if (!ret)
-> +			set_acpi_no_memhotplug();
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/staging/wlan-ng/prism2usb.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-We want to call this only in case of memmap=exactmap and not other memmap=
-options. So I think instead of here, call it inside parse_memmap_one()
-where exactmap check is done.
+diff --git a/drivers/staging/wlan-ng/prism2usb.c b/drivers/staging/wlan-ng/prism2usb.c
+index b401974fb282..4739c14d8359 100644
+--- a/drivers/staging/wlan-ng/prism2usb.c
++++ b/drivers/staging/wlan-ng/prism2usb.c
+@@ -140,11 +140,9 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+ 					   prism2_reset_holdtime,
+ 					   prism2_reset_settletime, 0);
+ 		if (result != 0) {
+-			unregister_wlandev(wlandev);
+-			hfa384x_destroy(hw);
+ 			result = -EIO;
+ 			dev_err(&interface->dev, "hfa384x_corereset() failed.\n");
+-			goto failed;
++			goto failed_reset;
+ 		}
+ 	}
+ 
+@@ -159,11 +157,15 @@ static int prism2sta_probe_usb(struct usb_interface *interface,
+ 	if (register_wlandev(wlandev) != 0) {
+ 		dev_err(&interface->dev, "register_wlandev() failed.\n");
+ 		result = -EIO;
+-		goto failed;
++		goto failed_register;
+ 	}
+ 
+ 	goto done;
+ 
++failed_register:
++	usb_put_dev(dev);
++failed_reset:
++	wlan_unsetup(wlandev);
+ failed:
+ 	kfree(wlandev);
+ 	kfree(hw);
+-- 
+1.8.3.2
 
-        if (!strncmp(p, "exactmap", 8)) {
-		set_acpi_no_memhotplug();
-	}
-
-Thanks
-Vivek
