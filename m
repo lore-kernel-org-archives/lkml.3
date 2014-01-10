@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722AbaAJWYL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 17:24:11 -0500
-Received: from mta-out.inet.fi ([195.156.147.13]:56562 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263AbaAJWYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 17:24:07 -0500
-Date: Sat, 11 Jan 2014 00:23:15 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
-Message-ID: <20140110222315.GA7931@node.dhcp.inet.fi>
-References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
- <20140110202310.GB1421@node.dhcp.inet.fi>
- <20140110220155.GD3066@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110220155.GD3066@sgi.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+	id S1758090AbaAJWYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 17:24:41 -0500
+Received: from smtp-69.nebula.fi ([83.145.220.69]:45708 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751263AbaAJWYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 17:24:13 -0500
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org, linux@openrisc.net
+Cc: jonas@southpole.se,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: [PATCH] openrisc: fix PTRS_PER_PGD define
+Date: Sat, 11 Jan 2014 00:23:16 +0200
+Message-Id: <1389392596-14666-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 04:01:55PM -0600, Alex Thorlton wrote:
-> On Fri, Jan 10, 2014 at 10:23:10PM +0200, Kirill A. Shutemov wrote:
-> > Do you know what cause the difference? I prefer to fix THP instead of
-> > adding new knob to disable it.
-> 
-> The issue is that when you touch 1 byte of an untouched, contiguous 2MB
-> chunk, a THP will be handed out, and the THP will be stuck on whatever
-> node the chunk was originally referenced from.  If many remote nodes
-> need to do work on that same chunk, they'll be making remote accesses.
-> With THP disabled, 4K pages can be handed out to separate nodes as
-> they're needed, greatly reducing the amount of remote accesses to
-> memory.
+On OpenRISC, with its 8k pages, PAGE_SHIFT is defined to be 13.
+That makes the expression (1UL << (PAGE_SHIFT-2)) evaluate
+to 2048.
+The correct value for PTRS_PER_PGD should be 256.
 
-I think this problem *potentially* could be fixed by NUMA balancer.
-(Although, I don't really know how balancer works...)
+Correcting the PTRS_PER_PGD define unveiled a bug in map_ram(),
+where PTRS_PER_PGD was used when the intent was to iterate
+over a set of page table entries.
+This patch corrects that issue as well.
 
-If we see NUMA hint faults for addresses in different 4k pages inside huge
-page from more then one node, we could split the huge page.
+Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+---
+ arch/openrisc/include/asm/pgtable.h | 2 +-
+ arch/openrisc/mm/init.c             | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Mel, is it possible? Do we collect enough info to make the decision?
-
+diff --git a/arch/openrisc/include/asm/pgtable.h b/arch/openrisc/include/asm/pgtable.h
+index 37bf6a3..5630d03 100644
+--- a/arch/openrisc/include/asm/pgtable.h
++++ b/arch/openrisc/include/asm/pgtable.h
+@@ -69,7 +69,7 @@ extern void paging_init(void);
+  */
+ #define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-2))
+ 
+-#define PTRS_PER_PGD	(1UL << (PAGE_SHIFT-2))
++#define PTRS_PER_PGD	(1UL << (32-PGDIR_SHIFT))
+ 
+ /* calculate how many PGD entries a user-level program can use
+  * the first mappable virtual address is 0
+diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
+index 7f94652..b782ce9 100644
+--- a/arch/openrisc/mm/init.c
++++ b/arch/openrisc/mm/init.c
+@@ -110,7 +110,7 @@ static void __init map_ram(void)
+ 			set_pmd(pme, __pmd(_KERNPG_TABLE + __pa(pte)));
+ 
+ 			/* Fill the newly allocated page with PTE'S */
+-			for (j = 0; p < e && j < PTRS_PER_PGD;
++			for (j = 0; p < e && j < PTRS_PER_PTE;
+ 			     v += PAGE_SIZE, p += PAGE_SIZE, j++, pte++) {
+ 				if (v >= (u32) _e_kernel_ro ||
+ 				    v < (u32) _s_kernel_ro)
 -- 
- Kirill A. Shutemov
+1.8.3.2
+
