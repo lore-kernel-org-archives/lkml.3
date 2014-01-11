@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaAKLFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 06:05:09 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54452 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaAKLFG (ORCPT
+	id S1752755AbaAKLKw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 06:10:52 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:44103 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195AbaAKLKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 06:05:06 -0500
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: gregkh@linuxfoundation.org, rashika.kheria@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, andreas.dilger@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        monamagarwal123@gmail.com
-Subject: [PATCH v3 2/2] Staging: lustre: Fix return does not need parantheses
-Date: Sat, 11 Jan 2014 16:34:50 +0530
-Message-Id: <1389438290-5987-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 11 Jan 2014 06:10:50 -0500
+Date: Sat, 11 Jan 2014 03:10:45 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>, fengguang.wu@intel.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>
+Subject: Re: [xfs] c91c46c12: xfstests generic/313 regression
+Message-ID: <20140111111045.GA29380@infradead.org>
+References: <20140110122700.GA12624@localhost>
+ <52CFF402.5080409@oracle.com>
+ <20140110133306.GA22918@infradead.org>
+ <52CFFD1C.7050005@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52CFFD1C.7050005@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl warning in
-lustre/ldlm/interval_tree.c
-ERROR: return is not a function, parentheses are not required
+On Fri, Jan 10, 2014 at 10:01:00PM +0800, Jeff Liu wrote:
+> I also thought to fix this problem in this way, however I'm not sure
+> if those flags can be set back to iattr->ia_valid internally...
+> 
+> Otherwise, this fix looks good to me.
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
----
+Nothing in the truncate or open code path (or non-size setattr for that
+matter) looks at ia_valid after calling the filesystem, and they really
+have no business to.
 
-Changes since version 1:
-* Incoorect signed-off-by line
-
-Changes since version 2:
-* Forgot change log
-
- drivers/staging/lustre/lustre/ldlm/interval_tree.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/ldlm/interval_tree.c b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-index 7c956de..fb64aea 100644
---- a/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-+++ b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-@@ -585,8 +585,8 @@ EXPORT_SYMBOL(interval_erase);
- static inline int interval_may_overlap(struct interval_node *node,
- 					  struct interval_node_extent *ext)
- {
--	return (ext->start <= node->in_max_high &&
--		ext->end >= interval_low(node));
-+	return ext->start <= node->in_max_high &&
-+		ext->end >= interval_low(node);
- }
- 
- /*
--- 
-1.7.9.5
+In the meantime this has passed xfstests, so I'll send it along.  Thanks
+for the first fix, btw!
 
