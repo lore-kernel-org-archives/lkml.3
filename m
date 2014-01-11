@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660AbaAKTdB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:33:01 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44925 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539AbaAKTdA (ORCPT
+	id S1752778AbaAKTln (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:41:43 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:56137 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaAKTlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:33:00 -0500
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
-        andreas.dilger@intel.com, peter.p.waskiewicz.jr@intel.com,
-        tao.peng@emc.com, devel@driverdev.osuosl.org,
+	Sat, 11 Jan 2014 14:41:40 -0500
+Message-ID: <52D19EB8.9060405@googlemail.com>
+Date: Sat, 11 Jan 2014 20:42:48 +0100
+From: =?UTF-8?B?RnJhbmsgU2Now6RmZXI=?= <fschaefer.oss@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Staging: lustre: Use of fls to find last set bit
-Date: Sun, 12 Jan 2014 01:02:43 +0530
-Message-Id: <1389468763-25662-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389440466-6895-1-git-send-email-monamagarwal123@gmail.com>
-References: <1389440466-6895-1-git-send-email-monamagarwal123@gmail.com>
+Subject: Re: sysfs warnings since kernel 3.13-rc1: "WARNING: ... at fs/sysfs/group.c:214
+ sysfs_remove_group"
+References: <52CC3D1A.9050109@googlemail.com> <20140107175925.GC3231@htj.dyndns.org> <52CDAEA2.2000801@googlemail.com> <20140108183258.01c494e4@samsung.com>
+In-Reply-To: <20140108183258.01c494e4@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces fls in lustre/ldlm/ldlm_extent.c 
-to find the last set bit. 
+Am 08.01.2014 21:32, schrieb Mauro Carvalho Chehab:
+> With the patches that split em28xx-v4l from the main em28xx, this logic
+> changed, as em28xx_release_analog_resources() now have another name and
+> don't free em28xx dev anymore.
+>
+> Could you please test again after that patches?
+Yes, I've tested it and the warnings are still there.
+However, I just started to rework the whole em28xx resources releasing
+logic and I think I know how to fix these warnings.
 
-It also fixes the following checkpatch.pl warning in
-lustre/ldlm/ldlm_extent.c
-WARNING: space prohibited before semicolon.
-
-The patch also fixes the following checkpatch.pl error in
-lustre/ldlm/ldlm_extent.c
-ERROR: trailing statements should be on next line
-
-
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
----
-Changes since v1:
-*Incorrect commit message
-*Use of fls function
-
- drivers/staging/lustre/lustre/ldlm/ldlm_extent.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
-index ac5d66a..e6fe2cb 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
-@@ -150,10 +150,12 @@ struct ldlm_interval *ldlm_interval_detach(struct ldlm_lock *l)
- static inline int lock_mode_to_index(ldlm_mode_t mode)
- {
- 	int index;
-+	int len;
- 
- 	LASSERT(mode != 0);
- 	LASSERT(IS_PO2(mode));
--	for (index = -1; mode; index++, mode >>= 1) ;
-+	len = fls(mode);
-+	index = len-1;
- 	LASSERT(index < LCK_MODE_NUM);
- 	return index;
- }
--- 
-1.7.9.5
+Regards,
+Frank
 
