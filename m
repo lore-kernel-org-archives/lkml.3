@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaAKST3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 13:19:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753804AbaAKST1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 13:19:27 -0500
-Date: Sat, 11 Jan 2014 19:19:53 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] change close_files() to use
-	rcu_dereference_raw(files->fdt)
-Message-ID: <20140111181953.GC7358@redhat.com>
-References: <20140107181258.GA29288@redhat.com> <20140108132852.GF10038@linux.vnet.ibm.com> <20140108151918.GA5156@redhat.com> <20140109011650.GI10038@linux.vnet.ibm.com> <20140110153459.GA31491@redhat.com> <20140111063438.GY10038@linux.vnet.ibm.com> <20140111181908.GA7358@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140111181908.GA7358@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752891AbaAKSVv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 13:21:51 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:40278 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaAKSVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 13:21:49 -0500
+Message-ID: <1389464504.21727.44.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v5 4/4] futex: Avoid taking hb lock if nothing to wakeup
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
+        peterz@infradead.org, tglx@linutronix.de, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+Date: Sat, 11 Jan 2014 10:21:44 -0800
+In-Reply-To: <20140111095236.GA1181@linux.vnet.ibm.com>
+References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
+	 <1388675120-8017-5-git-send-email-davidlohr@hp.com>
+	 <20140111094912.GC10038@linux.vnet.ibm.com>
+	 <20140111095236.GA1181@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-put_files_struct() and close_files() do rcu_read_lock() to make
-rcu_dereference_check_fdtable() happy.
+On Sat, 2014-01-11 at 01:52 -0800, Paul E. McKenney wrote:
+[...]
+> On Sat, Jan 11, 2014 at 01:49:12AM -0800, Paul E. McKenney wrote:
+> > On Thu, Jan 02, 2014 at 07:05:20AM -0800, Davidlohr Bueso wrote:
+> > > -	spin_lock(&hb->lock);
+> > > +	spin_lock(&hb->lock); /* implies MB (A) */
+> > 
+> > You need smp_mb__before_spinlock() before the spin_lock() to get a
+> > full memory barrier.
 
-This looks a bit ugly, files_fdtable() just reads the pointer,
-we can simply use rcu_dereference_raw() to avoid the warning.
+Hmmm, the thing we need to guarantee here is that the ticket increment
+is visible (which is the same as the smp_mb__after_atomic_inc we used to
+have in the original atomic counter approach), so adding a barrier
+before the spin_lock call wouldn't serve that. I previously consulted
+this with Linus and we can rely on the fact that spin_lock calls already
+update the head counter, so spinners are visible even if the lock hasn't
+been acquired yet.
 
-The patch also changes close_files() to return fdt, this avoids
-another rcu_read_lock()/files_fdtable() in put_files_struct().
+> Actually, even that only gets you smp_mb().
 
-I think close_files() needs more cleanups:
+I guess you mean smp_wmb() here.
 
-	- we do not need xchg() exactly because we are the last
-	  user of this files_struct
+> Unless you are ordering a prior write against a later write here, you
+> will need an smp_mb().
 
-	- "if (file)" should be turned into WARN_ON(!file)
+Yep.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/file.c |   26 +++++++++-----------------
- 1 files changed, 9 insertions(+), 17 deletions(-)
-
-diff --git a/fs/file.c b/fs/file.c
-index 957cbc0..d34e59e 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -348,21 +348,16 @@ out:
- 	return NULL;
- }
- 
--static void close_files(struct files_struct * files)
-+static struct fdtable *close_files(struct files_struct * files)
- {
--	int i, j;
--	struct fdtable *fdt;
--
--	j = 0;
--
- 	/*
- 	 * It is safe to dereference the fd table without RCU or
- 	 * ->file_lock because this is the last reference to the
--	 * files structure.  But use RCU to shut RCU-lockdep up.
-+	 * files structure.
- 	 */
--	rcu_read_lock();
--	fdt = files_fdtable(files);
--	rcu_read_unlock();
-+	struct fdtable *fdt = rcu_dereference_raw(files->fdt);
-+	int i, j = 0;
-+
- 	for (;;) {
- 		unsigned long set;
- 		i = j * BITS_PER_LONG;
-@@ -381,6 +376,8 @@ static void close_files(struct files_struct * files)
- 			set >>= 1;
- 		}
- 	}
-+
-+	return fdt;
- }
- 
- struct files_struct *get_files_struct(struct task_struct *task)
-@@ -398,14 +395,9 @@ struct files_struct *get_files_struct(struct task_struct *task)
- 
- void put_files_struct(struct files_struct *files)
- {
--	struct fdtable *fdt;
--
- 	if (atomic_dec_and_test(&files->count)) {
--		close_files(files);
--		/* not really needed, since nobody can see us */
--		rcu_read_lock();
--		fdt = files_fdtable(files);
--		rcu_read_unlock();
-+		struct fdtable *fdt = close_files(files);
-+
- 		/* free the arrays if they are not embedded */
- 		if (fdt != &files->fdtab)
- 			__free_fdtable(fdt);
--- 
-1.5.5.1
-
+Thanks for looking into this,
+Davidlohr
 
