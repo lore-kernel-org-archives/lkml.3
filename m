@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaAKSSk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 13:18:40 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34515 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751274AbaAKSSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 13:18:37 -0500
-Date: Sat, 11 Jan 2014 18:18:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>, Rob Clark <robdclark@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, Dave Airlie <airlied@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 15/28] drm/i2c: tda998x: use the tda998x video
-	format when cea mode
-Message-ID: <20140111181832.GD15937@n2100.arm.linux.org.uk>
-References: <20140109120448.24d89eba@armhf>
+	id S1753624AbaAKSSw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 13:18:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751274AbaAKSSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 13:18:48 -0500
+Date: Sat, 11 Jan 2014 19:19:08 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] rcu_dereference_check_fdtable fix/cleanups
+Message-ID: <20140111181908.GA7358@redhat.com>
+References: <20140107181258.GA29288@redhat.com> <20140108132852.GF10038@linux.vnet.ibm.com> <20140108151918.GA5156@redhat.com> <20140109011650.GI10038@linux.vnet.ibm.com> <20140110153459.GA31491@redhat.com> <20140111063438.GY10038@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109120448.24d89eba@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140111063438.GY10038@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 12:04:48PM +0100, Jean-Francois Moine wrote:
-> This patch uses the tda998x video format tied to the CEA mode.
-> This reduces the number of i2c exchanges.
+On 01/10, Paul E. McKenney wrote:
+>
+> On Fri, Jan 10, 2014 at 04:34:59PM +0100, Oleg Nesterov wrote:
+> >
+> > doesn't this look much simpler than adding the "bool unshared" argument
+> > and changing the callers?
+>
+> I might be being too paranoid, but my concern with using rcu_lock_acquire()
+> and rcu_lock_release()
 
-It is my understanding that one of the major design goals of this driver
-is to avoid the use of such a table, and therefore this change is
-undesirable by the original driver authors.  This is more a comment for
-Rob to pick up on.
+And I agree, I no longer suggest to use rcu_lock_acquire/release.
 
--- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+It seems that you misunderstood me, let me send v2 for review.
+
+Oleg.
+
+ fs/file.c                |   30 +++++++++++-------------------
+ include/linux/fdtable.h  |   35 +++++++++++++++++++++--------------
+ include/linux/rcupdate.h |    2 --
+ kernel/rcu/update.c      |   11 -----------
+ 4 files changed, 32 insertions(+), 46 deletions(-)
+
