@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaAKLok (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 06:44:40 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:42679 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaAKLog (ORCPT
+	id S1753120AbaAKLpD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 06:45:03 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39871 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028AbaAKLov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 06:44:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <20140111113959.GW30234@mwanda>
-References: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
-	<1389438033-5928-1-git-send-email-monamagarwal123@gmail.com>
-	<20140111111931.GV30234@mwanda>
-	<CAFB2WuU=aGwVM7n1Zy7OSnEaR00ZWyPNXGw9A5MBk1p0+LSKZg@mail.gmail.com>
-	<20140111113959.GW30234@mwanda>
-Date: Sat, 11 Jan 2014 17:14:35 +0530
-Message-ID: <CAFB2WuUaf9x42U0xTyczpw1=9kLaLLPC9v0f5JxpS7j+umt9kw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] Staging: lustre: Refactor the function
- interval_erase_color() in /lustre/ldlm/interval_tree.c
+	Sat, 11 Jan 2014 06:44:51 -0500
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org, peter.p.waskiewicz.jr@intel.com,
-        linux-kernel@vger.kernel.org,
-        Rashika Kheria <rashika.kheria@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
+        andreas.dilger@intel.com, peter.p.waskiewicz.jr@intel.com,
+        tao.peng@emc.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Staging: lustre: Removal of Unnecessary white spaces
+Date: Sat, 11 Jan 2014 17:11:06 +0530
+Message-Id: <1389440466-6895-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 5:09 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sat, Jan 11, 2014 at 04:56:44PM +0530, Monam Agarwal wrote:
->> I took n as a flag to decide whether parent->in_left == node is true
->> or not in the called function.
->
-> So "n" stands for "node"?
->
->> Should I use some other name for the flag.
->
->
-> Yes.
->
+This fixes the following checkpatch.pl warning in
+lustre/ldlm/ldlm_extent.c
+WARNING: unnecessary whitespace before a quoted newline
 
-Will "flag" be a suitable name?
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+---
+ drivers/staging/lustre/lustre/ldlm/ldlm_extent.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
+index ac5d66a..374d6e4 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
+@@ -153,7 +153,7 @@ static inline int lock_mode_to_index(ldlm_mode_t mode)
+ 
+ 	LASSERT(mode != 0);
+ 	LASSERT(IS_PO2(mode));
+-	for (index = -1; mode; index++, mode >>= 1) ;
++	for (index = -1; mode; index++, mode >>= 1);
+ 	LASSERT(index < LCK_MODE_NUM);
+ 	return index;
+ }
+-- 
+1.7.9.5
+
