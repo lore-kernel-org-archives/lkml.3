@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223AbaAKACn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 19:02:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27945 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950AbaAKACi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 19:02:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,640,1384329600"; 
-   d="scan'208";a="464957610"
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: rafael.j.wysocki@intel.com
-Cc: linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [PATCH] ACPI/SCAN: _STA status read
-Date: Fri, 10 Jan 2014 16:00:05 -0800
-Message-Id: <1389398405-1970-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1758263AbaAKAEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 19:04:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33801 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbaAKAEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 19:04:32 -0500
+Date: Fri, 10 Jan 2014 16:04:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: pavel@ucw.cz, joe@perches.com, keescook@chromium.org, geert@linux-m68k.org,
+        jkosina@suse.cz, viro@zeniv.linux.org.uk, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/vsprintf: add %pT format specifier
+Message-Id: <20140110160430.526efb3ea91783fe8a32fec5@linux-foundation.org>
+In-Reply-To: <201401092151.FIB00084.SJFOLVOMQHtFOF@I-love.SAKURA.ne.jp>
+References: <201401092151.FIB00084.SJFOLVOMQHtFOF@I-love.SAKURA.ne.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a "status" attribute for an acpi device. This status
-attribute shows the value of _STA object. The _STA object returns
-current status of an ACPI device to show enabled, disabled or removed.
+On Thu, 9 Jan 2014 21:52:00 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
----
- drivers/acpi/scan.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+> This patch introduces %pT format specifier for printing task_struct->comm.
+> Currently %pT does not provide consistency. I'm planning to change to use RCU
+> in the future. By using RCU, the comm name read from task_struct->comm will be
+> guaranteed to be consistent. But before modifying set_task_comm() to use RCU,
+> we need to kill direct ->comm users who do not use get_task_comm().
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index fd39459..a5f4a60 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -567,6 +567,20 @@ acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
- }
- static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
- 
-+static ssize_t status_show(struct device *dev, struct device_attribute *attr,
-+				char *buf) {
-+	struct acpi_device *acpi_dev = to_acpi_device(dev);
-+	acpi_status status;
-+	unsigned long long sta;
-+
-+	status = acpi_evaluate_integer(acpi_dev->handle, "_STA", NULL, &sta);
-+	if (ACPI_FAILURE(status))
-+		return -ENODEV;
-+
-+	return sprintf(buf, "%llu\n", sta);
-+}
-+static DEVICE_ATTR_RO(status);
-+
- static int acpi_device_setup_files(struct acpi_device *dev)
- {
- 	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
-@@ -622,6 +636,12 @@ static int acpi_device_setup_files(struct acpi_device *dev)
- 		dev->pnp.sun = (unsigned long)-1;
- 	}
- 
-+	if (acpi_has_method(dev->handle, "_STA")) {
-+		result = device_create_file(&dev->dev, &dev_attr_status);
-+		if (result)
-+			goto end;
-+	}
-+
-         /*
-          * If device has _EJ0, 'eject' file is created that is used to trigger
-          * hot-removal function from userland.
-@@ -677,6 +697,8 @@ static void acpi_device_remove_files(struct acpi_device *dev)
- 		device_remove_file(&dev->dev, &dev_attr_adr);
- 	device_remove_file(&dev->dev, &dev_attr_modalias);
- 	device_remove_file(&dev->dev, &dev_attr_hid);
-+	if (acpi_has_method(dev->handle, "_STA"))
-+		device_remove_file(&dev->dev, &dev_attr_status);
- 	if (dev->handle)
- 		device_remove_file(&dev->dev, &dev_attr_path);
- }
--- 
-1.8.3.1
+On reflection...
 
+It isn't obvious that this patch is sufficiently beneficial until we
+have that RCU code in place.
+
+So I could retain this patch in -mm until we have that all sorted out. 
+And I'll have to avoid merging %pT users into mainline in the
+meanwhile!
+
+Am I wrong?  The patch seems fairly pointless as a standalone thing?
