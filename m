@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaAKMmx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 07:42:53 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:45701 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572AbaAKMmv (ORCPT
+	id S1752171AbaAKNFz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 08:05:55 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:58007 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaAKNFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 07:42:51 -0500
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: plagnioj@jcrosoft.com, pali.rohar@gmail.com, pavel@ucw.cz,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Subject: [PATCH] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
-Date: Sat, 11 Jan 2014 14:42:05 +0200
-Message-Id: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-X-Mailer: git-send-email 1.8.4.msysgit.0
+	Sat, 11 Jan 2014 08:05:53 -0500
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        matt.fleming@intel.com, roy.franz@linaro.org, msalter@redhat.com,
+        linux@arm.linux.org.uk, grant.likely@secretlab.ca, patches@linaro.org,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v4 0/5] arm: add UEFI runtime services support
+Date: Sat, 11 Jan 2014 13:05:19 +0000
+Message-Id: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ivaylo Dimitrov <freemangordon@abv.bg>
+In systems based on [U]EFI-conformant firmware, runtime services provide
+a standardised way for the kernel to update firmware environment
+variables. This is used for example by efibootmgr to update which image
+should be loaded on next boot.
 
-commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
-synclost errors in OMAP3 introduces limits check to prevent SYNCLOST errors
-on OMAP3. However, it misses the logic found in Nokia kernels that is
-needed to correctly calculate whether 3 tap or 5 tap rescaler to be used as
-well as the logic to fallback to 3 taps if 5 taps clock results in too
-tight horizontal timings. Without that patch "horizontal timing too tight"
-errors are seen when a video with resolution above 640x350 is tried to be
-played. The patch is a forward-ported logic found in Nokia N900 and N9/50
-kernels.
+This patchset implements basic support for UEFI runtime services on ARM
+platforms, as well as the basic underlying EFI support. It also defines
+a mechanism by which the required information is passed from the
+bootloader (the EFI stub submitted separately) to the kernel via FDT
+entries.
 
-Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
----
- drivers/video/omap2/dss/dispc.c |   36 +++++++++++++++++++++++++-----------
- 1 files changed, 25 insertions(+), 11 deletions(-)
+This patchset depends on the presence of early_ioremap(). It has been
+validated against Mark Salter's generic implementation.
+It also depends on Mark's "efi: add helper function to get UEFI params
+from FDT" patch.
 
-diff --git a/drivers/video/omap2/dss/dispc.c b/drivers/video/omap2/dss/dispc.c
-index 67e413e..9d1aa25 100644
---- a/drivers/video/omap2/dss/dispc.c
-+++ b/drivers/video/omap2/dss/dispc.c
-@@ -1999,7 +1999,8 @@ static void calc_tiler_rotation_offset(u16 screen_width, u16 width,
-  */
- static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
- 		const struct omap_video_timings *t, u16 pos_x,
--		u16 width, u16 height, u16 out_width, u16 out_height)
-+		u16 width, u16 height, u16 out_width, u16 out_height,
-+		bool five_taps)
- {
- 	const int ds = DIV_ROUND_UP(height, out_height);
- 	unsigned long nonactive;
-@@ -2019,6 +2020,10 @@ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
- 	if (blank <= limits[i])
- 		return -EINVAL;
- 
-+	/* FIXME add checks for 3-tap filter once the limitations are known */
-+	if (!five_taps)
-+		return 0;
-+
- 	/*
- 	 * Pixel data should be prepared before visible display point starts.
- 	 * So, atleast DS-2 lines must have already been fetched by DISPC
-@@ -2191,24 +2196,33 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
- 	const int maxsinglelinewidth =
- 			dss_feat_get_param_max(FEAT_PARAM_LINEWIDTH);
- 
-+	*five_taps = height > out_height;
-+
- 	do {
- 		in_height = DIV_ROUND_UP(height, *decim_y);
- 		in_width = DIV_ROUND_UP(width, *decim_x);
--		*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
--			in_width, in_height, out_width, out_height, color_mode);
--
--		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
--				pos_x, in_width, in_height, out_width,
--				out_height);
- 
- 		if (in_width > maxsinglelinewidth)
- 			if (in_height > out_height &&
- 						in_height < out_height * 2)
- 				*five_taps = false;
--		if (!*five_taps)
-+again:
-+		if (*five_taps)
-+			*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
-+						in_width, in_height, out_width,
-+						out_height, color_mode);
-+		else
- 			*core_clk = dispc.feat->calc_core_clk(pclk, in_width,
--					in_height, out_width, out_height,
--					mem_to_mem);
-+				in_height, out_width, out_height,
-+				mem_to_mem);
-+
-+		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
-+				pos_x, in_width, in_height, out_width,
-+				out_height, *five_taps);
-+		if (error && *five_taps) {
-+			*five_taps = false;
-+			goto again;
-+		}
- 
- 		error = (error || in_width > maxsinglelinewidth * 2 ||
- 			(in_width > maxsinglelinewidth && *five_taps) ||
-@@ -2226,7 +2240,7 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
- 	} while (*decim_x <= *x_predecim && *decim_y <= *y_predecim && error);
- 
- 	if (check_horiz_timing_omap3(pclk, lclk, mgr_timings, pos_x, width,
--				height, out_width, out_height)){
-+				height, out_width, out_height, *five_taps)) {
- 			DSSERR("horizontal timing too tight\n");
- 			return -EINVAL;
- 	}
+Changes since v3:
+- Use new common function (from arm64 set) for extracting UEFI params
+  from FDT.
+- Use new generic early_ioremap implementation (with early_memunmap).
+- Reworked/simplified phys_call code, using new shared functions/macros.
+- Slightly refactored to reduce number of explicit casts.
+- Also preserve and map EFI_ACPI_MEMORY_NVS regions.
+- Added some ACKs.
+
+Change since v2:
+- Updated FDT bindings.
+- Preserve regions marked RESERVED (but don't map them).
+- Rename 'efi' -> 'uefi' within this new port (leaving core code as is).
+
+Leif Lindholm (5):
+  arm: break part of __soft_restart out into separate function
+  arm: add new asm macro update_sctlr
+  Documentation: arm: add UEFI support documentation
+  arm: Add [U]EFI runtime services support
+  init: efi: arm: enable (U)EFI runtime services on arm
+
+ Documentation/arm/00-INDEX       |    3 +
+ Documentation/arm/uefi.txt       |   61 ++++++
+ arch/arm/Kconfig                 |   16 ++
+ arch/arm/include/asm/assembler.h |   13 ++
+ arch/arm/include/asm/idmap.h     |    1 +
+ arch/arm/include/asm/uefi.h      |   28 +++
+ arch/arm/kernel/Makefile         |    2 +
+ arch/arm/kernel/process.c        |   12 +-
+ arch/arm/kernel/setup.c          |    4 +
+ arch/arm/kernel/uefi.c           |  418 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/uefi_phys.S      |   67 ++++++
+ arch/arm/mm/idmap.c              |   15 ++
+ include/linux/efi.h              |    2 +-
+ init/main.c                      |    4 +
+ 14 files changed, 634 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/arm/uefi.txt
+ create mode 100644 arch/arm/include/asm/uefi.h
+ create mode 100644 arch/arm/kernel/uefi.c
+ create mode 100644 arch/arm/kernel/uefi_phys.S
+
 -- 
-1.5.6.1
+1.7.10.4
 
