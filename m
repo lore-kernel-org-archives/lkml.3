@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750956AbaAKWqV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 17:46:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57005 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800AbaAKWqT convert rfc822-to-8bit (ORCPT
+	id S1750971AbaAKWwf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 17:52:35 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:52931 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750800AbaAKWwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 17:46:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
-   d="scan'208";a="465256881"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
+	Sat, 11 Jan 2014 17:52:31 -0500
+Date: Sat, 11 Jan 2014 17:52:30 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
 To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "Usyskin, Alexander" <alexander.usyskin@intel.com>
-Subject: RE: [char-misc 1/4] mei: do not run reset flow from the interrupt
- thread
-Thread-Topic: [char-misc 1/4] mei: do not run reset flow from the interrupt
- thread
-Thread-Index: AQHPDMirDYT8E/RffEyxtLkF2amaZZp/unsw
-Date: Sat, 11 Jan 2014 22:46:14 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AF40FBF@HASMSX106.ger.corp.intel.com>
-References: <1389205164-13553-1-git-send-email-tomas.winkler@intel.com>
- <1389205164-13553-2-git-send-email-tomas.winkler@intel.com>
- <20140108232410.GA11300@kroah.com>
-In-Reply-To: <20140108232410.GA11300@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+cc: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <schwidefsky@de.ibm.com>, <heiko.carstens@de.ibm.com>,
+        <JBottomley@parallels.com>, <bhelgaas@google.com>
+Subject: Re: [PATCHSET v2 driver-core-next] kernfs, sysfs, driver-core:
+ implement synchronous self-removal
+In-Reply-To: <20140111201909.GA30380@kroah.com>
+Message-ID: <Pine.LNX.4.44L0.1401111751040.16586-100000@netrider.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 11 Jan 2014, Greg KH wrote:
 
+> On Sat, Jan 11, 2014 at 01:51:10PM -0500, Tejun Heo wrote:
+> > Hey, Alan.
+> > 
+> > On Fri, Jan 10, 2014 at 10:46:10AM -0500, Alan Stern wrote:
+> > > The SUBJECT lines in your patch emails don't mention the version
+> > > number.  That is, they just say "[PATCH]", not "[PATCH v2]" or "[PATCH
+> > > v3]". This makes it very difficult for me to tell which messages to
+> > > read.
+> > 
+> > Hmm... they're all threaded.  I add version tags when posting
+> > incremental patches but usually don't bother with it when posting a
+> > new version of the whole series.  After all, some patches are get
+> > updated without explicitly given a new version for refrehses and stuff
+> > so it's not like you can determine everything based on subjects only.
 
+Greg, what do you prefer in this situation?
+
+> > > (Reading them in order doesn't work, because my computer mixes up the 
+> > > order of messages when it downloads a large bunch from the email 
+> > > server.  It's kind of annoying...)
+> > 
+> > And they aren't threaded?
 > 
-> This is a _really_ big patch for a stable kernel tree.  Are you sure
-> it's needed there?  Please go read Documentation/stable_kernel_rules.txt
-> again.
+> They were all threaded for me, perhaps Alan needs a better email client :)
 
-I understand it's big though currently I do not have significantly simpler fix for the issue, all 4 patches are needed to make the reset issue  go away.
- 
-Thanks
-Tomas
+Undoubtedly I do.  My current client is embarassingly old.
+
+Alan Stern
 
