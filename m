@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaAKTnH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:43:07 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51369 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482AbaAKTnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:43:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
-   d="scan'208";a="463697635"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: perf: Implement lbr-as-callgraph v2
-Date: Sat, 11 Jan 2014 11:42:50 -0800
-Message-Id: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S1754395AbaAKTnj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:43:39 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:52534 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132AbaAKTn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:43:29 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH RFC 10/10] ARM: dts: s3c6410-mini6410: Add support for LCD screen
+Date: Sat, 11 Jan 2014 20:42:52 +0100
+Message-Id: <1389469372-17199-11-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchkit implements lbr-as-callgraphs in per freport,
-as an alternative way to present LBR information.
+This patch adds necessary device tree nodes and properties to enable LCD
+screen on mini6410 board.
 
-Current perf report does a histogram over the branch edges,
-which is useful to look at basic blocks, but doesn't tell
-you anything about the larger control flow.
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+---
+ arch/arm/boot/dts/s3c6410-mini6410.dts | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-This patchkit adds a new option --branch-history that
-adds the branch paths to the callgraph history instead.
-
-This allows to reason about individual branch paths leading
-to specific samples.
-
-Updates to v1:
-- rebased on perf/core
-- fix various issues
-- rename the option to --branch-history
-- various fixes to display the information more concise
-
-Example output:
-
-    % perf record -b -g ./tsrc/tcall
-    [ perf record: Woken up 1 times to write data ]
-    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
-    % perf report --branch-history
-    ...
-        54.91%  tcall.c:6  [.] f2                      tcall
-                |
-                |--66.53%-- f2 tcall.c:5
-                |          |
-                |          |--70.83%-- f1 tcall.c:11
-                |          |          f1 tcall.c:10
-                |          |          main tcall.c:18
-                |          |          main tcall.c:18
-                |          |          main tcall.c:17
-                |          |          main tcall.c:17
-                |          |          f1 tcall.c:13
-                |          |          f1 tcall.c:13
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:12
-                |          |          f1 tcall.c:12
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:11
+diff --git a/arch/arm/boot/dts/s3c6410-mini6410.dts b/arch/arm/boot/dts/s3c6410-mini6410.dts
+index 57e00f9..97f6353 100644
+--- a/arch/arm/boot/dts/s3c6410-mini6410.dts
++++ b/arch/arm/boot/dts/s3c6410-mini6410.dts
+@@ -167,6 +167,33 @@
+ 	};
+ };
+ 
++&fimd {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&lcd_data24>, <&lcd_power>;
++
++	display-timings {
++		native-mode = <&timing0>;
++
++		timing0: timing@0 {
++			/* 480x272@60Hz */
++			clock-frequency = <10000000>;
++			hactive = <480>;
++			vactive = <272>;
++			hfront-porch = <4>;
++			hback-porch = <45>;
++			hsync-len = <40>;
++			vback-porch = <3>;
++			vfront-porch = <2>;
++			vsync-len = <6>;
++			vsync-active = <1>;
++			hsync-active = <1>;
++			de-active = <1>;
++			pixelclk-active = <0>;
++		};
++	};
++};
++
+ &sdhci0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sd0_clk>, <&sd0_cmd>, <&sd0_cd>, <&sd0_bus4>;
+@@ -213,6 +240,12 @@
+ 				"gpn-4", "gpn-5", "gpl-11", "gpl-12";
+ 		samsung,pin-pud = <PIN_PULL_NONE>;
+ 	};
++
++	lcd_power: lcd-power {
++		samsung,pins = "gpe-0";
++		samsung,pin-function = <0>;
++		samsung,pin-pud = <PIN_PULL_UP>;
++	};
+ };
+ 
+ &i2c0 {
+-- 
+1.8.5.2
 
