@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaAKSVv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 13:21:51 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:40278 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaAKSVt (ORCPT
+	id S1753660AbaAKSXG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 13:23:06 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34522 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751950AbaAKSXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 13:21:49 -0500
-Message-ID: <1389464504.21727.44.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v5 4/4] futex: Avoid taking hb lock if nothing to wakeup
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        peterz@infradead.org, tglx@linutronix.de, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Date: Sat, 11 Jan 2014 10:21:44 -0800
-In-Reply-To: <20140111095236.GA1181@linux.vnet.ibm.com>
-References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
-	 <1388675120-8017-5-git-send-email-davidlohr@hp.com>
-	 <20140111094912.GC10038@linux.vnet.ibm.com>
-	 <20140111095236.GA1181@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Jan 2014 13:23:03 -0500
+Date: Sat, 11 Jan 2014 18:22:57 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 16/28] drm/i2c: tda998x: change the video
+	quantization
+Message-ID: <20140111182257.GE15937@n2100.arm.linux.org.uk>
+References: <20140109120500.6abc6cd2@armhf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140109120500.6abc6cd2@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-01-11 at 01:52 -0800, Paul E. McKenney wrote:
-[...]
-> On Sat, Jan 11, 2014 at 01:49:12AM -0800, Paul E. McKenney wrote:
-> > On Thu, Jan 02, 2014 at 07:05:20AM -0800, Davidlohr Bueso wrote:
-> > > -	spin_lock(&hb->lock);
-> > > +	spin_lock(&hb->lock); /* implies MB (A) */
-> > 
-> > You need smp_mb__before_spinlock() before the spin_lock() to get a
-> > full memory barrier.
+On Thu, Jan 09, 2014 at 12:05:00PM +0100, Jean-Francois Moine wrote:
+> This patch changes the video quantization to RGB/YUV.
 
-Hmmm, the thing we need to guarantee here is that the ticket increment
-is visible (which is the same as the smp_mb__after_atomic_inc we used to
-have in the original atomic counter approach), so adding a barrier
-before the spin_lock call wouldn't serve that. I previously consulted
-this with Linus and we can rely on the fact that spin_lock calls already
-update the head counter, so spinners are visible even if the lock hasn't
-been acquired yet.
+Strong NAK, this patch is definitely incorrect.
 
-> Actually, even that only gets you smp_mb().
+The Cubox (which I assume is the platform you're generating these patches
+for) produces RGB at it's output, which are the RGB values from the
+framebuffer.  Being a computer-like "IT" source, these RGB values have the
+full range, from zero to 255, rather than the limited range of 16 to 235.
 
-I guess you mean smp_wmb() here.
+With limited range, a value of 16 is black and 235 is white.  However, the
+values in the framebuffer will be zero for black and 255 for white.
 
-> Unless you are ordering a prior write against a later write here, you
-> will need an smp_mb().
+A VQR value of 1 gives limited range of 16 to 235, whereas zero gives
+full range.  The value of zero is correct here.
 
-Yep.
-
-Thanks for looking into this,
-Davidlohr
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
