@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbaAKTKN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:10:13 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:54672 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaAKTKK (ORCPT
+	id S1753353AbaAKTTN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:19:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52969 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaAKTTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:10:10 -0500
-From: Alex Elder <alex.elder@linaro.org>
-To: mike.turquette@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 RESEND] clk: support hardware-specific debugfs entries
-Date: Sat, 11 Jan 2014 13:10:04 -0600
-Message-Id: <1389467404-1287-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 11 Jan 2014 14:19:10 -0500
+Date: Sat, 11 Jan 2014 16:18:46 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, eranian@google.com, fweisbec@gmail.com,
+        mingo@kernel.org, adrian.hunter@intel.com, dsahern@gmail.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/4] perf, tools: Add support for prepending LBRs to the
+ callstack
+Message-ID: <20140111191846.GC17659@ghostprotocols.net>
+References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
+ <20140111153614.GC1131@krava.brq.redhat.com>
+ <20140111175816.GK20765@two.firstfloor.org>
+ <20140111191657.GB17659@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140111191657.GB17659@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new clk_ops->debug_init method to allow a clock hardware
-driver to populate the clock's debugfs directory with entries
-beyond those common for every clock.
+Em Sat, Jan 11, 2014 at 04:16:57PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Sat, Jan 11, 2014 at 06:58:16PM +0100, Andi Kleen escreveu:
+> > On Sat, Jan 11, 2014 at 04:36:14PM +0100, Jiri Olsa wrote:
+> > > On Fri, Jan 10, 2014 at 04:32:03AM -0800, Andi Kleen wrote:
+> > > > From: Andi Kleen <ak@linux.intel.com>
+> > > > 
+> > > > I never found the default LBR display mode which generates histograms
+> > > > of individual branches particularly useful.
+> > > > 
+> > > > This implements an alternative mode that creates histograms over complete
+> > > > branch traces, instead of individual branches, similar to how normal
+> > > > callgraphs are handled. This is done by putting it in
+> > > > front of the normal callgraph and then using the normal callgraph
+> > > > histogram infrastructure to unify them.
+> > > > 
+> > > > This way in complex functions we can understand the control flow
+> > > > that lead to a particular sample.
+> > > > 
+> > > > The default output is unchanged.
+> > > > 
+> > > > This is only implemented in perf report, no change to record
+> > > > or anywhere else.
+> > > > 
+> > > > This adds the basic code to report:
+> > > > - add a new "branch" option to the -g option parser to enable this mode
+> > > > - when the flag is set include the LBR into the callstack in machine.c.
+> > > > The rest of the history code is unchanged and doesn't know the difference
+> > > > between LBR entry and normal call entry.
+> > > 
+> > > sounds like nice idea, but I could not get the patchset applied
+> > > on acme's perf/core
+> > 
+> > It was on Linus master.
+> > 
+> > I tried to rebase on perf/core, but it seems to be totally broken by
+> > itself. All the config tests fail on my opensuse system.
+> > 
+> > Arnaldo?
+> 
+> Oops, checking on some systems...
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
-v2: - Define debug_init unconditionally (suggested by Gerhard Sittig).
+What was your build command line?
 
- drivers/clk/clk.c            |    4 ++++
- include/linux/clk-provider.h |    8 ++++++++
- 2 files changed, 12 insertions(+)
+Here, on a f18 system it works with these:
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index e3e0327..8769b01 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -277,6 +277,10 @@ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
- 	if (!d)
- 		goto err_out;
- 
-+	if (clk->ops->debug_init)
-+		if (clk->ops->debug_init(clk->hw, clk->dentry))
-+			goto err_out;
-+
- 	ret = 0;
- 	goto out;
- 
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 5429f5d..b91674d 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -32,6 +32,7 @@
- #define CLK_GET_ACCURACY_NOCACHE BIT(8) /* do not use the cached clk accuracy */
- 
- struct clk_hw;
-+struct dentry;
- 
- /**
-  * struct clk_ops -  Callback operations for hardware clocks; these are to
-@@ -116,6 +117,12 @@ struct clk_hw;
-  *		set then clock accuracy will be initialized to parent accuracy
-  *		or 0 (perfect clock) if clock has no parent.
-  *
-+ * @debug_init:	Set up type-specific debugfs entries for this clock.  This
-+ *		is called once, after the debugfs directory entry for this
-+ *		clock has been created.  The dentry pointer representing that
-+ *		directory is provided as an argument.  Called with
-+ *		prepare_lock held.  Returns 0 on success, -EERROR otherwise.
-+ *
-  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-  * implementations to split any work between atomic (enable) and sleepable
-  * (prepare) contexts.  If enabling a clock requires code that might sleep,
-@@ -150,6 +157,7 @@ struct clk_ops {
- 	unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
- 					   unsigned long parent_accuracy);
- 	void		(*init)(struct clk_hw *hw);
-+	int		(*debug_init)(struct clk_hw *hw, struct dentry *dentry);
- };
- 
- /**
--- 
-1.7.9.5
+$ make -C tools/perf O=/tmp/build/perf install
 
+$ cd tools/perf ; make
+
+Trying on another system...
+
+- Arnaldo
+  
+> > Auto-detecting system features:
+> > ...                     backtrace: [ OFF ]
+> > ...                         dwarf: [ OFF ]
+> > ...                fortify-source: [ OFF ]
+> > ...                         glibc: [ OFF ]
+> > ...                          gtk2: [ OFF ]
+> > ...                  gtk2-infobar: [ OFF ]
+> > ...                      libaudit: [ OFF ]
+> > ...                        libbfd: [ OFF ]
+> > ...                        libelf: [ OFF ]
+> > ...             libelf-getphdrnum: [ OFF ]
+> > ...                   libelf-mmap: [ OFF ]
+> > ...                       libnuma: [ OFF ]
+> > ...                       libperl: [ OFF ]
+> > ...                     libpython: [ OFF ]
+> > ...             libpython-version: [ OFF ]
+> > ...                      libslang: [ OFF ]
+> > ...                     libunwind: [ OFF ]
+> > ...                       on-exit: [ OFF ]
+> > ...            stackprotector-all: [ OFF ]
+> > ...                       timerfd: [ OFF ]
+> > 
+> > config/Makefile:282: *** No gnu/libc-version.h found, please install
+> > glibc-dev[el]/glibc-static.  Stop.
+> > make: *** [all] Error 2
+> > 
+> > -Andi
