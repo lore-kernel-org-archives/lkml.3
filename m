@@ -1,200 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819AbaAKTo6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:44:58 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:46996 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351AbaAKTnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753995AbaAKTnV (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 11 Jan 2014 14:43:21 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH RFC 05/10] ARM: exynos: Move to generic power domain bindings
-Date: Sat, 11 Jan 2014 20:42:47 +0100
-Message-Id: <1389469372-17199-6-git-send-email-tomasz.figa@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+Received: from mga02.intel.com ([134.134.136.20]:6002 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753392AbaAKTnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:43:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
+   d="scan'208";a="437435644"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 6/9] perf, tools: Fix max stack handling with lbr-as-callgraph
+Date: Sat, 11 Jan 2014 11:42:56 -0800
+Message-Id: <1389469379-13340-7-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
+References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves Exynos power domain code to use the new generic power
-domain look-up framework introduced by previous patch, allowing the new
-code to be compiled with CONFIG_ARCH_EXYNOS selected as well.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+The original lbr-as-callstack code ignored the maxium callgraph
+length set by the user. Fix this.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- .../bindings/arm/exynos/power_domain.txt           | 12 ++--
- arch/arm/mach-exynos/pm_domains.c                  | 80 +---------------------
- kernel/power/Kconfig                               |  2 +-
- 3 files changed, 7 insertions(+), 87 deletions(-)
+ tools/perf/util/machine.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-index 5216b41..60f26a8 100644
---- a/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-+++ b/Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-@@ -8,6 +8,8 @@ Required Properties:
-     * samsung,exynos4210-pd - for exynos4210 type power domain.
- - reg: physical base address of the controller and length of memory mapped
-     region.
-+- #power-domain-cells: number of cells in power domain specifier;
-+    must be 0.
- 
- Node of a device using power domains must have a samsung,power-domain property
- defined with a phandle to respective power domain.
-@@ -17,12 +19,8 @@ Example:
- 	lcd0: power-domain-lcd0 {
- 		compatible = "samsung,exynos4210-pd";
- 		reg = <0x10023C00 0x10>;
-+		#power-domain-cells = <0>;
- 	};
- 
--Example of the node using power domain:
--
--	node {
--		/* ... */
--		samsung,power-domain = <&lcd0>;
--		/* ... */
--	};
-+See Documentation/devicetree/bindings/power/power_domain.txt for description
-+of consumer-side bindings.
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index 1703593..eba90a1 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -74,78 +74,6 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
- 	return exynos_pd_power(domain, false);
- }
- 
--static void exynos_add_device_to_domain(struct exynos_pm_domain *pd,
--					 struct device *dev)
--{
--	int ret;
--
--	dev_dbg(dev, "adding to power domain %s\n", pd->pd.name);
--
--	while (1) {
--		ret = pm_genpd_add_device(&pd->pd, dev);
--		if (ret != -EAGAIN)
--			break;
--		cond_resched();
--	}
--
--	pm_genpd_dev_need_restore(dev, true);
--}
--
--static void exynos_remove_device_from_domain(struct device *dev)
--{
--	struct generic_pm_domain *genpd = dev_to_genpd(dev);
--	int ret;
--
--	dev_dbg(dev, "removing from power domain %s\n", genpd->name);
--
--	while (1) {
--		ret = pm_genpd_remove_device(genpd, dev);
--		if (ret != -EAGAIN)
--			break;
--		cond_resched();
--	}
--}
--
--static void exynos_read_domain_from_dt(struct device *dev)
--{
--	struct platform_device *pd_pdev;
--	struct exynos_pm_domain *pd;
--	struct device_node *node;
--
--	node = of_parse_phandle(dev->of_node, "samsung,power-domain", 0);
--	if (!node)
--		return;
--	pd_pdev = of_find_device_by_node(node);
--	if (!pd_pdev)
--		return;
--	pd = platform_get_drvdata(pd_pdev);
--	exynos_add_device_to_domain(pd, dev);
--}
--
--static int exynos_pm_notifier_call(struct notifier_block *nb,
--				    unsigned long event, void *data)
--{
--	struct device *dev = data;
--
--	switch (event) {
--	case BUS_NOTIFY_BIND_DRIVER:
--		if (dev->of_node)
--			exynos_read_domain_from_dt(dev);
--
--		break;
--
--	case BUS_NOTIFY_UNBOUND_DRIVER:
--		exynos_remove_device_from_domain(dev);
--
--		break;
--	}
--	return NOTIFY_DONE;
--}
--
--static struct notifier_block platform_nb = {
--	.notifier_call = exynos_pm_notifier_call,
--};
--
- static __init int exynos4_pm_init_power_domain(void)
- {
- 	struct platform_device *pdev;
-@@ -155,8 +83,6 @@ static __init int exynos4_pm_init_power_domain(void)
- 		struct exynos_pm_domain *pd;
- 		int on;
- 
--		pdev = of_find_device_by_node(np);
--
- 		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
- 		if (!pd) {
- 			pr_err("%s: failed to allocate memory for domain\n",
-@@ -169,17 +95,13 @@ static __init int exynos4_pm_init_power_domain(void)
- 		pd->base = of_iomap(np, 0);
- 		pd->pd.power_off = exynos_pd_power_off;
- 		pd->pd.power_on = exynos_pd_power_on;
--		pd->pd.of_node = np;
--
--		platform_set_drvdata(pdev, pd);
- 
- 		on = __raw_readl(pd->base + 0x4) & S5P_INT_LOCAL_PWR_EN;
- 
- 		pm_genpd_init(&pd->pd, NULL, !on);
-+		of_genpd_add_provider(np, of_genpd_xlate_simple, &pd->pd);
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 4032634..853639c 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1372,7 +1372,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
  	}
  
--	bus_register_notifier(&platform_bus_type, &platform_nb);
--
- 	return 0;
- }
- arch_initcall(exynos4_pm_init_power_domain);
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 45aa98e..b17588c 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -308,7 +308,7 @@ config PM_GENERIC_DOMAINS_RUNTIME
+ 	if (callchain_param.branch_callstack) {
+-		int nr = branch->nr;
++		int nr = min(max_stack, branch->nr);
+ 		struct branch_entry be[nr];
  
- config PM_GENERIC_DOMAINS_OF
- 	def_bool y
--	depends on PM_GENERIC_DOMAINS && OF && !ARCH_EXYNOS
-+	depends on PM_GENERIC_DOMAINS && OF
+ 		for (i = 0; i < nr; i++) { 
+@@ -1397,6 +1397,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 			if (err)
+ 				return err;
+ 		}
++		chain_nr -= nr;
+ 	}
  
- config CPU_PM
- 	bool
+ 	if (chain->nr > PERF_MAX_STACK_DEPTH) {
 -- 
-1.8.5.2
+1.8.3.1
 
