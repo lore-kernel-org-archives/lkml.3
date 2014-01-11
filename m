@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaAKNre (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 08:47:34 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:40893 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969AbaAKNr1 (ORCPT
+	id S1752755AbaAKNwl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 08:52:41 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:51443 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaAKNwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 08:47:27 -0500
+	Sat, 11 Jan 2014 08:52:36 -0500
 From: Monam Agarwal <monamagarwal123@gmail.com>
 To: gregkh@linuxfoundation.org, bergwolf@gmail.com, andreas.dilger@intel.com,
         keith.mannthey@intel.com, oleg.drokin@intel.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] Staging: lustre: :Fix line over 80 character warning
-Date: Sat, 11 Jan 2014 19:17:12 +0530
-Message-Id: <1389448032-9713-1-git-send-email-monamagarwal123@gmail.com>
+Subject: [PATCH 3/3] Staging: lustre: Fix warning on quoted string on multiple lines
+Date: Sat, 11 Jan 2014 19:22:07 +0530
+Message-Id: <1389448327-9797-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl warning in
+his patch fixes the following type of checkpatch.pl errors in
 lustre/ldlm/ldlm_flock.c
-WARNING: line over 80 characters in the file
+ERROR: trailing statements should be on next line 
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/staging/lustre/lustre/ldlm/ldlm_flock.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/lustre/lustre/ldlm/ldlm_flock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-index 07a2c33..2b5c2fe 100644
+index 2b5c2fe..b175bbc 100644
 --- a/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
 +++ b/drivers/staging/lustre/lustre/ldlm/ldlm_flock.c
-@@ -468,7 +468,8 @@ reprocess:
- 			new->l_policy_data.l_flock.end + 1;
- 		new2->l_conn_export = lock->l_conn_export;
- 		if (lock->l_export != NULL) {
--			new2->l_export = class_export_lock_get(lock->l_export, new2);
-+			new2->l_export =
-+				class_export_lock_get(lock->l_export, new2);
- 			if (new2->l_export->exp_lock_hash &&
- 			    hlist_unhashed(&new2->l_exp_hash))
- 				cfs_hash_add(new2->l_export->exp_lock_hash,
+@@ -592,8 +592,8 @@ ldlm_flock_completion_ast(struct ldlm_lock *lock, __u64 flags, void *data)
+ 		return 0;
+ 	}
+ 
+-	LDLM_DEBUG(lock, "client-side enqueue returned a blocked lock, "
+-		   "sleeping");
++	LDLM_DEBUG(lock,
++		   "client-side enqueue returned a blocked lock, sleeping");
+ 	fwd.fwd_lock = lock;
+ 	obd = class_exp2obd(lock->l_conn_export);
+ 
 -- 
 1.7.9.5
 
