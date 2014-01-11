@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaAKTn3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:43:29 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:42857 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039AbaAKTnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754096AbaAKTnY (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 11 Jan 2014 14:43:24 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH RFC 07/10] ARM: s3c64xx: dt: Enable SoC-level power management
-Date: Sat, 11 Jan 2014 20:42:49 +0100
-Message-Id: <1389469372-17199-8-git-send-email-tomasz.figa@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+Received: from mga14.intel.com ([143.182.124.37]:13743 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372AbaAKTnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:43:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
+   d="scan'208";a="457257150"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/9] perf, tools: fix BFD detection on opensuse
+Date: Sat, 11 Jan 2014 11:42:51 -0800
+Message-Id: <1389469379-13340-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
+References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds call to s3c64xx_pm_init() from init_machine() callback
-of mach-s3c64xx-dt to enable SoC-level power management features, such
-as power domain management and sleep support.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+opensuse libbfd requires -lz -liberty to build. Add those
+to the BFD feature detection.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ tools/perf/config/Makefile                | 2 +-
+ tools/perf/config/feature-checks/Makefile | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-index 2fddf38..45a4ddc 100644
---- a/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-+++ b/arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c
-@@ -15,6 +15,7 @@
- #include <asm/system_misc.h>
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 01dd43d..d86d33c 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -478,7 +478,7 @@ else
+ endif
  
- #include <plat/cpu.h>
-+#include <plat/pm.h>
- #include <plat/watchdog-reset.h>
+ ifeq ($(feature-libbfd), 1)
+-  EXTLIBS += -lbfd
++  EXTLIBS += -lbfd -lz -liberty
+ endif
  
- #include <mach/map.h>
-@@ -49,9 +50,15 @@ static void __init s3c64xx_dt_map_io(void)
- static void __init s3c64xx_dt_init_machine(void)
- {
- 	samsung_wdt_reset_of_init();
-+	s3c64xx_pm_init();
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
+ ifdef NO_DEMANGLE
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 7cf6fcd..a430e4f 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -120,7 +120,7 @@ test-libpython-version.bin:
+ 	$(BUILD) $(FLAGS_PYTHON_EMBED)
  
-+static void __init s3c64xx_dt_init_late(void)
-+{
-+	s3c64xx_pm_late_initcall();
-+}
-+
- static void s3c64xx_dt_restart(enum reboot_mode mode, const char *cmd)
- {
- 	if (mode != REBOOT_SOFT)
-@@ -72,5 +79,6 @@ DT_MACHINE_START(S3C6400_DT, "Samsung S3C64xx (Flattened Device Tree)")
- 	.dt_compat	= s3c64xx_dt_compat,
- 	.map_io		= s3c64xx_dt_map_io,
- 	.init_machine	= s3c64xx_dt_init_machine,
-+	.init_late	= s3c64xx_dt_init_late,
- 	.restart        = s3c64xx_dt_restart,
- MACHINE_END
+ test-libbfd.bin:
+-	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
+ 
+ test-liberty.bin:
+ 	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
 -- 
-1.8.5.2
+1.8.3.1
 
