@@ -1,82 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124AbaAKDfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 22:35:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35008 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753548AbaAKDfg convert rfc822-to-8bit (ORCPT
+	id S1752766AbaAKEDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 23:03:08 -0500
+Received: from nm28-vm10.bullet.mail.gq1.yahoo.com ([98.136.216.169]:44383
+	"EHLO nm28-vm10.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751572AbaAKEDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 22:35:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,642,1384329600"; 
-   d="scan'208";a="457032187"
-From: "Brown, Aaron F" <aaron.f.brown@intel.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-CC: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ldv-project@linuxtesting.org" <ldv-project@linuxtesting.org>
-Subject: RE: [PATCH] e1000: avoid potential deadlock in
- e1000_do_[read|write]_eeprom()
-Thread-Topic: [PATCH] e1000: avoid potential deadlock in
- e1000_do_[read|write]_eeprom()
-Thread-Index: AQHO/dKCxlCPtq3w/0KnQshnIHZSXpp+/7ww
-Date: Sat, 11 Jan 2014 03:35:25 +0000
-Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B73129684@ORSMSX101.amr.corp.intel.com>
-References: <1387578320-26525-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1387578320-26525-1-git-send-email-khoroshilov@ispras.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 10 Jan 2014 23:03:04 -0500
+X-Yahoo-Newman-Id: 808413.88279.bm@smtp208.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: YUKq3NcVM1kBkw4YBYW6wsvyU8xrvtYxURoHE4hKLK2oqLm
+ YesRq6rnnRHAJi2Mq3d5uVuu7pp86mqMevw6SdOi_5IUeHU.kTfEB3pLUrzz
+ WZZmstd14tFlxrX..CKPTOzmCej6MXrHxCKSRkSnjxKUepteD1jFxlhEXXfR
+ ETnIoyVXeDUAUU7N6aq6mN.8rT9AFdMkc1v1EW1eTRiM_Erx80tQaT6rW2Sb
+ 63Ljnl5MlFcQ8NdiY.bQrGEnTL4qI4tSaef7gvkUpQYV8hT2w4anWgPYLt8y
+ klmbqWdDdFy6PcDtgfug16eywI_x3XxfYmP8c09smR5HwweoAua8tdwFBgSp
+ CbUuJQxUPBLVdbP2qyWxupslsJ4Uf.5uyqYIbSpJcDLOWcpiYi8z57CXxAb3
+ Z1QBnefYl5PMCCgKBHDn4zGkR9oFwIMtVLyqnknEqji3Bj.6VIAtZpvJ7CyI
+ B3dRrrhwxdZi1Ld6WPefk2L8QcUOjQJ1DfKy36VIXfZ3PBc4SfzMuLaJ6kai
+ EBxTs3p6DWf5ES45x2tJq6PZpoqNhnbbJyFM-
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [98.138.105.21])
+        by smtp208.mail.gq1.yahoo.com with SMTP; 10 Jan 2014 20:03:02 -0800 PST
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH 2/3] Staging: comedi: fix indentation coding style issue in ni_mio_common.c.
+Date: Fri, 10 Jan 2014 22:02:57 -0600
+Message-Id: <1389412977-20655-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
-> On Behalf Of Alexey Khoroshilov
-> Sent: Friday, December 20, 2013 2:25 PM
-> To: Kirsher, Jeffrey T
-> Cc: Alexey Khoroshilov; Brandeburg, Jesse; Allan, Bruce W; Wyborny,
-> Carolyn; Skidmore, Donald C; Rose, Gregory V; Duyck, Alexander H; Ronciak,
-> John; e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; ldv-project@linuxtesting.org
-> Subject: [PATCH] e1000: avoid potential deadlock in
-> e1000_do_[read|write]_eeprom()
-> 
-> If eeprom->word_size is zero, e1000_do_[read|write]_eeprom() invoke
-> e1000_init_eeprom_params() to reinit eeprom params.
-> That is not a good idea since e1000_init_eeprom_params() calls
-> e1000_read_eeprom() if eeprom->type is e1000_eeprom_spi.
-> That means a deadlock on e1000_eeprom_lock.
-> 
-> At the same time it is unclear if the reinit is needed at all.
-> e1000_init_eeprom_params() is called from probe, so it should succeed
-> before any activities of the module start.
-> 
-> The patch suggests to remove the try to reinit eeprom params.
-> 
-> Found by Linux Driver Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+This patch for ni_mio_common.c fixes several indentation warnings from
+checkpatch.pl.
 
-Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
-Tested by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+---
+ drivers/staging/comedi/drivers/ni_mio_common.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> ---
->  drivers/net/ethernet/intel/e1000/e1000_hw.c | 8 --------
->  1 file changed, 8 deletions(-)
+diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+index 116174a..95f4e37 100644
+--- a/drivers/staging/comedi/drivers/ni_mio_common.c
++++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+@@ -3652,15 +3652,15 @@ static void handle_cdio_interrupt(struct comedi_device *dev)
+ 
+ 	cdio_status = ni_readl(M_Offset_CDIO_Status);
+ 	if (cdio_status & (CDO_Overrun_Bit | CDO_Underflow_Bit)) {
+-/* printk("cdio error: statux=0x%x\n", cdio_status); */
++		/* printk("cdio error: statux=0x%x\n", cdio_status); */
+ 		ni_writel(CDO_Error_Interrupt_Confirm_Bit, M_Offset_CDIO_Command);	/*  XXX just guessing this is needed and does something useful */
+ 		s->async->events |= COMEDI_CB_OVERFLOW;
+ 	}
+ 	if (cdio_status & CDO_FIFO_Empty_Bit) {
+-/* printk("cdio fifo empty\n"); */
++		/* printk("cdio fifo empty\n"); */
+ 		ni_writel(CDO_Empty_FIFO_Interrupt_Enable_Clear_Bit,
+ 			  M_Offset_CDIO_Command);
+-/* s->async->events |= COMEDI_CB_EOA; */
++		/* s->async->events |= COMEDI_CB_EOA; */
+ 	}
+ 	ni_event(dev, s);
+ }
+@@ -3845,7 +3845,7 @@ static int ni_serial_sw_readwrite8(struct comedi_device *dev,
+ 		/* Input current bit */
+ 		if (devpriv->stc_readw(dev,
+ 				       DIO_Parallel_Input_Register) & DIO_SDIN) {
+-/*			printk("DIO_P_I_R: 0x%x\n", devpriv->stc_readw(dev, DIO_Parallel_Input_Register)); */
++			/* printk("DIO_P_I_R: 0x%x\n", devpriv->stc_readw(dev, DIO_Parallel_Input_Register)); */
+ 			input |= mask;
+ 		}
+ 	}
+-- 
+1.8.4.2
 
