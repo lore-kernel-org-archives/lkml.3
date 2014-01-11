@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaAKLff (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 06:35:35 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43414 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaAKLfd (ORCPT
+	id S1752360AbaAKLkV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 06:40:21 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36738 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617AbaAKLkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 06:35:33 -0500
-Date: Sat, 11 Jan 2014 12:35:25 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, joe@perches.com,
-        keescook@chromium.org, geert@linux-m68k.org, jkosina@suse.cz,
-        viro@zeniv.linux.org.uk, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/vsprintf: add %pT format specifier
-Message-ID: <20140111113525.GA32025@amd.pavel.ucw.cz>
-References: <201401092151.FIB00084.SJFOLVOMQHtFOF@I-love.SAKURA.ne.jp>
- <20140110160430.526efb3ea91783fe8a32fec5@linux-foundation.org>
- <201401111028.DEG34385.FVHtLOFMQJFSOO@I-love.SAKURA.ne.jp>
- <20140110175730.102b8250.akpm@linux-foundation.org>
+	Sat, 11 Jan 2014 06:40:18 -0500
+Date: Sat, 11 Jan 2014 14:39:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Monam Agarwal <monamagarwal123@gmail.com>
+Cc: devel@driverdev.osuosl.org, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org, peter.p.waskiewicz.jr@intel.com,
+        linux-kernel@vger.kernel.org,
+        Rashika Kheria <rashika.kheria@gmail.com>
+Subject: Re: [PATCH v3 1/2] Staging: lustre: Refactor the function
+ interval_erase_color() in /lustre/ldlm/interval_tree.c
+Message-ID: <20140111113959.GW30234@mwanda>
+References: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
+ <1389438033-5928-1-git-send-email-monamagarwal123@gmail.com>
+ <20140111111931.GV30234@mwanda>
+ <CAFB2WuU=aGwVM7n1Zy7OSnEaR00ZWyPNXGw9A5MBk1p0+LSKZg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140110175730.102b8250.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAFB2WuU=aGwVM7n1Zy7OSnEaR00ZWyPNXGw9A5MBk1p0+LSKZg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-01-10 17:57:30, Andrew Morton wrote:
-> On Sat, 11 Jan 2014 10:28:51 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
-> 
-> > Andrew Morton wrote:
-> > > On Thu, 9 Jan 2014 21:52:00 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
-> > > 
-> > > > This patch introduces %pT format specifier for printing task_struct->comm.
-> > > > Currently %pT does not provide consistency. I'm planning to change to use RCU
-> > > > in the future. By using RCU, the comm name read from task_struct->comm will be
-> > > > guaranteed to be consistent. But before modifying set_task_comm() to use RCU,
-> > > > we need to kill direct ->comm users who do not use get_task_comm().
-> > > 
-> > > On reflection...
-> > > 
-> > > It isn't obvious that this patch is sufficiently beneficial until we
-> > > have that RCU code in place.
-> > > 
-> > > So I could retain this patch in -mm until we have that all sorted out. 
-> > > And I'll have to avoid merging %pT users into mainline in the
-> > > meanwhile!
-> > > 
-> > > Am I wrong?  The patch seems fairly pointless as a standalone thing?
-> > > 
-> > 
-> >   Step 1: (targeted to 3.14-rc1)
-> >     Add "%pT" format specifier and commcpy() wrapper function.
-> > 
-> >   Step 2: (started after step 1 is reflected to other git trees)
-> >     Replace printk("%s", p->comm) with printk("%pT", p).
-> >     Replace strcpy(buf, p->comm) with commcpy(buf, p).
-> > 
-> >   Step 3: (started after step 2 is reflected to other git trees)
-> >     Add rcu_read_lock()/rcu_read_unlock() into commcpy().
-> >     Modify set_task_comm() etc. to replace ->comm using RCU.
-> 
-> In the absence of step 3, steps 1 and 2 are rather pointless churn.
+On Sat, Jan 11, 2014 at 04:56:44PM +0530, Monam Agarwal wrote:
+> I took n as a flag to decide whether parent->in_left == node is true
+> or not in the called function.
 
-Dunno. Given how often it appears in the code, it looks to me like
-step 1 is worthwile cleanup on its own...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+So "n" stands for "node"?
+
+> Should I use some other name for the flag.
+
+
+Yes.
+
+regards,
+dan carpenter
+
