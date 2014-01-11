@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479AbaAKUK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 15:10:26 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:55429 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829AbaAKUKX (ORCPT
+	id S1753351AbaAKUQL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 15:16:11 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63052 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaAKUQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 15:10:23 -0500
-Date: Sat, 11 Jan 2014 12:10:19 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>, Caizhiyong <caizhiyong@hisilicon.com>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "Wanglin (Albert)" <albert.wanglin@hisilicon.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: Re: [PATCH] mtd: nand:  assign mtd->name in find_full_id_nand
-Message-ID: <20140111201019.GD1992@norris-Latitude-E6410>
-References: <C3050A4DBA34F345975765E43127F10F25E47E20@SZXEMA512-MBX.china.huawei.com>
- <20131226021937.GA6752@shlinux2.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131226021937.GA6752@shlinux2.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 11 Jan 2014 15:16:07 -0500
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
+        andreas.dilger@intel.com, peter.p.waskiewicz.jr@intel.com,
+        tao.peng@emc.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] Staging: lustre: Use of fls to find last set bit
+Date: Sun, 12 Jan 2014 01:45:51 +0530
+Message-Id: <1389471351-31782-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389468763-25662-1-git-send-email-monamagarwal123@gmail.com>
+References: <1389468763-25662-1-git-send-email-monamagarwal123@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This introduces fls in lustre/ldlm/ldlm_extent.c
+to find the last set bit.
 
-On Thu, Dec 26, 2013 at 10:19:39AM +0800, Huang Shijie wrote:
-> On Thu, Dec 26, 2013 at 01:51:58AM +0000, Caizhiyong wrote:
-> > From: Cai Zhiyong <caizhiyong@huawei.com>
-> > Date: Wed, 25 Dec 2013 21:19:21 +0800
-> > Subject: [PATCH] mtd: nand: assign mtd->name in find_full_id_nand
-> > 
-> > This patch assigned the type->name to mtd->name when mtd->name is
-> > NULL in function "find_full_id_nand".
-> > mtd->name is NULL may cause some problem.
-> > 
-> > Signed-off-by: Cai Zhiyong <caizhiyong@huawei.com>
-> Acked-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+---
+Changes since v1:
+* Incorrect commit message
+* Use of fls function
+Changes since v2:
+* Removal of extra variable
 
-Thanks, the patch looks good. Pushed to l2-mtd.git.
+ drivers/staging/lustre/lustre/ldlm/ldlm_extent.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Wouldn't this trigger an exception when reading
-/sys/class/mtd/mtdX/name? If so, should this be marked for stable?
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
+index ac5d66a..a4f382d 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
+@@ -153,7 +153,7 @@ static inline int lock_mode_to_index(ldlm_mode_t mode)
+ 
+ 	LASSERT(mode != 0);
+ 	LASSERT(IS_PO2(mode));
+-	for (index = -1; mode; index++, mode >>= 1) ;
++	index = fls(mode)-1;
+ 	LASSERT(index < LCK_MODE_NUM);
+ 	return index;
+ }
+-- 
+1.7.9.5
 
-Brian
