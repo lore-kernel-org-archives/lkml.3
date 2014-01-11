@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaAKD1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 22:27:20 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44944 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaAKD1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 22:27:17 -0500
-Date: Sat, 11 Jan 2014 11:27:08 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-Message-ID: <20140111032708.GL4106@localhost.localdomain>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-	linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-	Michal Hocko <mhocko@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <52C5AA61.8060701@intel.com>
- <20140103033303.GB4106@localhost.localdomain>
- <52C6FED2.7070700@intel.com>
- <20140105003501.GC4106@localhost.localdomain>
- <20140106164604.GC27602@dhcp22.suse.cz>
- <20140108101611.GD27937@dhcp22.suse.cz>
- <20140110081744.GC9437@dhcp22.suse.cz>
+	id S1754566AbaAKDab (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 22:30:31 -0500
+Received: from mga14.intel.com ([143.182.124.37]:7286 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751343AbaAKDa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 22:30:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,642,1384329600"; 
+   d="scan'208";a="457031241"
+From: "Brown, Aaron F" <aaron.f.brown@intel.com>
+To: Ding Tianhong <dingtianhong@huawei.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH net-next v2 06/20] net: igbvf: slight optimization of
+ addr compare
+Thread-Topic: [PATCH net-next v2 06/20] net: igbvf: slight optimization of
+ addr compare
+Thread-Index: AQHPA5VKU9u9ZB8fT0yA/gddQF8dq5p+81nw
+Date: Sat, 11 Jan 2014 03:30:25 +0000
+Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B7312966C@ORSMSX101.amr.corp.intel.com>
+References: <52BE6CF8.5030806@huawei.com>
+In-Reply-To: <52BE6CF8.5030806@huawei.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110081744.GC9437@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011103-9332-0000-0000-000002BA3B9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0B3UdQ3013195
 
-On Fri, Jan 10, 2014 at 09:17:44AM +0100, Michal Hocko wrote:
-> On Fri 10-01-14 00:13:44, Andrew Morton wrote:
-> > On Fri, 10 Jan 2014 09:05:04 +0100 Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > > > --- a/mm/huge_memory.c
-> > > > > +++ b/mm/huge_memory.c
-> > > > > @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
-> > > > >  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
-> > > > >  };
-> > > > >  
-> > > > > +extern int user_min_free_kbytes;
-> > > > >  
-> > > > 
-> > > > We don't add extern declarations to .c files.  How many other examples of 
-> > > > this can you find in mm/?
-> > > 
-> > > I have suggested this because general visibility is not needed.
-> > 
-> > It's best to use a common declaration which is seen by the definition
-> > site and all references, so everyone agrees on the variable's type. 
-> > Otherwise we could have "long foo;" in one file and "extern char foo;"
-> > in another and the compiler won't tell us.  I think the linker could
-> > tell us, but it doesn't, afaik.  Perhaps there's an option...
-> > 
-> > > But if
-> > > you think that it should then include/linux/mm.h sounds like a proper
-> > > place.
-> > 
-> > mm/internal.h might suit.
+> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+> On Behalf Of Ding Tianhong
+> Sent: Friday, December 27, 2013 10:17 PM
+> To: Kirsher, Jeffrey T; Brandeburg, Jesse; Wyborny, Carolyn; Skidmore,
+> Donald C; David S. Miller; Netdev; linux-kernel@vger.kernel.org
+> Subject: [PATCH net-next v2 06/20] net: igbvf: slight optimization of addr
+> compare
 > 
-> min_free_kbytes is in mm.h so I thought having them together would be
-> appropriate.
+> Use possibly more efficient ether_addr_equal to instead of memcmp.
 > 
+> Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> Cc: Carolyn Wyborny <carolyn.wyborny@intel.com>
+> Cc: Don Skidmore <donald.c.skidmore@intel.com>
+> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 
-At present, we only use user_min_free_kbytes in memory subsystem. So I
-think mm/internal.h is suit.
+Signed-off-by: Aaron Brown <aaron.f.brown@intel.com> 
+Tested by: Aaron Brown <aaron.f.brown@intel.com>
 
-Thanks.
-
+> ---
+>  drivers/net/ethernet/intel/igbvf/netdev.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c
+> b/drivers/net/ethernet/intel/igbvf/netdev.c
+> index 04bf22e..675435f 100644
+> --- a/drivers/net/ethernet/intel/igbvf/netdev.c
+> +++ b/drivers/net/ethernet/intel/igbvf/netdev.c
+> @@ -1745,7 +1745,7 @@ static int igbvf_set_mac(struct net_device *netdev,
+> void *p)
+> 
+>  	hw->mac.ops.rar_set(hw, hw->mac.addr, 0);
+> 
+> -	if (memcmp(addr->sa_data, hw->mac.addr, 6))
+> +	if (!ether_addr_equal(addr->sa_data, hw->mac.addr))
+>  		return -EADDRNOTAVAIL;
+> 
+>  	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
+> --
+> 1.8.0
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
