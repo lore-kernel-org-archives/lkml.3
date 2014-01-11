@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaAKTa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:30:59 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:51379 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaAKTa4 (ORCPT
+	id S1753660AbaAKTdB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:33:01 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44925 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaAKTdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:30:56 -0500
-Date: Sat, 11 Jan 2014 20:30:54 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        linux-kernel@vger.kernel.org, namhyung@kernel.org, eranian@google.com,
-        fweisbec@gmail.com, mingo@kernel.org, adrian.hunter@intel.com,
-        dsahern@gmail.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/4] perf, tools: Add support for prepending LBRs to
- the callstack
-Message-ID: <20140111193054.GL20765@two.firstfloor.org>
-References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
- <20140111153614.GC1131@krava.brq.redhat.com>
- <20140111175816.GK20765@two.firstfloor.org>
- <20140111191657.GB17659@ghostprotocols.net>
- <20140111191846.GC17659@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140111191846.GC17659@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 11 Jan 2014 14:33:00 -0500
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: gregkh@linuxfoundation.org, monamagarwal123@gmail.com,
+        andreas.dilger@intel.com, peter.p.waskiewicz.jr@intel.com,
+        tao.peng@emc.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Staging: lustre: Use of fls to find last set bit
+Date: Sun, 12 Jan 2014 01:02:43 +0530
+Message-Id: <1389468763-25662-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389440466-6895-1-git-send-email-monamagarwal123@gmail.com>
+References: <1389440466-6895-1-git-send-email-monamagarwal123@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What was your build command line?
-> 
-> Here, on a f18 system it works with these:
-> 
-> $ make -C tools/perf O=/tmp/build/perf install
-> 
-> $ cd tools/perf ; make
-> 
-> Trying on another system...
+This introduces fls in lustre/ldlm/ldlm_extent.c 
+to find the last set bit. 
 
-Sorry for the false alarm. It looks like it was a problem on my side.
-Works now.
+It also fixes the following checkpatch.pl warning in
+lustre/ldlm/ldlm_extent.c
+WARNING: space prohibited before semicolon.
 
--andi
+The patch also fixes the following checkpatch.pl error in
+lustre/ldlm/ldlm_extent.c
+ERROR: trailing statements should be on next line
+
+
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+---
+Changes since v1:
+*Incorrect commit message
+*Use of fls function
+
+ drivers/staging/lustre/lustre/ldlm/ldlm_extent.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
+index ac5d66a..e6fe2cb 100644
+--- a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
++++ b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
+@@ -150,10 +150,12 @@ struct ldlm_interval *ldlm_interval_detach(struct ldlm_lock *l)
+ static inline int lock_mode_to_index(ldlm_mode_t mode)
+ {
+ 	int index;
++	int len;
+ 
+ 	LASSERT(mode != 0);
+ 	LASSERT(IS_PO2(mode));
+-	for (index = -1; mode; index++, mode >>= 1) ;
++	len = fls(mode);
++	index = len-1;
+ 	LASSERT(index < LCK_MODE_NUM);
+ 	return index;
+ }
+-- 
+1.7.9.5
+
