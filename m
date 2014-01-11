@@ -1,62 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaAKKcq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 05:32:46 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44030 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaAKKco (ORCPT
+	id S1752647AbaAKLAy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 06:00:54 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:43878 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195AbaAKLAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 05:32:44 -0500
-Date: Sat, 11 Jan 2014 02:32:35 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Ben Myers <bpm@sgi.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>, Paul Moore <paul@paul-moore.com>,
-        Matthew Wilcox <matthew@wil.cx>, Stephen Smalley <sds@tycho.nsa.gov>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, xfs@oss.sgi.com,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] vfs: Fix possible NULL pointer dereference in
- inode_permission()
-Message-ID: <20140111103234.GC22098@infradead.org>
-References: <20140109165012.391db81e@gandalf.local.home>
- <20140109223127.GM10323@ZenIV.linux.org.uk>
- <CA+55aFzCTPYEQCPnLBi1CwmMTocVqCFiCuJ391HkVx1CMw61ug@mail.gmail.com>
- <20140109182523.5b50131f@gandalf.local.home>
- <20140109182756.17abaaa8@gandalf.local.home>
- <1389310626.15209.92.camel@localhost>
- <CA+55aFzd2nw=JU4s0u=PJbATK0bwhm0kot3zRH=anLLT6THRFQ@mail.gmail.com>
- <20140110000642.GN10323@ZenIV.linux.org.uk>
- <20140110093148.GA26159@infradead.org>
- <20140110181434.GH1935@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110181434.GH1935@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 11 Jan 2014 06:00:51 -0500
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: gregkh@linuxfoundation.org, rashika.kheria@gmail.com,
+        peter.p.waskiewicz.jr@intel.com, andreas.dilger@intel.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        monamagarwal123@gmail.com
+Subject: [PATCH v3 1/2] Staging: lustre: Refactor the function interval_erase_color() in /lustre/ldlm/interval_tree.c
+Date: Sat, 11 Jan 2014 16:30:33 +0530
+Message-Id: <1389438033-5928-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
+References: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 12:14:34PM -0600, Ben Myers wrote:
-> > What's really needed there to make XFS behave more similar to everyone
-> > else is a way for the filesystem to say: "I can't actually free this
-> > inode right now, but I'll come back to you later".
-> 
-> This test might read something like:  "If my link count has gone to zero, and I
-> am the last inode in my cluster to be freed, and there are other inodes from my
-> cluster incore, I cannot be freed."
+The function interval_erase_color() in lustre/ldlm/interval_tree.c is
+too long and can be refactored. Most of the statements are same for if
+and else conditions. I am passing a new variable n based on which the
+differences are recognised.
 
-It's more complicated than that.  In theory we would free the inode
-easily as soon as the VFS wants it, but performance would be horrible
-as we would have to synchronously write back the inode.  Note that it
-really matters for the interface, that just needs to be an:  I won't
-free this right now, but I'll call you back later when I can.
+This fixes the following checkpatch.pl warning in
+lustre/ldlm/interval_tree.c
+WARNING: line over 80 characters in the file
+
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+---
+
+Changes since version 1:
+* Incorrect fixing
+* Incorrect Signed-off-by line
+
+Changes since version 2:
+* Removed new line character
+
+ drivers/staging/lustre/lustre/ldlm/interval_tree.c |  128 +++++++++++---------
+ 1 file changed, 69 insertions(+), 59 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/ldlm/interval_tree.c b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
+index 1de1d8e..7c956de 100644
+--- a/drivers/staging/lustre/lustre/ldlm/interval_tree.c
++++ b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
+@@ -404,75 +404,85 @@ static inline int node_is_black_or_0(struct interval_node *node)
+ 	return !node || node_is_black(node);
+ }
+ 
++static int interval_set_color(struct interval_node *node,
++			      struct interval_node *parent,
++			      struct interval_node *root,
++			      int n)
++{
++	struct interval_node *tmp;
++	if (n == 0)
++		tmp = parent->in_right;
++	else
++		tmp = parent->in_left;
++	if (node_is_red(tmp)) {
++		tmp->in_color = INTERVAL_BLACK;
++		parent->in_color = INTERVAL_RED;
++		if (n == 0) {
++			__rotate_left(parent, root);
++			tmp = parent->in_right;
++		} else {
++			__rotate_right(parent, root);
++			tmp = parent->in_left;
++		}
++	}
++	if (node_is_black_or_0(tmp->in_left) &&
++	    node_is_black_or_0(tmp->in_right)) {
++		tmp->in_color = INTERVAL_RED;
++		node = parent;
++		parent = node->in_parent;
++	} else {
++		if (n == 0) {
++			if (node_is_black_or_0(tmp->in_right)) {
++				struct interval_node *o_left;
++				o_left = tmp->in_left;
++				if (o_left)
++					o_left->in_color = INTERVAL_BLACK;
++				tmp->in_color = INTERVAL_RED;
++				__rotate_right(tmp, root);
++				tmp = parent->in_right;
++			}
++			tmp->in_color = parent->in_color;
++			parent->in_color = INTERVAL_BLACK;
++			if (tmp->in_right)
++				tmp->in_right->in_color = INTERVAL_BLACK;
++			__rotate_left(parent, root);
++			node = *root;
++			return 1;
++		} else {
++			if (node_is_black_or_0(tmp->in_left)) {
++				struct interval_node *o_right;
++				o_right = tmp->in_right;
++				if (o_right)
++					o_right->in_color = INTERVAL_BLACK;
++				tmp->in_color = INTERVAL_RED;
++				__rotate_left(tmp, root);
++				tmp = parent->in_left;
++			}
++			tmp->in_color = parent->in_color;
++			parent->in_color = INTERVAL_BLACK;
++			if (tmp->in_left)
++				tmp->in_left->in_color = INTERVAL_BLACK;
++			__rotate_right(parent, root);
++			node = *root;
++			return 1;
++		}
++	}
++	return 0;
++}
++
+ static void interval_erase_color(struct interval_node *node,
+ 				 struct interval_node *parent,
+ 				 struct interval_node **root)
+ {
+-	struct interval_node *tmp;
+ 
+ 	while (node_is_black_or_0(node) && node != *root) {
+ 		if (parent->in_left == node) {
+-			tmp = parent->in_right;
+-			if (node_is_red(tmp)) {
+-				tmp->in_color = INTERVAL_BLACK;
+-				parent->in_color = INTERVAL_RED;
+-				__rotate_left(parent, root);
+-				tmp = parent->in_right;
+-			}
+-			if (node_is_black_or_0(tmp->in_left) &&
+-			    node_is_black_or_0(tmp->in_right)) {
+-				tmp->in_color = INTERVAL_RED;
+-				node = parent;
+-				parent = node->in_parent;
+-			} else {
+-				if (node_is_black_or_0(tmp->in_right)) {
+-					struct interval_node *o_left;
+-					o_left = tmp->in_left;
+-					if (o_left)
+-						o_left->in_color = INTERVAL_BLACK;
+-					tmp->in_color = INTERVAL_RED;
+-					__rotate_right(tmp, root);
+-					tmp = parent->in_right;
+-				}
+-				tmp->in_color = parent->in_color;
+-				parent->in_color = INTERVAL_BLACK;
+-				if (tmp->in_right)
+-					tmp->in_right->in_color = INTERVAL_BLACK;
+-				__rotate_left(parent, root);
+-				node = *root;
++			if (interval_set_color(node, parent, root, 0))
+ 				break;
+-			}
+ 		} else {
+-			tmp = parent->in_left;
+-			if (node_is_red(tmp)) {
+-				tmp->in_color = INTERVAL_BLACK;
+-				parent->in_color = INTERVAL_RED;
+-				__rotate_right(parent, root);
+-				tmp = parent->in_left;
+-			}
+-			if (node_is_black_or_0(tmp->in_left) &&
+-			    node_is_black_or_0(tmp->in_right)) {
+-				tmp->in_color = INTERVAL_RED;
+-				node = parent;
+-				parent = node->in_parent;
+-			} else {
+-				if (node_is_black_or_0(tmp->in_left)) {
+-					struct interval_node *o_right;
+-					o_right = tmp->in_right;
+-					if (o_right)
+-						o_right->in_color = INTERVAL_BLACK;
+-					tmp->in_color = INTERVAL_RED;
+-					__rotate_left(tmp, root);
+-					tmp = parent->in_left;
+-				}
+-				tmp->in_color = parent->in_color;
+-				parent->in_color = INTERVAL_BLACK;
+-				if (tmp->in_left)
+-					tmp->in_left->in_color = INTERVAL_BLACK;
+-				__rotate_right(parent, root);
+-				node = *root;
++
++			if (interval_set_color(node, parent, root, 1))
+ 				break;
+-			}
+ 		}
+ 	}
+ 	if (node)
+-- 
+1.7.9.5
+
