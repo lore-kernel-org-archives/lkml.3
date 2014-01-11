@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaAKAsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 19:48:18 -0500
-Received: from ring0.de ([91.143.88.219]:47976 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953AbaAKAsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 19:48:05 -0500
-X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	* -0.0 NO_RECEIVED Informational: message has no Received headers
-From: Sebastian Reichel <sre@debian.org>
-To: Sebastian Reichel <sre@ring0.de>, Anton Vorontsov <anton@enomsg.org>,
-        Pavel Machek <pavel@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Sebastian Reichel <sre@debian.org>
-Subject: [PATCHv3] dt: binding documentation for bq2415x charger
-Date: Sat, 11 Jan 2014 01:47:48 +0100
-Message-Id: <1389401268-15069-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389393286-15263-1-git-send-email-sre@debian.org>
-References: <1389393286-15263-1-git-send-email-sre@debian.org>
+	id S1757570AbaAKAud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 19:50:33 -0500
+Received: from mail-ob0-f202.google.com ([209.85.214.202]:47699 "EHLO
+	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190AbaAKAub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 19:50:31 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] pinctrl: tegra1x4: initialize at arch_initcall time
+Date: Fri, 10 Jan 2014 16:50:16 -0800
+Message-Id: <1389401416-29892-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree binding documentation for bq2415x charger.
+Many devices rely on pinctrl/pinmux settings being applied
+before probing and some of these may probe before device_initcall
+time (e.g. i2c at subsys_initcall).  Move Tegra1x4 pinctrl driver
+registration to arch_initcall time so that proper pin settings
+can be applied earlier.
 
-Signed-off-by: Sebastian Reichel <sre@debian.org>
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
-Hi,
+ drivers/pinctrl/pinctrl-tegra114.c | 13 ++++++++++++-
+ drivers/pinctrl/pinctrl-tegra124.c | 13 ++++++++++++-
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
-It's me again :) Here's another update, which fixes a sentence reported by
-Pavel. I also added his Acked-by.
-
--- Sebastian
----
- .../devicetree/bindings/power/bq2415x.txt          | 47 ++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/bq2415x.txt
-
-diff --git a/Documentation/devicetree/bindings/power/bq2415x.txt b/Documentation/devicetree/bindings/power/bq2415x.txt
-new file mode 100644
-index 0000000..d0327f0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/bq2415x.txt
-@@ -0,0 +1,47 @@
-+Binding for TI bq2415x Li-Ion Charger
+diff --git a/drivers/pinctrl/pinctrl-tegra114.c b/drivers/pinctrl/pinctrl-tegra114.c
+index 93c9e38..5d0c950 100644
+--- a/drivers/pinctrl/pinctrl-tegra114.c
++++ b/drivers/pinctrl/pinctrl-tegra114.c
+@@ -2761,7 +2761,18 @@ static struct platform_driver tegra114_pinctrl_driver = {
+ 	.probe = tegra114_pinctrl_probe,
+ 	.remove = tegra_pinctrl_remove,
+ };
+-module_platform_driver(tegra114_pinctrl_driver);
 +
-+Required properties:
-+- compatible: Should contain one of the following:
-+ * "ti,bq24150"
-+ * "ti,bq24150"
-+ * "ti,bq24150a"
-+ * "ti,bq24151"
-+ * "ti,bq24151a"
-+ * "ti,bq24152"
-+ * "ti,bq24153"
-+ * "ti,bq24153a"
-+ * "ti,bq24155"
-+ * "ti,bq24156"
-+ * "ti,bq24156a"
-+ * "ti,bq24158"
-+- reg:			   integer, i2c address of the device.
-+- ti,current-limit:	   integer, initial maximum current charger can pull
-+			   from power supply in mA.
-+- ti,weak-battery-voltage: integer, weak battery voltage threshold in mV.
-+			   The chip will use slow precharge if battery voltage
-+			   is below this value.
-+- ti,battery-regulation-voltage: integer, maximum charging voltage in mV.
-+- ti,charge-current:	   integer, maximum charging current in mA.
-+- ti,termination-current:  integer, charge will be terminated when current in
-+			   constant-voltage phase drops below this value (in mA).
-+- ti,resistor-sense:	   integer, value of sensing resistor in milliohm.
++static int __init tegra114_pinctrl_init(void)
++{
++	return platform_driver_register(&tegra114_pinctrl_driver);
++}
++arch_initcall(tegra114_pinctrl_init);
 +
-+Optional properties:
-+- ti,usb-charger-detection: phandle to usb charger detection device.
-+			    (required for auto mode)
++static void __exit tegra114_pinctrl_exit(void)
++{
++	platform_driver_unregister(&tegra114_pinctrl_driver);
++}
++module_exit(tegra114_pinctrl_exit);
+ 
+ MODULE_AUTHOR("Pritesh Raithatha <praithatha@nvidia.com>");
+ MODULE_DESCRIPTION("NVIDIA Tegra114 pinctrl driver");
+diff --git a/drivers/pinctrl/pinctrl-tegra124.c b/drivers/pinctrl/pinctrl-tegra124.c
+index c20e0e1..02ac976 100644
+--- a/drivers/pinctrl/pinctrl-tegra124.c
++++ b/drivers/pinctrl/pinctrl-tegra124.c
+@@ -3130,7 +3130,18 @@ static struct platform_driver tegra124_pinctrl_driver = {
+ 	.probe = tegra124_pinctrl_probe,
+ 	.remove = tegra_pinctrl_remove,
+ };
+-module_platform_driver(tegra124_pinctrl_driver);
 +
-+Example from Nokia N900:
++static int __init tegra124_pinctrl_init(void)
++{
++	return platform_driver_register(&tegra124_pinctrl_driver);
++}
++arch_initcall(tegra124_pinctrl_init);
 +
-+bq24150a {
-+	compatible = "ti,bq24150a";
-+	reg = <0x6b>;
-+
-+	ti,current-limit = <100>;
-+	ti,weak-battery-voltage = <3400>;
-+	ti,battery-regulation-voltage = <4200>;
-+	ti,charge-current = <650>;
-+	ti,termination-current = <100>;
-+	ti,resistor-sense = <68>;
-+
-+	ti,usb-charger-detection = <&isp1704>;
-+};
++static void __exit tegra124_pinctrl_exit(void)
++{
++	platform_driver_unregister(&tegra124_pinctrl_driver);
++}
++module_exit(tegra124_pinctrl_exit);
+ 
+ MODULE_AUTHOR("Ashwini Ghuge <aghuge@nvidia.com>");
+ MODULE_DESCRIPTION("NVIDIA Tegra124 pinctrl driver");
 -- 
-1.8.5.2
+1.8.5.1
 
