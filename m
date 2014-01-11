@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758316AbaAKAXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 19:23:40 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:53254 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751544AbaAKAXh (ORCPT
+	id S1758289AbaAKAZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 19:25:51 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:36971 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbaAKAZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 19:23:37 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: daniel.lezcano@linaro.org, lenb@kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, kyungmin.park@samsung.com
-Subject: Re: [PATCH v2 0/9] cpuidle: rework device state count handling
-Date: Sat, 11 Jan 2014 01:37:29 +0100
-Message-ID: <2079155.EyEBRDoJjP@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 10 Jan 2014 19:25:49 -0500
+X-AuditID: cbfec37d-b7ff46d000005528-70-52d08f8c0e81
+Message-id: <52D08F89.10109@samsung.com>
+Date: Fri, 10 Jan 2014 17:25:45 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+Cc: akpm@linux-foundation.org, alexander.h.duyck@intel.com,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH v2] dma-debug: enhance dma_debug_device_change() to check
+ for mapping errors
+References: <1384376168-2148-1-git-send-email-shuah.kh@samsung.com>
+ <20131230141511.GC2799@8bytes.org> <52C700BC.1010200@samsung.com>
+ <20140107142625.GC2742@8bytes.org> <52CC1691.9040603@samsung.com>
+ <20140107151200.GA29041@8bytes.org> <52CC37F1.6080704@samsung.com>
+In-reply-to: <52CC37F1.6080704@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.13]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t9hX92e/gtBBvcniVjMWb+GzeLkst/M
+	Fp2zN7BbXN41h83i608HB1aPJwfnMXnsnHWX3WPxnpdMHidm/Gbx+LxJLoA1issmJTUnsyy1
+	SN8ugStj3+0HzAVzRSue3z/J3MD4ka+LkZNDQsBEorvjNzOELSZx4d56ti5GLg4hgWWMErdP
+	bGOBcHqZJL7+2MAO4WxilHjRN4sRpIVXQEPiWvtlJhCbRUBVYtu7B+wgNpuAusTn1zvAbCEB
+	OYmmJavBVogKREi8OjuRBaJXUOLH5HtgtoiAksT1z62sIAuYBQ4yStxbcI0VJCEskCQxbf58
+	JojNE5gkrr57zgaS4BTQlrjfNwesiFnAWmLlpG2MELa8xOY1b5khNitL/Ll8igniOUWJib8v
+	ME9gFJmFZPksJO2zkLQvYGRexShWWpxcUJyUnlpholecmFtcmpeul5yfu4kREjm1Oxjvf7U5
+	xCjAwajEw+vBeyFIiDWxrLgy9xCjBAezkghvjC9QiDclsbIqtSg/vqg0J7X4ECMTB6dUA+MS
+	ofLU+bcYV334fPqahMyVuUJPswxM+38u9D7Vdap6upma/pkdkWsS+83PLvHP3cBjNmfKVo7I
+	qi2rv+8IW6/CoFj+iVnDIV2q7kZfzoeprofDpp8t1Fqc6srHviFvlyvLvq41s3nUspqm3142
+	6dj57ZHWK5ss2P5+vCa2WO8Qt+YUmXtXPZ4qsRRnJBpqMRcVJwIAzz/yBXoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 20, 2013 07:47:22 PM Bartlomiej Zolnierkiewicz wrote:
-> Hi,
-> 
-> Some cpuidle drivers assume that cpuidle core will handle cases where
-> device->state_count is smaller than driver->state_count, unfortunately
-> currently this is untrue (device->state_count is used only for handling
-> cpuidle state sysfs entries and driver->state_count is used for all
-> other cases) and will not be fixed in the future as device->state_count
-> is planned to be removed [1].
-> 
-> This patchset fixes such drivers (ARM EXYNOS cpuidle driver and ACPI
-> cpuidle driver), removes superflous device->state_count initialization
-> from drivers for which device->state_count equals driver->state_count
-> (POWERPC pseries cpuidle driver and intel_idle driver) and finally
-> removes state_count field from struct cpuidle_device.
-> 
-> Additionaly (while at it) this patchset fixes C1E promotion disable
-> quirk handling (in intel_idle driver) and converts cpuidle drivers code
-> to use the common cpuidle_[un]register() routines (in POWERPC pseries
-> cpuidle driver and intel_idle driver).
-> 
-> [1] http://permalink.gmane.org/gmane.linux.power-management.general/36908
-> 
-> Reference to v1:
-> 	http://comments.gmane.org/gmane.linux.power-management.general/37390
-> 
-> Changes since v1:
-> - synced patch series with next-20131220
-> - added ACKs from Daniel Lezcano
+On 01/07/2014 10:22 AM, Shuah Khan wrote:
+> On 01/07/2014 08:12 AM, Joerg Roedel wrote:
+>> On Tue, Jan 07, 2014 at 08:00:33AM -0700, Shuah Khan wrote:
+>>> This patch and a follow-on cocinelli warning fix patch are in
+>>> linux-next. Would you like me to send a patch relative to the change
+>>> in linux-next or cut a new patch against the latest Linus's git. I
+>>> can go either way. We just have to remember to drop those two
+>>> patches from linux-next.
+>>
+>> Please do a patch against linus.git and drop the two patches from
+>> linux-next. Over which tree did they go into linux-next anyway?
+>>
+>>
+>
+> ok. It went through mm tree.
+>
 
-This series breaks boot on one of my test machines with intel_idle, so I'm
-not sure how well it has been tested.
+I have a separate routine now for scanning for entries with map error 
+flag set and I also have a new err_printk() call to print the entry from 
+dma_debug_device_change() right after device_dma_allocations() check and 
+corresponding err_printk(). Snippet of the diff below. Only one warning 
+gets printed. Looking at err_printk(): if (!show_all_errors && 
+show_num_errors > 0) conditional, it appears that is the way it is 
+supposed to work, unless I am missing something
 
-I've dropped it entirely for now.  If I have the time, I will try to identify
-the root cause of the failure, but that may not happen before the merge window.
-Sorry about that.
+One way to not miss the second warning is to just generate just a 
+pr_err() for the mapping error instead of err_printk(). Leaked entries 
+is a bigger problem that should really be shown and the same entry might 
+not have the map error flag set. Thoughts?
 
-Thanks!
+  static int dma_debug_device_change(struct notifier_block *nb, unsigned 
+long action, void *data)
+  {
+         struct device *dev = data;
+@@ -758,6 +784,18 @@ static int dma_debug_device_change(struct 
+notifier_block *nb, unsigned long acti
+                                 "[mapped with %s] [mapped as %s]\n",
+                         count, entry->dev_addr, entry->size,
+                         dir2name[entry->direction], 
+type2name[entry->type]);
++
++               count = device_dma_map_errors(dev, &entry);
++               if (count == 0)
++                       break;
++               err_printk(dev, entry,
++                               "DMA-API: device driver failed to check 
+map err"
++                               ": [count=%d]\n"
++                               "Details of an entry with map error flag 
+set: "
++                               "[device address=0x%016llx] [size=%llu 
+bytes] "
++                               "[mapped with %s] [mapped as %s]\n",
++                       count, entry->dev_addr, entry->size,
++                       dir2name[entry->direction], type2name[entry->type]);
+                 break;
+
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
