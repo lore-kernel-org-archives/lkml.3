@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaAKL0t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 06:26:49 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:52483 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaAKL0q (ORCPT
+	id S1752674AbaAKLdu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 06:33:50 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47084 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaAKLds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 06:26:46 -0500
+	Sat, 11 Jan 2014 06:33:48 -0500
+Message-ID: <52D12C25.90802@kernel.org>
+Date: Sat, 11 Jan 2014 11:33:57 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140111111931.GV30234@mwanda>
-References: <52c9bc8b.ca41420a.775b.ffff98ce@mx.google.com>
-	<1389438033-5928-1-git-send-email-monamagarwal123@gmail.com>
-	<20140111111931.GV30234@mwanda>
-Date: Sat, 11 Jan 2014 16:56:44 +0530
-Message-ID: <CAFB2WuU=aGwVM7n1Zy7OSnEaR00ZWyPNXGw9A5MBk1p0+LSKZg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] Staging: lustre: Refactor the function
- interval_erase_color() in /lustre/ldlm/interval_tree.c
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, Rashika Kheria <rashika.kheria@gmail.com>,
-        peter.p.waskiewicz.jr@intel.com, andreas.dilger@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        linux-iio@vger.kernel.org
+CC: Guenter Roeck <linux@roeck-us.net>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
+Subject: Re: [PATCH] iio:adc:max1363 clear list of missing features
+References: <1389387591-5534-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+In-Reply-To: <1389387591-5534-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I took n as a flag to decide whether parent->in_left == node is true
-or not in the called function.
-Should I use some other name for the flag.
 
-On Sat, Jan 11, 2014 at 4:49 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sat, Jan 11, 2014 at 04:30:33PM +0530, Monam Agarwal wrote:
->> The function interval_erase_color() in lustre/ldlm/interval_tree.c is
->> too long and can be refactored. Most of the statements are same for if
->> and else conditions. I am passing a new variable n based on which the
->> differences are recognised.
->>
+
+On 10/01/14 20:59, Vivien Didelot wrote:
+> Remove "Control of internal reference" from the list of unimplemented
+> features, since as of commit a405b00, external reference is supported if
+> the device has a regulator and falls back to internal if it doesn't.
 >
-> "n" stands for number, but what is the it the number of?
+> While we are modifying the header, let's make it more concise and remove
+> a redundant filename.
 >
-> regards,
-> dan carpenter
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Applied to the togreg branch of iio.git. Thanks.
+> ---
+>   drivers/iio/adc/max1363.c | 10 ++--------
+>   1 file changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/iio/adc/max1363.c b/drivers/iio/adc/max1363.c
+> index e283f2f..1228272 100644
+> --- a/drivers/iio/adc/max1363.c
+> +++ b/drivers/iio/adc/max1363.c
+> @@ -8,17 +8,11 @@
+>     * based on linux/drivers/acron/char/pcf8583.c
+>     * Copyright (C) 2000 Russell King
+>     *
+> +  * Driver for max1363 and similar chips.
+> +  *
+>     * This program is free software; you can redistribute it and/or modify
+>     * it under the terms of the GNU General Public License version 2 as
+>     * published by the Free Software Foundation.
+> -  *
+> -  * max1363.c
+> -  *
+> -  * Partial support for max1363 and similar chips.
+> -  *
+> -  * Not currently implemented.
+> -  *
+> -  * - Control of internal reference.
+>     */
+>
+>   #include <linux/interrupt.h>
 >
