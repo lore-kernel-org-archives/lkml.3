@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaAKTXx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:23:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:53004 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaAKTXu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:23:50 -0500
-Date: Sat, 11 Jan 2014 16:16:57 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, eranian@google.com, fweisbec@gmail.com,
-        mingo@kernel.org, adrian.hunter@intel.com, dsahern@gmail.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/4] perf, tools: Add support for prepending LBRs to the
- callstack
-Message-ID: <20140111191657.GB17659@ghostprotocols.net>
-References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
- <20140111153614.GC1131@krava.brq.redhat.com>
- <20140111175816.GK20765@two.firstfloor.org>
+	id S1753267AbaAKTaK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:30:10 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:42163 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752708AbaAKTaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:30:07 -0500
+Date: Sat, 11 Jan 2014 13:30:03 -0600
+From: Alex Thorlton <athorlton@sgi.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
+Message-ID: <20140111193003.GA10649@sgi.com>
+References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
+ <20140111155337.GA16003@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140111175816.GK20765@two.firstfloor.org>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20140111155337.GA16003@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Jan 11, 2014 at 06:58:16PM +0100, Andi Kleen escreveu:
-> On Sat, Jan 11, 2014 at 04:36:14PM +0100, Jiri Olsa wrote:
-> > On Fri, Jan 10, 2014 at 04:32:03AM -0800, Andi Kleen wrote:
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > I never found the default LBR display mode which generates histograms
-> > > of individual branches particularly useful.
-> > > 
-> > > This implements an alternative mode that creates histograms over complete
-> > > branch traces, instead of individual branches, similar to how normal
-> > > callgraphs are handled. This is done by putting it in
-> > > front of the normal callgraph and then using the normal callgraph
-> > > histogram infrastructure to unify them.
-> > > 
-> > > This way in complex functions we can understand the control flow
-> > > that lead to a particular sample.
-> > > 
-> > > The default output is unchanged.
-> > > 
-> > > This is only implemented in perf report, no change to record
-> > > or anywhere else.
-> > > 
-> > > This adds the basic code to report:
-> > > - add a new "branch" option to the -g option parser to enable this mode
-> > > - when the flag is set include the LBR into the callstack in machine.c.
-> > > The rest of the history code is unchanged and doesn't know the difference
-> > > between LBR entry and normal call entry.
-> > 
-> > sounds like nice idea, but I could not get the patchset applied
-> > on acme's perf/core
+On Sat, Jan 11, 2014 at 04:53:37PM +0100, Oleg Nesterov wrote:
+> On 01/10, Alex Thorlton wrote:
+> >
+> > This patch adds an mm flag (MMF_THP_DISABLE) to disable transparent
+> > hugepages using prctl.  It is based on my original patch to add a
+> > per-task_struct flag to disable THP:
 > 
-> It was on Linus master.
+> I leave the "whether we need this feature" to other reviewers, although
+> personally I think it probably makes sense anyway.
 > 
-> I tried to rebase on perf/core, but it seems to be totally broken by
-> itself. All the config tests fail on my opensuse system.
+> But the patch doesn't look nice imho.
 > 
-> Arnaldo?
+> > @@ -373,7 +373,15 @@ extern int get_dumpable(struct mm_struct *mm);
+> >  #define MMF_HAS_UPROBES		19	/* has uprobes */
+> >  #define MMF_RECALC_UPROBES	20	/* MMF_HAS_UPROBES can be wrong */
+> >  
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > +#define MMF_THP_DISABLE		21	/* disable THP for this mm */
+> > +#define MMF_THP_DISABLE_MASK	(1 << MMF_THP_DISABLE)
+> > +
+> > +#define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK | MMF_THP_DISABLE_MASK)
+> > +#else
+> >  #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
+> > +#endif
+> 
+> It would be nice to lessen the number of ifdef's. Why we can't define
+> MMF_THP_DISABLE unconditionally and include it into MMF_INIT_MASK?
+> Or define it == 0 if !CONFIG_THP. But this is minor.
 
-Oops, checking on some systems...
- 
-> Auto-detecting system features:
-> ...                     backtrace: [ OFF ]
-> ...                         dwarf: [ OFF ]
-> ...                fortify-source: [ OFF ]
-> ...                         glibc: [ OFF ]
-> ...                          gtk2: [ OFF ]
-> ...                  gtk2-infobar: [ OFF ]
-> ...                      libaudit: [ OFF ]
-> ...                        libbfd: [ OFF ]
-> ...                        libelf: [ OFF ]
-> ...             libelf-getphdrnum: [ OFF ]
-> ...                   libelf-mmap: [ OFF ]
-> ...                       libnuma: [ OFF ]
-> ...                       libperl: [ OFF ]
-> ...                     libpython: [ OFF ]
-> ...             libpython-version: [ OFF ]
-> ...                      libslang: [ OFF ]
-> ...                     libunwind: [ OFF ]
-> ...                       on-exit: [ OFF ]
-> ...            stackprotector-all: [ OFF ]
-> ...                       timerfd: [ OFF ]
+That's a good idea.  I guess I was thinking that we don't want to define
+any THP specific stuff when THP isn't configured, but I guess it doesn't
+make much of a difference since the flag will never be set if THP isn't
+configured.
+
+> > +#define PR_SET_THP_DISABLE	41
+> > +#define PR_CLEAR_THP_DISABLE	42
+> > +#define PR_GET_THP_DISABLE	43
 > 
-> config/Makefile:282: *** No gnu/libc-version.h found, please install
-> glibc-dev[el]/glibc-static.  Stop.
-> make: *** [all] Error 2
+> Why we can't add 2 PR_'s, set and get?
+
+See response below.
+
+> > --- a/kernel/fork.c
+> > +++ b/kernel/fork.c
+> > @@ -818,6 +818,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+> >  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
+> >  	mm->pmd_huge_pte = NULL;
+> >  #endif
+> > +
+> >  	if (!mm_init(mm, tsk))
+> >  		goto fail_nomem;
 > 
-> -Andi
+> Why? looks like the accidental change.
+
+Ah, yes.  Didn't catch that when I looked over the patch.  I'll fix
+that.
+
+> 
+> > --- a/kernel/sys.c
+> > +++ b/kernel/sys.c
+> > @@ -1835,6 +1835,42 @@ static int prctl_get_tid_address(struct task_struct *me, int __user **tid_addr)
+> >  }
+> >  #endif
+> >  
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > +static int prctl_set_thp_disable(struct task_struct *me)
+> > +{
+> > +	set_bit(MMF_THP_DISABLE, &me->mm->flags);
+> > +	return 0;
+> > +}
+> > +
+> > +static int prctl_clear_thp_disable(struct task_struct *me)
+> > +{
+> > +	clear_bit(MMF_THP_DISABLE, &me->mm->flags);
+> > +	return 0;
+> > +}
+> > +
+> > +static int prctl_get_thp_disable(struct task_struct *me,
+> > +				  int __user *thp_disabled)
+> > +{
+> > +	return put_user(test_bit(MMF_THP_DISABLE, &me->mm->flags), thp_disabled);
+> > +}
+> > +#else
+> > +static int prctl_set_thp_disable(struct task_struct *me)
+> > +{
+> > +	return -EINVAL;
+> > +}
+> > +
+> > +static int prctl_clear_thp_disable(struct task_struct *me)
+> > +{
+> > +	return -EINVAL;
+> > +}
+> > +
+> > +static int prctl_get_thp_disable(struct task_struct *me,
+> > +				  int __user *thp_disabled)
+> > +{
+> > +	return -EINVAL;
+> > +}
+> > +#endif
+> > +
+> >  SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+> >  		unsigned long, arg4, unsigned long, arg5)
+> >  {
+> > @@ -1998,6 +2034,15 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+> >  		if (arg2 || arg3 || arg4 || arg5)
+> >  			return -EINVAL;
+> >  		return current->no_new_privs ? 1 : 0;
+> > +	case PR_SET_THP_DISABLE:
+> > +		error = prctl_set_thp_disable(me);
+> > +		break;
+> > +	case PR_CLEAR_THP_DISABLE:
+> > +		error = prctl_clear_thp_disable(me);
+> > +		break;
+> > +	case PR_GET_THP_DISABLE:
+> > +		error = prctl_get_thp_disable(me, (int __user *) arg2);
+> > +		break;
+> >  	default:
+> >  		error = -EINVAL;
+> >  		break;
+> 
+> I simply can't understand, this all looks like overkill. Can't you simply add
+> 
+> 	#idfef CONFIG_TRANSPARENT_HUGEPAGE
+> 	case GET:
+> 		error = test_bit(MMF_THP_DISABLE);
+> 		break;
+> 	case PUT:
+> 		if (arg2)
+> 			set_bit();
+> 		else
+> 			clear_bit();
+> 		break;
+> 	#endif
+> 
+> into sys_prctl() ?	
+
+That's probably a better solution.  I wasn't sure whether or not it was
+better to have two functions to handle this, or to have one function
+handle both.  If you think it's better to just handle both with one,
+that's easy enough to change.
+
+- Alex
