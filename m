@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaAKUkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 15:40:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38590 "EHLO
+	id S1753001AbaAKUrS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 15:47:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaAKUkJ (ORCPT
+	with ESMTP id S1751274AbaAKUrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 15:40:09 -0500
-Date: Sat, 11 Jan 2014 12:40:13 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tim Jester-Pfadt <t.jp@gmx.de>
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Staging: rtl8188eu: checkpatch.pl error cleanups
-Message-ID: <20140111204013.GA22990@kroah.com>
-References: <cover.1389295303.git.t.jp@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1389295303.git.t.jp@gmx.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Sat, 11 Jan 2014 15:47:15 -0500
+Date: Sat, 11 Jan 2014 12:48:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: kernel test robot <fengguang.wu@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [percpu_counter] WARNING: CPU: 1 PID: 1 at
+ kernel/locking/lockdep.c:3537 check_flags()
+Message-Id: <20140111124841.00cd5893.akpm@linux-foundation.org>
+In-Reply-To: <CACVXFVNiOB3KE71kEJtEmi5GQ6QEUoftht308mvgsts8VCP5HQ@mail.gmail.com>
+References: <20140111161404.GA7744@localhost>
+	<CACVXFVNiOB3KE71kEJtEmi5GQ6QEUoftht308mvgsts8VCP5HQ@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 09:37:09PM +0100, Tim Jester-Pfadt wrote:
-> This patchset fixes all occurrences of the "space required after ','"
-> "space required around '='" aswell as "foo * bar" related checkpatch.pl errors in
-> rtl8188eu.
+On Sun, 12 Jan 2014 00:36:07 +0800 Ming Lei <tom.leiming@gmail.com> wrote:
+
+> >
+> > [    8.093354] ------------[ cut here ]------------
+> > [    8.095469] WARNING: CPU: 1 PID: 1 at kernel/locking/lockdep.c:3537 check_flags+0x77/0x1ba()
+> > [    8.095469] DEBUG_LOCKS_WARN_ON(current->hardirqs_enabled)
 > 
-> The patchset does not fix the remaining 80 character limit  warnings, since this might
-> require more substantial code modifiction.
+> The warning is caused by the added raw_local_irq_save(), which should
+> have been local_irq_save(flags). Actually, it is a false positive.
 > 
-> Tim Jester-Pfadt (2):
->   Staging: rtl8188eu: Fixed required spaces after ',' and around '=' and
->     '=='
->   Staging: rtl8188eu: Fixed "foo * bar" related coding style issues
+> Andrew, considered that your approach may be more efficient than this
+> one since preempt_disable()/preempt_enable() can be removed too.
+> 
+> So could you prepare one patch for fixing the problem? Or if you are busy, I'd
+> like to do it.
 
-These patches don't apply to my tree at all.  Please redo them against
-the staging-next branch of the staging.git tree on git.kernel.org.
-
-thanks,
-
-greg k-h
+Yes, please send a fresh patch.
