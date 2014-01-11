@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaAKOM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 09:12:27 -0500
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:47109 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaAKOMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 09:12:24 -0500
-Date: Sat, 11 Jan 2014 09:12:09 -0500
-From: Wakko Warner <wakko@animx.eu.org>
-To: Dominique Martinet <dominique.martinet@cea.fr>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        v9fs-developer@lists.sourceforge.net,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [V9fs-developer] Unable to load modules from 9p filesystem with
- kmod 16
-Message-ID: <20140111141209.GA26811@animx.eu.org>
-References: <20140110023543.GA6131@animx.eu.org>
- <20140110230303.GA19369@animx.eu.org>
- <52D097DB.3020101@infradead.org>
- <20140111121914.GA12907@nautica>
+	id S1752292AbaAKOnc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 09:43:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:49937 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaAKOn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 09:43:28 -0500
+Date: Sat, 11 Jan 2014 07:43:23 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matias Bjorling <m@bjorling.me>, Muthu Kumar <muthu.lkml@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [block:for-3.14/core] blk-mq: Compile fix for null_blk
+Message-ID: <20140111144323.GL6780@kernel.dk>
+References: <CAFR8uedovPTT0562nZSAfatjqqhyi8WXRdHj5wa9oCkVbzrBag@mail.gmail.com>
+ <52CF0D85.7060905@bjorling.me>
+ <CA+55aFwC75Afeo8KKm5=v2c8_ynVG9E5VFGjbUnhyB765Ro4PA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140111121914.GA12907@nautica>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFwC75Afeo8KKm5=v2c8_ynVG9E5VFGjbUnhyB765Ro4PA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dominique Martinet wrote:
-> Hi,
-
-Hi.
-
-The following was trimmed.
-
-> > On 01/10/2014 03:03 PM, Wakko Warner wrote:
-> > > Wakko Warner wrote:
-> > >> Kernel 3.12.7 from kernel.org
-> > >> With kmod-16, I'm unable to load any modules on my guest kvm machines.
-
-> > >> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
-> > >> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
-> > >> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f199aebd000
-> > >> syscall_313(0x3, 0x7f199aaa2de0, 0, 0x3, 0, 0x7f199b7b2010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) = -1 (errno 8)
-> > >> munmap(0x7f199aebd000, 13822)           = 0
-> > >> close(3)                                = 0
+On Sat, Jan 11 2014, Linus Torvalds wrote:
+> On Fri, Jan 10, 2014 at 3:58 AM, Matias Bjorling <m@bjorling.me> wrote:
+> >
+> > The patch from Ming Lei is missing in -rc6
+> >
+> > 4af48694451676403188a62385dd1a2849fc05c5
+> > block: null_blk: fix queue leak inside removing device
+> >
+> > Its queued for -rc7. It removes the usage of blk_mq_free_queue in blk_null.
 > 
-> I didn't look at the patch very closely because the mail apparently
-> never reached v9fs-developer (although it looks in copy), but I got
-> pointed out this patch recently:
-> http://www.spinics.net/lists/linux-virtualization/msg21716.html
+> Jens? I'm going to do an rc8 tomorrow, and I haven't seen any pull requests..
 
-I applied the patch on that page.  Here's my result:
+Sorry, between jobs and houses, and the two other patches in there were
+being evaluated. If you could just apply this one directly, then that'd
+be great!
 
-# df -T /lib/modules/3.12.7/kernel              
-Filesystem     Type 1K-blocks   Used Available Use% Mounted on
-kernel         9p     2015056 721356   1172460  39% /kernel
-# uname -r
-3.12.7
-# modprobe -V
-kmod version 16
-# lsmod
-Module                  Size  Used by
-nfsd                  217278  2 
-auth_rpcgss            41307  1 nfsd
-oid_registry            2179  1 auth_rpcgss
-exportfs                3499  1 nfsd
-nfs                   111109  0 
-...
+commit 4af48694451676403188a62385dd1a2849fc05c5
+Author: Ming Lei <tom.leiming@gmail.com>
+Date:   Thu Dec 26 21:31:37 2013 +0800
 
-> Which quotes "This patch enables 9p-virtio to correctly handle this
-> case. This not only enables us to load Linux kernel modules off virtfs,"
-> 
-> Perhaps would it be what you need to support this syscall_313?
+    block: null_blk: fix queue leak inside removing device
+    
+    When queue_mode is NULL_Q_MQ and null_blk is being removed,
+    blk_cleanup_queue() isn't called to cleanup queue, so the
+    queue allocated won't be freed.
+    
+    This patch calls blk_cleanup_queue() for MQ to drain all
+    pending requests first and release the reference counter
+    of queue kobject, then blk_mq_free_queue() will be called
+    in queue kobject's release handler when queue kobject's
+    reference counter drops to zero.
+    
+    Cc: Jens Axboe <axboe@kernel.dk>
+    Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+    Signed-off-by: Jens Axboe <axboe@kernel.dk>
 
-Looks like that's the fix.
+diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
+index a2e69d26266d..83a598ebb65a 100644
+--- a/drivers/block/null_blk.c
++++ b/drivers/block/null_blk.c
+@@ -425,10 +425,7 @@ static void null_del_dev(struct nullb *nullb)
+ 	list_del_init(&nullb->list);
+ 
+ 	del_gendisk(nullb->disk);
+-	if (queue_mode == NULL_Q_MQ)
+-		blk_mq_free_queue(nullb->q);
+-	else
+-		blk_cleanup_queue(nullb->q);
++	blk_cleanup_queue(nullb->q);
+ 	put_disk(nullb->disk);
+ 	kfree(nullb);
+ }
+@@ -578,10 +575,7 @@ static int null_add_dev(void)
+ 	disk = nullb->disk = alloc_disk_node(1, home_node);
+ 	if (!disk) {
+ queue_fail:
+-		if (queue_mode == NULL_Q_MQ)
+-			blk_mq_free_queue(nullb->q);
+-		else
+-			blk_cleanup_queue(nullb->q);
++		blk_cleanup_queue(nullb->q);
+ 		cleanup_queues(nullb);
+ err:
+ 		kfree(nullb);
 
 -- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+Jens Axboe
+
