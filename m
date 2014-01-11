@@ -1,87 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319AbaAKVRi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 16:17:38 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45272 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaAKVRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 16:17:35 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        jic23@kernel.org, grant.likely@linaro.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Marek Belisko <marek@goldelico.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH] iio: gyro: itg3200: Add DT support.
-Date: Sat, 11 Jan 2014 22:17:27 +0100
-Message-Id: <1389475047-4353-1-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1750929AbaAKVih (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 16:38:37 -0500
+Received: from mga03.intel.com ([143.182.124.21]:60755 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaAKVif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 16:38:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
+   d="scan'208";a="457278351"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH] perf, tools: Add --initial-delay support to perf record v3
+Date: Sat, 11 Jan 2014 13:38:27 -0800
+Message-Id: <1389476307-2124-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Marek Belisko <marek@goldelico.com>
----
- .../devicetree/bindings/iio/gyro/itg3200.txt       | 22 ++++++++++++++++++++++
- drivers/iio/gyro/itg3200_core.c                    |  9 +++++++++
- 2 files changed, 31 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/gyro/itg3200.txt
+From: Andi Kleen <ak@linux.intel.com>
 
-diff --git a/Documentation/devicetree/bindings/iio/gyro/itg3200.txt b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-new file mode 100644
-index 0000000..b1b18dc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/gyro/itg3200.txt
-@@ -0,0 +1,22 @@
-+* InvenSense ITG-3200 gyroscope
-+
-+http://www.invensense.com/mems/gyro/itg3200.html
-+
-+Required properties:
-+
-+  - compatible : should be "invensense,itg3200"
-+  - reg : the I2C address of the sensor
-+
-+Optional properties:
-+
-+  - interrupt-parent : should be the phandle for the interrupt controller
-+  - interrupts : interrupt mapping for GPIO IRQ
-+
-+Example:
-+
-+itg3200@68 {
-+	compatible = "invensense,itg3200";
-+	reg = <0x68>;
-+	interrupt-parent = <&gpio2>;
-+	interrupts = <29 IRQ_TYPE_EDGE_RISING>;
-+};
-diff --git a/drivers/iio/gyro/itg3200_core.c b/drivers/iio/gyro/itg3200_core.c
-index 4d3f3b9..adbf20d 100644
---- a/drivers/iio/gyro/itg3200_core.c
-+++ b/drivers/iio/gyro/itg3200_core.c
-@@ -374,10 +374,19 @@ static const struct i2c_device_id itg3200_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, itg3200_id);
+perf stat has a --delay option to delay measuring the workload.
+This is useful to skip measuring the startup phase of the program, which
+is often very different from the main workload.
+
+The same is useful for perf record when sampling.
+
+--no-delay was already taken, so add a --initial-delay
+to perf record too.
+-D was already taken for record, so there is only a long option.
+
+v2: Don't disable group members (Namhyung Kim)
+v3: port to latest perf/core
+    rename to --initial-delay to avoid conflict with --no-delay
+Cc: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-record.txt | 4 ++++
+ tools/perf/builtin-record.c              | 9 ++++++++-
+ tools/perf/perf.h                        | 1 +
+ tools/perf/util/evsel.c                  | 3 ++-
+ 4 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index c407897..82bffac 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -209,6 +209,10 @@ overrides that and uses per-thread mmaps.  A side-effect of that is that
+ inheritance is automatically disabled.  --per-thread is ignored with a warning
+ if combined with -a or -C options.
  
-+#ifdef CONFIG_OF
-+static const struct of_device_id itg3200_of_match[] = {
-+	{ .compatible = "invensense,itg3200", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, itg3200_of_match);
-+#endif
++--initial-delay msecs::
++After starting the program, wait msecs before measuring. This is useful to
++filter out the startup phase of the program, which is often very different.
 +
- static struct i2c_driver itg3200_driver = {
- 	.driver = {
- 		.owner  = THIS_MODULE,
- 		.name	= "itg3200",
-+		.of_match_table = of_match_ptr(itg3200_of_match),
- 	},
- 	.id_table	= itg3200_id,
- 	.probe		= itg3200_probe,
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8860015..07d4cf8 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -499,7 +499,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 	 * (apart from group members) have enable_on_exec=1 set,
+ 	 * so don't spoil it by prematurely enabling them.
+ 	 */
+-	if (!target__none(&opts->target))
++	if (!target__none(&opts->target) && !opts->initial_delay)
+ 		perf_evlist__enable(rec->evlist);
+ 
+ 	/*
+@@ -508,6 +508,11 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 	if (forks)
+ 		perf_evlist__start_workload(rec->evlist);
+ 
++	if (opts->initial_delay) {
++		usleep(opts->initial_delay * 1000);
++		perf_evlist__enable(rec->evlist);
++	}
++
+ 	for (;;) {
+ 		int hits = rec->samples;
+ 
+@@ -877,6 +882,8 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('G', "cgroup", &record.evlist, "name",
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
++	OPT_UINTEGER(0, "initial-delay", &record.opts.initial_delay,
++		  "ms to wait before starting measurement after program start"),
+ 	OPT_STRING('u', "uid", &record.opts.target.uid_str, "user",
+ 		   "user to profile"),
+ 
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index b1cc84b..af1ce6e 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -269,6 +269,7 @@ struct record_opts {
+ 	u64	     user_interval;
+ 	u16	     stack_dump_size;
+ 	bool	     sample_transaction;
++	unsigned     initial_delay;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index ade8d9c..cd4630a 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -658,7 +658,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	 * Setting enable_on_exec for independent events and
+ 	 * group leaders for traced executed by perf.
+ 	 */
+-	if (target__none(&opts->target) && perf_evsel__is_group_leader(evsel))
++	if (target__none(&opts->target) && perf_evsel__is_group_leader(evsel) &&
++		!opts->initial_delay)
+ 		attr->enable_on_exec = 1;
+ }
+ 
 -- 
-1.8.4.2
+1.8.3.1
 
