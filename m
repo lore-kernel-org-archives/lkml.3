@@ -1,129 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758297AbaAKAUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 19:20:08 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43561 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaAKAUD (ORCPT
+	id S1758316AbaAKAXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 19:23:40 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:53254 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751544AbaAKAXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 19:20:03 -0500
-Date: Sat, 11 Jan 2014 01:19:52 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org development" 
-	<linux-bluetooth@vger.kernel.org>,
-        Ville Tervo <ville.tervo@nokia.com>, Sebastian Reichel <sre@ring0.de>
-Subject: Re: [PATCH v5] Bluetooth: Add hci_h4p driver
-Message-ID: <20140111001952.GA16306@amd.pavel.ucw.cz>
-References: <1379703710-5757-1-git-send-email-pali.rohar@gmail.com>
- <1727897.LBX8128hIo@izba>
- <20140102161824.GA8204@amd.pavel.ucw.cz>
- <A5B72277-42D4-4A24-8A29-9BE18762E8C4@holtmann.org>
- <20140103001753.GA21023@amd.pavel.ucw.cz>
- <20140110145207.GB12048@amd.pavel.ucw.cz>
- <1389375184.2537.31.camel@joe-AO722>
+	Fri, 10 Jan 2014 19:23:37 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: daniel.lezcano@linaro.org, lenb@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, kyungmin.park@samsung.com
+Subject: Re: [PATCH v2 0/9] cpuidle: rework device state count handling
+Date: Sat, 11 Jan 2014 01:37:29 +0100
+Message-ID: <2079155.EyEBRDoJjP@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389375184.2537.31.camel@joe-AO722>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > +static inline void hci_h4p_handle_byte(struct hci_h4p_info *info, u8 byte)
+On Friday, December 20, 2013 07:47:22 PM Bartlomiej Zolnierkiewicz wrote:
+> Hi,
 > 
-> pretty big function to be inline
-
-Called from just one place, so that should be ok.
-
-> > +static void hci_h4p_rx_tasklet(unsigned long data)
-> > +{
-> []
-> > +	while (hci_h4p_inb(info, UART_LSR) & UART_LSR_DR) {
-> []
-> > +		pr_debug("0x%.2x  ", byte);
+> Some cpuidle drivers assume that cpuidle core will handle cases where
+> device->state_count is smaller than driver->state_count, unfortunately
+> currently this is untrue (device->state_count is used only for handling
+> cpuidle state sysfs entries and driver->state_count is used for all
+> other cases) and will not be fixed in the future as device->state_count
+> is planned to be removed [1].
 > 
-> pr_debug is prefixed by a newline if necessary
-> and then <7>, one for each use.
+> This patchset fixes such drivers (ARM EXYNOS cpuidle driver and ACPI
+> cpuidle driver), removes superflous device->state_count initialization
+> from drivers for which device->state_count equals driver->state_count
+> (POWERPC pseries cpuidle driver and intel_idle driver) and finally
+> removes state_count field from struct cpuidle_device.
 > 
-> This will produce a lot of dmesg output lines
-> (1 for each byte) and isn't in my opinion
-> necessary/useful.
-
-Ok, I just killed it.
-
-> > +	if (set != !!test_bit(H4P_ACTIVE_MODE, &info->pm_flags)) {
-> > +		bt_plat_data->set_pm_limits(info->dev, set);
-> > +		if (set)
-> > +			set_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-> > +		else
-> > +			clear_bit(H4P_ACTIVE_MODE, &info->pm_flags);
-> > +		BT_DBG("Change pm constraints to: %s", sset);
+> Additionaly (while at it) this patchset fixes C1E promotion disable
+> quirk handling (in intel_idle driver) and converts cpuidle drivers code
+> to use the common cpuidle_[un]register() routines (in POWERPC pseries
+> cpuidle driver and intel_idle driver).
 > 
-> missing newline
-
-Actually, it is the other way around. BT_DBG adds the newline. I'll
-remove it from the rest.
-
-> > +	if (!hdev) {
-> > +		printk(KERN_WARNING "hci_h4p: Frame for unknown device\n");
-> > +		return -ENODEV;
-> > +	}
+> [1] http://permalink.gmane.org/gmane.linux.power-management.general/36908
 > 
-> Is this possible?
-
-Probably not, removed.
-
-> > +	if (ret != 6)
-> > +		return -EINVAL;
-> > +
-> > +	for (i = 0; i < 6; i++)
-> > +		info->bd_addr[i] = bdaddr[i] & 0xff;
+> Reference to v1:
+> 	http://comments.gmane.org/gmane.linux.power-management.general/37390
 > 
-> This could also return -EINVAL if bdaddr[i] > 0xff
+> Changes since v1:
+> - synced patch series with next-20131220
+> - added ACKs from Daniel Lezcano
 
-Why not.
+This series breaks boot on one of my test machines with intel_idle, so I'm
+not sure how well it has been tested.
 
-> > +static int hci_h4p_bcm_set_bdaddr(struct hci_h4p_info *info, struct sk_buff *skb)
-> > +{
-> > +	int i;
-> > +	static const u8 nokia_oui[3] = {0x00, 0x1f, 0xdf};
-> > +	int not_valid;
-> > +
-> > +	not_valid = 1;
-> > +	for (i = 0; i < 6; i++) {
-> > +		if (info->bd_addr[i] != 0x00) {
-> > +			not_valid = 0;
-> > +			break;
-> > +		}
-> > +	}
-> 
-> This seems wrong as addresses can have valid 0 bytes.
-> Perhaps use:
-> 
-> 	if (!is_valid_ether_addr(info->bd_addr))
-> 
+I've dropped it entirely for now.  If I have the time, I will try to identify
+the root cause of the failure, but that may not happen before the merge window.
+Sorry about that.
 
-I am not sure bluetooth rules are same as ethernet. And notice that it
-only errors out on 00:00:00:00:00:00 which seems like invalid address
-to me.
-
-I fixed the other ones.
-
-Thanks,
-									Pavel
-
+Thanks!
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
