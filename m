@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbaAKTr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:47:58 -0500
-Received: from mga14.intel.com ([143.182.124.37]:53771 "EHLO mga14.intel.com"
+	id S1755478AbaAKTsB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:48:01 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13743 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444AbaAKTnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753420AbaAKTnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 Jan 2014 14:43:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
-   d="scan'208";a="457257154"
+   d="scan'208";a="457257152"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
         fweisbec@gmail.com, adrian.hunter@intel.com,
         linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/9] perf, tools: Enable printing the srcline in the history
-Date: Sat, 11 Jan 2014 11:42:55 -0800
-Message-Id: <1389469379-13340-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 3/9] perf, tools: Add --branch-history option to report v2
+Date: Sat, 11 Jan 2014 11:42:53 -0800
+Message-Id: <1389469379-13340-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
 References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
@@ -26,130 +26,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For lbr-as-callgraph we need to see the line number in the history,
-because many LBR entries can be in a single function, and just
-showing the same function name many times is not useful.
+Add a --branch-history option to perf report that changes all
+the settings necessary for using the branches in callstacks.
 
-When the history code is configured to sort by address, also try to
-resolve the address to a file:srcline and display this in the browser.
-If that doesn't work still display the address.
+This is just a short cut to make this nicer to use, it does
+not enable any functionality by itself.
 
-This can be also useful without LBRs for understanding which call in a large
-function (or in which inlined function) called something else.
-
-Contains fixes from Namhyung Kim
-
+v2: Change sort order. Rename option to --branch-history to
+be less confusing.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/ui/browsers/hists.c | 15 ++++++++++++---
- tools/perf/ui/stdio/hist.c     | 16 +++++++++++++---
- tools/perf/util/callchain.h    |  1 +
- tools/perf/util/machine.c      |  2 +-
- tools/perf/util/srcline.c      |  6 ++++--
- 5 files changed, 31 insertions(+), 9 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  5 +++++
+ tools/perf/builtin-report.c              | 27 ++++++++++++++++++++++++---
+ 2 files changed, 29 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index b720b92..509f550 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -399,9 +399,18 @@ static char *callchain_list__sym_name(struct callchain_list *cl,
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 8eab8a4..5410f35 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -223,6 +223,11 @@ OPTIONS
+ 	branch stacks and it will automatically switch to the branch view mode,
+ 	unless --no-branch-stack is used.
+ 
++--branch-history::
++	Add the addresses of sampled taken branches to the callstack.
++	This allows to examine the path the program took to each sample.
++	The data collection must have used -b (or -j) and -g.
++
+ --objdump=<path>::
+         Path to objdump binary.
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 19a74e1..24b48ec 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -715,6 +715,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+ }
+ 
+ static int
++parse_branch_call_mode(const struct option *opt __maybe_unused,
++		  const char *str __maybe_unused, int unset)
++{
++	int *branch_mode = opt->value;
++
++	*branch_mode = !unset;
++	return 0;
++}
++
++static int
+ parse_percent_limit(const struct option *opt, const char *str,
+ 		    int unset __maybe_unused)
  {
- 	int printed;
+@@ -729,7 +739,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_session *session;
+ 	struct stat st;
+ 	bool has_br_stack = false;
+-	int branch_mode = -1;
++	int branch_mode = -1, branch_call_mode = -1;
+ 	int ret = -1;
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const char * const report_usage[] = {
+@@ -838,7 +848,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
+ 		    "Show event group information together"),
+ 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
+-		    "use branch records for histogram filling", parse_branch_mode),
++		    "use branch records for per branch histogram filling", parse_branch_mode),
++	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
++		    "add last branch records to call history",
++		    parse_branch_call_mode),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+@@ -886,8 +899,16 @@ repeat:
+ 	has_br_stack = perf_header__has_feat(&session->header,
+ 					     HEADER_BRANCH_STACK);
  
--	if (cl->ms.sym)
--		printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
--	else
-+	if (cl->ms.sym) {
-+		if (callchain_param.key == CCKEY_ADDRESS && 
-+		    cl->ms.map && !cl->srcline)
-+			cl->srcline = get_srcline(cl->ms.map->dso,
-+						  map__rip_2objdump(cl->ms.map,
-+								    cl->ip));
-+		if (cl->srcline)
-+			printed = scnprintf(bf, bfsize, "%s %s", 
-+					cl->ms.sym->name, cl->srcline);
-+		else
-+			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
-+	} else
- 		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+-	if (branch_mode == -1 && has_br_stack)
++	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
+ 		sort__mode = SORT_MODE__BRANCH;
++	if (branch_call_mode != -1) {
++		callchain_param.branch_callstack = 1;
++		callchain_param.key = CCKEY_ADDRESS;
++		symbol_conf.use_callchain = true;
++		callchain_register_param(&callchain_param);
++		if (sort_order == default_sort_order)
++			sort_order = "srcline,symbol,dso";
++	}
  
- 	if (show_dso)
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index 831fbb7..894b12c 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -56,9 +56,19 @@ static size_t ipchain__fprintf_graph(FILE *fp, struct callchain_list *chain,
- 		} else
- 			ret += fprintf(fp, "%s", "          ");
- 	}
--	if (chain->ms.sym)
--		ret += fprintf(fp, "%s\n", chain->ms.sym->name);
--	else
-+	if (chain->ms.sym) {
-+		if (callchain_param.key == CCKEY_ADDRESS && 
-+		    chain->ms.map)
-+			chain->srcline = get_srcline(chain->ms.map->dso,
-+						  map__rip_2objdump(
-+							  chain->ms.map,
-+							  chain->ip));
-+		if (chain->srcline)
-+			ret += fprintf(fp, "%s %s\n", 
-+				       chain->ms.sym->name, chain->srcline);
-+		else
-+			ret += fprintf(fp, "%s\n", chain->ms.sym->name);
-+	} else
- 		ret += fprintf(fp, "0x%0" PRIx64 "\n", chain->ip);
- 
- 	return ret;
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index a1a298a..0e4d016 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -59,6 +59,7 @@ struct callchain_param {
- struct callchain_list {
- 	u64			ip;
- 	struct map_symbol	ms;
-+	char 		       *srcline;
- 	struct list_head	list;
- };
- 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 2f440f2..4032634 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1294,7 +1294,7 @@ static int add_callchain_ip(struct machine *machine,
- 			return -EINVAL;
- 	}
- 
--	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
-+	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
- }
- 
- #define CHASHSZ 127
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 7e67879..680c02b 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -258,7 +258,7 @@ char *get_srcline(struct dso *dso, unsigned long addr)
- 	const char *dso_name;
- 
- 	if (!dso->has_srcline)
--		return SRCLINE_UNKNOWN;
-+		goto out;
- 
- 	if (dso->symsrc_filename)
- 		dso_name = dso->symsrc_filename;
-@@ -289,7 +289,9 @@ out:
- 		dso->has_srcline = 0;
- 		dso__free_a2l(dso);
- 	}
--	return SRCLINE_UNKNOWN;
-+	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
-+		return SRCLINE_UNKNOWN;
-+	return srcline;
- }
- 
- void free_srcline(char *srcline)
+ 	/* sort__mode could be NORMAL if --no-branch-stack */
+ 	if (sort__mode == SORT_MODE__BRANCH) {
 -- 
 1.8.3.1
 
