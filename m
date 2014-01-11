@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaAKMhf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 07:37:35 -0500
-Received: from relay.parallels.com ([195.214.232.42]:40317 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaAKMgr (ORCPT
+	id S1753202AbaAKMmx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 07:42:53 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:45701 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaAKMmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 07:36:47 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Dave Chinner <dchinner@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: [PATCH 2/5] mm: vmscan: call NUMA-unaware shrinkers irrespective of nodemask
-Date: Sat, 11 Jan 2014 16:36:32 +0400
-Message-ID: <b232a866977fa58bdeeb4da70ec5016e4831efef.1389443272.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
-References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.24.175]
+	Sat, 11 Jan 2014 07:42:51 -0500
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+To: tomi.valkeinen@ti.com
+Cc: plagnioj@jcrosoft.com, pali.rohar@gmail.com, pavel@ucw.cz,
+        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: [PATCH] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
+Date: Sat, 11 Jan 2014 14:42:05 +0200
+Message-Id: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a shrinker is not NUMA-aware, shrink_slab() should call it exactly
-once with nid=0, but currently it is not true: if node 0 is not set in
-the nodemask or if it is not online, we will not call such shrinkers at
-all. As a result some slabs will be left untouched under some
-circumstances. Let us fix it.
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Reported-by: Dave Chinner <dchinner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Glauber Costa <glommer@gmail.com>
+commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
+synclost errors in OMAP3 introduces limits check to prevent SYNCLOST errors
+on OMAP3. However, it misses the logic found in Nokia kernels that is
+needed to correctly calculate whether 3 tap or 5 tap rescaler to be used as
+well as the logic to fallback to 3 taps if 5 taps clock results in too
+tight horizontal timings. Without that patch "horizontal timing too tight"
+errors are seen when a video with resolution above 640x350 is tried to be
+played. The patch is a forward-ported logic found in Nokia N900 and N9/50
+kernels.
+
+Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
 ---
- mm/vmscan.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/video/omap2/dss/dispc.c |   36 +++++++++++++++++++++++++-----------
+ 1 files changed, 25 insertions(+), 11 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0b3fc0a..adc3ecb 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -369,16 +369,17 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
- 	}
+diff --git a/drivers/video/omap2/dss/dispc.c b/drivers/video/omap2/dss/dispc.c
+index 67e413e..9d1aa25 100644
+--- a/drivers/video/omap2/dss/dispc.c
++++ b/drivers/video/omap2/dss/dispc.c
+@@ -1999,7 +1999,8 @@ static void calc_tiler_rotation_offset(u16 screen_width, u16 width,
+  */
+ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
+ 		const struct omap_video_timings *t, u16 pos_x,
+-		u16 width, u16 height, u16 out_width, u16 out_height)
++		u16 width, u16 height, u16 out_width, u16 out_height,
++		bool five_taps)
+ {
+ 	const int ds = DIV_ROUND_UP(height, out_height);
+ 	unsigned long nonactive;
+@@ -2019,6 +2020,10 @@ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
+ 	if (blank <= limits[i])
+ 		return -EINVAL;
  
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
--		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
--			if (!node_online(shrinkctl->nid))
--				continue;
--
--			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
--			    (shrinkctl->nid != 0))
--				break;
--
-+		if (!(shrinker->flags & SHRINKER_NUMA_AWARE)) {
-+			shrinkctl->nid = 0;
- 			freed += shrink_slab_node(shrinkctl, shrinker,
--				 nr_pages_scanned, lru_pages);
-+					nr_pages_scanned, lru_pages);
-+			continue;
-+		}
++	/* FIXME add checks for 3-tap filter once the limitations are known */
++	if (!five_taps)
++		return 0;
 +
-+		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
-+			if (node_online(shrinkctl->nid))
-+				freed += shrink_slab_node(shrinkctl, shrinker,
-+						nr_pages_scanned, lru_pages);
+ 	/*
+ 	 * Pixel data should be prepared before visible display point starts.
+ 	 * So, atleast DS-2 lines must have already been fetched by DISPC
+@@ -2191,24 +2196,33 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
+ 	const int maxsinglelinewidth =
+ 			dss_feat_get_param_max(FEAT_PARAM_LINEWIDTH);
  
- 		}
++	*five_taps = height > out_height;
++
+ 	do {
+ 		in_height = DIV_ROUND_UP(height, *decim_y);
+ 		in_width = DIV_ROUND_UP(width, *decim_x);
+-		*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
+-			in_width, in_height, out_width, out_height, color_mode);
+-
+-		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
+-				pos_x, in_width, in_height, out_width,
+-				out_height);
+ 
+ 		if (in_width > maxsinglelinewidth)
+ 			if (in_height > out_height &&
+ 						in_height < out_height * 2)
+ 				*five_taps = false;
+-		if (!*five_taps)
++again:
++		if (*five_taps)
++			*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
++						in_width, in_height, out_width,
++						out_height, color_mode);
++		else
+ 			*core_clk = dispc.feat->calc_core_clk(pclk, in_width,
+-					in_height, out_width, out_height,
+-					mem_to_mem);
++				in_height, out_width, out_height,
++				mem_to_mem);
++
++		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
++				pos_x, in_width, in_height, out_width,
++				out_height, *five_taps);
++		if (error && *five_taps) {
++			*five_taps = false;
++			goto again;
++		}
+ 
+ 		error = (error || in_width > maxsinglelinewidth * 2 ||
+ 			(in_width > maxsinglelinewidth && *five_taps) ||
+@@ -2226,7 +2240,7 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
+ 	} while (*decim_x <= *x_predecim && *decim_y <= *y_predecim && error);
+ 
+ 	if (check_horiz_timing_omap3(pclk, lclk, mgr_timings, pos_x, width,
+-				height, out_width, out_height)){
++				height, out_width, out_height, *five_taps)) {
+ 			DSSERR("horizontal timing too tight\n");
+ 			return -EINVAL;
  	}
 -- 
-1.7.10.4
+1.5.6.1
 
