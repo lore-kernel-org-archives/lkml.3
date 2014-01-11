@@ -1,102 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaAKGes (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 01:34:48 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:59950 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaAKGeo (ORCPT
+	id S1751661AbaAKGnt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 01:43:49 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40102 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaAKGnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 01:34:44 -0500
-Date: Fri, 10 Jan 2014 22:34:38 -0800
+	Sat, 11 Jan 2014 01:43:46 -0500
+Date: Fri, 10 Jan 2014 22:43:39 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] rcu_dereference_check_fdtable fix/cleanups
-Message-ID: <20140111063438.GY10038@linux.vnet.ibm.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
+        peterz@infradead.org, tglx@linutronix.de, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+Subject: Re: [PATCH v5 1/4] futex: Misc cleanups
+Message-ID: <20140111064339.GZ10038@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140107181258.GA29288@redhat.com>
- <20140108132852.GF10038@linux.vnet.ibm.com>
- <20140108151918.GA5156@redhat.com>
- <20140109011650.GI10038@linux.vnet.ibm.com>
- <20140110153459.GA31491@redhat.com>
+References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
+ <1388675120-8017-2-git-send-email-davidlohr@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140110153459.GA31491@redhat.com>
+In-Reply-To: <1388675120-8017-2-git-send-email-davidlohr@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011106-7164-0000-0000-000005054A5D
+x-cbid: 14011106-9332-0000-0000-000002BA609A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 04:34:59PM +0100, Oleg Nesterov wrote:
-> On 01/08, Paul E. McKenney wrote:
-> >
-> > On Wed, Jan 08, 2014 at 04:19:18PM +0100, Oleg Nesterov wrote:
-> > > On 01/08, Paul E. McKenney wrote:
-> > > >
-> > > > Another approach would be to add an argument to files_fdtable()
-> > > > that is zero normally and one for "we know we don't need RCU
-> > > > protection."  Then rcu_dereference_check() could be something
-> > > > like the following:
-> > > >
-> > > > #define files_fdtable(files, c) \
-> > > > 		(rcu_dereference_check_fdtable((files), (files)->fdt) || c)
-> > > >
-> > > > Would that work?
-> > >
-> > > Yes, I considered this optiion, but this needs much more uglifications^W
-> > > changes.
-> > >
-> > > Either we need to change all users of files_fdtable(), or we need something
-> > > like
-> >
-> > There are only about 20 uses of files_fdtable() in 3.12, with almost all
-> > of them in fs/file.c.  So is changing all the users really all that
-> > problematic?
+On Thu, Jan 02, 2014 at 07:05:17AM -0800, Davidlohr Bueso wrote:
+> From: Jason Low <jason.low2@hp.com>
 > 
-> But only one user, close_files(), needs files_fdtable(files, true). Why
-> complicate the patch and the code? I think it would be better to simply
-> change close_files() to use rcu_dereference_raw().
+> - Remove unnecessary head variables.
+> - Delete unused parameter in queue_unlock().
 > 
-> And note that rcu_dereference_check_fdtable() needs the new argument too.
-> 
-> And we should also take care of fcheck_files(),
-> 
-> > > 	static inline struct file *__fcheck_files(struct files_struct *files, unsigned int fd)
-> > > 	{
-> > > 		struct fdtable *fdt = rcu_dereference_raw(files->fdt);
-> > > 		struct file *file = NULL;
-> > >
-> > > 		if (fd < fdt->max_fds)
-> > > 			file = rcu_dereference_raw(fdt->fd[fd]);
-> > >
-> > > 		return file;
-> > > 	}
-> > >
-> > > 	static inline struct file *fcheck_files(struct files_struct *files, unsigned int fd)
-> > > 	{
-> > > 		rcu_lockdep_assert(rcu_read_lock_held() ||
-> > > 				   lockdep_is_held(files->file_lock),
-> > > 				   "message");
-> > > 		return __fcheck_files(files, fd);
-> > > 	}
-> 
-> doesn't this look much simpler than adding the "bool unshared" argument
-> and changing the callers?
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Jeff Mahoney <jeffm@suse.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Scott Norton <scott.norton@hp.com>
+> Cc: Tom Vaden <tom.vaden@hp.com>
+> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> Cc: Waiman Long <Waiman.Long@hp.com>
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 
-I might be being too paranoid, but my concern with using rcu_lock_acquire()
-and rcu_lock_release() is the possibility of code needing rcu_read_lock()
-appearing somewhere in the function-call graph between rcu_lock_acquire()
-and rcu_lock_release().  In that case, lockdep would be happy, but the
-required RCU protection would not be present.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Sort of like my experience with people using RCU from idle.
-
-							Thanx, Paul
+> ---
+>  kernel/futex.c | 39 ++++++++++++---------------------------
+>  1 file changed, 12 insertions(+), 27 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index f6ff019..085f5fa 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -598,13 +598,10 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+>  {
+>  	struct futex_pi_state *pi_state = NULL;
+>  	struct futex_q *this, *next;
+> -	struct plist_head *head;
+>  	struct task_struct *p;
+>  	pid_t pid = uval & FUTEX_TID_MASK;
+> 
+> -	head = &hb->chain;
+> -
+> -	plist_for_each_entry_safe(this, next, head, list) {
+> +	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+>  		if (match_futex(&this->key, key)) {
+>  			/*
+>  			 * Another waiter already exists - bump up
+> @@ -986,7 +983,6 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+>  {
+>  	struct futex_hash_bucket *hb;
+>  	struct futex_q *this, *next;
+> -	struct plist_head *head;
+>  	union futex_key key = FUTEX_KEY_INIT;
+>  	int ret;
+> 
+> @@ -999,9 +995,8 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+> 
+>  	hb = hash_futex(&key);
+>  	spin_lock(&hb->lock);
+> -	head = &hb->chain;
+> 
+> -	plist_for_each_entry_safe(this, next, head, list) {
+> +	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+>  		if (match_futex (&this->key, &key)) {
+>  			if (this->pi_state || this->rt_waiter) {
+>  				ret = -EINVAL;
+> @@ -1034,7 +1029,6 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+>  {
+>  	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
+>  	struct futex_hash_bucket *hb1, *hb2;
+> -	struct plist_head *head;
+>  	struct futex_q *this, *next;
+>  	int ret, op_ret;
+> 
+> @@ -1082,9 +1076,7 @@ retry_private:
+>  		goto retry;
+>  	}
+> 
+> -	head = &hb1->chain;
+> -
+> -	plist_for_each_entry_safe(this, next, head, list) {
+> +	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+>  		if (match_futex (&this->key, &key1)) {
+>  			if (this->pi_state || this->rt_waiter) {
+>  				ret = -EINVAL;
+> @@ -1097,10 +1089,8 @@ retry_private:
+>  	}
+> 
+>  	if (op_ret > 0) {
+> -		head = &hb2->chain;
+> -
+>  		op_ret = 0;
+> -		plist_for_each_entry_safe(this, next, head, list) {
+> +		plist_for_each_entry_safe(this, next, &hb2->chain, list) {
+>  			if (match_futex (&this->key, &key2)) {
+>  				if (this->pi_state || this->rt_waiter) {
+>  					ret = -EINVAL;
+> @@ -1270,7 +1260,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+>  	int drop_count = 0, task_count = 0, ret;
+>  	struct futex_pi_state *pi_state = NULL;
+>  	struct futex_hash_bucket *hb1, *hb2;
+> -	struct plist_head *head1;
+>  	struct futex_q *this, *next;
+>  	u32 curval2;
+> 
+> @@ -1393,8 +1382,7 @@ retry_private:
+>  		}
+>  	}
+> 
+> -	head1 = &hb1->chain;
+> -	plist_for_each_entry_safe(this, next, head1, list) {
+> +	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+>  		if (task_count - nr_wake >= nr_requeue)
+>  			break;
+> 
+> @@ -1494,7 +1482,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+>  }
+> 
+>  static inline void
+> -queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
+> +queue_unlock(struct futex_hash_bucket *hb)
+>  	__releases(&hb->lock)
+>  {
+>  	spin_unlock(&hb->lock);
+> @@ -1867,7 +1855,7 @@ retry_private:
+>  	ret = get_futex_value_locked(&uval, uaddr);
+> 
+>  	if (ret) {
+> -		queue_unlock(q, *hb);
+> +		queue_unlock(*hb);
+> 
+>  		ret = get_user(uval, uaddr);
+>  		if (ret)
+> @@ -1881,7 +1869,7 @@ retry_private:
+>  	}
+> 
+>  	if (uval != val) {
+> -		queue_unlock(q, *hb);
+> +		queue_unlock(*hb);
+>  		ret = -EWOULDBLOCK;
+>  	}
+> 
+> @@ -2029,7 +2017,7 @@ retry_private:
+>  			 * Task is exiting and we just wait for the
+>  			 * exit to complete.
+>  			 */
+> -			queue_unlock(&q, hb);
+> +			queue_unlock(hb);
+>  			put_futex_key(&q.key);
+>  			cond_resched();
+>  			goto retry;
+> @@ -2081,7 +2069,7 @@ retry_private:
+>  	goto out_put_key;
+> 
+>  out_unlock_put_key:
+> -	queue_unlock(&q, hb);
+> +	queue_unlock(hb);
+> 
+>  out_put_key:
+>  	put_futex_key(&q.key);
+> @@ -2091,7 +2079,7 @@ out:
+>  	return ret != -EINTR ? ret : -ERESTARTNOINTR;
+> 
+>  uaddr_faulted:
+> -	queue_unlock(&q, hb);
+> +	queue_unlock(hb);
+> 
+>  	ret = fault_in_user_writeable(uaddr);
+>  	if (ret)
+> @@ -2113,7 +2101,6 @@ static int futex_unlock_pi(u32 __user *uaddr, unsigned int flags)
+>  {
+>  	struct futex_hash_bucket *hb;
+>  	struct futex_q *this, *next;
+> -	struct plist_head *head;
+>  	union futex_key key = FUTEX_KEY_INIT;
+>  	u32 uval, vpid = task_pid_vnr(current);
+>  	int ret;
+> @@ -2153,9 +2140,7 @@ retry:
+>  	 * Ok, other tasks may need to be woken up - check waiters
+>  	 * and do the wakeup if necessary:
+>  	 */
+> -	head = &hb->chain;
+> -
+> -	plist_for_each_entry_safe(this, next, head, list) {
+> +	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+>  		if (!match_futex (&this->key, &key))
+>  			continue;
+>  		ret = wake_futex_pi(uaddr, uval, this);
+> -- 
+> 1.8.1.4
+> 
 
