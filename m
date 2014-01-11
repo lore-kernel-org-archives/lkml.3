@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaAKSvR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 13:51:17 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:38380 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaAKSvN (ORCPT
+	id S1753817AbaAKSv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 13:51:29 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34569 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753677AbaAKSvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 13:51:13 -0500
-Date: Sat, 11 Jan 2014 13:51:10 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        JBottomley@parallels.com, bhelgaas@google.com
-Subject: Re: [PATCHSET v2 driver-core-next] kernfs, sysfs, driver-core:
- implement synchronous self-removal
-Message-ID: <20140111185110.GB3257@mtj.dyndns.org>
-References: <20140110135416.GA8752@htj.dyndns.org>
- <Pine.LNX.4.44L0.1401101042010.1399-100000@iolanthe.rowland.org>
+	Sat, 11 Jan 2014 13:51:21 -0500
+Date: Sat, 11 Jan 2014 18:51:14 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 23/28] drm/i2c: tda998x: add the active aspect in
+	HDMI AVI frame
+Message-ID: <20140111185114.GK15937@n2100.arm.linux.org.uk>
+References: <20140109120639.5f76c620@armhf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1401101042010.1399-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140109120639.5f76c620@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Alan.
+On Thu, Jan 09, 2014 at 12:06:39PM +0100, Jean-Francois Moine wrote:
+> This patch adds the active aspect as 'picture' in the HDMI AVI frame
+> and also some comments about this frame.
 
-On Fri, Jan 10, 2014 at 10:46:10AM -0500, Alan Stern wrote:
-> The SUBJECT lines in your patch emails don't mention the version
-> number.  That is, they just say "[PATCH]", not "[PATCH v2]" or "[PATCH
-> v3]". This makes it very difficult for me to tell which messages to
-> read.
-
-Hmm... they're all threaded.  I add version tags when posting
-incremental patches but usually don't bother with it when posting a
-new version of the whole series.  After all, some patches are get
-updated without explicitly given a new version for refrehses and stuff
-so it's not like you can determine everything based on subjects only.
-
-> (Reading them in order doesn't work, because my computer mixes up the 
-> order of messages when it downloads a large bunch from the email 
-> server.  It's kind of annoying...)
-
-And they aren't threaded?
-
-Thanks.
+Yes, this should've been set.  It's probably a stable tree candidate,
+but first it needs testing.
 
 -- 
-tejun
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
