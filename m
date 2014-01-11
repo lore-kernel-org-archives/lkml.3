@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaAKRyq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 12:54:46 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:26211 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaAKRyo (ORCPT
+	id S1753074AbaAKR6V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 12:58:21 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:51075 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaAKR6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 12:54:44 -0500
-Message-ID: <1389462882.21727.36.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH -next 0/7] ipc: some misc updates & optimizations
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: akpm@linux-foundation.org, riel@redhat.com, aswin@hp.com,
-        linux-kernel@vger.kernel.org
-Date: Sat, 11 Jan 2014 09:54:42 -0800
-In-Reply-To: <52D108BF.8060401@colorfullife.com>
-References: <1389379707-20298-1-git-send-email-davidlohr@hp.com>
-	 <52D108BF.8060401@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Jan 2014 12:58:19 -0500
+Date: Sat, 11 Jan 2014 18:58:16 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, eranian@google.com,
+        fweisbec@gmail.com, mingo@kernel.org, adrian.hunter@intel.com,
+        dsahern@gmail.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/4] perf, tools: Add support for prepending LBRs to
+ the callstack
+Message-ID: <20140111175816.GK20765@two.firstfloor.org>
+References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
+ <20140111153614.GC1131@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140111153614.GC1131@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-01-11 at 10:02 +0100, Manfred Spraul wrote:
-> Hi David,
+On Sat, Jan 11, 2014 at 04:36:14PM +0100, Jiri Olsa wrote:
+> On Fri, Jan 10, 2014 at 04:32:03AM -0800, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > I never found the default LBR display mode which generates histograms
+> > of individual branches particularly useful.
+> > 
+> > This implements an alternative mode that creates histograms over complete
+> > branch traces, instead of individual branches, similar to how normal
+> > callgraphs are handled. This is done by putting it in
+> > front of the normal callgraph and then using the normal callgraph
+> > histogram infrastructure to unify them.
+> > 
+> > This way in complex functions we can understand the control flow
+> > that lead to a particular sample.
+> > 
+> > The default output is unchanged.
+> > 
+> > This is only implemented in perf report, no change to record
+> > or anywhere else.
+> > 
+> > This adds the basic code to report:
+> > - add a new "branch" option to the -g option parser to enable this mode
+> > - when the flag is set include the LBR into the callstack in machine.c.
+> > The rest of the history code is unchanged and doesn't know the difference
+> > between LBR entry and normal call entry.
 > 
-> On 01/10/2014 07:48 PM, Davidlohr Bueso wrote:
-> > A few updates to the ipc code, mostly some very needed cleanups (yes, we still
-> > have loads more to do, but it's a start). Nothing particularly interesting,
-> > except perhaps for the last two patches, which include a locking optimization
-> > and barrier documentation for message queues. Absolutely no functional changes.
-> >
-> > Applies on top of linux-next +  Manfred's 'whitespace cleanup' patch. Tested
-> > with LTP.
-> Now you confuse me.
-> In your other mail, you write that my patch doesn't apply to linux-next:
+> sounds like nice idea, but I could not get the patchset applied
+> on acme's perf/core
 
-Just ignore that email, Andrew then applied (and fixed the merge
-conflict) your whitespace cleanup patch and was already in linux-next by
-the time I sent this patchset, so no need to worry/coordinate.
+It was on Linus master.
 
-> 
-> On 01/07/2014 06:12 PM, Davidlohr Bueso wrote:
-> > This patch doesn't apply on top of linux-next (which now includes 
-> > Rafael's changes), could you please resend? I'm planning some more 
-> > cleanups on top of this so, if Andrew agrees, I can include these 
-> > changes to my patchset. Thanks, Davidlohr 
-> 
-> Perhaps: Could you include (and update, if required) my patch into your 
-> patchset?
-> It's probably simpler if we have only one set of ipc cleanups around.
-> 
-> > Thanks!
-> >
-> > Davidlohr Bueso (7):
-> >    ipc: standardize code comments
-> >    ipc: remove braces for single statements
-> >    ipc: remove useless return statement
-> >    ipc: simplify sysvipc_proc_open return
-> >    ipc: delete seq_max field in struct ipc_ids
-> Acked-by: Manfred Spraul <manfred@colorfullife.com>
-> >    ipc: share ids rwsem when possible in ipcget_public
-> This patch is a real change. Could you at least make it the last one in 
-> the series?
-> I will try to review it, but I don't know yet when I will find the time.
+I tried to rebase on perf/core, but it seems to be totally broken by
+itself. All the config tests fail on my opensuse system.
 
-Thanks, I definitely want your ack/review for this one.
+Arnaldo?
 
-> 
-> >    ipc,msg: document barriers
-> Acked-by: Manfred Spraul <manfred@colorfullife.com>
-> 
-> --
->      Manfred
+Auto-detecting system features:
+...                     backtrace: [ OFF ]
+...                         dwarf: [ OFF ]
+...                fortify-source: [ OFF ]
+...                         glibc: [ OFF ]
+...                          gtk2: [ OFF ]
+...                  gtk2-infobar: [ OFF ]
+...                      libaudit: [ OFF ]
+...                        libbfd: [ OFF ]
+...                        libelf: [ OFF ]
+...             libelf-getphdrnum: [ OFF ]
+...                   libelf-mmap: [ OFF ]
+...                       libnuma: [ OFF ]
+...                       libperl: [ OFF ]
+...                     libpython: [ OFF ]
+...             libpython-version: [ OFF ]
+...                      libslang: [ OFF ]
+...                     libunwind: [ OFF ]
+...                       on-exit: [ OFF ]
+...            stackprotector-all: [ OFF ]
+...                       timerfd: [ OFF ]
 
+config/Makefile:282: *** No gnu/libc-version.h found, please install
+glibc-dev[el]/glibc-static.  Stop.
+make: *** [all] Error 2
 
+-Andi
