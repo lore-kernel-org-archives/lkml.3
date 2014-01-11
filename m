@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaAKQf5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 11:35:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523AbaAKQfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 11:35:55 -0500
-Date: Sat, 11 Jan 2014 17:35:29 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 25/28] perf top: Convert to hist_entry_iter
-Message-ID: <20140111163529.GF1131@krava.brq.redhat.com>
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
- <1389170793-21926-26-git-send-email-namhyung@kernel.org>
+	id S1753353AbaAKQgM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 11:36:12 -0500
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:49784 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822AbaAKQgI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 11:36:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389170793-21926-26-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140111161404.GA7744@localhost>
+References: <20140111161404.GA7744@localhost>
+Date: Sun, 12 Jan 2014 00:36:07 +0800
+Message-ID: <CACVXFVNiOB3KE71kEJtEmi5GQ6QEUoftht308mvgsts8VCP5HQ@mail.gmail.com>
+Subject: Re: [percpu_counter] WARNING: CPU: 1 PID: 1 at kernel/locking/lockdep.c:3537
+ check_flags()
+From: Ming Lei <tom.leiming@gmail.com>
+To: kernel test robot <fengguang.wu@intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 05:46:30PM +0900, Namhyung Kim wrote:
-> Reuse hist_entry_iter__add() function to share the similar code with
-> perf report.  Note that it needs to be called with hists.lock so tweak
-> some internal functions not to deadlock or hold the lock too long.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-top.c | 75 ++++++++++++++++++++++++------------------------
->  1 file changed, 37 insertions(+), 38 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> index f0f55e6030cd..cf330c66bed7 100644
-> --- a/tools/perf/builtin-top.c
-> +++ b/tools/perf/builtin-top.c
-> @@ -186,9 +186,6 @@ static void perf_top__record_precise_ip(struct perf_top *top,
->  	sym = he->ms.sym;
->  	notes = symbol__annotation(sym);
->  
-> -	if (pthread_mutex_trylock(&notes->lock))
-> -		return;
-> -
->  	ip = he->ms.map->map_ip(he->ms.map, ip);
->  	err = hist_entry__inc_addr_samples(he, counter, ip);
->  
-> @@ -201,6 +198,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
->  		       sym->name);
->  		sleep(1);
->  	}
-> +
-> +	pthread_mutex_lock(&notes->lock);
->  }
+Hi Fengguang,
 
-locking on function exit.. does not look right ;-)
+Thanks for your test and reporting.
 
-jirka
+On Sun, Jan 12, 2014 at 12:14 AM, kernel test robot
+<fengguang.wu@intel.com> wrote:
+> Greetings,
+>
+> I got the below dmesg and the first bad commit is
+>
+> commit 97e890b9c839c191a500c3a19bfb4539f65c70be
+> Author:     Ming Lei <tom.leiming@gmail.com>
+> AuthorDate: Fri Jan 10 12:41:46 2014 +1100
+> Commit:     Stephen Rothwell <sfr@canb.auug.org.au>
+> CommitDate: Fri Jan 10 12:41:46 2014 +1100
+>
+>     lib/percpu_counter.c: disable local irq when updating percpu couter
+>
+>     __percpu_counter_add() may be called in softirq/hardirq handler (such as,
+>     blk_mq_queue_exit() is typically called in hardirq/softirq handler), so we
+>     need to disable local irq when updating the percpu counter, otherwise
+>     counts may be lost.
+>
+>     The patch fixes problem that 'rmmod null_blk' may hang in blk_cleanup_queue()
+>     because of miscounting of request_queue->mq_usage_counter.
+>
+>     Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+>     Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>     Cc: Andrew Morton <akpm@linux-foundation.org>
+>     Cc: Shaohua Li <shli@fusionio.com>
+>     Cc: Jens Axboe <axboe@kernel.dk>
+>     Cc: Fan Du <fan.du@windriver.com>
+>     Cc: Tejun Heo <tj@kernel.org>
+>     Cc: <stable@vger.kernel.org>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>
+> +-----------------------------------------------------------+----+
+> |                                                           |    |
+> +-----------------------------------------------------------+----+
+> | boot_successes                                            | 0  |
+> | boot_failures                                             | 19 |
+> | WARNING:CPU:PID:at_kernel/locking/lockdep.c:check_flags() | 19 |
+> +-----------------------------------------------------------+----+
+>
+> [    8.021637] Freeing unused kernel memory: 816K (ffff880001934000 - ffff880001a00000)
+>
+> [    8.093354] ------------[ cut here ]------------
+> [    8.095469] WARNING: CPU: 1 PID: 1 at kernel/locking/lockdep.c:3537 check_flags+0x77/0x1ba()
+> [    8.095469] DEBUG_LOCKS_WARN_ON(current->hardirqs_enabled)
+
+The warning is caused by the added raw_local_irq_save(), which should
+have been local_irq_save(flags). Actually, it is a false positive.
+
+Andrew, considered that your approach may be more efficient than this
+one since preempt_disable()/preempt_enable() can be removed too.
+
+So could you prepare one patch for fixing the problem? Or if you are busy, I'd
+like to do it.
+
+
+Thanks,
+-- 
+Ming Lei
