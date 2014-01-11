@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757570AbaAKAud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 19:50:33 -0500
-Received: from mail-ob0-f202.google.com ([209.85.214.202]:47699 "EHLO
-	mail-ob0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190AbaAKAub (ORCPT
+	id S1751840AbaAKAxV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 19:53:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34026 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaAKAxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 19:50:31 -0500
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH] pinctrl: tegra1x4: initialize at arch_initcall time
-Date: Fri, 10 Jan 2014 16:50:16 -0800
-Message-Id: <1389401416-29892-1-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.5.1
+	Fri, 10 Jan 2014 19:53:16 -0500
+Date: Fri, 10 Jan 2014 16:53:14 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Tejun Heo <tj@kernel.org>, Grygorii Strashko <grygorii.strashko@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
+ apis
+Message-Id: <20140110165314.80adf6b53c310693529c3c80@linux-foundation.org>
+In-Reply-To: <52A0B42C.5080405@ti.com>
+References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com>
+	<1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com>
+	<20131203232445.GX8277@htj.dyndns.org>
+	<529F5047.50309@ti.com>
+	<20131204160730.GQ3158@htj.dyndns.org>
+	<529F5C55.1020707@ti.com>
+	<52A07BBE.7060507@ti.com>
+	<20131205165936.GB24062@mtj.dyndns.org>
+	<52A0B42C.5080405@ti.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many devices rely on pinctrl/pinmux settings being applied
-before probing and some of these may probe before device_initcall
-time (e.g. i2c at subsys_initcall).  Move Tegra1x4 pinctrl driver
-registration to arch_initcall time so that proper pin settings
-can be applied earlier.
+On Thu, 5 Dec 2013 12:13:16 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/pinctrl/pinctrl-tegra114.c | 13 ++++++++++++-
- drivers/pinctrl/pinctrl-tegra124.c | 13 ++++++++++++-
- 2 files changed, 24 insertions(+), 2 deletions(-)
+> On Thursday 05 December 2013 11:59 AM, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Thu, Dec 05, 2013 at 03:12:30PM +0200, Grygorii Strashko wrote:
+> >> I'll try to provide more technical details here.
+> >> As Santosh mentioned in previous e-mails, it's not easy to simply
+> >> get rid of using MAX_NUMNODES:
+> >> 1) we introduce new interface memblock_allocX 
+> >> 2) our interface uses memblock APIs __next_free_mem_range_rev()
+> >>    and __next_free_mem_range()
+> >> 3) __next_free_mem_range_rev() and __next_free_mem_range() use MAX_NUMNODES
+> >> 4) _next_free_mem_range_rev() and __next_free_mem_range() are used standalone,
+> >>    outside of our interface as part of *for_each_free_mem_range* or for_each_mem_pfn_range ..
+> >>
+> >> The point [4] leads to necessity to find and correct all places where memmblock APIs
+> >> are used and where it's expected to get MAX_NUMNODES as input parameter.
+> >> The major problem is that simple "grep" will not work, because memmblock APIs calls
+> >> are hidden inside other MM modules and it's not always clear
+> >> what will be passed as input parameters to APIs of these MM modules
+> >> (for example sparse_memory_present_with_active_regions() or sparse.c).
+> > 
+> > Isn't that kinda trivial to work around?  Make those functions accept
+> > both MAX_NUMNODES and NUMA_NO_NODE but emit warning on MAX_NUMNODES
+> > (preferably throttled reasonably).  Given the history of API, we'd
+> > probably want to keep such warning for extended period of time but
+> > that's what we'd need to do no matter what.
+> > 
+> Looks a good idea.
+> 
+> >> As result, WIP patch, I did, and which was posted by Santosh illustrates
+> >> the probable size and complexity of the change.
+> > 
+> > Again, I don't really mind the order things happen but I don't think
+> > it's a good idea to spread misusage with a new API.  You gotta deal
+> > with it one way or the other.
+> > 
+> >> Sorry, but question here is not "Do or not to do?", but rather 'how to do?",
+> >> taking into account complexity and state of the current MM code.
+> >> For example. would it be ok if I'll workaround the issue as in the attached patch?
+> > 
+> > Well, it's more of when.  It's not really a technically difficult
+> > task and all I'm saying is it better be sooner than later.
+> > 
+> Fair enough. Based on your suggestion, we will try to see if
+> we can proceed with 4) accepting both MAX_NUMNODES and NUMA_NO_NODE.
+> 
+> Thanks for the suggestion.
 
-diff --git a/drivers/pinctrl/pinctrl-tegra114.c b/drivers/pinctrl/pinctrl-tegra114.c
-index 93c9e38..5d0c950 100644
---- a/drivers/pinctrl/pinctrl-tegra114.c
-+++ b/drivers/pinctrl/pinctrl-tegra114.c
-@@ -2761,7 +2761,18 @@ static struct platform_driver tegra114_pinctrl_driver = {
- 	.probe = tegra114_pinctrl_probe,
- 	.remove = tegra_pinctrl_remove,
- };
--module_platform_driver(tegra114_pinctrl_driver);
-+
-+static int __init tegra114_pinctrl_init(void)
-+{
-+	return platform_driver_register(&tegra114_pinctrl_driver);
-+}
-+arch_initcall(tegra114_pinctrl_init);
-+
-+static void __exit tegra114_pinctrl_exit(void)
-+{
-+	platform_driver_unregister(&tegra114_pinctrl_driver);
-+}
-+module_exit(tegra114_pinctrl_exit);
- 
- MODULE_AUTHOR("Pritesh Raithatha <praithatha@nvidia.com>");
- MODULE_DESCRIPTION("NVIDIA Tegra114 pinctrl driver");
-diff --git a/drivers/pinctrl/pinctrl-tegra124.c b/drivers/pinctrl/pinctrl-tegra124.c
-index c20e0e1..02ac976 100644
---- a/drivers/pinctrl/pinctrl-tegra124.c
-+++ b/drivers/pinctrl/pinctrl-tegra124.c
-@@ -3130,7 +3130,18 @@ static struct platform_driver tegra124_pinctrl_driver = {
- 	.probe = tegra124_pinctrl_probe,
- 	.remove = tegra_pinctrl_remove,
- };
--module_platform_driver(tegra124_pinctrl_driver);
-+
-+static int __init tegra124_pinctrl_init(void)
-+{
-+	return platform_driver_register(&tegra124_pinctrl_driver);
-+}
-+arch_initcall(tegra124_pinctrl_init);
-+
-+static void __exit tegra124_pinctrl_exit(void)
-+{
-+	platform_driver_unregister(&tegra124_pinctrl_driver);
-+}
-+module_exit(tegra124_pinctrl_exit);
- 
- MODULE_AUTHOR("Ashwini Ghuge <aghuge@nvidia.com>");
- MODULE_DESCRIPTION("NVIDIA Tegra124 pinctrl driver");
--- 
-1.8.5.1
+So where do we now stand with this MAX_NUMNODES-vs-NUMA_NO_NODE mess? 
+Is the conversion to NUMA_NO_NODE in current linux-next completed and
+nicely tested?
 
+Thanks.
