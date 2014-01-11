@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314AbaAKTqq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:46:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:13743 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353AbaAKTnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:43:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
-   d="scan'208";a="457257156"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 7/9] perf, tools: Add overlap detection for report branch-call-stack mode
-Date: Sat, 11 Jan 2014 11:42:57 -0800
-Message-Id: <1389469379-13340-8-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
-References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
+	id S1755397AbaAKTrc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:47:32 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:40221 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753472AbaAKTnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:43:13 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH RFC 00/10] Generic Device Tree based power domain look-up
+Date: Sat, 11 Jan 2014 20:42:42 +0100
+Message-Id: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Up till now there was no single generic method to bind devices to their
+power domains using Device Tree. Each platform has been doing this using
+its own way, example of which are Exynos power domain bindings [1] and
+look-up code [2].
 
-Add a simple heuristic to detect overlap of LBR entries and the call
-stack when in lbr-as-callgraph mode. The return address in the
-normal callstack is one off compared to the from entry in the
-branch stack. Handle this with a simple "assume call instruction
-is not longer than 8 bytes" heuristic. With that we can remove
-any redundant call in the callstack that is already in the branch
-stack.
+This series is intended to change this and provide generic DT bindings for
+power domain specification and generic code performing look-up of power
+domains and binding them to devices.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/machine.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+Patches 1, 2, 3 are not directly related to this series, but they are
+dependencies of further patches making mach-s3c64xx a user of introduced
+code. Patch 4 is the most important part of this series, as it's the one
+introducing $subject. Further patches are fixing and adding two users,
+mach-exynos (removing the legacy code) and mach-s3c64xx (no DT support for
+power domains before). Last two patches are adding display support for
+Mini6410 board, including a node for display controller (FIMD) which is
+a power domain consumer.
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 853639c..1f167fe 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1349,6 +1349,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 	int chain_nr = min(max_stack, (int)chain->nr);
- 	int i;
- 	int err;
-+	int first_call = 0;
- 
- 	callchain_cursor_reset(&callchain_cursor);
- 
-@@ -1362,8 +1363,6 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 	 * Limitations for now:
- 	 * - No extra filters
- 	 * - No annotations (should annotate somehow)
--	 * - When the sample is near the beginning of the function
-- 	 *   we may overlap with the real callstack. 
- 	 */
- 
- 	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
-@@ -1372,13 +1371,23 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 	}
- 
- 	if (callchain_param.branch_callstack) {
--		int nr = min(max_stack, branch->nr);
-+		int nr = min(max_stack, (int)branch->nr);
- 		struct branch_entry be[nr];
- 
- 		for (i = 0; i < nr; i++) { 
--			if (callchain_param.order == ORDER_CALLEE)
-+			if (callchain_param.order == ORDER_CALLEE) {
- 				be[i] = branch->entries[i];
--			else
-+				/* 
-+				 * Check for overlap into the callchain.
-+				 * The return address is one off compared to
-+				 * the branch entry. To adjust for this 
-+				 * assume the calling instruction is not longer
-+				 * than 8 bytes.
-+				 */
-+				if (be[i].from < chain->ips[first_call] &&
-+				    be[i].from >= chain->ips[first_call] - 8)
-+					first_call++;
-+			} else
- 				be[i] = branch->entries[branch->nr - i - 1];
- 		}
- 
-@@ -1405,7 +1414,7 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 		return 0;
- 	}
- 
--	for (i = 0; i < chain_nr; i++) {
-+	for (i = first_call; i < chain_nr; i++) {
- 		u64 ip;
- 
- 		if (callchain_param.order == ORDER_CALLEE)
+Successfully tested on S3C6410-based Mini6410 board.
+
+Tomasz Figa (10):
+  ARM: s3c64xx: pm: Use name field of generic_pm_domain
+  ARM: s3c64xx: pm: Add always_on field to s3c64xx_pm_domain struct
+  ARM: s3c64xx: pm: Add pwr_stat bit for domain G
+  base: power: Add generic OF-based power domain look-up
+  ARM: exynos: Move to generic power domain bindings
+  ARM: s3c64xx: pm: Add device tree based power domain instantiation
+  ARM: s3c64xx: dt: Enable SoC-level power management
+  ARM: dts: s3c64xx: Add nodes for power domains
+  ARM: dts: s3c64xx: Add node for display controller
+  ARM: dts: s3c6410-mini6410: Add support for LCD screen
+
+ .../bindings/arm/exynos/power_domain.txt           |  12 +-
+ .../devicetree/bindings/power/power_domain.txt     |  51 ++++
+ arch/arm/boot/dts/s3c6400.dtsi                     |   1 +
+ arch/arm/boot/dts/s3c6410-mini6410.dts             |  33 ++
+ arch/arm/boot/dts/s3c6410.dtsi                     |   1 +
+ arch/arm/boot/dts/s3c64xx.dtsi                     |  13 +
+ arch/arm/mach-exynos/pm_domains.c                  |  80 +----
+ arch/arm/mach-s3c64xx/mach-s3c64xx-dt.c            |   8 +
+ arch/arm/mach-s3c64xx/pm.c                         | 106 +++++--
+ drivers/base/power/domain.c                        | 339 +++++++++++++++++++++
+ include/dt-bindings/arm/s3c64xx-power-domains.h    |  26 ++
+ include/linux/pm_domain.h                          |  34 +++
+ kernel/power/Kconfig                               |   4 +
+ 13 files changed, 597 insertions(+), 111 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/power_domain.txt
+ create mode 100644 include/dt-bindings/arm/s3c64xx-power-domains.h
+
 -- 
-1.8.3.1
+1.8.5.2
 
