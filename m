@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAKBLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 20:11:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34059 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaAKBLK (ORCPT
+	id S1753223AbaAKBL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 20:11:58 -0500
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:60703 "HELO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751841AbaAKBLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 20:11:10 -0500
-Date: Fri, 10 Jan 2014 17:11:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>, hughd@google.com,
-        "'Minchan Kim'" <minchan@kernel.org>, shli@fusionio.com,
-        "'Bob Liu'" <bob.liu@oracle.com>, k.kozlowski@samsung.com,
-        stable@vger.kernel.org, weijie.yang.kh@gmail.com,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: Re: [PATCH] mm/swap: fix race on swap_info reuse between swapoff
- and swapon
-Message-Id: <20140110171108.32b2be171cd5e54bf22fb2a4@linux-foundation.org>
-In-Reply-To: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
-References: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 10 Jan 2014 20:11:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140108100549.GE6701@e106331-lin.cambridge.arm.com>
+References: <1389135041-16062-1-git-send-email-fkan@apm.com>
+	<1389135041-16062-2-git-send-email-fkan@apm.com>
+	<20140108100549.GE6701@e106331-lin.cambridge.arm.com>
+Date: Fri, 10 Jan 2014 17:11:53 -0800
+Message-ID: <CAL85gmCEk3c1qbo978qHssrz0toxbCT3LiTinX5ZZcwg-Q-FnA@mail.gmail.com>
+Subject: Re: [PATCH V2 1/6] Documentation: add dts binding for X-Gene reboot
+ dts node.
+From: Feng Kan <fkan@apm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Jan 2014 13:39:55 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
-
-> swapoff clear swap_info's SWP_USED flag prematurely and free its resources
-> after that. A concurrent swapon will reuse this swap_info while its previous
-> resources are not cleared completely.
-> 
-> These late freed resources are:
-> - p->percpu_cluster
-> - swap_cgroup_ctrl[type]
-> - block_device setting
-> - inode->i_flags &= ~S_SWAPFILE
-> 
-> This patch clear SWP_USED flag after all its resources freed, so that swapon
-> can reuse this swap_info by alloc_swap_info() safely.
-> 
-> ...
+On Wed, Jan 8, 2014 at 2:05 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Tue, Jan 07, 2014 at 10:50:36PM +0000, Feng Kan wrote:
+>> Add X-Gene reboot device tree node documentation.
+>>
+>> Signed-off-by: Feng Kan <fkan@apm.com>
+>> ---
+>>  .../devicetree/bindings/arm64/xgene/reboot.txt     |   10 ++++++++++
+>>  1 files changed, 10 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/arm64/xgene/reboot.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm64/xgene/reboot.txt b/Documentation/devicetree/bindings/arm64/xgene/reboot.txt
+>> new file mode 100644
+>> index 0000000..51d23c1
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm64/xgene/reboot.txt
+>> @@ -0,0 +1,10 @@
+>> +Reboot property to control system reboot on storm platforms:
+>> +
+>> +The register attribute contain the address of the reset register.
 >
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->  	p->swap_map = NULL;
->  	cluster_info = p->cluster_info;
->  	p->cluster_info = NULL;
-> -	p->flags = 0;
->  	frontswap_map = frontswap_map_get(p);
->  	spin_unlock(&p->lock);
->  	spin_unlock(&swap_lock);
-> @@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->  		mutex_unlock(&inode->i_mutex);
->  	}
->  	filp_close(swap_file, NULL);
-> +
-> +	/*
-> +	* clear SWP_USED flag after all resources freed
-> +	* so that swapon can reuse this swap_info in alloc_swap_info() safely
-> +	* it is ok to not hold p->lock after we cleared its SWP_WRITEOK
-> +	*/
-> +	spin_lock(&swap_lock);
-> +	p->flags = 0;
-> +	spin_unlock(&swap_lock);
-> +
->  	err = 0;
->  	atomic_inc(&proc_poll_event);
->  	wake_up_interruptible(&proc_poll_wait);
+> Required properties:
+>
+> - compatible: should contain "apm,xgene-reboot"
+>
+> - reg: the base address and size of the reset register.
+>
+>> +
+>> +Example:
+>> +
+>> +     reboot@0 {
+>> +             compatible = "apm,xgene-reboot";
+>> +             reg = <0x0 0x17000014 0x0 0x4>;
+>> +     };
+>
+> Given this seems to be a 64-bit address, the unit address should
+> preferably be 0,17000014 rather than just 0.
 
-I didn't look too closely, but this patch might also address the race
-which Krzysztof addressed with
-http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch.
-Can we please check that out?
-
-I do prefer fixing all these swapon-vs-swapoff races with some large,
-simple, wide-scope exclusion scheme.  Perhaps SWP_USED is that scheme.
-
-An alternative would be to add another mutex and just make sys_swapon()
-and sys_swapoff() 100% exclusive.  But that is plastering yet another
-lock over this mess to hide the horrors which lurk within :(
-
+FKAN: Mark, can I keep this as it is to be consistent with the reset
+of the file?
+>
+> Thanks,
+> Mark.
