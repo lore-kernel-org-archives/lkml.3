@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaAKHoc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 02:44:32 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:61916 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaAKHoa (ORCPT
+	id S1751661AbaAKH6L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 02:58:11 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:38625 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaAKH6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 02:44:30 -0500
-X-AuditID: cbfee61a-b7fb26d00000724f-e5-52d0f65c9d35
-From: Cai Liu <cai.liu@samsung.com>
-To: sjenning@linux.vnet.ibm.com, akpm@linux-foundation.org, bob.liu@oracle.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, liucai.lfn@gmail.com
-Subject: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
-Date: Sat, 11 Jan 2014 15:43:07 +0800
-Message-id: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac8OoEXSkddrVD1JQEiG1jw4jDS9aA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAd2YbxeCDF5elrSYs34Nm0XXqaks
-	Fpd3zWGzuLfmP6vFpj3HWC0O7VvF7sDmsXPWXXaPTZ8msXucmPGbxePBoc0sHh+f3mLx+LxJ
-	LoAtissmJTUnsyy1SN8ugSvj47GnrAWruSvunnvI3MC4hLOLkZNDQsBEYtah22wQtpjEhXvr
-	wWwhgUWMEnMOOXQxcgHZPxgl+tb9ZAVJsAkoSzx4MJ0RxBYR8JOY1NbP1MXIwcEs4CVxfZ4K
-	iCks4Cnx96IKSAWLgKpE/9dp7CBhXgFLiYdddSBhXgFBiR+T77GA2MwCWhLrdx5ngrDlJTav
-	ecsMcY2CxI6zr6EW6Ul8bbrFBlEjLrHxyC2WCYwCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmg
-	OCk911CvODG3uDQvXS85P3cTIzjsn0ntYFzZYHGIUYCDUYmHN1DkQpAQa2JZcWXuIUYJDmYl
-	EV7WT0Ah3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjEUr
-	l2dcYxGYd+jkNqXynycuTny/5uLlAJaLj99nMt2r7hEXSHgpNJPf6JY549N9Exnll2gkPc9m
-	Zr69IVrzvcrqxliruKzNBywC/23+VXRX/8L+2dtW820KuOjja7d2cU6k0PbJ8tdPHah/Yd0w
-	LSqjc92B5cL8xz69/yvjY+tp3yptuFLsp6ISS3FGoqEWc1FxIgCibIHJdwIAAA==
+	Sat, 11 Jan 2014 02:58:09 -0500
+MIME-Version: 1.0
+X-Originating-IP: [42.61.198.132]
+Date: Sat, 11 Jan 2014 15:58:07 +0800
+Message-ID: <CAMVG2suJAbK0_CWpjkT4Nko3SF+W6sx=AcMu_NzbCZOR7DT2WA@mail.gmail.com>
+Subject: 3.13-rc7 USB networking oops
+From: Daniel J Blueman <daniel@quora.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        Netdev <netdev@vger.kernel.org>
+Cc: Oliver Neukum <oneukum@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zswap can support multiple swapfiles. So we need to check
-all zbud pool pages in zswap.
+I hit this on 3.13-rc7 while transferring data over an ASIX88179 USB 3
+to gigabit ethernet adapter, transferring data at only 4MB/s.
 
-Signed-off-by: Cai Liu <cai.liu@samsung.com>
----
- mm/zswap.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+What other debug options apart from SG debug would be useful here?
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index d93afa6..2438344 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -291,7 +291,6 @@ static void zswap_free_entry(struct zswap_tree *tree,
- 	zbud_free(tree->pool, entry->handle);
- 	zswap_entry_cache_free(entry);
- 	atomic_dec(&zswap_stored_pages);
--	zswap_pool_pages = zbud_get_pool_size(tree->pool);
- }
- 
- /* caller must hold the tree lock */
-@@ -405,10 +404,24 @@ cleanup:
- /*********************************
- * helpers
- **********************************/
-+static u64 get_zswap_pool_pages(void)
-+{
-+	int i;
-+	u64 pool_pages = 0;
-+
-+	for (i = 0; i < MAX_SWAPFILES; i++) {
-+		if (zswap_trees[i])
-+			pool_pages += zbud_get_pool_size(zswap_trees[i]->pool);
-+	}
-+	zswap_pool_pages = pool_pages;
-+
-+	return pool_pages;
-+}
-+
- static bool zswap_is_full(void)
- {
- 	return (totalram_pages * zswap_max_pool_percent / 100 <
--		zswap_pool_pages);
-+		get_zswap_pool_pages());
- }
- 
- /*********************************
-@@ -716,7 +729,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 
- 	/* update stats */
- 	atomic_inc(&zswap_stored_pages);
--	zswap_pool_pages = zbud_get_pool_size(tree->pool);
- 
- 	return 0;
- 
+Thanks,
+  Daniel
+
+On 30 December 2013 23:26, Daniel J Blueman <daniel@quora.org> wrote:
+> When rsyncing data from a USB3 disk over a USB3-ethernet adapter to
+> local server on 3.13-rc5 [1], I ran into fatal page-not-readable fault
+> [2].
+>
+> Full dmesg (before the disk was plugged in) is at
+> http://quora.org/2013/dmesg.txt
+>
+> I can test patches on the weekend if needed.
+>
+> Thanks and Happy New Year!
+>   Daniel
+>
+> --- [1]
+>
+> http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.13-rc5-trusty/linux-image-3.13.0-031300rc5-generic_3.13.0-031300rc5.201312221635_amd64.deb
+>
+> --- [2] (apologies for any typos due to OCR)
+>
+> BUG: unable to handle kernel NULL pointer dereference at (null)
+> IP: [<ffffffff813979f2>] sg_next+0x2/0x20
+> PGD 2354c5067 PUD 1b25b1067 PMD 0
+> Oops: 0000 [#1] SMP
+> Modules linked in: usb_storage dm_crypt autofs4 snd_hda_codec_hdmi
+> parport_pc ppdev tusb bluetooth snd_page_alloc ax88179_178e usbnet
+> snd_seq_midi crctlOdif_pcImul vldepdev snd_sedird _ich apple_gmux
+> apple_bl mac_hid nIs_iS08859_1 lp parport btrfs xor raid6_pq libcrc32c
+> hid_generic
+> CPU: 0 PID: 6395 Comm: pool Not tainted 3.13.0-031300rc5-generic #201312221635
+> Hardware name: Apple Inc. MacBookFro10,1/Mac-C3EC7CD22292981F, BIOS
+> M8P101.632.00EE.I
+> task: ffff880178ec6000 ti: ffff880061914000 task.ti: ffff880061914000
+> RIP: 0010:[<ffffffff813979f2>] kffffffff813979f2A sg_next+0x2/0x20
+> RSP: 0018:ffff880061915740 EFLAGS: 00010046
+> RAX: 0000000000000000 RBX: ff1f880036255000 RCX: 0000000000000003
+> RDX: 0000000000000003 RSI: ffff880036255000 RDI: 0000000000000000
+> R6P: ffff880061915798 R08: 0000000000000201 R09: 0000000000003578
+> R10: ffffffff8163fa52 R11: 00000000000002c0 R12: ffff88025e5dfc00
+> R13: ffff8802634f2098 R14: 0000000000000001 R15: ffffffff81c26c40
+> FS: 00007fc7c4b37700(0000) OS:fff188026f200000(0000) knIGS:0000000000000000
+> CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000000 CR3: 00000001e8b12000 CR4: 00000000001407f0
+> Stack:
+> ffffffff8156d8fe 0000000000000000 ffff880100000003 ffff88011c144e40
+> 00000003245ded00 ffff8801245ded00 ffff880036255000 ffff88025e5dfc00
+> 0000000000000020 0000000000000200 1fff88007a3e59fc ffff8800619157d8
+> Call Trace:
+> [<ffffffff8156d8fe>] ? usb_hcd_map_urb_for_dma+0x30e/0x4b0
+> [<ffffffff8156e535>] usb_hcd_submit_urb+0x125/0x1b0
+> [<ffffffff8156f93f>] usb_submit_urb.part.7+0x15f/0x430
+> [<ffffffff814c79a9>] ? __pm_runtime_resume+0x69/0x90
+> [<ffffffff8156fc45>1 usb_submit_urb+0x35/0x80
+> [<ffffffffa05c8b55>] usbnet_stert_xmit+0x245/0x640 [usbnet]
+> [<ffffffff8165248d>] dev_hard_start_xmit+0x54d/0x5f0
+> [<ffffffff8165248d>] ? dev_hard_start_xmit+0x54d/0x5f0
+> [<ffffffff81671710>] sch_direct_xmit+0x100/0x1d0
+> [<ffffffff816526a2>] dev_queue_xmit+0x172/0x4b0
+> [<ffffffff8168c8b0>] ip_finish_output+0x224/0x3f0
+> [<ffffffffB168d3b8>] ip_output+0x58/0x90
+> [<ffffffff8168cb29>] 1p_local_out+0x29/0x30
+> [<ffffffff8168cc70>] ip_queue_xmit+0x140/0x3d0
+> [<ffffffff816a495a>] tcp_transmit_skb+0x3ba/0x620
+> [<ffffffff816a55cc>] tcp_write_xmit+0xlic/0x470
+> [<ffffffff81685992>] __tcp_push_pend1ng_frames+0x32/0xd0
+> [<ffffffff816968af>] tcp_sendmsg+0xl2f/0xd70
+> [<ffffffff816c0961>] inet_sendmsg+0x61/0xb0
+> [<ffffffff8108f460>] ? __remove_hrtimer+0x60/0xc0
+> [<ffffffff816374a2>] do_sock_write.isra.16+0xc2/0xe0
+> [<ffffffff81637508>] sock_aio_write+0x48/0x60
+> [<ffffffff8108f8c2>] ? hrtimer_cance1+0x22/0x30
+> [<ffffffff811c38f8>] do_sync_readv_writev+0x48/0x80
+> [<ffffffff811c4d18>] do_readv_writev+0xc8/0x2a0
+> [<ffffffff8109fc6d>] ? vtime_account_user+0x5d/0x70
+> [<ffffffffelic4f27>] vfs_writev+0x37/0x50
+> [<ffffffff811c50a2>] SyS_writev+0x52/0xc0
+> [<ffffffff8176c73f>] tracesys+0xe1/0xe6
+> Code: 5c 41 5d 41 5e 41 5f 5d c3 55 48 c7 c2 00 7e 39 81 be 80 00 00
+> 00 4S 89 eS e8 6b
+> RIP [<ffffffffe13379f2>] sg_next+0x2/0x20
+> RSP <ffff880061915740>
+> CR2: 0000000000000000
+> Kernel panic - not syncing: Fatal exception in interrupt
+> drm_kms_helper: panic occurred, switching back to text console
 -- 
-1.7.10.4
-
+Daniel J Blueman
