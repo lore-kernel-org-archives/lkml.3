@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaAKR6V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 12:58:21 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:51075 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbaAKR6T (ORCPT
+	id S1753120AbaAKSDV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 13:03:21 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34492 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751073AbaAKSDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 12:58:19 -0500
-Date: Sat, 11 Jan 2014 18:58:16 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org,
-        linux-kernel@vger.kernel.org, namhyung@kernel.org, eranian@google.com,
-        fweisbec@gmail.com, mingo@kernel.org, adrian.hunter@intel.com,
-        dsahern@gmail.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/4] perf, tools: Add support for prepending LBRs to
- the callstack
-Message-ID: <20140111175816.GK20765@two.firstfloor.org>
-References: <1389357126-3003-1-git-send-email-andi@firstfloor.org>
- <20140111153614.GC1131@krava.brq.redhat.com>
+	Sat, 11 Jan 2014 13:03:18 -0500
+Date: Sat, 11 Jan 2014 18:03:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 12/28] drm/i2c: tda998x: add DT support
+Message-ID: <20140111180310.GA15937@n2100.arm.linux.org.uk>
+References: <20140109120324.4e2c8aca@armhf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140111153614.GC1131@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140109120324.4e2c8aca@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 04:36:14PM +0100, Jiri Olsa wrote:
-> On Fri, Jan 10, 2014 at 04:32:03AM -0800, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > I never found the default LBR display mode which generates histograms
-> > of individual branches particularly useful.
-> > 
-> > This implements an alternative mode that creates histograms over complete
-> > branch traces, instead of individual branches, similar to how normal
-> > callgraphs are handled. This is done by putting it in
-> > front of the normal callgraph and then using the normal callgraph
-> > histogram infrastructure to unify them.
-> > 
-> > This way in complex functions we can understand the control flow
-> > that lead to a particular sample.
-> > 
-> > The default output is unchanged.
-> > 
-> > This is only implemented in perf report, no change to record
-> > or anywhere else.
-> > 
-> > This adds the basic code to report:
-> > - add a new "branch" option to the -g option parser to enable this mode
-> > - when the flag is set include the LBR into the callstack in machine.c.
-> > The rest of the history code is unchanged and doesn't know the difference
-> > between LBR entry and normal call entry.
+On Thu, Jan 09, 2014 at 12:03:24PM +0100, Jean-Francois Moine wrote:
+> This patch adds DT support to the tda998x.
 > 
-> sounds like nice idea, but I could not get the patchset applied
-> on acme's perf/core
+> As a side effect, now, the audio sample rate is always 48kHz and the
+> audio clock is always set.
+> 
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 
-It was on Linus master.
+This patch breaks audio through the renaming of variable names.  When you
+do such changes, *never* change all three together.  Do them one at a time,
+replacing all instances of one variable before moving on to the next one.
+This avoids getting the names muddled up.
 
-I tried to rebase on perf/core, but it seems to be totally broken by
-itself. All the config tests fail on my opensuse system.
+> -	struct tda998x_encoder_params params;
+> +
+> +	u8 audio_type;		/* audio type */
+> +	u8 audio_frame[6];
+> +	u32 audio_port;
 
-Arnaldo?
+"audio type" is a pointless comment for a variable called "audio_type".
+Explain what it is.  It's the input format, which may be SPDIF or I2S.
 
-Auto-detecting system features:
-...                     backtrace: [ OFF ]
-...                         dwarf: [ OFF ]
-...                fortify-source: [ OFF ]
-...                         glibc: [ OFF ]
-...                          gtk2: [ OFF ]
-...                  gtk2-infobar: [ OFF ]
-...                      libaudit: [ OFF ]
-...                        libbfd: [ OFF ]
-...                        libelf: [ OFF ]
-...             libelf-getphdrnum: [ OFF ]
-...                   libelf-mmap: [ OFF ]
-...                       libnuma: [ OFF ]
-...                       libperl: [ OFF ]
-...                     libpython: [ OFF ]
-...             libpython-version: [ OFF ]
-...                      libslang: [ OFF ]
-...                     libunwind: [ OFF ]
-...                       on-exit: [ OFF ]
-...            stackprotector-all: [ OFF ]
-...                       timerfd: [ OFF ]
+>  	/* Set audio input source */
+> -	switch (p->audio_format) {
+> +	switch (priv->audio_type) {
 
-config/Makefile:282: *** No gnu/libc-version.h found, please install
-glibc-dev[el]/glibc-static.  Stop.
-make: *** [all] Error 2
+So, "audio_format" has become "audio_type" here.
 
--Andi
+> @@ -698,7 +703,13 @@ tda998x_encoder_set_config(struct drm_encoder *encoder, void *params)
+>  			    VIP_CNTRL_2_SWAP_F(p->swap_f) |
+>  			    (p->mirr_f ? VIP_CNTRL_2_MIRR_F : 0);
+>  
+> -	priv->params = *p;
+> +	memcpy(priv->audio_frame, p->audio_frame,
+> +			sizeof priv->audio_frame);
+> +
+> +	if (p->audio_cfg) {
+> +		priv->audio_port = p->audio_cfg;
+> +		priv->audio_type = p->audio_format;
+> +	}
+
+Here, audio_port and audio_type are only written to if audio_cfg is
+non-zero, which is not quite what is intended here.  If you want DT
+to override this, then make that explicit.
+
+Moreover, we can see that this confirms that "audio_format" becomes
+"audio_type", and "audio_cfg" becomes "audio_port".
+
+> @@ -947,8 +958,8 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
+>  
+>  		tda998x_write_avi(priv, mode);
+>  
+> -		if (priv->params.audio_cfg)
+> -			tda998x_configure_audio(priv, mode, &priv->params);
+> +		if (priv->audio_type)
+> +			tda998x_configure_audio(priv, mode);
+
+And here we have the real bug.  "audio_cfg" has become "audio_type",
+which in the case of SPDIF, is zero.  Hence, with a SPDIF source,
+tda998x_configure_audio() is no longer called.
+
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
