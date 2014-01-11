@@ -1,134 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAKHkz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 02:40:55 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43295 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaAKHkx (ORCPT
+	id S1752171AbaAKHoc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 02:44:32 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:61916 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaAKHoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 02:40:53 -0500
-Date: Fri, 10 Jan 2014 23:40:46 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        peterz@infradead.org, tglx@linutronix.de, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com, Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v5 3/4] futex: Document ordering guarantees
-Message-ID: <20140111074046.GB10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
- <1388675120-8017-4-git-send-email-davidlohr@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388675120-8017-4-git-send-email-davidlohr@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011107-7164-0000-0000-000005056DF2
+	Sat, 11 Jan 2014 02:44:30 -0500
+X-AuditID: cbfee61a-b7fb26d00000724f-e5-52d0f65c9d35
+From: Cai Liu <cai.liu@samsung.com>
+To: sjenning@linux.vnet.ibm.com, akpm@linux-foundation.org, bob.liu@oracle.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, liucai.lfn@gmail.com
+Subject: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
+Date: Sat, 11 Jan 2014 15:43:07 +0800
+Message-id: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac8OoEXSkddrVD1JQEiG1jw4jDS9aA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAd2YbxeCDF5elrSYs34Nm0XXqaks
+	Fpd3zWGzuLfmP6vFpj3HWC0O7VvF7sDmsXPWXXaPTZ8msXucmPGbxePBoc0sHh+f3mLx+LxJ
+	LoAtissmJTUnsyy1SN8ugSvj47GnrAWruSvunnvI3MC4hLOLkZNDQsBEYtah22wQtpjEhXvr
+	wWwhgUWMEnMOOXQxcgHZPxgl+tb9ZAVJsAkoSzx4MJ0RxBYR8JOY1NbP1MXIwcEs4CVxfZ4K
+	iCks4Cnx96IKSAWLgKpE/9dp7CBhXgFLiYdddSBhXgFBiR+T77GA2MwCWhLrdx5ngrDlJTav
+	ecsMcY2CxI6zr6EW6Ul8bbrFBlEjLrHxyC2WCYwCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmg
+	OCk911CvODG3uDQvXS85P3cTIzjsn0ntYFzZYHGIUYCDUYmHN1DkQpAQa2JZcWXuIUYJDmYl
+	EV7WT0Ah3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjEUr
+	l2dcYxGYd+jkNqXynycuTny/5uLlAJaLj99nMt2r7hEXSHgpNJPf6JY549N9Exnll2gkPc9m
+	Zr69IVrzvcrqxliruKzNBywC/23+VXRX/8L+2dtW820KuOjja7d2cU6k0PbJ8tdPHah/Yd0w
+	LSqjc92B5cL8xz69/yvjY+tp3yptuFLsp6ISS3FGoqEWc1FxIgCibIHJdwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 02, 2014 at 07:05:19AM -0800, Davidlohr Bueso wrote:
-> From: Thomas Gleixner <tglx@linutronix.de>
-> 
-> That's essential, if you want to hack on futexes.
-> 
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Darren Hart <dvhart@linux.intel.com>
-> Acked-by: Peter Zijlstra <peterz@infradead.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Jeff Mahoney <jeffm@suse.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Scott Norton <scott.norton@hp.com>
-> Cc: Tom Vaden <tom.vaden@hp.com>
-> Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-> Cc: Waiman Long <Waiman.Long@hp.com>
-> Cc: Jason Low <jason.low2@hp.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+zswap can support multiple swapfiles. So we need to check
+all zbud pool pages in zswap.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Cai Liu <cai.liu@samsung.com>
+---
+ mm/zswap.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-> ---
->  kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 57 insertions(+)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 577481d..fcc6850 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -69,6 +69,63 @@
-> 
->  #include "locking/rtmutex_common.h"
-> 
-> +/*
-> + * Basic futex operation and ordering guarantees:
-> + *
-> + * The waiter reads the futex value in user space and calls
-> + * futex_wait(). This function computes the hash bucket and acquires
-> + * the hash bucket lock. After that it reads the futex user space value
-> + * again and verifies that the data has not changed. If it has not
-> + * changed it enqueues itself into the hash bucket, releases the hash
-> + * bucket lock and schedules.
-> + *
-> + * The waker side modifies the user space value of the futex and calls
-> + * futex_wake(). This functions computes the hash bucket and acquires
-> + * the hash bucket lock. Then it looks for waiters on that futex in the
-> + * hash bucket and wakes them.
-> + *
-> + * Note that the spin_lock serializes waiters and wakers, so that the
-> + * following scenario is avoided:
-> + *
-> + * CPU 0                               CPU 1
-> + * val = *futex;
-> + * sys_futex(WAIT, futex, val);
-> + *   futex_wait(futex, val);
-> + *   uval = *futex;
-> + *                                     *futex = newval;
-> + *                                     sys_futex(WAKE, futex);
-> + *                                       futex_wake(futex);
-> + *                                       if (queue_empty())
-> + *                                         return;
-> + *   if (uval == val)
-> + *      lock(hash_bucket(futex));
-> + *      queue();
-> + *     unlock(hash_bucket(futex));
-> + *     schedule();
-> + *
-> + * This would cause the waiter on CPU 0 to wait forever because it
-> + * missed the transition of the user space value from val to newval
-> + * and the waker did not find the waiter in the hash bucket queue.
-> + * The spinlock serializes that:
-> + *
-> + * CPU 0                               CPU 1
-> + * val = *futex;
-> + * sys_futex(WAIT, futex, val);
-> + *   futex_wait(futex, val);
-> + *   lock(hash_bucket(futex));
-> + *   uval = *futex;
-> + *                                     *futex = newval;
-> + *                                     sys_futex(WAKE, futex);
-> + *                                       futex_wake(futex);
-> + *                                       lock(hash_bucket(futex));
-> + *   if (uval == val)
-> + *      queue();
-> + *     unlock(hash_bucket(futex));
-> + *     schedule();                       if (!queue_empty())
-> + *                                         wake_waiters(futex);
-> + *                                       unlock(hash_bucket(futex));
-> + */
-> +
->  int __read_mostly futex_cmpxchg_enabled;
-> 
->  /*
-> -- 
-> 1.8.1.4
-> 
+diff --git a/mm/zswap.c b/mm/zswap.c
+index d93afa6..2438344 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -291,7 +291,6 @@ static void zswap_free_entry(struct zswap_tree *tree,
+ 	zbud_free(tree->pool, entry->handle);
+ 	zswap_entry_cache_free(entry);
+ 	atomic_dec(&zswap_stored_pages);
+-	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+ }
+ 
+ /* caller must hold the tree lock */
+@@ -405,10 +404,24 @@ cleanup:
+ /*********************************
+ * helpers
+ **********************************/
++static u64 get_zswap_pool_pages(void)
++{
++	int i;
++	u64 pool_pages = 0;
++
++	for (i = 0; i < MAX_SWAPFILES; i++) {
++		if (zswap_trees[i])
++			pool_pages += zbud_get_pool_size(zswap_trees[i]->pool);
++	}
++	zswap_pool_pages = pool_pages;
++
++	return pool_pages;
++}
++
+ static bool zswap_is_full(void)
+ {
+ 	return (totalram_pages * zswap_max_pool_percent / 100 <
+-		zswap_pool_pages);
++		get_zswap_pool_pages());
+ }
+ 
+ /*********************************
+@@ -716,7 +729,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 
+ 	/* update stats */
+ 	atomic_inc(&zswap_stored_pages);
+-	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+ 
+ 	return 0;
+ 
+-- 
+1.7.10.4
 
