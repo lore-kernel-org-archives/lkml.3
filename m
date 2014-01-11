@@ -1,100 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966AbaAKTpu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:45:50 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:53291 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730AbaAKTnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:43:18 -0500
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH RFC 02/10] ARM: s3c64xx: pm: Add always_on field to s3c64xx_pm_domain struct
-Date: Sat, 11 Jan 2014 20:42:44 +0100
-Message-Id: <1389469372-17199-3-git-send-email-tomasz.figa@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+	id S1753841AbaAKTnT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:43:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63799 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753351AbaAKTnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:43:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
+   d="scan'208";a="437435641"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/9] perf, tools: Filter out small loops from LBR-as-call-stack
+Date: Sat, 11 Jan 2014 11:42:54 -0800
+Message-Id: <1389469379-13340-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
+References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds always_on field to s3c64xx_pm_domain struct to allow
-handling registration of all domains in the same way, without the need
-to have separate arrays for normal and always on domains.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+Small loops can cause unnecessary duplication in the LBR-as-callstack,
+because the loop body appears multiple times. Filter out duplications
+from the LBR before unifying it into the histories.  This way the
+same loop body only appears once.
+
+This uses a simple hash based cycle detector. It takes some short
+cuts (not handling hash collisions) so in rare cases duplicates may
+be missed.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/arm/mach-s3c64xx/pm.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ tools/perf/util/machine.c | 73 ++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 62 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-s3c64xx/pm.c b/arch/arm/mach-s3c64xx/pm.c
-index 5238d66..605bfa9 100644
---- a/arch/arm/mach-s3c64xx/pm.c
-+++ b/arch/arm/mach-s3c64xx/pm.c
-@@ -35,6 +35,7 @@
- #include "regs-syscon-power.h"
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index f2eaf85..2f440f2 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -11,6 +11,7 @@
+ #include <stdbool.h>
+ #include <symbol/kallsyms.h>
+ #include "unwind.h"
++#include "linux/hash.h"
  
- struct s3c64xx_pm_domain {
-+	bool always_on;
- 	u32 ena;
- 	u32 pwr_stat;
- 	struct generic_pm_domain pd;
-@@ -84,6 +85,7 @@ static int s3c64xx_pd_on(struct generic_pm_domain *domain)
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ {
+@@ -1296,6 +1297,46 @@ static int add_callchain_ip(struct machine *machine,
+ 	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
  }
  
- static struct s3c64xx_pm_domain s3c64xx_pm_irom = {
-+	.always_on = true,
- 	.ena = S3C64XX_NORMALCFG_IROM_ON,
- 	.pd = {
- 		.name = "domain_irom",
-@@ -161,11 +163,8 @@ static struct s3c64xx_pm_domain s3c64xx_pm_v = {
- 	},
- };
- 
--static struct s3c64xx_pm_domain *s3c64xx_always_on_pm_domains[] = {
--	&s3c64xx_pm_irom,
--};
--
- static struct s3c64xx_pm_domain *s3c64xx_pm_domains[] = {
-+	&s3c64xx_pm_irom,
- 	&s3c64xx_pm_etm,
- 	&s3c64xx_pm_g,
- 	&s3c64xx_pm_v,
-@@ -311,12 +310,16 @@ int __init s3c64xx_pm_init(void)
- 
- 	s3c_pm_init();
- 
--	for (i = 0; i < ARRAY_SIZE(s3c64xx_always_on_pm_domains); i++)
--		pm_genpd_init(&s3c64xx_always_on_pm_domains[i]->pd,
--			      &pm_domain_always_on_gov, false);
- 
--	for (i = 0; i < ARRAY_SIZE(s3c64xx_pm_domains); i++)
--		pm_genpd_init(&s3c64xx_pm_domains[i]->pd, NULL, false);
-+	for (i = 0; i < ARRAY_SIZE(s3c64xx_pm_domains); i++) {
-+		struct s3c64xx_pm_domain *pd = s3c64xx_pm_domains[i];
-+		struct dev_power_governor *gov = NULL;
++#define CHASHSZ 127
++#define CHASHBITS 7
++#define NO_ENTRY 0xff
 +
-+		if (pd->always_on)
-+			gov = &pm_domain_always_on_gov;
++#define PERF_MAX_BRANCH_DEPTH 127
 +
-+		pm_genpd_init(&pd->pd, gov, false);
++/* Remove loops. */
++static int remove_loops(struct branch_entry *l, int nr)
++{
++	int i, j, off;
++	unsigned char chash[CHASHSZ];
++	memset(chash, -1, sizeof(chash));
++
++	BUG_ON(nr >= 256);
++	for (i = 0; i < nr; i++) {
++		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
++
++		/* no collision handling for now */
++		if (chash[h] == NO_ENTRY) {
++			chash[h] = i;
++		} else if (l[chash[h]].from == l[i].from) {
++			bool is_loop = true;
++			/* check if it is a real loop */
++			off = 0;
++			for (j = chash[h]; j < i && i + off < nr; j++, off++)
++				if (l[j].from != l[i + off].from) {
++					is_loop = false;
++					break;
++				}
++			if (is_loop) {
++				memmove(l + i, l + i + off, 
++					(nr - (i + off))
++					* sizeof(struct branch_entry));
++				nr -= off;
++			}
++		}
 +	}
++	return nr;
++}
++
+ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					     struct thread *thread,
+ 					     struct ip_callchain *chain,
+@@ -1322,29 +1363,39 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	 * - No extra filters
+ 	 * - No annotations (should annotate somehow)
+ 	 * - When the sample is near the beginning of the function
+- 	 *   we may overlap with the real callstack. Could handle this
+-	 *   case later, by checking against the last ip.
++ 	 *   we may overlap with the real callstack. 
+ 	 */
  
- #ifdef CONFIG_S3C_DEV_FB
- 	if (dev_get_platdata(&s3c_device_fb.dev))
++	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
++		pr_warning("corrupted branch chain. skipping...\n");
++		return 0;
++	}
++
+ 	if (callchain_param.branch_callstack) {
+-		for (i = 0; i < branch->nr; i++) { 
+-			struct branch_entry *b; 
++		int nr = branch->nr;
++		struct branch_entry be[nr];
+ 
++		for (i = 0; i < nr; i++) { 
+ 			if (callchain_param.order == ORDER_CALLEE)
+-				b = &branch->entries[i];
++				be[i] = branch->entries[i];
+ 			else
+-				b = &branch->entries[branch->nr - i - 1];
++				be[i] = branch->entries[branch->nr - i - 1];
++		}
+ 
+-			err = add_callchain_ip(machine, thread, parent, root_al,
+-					       -1, b->to);
++		nr = remove_loops(be, nr);
++
++		for (i = 0; i < nr; i++) {
++			err = add_callchain_ip(machine, thread, parent, 
++					       root_al,
++					       -1, be[i].to);
+ 			if (!err)
+-				err = add_callchain_ip(machine, thread, parent, root_al,
+-					       -1, b->from);
++				err = add_callchain_ip(machine, thread, 
++						       parent, root_al,
++						       -1, be[i].from);
+ 			if (err == -EINVAL)
+ 				break;
+ 			if (err)
+ 				return err;
+-
+ 		}
+ 	}
+ 
 -- 
-1.8.5.2
+1.8.3.1
 
