@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaAKBAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Jan 2014 20:00:08 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34603 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944AbaAKBAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Jan 2014 20:00:05 -0500
-Message-ID: <52D09779.9010900@ti.com>
-Date: Fri, 10 Jan 2014 19:59:37 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753074AbaAKBBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Jan 2014 20:01:20 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:45190 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaAKBBS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Jan 2014 20:01:18 -0500
+Message-ID: <52D097DB.3020101@infradead.org>
+Date: Fri, 10 Jan 2014 17:01:15 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, Grygorii Strashko <grygorii.strashko@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v2 08/23] mm/memblock: Add memblock memory allocation
- apis
-References: <1386037658-3161-1-git-send-email-santosh.shilimkar@ti.com> <1386037658-3161-9-git-send-email-santosh.shilimkar@ti.com> <20131203232445.GX8277@htj.dyndns.org> <529F5047.50309@ti.com> <20131204160730.GQ3158@htj.dyndns.org> <529F5C55.1020707@ti.com> <52A07BBE.7060507@ti.com> <20131205165936.GB24062@mtj.dyndns.org> <52A0B42C.5080405@ti.com> <20140110165314.80adf6b53c310693529c3c80@linux-foundation.org>
-In-Reply-To: <20140110165314.80adf6b53c310693529c3c80@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Wakko Warner <wakko@animx.eu.org>, linux-kernel@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Unable to load modules from 9p filesystem with kmod 16
+References: <20140110023543.GA6131@animx.eu.org> <20140110230303.GA19369@animx.eu.org>
+In-Reply-To: <20140110230303.GA19369@animx.eu.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 January 2014 07:53 PM, Andrew Morton wrote:
-> On Thu, 5 Dec 2013 12:13:16 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
-> 
->> On Thursday 05 December 2013 11:59 AM, Tejun Heo wrote:
->>> Hello,
->>>
->>> On Thu, Dec 05, 2013 at 03:12:30PM +0200, Grygorii Strashko wrote:
->>>> I'll try to provide more technical details here.
->>>> As Santosh mentioned in previous e-mails, it's not easy to simply
->>>> get rid of using MAX_NUMNODES:
->>>> 1) we introduce new interface memblock_allocX 
->>>> 2) our interface uses memblock APIs __next_free_mem_range_rev()
->>>>    and __next_free_mem_range()
->>>> 3) __next_free_mem_range_rev() and __next_free_mem_range() use MAX_NUMNODES
->>>> 4) _next_free_mem_range_rev() and __next_free_mem_range() are used standalone,
->>>>    outside of our interface as part of *for_each_free_mem_range* or for_each_mem_pfn_range ..
->>>>
->>>> The point [4] leads to necessity to find and correct all places where memmblock APIs
->>>> are used and where it's expected to get MAX_NUMNODES as input parameter.
->>>> The major problem is that simple "grep" will not work, because memmblock APIs calls
->>>> are hidden inside other MM modules and it's not always clear
->>>> what will be passed as input parameters to APIs of these MM modules
->>>> (for example sparse_memory_present_with_active_regions() or sparse.c).
->>>
->>> Isn't that kinda trivial to work around?  Make those functions accept
->>> both MAX_NUMNODES and NUMA_NO_NODE but emit warning on MAX_NUMNODES
->>> (preferably throttled reasonably).  Given the history of API, we'd
->>> probably want to keep such warning for extended period of time but
->>> that's what we'd need to do no matter what.
->>>
->> Looks a good idea.
->>
->>>> As result, WIP patch, I did, and which was posted by Santosh illustrates
->>>> the probable size and complexity of the change.
->>>
->>> Again, I don't really mind the order things happen but I don't think
->>> it's a good idea to spread misusage with a new API.  You gotta deal
->>> with it one way or the other.
->>>
->>>> Sorry, but question here is not "Do or not to do?", but rather 'how to do?",
->>>> taking into account complexity and state of the current MM code.
->>>> For example. would it be ok if I'll workaround the issue as in the attached patch?
->>>
->>> Well, it's more of when.  It's not really a technically difficult
->>> task and all I'm saying is it better be sooner than later.
->>>
->> Fair enough. Based on your suggestion, we will try to see if
->> we can proceed with 4) accepting both MAX_NUMNODES and NUMA_NO_NODE.
->>
->> Thanks for the suggestion.
-> 
-> So where do we now stand with this MAX_NUMNODES-vs-NUMA_NO_NODE mess? 
-> Is the conversion to NUMA_NO_NODE in current linux-next completed and
-> nicely tested?
-> 
->From all the report so far, there were actually only 3 places in x86
-code using MAX_NUMNODES and fix for that is already in your queue.
-So I guess we are good on that aspect now.
+[adding Cc:s]
 
-Regards,
-Santosh
+On 01/10/2014 03:03 PM, Wakko Warner wrote:
+> Wakko Warner wrote:
+>> Kernel 3.12.7 from kernel.org
+>> With kmod-16, I'm unable to load any modules on my guest kvm machines.
+>> The vm is booted via direct kernel boot.  The modules are located on the
+>> host and is passed to the guest via the fsdev.
+>>
+>> I have a mountpoint on the guest filesystem located at /kernel.  It is
+>> mounted like this:
+>> kernel /kernel 9p rw,sync,dirsync,relatime,trans=virtio,version=9p2000.L 0 0
+>>
+>> /boot, /lib/modules, and /lib/firmware are tmpfs filesystems like this:
+>> kboot /boot tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
+>> kfirmware /lib/firmware tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
+>> kmodules /lib/modules tmpfs rw,relatime,size=0k,nr_inodes=8 0 0
+>>
+>> /lib/modules/$(uname -r) is a symlink to /kernel/lib/modules/$(uname -r)
+>>
+>> When trying to load any module, I get 
+>> Error: could not insert module /lib/modules/3.12.7/kernel/crypto/af_alg.ko:
+>> Invalid module format
+>>
+>> This module was just one I picked at random, all modules fail the same way.
+>> Strace shows this:
+>> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
+>> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
+>> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f199aebd000
+>> syscall_313(0x3, 0x7f199aaa2de0, 0, 0x3, 0, 0x7f199b7b2010, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) = -1 (errno 8)
+>> munmap(0x7f199aebd000, 13822)           = 0
+>> close(3)                                = 0
+>>
+>> If I use kmod-9, it works w/o problems.  An strace of kmod-9 shows:
+>> open("/lib/modules/3.12.7/kernel/crypto/af_alg.ko", O_RDONLY|O_CLOEXEC) = 3
+>> fstat(3, {st_mode=S_IFREG|0644, st_size=13822, ...}) = 0
+>> mmap(NULL, 13822, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f658ba41000
+>> init_module(0x7f658ba41000, 13822, "")  = 0
+>> munmap(0x7f658ba41000, 13822)           = 0
+>> close(3)                                = 0
+>>
+>> If I copy the module to /tmp, kmod-16 loads it just fine.  It appears to be
+>> related to the 9p filesystem.
+>>
+>> I won't rule out a bug in kmod-16, but I was unable to figure out what the
+>> cause of the error was.  I tried to search through kmod's source and the
+>> kernel source, but I gave up because I don't understand what's going on.
+> 
+> I did some testing with the various kmod versions between kmod-9 and 16. 
+> The problem was introduced in 13.  The change that broke this was the
+> addition of finit_module().  Appears that the kernel cannot handle modules
+> that is on the 9p filesystem.  On the line that checked err == 0 (around
+> line libkmod-module.c:823), I added a test for ENOEXEC.  The finit_module
+> still fails,but it uses the old method and works.
+> 
+> I would say from what I've seen, the problem is in the kernel for
+> finit_module().  I don't know enough about the kernel to go any further.
+> --
 
+
+-- 
+~Randy
