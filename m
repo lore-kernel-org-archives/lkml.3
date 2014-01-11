@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaAKQLo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 11:11:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37252 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbaAKQLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 11:11:40 -0500
-Date: Sat, 11 Jan 2014 17:11:25 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-mm@kvack.org,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
-Message-ID: <20140111161125.GA17160@redhat.com>
-References: <1389383718-46031-1-git-send-email-athorlton@sgi.com> <20140110202310.GB1421@node.dhcp.inet.fi>
+	id S1752915AbaAKQNv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 11:13:51 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34248 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751241AbaAKQNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 11:13:49 -0500
+Date: Sat, 11 Jan 2014 16:13:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH REPOST] ARM: Fix regression in IXP4xx network drivers
+	DMA masks.
+Message-ID: <20140111161342.GM15937@n2100.arm.linux.org.uk>
+References: <m338l6vldf.fsf@t19.piap.pl> <m3d2k4x5vo.fsf@t19.piap.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140110202310.GB1421@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m3d2k4x5vo.fsf@t19.piap.pl>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10, Kirill A. Shutemov wrote:
->
-> I prefer to fix THP instead of
-> adding new knob to disable it.
+On Mon, Jan 06, 2014 at 08:33:15PM +0100, Krzysztof Hałasa wrote:
+> Russell et al.,
+> 
+> anything wrong with this fix?
 
-I agree. But if we have the per-vma MADV/VM_ flags, it looks
-natural to also have the per-mm know which affects all vmas.
+Well, I don't understand why moving this code around fixes a problem.
+After all, if PCI is enabled, then presumably common-pci.c will always
+be built and run - it has to be for the PCI bus to be probed.
 
-Besides this allows to control the thp behaviour after exec.
+Oh, are you trying to use the platform notify callback to set the
+DMA mask on statically defined platform devices?  No, don't do that,
+initialise it in the declarations instead.
 
-Oleg.
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
