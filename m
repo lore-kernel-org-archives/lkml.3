@@ -1,239 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaAKTsF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:48:05 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6002 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419AbaAKTnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:43:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
-   d="scan'208";a="437435652"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 9/9] perf, tools: Support source line numbers in annotate
-Date: Sat, 11 Jan 2014 11:42:59 -0800
-Message-Id: <1389469379-13340-10-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
-References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
+	id S1753479AbaAKTwa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:52:30 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:36418 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaAKTw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:52:26 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH RFC 00/10] Generic Device Tree based power domain look-up
+Date: Sat, 11 Jan 2014 20:52:17 +0100
+Message-ID: <1743034.81eWccWixG@flatron>
+User-Agent: KMail/4.12 (Linux/3.12.7-gentoo; KDE/4.12.0; x86_64; ; )
+In-Reply-To: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Saturday 11 of January 2014 20:42:42 Tomasz Figa wrote:
+> Up till now there was no single generic method to bind devices to their
+> power domains using Device Tree. Each platform has been doing this using
+> its own way, example of which are Exynos power domain bindings [1] and
+> look-up code [2].
+> 
+> This series is intended to change this and provide generic DT bindings for
+> power domain specification and generic code performing look-up of power
+> domains and binding them to devices.
+> 
+> Patches 1, 2, 3 are not directly related to this series, but they are
+> dependencies of further patches making mach-s3c64xx a user of introduced
+> code. Patch 4 is the most important part of this series, as it's the one
+> introducing $subject. Further patches are fixing and adding two users,
+> mach-exynos (removing the legacy code) and mach-s3c64xx (no DT support for
+> power domains before). Last two patches are adding display support for
+> Mini6410 board, including a node for display controller (FIMD) which is
+> a power domain consumer.
+> 
+> Successfully tested on S3C6410-based Mini6410 board.
+> 
 
-With srcline key/sort'ing it's useful to have line numbers
-in the annotate window. This patch implements this.
+I left the references for the end of this cover letter and finally forgot
+about them. Please accept my apologies ;).
 
-Use objdump -l to request the line numbers and
-save them in the line structure. Then the browser
-displays them for source lines.
+[1] Documentation/devicetree/bindings/arm/exynos/power_domain.txt
+[2] arch/arm/mach-exynos/pm_domains.c
 
-The line numbers are not displayed by default, but can be
-toggled on with 'k'
+Also it might be good to mention that I was heavily inspired by
+implementation of clock providers in Common Clock Framework in case of
+provider registration and look-up and also by my Exynos power domain
+implementation (now removed by this series ;)) in case of code binding
+devices to power domains.
 
-There is one unfortunate problem with this setup. For
-lines not containing source and which are outside functions
-objdump -l reports the wrong line numbers (it always reports
-the first line number in the next function even for lines
-that are outside the function)
-I haven't find a nice way to detect/correct this. Probably objdump
-has to be fixed.
-See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
-
-The line numbers are still useful even with these problems,
-as most are correct.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
- tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
- tools/perf/util/annotate.h        |  1 +
- 3 files changed, 38 insertions(+), 6 deletions(-)
-
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index f0697a3..1c8aab0 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
- 	bool hide_src_code,
- 	     use_offset,
- 	     jump_arrows,
-+	     show_linenr,
- 	     show_nr_jumps;
- } annotate_browser__opts = {
- 	.use_offset	= true,
-@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	if (!*dl->line)
- 		slsmg_write_nstring(" ", width - pcnt_width);
- 	else if (dl->offset == -1) {
--		printed = scnprintf(bf, sizeof(bf), "%*s  ",
-+		if (dl->line_nr && annotate_browser__opts.show_linenr) 
-+			printed = scnprintf(bf, sizeof(bf), "%*s %-5d ",
-+					ab->addr_width, " ", dl->line_nr);
-+		else
-+			printed = scnprintf(bf, sizeof(bf), "%*s  ",
- 				    ab->addr_width, " ");
- 		slsmg_write_nstring(bf, printed);
- 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
-@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 		"o             Toggle disassembler output/simplified view\n"
- 		"s             Toggle source code view\n"
- 		"/             Search string\n"
-+		"k	       Toggle line numbers\n"
- 		"r             Run available scripts\n"
- 		"?             Search string backwards\n");
- 			continue;
-@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 				script_browse(NULL);
- 				continue;
- 			}
-+		case 'k':
-+			annotate_browser__opts.show_linenr =
-+				!annotate_browser__opts.show_linenr;
-+			break;
- 		case 'H':
- 			nd = browser->curr_hot;
- 			break;
-@@ -984,6 +994,7 @@ static struct annotate_config {
- } annotate__configs[] = {
- 	ANNOTATE_CFG(hide_src_code),
- 	ANNOTATE_CFG(jump_arrows),
-+	ANNOTATE_CFG(show_linenr),
- 	ANNOTATE_CFG(show_nr_jumps),
- 	ANNOTATE_CFG(use_offset),
- };
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 469eb67..f020110 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -15,11 +15,13 @@
- #include "debug.h"
- #include "annotate.h"
- #include "evsel.h"
-+#include <regex.h>
- #include <pthread.h>
- #include <linux/bitops.h>
- 
- const char 	*disassembler_style;
- const char	*objdump_path;
-+static regex_t	 file_lineno;
- 
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
-@@ -562,13 +564,15 @@ out_free_name:
- 	return -1;
- }
- 
--static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
-+static struct disasm_line *disasm_line__new(s64 offset, char *line,
-+					size_t privsize, int line_nr)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
- 
- 	if (dl != NULL) {
- 		dl->offset = offset;
- 		dl->line = strdup(line);
-+		dl->line_nr = line_nr;
- 		if (dl->line == NULL)
- 			goto out_delete;
- 
-@@ -780,13 +784,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
-  * The ops.raw part will be parsed further according to type of the instruction.
-  */
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
--				      FILE *file, size_t privsize)
-+				      FILE *file, size_t privsize,
-+				      int *line_nr)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct disasm_line *dl;
- 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
- 	size_t line_len;
- 	s64 line_ip, offset = -1;
-+	regmatch_t match[2];
- 
- 	if (getline(&line, &line_len, file) < 0)
- 		return -1;
-@@ -804,6 +810,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	line_ip = -1;
- 	parsed_line = line;
- 
-+	/* /filename:linenr ? Save line number and ignore. */
-+	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
-+		*line_nr = atoi(line + match[1].rm_so);
-+		return 0;
-+	}
-+
- 	/*
- 	 * Strip leading spaces:
- 	 */
-@@ -834,8 +846,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 			parsed_line = tmp2 + 1;
- 	}
- 
--	dl = disasm_line__new(offset, parsed_line, privsize);
-+	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
- 	free(line);
-+	(*line_nr)++;
- 
- 	if (dl == NULL)
- 		return -1;
-@@ -861,6 +874,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
-+static __attribute__((constructor)) void symbol__init_regexpr(void)
-+{
-+	regcomp(&file_lineno, "^/[^:]+:([0-9]+)$", REG_EXTENDED);
-+}
-+
- static void delete_last_nop(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -896,6 +914,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
- 	char symfs_filename[PATH_MAX];
- 	struct kcore_extract kce;
- 	bool delete_extract = false;
-+	int lineno = 0;
- 
- 	if (filename) {
- 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-@@ -977,7 +996,7 @@ fallback:
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
--		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
-+		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
- 		 objdump_path ? objdump_path : "objdump",
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
-@@ -994,7 +1013,8 @@ fallback:
- 		goto out_free_filename;
- 
- 	while (!feof(file))
--		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
-+		if (symbol__parse_objdump_line(sym, map, file, privsize,
-+			    &lineno) < 0)
- 			break;
- 
- 	/*
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index b2aef59..a124e7e 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -58,6 +58,7 @@ struct disasm_line {
- 	char		    *line;
- 	char		    *name;
- 	struct ins	    *ins;
-+	int		    line_nr;
- 	struct ins_operands ops;
- };
- 
--- 
-1.8.3.1
+Best regards,
+Tomasz
 
