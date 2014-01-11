@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbaAKTnY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 14:43:24 -0500
-Received: from mga14.intel.com ([143.182.124.37]:13743 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372AbaAKTnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 14:43:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,644,1384329600"; 
-   d="scan'208";a="457257150"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/9] perf, tools: fix BFD detection on opensuse
-Date: Sat, 11 Jan 2014 11:42:51 -0800
-Message-Id: <1389469379-13340-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
-References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
+	id S1754624AbaAKTo1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 14:44:27 -0500
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:40529 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754118AbaAKTn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 14:43:27 -0500
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH RFC 09/10] ARM: dts: s3c64xx: Add node for display controller
+Date: Sat, 11 Jan 2014 20:42:51 +0100
+Message-Id: <1389469372-17199-10-git-send-email-tomasz.figa@gmail.com>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+This patch adds device tree node for the display controller present on
+S3C64xx SoCs.
 
-opensuse libbfd requires -lz -liberty to build. Add those
-to the BFD feature detection.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
 ---
- tools/perf/config/Makefile                | 2 +-
- tools/perf/config/feature-checks/Makefile | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/s3c64xx.dtsi | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 01dd43d..d86d33c 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -478,7 +478,7 @@ else
- endif
+diff --git a/arch/arm/boot/dts/s3c64xx.dtsi b/arch/arm/boot/dts/s3c64xx.dtsi
+index 4e3be4d..6fe1042 100644
+--- a/arch/arm/boot/dts/s3c64xx.dtsi
++++ b/arch/arm/boot/dts/s3c64xx.dtsi
+@@ -18,6 +18,7 @@
  
- ifeq ($(feature-libbfd), 1)
--  EXTLIBS += -lbfd
-+  EXTLIBS += -lbfd -lz -liberty
- endif
+ #include "skeleton.dtsi"
+ #include <dt-bindings/clock/samsung,s3c64xx-clock.h>
++#include <dt-bindings/arm/s3c64xx-power-domains.h>
  
- ifdef NO_DEMANGLE
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 7cf6fcd..a430e4f 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -120,7 +120,7 @@ test-libpython-version.bin:
- 	$(BUILD) $(FLAGS_PYTHON_EMBED)
+ / {
+ 	aliases {
+@@ -56,6 +57,18 @@
+ 			#interrupt-cells = <1>;
+ 		};
  
- test-libbfd.bin:
--	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
- 
- test-liberty.bin:
- 	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
++		fimd: display@77100000 {
++			compatible = "samsung,s3c6400-fimd";
++			reg = <0x77100000 0x1000>;
++			interrupt-parent = <&vic0>;
++			interrupts = <29>, <30>, <31>;
++			interrupt-names = "fifo", "vsync", "lcd_sys";
++			clocks = <&clocks HCLK_LCD>, <&clocks SCLK_LCD>;
++			clock-names = "fimd", "sclk_fimd";
++			power-domain = <&clocks DOMAIN_F>;
++			status = "disabled";
++		};
++
+ 		sdhci0: sdhci@7c200000 {
+ 			compatible = "samsung,s3c6410-sdhci";
+ 			reg = <0x7c200000 0x100>;
 -- 
-1.8.3.1
+1.8.5.2
 
