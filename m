@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaAKMhk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 07:37:40 -0500
-Received: from relay.parallels.com ([195.214.232.42]:40320 "EHLO
+	id S1753310AbaAKMhf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 07:37:35 -0500
+Received: from relay.parallels.com ([195.214.232.42]:40317 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370AbaAKMgr (ORCPT
+	with ESMTP id S1751231AbaAKMgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 Jan 2014 07:36:47 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: [PATCH 3/5] mm: vmscan: respect NUMA policy mask when shrinking slab on direct reclaim
-Date: Sat, 11 Jan 2014 16:36:33 +0400
-Message-ID: <a39e4c57c5a8db4d6e5bb8cd070ac807c8c6fce8.1389443272.git.vdavydov@parallels.com>
+        Dave Chinner <dchinner@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: [PATCH 2/5] mm: vmscan: call NUMA-unaware shrinkers irrespective of nodemask
+Date: Sat, 11 Jan 2014 16:36:32 +0400
+Message-ID: <b232a866977fa58bdeeb4da70ec5016e4831efef.1389443272.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
 References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
@@ -26,40 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When direct reclaim is executed by a process bound to a set of NUMA
-nodes, we should scan only those nodes when possible, but currently we
-will scan kmem from all online nodes even if the kmem shrinker is NUMA
-aware. That said, binding a process to a particular NUMA node won't
-prevent it from shrinking inode/dentry caches from other nodes, which is
-not good. Fix this.
+If a shrinker is not NUMA-aware, shrink_slab() should call it exactly
+once with nid=0, but currently it is not true: if node 0 is not set in
+the nodemask or if it is not online, we will not call such shrinkers at
+all. As a result some slabs will be left untouched under some
+circumstances. Let us fix it.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Reported-by: Dave Chinner <dchinner@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Dave Chinner <dchinner@redhat.com>
 Cc: Glauber Costa <glommer@gmail.com>
 ---
- mm/vmscan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/vmscan.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index adc3ecb..ae6518d 100644
+index 0b3fc0a..adc3ecb 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2425,8 +2425,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 			unsigned long lru_pages = 0;
+@@ -369,16 +369,17 @@ unsigned long shrink_slab(struct shrink_control *shrinkctl,
+ 	}
  
- 			nodes_clear(shrink->nodes_to_scan);
--			for_each_zone_zonelist(zone, z, zonelist,
--					gfp_zone(sc->gfp_mask)) {
-+			for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+					gfp_zone(sc->gfp_mask), sc->nodemask) {
- 				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 					continue;
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+-		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
+-			if (!node_online(shrinkctl->nid))
+-				continue;
+-
+-			if (!(shrinker->flags & SHRINKER_NUMA_AWARE) &&
+-			    (shrinkctl->nid != 0))
+-				break;
+-
++		if (!(shrinker->flags & SHRINKER_NUMA_AWARE)) {
++			shrinkctl->nid = 0;
+ 			freed += shrink_slab_node(shrinkctl, shrinker,
+-				 nr_pages_scanned, lru_pages);
++					nr_pages_scanned, lru_pages);
++			continue;
++		}
++
++		for_each_node_mask(shrinkctl->nid, shrinkctl->nodes_to_scan) {
++			if (node_online(shrinkctl->nid))
++				freed += shrink_slab_node(shrinkctl, shrinker,
++						nr_pages_scanned, lru_pages);
  
+ 		}
+ 	}
 -- 
 1.7.10.4
 
