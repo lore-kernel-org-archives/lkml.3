@@ -1,292 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaAKJwr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 04:52:47 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:53696 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685AbaAKJwo (ORCPT
+	id S1752192AbaAKJ4X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 04:56:23 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:59173 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaAKJ4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 04:52:44 -0500
-Date: Sat, 11 Jan 2014 01:52:36 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, dvhart@linux.intel.com,
-        peterz@infradead.org, tglx@linutronix.de, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com
-Subject: Re: [PATCH v5 4/4] futex: Avoid taking hb lock if nothing to wakeup
-Message-ID: <20140111095236.GA1181@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1388675120-8017-1-git-send-email-davidlohr@hp.com>
- <1388675120-8017-5-git-send-email-davidlohr@hp.com>
- <20140111094912.GC10038@linux.vnet.ibm.com>
+	Sat, 11 Jan 2014 04:56:16 -0500
+Date: Sat, 11 Jan 2014 09:56:24 +0000
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org,
+        Luigi Semenzato <semenzato@google.com>
+Subject: Re: [PATCH -next] zram: do not pass rw argument to
+ __zram_make_request()
+Message-ID: <20140111095623.GA21479@gmail.com>
+References: <20140109132343.GB2246@swordfish.minsk.epam.com>
+ <20140110071445.GK1992@bbox>
+ <20140110090059.GA2386@swordfish.minsk.epam.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140111094912.GC10038@linux.vnet.ibm.com>
+In-Reply-To: <20140110090059.GA2386@swordfish.minsk.epam.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011109-3532-0000-0000-000004A80844
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 01:49:12AM -0800, Paul E. McKenney wrote:
-> On Thu, Jan 02, 2014 at 07:05:20AM -0800, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <davidlohr@hp.com>
+On Fri, Jan 10, 2014 at 12:00:59PM +0300, Sergey Senozhatsky wrote:
+> On (01/10/14 16:14), Minchan Kim wrote:
+> > On Thu, Jan 09, 2014 at 04:23:43PM +0300, Sergey Senozhatsky wrote:
+> > > Do not pass rw argument down the __zram_make_request() -> zram_bvec_rw()
+> > > chain, decode it in zram_bvec_rw() instead. Besides, this is the place
+> > > where we distinguish READ and WRITE bio data directions, so account zram
+> > > RW stats here, instead of __zram_make_request(). This also allows to
+> > > account a real number of zram READ/WRITE operations, not just requests
+> > > (RW request may end up in a number of zram RW ops with separate
+> > > locking, compression/decompression, slot free handling, etc).
 > > 
-> > In futex_wake() there is clearly no point in taking the hb->lock if we know
-> > beforehand that there are no tasks to be woken. While the hash bucket's plist
-> > head is a cheap way of knowing this, we cannot rely 100% on it as there is a
-> > racy window between the futex_wait call and when the task is actually added to
-> > the plist. To this end, we couple it with the spinlock check as tasks trying to
-> > enter the critical region are most likely potential waiters that will be added
-> > to the plist, thus preventing tasks sleeping forever if wakers don't acknowledge
-> > all possible waiters.
+> > Looks sane to me because other statistic variable accounts per bio, not
+> > request. But it changes current statistic's semantic so they could be
+> > regressed. Let's wait a bit for other's opinion.
 > > 
-> > Furthermore, the futex ordering guarantees are preserved, ensuring that waiters
-> > either observe the changed user space value before blocking or is woken by a
-> > concurrent waker. For wakers, this is done by relying on the barriers in
-> > get_futex_key_refs() -- for archs that do have implicit mb in atomic_inc() we
-> > explicitly add them through a new futex_get_mm function. For waiters we rely
-> > on the fact that spin_lock calls already update the head counter, so spinners
-> > are visible even if the lock hasn't been acquired yet.
-> > 
-> > For more details please refer to the updated comments in the code and related
-> > discussion: https://lkml.org/lkml/2013/11/26/556
-> > 
-> > Special thanks to tglx for careful review and feedback.
-> > 
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Darren Hart <dvhart@linux.intel.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Mike Galbraith <efault@gmx.de>
-> > Cc: Jeff Mahoney <jeffm@suse.com>
-> > Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: Scott Norton <scott.norton@hp.com>
-> > Cc: Tom Vaden <tom.vaden@hp.com>
-> > Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-> > Cc: Waiman Long <Waiman.Long@hp.com>
-> > Cc: Jason Low <jason.low2@hp.com>
-> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 > 
-> A couple of comments below.
+> Hello,
 > 
-> 							Thanx, Paul
-> 
-> > ---
-> >  kernel/futex.c | 113 +++++++++++++++++++++++++++++++++++++++++++++------------
-> >  1 file changed, 90 insertions(+), 23 deletions(-)
-> > 
-> > diff --git a/kernel/futex.c b/kernel/futex.c
-> > index fcc6850..5b4d09e 100644
-> > --- a/kernel/futex.c
-> > +++ b/kernel/futex.c
-> > @@ -75,17 +75,20 @@
-> >   * The waiter reads the futex value in user space and calls
-> >   * futex_wait(). This function computes the hash bucket and acquires
-> >   * the hash bucket lock. After that it reads the futex user space value
-> > - * again and verifies that the data has not changed. If it has not
-> > - * changed it enqueues itself into the hash bucket, releases the hash
-> > - * bucket lock and schedules.
-> > + * again and verifies that the data has not changed. If it has not changed
-> > + * it enqueues itself into the hash bucket, releases the hash bucket lock
-> > + * and schedules.
-> >   *
-> >   * The waker side modifies the user space value of the futex and calls
-> > - * futex_wake(). This functions computes the hash bucket and acquires
-> > - * the hash bucket lock. Then it looks for waiters on that futex in the
-> > - * hash bucket and wakes them.
-> > + * futex_wake(). This function computes the hash bucket and acquires the
-> > + * hash bucket lock. Then it looks for waiters on that futex in the hash
-> > + * bucket and wakes them.
-> >   *
-> > - * Note that the spin_lock serializes waiters and wakers, so that the
-> > - * following scenario is avoided:
-> > + * In scenarios where wakeups are called and no tasks are blocked on a futex,
-> > + * taking the hb spinlock can be avoided and simply return. In order for this
-> > + * optimization to work, ordering guarantees must exist so that the waiter
-> > + * being added to the list is acknowledged when the list is concurrently being
-> > + * checked by the waker, avoiding scenarios like the following:
-> >   *
-> >   * CPU 0                               CPU 1
-> >   * val = *futex;
-> > @@ -106,24 +109,50 @@
-> >   * This would cause the waiter on CPU 0 to wait forever because it
-> >   * missed the transition of the user space value from val to newval
-> >   * and the waker did not find the waiter in the hash bucket queue.
-> > - * The spinlock serializes that:
-> > + *
-> > + * The correct serialization ensures that a waiter either observes
-> > + * the changed user space value before blocking or is woken by a
-> > + * concurrent waker:
-> >   *
-> >   * CPU 0                               CPU 1
-> >   * val = *futex;
-> >   * sys_futex(WAIT, futex, val);
-> >   *   futex_wait(futex, val);
-> > - *   lock(hash_bucket(futex));
-> > - *   uval = *futex;
-> > - *                                     *futex = newval;
-> > - *                                     sys_futex(WAKE, futex);
-> > - *                                       futex_wake(futex);
-> > - *                                       lock(hash_bucket(futex));
-> > + *
-> > + *   waiters++;
-> > + *   mb(); (A) <-- paired with -.
-> > + *                              |
-> > + *   lock(hash_bucket(futex));  |
-> > + *                              |
-> > + *   uval = *futex;             |
-> > + *                              |        *futex = newval;
-> > + *                              |        sys_futex(WAKE, futex);
-> > + *                              |          futex_wake(futex);
-> > + *                              |
-> > + *                              `------->   mb(); (B)
-> >   *   if (uval == val)
-> > - *      queue();
-> > + *     queue();
-> >   *     unlock(hash_bucket(futex));
-> > - *     schedule();                       if (!queue_empty())
-> > - *                                         wake_waiters(futex);
-> > - *                                       unlock(hash_bucket(futex));
-> > + *     schedule();                         if (waiters)
-> > + *                                           lock(hash_bucket(futex));
-> > + *                                           wake_waiters(futex);
-> > + *                                           unlock(hash_bucket(futex));
-> > + *
-> > + * Where (A) orders the waiters increment and the futex value read -- this
-> > + * is guaranteed by the head counter in the hb spinlock; and where (B)
-> > + * orders the write to futex and the waiters read.
-> > + *
-> > + * This yields the following case (where X:=waiters, Y:=futex):
-> > + *
-> > + *	X = Y = 0
-> > + *
-> > + *	w[X]=1		w[Y]=1
-> > + *	MB		MB
-> > + *	r[Y]=y		r[X]=x
-> > + *
-> > + * Which guarantees that x==0 && y==0 is impossible; which translates back into
-> > + * the guarantee that we cannot both miss the futex variable change and the
-> > + * enqueue.
-> >   */
-> > 
-> >  int __read_mostly futex_cmpxchg_enabled;
-> > @@ -211,6 +240,38 @@ static unsigned long __read_mostly futex_hashsize;
-> > 
-> >  static struct futex_hash_bucket *futex_queues;
-> > 
-> > +static inline void futex_get_mm(union futex_key *key)
-> > +{
-> > +	atomic_inc(&key->private.mm->mm_count);
-> > +#ifdef CONFIG_SMP
-> 
-> You don't need the #ifdef -- smp_mb__after_atomic_inc() does not emit
-> code if !SMP.
-> 
-> > +	/*
-> > +	 * Ensure futex_get_mm() implies a full barrier such that
-> > +	 * get_futex_key() implies a full barrier. This is relied upon
-> > +	 * as full barrier (B), see the ordering comment above.
-> > +	 */
-> > +	smp_mb__after_atomic_inc();
-> > +#endif
-> > +}
-> > +
-> > +static inline bool hb_waiters_pending(struct futex_hash_bucket *hb)
-> > +{
-> > +#ifdef CONFIG_SMP
-> > +	/*
-> > +	 * Tasks trying to enter the critical region are most likely
-> > +	 * potential waiters that will be added to the plist. Ensure
-> > +	 * that wakers won't miss to-be-slept tasks in the window between
-> > +	 * the wait call and the actual plist_add.
-> > +	 */
-> > +	if (spin_is_locked(&hb->lock))
-> > +		return true;
-> > +	smp_rmb(); /* Make sure we check the lock state first */
-> > +
-> > +	return !plist_head_empty(&hb->chain);
-> > +#else
-> > +	return true;
-> > +#endif
-> > +}
-> > +
-> >  /*
-> >   * We hash on the keys returned from get_futex_key (see below).
-> >   */
-> > @@ -245,10 +306,10 @@ static void get_futex_key_refs(union futex_key *key)
-> > 
-> >  	switch (key->both.offset & (FUT_OFF_INODE|FUT_OFF_MMSHARED)) {
-> >  	case FUT_OFF_INODE:
-> > -		ihold(key->shared.inode);
-> > +		ihold(key->shared.inode); /* implies MB (B) */
-> >  		break;
-> >  	case FUT_OFF_MMSHARED:
-> > -		atomic_inc(&key->private.mm->mm_count);
-> > +		futex_get_mm(key); /* implies MB (B) */
-> >  		break;
-> >  	}
-> >  }
-> > @@ -322,7 +383,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
-> >  	if (!fshared) {
-> >  		key->private.mm = mm;
-> >  		key->private.address = address;
-> > -		get_futex_key_refs(key);
-> > +		get_futex_key_refs(key);  /* implies MB (B) */
-> >  		return 0;
-> >  	}
-> > 
-> > @@ -1052,6 +1113,11 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
-> >  		goto out;
-> > 
-> >  	hb = hash_futex(&key);
-> > +
-> > +	/* Make sure we really have tasks to wakeup */
-> > +	if (!hb_waiters_pending(hb))
-> > +		goto out_put_key;
-> 
-> Nice optimization, especially in the (hopefully) common case of low
-> contention!
-> 
-> > +
-> >  	spin_lock(&hb->lock);
-> > 
-> >  	plist_for_each_entry_safe(this, next, &hb->chain, list) {
-> > @@ -1072,6 +1138,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
-> >  	}
-> > 
-> >  	spin_unlock(&hb->lock);
-> > +out_put_key:
-> >  	put_futex_key(&key);
-> >  out:
-> >  	return ret;
-> > @@ -1535,7 +1602,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
-> >  	hb = hash_futex(&q->key);
-> >  	q->lock_ptr = &hb->lock;
-> > 
-> > -	spin_lock(&hb->lock);
-> > +	spin_lock(&hb->lock); /* implies MB (A) */
-> 
-> You need smp_mb__before_spinlock() before the spin_lock() to get a
-> full memory barrier.
+> well, imho current zram stats are a bit meaningless and misleading. some data
 
-Actually, even that only gets you smp_mb().
+Agreed and I wanted to look into that but I was hesitant about that
+because there was some hurdle to enhance it during staying -staging.
+(I guess you understand whant I'm saying. ;-) )
 
-Unless you are ordering a prior write against a later write here, you
-will need an smp_mb().
+> simply makes a little sense, some data is not visible to end user at all, etc. my
+> plan was to revisit it before 3.14 merge window (which is also the end of promotion,
+> I guess). after 3.14 merge window we will not be able to change this easily.
 
-							Thanx, Paul
+Fair enough and we don't have any obstacle to prevent it any more
+and it would be great if it would be done until mainlining.
+Let's go ahead.
 
-> >  	return hb;
-> >  }
-> > 
-> > -- 
-> > 1.8.1.4
-> > 
+> 
+> I was going to publish stats rework patch today. It removes code duplication
+> and re-organizes end user visible stats. so here it is (w/o the proper commit
+> message)
+> 
+> 	num_reads
+> 	num_writes
+> 	pages_stored
+> 	invalid_io
+> 	notify_free
+> 	pages_zero
+> 	compressed_size
+> 	memory_used
 
+Will review it when I go to the office.
+Thanks!
+
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+>  drivers/block/zram/zram_drv.c | 171 +++++++++++-------------------------------
+>  drivers/block/zram/zram_drv.h |  15 ++--
+>  2 files changed, 51 insertions(+), 135 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 798793f..234e703 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -42,6 +42,17 @@ static struct zram *zram_devices;
+>  /* Module params (documentation at end) */
+>  static unsigned int num_devices = 1;
+>  
+> +#define ZRAM_ATTR_RO(name)						\
+> +static ssize_t zram_attr_##name##_show(struct device *d,		\
+> +				struct device_attribute *attr, char *b)	\
+> +{									\
+> +	struct zram *zram = dev_to_zram(d);				\
+> +	return sprintf(b, "%llu\n",					\
+> +		(u64)atomic64_read(&zram->stats.name));			\
+> +}									\
+> +static struct device_attribute dev_attr_##name =			\
+> +	__ATTR(name, S_IRUGO, zram_attr_##name##_show, NULL);
+> +
+>  static inline int init_done(struct zram *zram)
+>  {
+>  	return zram->meta != NULL;
+> @@ -52,97 +63,31 @@ static inline struct zram *dev_to_zram(struct device *dev)
+>  	return (struct zram *)dev_to_disk(dev)->private_data;
+>  }
+>  
+> -static ssize_t disksize_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%llu\n", zram->disksize);
+> -}
+> -
+> -static ssize_t initstate_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%u\n", init_done(zram));
+> -}
+> -
+> -static ssize_t num_reads_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%llu\n",
+> -			(u64)atomic64_read(&zram->stats.num_reads));
+> -}
+> -
+> -static ssize_t num_writes_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%llu\n",
+> -			(u64)atomic64_read(&zram->stats.num_writes));
+> -}
+> -
+> -static ssize_t invalid_io_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%llu\n",
+> -			(u64)atomic64_read(&zram->stats.invalid_io));
+> -}
+> -
+> -static ssize_t notify_free_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%llu\n",
+> -			(u64)atomic64_read(&zram->stats.notify_free));
+> -}
+> -
+> -static ssize_t zero_pages_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> -{
+> -	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%u\n", zram->stats.pages_zero);
+> -}
+> -
+> -static ssize_t orig_data_size_show(struct device *dev,
+> -		struct device_attribute *attr, char *buf)
+> +static ssize_t memory_used_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+> +	u64 val = 0;
+>  	struct zram *zram = dev_to_zram(dev);
+> +	struct zram_meta *meta = zram->meta;
+>  
+> -	return sprintf(buf, "%llu\n",
+> -		(u64)(zram->stats.pages_stored) << PAGE_SHIFT);
+> +	down_read(&zram->init_lock);
+> +	if (init_done(zram))
+> +		val = zs_get_total_size_bytes(meta->mem_pool);
+> +	up_read(&zram->init_lock);
+> +	return sprintf(buf, "%llu\n", val);
+>  }
+>  
+> -static ssize_t compr_data_size_show(struct device *dev,
+> +static ssize_t disksize_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+> -
+> -	return sprintf(buf, "%llu\n",
+> -			(u64)atomic64_read(&zram->stats.compr_size));
+> +	return sprintf(buf, "%llu\n", zram->disksize);
+>  }
+>  
+> -static ssize_t mem_used_total_show(struct device *dev,
+> +static ssize_t initstate_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+> -	u64 val = 0;
+>  	struct zram *zram = dev_to_zram(dev);
+> -	struct zram_meta *meta = zram->meta;
+> -
+> -	down_read(&zram->init_lock);
+> -	if (init_done(zram))
+> -		val = zs_get_total_size_bytes(meta->mem_pool);
+> -	up_read(&zram->init_lock);
+> -
+> -	return sprintf(buf, "%llu\n", val);
+> +	return sprintf(buf, "%u\n", init_done(zram));
+>  }
+>  
+>  static int zram_test_flag(struct zram_meta *meta, u32 index,
+> @@ -289,7 +234,6 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  {
+>  	struct zram_meta *meta = zram->meta;
+>  	unsigned long handle = meta->table[index].handle;
+> -	u16 size = meta->table[index].size;
+>  
+>  	if (unlikely(!handle)) {
+>  		/*
+> @@ -298,21 +242,14 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  		 */
+>  		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
+>  			zram_clear_flag(meta, index, ZRAM_ZERO);
+> -			zram->stats.pages_zero--;
+> +			atomic64_dec(&zram->stats.pages_zero);
+>  		}
+>  		return;
+>  	}
+>  
+> -	if (unlikely(size > max_zpage_size))
+> -		zram->stats.bad_compress--;
+> -
+>  	zs_free(meta->mem_pool, handle);
+> -
+> -	if (size <= PAGE_SIZE / 2)
+> -		zram->stats.good_compress--;
+> -
+> -	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
+> -	zram->stats.pages_stored--;
+> +	atomic64_sub(meta->table[index].size, &zram->stats.compressed_size);
+> +	atomic64_dec(&zram->stats.pages_stored);
+>  
+>  	meta->table[index].handle = 0;
+>  	meta->table[index].size = 0;
+> @@ -352,7 +289,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>  			  u32 index, int offset, struct bio *bio)
+>  {
+> -	int ret;
+> +	int ret = -EINVAL;
+>  	struct page *page;
+>  	unsigned char *user_mem, *uncmem = NULL;
+>  	struct zram_meta *meta = zram->meta;
+> @@ -393,6 +330,8 @@ out_cleanup:
+>  	kunmap_atomic(user_mem);
+>  	if (is_partial_io(bvec))
+>  		kfree(uncmem);
+> +	if (ret)
+> +		atomic64_inc(&zram->stats.failed_reads);
+>  	return ret;
+>  }
+>  
+> @@ -440,7 +379,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  		/* Free memory associated with this sector now. */
+>  		zram_free_page(zram, index);
+>  
+> -		zram->stats.pages_zero++;
+> +		atomic64_inc(&zram->stats.pages_zero);
+>  		zram_set_flag(meta, index, ZRAM_ZERO);
+>  		ret = 0;
+>  		goto out;
+> @@ -469,7 +408,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	}
+>  
+>  	if (unlikely(clen > max_zpage_size)) {
+> -		zram->stats.bad_compress++;
+>  		clen = PAGE_SIZE;
+>  		src = NULL;
+>  		if (is_partial_io(bvec))
+> @@ -503,17 +441,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  
+>  	meta->table[index].handle = handle;
+>  	meta->table[index].size = clen;
+> -
+>  	/* Update stats */
+> -	atomic64_add(clen, &zram->stats.compr_size);
+> -	zram->stats.pages_stored++;
+> -	if (clen <= PAGE_SIZE / 2)
+> -		zram->stats.good_compress++;
+> -
+> +	atomic64_add(clen, &zram->stats.compressed_size);
+> +	atomic64_inc(&zram->stats.pages_stored);
+>  out:
+>  	if (is_partial_io(bvec))
+>  		kfree(uncmem);
+> -
+>  	if (ret)
+>  		atomic64_inc(&zram->stats.failed_writes);
+>  	return ret;
+> @@ -594,23 +527,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  
+>  static void zram_init_device(struct zram *zram, struct zram_meta *meta)
+>  {
+> -	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
+> -		pr_info(
+> -		"There is little point creating a zram of greater than "
+> -		"twice the size of memory since we expect a 2:1 compression "
+> -		"ratio. Note that zram uses about 0.1%% of the size of "
+> -		"the disk when not in use so a huge zram is "
+> -		"wasteful.\n"
+> -		"\tMemory Size: %lu kB\n"
+> -		"\tSize you selected: %llu kB\n"
+> -		"Continuing anyway ...\n",
+> -		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
+> -		);
+> -	}
+> -
+>  	/* zram devices sort of resembles non-rotational disks */
+>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+> -
+>  	zram->meta = meta;
+>  	pr_debug("Initialization done!\n");
+>  }
+> @@ -803,14 +721,15 @@ static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
+>  		disksize_show, disksize_store);
+>  static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+> -static DEVICE_ATTR(num_reads, S_IRUGO, num_reads_show, NULL);
+> -static DEVICE_ATTR(num_writes, S_IRUGO, num_writes_show, NULL);
+> -static DEVICE_ATTR(invalid_io, S_IRUGO, invalid_io_show, NULL);
+> -static DEVICE_ATTR(notify_free, S_IRUGO, notify_free_show, NULL);
+> -static DEVICE_ATTR(zero_pages, S_IRUGO, zero_pages_show, NULL);
+> -static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+> -static DEVICE_ATTR(compr_data_size, S_IRUGO, compr_data_size_show, NULL);
+> -static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> +static DEVICE_ATTR(memory_used, S_IRUGO, memory_used_show, NULL);
+> +
+> +ZRAM_ATTR_RO(num_reads);
+> +ZRAM_ATTR_RO(num_writes);
+> +ZRAM_ATTR_RO(pages_stored);
+> +ZRAM_ATTR_RO(invalid_io);
+> +ZRAM_ATTR_RO(notify_free);
+> +ZRAM_ATTR_RO(pages_zero);
+> +ZRAM_ATTR_RO(compressed_size);
+>  
+>  static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_disksize.attr,
+> @@ -818,12 +737,12 @@ static struct attribute *zram_disk_attrs[] = {
+>  	&dev_attr_reset.attr,
+>  	&dev_attr_num_reads.attr,
+>  	&dev_attr_num_writes.attr,
+> +	&dev_attr_pages_stored.attr,
+>  	&dev_attr_invalid_io.attr,
+>  	&dev_attr_notify_free.attr,
+> -	&dev_attr_zero_pages.attr,
+> -	&dev_attr_orig_data_size.attr,
+> -	&dev_attr_compr_data_size.attr,
+> -	&dev_attr_mem_used_total.attr,
+> +	&dev_attr_pages_zero.attr,
+> +	&dev_attr_compressed_size.attr,
+> +	&dev_attr_memory_used.attr,
+>  	NULL,
+>  };
+>  
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index 1388bad..6b00d4d 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -64,8 +64,7 @@ enum zram_pageflags {
+>  struct table {
+>  	unsigned long handle;
+>  	u16 size;	/* object size (excluding header) */
+> -	u8 count;	/* object ref count (not yet used) */
+> -	u8 flags;
+> +	u16 flags;
+>  } __aligned(4);
+>  
+>  /*
+> @@ -73,17 +72,15 @@ struct table {
+>   * All modifications to 32bit counter should be protected by zram->lock.
+>   */
+>  struct zram_stats {
+> -	atomic64_t compr_size;	/* compressed size of pages stored */
+> -	atomic64_t num_reads;	/* failed + successful */
+> -	atomic64_t num_writes;	/* --do-- */
+> +	atomic64_t num_writes;	/* number of writes */
+> +	atomic64_t num_reads;	/* number of reads */
+> +	atomic64_t pages_stored;	/* no. of pages currently stored */
+> +	atomic64_t compressed_size;	/* compressed size of pages stored */
+> +	atomic64_t pages_zero;		/* no. of zero filled pages */
+>  	atomic64_t failed_reads;	/* should NEVER! happen */
+>  	atomic64_t failed_writes;	/* can happen when memory is too low */
+>  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+>  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> -	u32 pages_zero;		/* no. of zero filled pages */
+> -	u32 pages_stored;	/* no. of pages currently stored */
+> -	u32 good_compress;	/* % of pages with compression ratio<=50% */
+> -	u32 bad_compress;	/* % of pages with compression ratio>=75% */
+>  };
+>  
+>  struct zram_meta {
+> 
