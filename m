@@ -1,198 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbaAKK0p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 05:26:45 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:33913 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaAKK0n (ORCPT
+	id S1752724AbaAKK2S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 05:28:18 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:49827 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaAKK2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 05:26:43 -0500
-Date: Sat, 11 Jan 2014 15:56:35 +0530
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: gregkh@linuxfoundation.org, rashika.kheria@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, andreas.dilger@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        monamagarwal123@gmail.com
-Subject: [PATCH v2 1/2] Staging: lustre: Refactor the function
- interval_erase_color() in /lustre/ldlm/interval_tree.c
-Message-ID: <52d11c61.0ac5440a.26d2.fffff73b@mx.google.com>
+	Sat, 11 Jan 2014 05:28:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140110155952.b376106ab7b76403af99111b@linux-foundation.org>
+References: <201401092151.FIB00084.SJFOLVOMQHtFOF@I-love.SAKURA.ne.jp>
+	<20140110155952.b376106ab7b76403af99111b@linux-foundation.org>
+Date: Sat, 11 Jan 2014 11:28:15 +0100
+X-Google-Sender-Auth: HNwMh4hBn-r2LAxtyRLrdDHSnFY
+Message-ID: <CAMuHMdVwoQbBVESnJrUviA63Xrp845gg8z0BjYJq9OZzvoodrA@mail.gmail.com>
+Subject: Re: [PATCH] lib/vsprintf: add %pT format specifier
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Pavel Machek <pavel@ucw.cz>, Joe Perches <joe@perches.com>,
+        Kees Cook <keescook@chromium.org>, Jiri Kosina <jkosina@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function interval_erase_color() in lustre/ldlm/interval_tree.c is
-too long and can be refactored. Most of the statements are same for if
-and else conditions.I am passing a new variable n based on which the differences are
-recognised.
+On Sat, Jan 11, 2014 at 12:59 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+>> +char *comm_name(char *buf, char *end, struct task_struct *tsk,
+>> +             struct printf_spec spec, const char *fmt)
+>> +{
+>> +     char name[TASK_COMM_LEN];
+>> +
+>> +     /* Caller can pass NULL instead of current. */
+>> +     if (!tsk)
+>> +             tsk = current;
+>> +     /* Not using get_task_comm() in case I'm in IRQ context. */
+>> +     memcpy(name, tsk->comm, TASK_COMM_LEN);
 
-This fixes the following checkpatch.pl warning in
-lustre/ldlm/interval_tree.c
-WARNING: line over 80 characters in the file
+So this may copy more bytes than the actual string length of tsk->comm.
+As this is a temporary buffer, that just wastes cycles.
+And even if it wasn't, data between the string zero terminator and the end of
+the buffer wouild be leaked.
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+>> +     name[sizeof(name) - 1] = '\0';
 
----
-Changes since version 1:
-* Incorrect fixing
-* Incorrect Signed-off-by line
----
+You can use strlcpy() here instead of memcpy and clear.
 
- drivers/staging/lustre/lustre/ldlm/interval_tree.c |  128 +++++++++++---------
- 1 file changed, 69 insertions(+), 59 deletions(-)
+> get_task_comm() uses strncpy()?
 
-diff --git a/drivers/staging/lustre/lustre/ldlm/interval_tree.c b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-index 1de1d8e..7c956de 100644
---- a/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-+++ b/drivers/staging/lustre/lustre/ldlm/interval_tree.c
-@@ -404,75 +404,85 @@ static inline int node_is_black_or_0(struct interval_node *node)
- 	return !node || node_is_black(node);
- }
- 
-+static int interval_set_color(struct interval_node *node,
-+			      struct interval_node *parent,
-+			      struct interval_node *root,
-+			      int n)
-+{
-+	struct interval_node *tmp;
-+	if (n == 0)
-+		tmp = parent->in_right;
-+	else
-+		tmp = parent->in_left;
-+	if (node_is_red(tmp)) {
-+		tmp->in_color = INTERVAL_BLACK;
-+		parent->in_color = INTERVAL_RED;
-+		if (n == 0) {
-+			__rotate_left(parent, root);
-+			tmp = parent->in_right;
-+		} else {
-+			__rotate_right(parent, root);
-+			tmp = parent->in_left;
-+		}
-+	}
-+	if (node_is_black_or_0(tmp->in_left) &&
-+	    node_is_black_or_0(tmp->in_right)) {
-+		tmp->in_color = INTERVAL_RED;
-+		node = parent;
-+		parent = node->in_parent;
-+	} else {
-+		if (n == 0) {
-+			if (node_is_black_or_0(tmp->in_right)) {
-+				struct interval_node *o_left;
-+				o_left = tmp->in_left;
-+				if (o_left)
-+					o_left->in_color = INTERVAL_BLACK;
-+				tmp->in_color = INTERVAL_RED;
-+				__rotate_right(tmp, root);
-+				tmp = parent->in_right;
-+			}
-+			tmp->in_color = parent->in_color;
-+			parent->in_color = INTERVAL_BLACK;
-+			if (tmp->in_right)
-+				tmp->in_right->in_color = INTERVAL_BLACK;
-+			__rotate_left(parent, root);
-+			node = *root;
-+			return 1;
-+		} else {
-+			if (node_is_black_or_0(tmp->in_left)) {
-+				struct interval_node *o_right;
-+				o_right = tmp->in_right;
-+				if (o_right)
-+					o_right->in_color = INTERVAL_BLACK;
-+				tmp->in_color = INTERVAL_RED;
-+				__rotate_left(tmp, root);
-+				tmp = parent->in_left;
-+			}
-+			tmp->in_color = parent->in_color;
-+			parent->in_color = INTERVAL_BLACK;
-+			if (tmp->in_left)
-+				tmp->in_left->in_color = INTERVAL_BLACK;
-+			__rotate_right(parent, root);
-+			node = *root;
-+			return 1;
-+		}
-+	}
-+	return 0;
-+}
-+
- static void interval_erase_color(struct interval_node *node,
- 				 struct interval_node *parent,
- 				 struct interval_node **root)
- {
--	struct interval_node *tmp;
- 
- 	while (node_is_black_or_0(node) && node != *root) {
- 		if (parent->in_left == node) {
--			tmp = parent->in_right;
--			if (node_is_red(tmp)) {
--				tmp->in_color = INTERVAL_BLACK;
--				parent->in_color = INTERVAL_RED;
--				__rotate_left(parent, root);
--				tmp = parent->in_right;
--			}
--			if (node_is_black_or_0(tmp->in_left) &&
--			    node_is_black_or_0(tmp->in_right)) {
--				tmp->in_color = INTERVAL_RED;
--				node = parent;
--				parent = node->in_parent;
--			} else {
--				if (node_is_black_or_0(tmp->in_right)) {
--					struct interval_node *o_left;
--					o_left = tmp->in_left;
--					if (o_left)
--						o_left->in_color = INTERVAL_BLACK;
--					tmp->in_color = INTERVAL_RED;
--					__rotate_right(tmp, root);
--					tmp = parent->in_right;
--				}
--				tmp->in_color = parent->in_color;
--				parent->in_color = INTERVAL_BLACK;
--				if (tmp->in_right)
--					tmp->in_right->in_color = INTERVAL_BLACK;
--				__rotate_left(parent, root);
--				node = *root;
-+			if (interval_set_color(node, parent, root, 0))
- 				break;
--			}
- 		} else {
--			tmp = parent->in_left;
--			if (node_is_red(tmp)) {
--				tmp->in_color = INTERVAL_BLACK;
--				parent->in_color = INTERVAL_RED;
--				__rotate_right(parent, root);
--				tmp = parent->in_left;
--			}
--			if (node_is_black_or_0(tmp->in_left) &&
--			    node_is_black_or_0(tmp->in_right)) {
--				tmp->in_color = INTERVAL_RED;
--				node = parent;
--				parent = node->in_parent;
--			} else {
--				if (node_is_black_or_0(tmp->in_left)) {
--					struct interval_node *o_right;
--					o_right = tmp->in_right;
--					if (o_right)
--						o_right->in_color = INTERVAL_BLACK;
--					tmp->in_color = INTERVAL_RED;
--					__rotate_left(tmp, root);
--					tmp = parent->in_left;
--				}
--				tmp->in_color = parent->in_color;
--				parent->in_color = INTERVAL_BLACK;
--				if (tmp->in_left)
--					tmp->in_left->in_color = INTERVAL_BLACK;
--				__rotate_right(parent, root);
--				node = *root;
-+
-+			if (interval_set_color(node, parent, root, 1))
- 				break;
--			}
- 		}
- 	}
- 	if (node)
--- 
-1.7.9.5
+char *get_task_comm(char *buf, struct task_struct *tsk)
+{
+        /* buf must be at least sizeof(tsk->comm) in size */
+        task_lock(tsk);
+        strncpy(buf, tsk->comm, sizeof(tsk->comm));
+        task_unlock(tsk);
+        return buf;
+}
 
+Is get_task_comm() used to prepare data for userspace?
+strncpy() fills the remaining of the buffer with zeroes, so it avoids leaking
+data.
+
+Note that strncpy() may leave the buffer non-zero-terminated if the source
+string is too long, but as set_task_comm() uses strlcpy(), this should never
+be the case:
+
+void set_task_comm(struct task_struct *tsk, char *buf)
+{
+        task_lock(tsk);
+        trace_task_rename(tsk, buf);
+        strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+        task_unlock(tsk);
+        perf_event_comm(tsk);
+}
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
