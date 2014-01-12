@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228AbaALVlE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 16:41:04 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:36003 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbaALVlC (ORCPT
+	id S1751203AbaALVxh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 16:53:37 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52715 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaALVxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 16:41:02 -0500
-Message-ID: <52D30BF7.90107@kernel.org>
-Date: Sun, 12 Jan 2014 21:41:11 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 12 Jan 2014 16:53:36 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Linus SH list <linux-sh@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI
+Date: Sun, 12 Jan 2014 22:54:15 +0100
+Message-ID: <2820428.J065BbN1jW@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.10.25-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1389445589-21502-1-git-send-email-ben.dooks@codethink.co.uk>
+References: <1389445589-21502-1-git-send-email-ben.dooks@codethink.co.uk>
 MIME-Version: 1.0
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-CC: pali.rohar@gmail.com, pavel@ucw.cz, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH] iio: tsl2563: Initialize channels
-References: <1389556464-692-1-git-send-email-ivo.g.dimitrov.75@gmail.com> <alpine.DEB.2.01.1401122150210.9334@pmeerw.net> <52D30444.5070800@gmail.com>
-In-Reply-To: <52D30444.5070800@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ben,
 
+Thank you for the patch.
 
-On 12/01/14 21:08, Ivaylo Dimitrov wrote:
-> On 12.01.2014 22:55, Peter Meerwald wrote:
->>
->> I think the fix should rather be
->>
->>     if (chan->channel2 == IIO_MOD_LIGHT_BOTH)
->>         chip->calib0 = calib_from_sysfs(val);
->>     else if (chan->channel2 == IIO_MOD_LIGHT_IR)
->>         chip->calib1 = calib_from_sysfs(val);
->>     else
->>         return -EINVAL;
->>
->> since only the INTENSITY channels have a CALIBSCALE info
->>
->> the light channel incorrectly sets .indexed = 1 and .channel = 0 which
->> should be unnecessary since there is only one IIO_LIGHT channel
->>
->> regards, p.
->>
->
-> I thought so when I was preparing the patch, but unfortunately couldn't find any documentation for iio subsystem structs and defines, besides what is in the header files (and it is not very descriptive), so I took the easy route.
->
-> However, I'll send a new patch with the above (and a little more) changes.
-Leave the indexed bit alone.  Whilst unnecessary it is fine within the ABI
-and changing it would be a userspace ABI change.
+On Saturday 11 January 2014 13:06:29 Ben Dooks wrote:
+> If the kernel is built to support multi-arm configurmation with shmobile
+> support built in, then the drivers/sh is not built. This contains drivers
+> that are essential to devices support by that configuration, including the
+> PM runtime code in drivers/sh/pm_runtime.c (which implicitly enables the
+> bus clocks for all devices).
+> 
+> If CONFIG_ARCH_SHMOBILE_MULTI then build the drivers/sh directory,
+> but ensure that bits that may conflict (drivers/sh/clk if the common
+> clock framework is not enabled) are built.
+> 
+> The ARCH_SHMOBILE_MULTI was added by efacfce5f8a ("ARM: shmobile: Introduce
+> ARCH_SHMOBILE_MULTI") but this has only just recently been found due to
+> building device-tree only kernels.
+> 
+> Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+> Cc: Linus SH list <linux-sh@vger.kernel.org>
+> Cc: Simon Horman <horms@verge.net.au>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+> ---
+>  drivers/Makefile    | 1 +
+>  drivers/sh/Makefile | 3 +++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 8e3b8b0..abc4744 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -118,6 +118,7 @@ obj-$(CONFIG_SGI_SN)		+= sn/
+>  obj-y				+= firmware/
+>  obj-$(CONFIG_CRYPTO)		+= crypto/
+>  obj-$(CONFIG_SUPERH)		+= sh/
+> +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= sh/
+>  obj-$(CONFIG_ARCH_SHMOBILE_LEGACY)	+= sh/
+>  ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
+>  obj-y				+= clocksource/
+> diff --git a/drivers/sh/Makefile b/drivers/sh/Makefile
+> index fc67f56..86604a5 100644
+> --- a/drivers/sh/Makefile
+> +++ b/drivers/sh/Makefile
+> @@ -3,7 +3,10 @@
+>  #
+>  obj-y	:= intc/
 
-Otherwise, as described by Peter will be fine.
+Is intc needed as well ?
 
-Jonathan
->
-> Thanks,
-> Ivo
->
+> 
+> +ifeq ($(CONFIG_COMMON_CLK),n)
+>  obj-$(CONFIG_HAVE_CLK)		+= clk/
+> +endif
+> +
+>  obj-$(CONFIG_MAPLE)		+= maple/
+>  obj-$(CONFIG_SUPERHYWAY)	+= superhyway/
+-- 
+Regards,
+
+Laurent Pinchart
+
