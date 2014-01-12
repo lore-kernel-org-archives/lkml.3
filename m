@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751029AbaALPRE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 10:17:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaALPRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 10:17:02 -0500
-Date: Sun, 12 Jan 2014 16:16:15 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, namhyung@kernel.org, mingo@kernel.org,
-        dsahern@gmail.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/9] perf, tools: fix BFD detection on opensuse
-Message-ID: <20140112151615.GA6524@krava.brq.redhat.com>
-References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
- <1389469379-13340-2-git-send-email-andi@firstfloor.org>
+	id S1751101AbaALPdz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 10:33:55 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:44954 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaALPdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 10:33:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389469379-13340-2-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389536074-17145-1-git-send-email-cyborg101010@gmail.com>
+References: <1389536074-17145-1-git-send-email-cyborg101010@gmail.com>
+Date: Sun, 12 Jan 2014 16:33:51 +0100
+X-Google-Sender-Auth: K47nwe4ERR8W2PO9Y05qDFI0Dbk
+Message-ID: <CAAsK9AEQiAZ+X83x9cnoxKTnsFZvZdg8CQNzd=+UQO_4AZTABQ@mail.gmail.com>
+Subject: Re: [PATCH] AlarmDev: Changing is_wakeup() to be a function to pass checkpatch
+From: Levente Kurusa <levex@linux.com>
+To: Joe <cyborg101010@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, john.stultz@linaro.org,
+        dan.carpenter@oracle.com, cruzjbishop@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 11:42:51AM -0800, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> opensuse libbfd requires -lz -liberty to build. Add those
-> to the BFD feature detection.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Hello,
+
+2014/1/12 Joe <cyborg101010@gmail.com>:
 > ---
->  tools/perf/config/Makefile                | 2 +-
->  tools/perf/config/feature-checks/Makefile | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index 01dd43d..d86d33c 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -478,7 +478,7 @@ else
->  endif
->  
->  ifeq ($(feature-libbfd), 1)
-> -  EXTLIBS += -lbfd
-> +  EXTLIBS += -lbfd -lz -liberty
->  endif
+>  drivers/staging/android/alarm-dev.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
 
-ok, Fedora is using linker script in place of libbfd.so which
-adds those anyway..
+You are missing a commit message. Your subject as well looks a bit weird.
 
----
-[jolsa@krava perf]$ cat /usr/lib64/libbfd.so 
-/* GNU ld script */
+>
+> diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+> index 647694f..87f2a02 100644
+> --- a/drivers/staging/android/alarm-dev.c
+> +++ b/drivers/staging/android/alarm-dev.c
+> @@ -66,13 +66,15 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
+>   *
+>   * Return: 1 if this is a wakeup alarm, otherwise 0
+>   */
+> -static int is_wakeup(enum android_alarm_type type)
+> +static int is_wakeup(enum andriod_alarm_type type)
 
-/* Ensure this .so library will not be used by a link for a different format
-   on a multi-architecture system.  */
-OUTPUT_FORMAT(elf64-x86-64)
+What is this? andriod? Did it compile?
 
-/* The libz dependency is unexpected by legacy build scripts.  */
-/* The libdl dependency is for plugin support.  (BZ 889134)  */
-INPUT ( /usr/lib64/libbfd.a -liberty -lz -ldl )
----
+>  {
+> -       return (type == ANDROID_ALARM_RTC_WAKEUP ||
+> -               type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
+> +       if (type == ANDROID_ALARM_RTC_WAKEUP ||
+> +           type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP)
+> +               return 1;
+> +       else
+> +               return 0;
 
-we also need to check and probably get rid of follow up settings of
-EXTLIBS which seems useless now:
+While this is correct, the better fix would be to remove the parentheses..
 
-...
-    ifneq ($(feature-libbfd), 1)
-      $(call feature_check,liberty)
-      ifeq ($(feature-liberty), 1)
-        EXTLIBS += -lbfd -liberty
-      else
-        $(call feature_check,liberty-z)
-        ifeq ($(feature-liberty-z), 1)
-          EXTLIBS += -lbfd -liberty -lz
-...
+Also, I think a similar patch was already applied, not sure though.
 
-jirka
+> [...]
+
+--
+Regards,
+Levente Kurusa
