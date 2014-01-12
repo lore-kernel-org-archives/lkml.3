@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287AbaALRHT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 12:07:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44426 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaALRHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 12:07:17 -0500
-Message-ID: <52D2CBAC.5020901@zytor.com>
-Date: Sun, 12 Jan 2014 09:06:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751292AbaALRKp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 12:10:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44457 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaALRKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 12:10:42 -0500
+Date: Sun, 12 Jan 2014 09:10:26 -0800
+From: tip-bot for Richard Weinberger <tipbot@zytor.com>
+Message-ID: <tip-4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        richard@nod.at, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        richard@nod.at, tglx@linutronix.de
+In-Reply-To: <1389538341-31383-1-git-send-email-richard@nod.at>
+References: <1389538341-31383-1-git-send-email-richard@nod.at>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] um, x86: Fix vDSO build
+Git-Commit-ID: 4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Qiaowei Ren <qiaowei.ren@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] x86, mpx: extend siginfo structure to include bound
- violation information
-References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-5-git-send-email-qiaowei.ren@intel.com> <20140112093013.GB3664@pd.tnic> <52D2C791.2030802@zytor.com> <20140112170354.GC3655@pd.tnic>
-In-Reply-To: <20140112170354.GC3655@pd.tnic>
-X-Enigmail-Version: 1.6
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 09:10:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2014 09:03 AM, Borislav Petkov wrote:
-> On Sun, Jan 12, 2014 at 08:49:21AM -0800, H. Peter Anvin wrote:
->> I saw a previous version of the code that did that, and it really
->> didn't work out well -- it ended up being more complex and slower.
-> 
-> I suspected as much.
-> 
-> But, we still probably should use the generic struct insn, insn_field,
-> etc and act on them in mpx.c instead of defining our own mpx_insn,
-> mpx_insn_field, X86_MODRM_MOD, etc in the header which are more or less
-> copied from insn.h, right?
-> 
+Commit-ID:  4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5
+Gitweb:     http://git.kernel.org/tip/4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5
+Author:     Richard Weinberger <richard@nod.at>
+AuthorDate: Sun, 12 Jan 2014 15:52:21 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Sun, 12 Jan 2014 09:06:03 -0800
 
-That may be.
+um, x86: Fix vDSO build
 
-	-hpa
+Commit
 
+    663b55b9b39fa x86: Delete non-required instances of include <linux/init.h>
+
+broke the UML build.
+
+arch/x86/um/vdso/vdso.S: Assembler messages:
+arch/x86/um/vdso/vdso.S:2: Error: no such instruction: `__initdata'
+arch/x86/um/vdso/vdso.S:9: Error: no such instruction: `__finit'
+
+UML's vDSO needs linux/init.h.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Link: http://lkml.kernel.org/r/1389538341-31383-1-git-send-email-richard@nod.at
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/um/vdso/vdso.S | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/um/vdso/vdso.S b/arch/x86/um/vdso/vdso.S
+index 4b4bd4c..1cb468a 100644
+--- a/arch/x86/um/vdso/vdso.S
++++ b/arch/x86/um/vdso/vdso.S
+@@ -1,3 +1,4 @@
++#include <linux/init.h>
+ 
+ __INITDATA
+ 
