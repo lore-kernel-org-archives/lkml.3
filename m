@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaALMNT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 07:13:19 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:41075 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaALMNR (ORCPT
+	id S1751411AbaALMNz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 07:13:55 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:58139 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaALMNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 07:13:17 -0500
-Message-ID: <52D286D9.5050500@dev.mellanox.co.il>
-Date: Sun, 12 Jan 2014 14:13:13 +0200
+	Sun, 12 Jan 2014 07:13:53 -0500
+Message-ID: <52D286FB.2070108@dev.mellanox.co.il>
+Date: Sun, 12 Jan 2014 14:13:47 +0200
 From: Sagi Grimberg <sagig@dev.mellanox.co.il>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -44,7 +44,7 @@ Hmm,
 
 So this takes me to a corner I still don't understand, if a LUN is 
 pre-formatted as T10-protected, what happens to unwritten blocks read?
-I mean, SCSI login executes some reads from sevel LBAs which will 
+I mean, SCSI login executes some reads from several LBAs which will 
 probably fail as blocks are unwritten.
 
 What is the usage model? perform Initiator login and then format the LUN 
