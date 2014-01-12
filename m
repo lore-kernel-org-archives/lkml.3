@@ -1,92 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaALKPU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 05:15:20 -0500
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:58965 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114AbaALKPP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 05:15:15 -0500
-Date: Sun, 12 Jan 2014 11:14:20 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 26/28] drm/i2c: tda998x: code optimization
-Message-ID: <20140112111420.6258799a@armhf>
-In-Reply-To: <20140112094533.GP15937@n2100.arm.linux.org.uk>
-References: <20140109120725.0b0f3e55@armhf>
-	<20140111185509.GL15937@n2100.arm.linux.org.uk>
-	<20140112092201.764fb09c@armhf>
-	<20140112094533.GP15937@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	id S1751295AbaALKSK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 05:18:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41389 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaALKSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 05:18:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,647,1384329600"; 
+   d="scan'208";a="457437124"
+Date: Sun, 12 Jan 2014 18:18:04 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: David Miller <davem@davemloft.net>
+Cc: roy.qing.li@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [ipv6_vti.c] INFO: trying to register non-static key.
+Message-ID: <20140112101804.GA13797@localhost>
+References: <20140111231023.GA9864@localhost>
+ <20140111.194502.2043728861122940485.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140111.194502.2043728861122940485.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Jan 2014 09:45:33 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-
-> On Sun, Jan 12, 2014 at 09:22:01AM +0100, Jean-Francois Moine wrote:
-> > On Sat, 11 Jan 2014 18:55:09 +0000
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > 
-> > > On Thu, Jan 09, 2014 at 12:07:25PM +0100, Jean-Francois Moine wrote:
-> > > > This patch reduces the number of I2C exchanges by setting many bits in
-> > > > one write and removing a useless write.
-> > > > 
-> > > > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> > > > ---
-> > > >  drivers/gpu/drm/i2c/tda998x_drv.c   | 10 ++++------
-> > > >  1 file changed, 4 insertions(+), 6 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-> > > > index 6b4f6d2..d3b3f3a 100644
-> > > > --- a/drivers/gpu/drm/i2c/tda998x_drv.c
-> > > > +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-> > > > @@ -751,10 +751,10 @@ tda998x_configure_audio(struct tda998x_priv *priv,
-> > > >  	}
-> > > >  
-> > > >  	reg_write(priv, REG_AIP_CLKSEL, clksel_aip);
-> > > > -	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT);
-> > > > +	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT |
-> > > 
-> > > This patch clearly hasn't even been build tested, so I doubt there's
-> > > much point reviewing this or the following patches.  From a quick scan
-> > > of the following patches, this never got fixed so the following patches
-> > > can't have been build tested either.
-> > 
-> > I don't see what can be the problem with this patch. It does not change
-> > anything in the logic. About testing, it is applied to my Cubox kernel
-> > for more than 4 months and everything works correctly.
-> > 
-> > I will move the following comment a bit upwards. Maybe the code will be
-> > clearer.
+On Sat, Jan 11, 2014 at 07:45:02PM -0800, David Miller wrote:
+> From: Fengguang Wu <fengguang.wu@intel.com>
+> Date: Sun, 12 Jan 2014 07:10:23 +0800
 > 
-> You're replacing ");" with "|" here, which is not legal C.  Parenthesis
-> must be balanced and statements must be terminated.
+> > Here is a warning introduced by commit 469bdcefd ("ipv6: fix the use
+> > of pcpu_tstats in ip6_vti.c"):
+> 
+> It isn't fixed by the following, which is also in Linus's tree?
 
-!? they are:
+Yes.. Sorry it's a duplicate report. I searched the full commit sha1
+in my outbox before this report but the previous report email only
+mentioned the abbreviated commit id..
 
--	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT);
-+	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT |
- 
- 	/* Enable automatic CTS generation */
--	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_ACR_MAN);
-+					AIP_CNTRL_0_ACR_MAN);
+Cheers,
+Fengguang
 
-gives:
-
-	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT |
-
-	/* Enable automatic CTS generation */
-					AIP_CNTRL_0_ACR_MAN);
-
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+> >From 657e5d19657542631461e72fdc375b1e83e72070 Mon Sep 17 00:00:00 2001
+> From: Li RongQing <roy.qing.li@gmail.com>
+> Date: Tue, 7 Jan 2014 15:39:43 +0800
+> Subject: [PATCH] ipv6: pcpu_tstats.syncp should be initialised in ip6_vti.c
+> 
+> initialise pcpu_tstats.syncp to kill the calltrace
+> [   11.973950] Call Trace:
+> [   11.973950]  [<819bbaff>] dump_stack+0x48/0x60
+> [   11.973950]  [<819bbaff>] dump_stack+0x48/0x60
+> [   11.973950]  [<81078dcf>] __lock_acquire.isra.22+0x1bf/0xc10
+> [   11.973950]  [<81078dcf>] __lock_acquire.isra.22+0x1bf/0xc10
+> [   11.973950]  [<81079fa7>] lock_acquire+0x77/0xa0
+> [   11.973950]  [<81079fa7>] lock_acquire+0x77/0xa0
+> [   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
+> [   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
+> [   11.973950]  [<8183862d>] ip_tunnel_get_stats64+0x6d/0x230
+> [   11.973950]  [<8183862d>] ip_tunnel_get_stats64+0x6d/0x230
+> [   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
+> [   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
+> [   11.973950]  [<811cf8c1>] ? __nla_reserve+0x21/0xd0
+> [   11.973950]  [<811cf8c1>] ? __nla_reserve+0x21/0xd0
+> [   11.973950]  [<817ca7ab>] dev_get_stats+0xcb/0x130
+> [   11.973950]  [<817ca7ab>] dev_get_stats+0xcb/0x130
+> [   11.973950]  [<817d5409>] rtnl_fill_ifinfo+0x569/0xe20
+> [   11.973950]  [<817d5409>] rtnl_fill_ifinfo+0x569/0xe20
+> [   11.973950]  [<810352e0>] ? kvm_clock_read+0x20/0x30
+> [   11.973950]  [<810352e0>] ? kvm_clock_read+0x20/0x30
+> [   11.973950]  [<81008e38>] ? sched_clock+0x8/0x10
+> [   11.973950]  [<81008e38>] ? sched_clock+0x8/0x10
+> [   11.973950]  [<8106ba45>] ? sched_clock_local+0x25/0x170
+> [   11.973950]  [<8106ba45>] ? sched_clock_local+0x25/0x170
+> [   11.973950]  [<810da6bd>] ? __kmalloc+0x3d/0x90
+> [   11.973950]  [<810da6bd>] ? __kmalloc+0x3d/0x90
+> [   11.973950]  [<817b8c10>] ? __kmalloc_reserve.isra.41+0x20/0x70
+> [   11.973950]  [<817b8c10>] ? __kmalloc_reserve.isra.41+0x20/0x70
+> [   11.973950]  [<810da81a>] ? slob_alloc_node+0x2a/0x60
+> [   11.973950]  [<810da81a>] ? slob_alloc_node+0x2a/0x60
+> [   11.973950]  [<817b919a>] ? __alloc_skb+0x6a/0x2b0
+> [   11.973950]  [<817b919a>] ? __alloc_skb+0x6a/0x2b0
+> [   11.973950]  [<817d8795>] rtmsg_ifinfo+0x65/0xe0
+> [   11.973950]  [<817d8795>] rtmsg_ifinfo+0x65/0xe0
+> [   11.973950]  [<817cbd31>] register_netdevice+0x531/0x5a0
+> [   11.973950]  [<817cbd31>] register_netdevice+0x531/0x5a0
+> [   11.973950]  [<81892b87>] ? ip6_tnl_get_cap+0x27/0x90
+> [   11.973950]  [<81892b87>] ? ip6_tnl_get_cap+0x27/0x90
+> [   11.973950]  [<817cbdb6>] register_netdev+0x16/0x30
+> [   11.973950]  [<817cbdb6>] register_netdev+0x16/0x30
+> [   11.973950]  [<81f574a6>] vti6_init_net+0x1c4/0x1d4
+> [   11.973950]  [<81f574a6>] vti6_init_net+0x1c4/0x1d4
+> [   11.973950]  [<81f573af>] ? vti6_init_net+0xcd/0x1d4
+> [   11.973950]  [<81f573af>] ? vti6_init_net+0xcd/0x1d4
+> [   11.973950]  [<817c16df>] ops_init.constprop.11+0x17f/0x1c0
+> [   11.973950]  [<817c16df>] ops_init.constprop.11+0x17f/0x1c0
+> [   11.973950]  [<817c1779>] register_pernet_operations.isra.9+0x59/0x90
+> [   11.973950]  [<817c1779>] register_pernet_operations.isra.9+0x59/0x90
+> [   11.973950]  [<817c18d1>] register_pernet_device+0x21/0x60
+> [   11.973950]  [<817c18d1>] register_pernet_device+0x21/0x60
+> [   11.973950]  [<81f574b6>] ? vti6_init_net+0x1d4/0x1d4
+> [   11.973950]  [<81f574b6>] ? vti6_init_net+0x1d4/0x1d4
+> [   11.973950]  [<81f574c7>] vti6_tunnel_init+0x11/0x68
+> [   11.973950]  [<81f574c7>] vti6_tunnel_init+0x11/0x68
+> [   11.973950]  [<81f572a1>] ? mip6_init+0x73/0xb4
+> [   11.973950]  [<81f572a1>] ? mip6_init+0x73/0xb4
+> [   11.973950]  [<81f0cba4>] do_one_initcall+0xbb/0x15b
+> [   11.973950]  [<81f0cba4>] do_one_initcall+0xbb/0x15b
+> [   11.973950]  [<811a00d8>] ? sha_transform+0x528/0x1150
+> [   11.973950]  [<811a00d8>] ? sha_transform+0x528/0x1150
+> [   11.973950]  [<81f0c544>] ? repair_env_string+0x12/0x51
+> [   11.973950]  [<81f0c544>] ? repair_env_string+0x12/0x51
+> [   11.973950]  [<8105c30d>] ? parse_args+0x2ad/0x440
+> [   11.973950]  [<8105c30d>] ? parse_args+0x2ad/0x440
+> [   11.973950]  [<810546be>] ? __usermodehelper_set_disable_depth+0x3e/0x50
+> [   11.973950]  [<810546be>] ? __usermodehelper_set_disable_depth+0x3e/0x50
+> [   11.973950]  [<81f0cd27>] kernel_init_freeable+0xe3/0x182
+> [   11.973950]  [<81f0cd27>] kernel_init_freeable+0xe3/0x182
+> [   11.973950]  [<81f0c532>] ? do_early_param+0x7a/0x7a
+> [   11.973950]  [<81f0c532>] ? do_early_param+0x7a/0x7a
+> [   11.973950]  [<819b5b1b>] kernel_init+0xb/0x100
+> [   11.973950]  [<819b5b1b>] kernel_init+0xb/0x100
+> [   11.973950]  [<819cebf7>] ret_from_kernel_thread+0x1b/0x28
+> [   11.973950]  [<819cebf7>] ret_from_kernel_thread+0x1b/0x28
+> [   11.973950]  [<819b5b10>] ? rest_init+0xc0/0xc0
+> [   11.973950]  [<819b5b10>] ? rest_init+0xc0/0xc0
+> 
+> Before 469bdcefdc ("ipv6: fix the use of pcpu_tstats in ip6_vti.c"),
+> the pcpu_tstats.syncp is not used to pretect the 64bit elements of
+> pcpu_tstats, so not appear this calltrace.
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> ---
+>  net/ipv6/ip6_vti.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/net/ipv6/ip6_vti.c b/net/ipv6/ip6_vti.c
+> index a4564b0..7b42d5e 100644
+> --- a/net/ipv6/ip6_vti.c
+> +++ b/net/ipv6/ip6_vti.c
+> @@ -732,12 +732,18 @@ static void vti6_dev_setup(struct net_device *dev)
+>  static inline int vti6_dev_init_gen(struct net_device *dev)
+>  {
+>  	struct ip6_tnl *t = netdev_priv(dev);
+> +	int i;
+>  
+>  	t->dev = dev;
+>  	t->net = dev_net(dev);
+>  	dev->tstats = alloc_percpu(struct pcpu_tstats);
+>  	if (!dev->tstats)
+>  		return -ENOMEM;
+> +	for_each_possible_cpu(i) {
+> +		struct pcpu_tstats *stats;
+> +		stats = per_cpu_ptr(dev->tstats, i);
+> +		u64_stats_init(&stats->syncp);
+> +	}
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.11.7
