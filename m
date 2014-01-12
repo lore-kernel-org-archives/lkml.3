@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaALSgM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:36:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45735 "EHLO
+	id S1751931AbaALSgY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:36:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45749 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaALSgJ (ORCPT
+	with ESMTP id S1751172AbaALSgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:36:09 -0500
-Date: Sun, 12 Jan 2014 10:35:35 -0800
+	Sun, 12 Jan 2014 13:36:19 -0500
+Date: Sun, 12 Jan 2014 10:35:45 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-fspmnjadohrik8uvhytyu8lp@git.kernel.org>
+Message-ID: <tip-b7r7o80o2xwwtlzgqxv50foe@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
@@ -21,9 +21,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf scripting python:
-  Shorten function signatures
-Git-Commit-ID: b7fff6b5f977115be1757f18b1aca928803b1e17
+Subject: [tip:perf/core] perf scripting perl: Shorten function signatures
+Git-Commit-ID: 8853a1b76288d79aa1a6c5b8fe623d892aa9958b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,19 +31,19 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:35:41 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:35:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b7fff6b5f977115be1757f18b1aca928803b1e17
-Gitweb:     http://git.kernel.org/tip/b7fff6b5f977115be1757f18b1aca928803b1e17
+Commit-ID:  8853a1b76288d79aa1a6c5b8fe623d892aa9958b
+Gitweb:     http://git.kernel.org/tip/8853a1b76288d79aa1a6c5b8fe623d892aa9958b
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 19 Dec 2013 16:34:52 -0300
+AuthorDate: Thu, 19 Dec 2013 16:39:31 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Dec 2013 16:34:52 -0300
+CommitDate: Thu, 19 Dec 2013 16:39:31 -0300
 
-perf scripting python: Shorten function signatures
+perf scripting perl: Shorten function signatures
 
 Removing unused parameters.
 
@@ -57,71 +56,57 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-fspmnjadohrik8uvhytyu8lp@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-b7r7o80o2xwwtlzgqxv50foe@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../util/scripting-engines/trace-event-python.c    | 26 ++++++++--------------
- 1 file changed, 9 insertions(+), 17 deletions(-)
+ tools/perf/util/scripting-engines/trace-event-perl.c | 20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 53c20e7..fc00792 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -231,13 +231,10 @@ static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index d5e5969..b672ef0 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -257,12 +257,9 @@ static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
  	return event;
  }
  
--static void python_process_tracepoint(union perf_event *perf_event
--				      __maybe_unused,
--				 struct perf_sample *sample,
--				 struct perf_evsel *evsel,
--				 struct machine *machine __maybe_unused,
--				 struct thread *thread,
--				 struct addr_location *al)
-+static void python_process_tracepoint(struct perf_sample *sample,
-+				      struct perf_evsel *evsel,
-+				      struct thread *thread,
-+				      struct addr_location *al)
+-static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
+-				    struct perf_sample *sample,
++static void perl_process_tracepoint(struct perf_sample *sample,
+ 				    struct perf_evsel *evsel,
+-				    struct machine *machine __maybe_unused,
+-				    struct thread *thread,
+-					struct addr_location *al)
++				    struct thread *thread)
  {
- 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
-@@ -351,11 +348,8 @@ static void python_process_tracepoint(union perf_event *perf_event
- 	Py_DECREF(t);
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -349,10 +346,7 @@ static void perl_process_tracepoint(union perf_event *perf_event __maybe_unused,
+ 
+ static void perl_process_event_generic(union perf_event *event,
+ 				       struct perf_sample *sample,
+-				       struct perf_evsel *evsel,
+-				       struct machine *machine __maybe_unused,
+-				       struct thread *thread __maybe_unused,
+-					   struct addr_location *al __maybe_unused)
++				       struct perf_evsel *evsel)
+ {
+ 	dSP;
+ 
+@@ -377,12 +371,12 @@ static void perl_process_event_generic(union perf_event *event,
+ static void perl_process_event(union perf_event *event,
+ 			       struct perf_sample *sample,
+ 			       struct perf_evsel *evsel,
+-			       struct machine *machine,
++			       struct machine *machine __maybe_unused,
+ 			       struct thread *thread,
+-				   struct addr_location *al)
++			       struct addr_location *al __maybe_unused)
+ {
+-	perl_process_tracepoint(event, sample, evsel, machine, thread, al);
+-	perl_process_event_generic(event, sample, evsel, machine, thread, al);
++	perl_process_tracepoint(sample, evsel, thread);
++	perl_process_event_generic(event, sample, evsel);
  }
  
--static void python_process_general_event(union perf_event *perf_event
--					 __maybe_unused,
--					 struct perf_sample *sample,
-+static void python_process_general_event(struct perf_sample *sample,
- 					 struct perf_evsel *evsel,
--					 struct machine *machine __maybe_unused,
- 					 struct thread *thread,
- 					 struct addr_location *al)
- {
-@@ -411,22 +405,20 @@ exit:
- 	Py_DECREF(t);
- }
- 
--static void python_process_event(union perf_event *perf_event,
-+static void python_process_event(union perf_event *event __maybe_unused,
- 				 struct perf_sample *sample,
- 				 struct perf_evsel *evsel,
--				 struct machine *machine,
-+				 struct machine *machine __maybe_unused,
- 				 struct thread *thread,
- 				 struct addr_location *al)
- {
- 	switch (evsel->attr.type) {
- 	case PERF_TYPE_TRACEPOINT:
--		python_process_tracepoint(perf_event, sample, evsel,
--					  machine, thread, al);
-+		python_process_tracepoint(sample, evsel, thread, al);
- 		break;
- 	/* Reserve for future process_hw/sw/raw APIs */
- 	default:
--		python_process_general_event(perf_event, sample, evsel,
--					     machine, thread, al);
-+		python_process_general_event(sample, evsel, thread, al);
- 	}
- }
- 
+ static void run_start_sub(void)
