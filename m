@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaALLF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 06:05:57 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:52956 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751168AbaALLFx (ORCPT
+	id S1751292AbaALLbj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 06:31:39 -0500
+Received: from nwas14.bluewin.ch ([195.186.228.231]:63017 "EHLO
+	zhhdzmsp-nwas14.bluewin.ch" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751175AbaALLbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 06:05:53 -0500
-Date: Sun, 12 Jan 2014 11:05:46 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, joeyli <jlee@suse.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
- efi_enter_virtual_mode() (was: Re: [RFC PATCH 00/14] Support timezone of
- ACPI TAD and EFI TIME)
-Message-ID: <20140112110546.GB25180@console-pimps.org>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
- <3476450.BMEcId2Lgj@vostro.rjw.lan>
- <20131221122148.GB29501@console-pimps.org>
- <2530951.HFPX8MI38t@vostro.rjw.lan>
+	Sun, 12 Jan 2014 06:31:36 -0500
+Date: Sun, 12 Jan 2014 12:31:21 +0100 (CET)
+From: Daniel Matuschek <daniel@matuschek.net>
+X-X-Sender: parallels@parallels-Parallels-Virtual-Platform
+To: alsa-devel@alsa-project.org
+cc: info@crazy-audio.com, Dimitris.Papastamos@wolfsonmicro.com,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: wm8804: Cleanup of post_table
+Message-ID: <alpine.DEB.2.02.1401121222180.3093@parallels-Parallels-Virtual-Platform>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2530951.HFPX8MI38t@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Jan, at 01:30:23AM, Rafael J. Wysocki wrote:
-> On Saturday, December 21, 2013 12:21:48 PM Matt Fleming wrote:
-> > On Fri, 20 Dec, at 11:18:56PM, Rafael J. Wysocki wrote:
-> > > 
-> > > I'm not sure 100%, but I *think* we need to do that with interrupts enabled.
-> > > At least after mm_init(), because it relies on things initialized there if I
-> > > remember correctly.
-> > > 
-> > > From what I can tell at the moment, it might be possible to move it before
-> > > efi_enter_virtual_mode() if that would help.
-> > 
-> > Actually yeah, that would be super useful, and I think we'd be able to
-> > get rid of the whole efi_late_init() stuff because we'd no longer need
-> > to hang on to the EFI_BOOT_SERVICES* regions after
-> > SetVirtualAddressMap().
-> 
-> OK
-> 
-> I don't see any adverse effects of the patch below on a couple of my test
-> boxes, but (a) they are Intel-based and (b) they are non-EFI, so it would be
-> good to give it a go on as many machines as reasonably possible.
 
-Thanks Rafael, I'll give this a spin on my test machines here.
+Signed-off-by: Daniel 
+Matuschek <inof@crazy-audio.com>
 
+  Existing post_table has duplicate settings for some PLL settings.
+  Only the first setting was used with mclk_div=1
+  With the updated post_table, the driver
+  uses mclk_div=0 whenever it is possible. This allows the WM8804
+  to work at 256xfs internal clock and only use 128xfs
+  internal clock for high sample rates where 256xfs is not
+  supported anymore.
+
+---
+  sound/soc/codecs/wm8804.c |    2 --
+  1 file changed, 2 deletions(-)
+
+diff --git a/sound/soc/codecs/wm8804.c b/sound/soc/codecs/wm8804.c
+index 1704b1e..f605b8b 100644
+--- a/sound/soc/codecs/wm8804.c
++++ b/sound/soc/codecs/wm8804.c
+@@ -307,9 +307,7 @@ static struct {
+  	unsigned int mclkdiv;
+  } post_table[] = {
+  	{  2,  0, 0 },
+-	{  4,  0, 1 },
+  	{  4,  1, 0 },
+-	{  8,  1, 1 },
+  	{  8,  2, 0 },
+  	{ 16,  2, 1 },
+  	{ 12,  3, 0 },
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.9.5
+
