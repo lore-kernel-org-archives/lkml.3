@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370AbaALRqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 12:46:14 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:58842 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaALRqL (ORCPT
+	id S1751399AbaALRqd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 12:46:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44744 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaALRpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 12:46:11 -0500
-Date: Sun, 12 Jan 2014 18:46:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] speeding up the stat() family of system calls...
-Message-ID: <20140112174607.GA26698@gmail.com>
-References: <CA+55aFxZ2u+M72u3HSD7TVY2+WRRi27pYC=_4Wawr5y1m8DfnQ@mail.gmail.com>
- <20131224204625.GB20471@gmail.com>
- <CA+55aFzPBdbfKovMT8Edr4SmE2_=+OKJFac9XW2awegogTkVTA@mail.gmail.com>
- <52BD199A.8070607@zytor.com>
- <52BE0D89.3080405@zytor.com>
+	Sun, 12 Jan 2014 12:45:44 -0500
+Date: Sun, 12 Jan 2014 09:45:28 -0800
+From: tip-bot for Richard Weinberger <tipbot@zytor.com>
+Message-ID: <tip-106553aa4ead528b1bab37fb3cc47004a4451acc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        richard@nod.at, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        richard@nod.at, tglx@linutronix.de
+In-Reply-To: <1389538341-31383-1-git-send-email-richard@nod.at>
+References: <1389538341-31383-1-git-send-email-richard@nod.at>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] um, x86: Fix vDSO build
+Git-Commit-ID: 106553aa4ead528b1bab37fb3cc47004a4451acc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <52BE0D89.3080405@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 09:45:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  106553aa4ead528b1bab37fb3cc47004a4451acc
+Gitweb:     http://git.kernel.org/tip/106553aa4ead528b1bab37fb3cc47004a4451acc
+Author:     Richard Weinberger <richard@nod.at>
+AuthorDate: Sun, 12 Jan 2014 15:52:21 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 12 Jan 2014 16:47:31 +0100
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+um, x86: Fix vDSO build
 
-> On 12/26/2013 10:09 PM, H. Peter Anvin wrote:
-> > On 12/26/2013 11:00 AM, Linus Torvalds wrote:
-> >>
-> >> Interestingly, looking at the cp_new_stat() profiles, the games we
-> >> play to get efficient range checking seem to actually hurt us. Maybe
-> >> it's the "sbb" that is just expensive, or maybe it's turning a (very
-> >> predictable) conditional branch into a data dependency chain instead.
-> >> Or maybe it's just random noise in my profiles that happened to make
-> >> those sbb's look bad.
-> >>
-> > 
-> > Much to my surprise, this patch adds almost 10K of text to an 
-> > "allyesconfig" build.  I wouldn't have expected it.  I'll look at 
-> > it some more tomorrow.
-> 
-> Mystery solved... it is all code added by gcov &c because a new 
-> (inline) function is added to the code base.  So it is fluff, not 
-> real.
+Commit 663b55b9b39 ("x86: Delete non-required instances of include <linux/init.h>")
+broke the UML build.
 
-Yeah, defconfig builds are better for size comparisons, at least on 
-x86 they are distro-config derived so a lot more relevant to real life 
-than allyesconfig or allmodconfig.
+  arch/x86/um/vdso/vdso.S: Assembler messages:
+  arch/x86/um/vdso/vdso.S:2: Error: no such instruction: `__initdata'
+  arch/x86/um/vdso/vdso.S:9: Error: no such instruction: `__finit'
 
-Thanks,
+UML's vDSO needs linux/init.h.
 
-	Ingo
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Cc: user-mode-linux-devel@lists.sourceforge.net
+Cc: paul.gortmaker@windriver.com
+Link: http://lkml.kernel.org/r/1389538341-31383-1-git-send-email-richard@nod.at
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/um/vdso/vdso.S | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/um/vdso/vdso.S b/arch/x86/um/vdso/vdso.S
+index 4b4bd4c..1cb468a 100644
+--- a/arch/x86/um/vdso/vdso.S
++++ b/arch/x86/um/vdso/vdso.S
+@@ -1,3 +1,4 @@
++#include <linux/init.h>
+ 
+ __INITDATA
+ 
