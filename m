@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbaALRKp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 12:10:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44457 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaALRKm (ORCPT
+	id S1751223AbaALRQT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 12:16:19 -0500
+Received: from cassarossa.samfundet.no ([193.35.52.29]:49577 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaALRQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 12:10:42 -0500
-Date: Sun, 12 Jan 2014 09:10:26 -0800
-From: tip-bot for Richard Weinberger <tipbot@zytor.com>
-Message-ID: <tip-4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        richard@nod.at, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        richard@nod.at, tglx@linutronix.de
-In-Reply-To: <1389538341-31383-1-git-send-email-richard@nod.at>
-References: <1389538341-31383-1-git-send-email-richard@nod.at>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] um, x86: Fix vDSO build
-Git-Commit-ID: 4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 12 Jan 2014 12:16:17 -0500
+Date: Sun, 12 Jan 2014 18:16:09 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Sergei Trofimovich <slyfox@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, Mark Jackson <mpfj@mimc.co.uk>,
+        Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+Subject: Re: [PATCH] arch/avr32/boards/mimc200/fram.c: add missing 'module.h'
+ for MODULE_LICENSE
+Message-ID: <20140112171609.GA3773@samfundet.no>
+References: <1389341774-6589-1-git-send-email-slyfox@gentoo.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 09:10:33 -0800 (PST)
+In-Reply-To: <1389341774-6589-1-git-send-email-slyfox@gentoo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5
-Gitweb:     http://git.kernel.org/tip/4ba89f1b381a0adb6cbdfc31a4753c7db11e6ba5
-Author:     Richard Weinberger <richard@nod.at>
-AuthorDate: Sun, 12 Jan 2014 15:52:21 +0100
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sun, 12 Jan 2014 09:06:03 -0800
+Around Fri 10 Jan 2014 11:16:14 +0300 or thereabout, Sergei Trofimovich wrote:
+> config: make ARCH=avr32 mimc200_defconfig
+> 
+>> All error/warnings:
+>>
+>>    arch/avr32/boards/mimc200/fram.c:79: error: expected declaration specifiers or '...' before string constant
+>>    arch/avr32/boards/mimc200/fram.c:79: warning: data definition has no type or storage class
+>>    arch/avr32/boards/mimc200/fram.c:79: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+>> >> arch/avr32/boards/mimc200/fram.c:79: error: function declaration isn't a prototype
+> 
+> Untested.
 
-um, x86: Fix vDSO build
+Looks very sane.
 
-Commit
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> CC: Mark Jackson <mpfj@mimc.co.uk>
+> CC: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> CC: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
+> Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 
-    663b55b9b39fa x86: Delete non-required instances of include <linux/init.h>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-broke the UML build.
+> ---
+>  arch/avr32/boards/mimc200/fram.c | 1 +
+>  1 file changed, 1 insertion(+)
 
-arch/x86/um/vdso/vdso.S: Assembler messages:
-arch/x86/um/vdso/vdso.S:2: Error: no such instruction: `__initdata'
-arch/x86/um/vdso/vdso.S:9: Error: no such instruction: `__finit'
+I will append this to the AVR32 tree at git.kernel.org.
 
-UML's vDSO needs linux/init.h.
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Link: http://lkml.kernel.org/r/1389538341-31383-1-git-send-email-richard@nod.at
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/um/vdso/vdso.S | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/um/vdso/vdso.S b/arch/x86/um/vdso/vdso.S
-index 4b4bd4c..1cb468a 100644
---- a/arch/x86/um/vdso/vdso.S
-+++ b/arch/x86/um/vdso/vdso.S
-@@ -1,3 +1,4 @@
-+#include <linux/init.h>
- 
- __INITDATA
- 
+> diff --git a/arch/avr32/boards/mimc200/fram.c b/arch/avr32/boards/mimc200/fram.c
+> index 9764a1a..76cb51d 100644
+> --- a/arch/avr32/boards/mimc200/fram.c
+> +++ b/arch/avr32/boards/mimc200/fram.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/miscdevice.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/mm.h>
+> +#include <linux/module.h>
+>  #include <linux/io.h>
+>  
+>  #define FRAM_BASE	0xac000000
+-- 
+mvh
+Hans-Christian Egtvedt
