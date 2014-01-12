@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaALSnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:43:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46245 "EHLO
+	id S1752329AbaALSnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:43:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46256 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaALSni (ORCPT
+	with ESMTP id S1752310AbaALSnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:43:38 -0500
-Date: Sun, 12 Jan 2014 10:42:38 -0800
-From: tip-bot for John Stultz <tipbot@zytor.com>
-Message-ID: <tip-7a06c41cbec33c6dbe7eec575c61986122617408@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        sboyd@codeaurora.org, john.stultz@linaro.org, w@1wt.eu,
-        khalasa@piap.pl, tglx@linutronix.de, u.kleine-koenig@pengutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        sboyd@codeaurora.org, john.stultz@linaro.org, w@1wt.eu,
-        khalasa@piap.pl, u.kleine-koenig@pengutronix.de, tglx@linutronix.de
-In-Reply-To: <1388704274-5278-2-git-send-email-john.stultz@linaro.org>
-References: <1388704274-5278-2-git-send-email-john.stultz@linaro.org>
+	Sun, 12 Jan 2014 13:43:45 -0500
+Date: Sun, 12 Jan 2014 10:43:06 -0800
+From: tip-bot for Yann Droneaud <tipbot@zytor.com>
+Message-ID: <tip-a21b0b354d4ac39be691f51c53562e2c24443d9e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        acme@ghostprotocols.net, ydroneaud@opteya.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        acme@ghostprotocols.net, peterz@infradead.org, ydroneaud@opteya.com,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
+References: <8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] sched_clock:
-  Disable seqlock lockdep usage in sched_clock()
-Git-Commit-ID: 7a06c41cbec33c6dbe7eec575c61986122617408
+Subject: [tip:perf/core] perf:
+  Introduce a flag to enable close-on-exec in perf_event_open()
+Git-Commit-ID: a21b0b354d4ac39be691f51c53562e2c24443d9e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,63 +32,117 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:42:44 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:43:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7a06c41cbec33c6dbe7eec575c61986122617408
-Gitweb:     http://git.kernel.org/tip/7a06c41cbec33c6dbe7eec575c61986122617408
-Author:     John Stultz <john.stultz@linaro.org>
-AuthorDate: Thu, 2 Jan 2014 15:11:14 -0800
+Commit-ID:  a21b0b354d4ac39be691f51c53562e2c24443d9e
+Gitweb:     http://git.kernel.org/tip/a21b0b354d4ac39be691f51c53562e2c24443d9e
+Author:     Yann Droneaud <ydroneaud@opteya.com>
+AuthorDate: Sun, 5 Jan 2014 21:36:33 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 12 Jan 2014 10:14:00 +0100
+CommitDate: Sun, 12 Jan 2014 10:16:59 +0100
 
-sched_clock: Disable seqlock lockdep usage in sched_clock()
+perf: Introduce a flag to enable close-on-exec in perf_event_open()
 
-Unfortunately the seqlock lockdep enablement can't be used
-in sched_clock(), since the lockdep infrastructure eventually
-calls into sched_clock(), which causes a deadlock.
+Unlike recent modern userspace API such as:
 
-Thus, this patch changes all generic sched_clock() usage
-to use the raw_* methods.
+  epoll_create1 (EPOLL_CLOEXEC), eventfd (EFD_CLOEXEC),
+  fanotify_init (FAN_CLOEXEC), inotify_init1 (IN_CLOEXEC),
+  signalfd (SFD_CLOEXEC), timerfd_create (TFD_CLOEXEC),
+  or the venerable general purpose open (O_CLOEXEC),
 
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Reported-by: Krzysztof Hałasa <khalasa@piap.pl>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Willy Tarreau <w@1wt.eu>
+perf_event_open() syscall lack a flag to atomically set FD_CLOEXEC
+(eg. close-on-exec) flag on file descriptor it returns to userspace.
+
+The present patch adds a PERF_FLAG_FD_CLOEXEC flag to allow
+perf_event_open() syscall to atomically set close-on-exec.
+
+Having this flag will enable userspace to remove the file descriptor
+from the list of file descriptors being inherited across exec,
+without the need to call fcntl(fd, F_SETFD, FD_CLOEXEC) and the
+associated race condition between the current thread and another
+thread calling fork(2) then execve(2).
+
+Links:
+
+ - Secure File Descriptor Handling (Ulrich Drepper, 2008)
+   http://udrepper.livejournal.com/20407.html
+
+ - Excuse me son, but your code is leaking !!! (Dan Walsh, March 2012)
+   http://danwalsh.livejournal.com/53603.html
+
+ - Notes in DMA buffer sharing: leak and security hole
+   http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/dma-buf-sharing.txt?id=v3.13-rc3#n428
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1388704274-5278-2-git-send-email-john.stultz@linaro.org
+Link: http://lkml.kernel.org/r/8c03f54e1598b1727c19706f3af03f98685d9fe6.1388952061.git.ydroneaud@opteya.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/time/sched_clock.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/uapi/linux/perf_event.h |  1 +
+ kernel/events/core.c            | 12 +++++++++---
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 68b7993..0abb364 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -74,7 +74,7 @@ unsigned long long notrace sched_clock(void)
- 		return cd.epoch_ns;
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index e1802d6..ca018b4 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -724,6 +724,7 @@ enum perf_callchain_context {
+ #define PERF_FLAG_FD_NO_GROUP		(1U << 0)
+ #define PERF_FLAG_FD_OUTPUT		(1U << 1)
+ #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
++#define PERF_FLAG_FD_CLOEXEC		(1U << 3) /* O_CLOEXEC */
  
- 	do {
--		seq = read_seqcount_begin(&cd.seq);
-+		seq = raw_read_seqcount_begin(&cd.seq);
- 		epoch_cyc = cd.epoch_cyc;
- 		epoch_ns = cd.epoch_ns;
- 	} while (read_seqcount_retry(&cd.seq, seq));
-@@ -99,10 +99,10 @@ static void notrace update_sched_clock(void)
- 			  cd.mult, cd.shift);
+ union perf_mem_data_src {
+ 	__u64 val;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c3b6c27..5c87264 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -119,7 +119,8 @@ static int cpu_function_call(int cpu, int (*func) (void *info), void *info)
  
- 	raw_local_irq_save(flags);
--	write_seqcount_begin(&cd.seq);
-+	raw_write_seqcount_begin(&cd.seq);
- 	cd.epoch_ns = ns;
- 	cd.epoch_cyc = cyc;
--	write_seqcount_end(&cd.seq);
-+	raw_write_seqcount_end(&cd.seq);
- 	raw_local_irq_restore(flags);
- }
+ #define PERF_FLAG_ALL (PERF_FLAG_FD_NO_GROUP |\
+ 		       PERF_FLAG_FD_OUTPUT  |\
+-		       PERF_FLAG_PID_CGROUP)
++		       PERF_FLAG_PID_CGROUP |\
++		       PERF_FLAG_FD_CLOEXEC)
  
+ /*
+  * branch priv levels that need permission checks
+@@ -6982,6 +6983,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	int event_fd;
+ 	int move_group = 0;
+ 	int err;
++	int f_flags = O_RDWR;
+ 
+ 	/* for future expandability... */
+ 	if (flags & ~PERF_FLAG_ALL)
+@@ -7010,7 +7012,10 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	if ((flags & PERF_FLAG_PID_CGROUP) && (pid == -1 || cpu == -1))
+ 		return -EINVAL;
+ 
+-	event_fd = get_unused_fd();
++	if (flags & PERF_FLAG_FD_CLOEXEC)
++		f_flags |= O_CLOEXEC;
++
++	event_fd = get_unused_fd_flags(f_flags);
+ 	if (event_fd < 0)
+ 		return event_fd;
+ 
+@@ -7132,7 +7137,8 @@ SYSCALL_DEFINE5(perf_event_open,
+ 			goto err_context;
+ 	}
+ 
+-	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
++	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event,
++					f_flags);
+ 	if (IS_ERR(event_file)) {
+ 		err = PTR_ERR(event_file);
+ 		goto err_context;
