@@ -1,155 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751221AbaALDpK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 22:45:10 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52773 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaALDpG (ORCPT
+	id S1751142AbaALELJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 23:11:09 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:47145 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaALELH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 22:45:06 -0500
-Date: Sat, 11 Jan 2014 19:45:02 -0800 (PST)
-Message-Id: <20140111.194502.2043728861122940485.davem@davemloft.net>
-To: fengguang.wu@intel.com
-Cc: roy.qing.li@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [ipv6_vti.c] INFO: trying to register non-static key.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140111231023.GA9864@localhost>
-References: <20140111231023.GA9864@localhost>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Jan 2014 23:11:07 -0500
+From: Sander Eikelenboom <linux@eikelenboom.it>
+To: Dave Airlie <airlied@redhat.com>,
+        Eiichiro Oiwa <eiichiro.oiwa.nm@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel @ vger . kernel . org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] In "pci_fixup_video" check if this is or should be the primary video device to prevent setting the IORESOURCE_ROM_SHADOW flag on a secondary VGA card
+Date: Sun, 12 Jan 2014 05:10:41 +0100
+Message-Id: <1389499841-6097-2-git-send-email-linux@eikelenboom.it>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1389499841-6097-1-git-send-email-linux@eikelenboom.it>
+References: <1389499841-6097-1-git-send-email-linux@eikelenboom.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fengguang Wu <fengguang.wu@intel.com>
-Date: Sun, 12 Jan 2014 07:10:23 +0800
+Setting the IORESOURCE_ROM_SHADOW flag on a secondary VGA card prevents if from
+reading it's own rom. It will get the content of the shadowrom at C000 instead,
+which is of the primary VGA card and the driver of the secondary card will bail
+out.
 
-> Here is a warning introduced by commit 469bdcefd ("ipv6: fix the use
-> of pcpu_tstats in ip6_vti.c"):
+Fix this by checking if this is or should be the primary video device before
+applying the fix and let the comment reflect this.
 
-It isn't fixed by the following, which is also in Linus's tree?
-
->From 657e5d19657542631461e72fdc375b1e83e72070 Mon Sep 17 00:00:00 2001
-From: Li RongQing <roy.qing.li@gmail.com>
-Date: Tue, 7 Jan 2014 15:39:43 +0800
-Subject: [PATCH] ipv6: pcpu_tstats.syncp should be initialised in ip6_vti.c
-
-initialise pcpu_tstats.syncp to kill the calltrace
-[   11.973950] Call Trace:
-[   11.973950]  [<819bbaff>] dump_stack+0x48/0x60
-[   11.973950]  [<819bbaff>] dump_stack+0x48/0x60
-[   11.973950]  [<81078dcf>] __lock_acquire.isra.22+0x1bf/0xc10
-[   11.973950]  [<81078dcf>] __lock_acquire.isra.22+0x1bf/0xc10
-[   11.973950]  [<81079fa7>] lock_acquire+0x77/0xa0
-[   11.973950]  [<81079fa7>] lock_acquire+0x77/0xa0
-[   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
-[   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
-[   11.973950]  [<8183862d>] ip_tunnel_get_stats64+0x6d/0x230
-[   11.973950]  [<8183862d>] ip_tunnel_get_stats64+0x6d/0x230
-[   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
-[   11.973950]  [<817ca7ab>] ? dev_get_stats+0xcb/0x130
-[   11.973950]  [<811cf8c1>] ? __nla_reserve+0x21/0xd0
-[   11.973950]  [<811cf8c1>] ? __nla_reserve+0x21/0xd0
-[   11.973950]  [<817ca7ab>] dev_get_stats+0xcb/0x130
-[   11.973950]  [<817ca7ab>] dev_get_stats+0xcb/0x130
-[   11.973950]  [<817d5409>] rtnl_fill_ifinfo+0x569/0xe20
-[   11.973950]  [<817d5409>] rtnl_fill_ifinfo+0x569/0xe20
-[   11.973950]  [<810352e0>] ? kvm_clock_read+0x20/0x30
-[   11.973950]  [<810352e0>] ? kvm_clock_read+0x20/0x30
-[   11.973950]  [<81008e38>] ? sched_clock+0x8/0x10
-[   11.973950]  [<81008e38>] ? sched_clock+0x8/0x10
-[   11.973950]  [<8106ba45>] ? sched_clock_local+0x25/0x170
-[   11.973950]  [<8106ba45>] ? sched_clock_local+0x25/0x170
-[   11.973950]  [<810da6bd>] ? __kmalloc+0x3d/0x90
-[   11.973950]  [<810da6bd>] ? __kmalloc+0x3d/0x90
-[   11.973950]  [<817b8c10>] ? __kmalloc_reserve.isra.41+0x20/0x70
-[   11.973950]  [<817b8c10>] ? __kmalloc_reserve.isra.41+0x20/0x70
-[   11.973950]  [<810da81a>] ? slob_alloc_node+0x2a/0x60
-[   11.973950]  [<810da81a>] ? slob_alloc_node+0x2a/0x60
-[   11.973950]  [<817b919a>] ? __alloc_skb+0x6a/0x2b0
-[   11.973950]  [<817b919a>] ? __alloc_skb+0x6a/0x2b0
-[   11.973950]  [<817d8795>] rtmsg_ifinfo+0x65/0xe0
-[   11.973950]  [<817d8795>] rtmsg_ifinfo+0x65/0xe0
-[   11.973950]  [<817cbd31>] register_netdevice+0x531/0x5a0
-[   11.973950]  [<817cbd31>] register_netdevice+0x531/0x5a0
-[   11.973950]  [<81892b87>] ? ip6_tnl_get_cap+0x27/0x90
-[   11.973950]  [<81892b87>] ? ip6_tnl_get_cap+0x27/0x90
-[   11.973950]  [<817cbdb6>] register_netdev+0x16/0x30
-[   11.973950]  [<817cbdb6>] register_netdev+0x16/0x30
-[   11.973950]  [<81f574a6>] vti6_init_net+0x1c4/0x1d4
-[   11.973950]  [<81f574a6>] vti6_init_net+0x1c4/0x1d4
-[   11.973950]  [<81f573af>] ? vti6_init_net+0xcd/0x1d4
-[   11.973950]  [<81f573af>] ? vti6_init_net+0xcd/0x1d4
-[   11.973950]  [<817c16df>] ops_init.constprop.11+0x17f/0x1c0
-[   11.973950]  [<817c16df>] ops_init.constprop.11+0x17f/0x1c0
-[   11.973950]  [<817c1779>] register_pernet_operations.isra.9+0x59/0x90
-[   11.973950]  [<817c1779>] register_pernet_operations.isra.9+0x59/0x90
-[   11.973950]  [<817c18d1>] register_pernet_device+0x21/0x60
-[   11.973950]  [<817c18d1>] register_pernet_device+0x21/0x60
-[   11.973950]  [<81f574b6>] ? vti6_init_net+0x1d4/0x1d4
-[   11.973950]  [<81f574b6>] ? vti6_init_net+0x1d4/0x1d4
-[   11.973950]  [<81f574c7>] vti6_tunnel_init+0x11/0x68
-[   11.973950]  [<81f574c7>] vti6_tunnel_init+0x11/0x68
-[   11.973950]  [<81f572a1>] ? mip6_init+0x73/0xb4
-[   11.973950]  [<81f572a1>] ? mip6_init+0x73/0xb4
-[   11.973950]  [<81f0cba4>] do_one_initcall+0xbb/0x15b
-[   11.973950]  [<81f0cba4>] do_one_initcall+0xbb/0x15b
-[   11.973950]  [<811a00d8>] ? sha_transform+0x528/0x1150
-[   11.973950]  [<811a00d8>] ? sha_transform+0x528/0x1150
-[   11.973950]  [<81f0c544>] ? repair_env_string+0x12/0x51
-[   11.973950]  [<81f0c544>] ? repair_env_string+0x12/0x51
-[   11.973950]  [<8105c30d>] ? parse_args+0x2ad/0x440
-[   11.973950]  [<8105c30d>] ? parse_args+0x2ad/0x440
-[   11.973950]  [<810546be>] ? __usermodehelper_set_disable_depth+0x3e/0x50
-[   11.973950]  [<810546be>] ? __usermodehelper_set_disable_depth+0x3e/0x50
-[   11.973950]  [<81f0cd27>] kernel_init_freeable+0xe3/0x182
-[   11.973950]  [<81f0cd27>] kernel_init_freeable+0xe3/0x182
-[   11.973950]  [<81f0c532>] ? do_early_param+0x7a/0x7a
-[   11.973950]  [<81f0c532>] ? do_early_param+0x7a/0x7a
-[   11.973950]  [<819b5b1b>] kernel_init+0xb/0x100
-[   11.973950]  [<819b5b1b>] kernel_init+0xb/0x100
-[   11.973950]  [<819cebf7>] ret_from_kernel_thread+0x1b/0x28
-[   11.973950]  [<819cebf7>] ret_from_kernel_thread+0x1b/0x28
-[   11.973950]  [<819b5b10>] ? rest_init+0xc0/0xc0
-[   11.973950]  [<819b5b10>] ? rest_init+0xc0/0xc0
-
-Before 469bdcefdc ("ipv6: fix the use of pcpu_tstats in ip6_vti.c"),
-the pcpu_tstats.syncp is not used to pretect the 64bit elements of
-pcpu_tstats, so not appear this calltrace.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
 ---
- net/ipv6/ip6_vti.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/pci/fixup.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv6/ip6_vti.c b/net/ipv6/ip6_vti.c
-index a4564b0..7b42d5e 100644
---- a/net/ipv6/ip6_vti.c
-+++ b/net/ipv6/ip6_vti.c
-@@ -732,12 +732,18 @@ static void vti6_dev_setup(struct net_device *dev)
- static inline int vti6_dev_init_gen(struct net_device *dev)
- {
- 	struct ip6_tnl *t = netdev_priv(dev);
-+	int i;
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index b046e07..525e49a 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -314,9 +314,9 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_MCH_PC1,	pcie_r
+  * IORESOURCE_ROM_SHADOW is used to associate the boot video
+  * card with this copy. On laptops this copy has to be used since
+  * the main ROM may be compressed or combined with another image.
+- * See pci_map_rom() for use of this flag. IORESOURCE_ROM_SHADOW
+- * is marked here since the boot video device will be the only enabled
+- * video device at this point.
++ * See pci_map_rom() for use of this flag. Before we mark the device
++ * with IORESOURCE_ROM_SHADOW we have to check if this is or should become
++ * the primary video card, since this quirk is ran for all video devices.
+  */
  
- 	t->dev = dev;
- 	t->net = dev_net(dev);
- 	dev->tstats = alloc_percpu(struct pcpu_tstats);
- 	if (!dev->tstats)
- 		return -ENOMEM;
-+	for_each_possible_cpu(i) {
-+		struct pcpu_tstats *stats;
-+		stats = per_cpu_ptr(dev->tstats, i);
-+		u64_stats_init(&stats->syncp);
-+	}
- 	return 0;
+ static void pci_fixup_video(struct pci_dev *pdev)
+@@ -347,12 +347,13 @@ static void pci_fixup_video(struct pci_dev *pdev)
+ 		}
+ 		bus = bus->parent;
+ 	}
+-	pci_read_config_word(pdev, PCI_COMMAND, &config);
+-	if (config & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY)) {
+-		pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_SHADOW;
+-		dev_printk(KERN_DEBUG, &pdev->dev, "Boot video device\n");
+-		if (!vga_default_device())
++	if (!vga_default_device() || pdev == vga_default_device()) {
++		pci_read_config_word(pdev, PCI_COMMAND, &config);
++		if (config & (PCI_COMMAND_IO | PCI_COMMAND_MEMORY)) {
++			pdev->resource[PCI_ROM_RESOURCE].flags |= IORESOURCE_ROM_SHADOW;
++			dev_printk(KERN_DEBUG, &pdev->dev, "Boot video device\n");
+ 			vga_set_default_device(pdev);
++		}
+ 	}
  }
- 
+ DECLARE_PCI_FIXUP_CLASS_FINAL(PCI_ANY_ID, PCI_ANY_ID,
 -- 
-1.7.11.7
+1.7.10.4
 
