@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289AbaALWBq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 17:01:46 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52754 "EHLO
+	id S1751327AbaALWES (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 17:04:18 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52774 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaALWBT (ORCPT
+	with ESMTP id S1750999AbaALWEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 17:01:19 -0500
+	Sun, 12 Jan 2014 17:04:15 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: Ben Dooks <ben.dooks@codethink.co.uk>
 Cc: linux-kernel@lists.codethink.co.uk,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Linus SH list <linux-sh@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI
-Date: Sun, 12 Jan 2014 23:01:59 +0100
-Message-ID: <4441342.H8MHOLBobb@avalon>
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] power: clock_ops.c: fixup clk prepare/unprepare count
+Date: Sun, 12 Jan 2014 23:04:56 +0100
+Message-ID: <2133074.4EFCIDJZXE@avalon>
 User-Agent: KMail/4.10.5 (Linux/3.10.25-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2820428.J065BbN1jW@avalon>
-References: <1389445589-21502-1-git-send-email-ben.dooks@codethink.co.uk> <2820428.J065BbN1jW@avalon>
+In-Reply-To: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk>
+References: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -29,81 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Ben,
 
-On Sunday 12 January 2014 22:54:15 Laurent Pinchart wrote:
-> Hi Ben,
-> 
-> Thank you for the patch.
-> 
-> On Saturday 11 January 2014 13:06:29 Ben Dooks wrote:
-> > If the kernel is built to support multi-arm configurmation with shmobile
-> > support built in, then the drivers/sh is not built. This contains drivers
-> > that are essential to devices support by that configuration, including the
-> > PM runtime code in drivers/sh/pm_runtime.c (which implicitly enables the
-> > bus clocks for all devices).
+Thank you for the patch.
 
-Thinking a bit more about this, I think the approach taken in 
-drivers/sh/pm_runtime.c isn't good. The code enables device clocks when 
-devices are bound to a driver, increasing power consumption when devices are 
-idle. Instead of enabling it for ARCH_SHMOBILE_MULTI I'd like to either add 
-explicit clock support to drivers, or to integrate clocks with runtime PM 
-only.
+On Saturday 11 January 2014 13:05:38 Ben Dooks wrote:
+> The drivers/base/power/clock_ops.c file is causing warnings from
+> the clock driver (as shown below) due to failing to do a clk_prepare()
+> call before enabling a clock. It also fails to check the balance of
+> prepare/unprepare as __pm_clk_remove() do clk_disable_unprepare() call.
+> 
+> This bug has probably been in since commit b2476490e ("clk: introduce
+> the common clock framework") as the warning was part of the original
+> commit. It is strange that it has not been noticed (although this has
+> also been coupled with a failure for certain SH builds to not build the
+> necessary glue to use this method of controlling the clocks).
+>
+> In summary, this is probably needed in several stable branches but need
+> advice on which ones.
+> 
+> On the Renesas Lager board, this causes numerous warnings of the following
+> and even worse the clock system will not enable clocks, causing drivers
+> that are in development to fail to work:
+> 
+> WARNING: CPU: 0 PID: 1 at drivers/clk/clk.c:883 __clk_enable+0x2c/0xa0()
 
-> > If CONFIG_ARCH_SHMOBILE_MULTI then build the drivers/sh directory,
-> > but ensure that bits that may conflict (drivers/sh/clk if the common
-> > clock framework is not enabled) are built.
-> > 
-> > The ARCH_SHMOBILE_MULTI was added by efacfce5f8a ("ARM: shmobile:
-> > Introduce ARCH_SHMOBILE_MULTI") but this has only just recently been found
-> > due to building device-tree only kernels.
-> > 
-> > Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-> > Cc: Linus SH list <linux-sh@vger.kernel.org>
-> > Cc: Simon Horman <horms@verge.net.au>
-> > Cc: Magnus Damm <magnus.damm@gmail.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> > ---
-> > 
-> >  drivers/Makefile    | 1 +
-> >  drivers/sh/Makefile | 3 +++
-> >  2 files changed, 4 insertions(+)
-> > 
-> > diff --git a/drivers/Makefile b/drivers/Makefile
-> > index 8e3b8b0..abc4744 100644
-> > --- a/drivers/Makefile
-> > +++ b/drivers/Makefile
-> > @@ -118,6 +118,7 @@ obj-$(CONFIG_SGI_SN)		+= sn/
-> > 
-> >  obj-y				+= firmware/
-> >  obj-$(CONFIG_CRYPTO)		+= crypto/
-> >  obj-$(CONFIG_SUPERH)		+= sh/
-> > 
-> > +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= sh/
-> > 
-> >  obj-$(CONFIG_ARCH_SHMOBILE_LEGACY)	+= sh/
-> >  ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
-> >  obj-y				+= clocksource/
-> > 
-> > diff --git a/drivers/sh/Makefile b/drivers/sh/Makefile
-> > index fc67f56..86604a5 100644
-> > --- a/drivers/sh/Makefile
-> > +++ b/drivers/sh/Makefile
-> > @@ -3,7 +3,10 @@
-> > 
-> >  #
-> >  obj-y	:= intc/
+I've never noticed this on Lager, probably because Lager multiplatform doesn't 
+make use of clock_ops.c as drivers/sh/pm_runtime.c (which you addressed in 
+another patch that I've also replied to). I'm thus not sure we need to apply 
+this as a fix and backport it to stable branches.
+
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-sh@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+> ---
+>  drivers/base/power/clock_ops.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
 > 
-> Is intc needed as well ?
+> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+> index 9d8fde7..b9dd8fa 100644
+> --- a/drivers/base/power/clock_ops.c
+> +++ b/drivers/base/power/clock_ops.c
+> @@ -43,6 +43,7 @@ static void pm_clk_acquire(struct device *dev, struct
+> pm_clock_entry *ce) if (IS_ERR(ce->clk)) {
+>  		ce->status = PCE_STATUS_ERROR;
+>  	} else {
+> +		clk_prepare(ce->clk);
+>  		ce->status = PCE_STATUS_ACQUIRED;
+>  		dev_dbg(dev, "Clock %s managed by runtime PM.\n", ce->con_id);
+>  	}
+> @@ -99,10 +100,12 @@ static void __pm_clk_remove(struct pm_clock_entry *ce)
 > 
-> > +ifeq ($(CONFIG_COMMON_CLK),n)
-> > 
-> >  obj-$(CONFIG_HAVE_CLK)		+= clk/
-> > 
-> > +endif
-> > +
-> > 
-> >  obj-$(CONFIG_MAPLE)		+= maple/
-> >  obj-$(CONFIG_SUPERHYWAY)	+= superhyway/
+>  	if (ce->status < PCE_STATUS_ERROR) {
+>  		if (ce->status == PCE_STATUS_ENABLED)
+> -			clk_disable_unprepare(ce->clk);
+> +			clk_disable(ce->clk);
+> 
+> -		if (ce->status >= PCE_STATUS_ACQUIRED)
+> +		if (ce->status >= PCE_STATUS_ACQUIRED) {
+> +			clk_unprepare(ce->clk);
+>  			clk_put(ce->clk);
+> +		}
+>  	}
+> 
+>  	kfree(ce->con_id);
 -- 
 Regards,
 
