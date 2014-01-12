@@ -1,175 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaALRwm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 12:52:42 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:44384 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751101AbaALRwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 12:52:38 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: netfilter-devel@vger.kernel.org
-Cc: netfilter@vger.kernel.org, coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] netfilter: nf_conntrack: fix RCU race in nf_conntrack_find_get (v3)
-Date: Sun, 12 Jan 2014 21:50:33 +0400
-Message-Id: <1389549033-23523-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389188841.26646.87.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1389188841.26646.87.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1751260AbaALR4R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 12:56:17 -0500
+Received: from mail.windriver.com ([147.11.1.11]:39515 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaALR4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 12:56:14 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH] x86: don't use module_init in non-modular intel_mid_vrtc.c
+Date: Sun, 12 Jan 2014 12:50:18 -0500
+Message-ID: <1389549018-1249-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lets look at destroy_conntrack:
+The X86_INTEL_MID option is bool, and hence this code is either
+present or absent.  It will never be modular, so using
+module_init as an alias for __initcall is rather misleading.
 
-hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
-...
-nf_conntrack_free(ct)
-	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
-net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
+Note that direct use of __initcall is discouraged, vs. one
+of the priority categorized subgroups.  As __initcall gets
+mapped onto device_initcall, our use of device_initcall
+directly in this change means that the runtime impact is
+zero -- it will remain at level 6 in initcall ordering.
 
-The hash is protected by rcu, so readers look up conntracks without
-locks.
-A conntrack is removed from the hash, but in this moment a few readers
-still can use the conntrack. Then this conntrack is released and another
-thread creates conntrack with the same address and the equal tuple.
-After this a reader starts to validate the conntrack:
-* It's not dying, because a new conntrack was created
-* nf_ct_tuple_equal() returns true.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-But this conntrack is not initialized yet, so it can not be used by two
-threads concurrently. In this case BUG_ON may be triggered from
-nf_nat_setup_info().
-
-Florian Westphal suggested to check the confirm bit too. I think it's
-right.
-
-task 1			task 2			task 3
-			nf_conntrack_find_get
-			 ____nf_conntrack_find
-destroy_conntrack
- hlist_nulls_del_rcu
- nf_conntrack_free
- kmem_cache_free
-						__nf_conntrack_alloc
-						 kmem_cache_alloc
-						 memset(&ct->tuplehash[IP_CT_DIR_MAX],
-			 if (nf_ct_is_dying(ct))
-			 if (!nf_ct_tuple_equal()
-
-I'm not sure, that I have ever seen this race condition in a real life.
-Currently we are investigating a bug, which is reproduced on a few nodes.
-In our case one conntrack is initialized from a few tasks concurrently,
-we don't have any other explanation for this.
-
-<2>[46267.083061] kernel BUG at net/ipv4/netfilter/nf_nat_core.c:322!
-...
-<4>[46267.083951] RIP: 0010:[<ffffffffa01e00a4>]  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590 [nf_nat]
-...
-<4>[46267.085549] Call Trace:
-<4>[46267.085622]  [<ffffffffa023421b>] alloc_null_binding+0x5b/0xa0 [iptable_nat]
-<4>[46267.085697]  [<ffffffffa02342bc>] nf_nat_rule_find+0x5c/0x80 [iptable_nat]
-<4>[46267.085770]  [<ffffffffa0234521>] nf_nat_fn+0x111/0x260 [iptable_nat]
-<4>[46267.085843]  [<ffffffffa0234798>] nf_nat_out+0x48/0xd0 [iptable_nat]
-<4>[46267.085919]  [<ffffffff814841b9>] nf_iterate+0x69/0xb0
-<4>[46267.085991]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
-<4>[46267.086063]  [<ffffffff81484374>] nf_hook_slow+0x74/0x110
-<4>[46267.086133]  [<ffffffff81494e70>] ? ip_finish_output+0x0/0x2f0
-<4>[46267.086207]  [<ffffffff814b5890>] ? dst_output+0x0/0x20
-<4>[46267.086277]  [<ffffffff81495204>] ip_output+0xa4/0xc0
-<4>[46267.086346]  [<ffffffff814b65a4>] raw_sendmsg+0x8b4/0x910
-<4>[46267.086419]  [<ffffffff814c10fa>] inet_sendmsg+0x4a/0xb0
-<4>[46267.086491]  [<ffffffff814459aa>] ? sock_update_classid+0x3a/0x50
-<4>[46267.086562]  [<ffffffff81444d67>] sock_sendmsg+0x117/0x140
-<4>[46267.086638]  [<ffffffff8151997b>] ? _spin_unlock_bh+0x1b/0x20
-<4>[46267.086712]  [<ffffffff8109d370>] ? autoremove_wake_function+0x0/0x40
-<4>[46267.086785]  [<ffffffff81495e80>] ? do_ip_setsockopt+0x90/0xd80
-<4>[46267.086858]  [<ffffffff8100be0e>] ? call_function_interrupt+0xe/0x20
-<4>[46267.086936]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
-<4>[46267.087006]  [<ffffffff8118cb10>] ? ub_slab_ptr+0x20/0x90
-<4>[46267.087081]  [<ffffffff8118f2e8>] ? kmem_cache_alloc+0xd8/0x1e0
-<4>[46267.087151]  [<ffffffff81445599>] sys_sendto+0x139/0x190
-<4>[46267.087229]  [<ffffffff81448c0d>] ? sock_setsockopt+0x16d/0x6f0
-<4>[46267.087303]  [<ffffffff810efa47>] ? audit_syscall_entry+0x1d7/0x200
-<4>[46267.087378]  [<ffffffff810ef795>] ? __audit_syscall_exit+0x265/0x290
-<4>[46267.087454]  [<ffffffff81474885>] ? compat_sys_setsockopt+0x75/0x210
-<4>[46267.087531]  [<ffffffff81474b5f>] compat_sys_socketcall+0x13f/0x210
-<4>[46267.087607]  [<ffffffff8104dea3>] ia32_sysret+0x0/0x5
-<4>[46267.087676] Code: 91 20 e2 01 75 29 48 89 de 4c 89 f7 e8 56 fa ff ff 85 c0 0f 84 68 fc ff ff 0f b6 4d c6 41 8b 45 00 e9 4d fb ff ff e8 7c 19 e9 e0 <0f> 0b eb fe f6 05 17 91 20 e2 80 74 ce 80 3d 5f 2e 00 00 00 74
-<1>[46267.088023] RIP  [<ffffffffa01e00a4>] nf_nat_setup_info+0x564/0x590
-
-v2: move nf_ct_is_confirmed into the unlikely() annotation
-v3: Eric suggested to fix refcnt, so that it becomes zero before adding
-    in a hash, but we can't find a way how to do that. Another way is to
-    interpret the confirm bit as part of a search key and check it in
-    ____nf_conntrack_find() too.
-
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Florian Westphal <fw@strlen.de>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- net/netfilter/nf_conntrack_core.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
-
-diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
-index 43549eb..af6ad2e 100644
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -318,6 +318,21 @@ static void death_by_timeout(unsigned long ul_conntrack)
- 	nf_ct_delete((struct nf_conn *)ul_conntrack, 0, 0);
- }
+diff --git a/arch/x86/platform/intel-mid/intel_mid_vrtc.c b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+index 4762cff7facd..d79e79a232fa 100644
+--- a/arch/x86/platform/intel-mid/intel_mid_vrtc.c
++++ b/arch/x86/platform/intel-mid/intel_mid_vrtc.c
+@@ -173,5 +173,4 @@ static int __init intel_mid_device_create(void)
  
-+static inline bool
-+nf_ct_key_equal(struct nf_conntrack_tuple_hash *h,
-+			const struct nf_conntrack_tuple *tuple,
-+			u16 zone)
-+{
-+	struct nf_conn *ct = nf_ct_tuplehash_to_ctrack(h);
-+
-+	/* A conntrack can be recreated with the equal tuple,
-+	 * so we need to check that the conntrack is confirmed
-+	 */
-+	return nf_ct_tuple_equal(tuple, &h->tuple) &&
-+		nf_ct_zone(ct) == zone &&
-+		nf_ct_is_confirmed(ct);
-+}
-+
- /*
-  * Warning :
-  * - Caller must take a reference on returned object
-@@ -339,8 +354,7 @@ ____nf_conntrack_find(struct net *net, u16 zone,
- 	local_bh_disable();
- begin:
- 	hlist_nulls_for_each_entry_rcu(h, n, &net->ct.hash[bucket], hnnode) {
--		if (nf_ct_tuple_equal(tuple, &h->tuple) &&
--		    nf_ct_zone(nf_ct_tuplehash_to_ctrack(h)) == zone) {
-+		if (nf_ct_key_equal(h, tuple, zone)) {
- 			NF_CT_STAT_INC(net, found);
- 			local_bh_enable();
- 			return h;
-@@ -387,8 +401,7 @@ begin:
- 			     !atomic_inc_not_zero(&ct->ct_general.use)))
- 			h = NULL;
- 		else {
--			if (unlikely(!nf_ct_tuple_equal(tuple, &h->tuple) ||
--				     nf_ct_zone(ct) != zone)) {
-+			if (unlikely(!nf_ct_key_equal(h, tuple, zone))) {
- 				nf_ct_put(ct);
- 				goto begin;
- 			}
+ 	return platform_device_register(&vrtc_device);
+ }
+-
+-module_init(intel_mid_device_create);
++device_initcall(intel_mid_device_create);
 -- 
-1.8.4.2
+1.8.5.2
 
