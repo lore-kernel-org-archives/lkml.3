@@ -1,165 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaALXcU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 18:32:20 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:12400 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207AbaALXbp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 18:31:45 -0500
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
-        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
-        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
-        aswin@hp.com, davidlohr@hp.com
-Subject: [PATCH v6 2/5] futex: Larger hash table
-Date: Sun, 12 Jan 2014 15:31:23 -0800
-Message-Id: <1389569486-25487-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1389569486-25487-1-git-send-email-davidlohr@hp.com>
-References: <1389569486-25487-1-git-send-email-davidlohr@hp.com>
+	id S1751179AbaALXrO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 18:47:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899AbaALXrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 18:47:11 -0500
+Message-ID: <52D32962.5050908@redhat.com>
+Date: Sun, 12 Jan 2014 18:46:42 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: 7eggert@gmx.de
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        kosaki.motohiro@gmail.com, dyoung@redhat.com,
+        linux-acpi@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory mapping
+ is specified by user [v2]
+References: <1389380698-19361-1-git-send-email-prarit@redhat.com> <1389380698-19361-4-git-send-email-prarit@redhat.com> <alpine.DEB.2.02.1401111624170.20677@be1.lrz>
+In-Reply-To: <alpine.DEB.2.02.1401111624170.20677@be1.lrz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <davidlohr@hp.com>
 
-Currently, the futex global hash table suffers from it's fixed, smallish
-(for today's standards) size of 256 entries, as well as its lack of NUMA
-awareness. Large systems, using many futexes, can be prone to high amounts
-of collisions; where these futexes hash to the same bucket and lead to
-extra contention on the same hb->lock. Furthermore, cacheline bouncing is a
-reality when we have multiple hb->locks residing on the same cacheline and
-different futexes hash to adjacent buckets.
 
-This patch keeps the current static size of 16 entries for small systems,
-or otherwise, 256 * ncpus (or larger as we need to round the number to a
-power of 2). Note that this number of CPUs accounts for all CPUs that can
-ever be available in the system, taking into consideration things like
-hotpluging. While we do impose extra overhead at bootup by making the hash
-table larger, this is a one time thing, and does not shadow the benefits
-of this patch.
+On 01/11/2014 11:35 AM, 7eggert@gmx.de wrote:
+> 
+> 
+> On Fri, 10 Jan 2014, Prarit Bhargava wrote:
+> 
+>> kdump uses memmap=exactmap and mem=X values to configure the memory
+>> mapping for the kdump kernel.  If memory is hotadded during the boot of
+>> the kdump kernel it is possible that the page tables for the new memory
+>> cause the kdump kernel to run out of memory.
+>>
+>> Since the user has specified a specific mapping ACPI Memory Hotplug should be
+>> disabled in this case.
+> 
+> I'll ask just in case: Is it possible to want memory hotplug in spite of 
+> using memmap=exactmap or mem=X?
 
-Furthermore, as suggested by tglx, by cache aligning the hash buckets we can
-avoid access across cacheline boundaries and also avoid massive cache line
-bouncing if multiple cpus are hammering away at different hash buckets which
-happen to reside in the same cache line.
+Good question -- I can't think of a case.  When a user specifies "memmap" or
+"mem" IMO they are asking for a very specific memory configuration.  Having
+extra memory added above what the user has specified seems to defeat the purpose
+of "memmap" and "mem".
 
-Also, similar to other core kernel components (pid, dcache, tcp), by using
-alloc_large_system_hash() we benefit from its NUMA awareness and thus the
-table is distributed among the nodes instead of in a single one.
-
-For a custom microbenchmark that pounds on the uaddr hashing -- making the wait
-path fail at futex_wait_setup() returning -EWOULDBLOCK for large amounts of
-futexes, we can see the following benefits on a 80-core, 8-socket 1Tb server:
-
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-| threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-|     512 |              32426 | 50531  (+55.8%)        | 255274  (+687.2%)     | 292553  (+802.2%)             |
-|     256 |              65360 | 99588  (+52.3%)        | 443563  (+578.6%)     | 508088  (+677.3%)             |
-|     128 |             125635 | 200075 (+59.2%)        | 742613  (+491.1%)     | 835452  (+564.9%)             |
-|      80 |             193559 | 323425 (+67.1%)        | 1028147 (+431.1%)     | 1130304 (+483.9%)             |
-|      64 |             247667 | 443740 (+79.1%)        | 997300  (+302.6%)     | 1145494 (+362.5%)             |
-|      32 |             628412 | 721401 (+14.7%)        | 965996  (+53.7%)      | 1122115 (+78.5%)              |
-+---------+--------------------+------------------------+-----------------------+-------------------------------+
-
-Cc: Ingo Molnar <mingo@kernel.org>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Reviewed-by: Waiman Long <Waiman.Long@hp.com>
-Reviewed-and-tested-by: Jason Low <jason.low2@hp.com>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- kernel/futex.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 085f5fa..577481d 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -63,6 +63,7 @@
- #include <linux/sched/rt.h>
- #include <linux/hugetlb.h>
- #include <linux/freezer.h>
-+#include <linux/bootmem.h>
- 
- #include <asm/futex.h>
- 
-@@ -70,8 +71,6 @@
- 
- int __read_mostly futex_cmpxchg_enabled;
- 
--#define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
--
- /*
-  * Futex flags used to encode options to functions and preserve them across
-  * restarts.
-@@ -149,9 +148,11 @@ static const struct futex_q futex_q_init = {
- struct futex_hash_bucket {
- 	spinlock_t lock;
- 	struct plist_head chain;
--};
-+} ____cacheline_aligned_in_smp;
- 
--static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
-+static unsigned long __read_mostly futex_hashsize;
-+
-+static struct futex_hash_bucket *futex_queues;
- 
- /*
-  * We hash on the keys returned from get_futex_key (see below).
-@@ -161,7 +162,7 @@ static struct futex_hash_bucket *hash_futex(union futex_key *key)
- 	u32 hash = jhash2((u32*)&key->both.word,
- 			  (sizeof(key->both.word)+sizeof(key->both.ptr))/4,
- 			  key->both.offset);
--	return &futex_queues[hash & ((1 << FUTEX_HASHBITS)-1)];
-+	return &futex_queues[hash & (futex_hashsize - 1)];
- }
- 
- /*
-@@ -2719,7 +2720,18 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- static int __init futex_init(void)
- {
- 	u32 curval;
--	int i;
-+	unsigned long i;
-+
-+#if CONFIG_BASE_SMALL
-+	futex_hashsize = 16;
-+#else
-+	futex_hashsize = roundup_pow_of_two(256 * num_possible_cpus());
-+#endif
-+
-+	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
-+					       futex_hashsize, 0,
-+					       futex_hashsize < 256 ? HASH_SMALL : 0,
-+					       NULL, NULL, futex_hashsize, futex_hashsize);
- 
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
-@@ -2734,7 +2746,7 @@ static int __init futex_init(void)
- 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
- 		futex_cmpxchg_enabled = 1;
- 
--	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
-+	for (i = 0; i < futex_hashsize; i++) {
- 		plist_head_init(&futex_queues[i].chain);
- 		spin_lock_init(&futex_queues[i].lock);
- 	}
--- 
-1.8.1.4
-
+P.
