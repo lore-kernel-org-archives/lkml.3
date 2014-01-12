@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358AbaALLiY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 06:38:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48591 "EHLO mx1.redhat.com"
+	id S1751392AbaALLil (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 06:38:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaALLiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 06:38:22 -0500
-Date: Sun, 12 Jan 2014 13:37:56 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>, amit.shah@redhat.com,
-        Jason Wang <jasowang@redhat.com>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        virtio-dev@lists.oasis-open.org, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH] MAINTAINERS: add virtio-dev ML for virtio
-Message-ID: <20140112113756.GA9127@redhat.com>
+	id S1751175AbaALLii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 06:38:38 -0500
+Message-ID: <52D27EB4.9050909@redhat.com>
+Date: Sun, 12 Jan 2014 12:38:28 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Bruce Liu <damuzi000@gmail.com>
+CC: peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] When timestamping is enabled, stmmac_tx_clean will
+ call stmmac_get_tx_hwtstamp to get tx TS. It's possible that skb is NULL
+ because there are other network frames that use several descriptors. So we
+ must return immediately in stmmac_get_tx_hwtstamp if skb is NULL to avoid
+ system crash.
+References: <1389492095-6589-1-git-send-email-damuzi000@gmail.com> <20140112093951.GA3743@gmail.com>
+In-Reply-To: <20140112093951.GA3743@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since virtio is an OASIS standard draft now, virtio implementation
-discussions are taking place on the virtio-dev OASIS mailing list.
-Update MAINTAINERS.
+On 01/12/2014 10:39 AM, Bruce Liu wrote:
+>   When timestamping is enabled, stmmac_tx_clean will call stmmac_get_tx_hwtstamp to get tx TS.
+>   It's possible that skb is NULL because there are other network frames that use several descriptors.
+>   So we must return immediately in stmmac_get_tx_hwtstamp if skb is NULL to avoid system crash.
+>
+>
+> Signed-off-by: Bruce Liu <damuzi000@gmail.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- MAINTAINERS              |   3 +
- drivers/net/virtio_net.c | 355 +++++++++++++++++++++++++----------------------
- 2 files changed, 191 insertions(+), 167 deletions(-)
+Please see Documentation/SubmittingPatches +489
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ffcaf97..75202af 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9088,6 +9088,7 @@ F:	include/media/videobuf2-*
- 
- VIRTIO CONSOLE DRIVER
- M:	Amit Shah <amit.shah@redhat.com>
-+L:	virtio-dev@lists.oasis-open.org
- L:	virtualization@lists.linux-foundation.org
- S:	Maintained
- F:	drivers/char/virtio_console.c
-@@ -9097,6 +9098,7 @@ F:	include/uapi/linux/virtio_console.h
- VIRTIO CORE, NET AND BLOCK DRIVERS
- M:	Rusty Russell <rusty@rustcorp.com.au>
- M:	"Michael S. Tsirkin" <mst@redhat.com>
-+L:	virtio-dev@lists.oasis-open.org
- L:	virtualization@lists.linux-foundation.org
- S:	Maintained
- F:	drivers/virtio/
-@@ -9109,6 +9111,7 @@ F:	include/uapi/linux/virtio_*.h
- VIRTIO HOST (VHOST)
- M:	"Michael S. Tsirkin" <mst@redhat.com>
- L:	kvm@vger.kernel.org
-+L:	virtio-dev@lists.oasis-open.org
- L:	virtualization@lists.linux-foundation.org
- L:	netdev@vger.kernel.org
- S:	Maintained
--- 
-MST
+You subject line is way too long and should just be something like:
+
+[PATCH net-next] net: stmmac: fix NULL pointer dereference in stmmac_get_tx_hwtstamp
+
+Don't indent your actual commit message with whitespaces as prefix,
+and do a line break after around 70 chars.
+
+Btw, I mentioned net-next in the subject since merge window will
+open soon anyway.
+
+> ---
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> index 797b56a..47f2287 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -332,7 +332,7 @@ static void stmmac_get_tx_hwtstamp(struct stmmac_priv *priv,
+>   		return;
+>
+>   	/* exit if skb doesn't support hw tstamp */
+> -	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+> +	if (likely(!skb || !(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+>   		return;
+>
+>   	if (priv->adv_ts)
+>
