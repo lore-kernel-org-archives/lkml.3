@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751202AbaALJUc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 04:20:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52501 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088AbaALJU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 04:20:29 -0500
-Date: Sun, 12 Jan 2014 10:20:19 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
- bound tables
-Message-ID: <20140112092019.GA3664@pd.tnic>
-References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
- <1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
+	id S1751228AbaALJZz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 04:25:55 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:54146 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaALJZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 04:25:51 -0500
+Date: Sun, 12 Jan 2014 01:25:21 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] thp: fix copy_page_rep GPF by testing is_huge_zero_pmd once
+ only
+Message-ID: <alpine.LSU.2.11.1401120112500.4070@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 12, 2014 at 05:20:00PM +0800, Qiaowei Ren wrote:
-> An access to an invalid bound directory entry will cause a #BR
-> exception. This patch hook #BR exception handler to allocate
-> one bound table and bind it with that buond directory entry.
-> 
-> This will avoid the need of forwarding the #BR exception
-> to the user space when bound directory has invalid entry.
-> 
-> Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
-> ---
->  arch/x86/include/asm/mpx.h |   35 +++++++++++++++++++++++++++++++++
->  arch/x86/kernel/Makefile   |    1 +
->  arch/x86/kernel/mpx.c      |   44 ++++++++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/traps.c    |   46 +++++++++++++++++++++++++++++++++++++++++++-
->  4 files changed, 125 insertions(+), 1 deletions(-)
->  create mode 100644 arch/x86/include/asm/mpx.h
->  create mode 100644 arch/x86/kernel/mpx.c
+We see General Protection Fault on RSI in copy_page_rep:
+that RSI is what you get from a NULL struct page pointer.
 
-...
+RIP: 0010:[<ffffffff81154955>]  [<ffffffff81154955>] copy_page_rep+0x5/0x10
+RSP: 0000:ffff880136e15c00  EFLAGS: 00010286
+RAX: ffff880000000000 RBX: ffff880136e14000 RCX: 0000000000000200
+RDX: 6db6db6db6db6db7 RSI: db73880000000000 RDI: ffff880dd0c00000
+RBP: ffff880136e15c18 R08: 0000000000000200 R09: 000000000005987c
+R10: 000000000005987c R11: 0000000000000200 R12: 0000000000000001
+R13: ffffea00305aa000 R14: 0000000000000000 R15: 0000000000000000
+FS:  00007f195752f700(0000) GS:ffff880c7fc20000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000093010000 CR3: 00000001458e1000 CR4: 00000000000027e0
+Call Trace:
+ [<ffffffff810f2835>] ? copy_user_highpage.isra.43+0x65/0x80
+ [<ffffffff812654b2>] copy_user_huge_page+0x93/0xab
+ [<ffffffff8127cc76>] do_huge_pmd_wp_page+0x710/0x815
+ [<ffffffff81055ab8>] handle_mm_fault+0x15d8/0x1d70
+ [<ffffffff814f909d>] __do_page_fault+0x14d/0x840
+ [<ffffffff810a13ad>] ? SYSC_recvfrom+0x10d/0x210
+ [<ffffffff814f97bf>] do_page_fault+0x2f/0x90
+ [<ffffffff814f6032>] page_fault+0x22/0x30
 
-> diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
-> new file mode 100644
-> index 0000000..767b3bf
-> --- /dev/null
-> +++ b/arch/x86/kernel/mpx.c
-> @@ -0,0 +1,44 @@
-> +#include <linux/kernel.h>
-> +#include <linux/syscalls.h>
-> +#include <asm/processor.h>
-> +#include <asm/mpx.h>
-> +#include <asm/mman.h>
-> +#include <asm/i387.h>
-> +#include <asm/fpu-internal.h>
-> +#include <asm/alternative.h>
-> +
-> +static bool allocate_bt(unsigned long bd_entry)
-> +{
-> +	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
-> +	unsigned long bt_addr, old_val;
-> +
-> +	bt_addr = sys_mmap_pgoff(0, bt_size, PROT_READ | PROT_WRITE,
-> +			MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
+do_huge_pmd_wp_page() tests is_huge_zero_pmd(orig_pmd) four times:
+but since shrink_huge_zero_page() can free the huge_zero_page, and
+we have no hold of our own on it here (except where the fourth test
+holds page_table_lock and has checked pmd_same), it's possible for
+it to answer yes the first time, but no to the second or third test.
+Change all those last three to tests for NULL page.
 
-Are we sure about this? We can do a possible memory allocation in
-mmap_region() in this exception handler context. And yes, we do a
-conditional_sti(), which makes it all the more susceptible.
+(Note: this is not the same issue as trinity's DEBUG_PAGEALLOC BUG
+in copy_page_rep with RSI: ffff88009c422000, reported by Sasha Levin
+in https://lkml.org/lkml/2013/3/29/103.  I believe that one is due
+to the source page being split, and a tail page freed, while copy
+is in progress; and not a problem without DEBUG_PAGEALLOC, since
+the pmd_same check will prevent a miscopy from being made visible.)
 
-Have you run this with lockdep enabled?
+Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org # v3.10 v3.11 v3.12
+---
 
--- 
-Regards/Gruss,
-    Boris.
+ mm/huge_memory.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+--- 3.13-rc7/mm/huge_memory.c	2014-01-04 22:30:56.388815704 -0800
++++ linux/mm/huge_memory.c	2014-01-12 00:54:09.292491631 -0800
+@@ -1154,7 +1154,7 @@ alloc:
+ 		new_page = NULL;
+ 
+ 	if (unlikely(!new_page)) {
+-		if (is_huge_zero_pmd(orig_pmd)) {
++		if (!page) {
+ 			ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
+ 					address, pmd, orig_pmd, haddr);
+ 		} else {
+@@ -1181,7 +1181,7 @@ alloc:
+ 
+ 	count_vm_event(THP_FAULT_ALLOC);
+ 
+-	if (is_huge_zero_pmd(orig_pmd))
++	if (!page)
+ 		clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
+ 	else
+ 		copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
+@@ -1207,7 +1207,7 @@ alloc:
+ 		page_add_new_anon_rmap(new_page, vma, haddr);
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		update_mmu_cache_pmd(vma, address, pmd);
+-		if (is_huge_zero_pmd(orig_pmd)) {
++		if (!page) {
+ 			add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
+ 			put_huge_zero_page();
+ 		} else {
