@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750977AbaALAQd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 19:16:33 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52794 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750876AbaALAQa (ORCPT
+	id S1751000AbaALA6H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 19:58:07 -0500
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:33549 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750877AbaALA6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 19:16:30 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, joeyli <jlee@suse.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Subject: [RFT][PATCH] ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode() (was: Re: [RFC PATCH 00/14] Support timezone of ACPI TAD and EFI TIME)
-Date: Sun, 12 Jan 2014 01:30:23 +0100
-Message-ID: <2530951.HFPX8MI38t@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc6+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20131221122148.GB29501@console-pimps.org>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com> <3476450.BMEcId2Lgj@vostro.rjw.lan> <20131221122148.GB29501@console-pimps.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 11 Jan 2014 19:58:05 -0500
+Date: Sat, 11 Jan 2014 18:55:39 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Pekka Enberg <penberg@kernel.org>
+cc: Dave Hansen <dave@sr71.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
+In-Reply-To: <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1401111854580.6036@nuc>
+References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net>
+ <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 21, 2013 12:21:48 PM Matt Fleming wrote:
-> On Fri, 20 Dec, at 11:18:56PM, Rafael J. Wysocki wrote:
-> > 
-> > I'm not sure 100%, but I *think* we need to do that with interrupts enabled.
-> > At least after mm_init(), because it relies on things initialized there if I
-> > remember correctly.
-> > 
-> > From what I can tell at the moment, it might be possible to move it before
-> > efi_enter_virtual_mode() if that would help.
-> 
-> Actually yeah, that would be super useful, and I think we'd be able to
-> get rid of the whole efi_late_init() stuff because we'd no longer need
-> to hang on to the EFI_BOOT_SERVICES* regions after
-> SetVirtualAddressMap().
+On Sat, 11 Jan 2014, Pekka Enberg wrote:
 
-OK
+> On Sat, Jan 11, 2014 at 1:42 AM, Dave Hansen <dave@sr71.net> wrote:
+> > On 01/10/2014 03:39 PM, Andrew Morton wrote:
+> >>> I tested 4 cases, all of these on the "cache-cold kfree()" case.  The
+> >>> first 3 are with vanilla upstream kernel source.  The 4th is patched
+> >>> with my new slub code (all single-threaded):
+> >>>
+> >>>      http://www.sr71.net/~dave/intel/slub/slub-perf-20140109.png
+> >>
+> >> So we're converging on the most complex option.  argh.
+> >
+> > Yeah, looks that way.
+>
+> Seems like a reasonable compromise between memory usage and allocation speed.
+>
+> Christoph?
 
-I don't see any adverse effects of the patch below on a couple of my test
-boxes, but (a) they are Intel-based and (b) they are non-EFI, so it would be
-good to give it a go on as many machines as reasonably possible.
-
-Thanks,
-Rafael
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
-
-According to Matt Fleming, if acpi_early_init() was executed befpre
-efi_enter_virtual_mode(), the EFI initialization could benefit from
-it, so make that happen.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- init/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-pm/init/main.c
-===================================================================
---- linux-pm.orig/init/main.c
-+++ linux-pm/init/main.c
-@@ -615,6 +615,7 @@ asmlinkage void __init start_kernel(void
- 	calibrate_delay();
- 	pidmap_init();
- 	anon_vma_init();
-+	acpi_early_init();
- #ifdef CONFIG_X86
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
-@@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void
- 
- 	check_bugs();
- 
--	acpi_early_init(); /* before LAPIC and SMP init */
- 	sfi_init_late();
- 
- 	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+Fundamentally I think this is good. I need to look at the details but I am
+only going to be able to do that next week when I am back in the office.
 
