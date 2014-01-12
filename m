@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751202AbaALEd0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 23:33:26 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58913 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750958AbaALEdX (ORCPT
+	id S1751114AbaALGyt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 01:54:49 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:38232 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbaALGyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 23:33:23 -0500
-From: Gaurav Jain <gjain@fb.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Gaurav Jain <gjain@fb.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Don Zickus <dzickus@redhat.com>, Arun Sharma <asharma@fb.com>
-Subject: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Date: Sat, 11 Jan 2014 20:32:14 -0800
-Message-ID: <1389501134-13116-1-git-send-email-gjain@fb.com>
-X-Mailer: git-send-email 1.8.5.2
+	Sun, 12 Jan 2014 01:54:46 -0500
+Date: Sat, 11 Jan 2014 22:54:15 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jan Kara <jack@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH mmotm/next] fanotify: fix corruption preventing startup
+Message-ID: <alpine.LSU.2.11.1401112245290.4960@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-12_01:2014-01-10,2014-01-12,1970-01-01 signatures=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anon records usually do not have the 'execname' entry. However if they are on
-the heap, the execname shows up as '[heap]'. The fix considers any executable
-entries in the map that do not have a name or are on the heap as anon records
-and sets the name to '//anon'.
+Two of my machines couldn't boot mmotm with fanotify enabled:
+0x40000020 was being or'ed into a group's notification_waitq next
+pointer, with sad results.  It comes from an over-simplification in
+fanotify_merge(): test_event isn't NULL when the loop finds no merge.
 
-This fixes JIT profiling for records on the heap.
-
-Signed-off-by: Gaurav Jain <gjain@fb.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- tools/perf/util/event.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Fixes fsnotify-do-not-share-events-between-notification-groups.patch
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index bb788c1..ae9c55b 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -224,10 +224,9 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 				continue;
+ fs/notify/fanotify/fanotify.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- mmotm/fs/notify/fanotify/fanotify.c	2014-01-10 18:25:01.700448941 -0800
++++ linux/fs/notify/fanotify/fanotify.c	2014-01-11 22:15:31.580961010 -0800
+@@ -37,16 +37,19 @@ static bool should_merge(struct fsnotify
+ static struct fsnotify_event *fanotify_merge(struct list_head *list,
+ 					     struct fsnotify_event *event)
+ {
+-	struct fsnotify_event *test_event = NULL;
++	struct fsnotify_event *test_event;
++	bool do_merge = false;
  
- 			event->header.misc |= PERF_RECORD_MISC_MMAP_DATA;
--		}
--
--		if (!strcmp(execname, ""))
-+		} if (!strcmp(execname, "") || !strcmp(execname, "[heap]")) {
- 			strcpy(execname, anonstr);
+ 	pr_debug("%s: list=%p event=%p\n", __func__, list, event);
+ 
+ 	list_for_each_entry_reverse(test_event, list, list) {
+-		if (should_merge(test_event, event))
++		if (should_merge(test_event, event)) {
++			do_merge = true;
+ 			break;
 +		}
+ 	}
  
- 		size = strlen(execname) + 1;
- 		memcpy(event->mmap.filename, execname, size);
--- 
-1.8.1
-
+-	if (!test_event)
++	if (!do_merge)
+ 		return NULL;
+ 
+ 	test_event->mask |= event->mask;
