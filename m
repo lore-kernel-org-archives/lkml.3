@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaALN4M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 08:56:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58454 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaALN4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 08:56:11 -0500
-Date: Sun, 12 Jan 2014 14:56:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
-Message-ID: <20140112135600.GA15051@redhat.com>
-References: <1389383718-46031-1-git-send-email-athorlton@sgi.com> <20140111155337.GA16003@redhat.com> <20140111193003.GA10649@sgi.com>
+	id S1751117AbaALOWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 09:22:20 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:44005 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaALOWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 09:22:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140111193003.GA10649@sgi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140112120305.GA13076@gmail.com>
+References: <1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com>
+	<tip-663b55b9b39fa9c848cca273ca4e12bf29b32c71@git.kernel.org>
+	<20140112120305.GA13076@gmail.com>
+Date: Sun, 12 Jan 2014 15:22:14 +0100
+Message-ID: <CAFLxGvwRfBy__wRJnaDEkVAUPOgPi9ud06KdT=8bRND+Tu374w@mail.gmail.com>
+Subject: Re: [tip:x86/cleanups] x86: Delete non-required instances of include <linux/init.h>
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, paul.gortmaker@windriver.com,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11, Alex Thorlton wrote:
+On Sun, Jan 12, 2014 at 1:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> On Sat, Jan 11, 2014 at 04:53:37PM +0100, Oleg Nesterov wrote:
+> * tip-bot for Paul Gortmaker <tipbot@zytor.com> wrote:
 >
-> > I simply can't understand, this all looks like overkill. Can't you simply add
-> >
-> > 	#idfef CONFIG_TRANSPARENT_HUGEPAGE
-> > 	case GET:
-> > 		error = test_bit(MMF_THP_DISABLE);
-> > 		break;
-> > 	case PUT:
-> > 		if (arg2)
-> > 			set_bit();
-> > 		else
-> > 			clear_bit();
-> > 		break;
-> > 	#endif
-> >
-> > into sys_prctl() ?	
+>> Commit-ID:  663b55b9b39fa9c848cca273ca4e12bf29b32c71
+>> Gitweb:     http://git.kernel.org/tip/663b55b9b39fa9c848cca273ca4e12bf29b32c71
+>> Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
+>> AuthorDate: Mon, 6 Jan 2014 19:20:26 -0500
+>> Committer:  H. Peter Anvin <hpa@zytor.com>
+>> CommitDate: Mon, 6 Jan 2014 21:25:18 -0800
+>>
+>> x86: Delete non-required instances of include <linux/init.h>
+>>
+>> None of these files are actually using any __init type directives
+>> and hence don't need to include <linux/init.h>.  Most are just a
+>> left over from __devinit and __cpuinit removal, or simply due to
+>> code getting copied from one driver to the next.
+>>
+>> [ hpa: undid incorrect removal from arch/x86/kernel/head_32.S ]
+>>
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Link: http://lkml.kernel.org/r/1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com
+>> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 >
-> That's probably a better solution.  I wasn't sure whether or not it was
-> better to have two functions to handle this, or to have one function
-> handle both.  If you think it's better to just handle both with one,
-> that's easy enough to change.
+> FYI, this patch breaks the UML build:
+>
+> /home/mingo/tip/arch/x86/um/vdso/vdso.S: Assembler messages:
+> /home/mingo/tip/arch/x86/um/vdso/vdso.S:2: Error: no such instruction: `__initdata'
+> /home/mingo/tip/arch/x86/um/vdso/vdso.S:9: Error: no such instruction: `__finit'
 
-Personally I think sys_prctl() can handle this itself, without a helper.
-But of course I won't argue, this is up to you.
+Thanks for reporting this Ingo!
+Feel free to CC me in future too. :)
 
-My only point is, the kernel is already huge ;) Imho it makes sense to
-try to lessen the code size, when the logic is simple.
+UML's vdso fails to build because it uses __INITDATA and __FINIT.
 
-Oleg.
+Paul, please remove that hunk from your patch.
+diff --git a/arch/x86/um/vdso/vdso.S b/arch/x86/um/vdso/vdso.S
+index 1cb468a..4b4bd4c 100644
+--- a/arch/x86/um/vdso/vdso.S
++++ b/arch/x86/um/vdso/vdso.S
+@@ -1,4 +1,3 @@
+-#include <linux/init.h>
 
+ __INITDATA
+
+-- 
+Thanks,
+//richard
