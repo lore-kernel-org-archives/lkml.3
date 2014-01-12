@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaALMRA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 07:17:00 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:47275 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaALMQ4 (ORCPT
+	id S1751430AbaALMSY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 07:18:24 -0500
+Received: from mail-ee0-f67.google.com ([74.125.83.67]:34974 "EHLO
+	mail-ee0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbaALMSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 07:16:56 -0500
-Message-ID: <52D287B1.3090106@gmail.com>
-Date: Sun, 12 Jan 2014 13:16:49 +0100
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Sun, 12 Jan 2014 07:18:18 -0500
+Message-ID: <52D28807.2000004@dev.mellanox.co.il>
+Date: Sun, 12 Jan 2014 14:18:15 +0200
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH RFC 01/10] ARM: s3c64xx: pm: Use name field of generic_pm_domain
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com> <1389469372-17199-2-git-send-email-tomasz.figa@gmail.com> <20140112114717.GA31318@amd.pavel.ucw.cz>
-In-Reply-To: <20140112114717.GA31318@amd.pavel.ucw.cz>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>
+CC: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 09/14] target/configfs: Expose protection device attributes
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	<1389212157-14540-10-git-send-email-nab@daterainc.com> <yq161prr1p8.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq161prr1p8.fsf@sermon.lab.mkp.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+<SNIP>
 
-On 12.01.2014 12:47, Pavel Machek wrote:
-> On Sat 2014-01-11 20:42:43, Tomasz Figa wrote:
->> This patch removes name field from private s3c64xx_pm_domain struct and
->> moves domain name to dedicated field of generic_pm_domain struct.
->>
->> When at it, beautify the names a bit, since they are used by genpd core
->> as message prefixes.
->>
->> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
->> ---
->>   arch/arm/mach-s3c64xx/pm.c | 19 +++++++++----------
->>   1 file changed, 9 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/arm/mach-s3c64xx/pm.c b/arch/arm/mach-s3c64xx/pm.c
->> index 8cdb824..5238d66 100644
->> --- a/arch/arm/mach-s3c64xx/pm.c
->> +++ b/arch/arm/mach-s3c64xx/pm.c
->> @@ -35,7 +35,6 @@
->>   #include "regs-syscon-power.h"
->>
->>   struct s3c64xx_pm_domain {
->> -	char *const name;
->>   	u32 ena;
->>   	u32 pwr_stat;
->>   	struct generic_pm_domain pd;
->> @@ -76,7 +75,7 @@ static int s3c64xx_pd_on(struct generic_pm_domain *domain)
->>   		} while (retry--);
->>
->>   		if (!retry) {
->> -			pr_err("Failed to start domain %s\n", pd->name);
->> +			pr_err("Failed to start domain %s\n", pd->pd.name);
->>   			return -EBUSY;
->>   		}
+> nab> This patch adds support for exposing DIF protection device
+> nab> attributes via configfs.  This includes:
 >
+> nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
+> nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
 >
-> So you changed text "failed to start domain I" to "failed to start
-> domain domain_i". Not sure that's an improvement...?
-
-Right. I apparently missed this, since this error should never happen 
-unless there is something wrong with your hardware (SoC or PMIC).
-
-Still, the generic code in drivers/base/power/domain.c does not add the 
-"domain" prefix to the message. Without this patch it was printing 
-messages like
-
-I: Power-on latency exceeded, new value 1000 ns
-
-I'd say that what's need adjustment are the messages in 
-mach-s3c64xx/pm.c to print "%s: Failed to start\n" and keep things 
-consistent with higher level code.
-
+> What's DIF v2?
 >
-> Could we get some more descriptive names for the domains?
+> nab>    pi_guard_type: Guard Type (1=DIF CRC, 2=IP CRC)
+>
+> The IP checksum is only supported by DIX between OS and initiator, not
+> by the target. I guess we could signal to the initiator via a
+> vendor-private VPD that IP checksum is supported directly. But now what
+> we have hardware-accelerated T10 CRC I don't think it's a big deal.
 
-They are listed like this in user's manual, e.g. DOMAIN_F, DOMAIN_I, 
-DOMAIN_G, etc.
+shouldn't it stick around if it is not deprecated yet, the transport is 
+required to support ip-csum->CRC conversion anyhow.
 
-Best regards,
-Tomasz
+> (scsi_debug supports IP checksum because it's both initiator and
+> target).
+>
+
+
