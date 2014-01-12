@@ -1,48 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000AbaALA6H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 19:58:07 -0500
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:33549 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750877AbaALA6F (ORCPT
+	id S1751029AbaALBgW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 20:36:22 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:46711 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaALBgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 19:58:05 -0500
-Date: Sat, 11 Jan 2014 18:55:39 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Pekka Enberg <penberg@kernel.org>
-cc: Dave Hansen <dave@sr71.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
-In-Reply-To: <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.10.1401111854580.6036@nuc>
-References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net>
- <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 11 Jan 2014 20:36:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANudz+u_dG+W=YNsN-3hi=6ACW2DTdtzE+-ebhTF39UW=TFLQA@mail.gmail.com>
+References: <CANudz+u_dG+W=YNsN-3hi=6ACW2DTdtzE+-ebhTF39UW=TFLQA@mail.gmail.com>
+Date: Sun, 12 Jan 2014 09:36:19 +0800
+Message-ID: <CANudz+uvCxfzfb-OXyNm7JAwzYg1McQAu8RA1syQxQ6_POiLZg@mail.gmail.com>
+Subject: Fwd: how to determine kernel interrupt latency
+From: loody <miloody@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan 2014, Pekka Enberg wrote:
+hi all:
+is it possible to determine interrupt latency in kernel with any ftrace or proc?
 
-> On Sat, Jan 11, 2014 at 1:42 AM, Dave Hansen <dave@sr71.net> wrote:
-> > On 01/10/2014 03:39 PM, Andrew Morton wrote:
-> >>> I tested 4 cases, all of these on the "cache-cold kfree()" case.  The
-> >>> first 3 are with vanilla upstream kernel source.  The 4th is patched
-> >>> with my new slub code (all single-threaded):
-> >>>
-> >>>      http://www.sr71.net/~dave/intel/slub/slub-perf-20140109.png
-> >>
-> >> So we're converging on the most complex option.  argh.
-> >
-> > Yeah, looks that way.
->
-> Seems like a reasonable compromise between memory usage and allocation speed.
->
-> Christoph?
-
-Fundamentally I think this is good. I need to look at the details but I am
-only going to be able to do that next week when I am back in the office.
-
+Appreciate your help in advance.
