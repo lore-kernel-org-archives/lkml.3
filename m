@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624AbaALSyM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:54:12 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:37209 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566AbaALSyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:54:10 -0500
-Message-ID: <52D2E4A9.7010004@interlog.com>
-Date: Sun, 12 Jan 2014 13:53:29 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751251AbaALTEB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 14:04:01 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:60779 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaALTD5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 14:03:57 -0500
+Message-ID: <52D2E716.8040403@gmail.com>
+Date: Sun, 12 Jan 2014 20:03:50 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Sagi Grimberg <sagig@dev.mellanox.co.il>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	<1389212157-14540-8-git-send-email-nab@daterainc.com>	<52CE78EB.60108@mellanox.com> <yq1mwj3r2py.fsf@sermon.lab.mkp.net>	<52D286D9.5050500@dev.mellanox.co.il> <52D2C4C2.2040800@interlog.com> <yq1ppnxnmj4.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1ppnxnmj4.fsf@sermon.lab.mkp.net>
+To: Pavel Machek <pavel@ucw.cz>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH RFC 01/10] ARM: s3c64xx: pm: Use name field of generic_pm_domain
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com> <1389469372-17199-2-git-send-email-tomasz.figa@gmail.com> <20140112114717.GA31318@amd.pavel.ucw.cz> <52D287B1.3090106@gmail.com> <20140112185337.GA6810@amd.pavel.ucw.cz>
+In-Reply-To: <20140112185337.GA6810@amd.pavel.ucw.cz>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-12 12:21 PM, Martin K. Petersen wrote:
->>>>>> "Doug" == Douglas Gilbert <dgilbert@interlog.com> writes:
+On 12.01.2014 19:53, Pavel Machek wrote:
+> Hi!
 >
->>> So this takes me to a corner I still don't understand, if a LUN is
->>> pre-formatted as T10-protected, what happens to unwritten blocks
->>> read?  I mean, SCSI login executes some reads from sevel LBAs which
->>> will probably fail as blocks are unwritten.
+>>> Could we get some more descriptive names for the domains?
+>>
+>> They are listed like this in user's manual, e.g. DOMAIN_F, DOMAIN_I,
+>> DOMAIN_G, etc.
 >
-> Doug> Some observations: I haven't seen any disks pre-formatted with
-> Doug> T10-protection, they usually come pre-formatted without
-> Doug> T10-protection.
->
-> Depends where you buy them. All the drives we ship arrive formatted with
-> T10 PI from the manufacturer.
->
-> However, nobody expects you to format a LUN on an array. When you create
-> a LUN on a PI-capable storage array, T10 PI is a storage management
-> interface option just like size, RAID level, etc. Upon creation, arrays
-> zero out newly provisioned LUN blocks and write parity, etc. If PI is
-> enabled on a LUN, blocks are written with all zeroes in the data block
-> and all ones in the trailing PI tuple. This is all part of the regular
-> LUN setup procedure.
->
-> In any case. The usage model is that you never format a disk unless you
-> are a tinkerer and bought a retail SAS drive at Fry's. Drives will be
-> delivered by your server vendor formatted with PI and ready to go.
+> I guessed so. So the manual sucks. Would it be feasible to get it more
+> descriptive (like "Domain_G (GPU)")?
 
-Only tinkerers would contribute to something like
-the scsi_debug driver. After all, the pros could
-rely on their T10 compliant vendor equipment :-)
+Does the name really matter that much? I changed original ones in this 
+patch simply to make it easier to grep for domain related messages in 
+kernel output (e.g. dmesg | grep domain). It was not the main part of 
+this patch.
 
-And you are right, I do like to test sg_format
-against something real. Perhaps sg_format is the
-utility those server vendors use. Another
-tinkerer called James Bottomley wrote the original
-sg_format code, according to my notes.
+Also, there are multiple devices in most domains, so that would rather 
+end up being "Domain_I (JPEG, Cam I/F)", "Domain_P (2D, TV Enc., 
+Scaler)", "Domain_F (Rot, Post, LCD)".
 
-> If you use a non-disk storage device, whether or not to enable PI is
-> part of the LUN provisioning procedure (array management console, RAID
-> or flash controller card config utility, etc.)
->
-> Doug> So a tentative READ, for example checking if a disk has a
-> Doug> partition table, could be preceded by a GET LBA STATUS
-> Doug> command. IMO, if provisioning is enabled, LBPRZ=0 then the GET LBA
-> Doug> STATUS command should be mandatory.  Otherwise a tentative READ is
-> Doug> a lucky dip.
->
-> It's perfectly valid to do a legacy/unprotected READ from a T10 PI
-> device. Doesn't matter whether the blocks are unwritten or not.
+If you really insist, I can change this, but I fail to see what effect 
+it would really have.
 
-Ah, the current SBC-3 draft (sbc3r36.pdf) does say if one
-does a READ from a disk with logical provisioning enabled
-and LBPRZ=0 then the block data is "vendor specific" and
-the PI, if any, is all 0xff bytes. That last bit was added
-in sbc3r34.pdf (and it was "any value" prior to that).
-
-Back to the original question, I don't think Sagi was
-asking if it was valid to do a legacy/unprotected READ,
-it was what to expect with a protected READ on
-unwritten blocks:
-
- > So this takes me to a corner I still don't understand, if
- > a LUN is pre-formatted as T10-protected, what happens to
- > unwritten blocks read?
-
-So the precise answer is: the PI will be all 0xff bytes,
-unless logical provisioning is enabled, LBPRZ=0 and the
-device's compliance predates sbc3r34.pdf (November 2012).
-
-Doug Gilbert
-
-
+Best regards,
+Tomasz
