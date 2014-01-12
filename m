@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309AbaALJlF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 04:41:05 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:56569 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaALJkp (ORCPT
+	id S1751257AbaALJk2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 04:40:28 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35163 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaALJkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 04:40:45 -0500
-Date: Sun, 12 Jan 2014 10:40:41 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC][PATCH] lockdep: Introduce wait-type checks
-Message-ID: <20140112094041.GB31809@gmail.com>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
- <20140109163120.GA8038@redhat.com>
- <20140109170823.GF7572@laptop.programming.kicks-ass.net>
+	Sun, 12 Jan 2014 04:40:25 -0500
+Date: Sun, 12 Jan 2014 17:39:52 +0800
+From: Bruce Liu <damuzi000@gmail.com>
+To: peppe.cavallaro@st.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, damuzi000@gmail.com
+Subject: Re: [PATCH 1/1] When timestamping is enabled, stmmac_tx_clean will
+ call stmmac_get_tx_hwtstamp to get tx TS. It's possible that skb is NULL
+ because there are other network frames that use several descriptors. So we
+ must return immediately in stmmac_get_tx_hwtstamp if skb is NULL to avoid
+ system crash.
+Message-ID: <20140112093951.GA3743@gmail.com>
+References: <1389492095-6589-1-git-send-email-damuzi000@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140109170823.GF7572@laptop.programming.kicks-ass.net>
+In-Reply-To: <1389492095-6589-1-git-send-email-damuzi000@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ When timestamping is enabled, stmmac_tx_clean will call stmmac_get_tx_hwtstamp to get tx TS.
+ It's possible that skb is NULL because there are other network frames that use several descriptors.
+ So we must return immediately in stmmac_get_tx_hwtstamp if skb is NULL to avoid system crash.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> > But what I really can't understans is what "check == 0" means? It 
-> > seems that in fact it can be 1 or 2? Or, iow, "check == 0" is 
-> > actually equivalent to "check == 1" ?
-> 
-> Hmm indeed, the comment in lockdep.h says 0 means no checks at all, 
-> but the code doesn't actually appear to work like that. I'm not sure 
-> it ever did or not, I'd have to go dig through history.
-> 
-> That said, given the current state it certainly looks like we can 
-> remove the check argument.
-> 
-> Ingo?
+Signed-off-by: Bruce Liu <damuzi000@gmail.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Agreed.
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 797b56a..47f2287 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -332,7 +332,7 @@ static void stmmac_get_tx_hwtstamp(struct stmmac_priv *priv,
+ 		return;
+ 
+ 	/* exit if skb doesn't support hw tstamp */
+-	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
++	if (likely(!skb || !(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+ 		return;
+ 
+ 	if (priv->adv_ts)
+-- 
+1.7.9.5
 
-Thanks,
-
-	Ingo
+ 
