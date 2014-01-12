@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaALPdz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 10:33:55 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:44954 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaALPdv (ORCPT
+	id S1751109AbaALPkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 10:40:25 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:51853 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaALPkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 10:33:51 -0500
+	Sun, 12 Jan 2014 10:40:23 -0500
+Message-ID: <52D2B763.2050301@gmail.com>
+Date: Sun, 12 Jan 2014 08:40:19 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1389536074-17145-1-git-send-email-cyborg101010@gmail.com>
-References: <1389536074-17145-1-git-send-email-cyborg101010@gmail.com>
-Date: Sun, 12 Jan 2014 16:33:51 +0100
-X-Google-Sender-Auth: K47nwe4ERR8W2PO9Y05qDFI0Dbk
-Message-ID: <CAAsK9AEQiAZ+X83x9cnoxKTnsFZvZdg8CQNzd=+UQO_4AZTABQ@mail.gmail.com>
-Subject: Re: [PATCH] AlarmDev: Changing is_wakeup() to be a function to pass checkpatch
-From: Levente Kurusa <levex@linux.com>
-To: Joe <cyborg101010@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, john.stultz@linaro.org,
-        dan.carpenter@oracle.com, cruzjbishop@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>, acme@infradead.org
+CC: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org,
+        fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/9] perf, tools: fix BFD detection on opensuse
+References: <1389469379-13340-1-git-send-email-andi@firstfloor.org> <1389469379-13340-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1389469379-13340-2-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-2014/1/12 Joe <cyborg101010@gmail.com>:
-> ---
->  drivers/staging/android/alarm-dev.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
-
-You are missing a commit message. Your subject as well looks a bit weird.
-
+On 1/11/14, 12:42 PM, Andi Kleen wrote:
+> From: Andi Kleen<ak@linux.intel.com>
 >
-> diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-> index 647694f..87f2a02 100644
-> --- a/drivers/staging/android/alarm-dev.c
-> +++ b/drivers/staging/android/alarm-dev.c
-> @@ -66,13 +66,15 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
->   *
->   * Return: 1 if this is a wakeup alarm, otherwise 0
->   */
-> -static int is_wakeup(enum android_alarm_type type)
-> +static int is_wakeup(enum andriod_alarm_type type)
+> opensuse libbfd requires -lz -liberty to build. Add those
+> to the BFD feature detection.
+>
 
-What is this? andriod? Did it compile?
+Fixes static builds on Fedora as well.
 
->  {
-> -       return (type == ANDROID_ALARM_RTC_WAKEUP ||
-> -               type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
-> +       if (type == ANDROID_ALARM_RTC_WAKEUP ||
-> +           type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP)
-> +               return 1;
-> +       else
-> +               return 0;
+David
 
-While this is correct, the better fix would be to remove the parentheses..
-
-Also, I think a similar patch was already applied, not sure though.
-
-> [...]
-
---
-Regards,
-Levente Kurusa
