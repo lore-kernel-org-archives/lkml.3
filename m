@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497AbaALSv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:51:58 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:40217 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaALSv4 convert rfc822-to-8bit (ORCPT
+	id S1751527AbaALSxm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:53:42 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51460 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaALSxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:51:56 -0500
-Date: Sun, 12 Jan 2014 19:51:13 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 13/28] drm/i2c: tda998x: use irq for connection
- status and EDID read
-Message-ID: <20140112195113.316d0c98@armhf>
-In-Reply-To: <52D18EE9.5030305@gmail.com>
-References: <20140109120412.7697d23c@armhf>
-	<20140111181432.GB15937@n2100.arm.linux.org.uk>
-	<52D18EE9.5030305@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Sun, 12 Jan 2014 13:53:39 -0500
+Date: Sun, 12 Jan 2014 19:53:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH RFC 01/10] ARM: s3c64xx: pm: Use name field of
+ generic_pm_domain
+Message-ID: <20140112185337.GA6810@amd.pavel.ucw.cz>
+References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
+ <1389469372-17199-2-git-send-email-tomasz.figa@gmail.com>
+ <20140112114717.GA31318@amd.pavel.ucw.cz>
+ <52D287B1.3090106@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D287B1.3090106@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan 2014 19:35:21 +0100
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+Hi!
 
-> At least for the DT part, I'd suggest to not ask for interrupt directly
-> but use a proper gpios property. The can of course be converted to
-> priv->int_irq in some tda998x_dt_probe.
+> >Could we get some more descriptive names for the domains?
+> 
+> They are listed like this in user's manual, e.g. DOMAIN_F, DOMAIN_I,
+> DOMAIN_G, etc.
 
-May you give me more information?
+I guessed so. So the manual sucks. Would it be feasible to get it more
+descriptive (like "Domain_G (GPU)")?
 
+									Pavel
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
