@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaALPro (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 10:47:44 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49562 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751212AbaALPrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 10:47:42 -0500
-Message-ID: <52D2B8ED.2010006@ti.com>
-Date: Sun, 12 Jan 2014 10:46:53 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
-References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com> <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org> <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com> <20140112105958.GA9791@n2100.arm.linux.org.uk> <52D2B7C8.4060103@ti.com>
-In-Reply-To: <52D2B7C8.4060103@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751071AbaALQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 11:10:58 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61985 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaALQK4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 11:10:56 -0500
+From: Ming Lei <tom.leiming@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shaohua Li <shli@fusionio.com>, Jens Axboe <axboe@kernel.dk>,
+        Fan Du <fan.du@windriver.com>, Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH] lib/percpu_counter.c: fix __percpu_counter_add
+Date: Mon, 13 Jan 2014 00:10:45 +0800
+Message-Id: <1389543045-10563-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 12 January 2014 10:42 AM, Santosh Shilimkar wrote:
-> On Sunday 12 January 2014 05:59 AM, Russell King - ARM Linux wrote:
->> On Mon, Dec 09, 2013 at 08:02:30PM -0500, Santosh Shilimkar wrote:
->>> On Monday 09 December 2013 07:54 PM, Russell King - ARM Linux wrote:
->>>> The underlying reason is that - as I've already explained - ARM's __ffs()
->>>> differs from other architectures in that it ends up being an int, whereas
->>>> almost everyone else is unsigned long.
->>>>
->>>> The fix is to fix ARMs __ffs() to conform to other architectures.
->>>>
->>> I was just about to cross-post your reply here. Obviously I didn't think
->>> this far when I made  $subject fix.
->>>
->>> So lets ignore the $subject patch which is not correct. Sorry for noise
->>
->> Well, here we are, a month on, and this still remains unfixed despite
->> my comments pointing to what the problem is.  So, here's a patch to fix
->> this problem the correct way.  I took the time to add some comments to
->> these functions as I find that I wonder about their return values, and
->> these comments make the patch a little larger than it otherwise would be.
->>
-> The $subject warning fix [1] is already picked by Andrew with your ack
-> and its in his queue [2]
-> 
->> This patch makes their types match exactly with x86's definitions of
->> the same, which is the basic problem: on ARM, they all took "int" values
->> and returned "int"s, which leads to min() in nobootmem.c complaining.
->>
-> Not sure if you missed the thread but the right fix was picked. Ofcourse
-> you do have additional clz optimisation in updated patch and some comments
-> on those functions.
-> 
-> Regards,
-> Santosh
-> 
-> [1] https://lkml.org/lkml/2013/12/9/811
-fixing the link since above was the link to the $subject thread and below is
-the correct link for updated patch
-[1] https://lkml.org/lkml/2013/12/20/497
-> [2] http://ozlabs.org/~akpm/mmotm/broken-out/mm-arm-fix-arms-__ffs-to-conform-to-avoid-warning-with-no_bootmem.patch
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+From: Andrew Morton <akpm@linux-foundation.org>
+
+__percpu_counter_add() may be called in softirq/hardirq handler
+(such as, blk_mq_queue_exit() is typically called in hardirq/softirq
+handler), so we need to call this_cpu_add()(irq safe helper) to
+update percpu counter, otherwise counts may be lost.
+
+The patch fixes problem that 'rmmod null_blk' hangs in
+blk_cleanup_queue() because of miscounting of
+request_queue->mq_usage_counter.
+
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Shaohua Li <shli@fusionio.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Fan Du <fan.du@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+---
+This patch is the v1 of previous one of "lib/percpu_counter.c:
+disable local irq when updating percpu couter", and takes Andrew's
+approach which may be more efficient for ARCHs(x86, s390) that
+have optimized this_cpu_add().
+
+ lib/percpu_counter.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index 7473ee3..1da85bb 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -82,10 +82,10 @@ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
+ 		unsigned long flags;
+ 		raw_spin_lock_irqsave(&fbc->lock, flags);
+ 		fbc->count += count;
++		 __this_cpu_sub(*fbc->counters, count);
+ 		raw_spin_unlock_irqrestore(&fbc->lock, flags);
+-		__this_cpu_write(*fbc->counters, 0);
+ 	} else {
+-		__this_cpu_write(*fbc->counters, count);
++		this_cpu_add(*fbc->counters, amount);
+ 	}
+ 	preempt_enable();
+ }
+-- 
+1.7.9.5
 
