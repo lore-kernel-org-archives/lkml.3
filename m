@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaALShM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:37:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45824 "EHLO
+	id S1752048AbaALShR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:37:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45829 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaALShJ (ORCPT
+	with ESMTP id S1751315AbaALShN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:37:09 -0500
-Date: Sun, 12 Jan 2014 10:36:45 -0800
+	Sun, 12 Jan 2014 13:37:13 -0500
+Date: Sun, 12 Jan 2014 10:36:55 -0800
 From: tip-bot for Dongsheng Yang <tipbot@zytor.com>
-Message-ID: <tip-ad85ace07a05062ef6b59c35a5e80b6eaee1eee6@git.kernel.org>
+Message-ID: <tip-fb50bb43d051d12aad9e2337d0d5d14d0d3dd281@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
+        mingo@kernel.org, namhyung.kim@lge.com, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, dsahern@gmail.com, tglx@linutronix.de,
-        yangds.fnst@cn.fujitsu.com
-In-Reply-To: <1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-References: <1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+        acme@redhat.com, namhyung.kim@lge.com, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de, yangds.fnst@cn.fujitsu.com
+In-Reply-To: <3dd652201171a19c910b500984c7c3590e77603b.1387572416.git.yangds.fnst@cn.fujitsu.com>
+References: <3dd652201171a19c910b500984c7c3590e77603b.1387572416.git.yangds.fnst@cn.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Fix kvm report without guestmount.
-Git-Commit-ID: ad85ace07a05062ef6b59c35a5e80b6eaee1eee6
+Subject: [tip:perf/core] perf tools:
+  Add support for PERF_RECORD_MISC_GUEST_USER in thread__find_addr_map().
+Git-Commit-ID: fb50bb43d051d12aad9e2337d0d5d14d0d3dd281
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,88 +30,54 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:36:53 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:37:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ad85ace07a05062ef6b59c35a5e80b6eaee1eee6
-Gitweb:     http://git.kernel.org/tip/ad85ace07a05062ef6b59c35a5e80b6eaee1eee6
+Commit-ID:  fb50bb43d051d12aad9e2337d0d5d14d0d3dd281
+Gitweb:     http://git.kernel.org/tip/fb50bb43d051d12aad9e2337d0d5d14d0d3dd281
 Author:     Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-AuthorDate: Fri, 20 Dec 2013 13:41:47 -0500
+AuthorDate: Fri, 20 Dec 2013 15:52:56 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 23 Dec 2013 16:49:48 -0300
+CommitDate: Mon, 23 Dec 2013 16:49:49 -0300
 
-perf kvm: Fix kvm report without guestmount.
+perf tools: Add support for PERF_RECORD_MISC_GUEST_USER in thread__find_addr_map().
 
-Currently, if we use perf kvm --guestkallsyms --guestmodules report, we
-can not get the perf information from perf data file. All sample are
-shown as unknown.
-
-Reproducing steps:
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.624 MB perf.data.guest (~27260 samples) ]
-	# perf kvm --guestkallsyms /tmp/kallsyms --guestmodules /tmp/modules report |grep %
-	   100.00%  [guest/6471]  [unknown]         [g] 0xffffffff8164f330
-
-This bug was introduced by 207b57926 (perf kvm: Fix regression with guest machine creation).
-In original code, it uses perf_session__find_machine(), it means we deliver symbol to machine
-which has the same pid, if no machine found, deliver it to *default* guest. But if we use
-perf_session__findnew_machine() here, if no machine was found, new machine with pid will be built
-and added. Then the default guest which with pid == 0 will never get a symbol.
-
-And because the new machine initialized here has no kernel map created, the symbol delivered to
-it will be marked as "unknown".
-
-This patch here is to revert commit 207b57926 and fix the SEGFAULT bug in another way.
-
-Verification steps:
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules record -a sleep 1
-	[ perf record: Woken up 1 times to write data ]
-	[ perf record: Captured and wrote 0.651 MB perf.data.guest (~28437 samples) ]
-	# ./perf kvm --guestkallsyms /home/kallsyms --guestmodules /home/modules report |grep %
-	    22.64%    :6471  [guest.kernel.kallsyms]  [g] update_rq_clock.part.70
-	    19.99%    :6471  [guest.kernel.kallsyms]  [g] d_free
-	    18.46%    :6471  [guest.kernel.kallsyms]  [g] bio_phys_segments
-	    16.25%    :6471  [guest.kernel.kallsyms]  [g] dequeue_task
-	    12.78%    :6471  [guest.kernel.kallsyms]  [g] __switch_to
-	     7.91%    :6471  [guest.kernel.kallsyms]  [g] scheduler_tick
-	     1.75%    :6471  [guest.kernel.kallsyms]  [g] native_apic_mem_write
-	     0.21%    :6471  [guest.kernel.kallsyms]  [g] apic_timer_interrupt
+This patch remove a TODO in thread__find_addr_map() and add support of
+PERF_RECORD_MISC_GUEST_USER.
 
 Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: stable@vger.kernel.org # 3.3+
 Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1387564907-3045-1-git-send-email-yangds.fnst@cn.fujitsu.com
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Link: http://lkml.kernel.org/r/3dd652201171a19c910b500984c7c3590e77603b.1387572416.git.yangds.fnst@cn.fujitsu.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/util/event.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index cbacaab..d3a857be 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -830,6 +830,7 @@ static struct machine *
- 					       struct perf_sample *sample)
- {
- 	const u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
-+	struct machine *machine;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index fe20227..484e994 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -659,15 +659,10 @@ void thread__find_addr_map(struct thread *thread,
+ 		al->level = 'g';
+ 		mg = &machine->kmaps;
+ 		load_map = true;
++	} else if (cpumode == PERF_RECORD_MISC_GUEST_USER && perf_guest) {
++		al->level = 'u';
+ 	} else {
+-		/*
+-		 * 'u' means guest os user space.
+-		 * TODO: We don't support guest user space. Might support late.
+-		 */
+-		if (cpumode == PERF_RECORD_MISC_GUEST_USER && perf_guest)
+-			al->level = 'u';
+-		else
+-			al->level = 'H';
++		al->level = 'H';
+ 		al->map = NULL;
  
- 	if (perf_guest &&
- 	    ((cpumode == PERF_RECORD_MISC_GUEST_KERNEL) ||
-@@ -842,7 +843,11 @@ static struct machine *
- 		else
- 			pid = sample->pid;
- 
--		return perf_session__findnew_machine(session, pid);
-+		machine = perf_session__find_machine(session, pid);
-+		if (!machine)
-+			machine = perf_session__findnew_machine(session,
-+						DEFAULT_GUEST_KERNEL_ID);
-+		return machine;
- 	}
- 
- 	return &session->machines.host;
+ 		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
