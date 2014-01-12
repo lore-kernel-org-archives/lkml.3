@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203AbaALSbk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:31:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45301 "EHLO
+	id S1751255AbaALScR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:32:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45303 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaALSbg (ORCPT
+	with ESMTP id S1750954AbaALSbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Jan 2014 13:31:36 -0500
-Date: Sun, 12 Jan 2014 10:31:08 -0800
+Date: Sun, 12 Jan 2014 10:30:57 -0800
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-68f6d0224b2a19a4da4a12a5081f01776e5150df@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, rodrigo@sdfg.com.ar, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        asharma@fb.com
+Message-ID: <tip-2037be53b2bceac3c2e648b8ff3fd62e21af2d35@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, rodrigo@sdfg.com.ar,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, asharma@fb.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, rodrigo@sdfg.com.ar, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        asharma@fb.com
-In-Reply-To: <1387344086-12744-3-git-send-email-namhyung@kernel.org>
-References: <1387344086-12744-3-git-send-email-namhyung@kernel.org>
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, rodrigo@sdfg.com.ar,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, asharma@fb.com
+In-Reply-To: <1387344086-12744-2-git-send-email-namhyung@kernel.org>
+References: <1387344086-12744-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf sort: Do not compare dso again
-Git-Commit-ID: 68f6d0224b2a19a4da4a12a5081f01776e5150df
+Subject: [tip:perf/core] perf sort: Compare addresses if no symbol info
+Git-Commit-ID: 2037be53b2bceac3c2e648b8ff3fd62e21af2d35
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,25 +33,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:31:14 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:31:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  68f6d0224b2a19a4da4a12a5081f01776e5150df
-Gitweb:     http://git.kernel.org/tip/68f6d0224b2a19a4da4a12a5081f01776e5150df
+Commit-ID:  2037be53b2bceac3c2e648b8ff3fd62e21af2d35
+Gitweb:     http://git.kernel.org/tip/2037be53b2bceac3c2e648b8ff3fd62e21af2d35
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Wed, 18 Dec 2013 14:21:10 +0900
+AuthorDate: Wed, 18 Dec 2013 14:21:09 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 18 Dec 2013 14:43:04 -0300
+CommitDate: Wed, 18 Dec 2013 14:42:30 -0300
 
-perf sort: Do not compare dso again
+perf sort: Compare addresses if no symbol info
 
-The commit 09600e0f9ebb ("perf tools: Compare dso's also when comparing
-symbols") added a comparison of dso when comparing symbol.
+If a hist entry doesn't have symbol information, compare it with its
+address.  Currently it only compares its level or whether it's NULL.
 
-But if the sort key already has dso, it doesn't need to do it again
-since entries have a different dso already filtered out.
+This can lead to an undesired result like an overhead exceeds 100%
+especially when callchain accumulation is enabled by later patch.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
@@ -62,45 +62,53 @@ Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
-Link: http://lkml.kernel.org/r/1387344086-12744-3-git-send-email-namhyung@kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1387344086-12744-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
  tools/perf/util/sort.c | 11 ++++++++---
  1 file changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 68a4fd2..635cd8f 100644
+index 8b0bb1f..68a4fd2 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -13,6 +13,7 @@ int		have_ignore_callees = 0;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
- int		sort__has_sym = 0;
-+int		sort__has_dso = 0;
- enum sort_mode	sort__mode = SORT_MODE__NORMAL;
+@@ -161,6 +161,11 @@ struct sort_entry sort_dso = {
  
- enum sort_type	sort__first_dimension;
-@@ -194,9 +195,11 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ /* --sort symbol */
+ 
++static int64_t _sort__addr_cmp(u64 left_ip, u64 right_ip)
++{
++	return (int64_t)(right_ip - left_ip);
++}
++
+ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r)
+ {
+ 	u64 ip_l, ip_r;
+@@ -183,7 +188,7 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	int64_t ret;
+ 
+ 	if (!left->ms.sym && !right->ms.sym)
+-		return right->level - left->level;
++		return _sort__addr_cmp(left->ip, right->ip);
+ 
+ 	/*
  	 * comparing symbol address alone is not enough since it's a
- 	 * relative address within a dso.
- 	 */
--	ret = sort__dso_cmp(left, right);
--	if (ret != 0)
--		return ret;
-+	if (!sort__has_dso) {
-+		ret = sort__dso_cmp(left, right);
-+		if (ret != 0)
-+			return ret;
-+	}
+@@ -372,7 +377,7 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	struct addr_map_symbol *from_r = &right->branch_info->from;
  
- 	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
+ 	if (!from_l->sym && !from_r->sym)
+-		return right->level - left->level;
++		return _sort__addr_cmp(from_l->addr, from_r->addr);
+ 
+ 	return _sort__sym_cmp(from_l->sym, from_r->sym);
  }
-@@ -1061,6 +1064,8 @@ int sort_dimension__add(const char *tok)
- 			sort__has_parent = 1;
- 		} else if (sd->entry == &sort_sym) {
- 			sort__has_sym = 1;
-+		} else if (sd->entry == &sort_dso) {
-+			sort__has_dso = 1;
- 		}
+@@ -384,7 +389,7 @@ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	struct addr_map_symbol *to_r = &right->branch_info->to;
  
- 		__sort_dimension__add(sd, i);
+ 	if (!to_l->sym && !to_r->sym)
+-		return right->level - left->level;
++		return _sort__addr_cmp(to_l->addr, to_r->addr);
+ 
+ 	return _sort__sym_cmp(to_l->sym, to_r->sym);
+ }
