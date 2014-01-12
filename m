@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250AbaALUBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 15:01:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38284 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaALUBH (ORCPT
+	id S1751329AbaALUVU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 15:21:20 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:41053 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaALUVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 15:01:07 -0500
-Date: Sun, 12 Jan 2014 21:00:49 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/1] lockdep: Kill held_lock->check and "int check" arg
- of __lock_acquire()
-Message-ID: <20140112200049.GO7572@laptop.programming.kicks-ass.net>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
- <20140109163120.GA8038@redhat.com>
- <20140109170823.GF7572@laptop.programming.kicks-ass.net>
- <20140112094041.GB31809@gmail.com>
- <20140112174532.GA12147@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140112174532.GA12147@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Sun, 12 Jan 2014 15:21:16 -0500
+Message-ID: <1389558074.31367.187.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get (v3)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Sun, 12 Jan 2014 12:21:14 -0800
+In-Reply-To: <1389549033-23523-1-git-send-email-avagin@openvz.org>
+References: <1389188841.26646.87.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1389549033-23523-1-git-send-email-avagin@openvz.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 12, 2014 at 06:45:32PM +0100, Oleg Nesterov wrote:
-> But could someone please explain me what should lockdep_no_validate
-> actually do? 1704f47b5 "lockdep: Add novalidate class for dev->mutex
-> conversion" doesn't tell which kind of warnings it tries to avoid,
-> and it looks buggy (see another email from me).
+On Sun, 2014-01-12 at 21:50 +0400, Andrey Vagin wrote:
+> Lets look at destroy_conntrack:
+> 
+> hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+> ...
+> nf_conntrack_free(ct)
+> 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
+> 
+> net->ct.nf_conntrack_cachep is created with SLAB_DESTROY_BY_RCU.
+> 
+> The hash is protected by rcu, so readers look up conntracks without
+> locks.
+> A conntrack is removed from the hash, but in this moment a few readers
+> still can use the conntrack. Then this conntrack is released and another
+> thread creates conntrack with the same address and the equal tuple.
+> After this a reader starts to validate the conntrack:
+> * It's not dying, because a new conntrack was created
+> * nf_ct_tuple_equal() returns true.
+...
 
-It should disable lock-order checks for the locks that set that as
-class. So we can still do the simple checks like detect if we free
-memory with a held lock in and make sure we do not return to userspace
-with a held lock; but the class should not participate in the lock
-graph.
 
-I'll have a look at your earlier email again; I did note the question
-but it slipped my mind :/
+> v2: move nf_ct_is_confirmed into the unlikely() annotation
+> v3: Eric suggested to fix refcnt, so that it becomes zero before adding
+>     in a hash, but we can't find a way how to do that. Another way is to
+>     interpret the confirm bit as part of a search key and check it in
+>     ____nf_conntrack_find() too.
+> 
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: Florian Westphal <fw@strlen.de>
+> Cc: Pablo Neira Ayuso <pablo@netfilter.org>
+> Cc: Patrick McHardy <kaber@trash.net>
+> Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+
+Acked-by: Eric Dumazet <edumazet@google.com>
+
+Thanks Andrey !
+
+
