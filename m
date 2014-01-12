@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaALTno (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 14:43:44 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45504 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962AbaALTnj convert rfc822-to-8bit (ORCPT
+	id S1751280AbaALTzE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 14:55:04 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:62196 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaALTzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 14:43:39 -0500
-From: Florian Fainelli <florian@openwrt.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>, apkm@linux-foundation.org
-Subject: Re: [patch] vlynq: fix another resource size off by 1 error
-Date: Sun, 12 Jan 2014 11:43:36 -0800
-Message-ID: <2337301.FMvHPCUCYL@lenovo>
-Organization: OpenWrt
-User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20131111114827.GE5443@mwanda>
-References: <20130823081949.GD31293@elgon.mountain> <20131111114827.GE5443@mwanda>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	Sun, 12 Jan 2014 14:55:01 -0500
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+To: jic23@kernel.org
+Cc: pali.rohar@gmail.com, pavel@ucw.cz, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: [PATCH] iio: tsl2563: Initialize channels
+Date: Sun, 12 Jan 2014 21:54:24 +0200
+Message-Id: <1389556464-692-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 11 novembre 2013, 14:48:27 Dan Carpenter a écrit :
-> We still need to apply this fix.
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-Sorry for this late answer, vlynq changes usually go through AKPM's tree as I 
-don't maintain one due to the low number of changes in this code.
+Correctly initialize device channels, otherwise writing the calibration
+values to sysfs nodes does not work
 
-> 
-> regards,
-> dan carpenter
-> 
-> On Fri, Aug 23, 2013 at 11:19:49AM +0300, Dan Carpenter wrote:
-> > We fixed the call to request_mem_region() patch
-> > 3354f73 ('drivers/vlynq/vlynq.c: fix resource size off by 1 error').
-> > But we need to fix the call the release_mem_region() as well.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > ---
-> > Static checker stuff.
-> > 
-> > diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
-> > index 7b07135..c0227f9 100644
-> > --- a/drivers/vlynq/vlynq.c
-> > +++ b/drivers/vlynq/vlynq.c
-> > @@ -762,7 +762,8 @@ static int vlynq_remove(struct platform_device *pdev)
-> > 
-> >  	device_unregister(&dev->dev);
-> >  	iounmap(dev->local);
-> > 
-> > -	release_mem_region(dev->regs_start, dev->regs_end - dev->regs_start);
-> > +	release_mem_region(dev->regs_start,
-> > +			   dev->regs_end - dev->regs_start + 1);
-> > 
-> >  	kfree(dev);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+---
+ drivers/iio/light/tsl2563.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/iio/light/tsl2563.c b/drivers/iio/light/tsl2563.c
+index 5e5d9de..a663ea2 100644
+--- a/drivers/iio/light/tsl2563.c
++++ b/drivers/iio/light/tsl2563.c
+@@ -460,7 +460,7 @@ static int tsl2563_write_raw(struct iio_dev *indio_dev,
+ {
+ 	struct tsl2563_chip *chip = iio_priv(indio_dev);
+ 
+-	if (chan->channel == IIO_MOD_LIGHT_BOTH)
++	if (chan->channel == 0)
+ 		chip->calib0 = calib_from_sysfs(val);
+ 	else
+ 		chip->calib1 = calib_from_sysfs(val);
+@@ -543,11 +543,12 @@ static const struct iio_event_spec tsl2563_events[] = {
+ static const struct iio_chan_spec tsl2563_channels[] = {
+ 	{
+ 		.type = IIO_LIGHT,
++		.channel = 0,
+ 		.indexed = 1,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
+-		.channel = 0,
+ 	}, {
+ 		.type = IIO_INTENSITY,
++		.channel = 0,
+ 		.modified = 1,
+ 		.channel2 = IIO_MOD_LIGHT_BOTH,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+@@ -556,6 +557,7 @@ static const struct iio_chan_spec tsl2563_channels[] = {
+ 		.num_event_specs = ARRAY_SIZE(tsl2563_events),
+ 	}, {
+ 		.type = IIO_INTENSITY,
++		.channel = 1,
+ 		.modified = 1,
+ 		.channel2 = IIO_MOD_LIGHT_IR,
+ 		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
 -- 
-Florian
+1.5.6.1
+
