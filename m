@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394AbaALMxF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 07:53:05 -0500
-Received: from mail-ea0-f194.google.com ([209.85.215.194]:54294 "EHLO
-	mail-ea0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaALMxC (ORCPT
+	id S1751450AbaALMxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 07:53:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:35857 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaALMxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 07:53:02 -0500
-Message-ID: <52D29026.6000302@dev.mellanox.co.il>
-Date: Sun, 12 Jan 2014 14:52:54 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
+	Sun, 12 Jan 2014 07:53:46 -0500
+To: Sagi Grimberg <sagig@dev.mellanox.co.il>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
         target-devel <target-devel@vger.kernel.org>,
         linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 09/14] target/configfs: Expose protection device attributes
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	<1389212157-14540-10-git-send-email-nab@daterainc.com>	<yq161prr1p8.fsf@sermon.lab.mkp.net>	<52D28807.2000004@dev.mellanox.co.il> <yq138ktpdz9.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq138ktpdz9.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Oren Duer <oren@mellanox.com>
+Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	<1389212157-14540-8-git-send-email-nab@daterainc.com>
+	<52CE78EB.60108@mellanox.com> <yq1mwj3r2py.fsf@sermon.lab.mkp.net>
+	<52D286D9.5050500@dev.mellanox.co.il>
+	<yq17ga5pefv.fsf@sermon.lab.mkp.net>
+	<52D28ED8.6020102@dev.mellanox.co.il>
+Date: Sun, 12 Jan 2014 07:53:28 -0500
+In-Reply-To: <52D28ED8.6020102@dev.mellanox.co.il> (Sagi Grimberg's message of
+	"Sun, 12 Jan 2014 14:47:20 +0200")
+Message-ID: <yq1y52lnyyf.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/12/2014 2:43 PM, Martin K. Petersen wrote:
->>>>>> "Sagi" == Sagi Grimberg <sagig@dev.mellanox.co.il> writes:
->>> The IP checksum is only supported by DIX between OS and initiator,
->>> not by the target. I guess we could signal to the initiator via a
->>> vendor-private VPD that IP checksum is supported directly. But now
->>> what we have hardware-accelerated T10 CRC I don't think it's a big
->>> deal.
-> Sagi> shouldn't it stick around if it is not deprecated yet, the
-> Sagi> transport is required to support ip-csum->CRC conversion anyhow.
->
-> SBC mandates that the guard tag on the wire and on the target device be
-> the T10 CRC. The IP checksum is a DIX-optimization for application-HBA
-> exchanges. The only place you should support the IP checksum is in the
-> initiator.
+>>>>> "Sagi" == Sagi Grimberg <sagig@dev.mellanox.co.il> writes:
 
-Right.
+>> Per SBC, PI must be initialized to 0xffffffffffffffff. Since an app
+>> tag value of 0xffff is an escape, this will prevent both target and
+>> initiator from performing PI-verification when that block is read.
 
-> Note that you could conceivably do a T10 CRC to IP checksum conversion
-> on writes received by the target and store the IP checksum on disk. And
-> then convert back to T10 CRC when the data is eventually read. But it
-> makes no sense to do that given that you will have to do the T10 CRC
-> calculation regardless. Even if the backing store is DIX-capable and
-> supports the IP checksum.
->
+Sagi> OK, so this is an implicit escape (which will become explicit in
+Sagi> DIX1.1?). So I will open that in DIF RDMA verbs.
 
-I agree, but for backstore DIF (SW) emulation it will make sense.
+DIX 1.0 says:
+
+"If a storage device returns a value of 0xFFFF in the application tag
+and the device is formatted with T10 PI Type 1 or 2 protection, the I/O
+controller must disable integrity checking for that sector."
+
+In DIX 1.1 it is explicit by way of the DIX_APP_ESCAPE flag.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
