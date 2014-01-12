@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaALSoh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:44:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46331 "EHLO
+	id S1752438AbaALSon (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:44:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46343 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379AbaALSoc (ORCPT
+	with ESMTP id S1752409AbaALSoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:44:32 -0500
-Date: Sun, 12 Jan 2014 10:43:59 -0800
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-x9jgh45oeayzajz2mjt0y7d6@git.kernel.org>
+	Sun, 12 Jan 2014 13:44:38 -0500
+Date: Sun, 12 Jan 2014 10:44:19 -0800
+From: tip-bot for Prarit Bhargava <tipbot@zytor.com>
+Message-ID: <tip-9345005f4eed805308193658d12e4e7e9c261e74@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
+        rui.y.wang@intel.com, seiji.aguchi@hds.com, yang.z.zhang@intel.com,
+        tglx@linutronix.de, prarit@redhat.com, walken@google.com,
+        paul.gortmaker@windriver.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
+        rui.y.wang@intel.com, seiji.aguchi@hds.com, yang.z.zhang@intel.com,
+        tglx@linutronix.de, walken@google.com, prarit@redhat.com,
+        paul.gortmaker@windriver.com
+In-Reply-To: <1388938252-16627-1-git-send-email-prarit@redhat.com>
+References: <1388938252-16627-1-git-send-email-prarit@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/idle] sched/preempt:
-  Fix up missed PREEMPT_NEED_RESCHED folding
-Git-Commit-ID: eb797bf5bba817f2178e6126fb01efee27192a2d
+Subject: [tip:irq/core] x86/irq: Fix do_IRQ()
+  interrupt warning for cpu hotplug retriggered irqs
+Git-Commit-ID: 9345005f4eed805308193658d12e4e7e9c261e74
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -26,150 +32,222 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:44:07 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:44:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eb797bf5bba817f2178e6126fb01efee27192a2d
-Gitweb:     http://git.kernel.org/tip/eb797bf5bba817f2178e6126fb01efee27192a2d
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 20 Nov 2013 12:22:37 +0100
+Commit-ID:  9345005f4eed805308193658d12e4e7e9c261e74
+Gitweb:     http://git.kernel.org/tip/9345005f4eed805308193658d12e4e7e9c261e74
+Author:     Prarit Bhargava <prarit@redhat.com>
+AuthorDate: Sun, 5 Jan 2014 11:10:52 -0500
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 12 Jan 2014 10:48:23 +0100
+CommitDate: Sun, 12 Jan 2014 13:13:02 +0100
 
-sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
+x86/irq: Fix do_IRQ() interrupt warning for cpu hotplug retriggered irqs
 
-With various drivers wanting to inject idle time; we get people
-calling idle routines outside of the idle loop proper.
+During heavy CPU-hotplug operations the following spurious kernel warnings
+can trigger:
 
-Therefore we need to be extra careful about not missing
-TIF_NEED_RESCHED -> PREEMPT_NEED_RESCHED propagations.
+  do_IRQ: No ... irq handler for vector (irq -1)
 
-While looking at this, I also realized there's a small window in the
-existing idle loop where we can miss TIF_NEED_RESCHED; when it hits
-right after the tif_need_resched() test at the end of the loop but
-right before the need_resched() test at the start of the loop.
+  [ See: https://bugzilla.kernel.org/show_bug.cgi?id=64831 ]
 
-So move preempt_fold_need_resched() out of the loop where we're
-guaranteed to have TIF_NEED_RESCHED set.
+When downing a cpu it is possible that there are unhandled irqs
+left in the APIC IRR register.  The following code path shows
+how the problem can occur:
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-x9jgh45oeayzajz2mjt0y7d6@git.kernel.org
+ 1. CPU 5 is to go down.
+
+ 2. cpu_disable() on CPU 5 executes with interrupt flag cleared
+    by local_irq_save() via stop_machine().
+
+ 3. IRQ 12 asserts on CPU 5, setting IRR but not ISR because
+    interrupt flag is cleared (CPU unabled to handle the irq)
+
+ 4. IRQs are migrated off of CPU 5, and the vectors' irqs are set
+    to -1. 5. stop_machine() finishes cpu_disable()
+
+ 6. cpu_die() for CPU 5 executes in normal context.
+
+ 7. CPU 5 attempts to handle IRQ 12 because the IRR is set for
+    IRQ 12.  The code attempts to find the vector's IRQ and cannot
+    because it has been set to -1. 8. do_IRQ() warning displays
+    warning about CPU 5 IRQ 12.
+
+I added a debug printk to output which CPU & vector was
+retriggered and discovered that that we are getting bogus
+events.  I see a 100% correlation between this debug printk in
+fixup_irqs() and the do_IRQ() warning.
+
+This patchset resolves this by adding definitions for
+VECTOR_UNDEFINED(-1) and VECTOR_RETRIGGERED(-2) and modifying
+the code to use them.
+
+Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=64831
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Reviewed-by: Rui Wang <rui.y.wang@intel.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: janet.morgan@Intel.com
+Cc: tony.luck@Intel.com
+Cc: ruiv.wang@gmail.com
+Link: http://lkml.kernel.org/r/1388938252-16627-1-git-send-email-prarit@redhat.com
+[ Cleaned up the code a bit. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/mwait.h |  2 +-
- include/linux/preempt.h      | 15 +++++++++++++++
- include/linux/sched.h        | 15 +++++++++++++++
- kernel/cpu/idle.c            | 17 ++++++++++-------
- kernel/sched/core.c          |  3 +--
- 5 files changed, 42 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |  3 +++
+ arch/x86/kernel/apic/io_apic.c | 18 +++++++++---------
+ arch/x86/kernel/irq.c          | 19 +++++++++++++------
+ arch/x86/kernel/irqinit.c      |  4 ++--
+ 4 files changed, 27 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
-index 19b71c4..1da25a5 100644
---- a/arch/x86/include/asm/mwait.h
-+++ b/arch/x86/include/asm/mwait.h
-@@ -53,7 +53,7 @@ static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
- 		if (!need_resched())
- 			__mwait(eax, ecx);
- 	}
--	__current_clr_polling();
-+	current_clr_polling();
- }
- 
- #endif /* _ASM_X86_MWAIT_H */
-diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index a3d9dc8..ef4e80c 100644
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -116,6 +116,21 @@ do { \
- 
- #endif /* CONFIG_PREEMPT_COUNT */
- 
-+#ifdef CONFIG_PREEMPT
-+#define preempt_set_need_resched() \
-+do { \
-+	set_preempt_need_resched(); \
-+} while (0)
-+#define preempt_fold_need_resched() \
-+do { \
-+	if (tif_need_resched()) \
-+		set_preempt_need_resched(); \
-+} while (0)
-+#else
-+#define preempt_set_need_resched() do { } while (0)
-+#define preempt_fold_need_resched() do { } while (0)
-+#endif
-+
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 
- struct preempt_notifier;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 53f97eb..6340654 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2627,6 +2627,21 @@ static inline bool __must_check current_clr_polling_and_test(void)
- }
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index cba45d9..67d69b8 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -191,6 +191,9 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+ #define trace_interrupt interrupt
  #endif
  
-+static inline void current_clr_polling(void)
-+{
-+	__current_clr_polling();
++#define VECTOR_UNDEFINED	-1
++#define VECTOR_RETRIGGERED	-2
 +
-+	/*
-+	 * Ensure we check TIF_NEED_RESCHED after we clear the polling bit.
-+	 * Once the bit is cleared, we'll get IPIs with every new
-+	 * TIF_NEED_RESCHED and the IPI handler, scheduler_ipi(), will also
-+	 * fold.
-+	 */
-+	smp_mb(); /* paired with resched_task() */
-+
-+	preempt_fold_need_resched();
-+}
-+
- static __always_inline bool need_resched(void)
- {
- 	return unlikely(tif_need_resched());
-diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
-index 988573a..277f494 100644
---- a/kernel/cpu/idle.c
-+++ b/kernel/cpu/idle.c
-@@ -105,14 +105,17 @@ static void cpu_idle_loop(void)
- 				__current_set_polling();
- 			}
- 			arch_cpu_idle_exit();
--			/*
--			 * We need to test and propagate the TIF_NEED_RESCHED
--			 * bit here because we might not have send the
--			 * reschedule IPI to idle tasks.
--			 */
--			if (tif_need_resched())
--				set_preempt_need_resched();
- 		}
-+
-+		/*
-+		 * Since we fell out of the loop above, we know
-+		 * TIF_NEED_RESCHED must be set, propagate it into
-+		 * PREEMPT_NEED_RESCHED.
-+		 *
-+		 * This is required because for polling idle loops we will
-+		 * not have had an IPI to fold the state for us.
-+		 */
-+		preempt_set_need_resched();
- 		tick_nohz_idle_exit();
- 		schedule_preempt_disabled();
- 	}
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a88f4a4..98a7a1c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1499,8 +1499,7 @@ void scheduler_ipi(void)
- 	 * TIF_NEED_RESCHED remotely (for the first time) will also send
- 	 * this IPI.
- 	 */
--	if (tif_need_resched())
--		set_preempt_need_resched();
-+	preempt_fold_need_resched();
+ typedef int vector_irq_t[NR_VECTORS];
+ DECLARE_PER_CPU(vector_irq_t, vector_irq);
+ extern void setup_vector_irq(int cpu);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e63a5bd..6df0b66 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1142,9 +1142,10 @@ next:
+ 		if (test_bit(vector, used_vectors))
+ 			goto next;
  
- 	if (llist_empty(&this_rq()->wake_list)
- 			&& !tick_nohz_full_cpu(smp_processor_id())
+-		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask)
+-			if (per_cpu(vector_irq, new_cpu)[vector] != -1)
++		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask) {
++			if (per_cpu(vector_irq, new_cpu)[vector] > VECTOR_UNDEFINED)
+ 				goto next;
++		}
+ 		/* Found one! */
+ 		current_vector = vector;
+ 		current_offset = offset;
+@@ -1183,7 +1184,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 
+ 	vector = cfg->vector;
+ 	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
+-		per_cpu(vector_irq, cpu)[vector] = -1;
++		per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 
+ 	cfg->vector = 0;
+ 	cpumask_clear(cfg->domain);
+@@ -1191,11 +1192,10 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 	if (likely(!cfg->move_in_progress))
+ 		return;
+ 	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
+-		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+-								vector++) {
++		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+ 			if (per_cpu(vector_irq, cpu)[vector] != irq)
+ 				continue;
+-			per_cpu(vector_irq, cpu)[vector] = -1;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 			break;
+ 		}
+ 	}
+@@ -1228,12 +1228,12 @@ void __setup_vector_irq(int cpu)
+ 	/* Mark the free vectors */
+ 	for (vector = 0; vector < NR_VECTORS; ++vector) {
+ 		irq = per_cpu(vector_irq, cpu)[vector];
+-		if (irq < 0)
++		if (irq <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		cfg = irq_cfg(irq);
+ 		if (!cpumask_test_cpu(cpu, cfg->domain))
+-			per_cpu(vector_irq, cpu)[vector] = -1;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+ 	}
+ 	raw_spin_unlock(&vector_lock);
+ }
+@@ -2208,7 +2208,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
+ 		struct irq_cfg *cfg;
+ 		irq = __this_cpu_read(vector_irq[vector]);
+ 
+-		if (irq == -1)
++		if (irq <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		desc = irq_to_desc(irq);
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 22d0687..884d875 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -193,9 +193,13 @@ __visible unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+ 	if (!handle_irq(irq, regs)) {
+ 		ack_APIC_irq();
+ 
+-		if (printk_ratelimit())
+-			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
+-				__func__, smp_processor_id(), vector, irq);
++		if (irq != VECTOR_RETRIGGERED) {
++			pr_emerg_ratelimited("%s: %d.%d No irq handler for vector (irq %d)\n",
++					     __func__, smp_processor_id(),
++					     vector, irq);
++		} else {
++			__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
++		}
+ 	}
+ 
+ 	irq_exit();
+@@ -344,7 +348,7 @@ void fixup_irqs(void)
+ 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+ 		unsigned int irr;
+ 
+-		if (__this_cpu_read(vector_irq[vector]) < 0)
++		if (__this_cpu_read(vector_irq[vector]) <= VECTOR_UNDEFINED)
+ 			continue;
+ 
+ 		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
+@@ -355,11 +359,14 @@ void fixup_irqs(void)
+ 			data = irq_desc_get_irq_data(desc);
+ 			chip = irq_data_get_irq_chip(data);
+ 			raw_spin_lock(&desc->lock);
+-			if (chip->irq_retrigger)
++			if (chip->irq_retrigger) {
+ 				chip->irq_retrigger(data);
++				__this_cpu_write(vector_irq[vector], VECTOR_RETRIGGERED);
++			}
+ 			raw_spin_unlock(&desc->lock);
+ 		}
+-		__this_cpu_write(vector_irq[vector], -1);
++		if (__this_cpu_read(vector_irq[vector]) != VECTOR_RETRIGGERED)
++			__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
+ 	}
+ }
+ #endif
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index a2a1fbc..7f50156 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -52,7 +52,7 @@ static struct irqaction irq2 = {
+ };
+ 
+ DEFINE_PER_CPU(vector_irq_t, vector_irq) = {
+-	[0 ... NR_VECTORS - 1] = -1,
++	[0 ... NR_VECTORS - 1] = VECTOR_UNDEFINED,
+ };
+ 
+ int vector_used_by_percpu_irq(unsigned int vector)
+@@ -60,7 +60,7 @@ int vector_used_by_percpu_irq(unsigned int vector)
+ 	int cpu;
+ 
+ 	for_each_online_cpu(cpu) {
+-		if (per_cpu(vector_irq, cpu)[vector] != -1)
++		if (per_cpu(vector_irq, cpu)[vector] > VECTOR_UNDEFINED)
+ 			return 1;
+ 	}
+ 
