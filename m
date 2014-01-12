@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaALSdV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:33:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45443 "EHLO
+	id S1751578AbaALSde (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:33:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45457 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbaALSdP (ORCPT
+	with ESMTP id S1751549AbaALSda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:33:15 -0500
-Date: Sun, 12 Jan 2014 10:32:36 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-js3pour59yk2aibqzb1tpumh@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de
+	Sun, 12 Jan 2014 13:33:30 -0500
+Date: Sun, 12 Jan 2014 10:32:55 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-01j9ophd7tntmgrxa40uqjjm@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, efault@gmx.de,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, efault@gmx.de, peterz@infradead.org,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report:
-  Introduce helpers for processing callchains
-Git-Commit-ID: 6dbc8ca97b7737fa9254083df29d06c556b0653c
+Subject: [tip:perf/core] perf inject:
+  Handle output file via perf_data_file object
+Git-Commit-ID: 3406912cc1c631dea7ff050a9df92216e5a70e98
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,169 +30,165 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:32:42 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:33:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6dbc8ca97b7737fa9254083df29d06c556b0653c
-Gitweb:     http://git.kernel.org/tip/6dbc8ca97b7737fa9254083df29d06c556b0653c
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 18 Dec 2013 18:16:18 -0300
+Commit-ID:  3406912cc1c631dea7ff050a9df92216e5a70e98
+Gitweb:     http://git.kernel.org/tip/3406912cc1c631dea7ff050a9df92216e5a70e98
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 29 Oct 2013 19:04:57 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 19 Dec 2013 11:34:37 -0300
+CommitDate: Thu, 19 Dec 2013 11:38:49 -0300
 
-perf report: Introduce helpers for processing callchains
+perf inject: Handle output file via perf_data_file object
 
-Continuing to try to remove the code duplication introduced with mem and
-branch hist entry code, this time providing prologue and epilogues to
-deal with callchains when processing samples.
+Using the perf_data_file object to handle output file processing.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+No functional change intended.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-js3pour59yk2aibqzb1tpumh@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-01j9ophd7tntmgrxa40uqjjm@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 72 ++++++++++++++++++++-------------------------
- 1 file changed, 32 insertions(+), 40 deletions(-)
+ tools/perf/builtin-inject.c | 65 +++++++++++++++++++--------------------------
+ 1 file changed, 27 insertions(+), 38 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 9a20c9e..8424053 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -75,6 +75,24 @@ static int perf_report_config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 6a25085..c9f6d74 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -22,14 +22,13 @@
+ #include <linux/list.h>
  
-+static int report__resolve_callchain(struct perf_report *rep, struct symbol **parent,
-+				     struct perf_evsel *evsel, struct addr_location *al,
-+				     struct perf_sample *sample, struct machine *machine)
-+{
-+	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
-+		return machine__resolve_callchain(machine, evsel, al->thread, sample,
-+						  parent, al, rep->max_stack);
-+	}
-+	return 0;
-+}
-+
-+static int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample)
-+{
-+	if (!symbol_conf.use_callchain)
-+		return 0;
-+	return callchain_append(he->callchain, &callchain_cursor, sample->period);
-+}
-+
- static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 					   struct addr_location *al,
- 					   struct perf_sample *sample,
-@@ -85,19 +103,13 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct symbol *parent = NULL;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	int err = 0;
- 	struct hist_entry *he;
- 	struct mem_info *mi, *mx;
- 	uint64_t cost;
-+	int err = report__resolve_callchain(rep, &parent, evsel, al, sample, machine);
+ struct perf_inject {
+-	struct perf_tool tool;
+-	bool		 build_ids;
+-	bool		 sched_stat;
+-	const char	 *input_name;
+-	int		 pipe_output,
+-			 output;
+-	u64		 bytes_written;
+-	struct list_head samples;
++	struct perf_tool	tool;
++	bool			build_ids;
++	bool			sched_stat;
++	const char		*input_name;
++	struct perf_data_file	output;
++	u64			bytes_written;
++	struct list_head	samples;
+ };
  
--	if ((sort__has_parent || symbol_conf.use_callchain) &&
--	    sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al,
--						 rep->max_stack);
--		if (err)
--			return err;
--	}
-+	if (err)
-+		return err;
+ struct event_entry {
+@@ -42,21 +41,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool,
+ 				    union perf_event *event)
+ {
+ 	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
+-	uint32_t size;
+-	void *buf = event;
++	ssize_t size;
  
- 	mi = machine__resolve_mem(machine, al->thread, sample, cpumode);
- 	if (!mi)
-@@ -133,13 +145,7 @@ static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
- 
- 	evsel->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
--	err = 0;
+-	size = event->header.size;
 -
--	if (symbol_conf.use_callchain) {
--		err = callchain_append(he->callchain,
--				       &callchain_cursor,
--				       sample->period);
+-	while (size) {
+-		int ret = write(inject->output, buf, size);
+-		if (ret < 0)
+-			return -errno;
+-
+-		size -= ret;
+-		buf += ret;
+-		inject->bytes_written += ret;
 -	}
-+	err = hist_entry__append_callchain(he, sample);
- out:
- 	return err;
- }
-@@ -152,19 +158,13 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- {
- 	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct symbol *parent = NULL;
--	int err = 0;
- 	unsigned i;
- 	struct hist_entry *he;
- 	struct branch_info *bi, *bx;
-+	int err = report__resolve_callchain(rep, &parent, evsel, al, sample, machine);
++	size = perf_data_file__write(&inject->output, event,
++				     event->header.size);
++	if (size < 0)
++		return -errno;
  
--	if ((sort__has_parent || symbol_conf.use_callchain)
--	    && sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al,
--						 rep->max_stack);
--		if (err)
--			return err;
--	}
-+	if (err)
-+		return err;
- 
- 	bi = machine__resolve_bstack(machine, al->thread,
- 				     sample->branch_stack);
-@@ -216,16 +216,11 @@ static int perf_evsel__add_hist_entry(struct perf_tool *tool,
- {
- 	struct perf_report *rep = container_of(tool, struct perf_report, tool);
- 	struct symbol *parent = NULL;
--	int err = 0;
- 	struct hist_entry *he;
-+	int err = report__resolve_callchain(rep, &parent, evsel, al, sample, machine);
- 
--	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
--		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent, al,
--						 rep->max_stack);
--		if (err)
--			return err;
--	}
-+	if (err)
-+		return err;
- 
- 	he = __hists__add_entry(&evsel->hists, al, parent, NULL, NULL,
- 				sample->period, sample->weight,
-@@ -233,17 +228,14 @@ static int perf_evsel__add_hist_entry(struct perf_tool *tool,
- 	if (he == NULL)
- 		return -ENOMEM;
- 
--	if (symbol_conf.use_callchain) {
--		err = callchain_append(he->callchain,
--				       &callchain_cursor,
--				       sample->period);
--		if (err)
--			return err;
--	}
-+	err = hist_entry__append_callchain(he, sample);
-+	if (err)
-+		goto out;
- 
- 	err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
- 	evsel->hists.stats.total_period += sample->period;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+out:
- 	return err;
++	inject->bytes_written += size;
+ 	return 0;
  }
  
+@@ -80,7 +72,7 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
+ 	if (ret)
+ 		return ret;
+ 
+-	if (!inject->pipe_output)
++	if (&inject->output.is_pipe)
+ 		return 0;
+ 
+ 	return perf_event__repipe_synth(tool, event);
+@@ -355,6 +347,7 @@ static int __cmd_inject(struct perf_inject *inject)
+ 		.path = inject->input_name,
+ 		.mode = PERF_DATA_MODE_READ,
+ 	};
++	struct perf_data_file *file_out = &inject->output;
+ 
+ 	signal(SIGINT, sig_handler);
+ 
+@@ -391,14 +384,14 @@ static int __cmd_inject(struct perf_inject *inject)
+ 		}
+ 	}
+ 
+-	if (!inject->pipe_output)
+-		lseek(inject->output, session->header.data_offset, SEEK_SET);
++	if (!file_out->is_pipe)
++		lseek(file_out->fd, session->header.data_offset, SEEK_SET);
+ 
+ 	ret = perf_session__process_events(session, &inject->tool);
+ 
+-	if (!inject->pipe_output) {
++	if (!file_out->is_pipe) {
+ 		session->header.data_size = inject->bytes_written;
+-		perf_session__write_header(session, session->evlist, inject->output, true);
++		perf_session__write_header(session, session->evlist, file_out->fd, true);
+ 	}
+ 
+ 	perf_session__delete(session);
+@@ -427,14 +420,17 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		},
+ 		.input_name  = "-",
+ 		.samples = LIST_HEAD_INIT(inject.samples),
++		.output = {
++			.path = "-",
++			.mode = PERF_DATA_MODE_WRITE,
++		},
+ 	};
+-	const char *output_name = "-";
+ 	const struct option options[] = {
+ 		OPT_BOOLEAN('b', "build-ids", &inject.build_ids,
+ 			    "Inject build-ids into the output stream"),
+ 		OPT_STRING('i', "input", &inject.input_name, "file",
+ 			   "input file name"),
+-		OPT_STRING('o', "output", &output_name, "file",
++		OPT_STRING('o', "output", &inject.output.path, "file",
+ 			   "output file name"),
+ 		OPT_BOOLEAN('s', "sched-stat", &inject.sched_stat,
+ 			    "Merge sched-stat and sched-switch for getting events "
+@@ -456,16 +452,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (argc)
+ 		usage_with_options(inject_usage, options);
+ 
+-	if (!strcmp(output_name, "-")) {
+-		inject.pipe_output = 1;
+-		inject.output = STDOUT_FILENO;
+-	} else {
+-		inject.output = open(output_name, O_CREAT | O_WRONLY | O_TRUNC,
+-						  S_IRUSR | S_IWUSR);
+-		if (inject.output < 0) {
+-			perror("failed to create output file");
+-			return -1;
+-		}
++	if (perf_data_file__open(&inject.output)) {
++		perror("failed to create output file");
++		return -1;
+ 	}
+ 
+ 	if (symbol__init() < 0)
