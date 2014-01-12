@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaALWES (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 17:04:18 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:52774 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaALWEP (ORCPT
+	id S1751253AbaALWKz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 17:10:55 -0500
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:43964 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaALWKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 17:04:15 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] power: clock_ops.c: fixup clk prepare/unprepare count
-Date: Sun, 12 Jan 2014 23:04:56 +0100
-Message-ID: <2133074.4EFCIDJZXE@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.10.25-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk>
-References: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk>
+	Sun, 12 Jan 2014 17:10:52 -0500
+Date: Sun, 12 Jan 2014 14:10:49 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
+ access to memory reserves
+In-Reply-To: <20140110221432.GD6963@cmpxchg.org>
+Message-ID: <alpine.DEB.2.02.1401121404530.20999@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com> <20131218200434.GA4161@dhcp22.suse.cz> <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com> <20131219144134.GH10855@dhcp22.suse.cz> <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
+ <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com> <20140109144757.e95616b4280c049b22743a15@linux-foundation.org> <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com> <20140109161246.57ea590f00ea5b61fdbf5f11@linux-foundation.org>
+ <alpine.DEB.2.02.1401091613560.22649@chino.kir.corp.google.com> <20140110221432.GD6963@cmpxchg.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Fri, 10 Jan 2014, Johannes Weiner wrote:
 
-Thank you for the patch.
+> > > > It was acked-by Michal.
+> 
+> Michal acked it before we had most of the discussions and now he is
+> proposing an alternate version of yours, a patch that you are even
+> discussing with him concurrently in another thread.  To claim he is
+> still backing your patch because of that initial ack is disingenuous.
+> 
 
-On Saturday 11 January 2014 13:05:38 Ben Dooks wrote:
-> The drivers/base/power/clock_ops.c file is causing warnings from
-> the clock driver (as shown below) due to failing to do a clk_prepare()
-> call before enabling a clock. It also fails to check the balance of
-> prepare/unprepare as __pm_clk_remove() do clk_disable_unprepare() call.
-> 
-> This bug has probably been in since commit b2476490e ("clk: introduce
-> the common clock framework") as the warning was part of the original
-> commit. It is strange that it has not been noticed (although this has
-> also been coupled with a failure for certain SH builds to not build the
-> necessary glue to use this method of controlling the clocks).
->
-> In summary, this is probably needed in several stable branches but need
-> advice on which ones.
-> 
-> On the Renesas Lager board, this causes numerous warnings of the following
-> and even worse the clock system will not enable clocks, causing drivers
-> that are in development to fail to work:
-> 
-> WARNING: CPU: 0 PID: 1 at drivers/clk/clk.c:883 __clk_enable+0x2c/0xa0()
+His patch depends on mine, Johannes.
 
-I've never noticed this on Lager, probably because Lager multiplatform doesn't 
-make use of clock_ops.c as drivers/sh/pm_runtime.c (which you addressed in 
-another patch that I've also replied to). I'm thus not sure we need to apply 
-this as a fix and backport it to stable branches.
+> > Johannes is arguing for the same semantics that VMPRESSURE_CRITICAL and/or 
+> > memory thresholds provides, which disagrees from the list of solutions 
+> > that Documentation/cgroups/memory.txt gives for userspace oom handler 
+> > wakeups and is required for any sane implementation.
+> 
+> No, he's not and I'm sick of you repeating refuted garbage like this.
+> 
+> You have convinced neither me nor Michal that your problem is entirely
+> real and when confronted with doubt you just repeat the same points
+> over and over.
+> 
 
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-sh@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
-> ---
->  drivers/base/power/clock_ops.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-> index 9d8fde7..b9dd8fa 100644
-> --- a/drivers/base/power/clock_ops.c
-> +++ b/drivers/base/power/clock_ops.c
-> @@ -43,6 +43,7 @@ static void pm_clk_acquire(struct device *dev, struct
-> pm_clock_entry *ce) if (IS_ERR(ce->clk)) {
->  		ce->status = PCE_STATUS_ERROR;
->  	} else {
-> +		clk_prepare(ce->clk);
->  		ce->status = PCE_STATUS_ACQUIRED;
->  		dev_dbg(dev, "Clock %s managed by runtime PM.\n", ce->con_id);
->  	}
-> @@ -99,10 +100,12 @@ static void __pm_clk_remove(struct pm_clock_entry *ce)
-> 
->  	if (ce->status < PCE_STATUS_ERROR) {
->  		if (ce->status == PCE_STATUS_ENABLED)
-> -			clk_disable_unprepare(ce->clk);
-> +			clk_disable(ce->clk);
-> 
-> -		if (ce->status >= PCE_STATUS_ACQUIRED)
-> +		if (ce->status >= PCE_STATUS_ACQUIRED) {
-> +			clk_unprepare(ce->clk);
->  			clk_put(ce->clk);
-> +		}
->  	}
-> 
->  	kfree(ce->con_id);
--- 
-Regards,
+The conditional to check if current needs access to memory reserves to 
+make forward progress and avoid oom killing anything else is done after 
+the memcg notification.  It's real per section 6.8.4 of the C99 standard 
+which defines how a conditional works.  We do not want a userspace 
+notification in such a case because userspace testing of whether the 
+condition is actionable would be unreliable.  This is not dead code, it 
+does get executed.
 
-Laurent Pinchart
+> The one aspect of your change that we DO agree is valid is now fixed
+> by Michal in a separate attempt because you could not be bothered to
+> incorporate feedback into your patch.
+> 
 
+I suggested his patch, Johannes, but his patch depends on mine.  I'm 
+hoping he can rebase his patch and it's done and merged into -mm before 
+the merge window for 3.14 as I've stated.
