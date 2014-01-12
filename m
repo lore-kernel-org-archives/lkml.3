@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaALSpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:45:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46396 "EHLO
+	id S1752457AbaALSoz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:44:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46359 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012AbaALSpK (ORCPT
+	with ESMTP id S1751172AbaALSor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:45:10 -0500
-Date: Sun, 12 Jan 2014 10:44:30 -0800
+	Sun, 12 Jan 2014 13:44:47 -0500
+Date: Sun, 12 Jan 2014 10:44:09 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-3a5cd0b09443edb2f960497928de047e9c8ab848@git.kernel.org>
+Message-ID: <tip-c795eb55e74041a4b1e46a82bb07d8bd513fb066@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, arjan@linux.intel.com,
-        peterz@infradead.org, bitbucket@online.de, davem@davemloft.net,
-        eliezer.tamir@linux.intel.com, akpm@linux-foundation.org,
+        arjan@linux.intel.com, peterz@infradead.org, bitbucket@online.de,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, bitbucket@online.de, davem@davemloft.net,
-        eliezer.tamir@linux.intel.com, akpm@linux-foundation.org,
+        arjan@linux.intel.com, peterz@infradead.org, bitbucket@online.de,
         tglx@linutronix.de
 In-Reply-To: <20131119151338.GF3694@twins.programming.kicks-ass.net>
 References: <20131119151338.GF3694@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/idle] sched, net: Clean up preempt_enable_no_resched()
-  abuse
-Git-Commit-ID: 3a5cd0b09443edb2f960497928de047e9c8ab848
+Subject: [tip:sched/idle] sched/preempt, locking: Rework local_bh_{dis,
+ en}able()
+Git-Commit-ID: c795eb55e74041a4b1e46a82bb07d8bd513fb066
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,58 +30,201 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:44:36 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:44:17 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a5cd0b09443edb2f960497928de047e9c8ab848
-Gitweb:     http://git.kernel.org/tip/3a5cd0b09443edb2f960497928de047e9c8ab848
+Commit-ID:  c795eb55e74041a4b1e46a82bb07d8bd513fb066
+Gitweb:     http://git.kernel.org/tip/c795eb55e74041a4b1e46a82bb07d8bd513fb066
 Author:     Peter Zijlstra <peterz@infradead.org>
 AuthorDate: Tue, 19 Nov 2013 16:13:38 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 12 Jan 2014 14:50:35 +0100
+CommitDate: Sun, 12 Jan 2014 10:48:24 +0100
 
-sched, net: Clean up preempt_enable_no_resched() abuse
+sched/preempt, locking: Rework local_bh_{dis,en}able()
 
-The only valid use of preempt_enable_no_resched() is if the very next
-line is schedule() or if we know preemption cannot actually be enabled
-by that statement due to known more preempt_count 'refs'.
+Currently local_bh_disable() is out-of-line for no apparent reason.
+So inline it to save a few cycles on call/return nonsense, the
+function body is a single add on x86 (a few loads and store extra on
+load/store archs).
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Also expose two new local_bh functions:
+
+  __local_bh_{dis,en}able_ip(unsigned long ip, unsigned int cnt);
+
+Which implement the actual local_bh_{dis,en}able() behaviour.
+
+The next patch uses the exposed @cnt argument to optimize bh lock
+functions.
+
+With build fixes from Jacob Pan.
+
 Cc: rjw@rjwysocki.net
-Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: David S. Miller <davem@davemloft.net>
 Cc: rui.zhang@intel.com
 Cc: jacob.jun.pan@linux.intel.com
 Cc: Mike Galbraith <bitbucket@online.de>
 Cc: hpa@zytor.com
 Cc: Arjan van de Ven <arjan@linux.intel.com>
 Cc: lenb@kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Link: http://lkml.kernel.org/r/20131119151338.GF3694@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- net/ipv4/tcp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/bottom_half.h  | 32 +++++++++++++++++++++++++++++---
+ include/linux/hardirq.h      |  1 +
+ include/linux/preempt_mask.h |  1 -
+ kernel/softirq.c             | 35 ++++++-----------------------------
+ 4 files changed, 36 insertions(+), 33 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index c4638e6..82de786 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1623,11 +1623,11 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		    (len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
- 		    !sysctl_tcp_low_latency &&
- 		    net_dma_find_channel()) {
--			preempt_enable_no_resched();
-+			preempt_enable();
- 			tp->ucopy.pinned_list =
- 					dma_pin_iovec_pages(msg->msg_iov, len);
- 		} else {
--			preempt_enable_no_resched();
-+			preempt_enable();
- 		}
- 	}
+diff --git a/include/linux/bottom_half.h b/include/linux/bottom_half.h
+index 27b1bcf..86c12c9 100644
+--- a/include/linux/bottom_half.h
++++ b/include/linux/bottom_half.h
+@@ -1,9 +1,35 @@
+ #ifndef _LINUX_BH_H
+ #define _LINUX_BH_H
+ 
+-extern void local_bh_disable(void);
++#include <linux/preempt.h>
++#include <linux/preempt_mask.h>
++
++#ifdef CONFIG_TRACE_IRQFLAGS
++extern void __local_bh_disable_ip(unsigned long ip, unsigned int cnt);
++#else
++static __always_inline void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
++{
++	preempt_count_add(cnt);
++	barrier();
++}
++#endif
++
++static inline void local_bh_disable(void)
++{
++	__local_bh_disable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
++}
++
+ extern void _local_bh_enable(void);
+-extern void local_bh_enable(void);
+-extern void local_bh_enable_ip(unsigned long ip);
++extern void __local_bh_enable_ip(unsigned long ip, unsigned int cnt);
++
++static inline void local_bh_enable_ip(unsigned long ip)
++{
++	__local_bh_enable_ip(ip, SOFTIRQ_DISABLE_OFFSET);
++}
++
++static inline void local_bh_enable(void)
++{
++	__local_bh_enable_ip(_THIS_IP_, SOFTIRQ_DISABLE_OFFSET);
++}
+ 
+ #endif /* _LINUX_BH_H */
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index d9cf963..12d5f97 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -5,6 +5,7 @@
+ #include <linux/lockdep.h>
+ #include <linux/ftrace_irq.h>
+ #include <linux/vtime.h>
++#include <asm/hardirq.h>
+ 
+ 
+ extern void synchronize_irq(unsigned int irq);
+diff --git a/include/linux/preempt_mask.h b/include/linux/preempt_mask.h
+index d169820..30820ec 100644
+--- a/include/linux/preempt_mask.h
++++ b/include/linux/preempt_mask.h
+@@ -2,7 +2,6 @@
+ #define LINUX_PREEMPT_MASK_H
+ 
+ #include <linux/preempt.h>
+-#include <asm/hardirq.h>
+ 
+ /*
+  * We put the hardirq and softirq counter into the preemption
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 9a4500e..2a4b5f4 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -89,7 +89,7 @@ static void wakeup_softirqd(void)
+  * where hardirqs are disabled legitimately:
+  */
+ #ifdef CONFIG_TRACE_IRQFLAGS
+-static void __local_bh_disable(unsigned long ip, unsigned int cnt)
++void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
+ {
+ 	unsigned long flags;
+ 
+@@ -114,21 +114,9 @@ static void __local_bh_disable(unsigned long ip, unsigned int cnt)
+ 	if (preempt_count() == cnt)
+ 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+ }
+-#else /* !CONFIG_TRACE_IRQFLAGS */
+-static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
+-{
+-	preempt_count_add(cnt);
+-	barrier();
+-}
++EXPORT_SYMBOL(__local_bh_disable_ip);
+ #endif /* CONFIG_TRACE_IRQFLAGS */
+ 
+-void local_bh_disable(void)
+-{
+-	__local_bh_disable(_RET_IP_, SOFTIRQ_DISABLE_OFFSET);
+-}
+-
+-EXPORT_SYMBOL(local_bh_disable);
+-
+ static void __local_bh_enable(unsigned int cnt)
+ {
+ 	WARN_ON_ONCE(!irqs_disabled());
+@@ -151,7 +139,7 @@ void _local_bh_enable(void)
+ 
+ EXPORT_SYMBOL(_local_bh_enable);
+ 
+-static inline void _local_bh_enable_ip(unsigned long ip)
++void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
+ {
+ 	WARN_ON_ONCE(in_irq() || irqs_disabled());
+ #ifdef CONFIG_TRACE_IRQFLAGS
+@@ -166,7 +154,7 @@ static inline void _local_bh_enable_ip(unsigned long ip)
+ 	 * Keep preemption disabled until we are done with
+ 	 * softirq processing:
+  	 */
+-	preempt_count_sub(SOFTIRQ_DISABLE_OFFSET - 1);
++	preempt_count_sub(cnt - 1);
+ 
+ 	if (unlikely(!in_interrupt() && local_softirq_pending())) {
+ 		/*
+@@ -182,18 +170,7 @@ static inline void _local_bh_enable_ip(unsigned long ip)
  #endif
+ 	preempt_check_resched();
+ }
+-
+-void local_bh_enable(void)
+-{
+-	_local_bh_enable_ip(_RET_IP_);
+-}
+-EXPORT_SYMBOL(local_bh_enable);
+-
+-void local_bh_enable_ip(unsigned long ip)
+-{
+-	_local_bh_enable_ip(ip);
+-}
+-EXPORT_SYMBOL(local_bh_enable_ip);
++EXPORT_SYMBOL(__local_bh_enable_ip);
+ 
+ /*
+  * We restart softirq processing for at most MAX_SOFTIRQ_RESTART times,
+@@ -264,7 +241,7 @@ asmlinkage void __do_softirq(void)
+ 	pending = local_softirq_pending();
+ 	account_irq_enter_time(current);
+ 
+-	__local_bh_disable(_RET_IP_, SOFTIRQ_OFFSET);
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);
+ 	in_hardirq = lockdep_softirq_start();
+ 
+ 	cpu = smp_processor_id();
