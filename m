@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaALMAE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 07:00:04 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:34371 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaALL76 (ORCPT
+	id S1751381AbaALMDL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 07:03:11 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:39867 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaALMDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 06:59:58 -0500
-Message-ID: <52D283B8.6050108@dev.mellanox.co.il>
-Date: Sun, 12 Jan 2014 13:59:52 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 12 Jan 2014 07:03:08 -0500
+Date: Sun, 12 Jan 2014 13:03:05 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        paul.gortmaker@windriver.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/cleanups] x86: Delete non-required instances of include
+ <linux/init.h>
+Message-ID: <20140112120305.GA13076@gmail.com>
+References: <1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com>
+ <tip-663b55b9b39fa9c848cca273ca4e12bf29b32c71@git.kernel.org>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Sagi Grimberg <sagig@mellanox.com>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>, oren Duer <oren@mellanox.com>
-Subject: Re: [PATCH 03/14] target/sbc: Add sbc_check_prot + update sbc_parse_cdb
- for DIF
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	 <1389212157-14540-4-git-send-email-nab@daterainc.com>	 <52CEB901.6030504@mellanox.com> <1389337456.5567.412.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1389337456.5567.412.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-663b55b9b39fa9c848cca273ca4e12bf29b32c71@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/10/2014 9:04 AM, Nicholas A. Bellinger wrote:
-> On Thu, 2014-01-09 at 16:58 +0200, Sagi Grimberg wrote:
->> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
->>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>
->>> This patch adds sbc_check_prot() for performing various DIF
->>> related CDB sanity checks, along with setting SCF_PROT once
->>> sanity checks have passed.
->>>
->>> Also, add calls in sbc_parse_cdb() for READ_[10,12,16] +
->>> WRITE_[10,12,16] to perform DIF sanity checking.
->>>
->>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
->>> Cc: Christoph Hellwig <hch@lst.de>
->>> Cc: Hannes Reinecke <hare@suse.de>
->>> Cc: Sagi Grimberg <sagig@mellanox.com>
->>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
->>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
->>> ---
->>>    drivers/target/target_core_sbc.c |   39 ++++++++++++++++++++++++++++++++++++++
->>>    1 file changed, 39 insertions(+)
->>>
->>> diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
->>> index 52ae54e..600ffcb 100644
->>> --- a/drivers/target/target_core_sbc.c
->>> +++ b/drivers/target/target_core_sbc.c
->>> @@ -563,6 +563,27 @@ sbc_compare_and_write(struct se_cmd *cmd)
->>>    	return TCM_NO_SENSE;
->>>    }
->>>    
->>> +bool
->>> +sbc_check_prot(struct se_device *dev, struct se_cmd *cmd, unsigned char *cdb)
->>> +{
->>> +	if (!dev->dev_attrib.pi_prot_type)
->>> +		return true;
->>> +
->>> +	if (dev->dev_attrib.pi_prot_type == TARGET_DIF_TYPE2_PROT &&
->>> +	   (cdb[1] & 0xe0))
->>> +		return false;
->>> +
->>> +	if (!(cdb[1] & 0xe0)) {
->>> +		pr_warn("Target: Unprotected READ/WRITE to DIF device\n");
->>> +		return true;
->>> +	}
->>> +	if (!cmd->t_prot_sg || !cmd->t_prot_nents)
->>> +		return true;
->>> +
->>> +	cmd->se_cmd_flags |= SCF_PROT;
->> Isn't this the place to fill the se_cmd DIF execution parameters?
->> prot_op, prot_type, guard_type, initial_reftag, apptag etc...
->> Next, all parties interested in DIF execution should look in se_cmd
->> (backstore, transport).
-> Yes, working on this for -v2 as well.  :)
 
-OK, so just to be clear, both the transport and the backstore will be 
-look in se_cmd protection attributes when executing IO correct?
+* tip-bot for Paul Gortmaker <tipbot@zytor.com> wrote:
 
+> Commit-ID:  663b55b9b39fa9c848cca273ca4e12bf29b32c71
+> Gitweb:     http://git.kernel.org/tip/663b55b9b39fa9c848cca273ca4e12bf29b32c71
+> Author:     Paul Gortmaker <paul.gortmaker@windriver.com>
+> AuthorDate: Mon, 6 Jan 2014 19:20:26 -0500
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Mon, 6 Jan 2014 21:25:18 -0800
+> 
+> x86: Delete non-required instances of include <linux/init.h>
+> 
+> None of these files are actually using any __init type directives
+> and hence don't need to include <linux/init.h>.  Most are just a
+> left over from __devinit and __cpuinit removal, or simply due to
+> code getting copied from one driver to the next.
+> 
+> [ hpa: undid incorrect removal from arch/x86/kernel/head_32.S ]
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Link: http://lkml.kernel.org/r/1389054026-12947-1-git-send-email-paul.gortmaker@windriver.com
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+
+FYI, this patch breaks the UML build:
+
+/home/mingo/tip/arch/x86/um/vdso/vdso.S: Assembler messages:
+/home/mingo/tip/arch/x86/um/vdso/vdso.S:2: Error: no such instruction: `__initdata'
+/home/mingo/tip/arch/x86/um/vdso/vdso.S:9: Error: no such instruction: `__finit'
+
+Thanks,
+
+	Ingo
