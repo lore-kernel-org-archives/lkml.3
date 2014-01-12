@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751384AbaALL4X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 06:56:23 -0500
-Received: from mail-ee0-f67.google.com ([74.125.83.67]:61090 "EHLO
-	mail-ee0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaALL4U (ORCPT
+	id S1751234AbaALL4e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 06:56:34 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:33424 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaALL4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 06:56:20 -0500
-Message-ID: <52D282E0.2060800@dev.mellanox.co.il>
-Date: Sun, 12 Jan 2014 13:56:16 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Sagi Grimberg <sagig@mellanox.com>
-CC: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: [PATCH 09/14] target/configfs: Expose protection device attributes
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	 <1389212157-14540-10-git-send-email-nab@daterainc.com>	 <52CE817B.9070203@mellanox.com> <1389337238.5567.408.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1389337238.5567.408.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 12 Jan 2014 06:56:22 -0500
+From: Svetlana Mavrina <another.karnil@gmail.com>
+To: tom@opengridcomputing.com
+Cc: Svetlana Mavrina <another.karnil@gmail.com>, swise@opengridcomputing.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] amso1100: Add check if cache memory was allocated before freeing it
+Date: Sun, 12 Jan 2014 11:56:09 +0000
+Message-Id: <1389527769-6602-1-git-send-email-another.karnil@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/10/2014 9:00 AM, Nicholas A. Bellinger wrote:
-> On Thu, 2014-01-09 at 13:01 +0200, Sagi Grimberg wrote:
->> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
->>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>
->>> This patch adds support for exposing DIF protection device
->>> attributes via configfs.  This includes:
->>>
->>>      pi_prot_type: Protection Type (0, 1, 3 currently support)
->>>      pi_prot_version: Protection Version (DIF v1 currently supported)
->>>      pi_guard_type: Guard Type (1=DIF CRC, 2=IP CRC)
->>>
->>> Within se_dev_set_pi_prot_type() it also adds the se_subsystem_api
->>> device callbacks to setup per device protection information.
->> Suggestion, expose pi_prot_format and call transport->init_prot() there.
->> It is more explicit
->> and this routine should be called upon getting FORMAT_UNIT as well.
-> <nod>, working on this next for FILEIO following your original example
-> code.
+From: Svetlana Mavrina <another.karnil@gmail.com>
 
-I would suggest to keep user interface the same for all backstores.
-Let me send you my latest WIP example for FILEIO that follows the 
-pi_prot_format notation and you can arrange it as you wish.
+There is a path in handle_vq() where kmem_cache_free()
+can be called with pointer to a local variable.
+It can happen if vq_repbuf_alloc() failed to allocate memory from cache
+and req is NULL.
 
-> Thanks Sagi!
->
-> --nab
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe target-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The patch adds check if cache memory was allocated before freeing it.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Svetlana Mavrina <another.karnil@gmail.com>
+Reviewed-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/infiniband/hw/amso1100/c2_intr.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/hw/amso1100/c2_intr.c b/drivers/infiniband/hw/amso1100/c2_intr.c
+index 8951db4ae29d..3a17d9b36dba 100644
+--- a/drivers/infiniband/hw/amso1100/c2_intr.c
++++ b/drivers/infiniband/hw/amso1100/c2_intr.c
+@@ -169,7 +169,8 @@ static void handle_vq(struct c2_dev *c2dev, u32 mq_index)
+ 		 * We should never get here, as the adapter should
+ 		 * never send us a reply that we're not expecting.
+ 		 */
+-		vq_repbuf_free(c2dev, host_msg);
++		if (reply_msg != NULL)
++			vq_repbuf_free(c2dev, host_msg);
+ 		pr_debug("handle_vq: UNEXPECTEDLY got NULL req\n");
+ 		return;
+ 	}
+-- 
+1.8.1.2
 
