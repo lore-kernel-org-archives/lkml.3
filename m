@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaALSkS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:40:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46078 "EHLO
+	id S1751859AbaALSks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:40:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46101 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841AbaALSkO (ORCPT
+	with ESMTP id S1750956AbaALSko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:40:14 -0500
-Date: Sun, 12 Jan 2014 10:39:53 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-6dd601354f14b5cd7a0a4103811e52ccec22ac53@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1388036284-32342-4-git-send-email-namhyung@kernel.org>
-References: <1388036284-32342-4-git-send-email-namhyung@kernel.org>
+	Sun, 12 Jan 2014 13:40:44 -0500
+Date: Sun, 12 Jan 2014 10:40:03 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-uux5wpvevlerd42gqer13e7n@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui/tui: Implement header window
-Git-Commit-ID: 6dd601354f14b5cd7a0a4103811e52ccec22ac53
+Subject: [tip:perf/core] perf tools:
+  No need to test against NULL before calling free()
+Git-Commit-ID: f5385650c02cd4373c4124c8a8fac3b5f9851e7f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,217 +32,255 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:40:00 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:40:10 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6dd601354f14b5cd7a0a4103811e52ccec22ac53
-Gitweb:     http://git.kernel.org/tip/6dd601354f14b5cd7a0a4103811e52ccec22ac53
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 26 Dec 2013 14:37:59 +0900
+Commit-ID:  f5385650c02cd4373c4124c8a8fac3b5f9851e7f
+Gitweb:     http://git.kernel.org/tip/f5385650c02cd4373c4124c8a8fac3b5f9851e7f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 26 Dec 2013 15:54:57 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 26 Dec 2013 11:22:02 -0300
+CommitDate: Thu, 26 Dec 2013 15:58:52 -0300
 
-perf ui/tui: Implement header window
+perf tools: No need to test against NULL before calling free()
 
-Implement a simple, full-screen header window which shows session header
-(metadata) information.  Press 'i' key to display the header window.
+Its perfectly fine to call free(NULL), so no need to clutter the source
+code with all those superfluous testing.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1388036284-32342-4-git-send-email-namhyung@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-uux5wpvevlerd42gqer13e7n@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf        |   1 +
- tools/perf/ui/browser.h         |   2 +
- tools/perf/ui/browsers/header.c | 127 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/ui/browsers/hists.c  |   6 ++
- 4 files changed, 136 insertions(+)
+ tools/perf/builtin-kvm.c                           |  4 +-
+ tools/perf/ui/browsers/scripts.c                   |  3 +-
+ tools/perf/util/header.c                           |  6 +--
+ tools/perf/util/probe-event.c                      | 62 ++++++++--------------
+ tools/perf/util/probe-finder.c                     | 12 ++---
+ .../perf/util/scripting-engines/trace-event-perl.c |  3 +-
+ .../util/scripting-engines/trace-event-python.c    |  3 +-
+ 7 files changed, 31 insertions(+), 62 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 97a2145..3638b0b 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -489,6 +489,7 @@ ifndef NO_SLANG
-   LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
-   LIB_OBJS += $(OUTPUT)ui/browsers/map.o
-   LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
-+  LIB_OBJS += $(OUTPUT)ui/browsers/header.o
-   LIB_OBJS += $(OUTPUT)ui/tui/setup.o
-   LIB_OBJS += $(OUTPUT)ui/tui/util.o
-   LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
-diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
-index 7d45d2f..118cca2 100644
---- a/tools/perf/ui/browser.h
-+++ b/tools/perf/ui/browser.h
-@@ -59,6 +59,8 @@ int ui_browser__help_window(struct ui_browser *browser, const char *text);
- bool ui_browser__dialog_yesno(struct ui_browser *browser, const char *text);
- int ui_browser__input_window(const char *title, const char *text, char *input,
- 			     const char *exit_msg, int delay_sec);
-+struct perf_session_env;
-+int tui__header_window(struct perf_session_env *env);
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 5a80da6..a6ec105 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1158,9 +1158,7 @@ out:
+ 	if (kvm->timerfd >= 0)
+ 		close(kvm->timerfd);
  
- void ui_browser__argv_seek(struct ui_browser *browser, off_t offset, int whence);
- unsigned int ui_browser__argv_refresh(struct ui_browser *browser);
-diff --git a/tools/perf/ui/browsers/header.c b/tools/perf/ui/browsers/header.c
-new file mode 100644
-index 0000000..89c16b9
---- /dev/null
-+++ b/tools/perf/ui/browsers/header.c
-@@ -0,0 +1,127 @@
-+#include "util/cache.h"
-+#include "util/debug.h"
-+#include "ui/browser.h"
-+#include "ui/ui.h"
-+#include "ui/util.h"
-+#include "ui/libslang.h"
-+#include "util/header.h"
-+#include "util/session.h"
-+
-+static void ui_browser__argv_write(struct ui_browser *browser,
-+				   void *entry, int row)
-+{
-+	char **arg = entry;
-+	char *str = *arg;
-+	char empty[] = " ";
-+	bool current_entry = ui_browser__is_current_entry(browser, row);
-+	unsigned long offset = (unsigned long)browser->priv;
-+
-+	if (offset >= strlen(str))
-+		str = empty;
-+	else
-+		str = str + offset;
-+
-+	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
-+						       HE_COLORSET_NORMAL);
-+
-+	slsmg_write_nstring(str, browser->width);
-+}
-+
-+static int list_menu__run(struct ui_browser *menu)
-+{
-+	int key;
-+	unsigned long offset;
-+	const char help[] =
-+	"h/?/F1        Show this window\n"
-+	"UP/DOWN/PGUP\n"
-+	"PGDN/SPACE\n"
-+	"LEFT/RIGHT    Navigate\n"
-+	"q/ESC/CTRL+C  Exit browser";
-+
-+	if (ui_browser__show(menu, "Header information", "Press 'q' to exit") < 0)
-+		return -1;
-+
-+	while (1) {
-+		key = ui_browser__run(menu, 0);
-+
-+		switch (key) {
-+		case K_RIGHT:
-+			offset = (unsigned long)menu->priv;
-+			offset += 10;
-+			menu->priv = (void *)offset;
-+			continue;
-+		case K_LEFT:
-+			offset = (unsigned long)menu->priv;
-+			if (offset >= 10)
-+				offset -= 10;
-+			menu->priv = (void *)offset;
-+			continue;
-+		case K_F1:
-+		case 'h':
-+		case '?':
-+			ui_browser__help_window(menu, help);
-+			continue;
-+		case K_ESC:
-+		case 'q':
-+		case CTRL('c'):
-+			key = -1;
-+			break;
-+		default:
-+			continue;
-+		}
-+
-+		break;
-+	}
-+
-+	ui_browser__hide(menu);
-+	return key;
-+}
-+
-+static int ui__list_menu(int argc, char * const argv[])
-+{
-+	struct ui_browser menu = {
-+		.entries    = (void *)argv,
-+		.refresh    = ui_browser__argv_refresh,
-+		.seek	    = ui_browser__argv_seek,
-+		.write	    = ui_browser__argv_write,
-+		.nr_entries = argc,
-+	};
-+
-+	return list_menu__run(&menu);
-+}
-+
-+int tui__header_window(struct perf_session_env *env)
-+{
-+	int i, argc = 0;
-+	char **argv;
-+	struct perf_session *session;
-+	char *ptr, *pos;
-+	size_t size;
-+	FILE *fp = open_memstream(&ptr, &size);
-+
-+	session = container_of(env, struct perf_session, header.env);
-+	perf_header__fprintf_info(session, fp, true);
-+	fclose(fp);
-+
-+	for (pos = ptr, argc = 0; (pos = strchr(pos, '\n')) != NULL; pos++)
-+		argc++;
-+
-+	argv = calloc(argc + 1, sizeof(*argv));
-+	if (argv == NULL)
-+		goto out;
-+
-+	argv[0] = pos = ptr;
-+	for (i = 1; (pos = strchr(pos, '\n')) != NULL; i++) {
-+		*pos++ = '\0';
-+		argv[i] = pos;
-+	}
-+
-+	BUG_ON(i != argc + 1);
-+
-+	ui__list_menu(argc, argv);
-+
-+out:
-+	free(argv);
-+	free(ptr);
-+	return 0;
-+}
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index d43ec79..0d9dd99 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1417,6 +1417,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+-	if (pollfds)
+-		free(pollfds);
+-
++	free(pollfds);
+ 	return err;
+ }
  
- 	/* help messages are sorted by lexical order of the hotkey */
- 	const char report_help[] = HIST_BROWSER_HELP_COMMON
-+	"i             Show header information\n"
- 	"P             Print histograms to perf.hist.N\n"
- 	"r             Run available scripts\n"
- 	"s             Switch to another data file in PWD\n"
-@@ -1513,6 +1514,11 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			if (is_report_browser(hbt))
- 				goto do_data_switch;
- 			continue;
-+		case 'i':
-+			/* env->arch is NULL for live-mode (i.e. perf top) */
-+			if (env->arch)
-+				tui__header_window(env);
-+			continue;
- 		case K_F1:
- 		case 'h':
- 		case '?':
+diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
+index d63c68e..402d2bd 100644
+--- a/tools/perf/ui/browsers/scripts.c
++++ b/tools/perf/ui/browsers/scripts.c
+@@ -173,8 +173,7 @@ int script_browse(const char *script_opt)
+ 	if (script.b.width > AVERAGE_LINE_LEN)
+ 		script.b.width = AVERAGE_LINE_LEN;
+ 
+-	if (line)
+-		free(line);
++	free(line);
+ 	pclose(fp);
+ 
+ 	script.nr_lines = nr_entries;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 61c5421..10730b0 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1232,10 +1232,8 @@ static void free_event_desc(struct perf_evsel *events)
+ 		return;
+ 
+ 	for (evsel = events; evsel->attr.size; evsel++) {
+-		if (evsel->name)
+-			free(evsel->name);
+-		if (evsel->id)
+-			free(evsel->id);
++		free(evsel->name);
++		free(evsel->id);
+ 	}
+ 
+ 	free(events);
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 72b56ae..095a98e 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -401,9 +401,7 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ 		}
+ 	}
+ 
+-	if (tmp)
+-		free(tmp);
+-
++	free(tmp);
+ 	return ret;
+ }
+ 
+@@ -1382,8 +1380,7 @@ static char *synthesize_perf_probe_point(struct perf_probe_point *pp)
+ error:
+ 	pr_debug("Failed to synthesize perf probe point: %s\n",
+ 		 strerror(-ret));
+-	if (buf)
+-		free(buf);
++	free(buf);
+ 	return NULL;
+ }
+ 
+@@ -1584,34 +1581,25 @@ void clear_perf_probe_event(struct perf_probe_event *pev)
+ 	struct perf_probe_arg_field *field, *next;
+ 	int i;
+ 
+-	if (pev->event)
+-		free(pev->event);
+-	if (pev->group)
+-		free(pev->group);
+-	if (pp->file)
+-		free(pp->file);
+-	if (pp->function)
+-		free(pp->function);
+-	if (pp->lazy_line)
+-		free(pp->lazy_line);
++	free(pev->event);
++	free(pev->group);
++	free(pp->file);
++	free(pp->function);
++	free(pp->lazy_line);
++
+ 	for (i = 0; i < pev->nargs; i++) {
+-		if (pev->args[i].name)
+-			free(pev->args[i].name);
+-		if (pev->args[i].var)
+-			free(pev->args[i].var);
+-		if (pev->args[i].type)
+-			free(pev->args[i].type);
++		free(pev->args[i].name);
++		free(pev->args[i].var);
++		free(pev->args[i].type);
+ 		field = pev->args[i].field;
+ 		while (field) {
+ 			next = field->next;
+-			if (field->name)
+-				free(field->name);
++			free(field->name);
+ 			free(field);
+ 			field = next;
+ 		}
+ 	}
+-	if (pev->args)
+-		free(pev->args);
++	free(pev->args);
+ 	memset(pev, 0, sizeof(*pev));
+ }
+ 
+@@ -1620,21 +1608,14 @@ static void clear_probe_trace_event(struct probe_trace_event *tev)
+ 	struct probe_trace_arg_ref *ref, *next;
+ 	int i;
+ 
+-	if (tev->event)
+-		free(tev->event);
+-	if (tev->group)
+-		free(tev->group);
+-	if (tev->point.symbol)
+-		free(tev->point.symbol);
+-	if (tev->point.module)
+-		free(tev->point.module);
++	free(tev->event);
++	free(tev->group);
++	free(tev->point.symbol);
++	free(tev->point.module);
+ 	for (i = 0; i < tev->nargs; i++) {
+-		if (tev->args[i].name)
+-			free(tev->args[i].name);
+-		if (tev->args[i].value)
+-			free(tev->args[i].value);
+-		if (tev->args[i].type)
+-			free(tev->args[i].type);
++		free(tev->args[i].name);
++		free(tev->args[i].value);
++		free(tev->args[i].type);
+ 		ref = tev->args[i].ref;
+ 		while (ref) {
+ 			next = ref->next;
+@@ -1642,8 +1623,7 @@ static void clear_probe_trace_event(struct probe_trace_event *tev)
+ 			ref = next;
+ 		}
+ 	}
+-	if (tev->args)
+-		free(tev->args);
++	free(tev->args);
+ 	memset(tev, 0, sizeof(*tev));
+ }
+ 
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index 7db7e05..8c08735 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1414,10 +1414,8 @@ int debuginfo__find_available_vars_at(struct debuginfo *dbg,
+ 	if (ret < 0) {
+ 		/* Free vlist for error */
+ 		while (af.nvls--) {
+-			if (af.vls[af.nvls].point.symbol)
+-				free(af.vls[af.nvls].point.symbol);
+-			if (af.vls[af.nvls].vars)
+-				strlist__delete(af.vls[af.nvls].vars);
++			free(af.vls[af.nvls].point.symbol);
++			strlist__delete(af.vls[af.nvls].vars);
+ 		}
+ 		free(af.vls);
+ 		*vls = NULL;
+@@ -1524,10 +1522,8 @@ post:
+ 	if (fname) {
+ 		ppt->file = strdup(fname);
+ 		if (ppt->file == NULL) {
+-			if (ppt->function) {
+-				free(ppt->function);
+-				ppt->function = NULL;
+-			}
++			free(ppt->function);
++			ppt->function = NULL;
+ 			ret = -ENOMEM;
+ 			goto end;
+ 		}
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index 3773c48..e108207 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -194,8 +194,7 @@ static void define_event_symbols(struct event_format *event,
+ 		zero_flag_atom = 0;
+ 		break;
+ 	case PRINT_FIELD:
+-		if (cur_field_name)
+-			free(cur_field_name);
++		free(cur_field_name);
+ 		cur_field_name = strdup(args->field.name);
+ 		break;
+ 	case PRINT_FLAGS:
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index b258de6..cd9774d 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -161,8 +161,7 @@ static void define_event_symbols(struct event_format *event,
+ 		zero_flag_atom = 0;
+ 		break;
+ 	case PRINT_FIELD:
+-		if (cur_field_name)
+-			free(cur_field_name);
++		free(cur_field_name);
+ 		cur_field_name = strdup(args->field.name);
+ 		break;
+ 	case PRINT_FLAGS:
