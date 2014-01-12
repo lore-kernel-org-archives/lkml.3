@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaALTlF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 14:41:05 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61825 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaALTlD (ORCPT
+	id S1751436AbaALTno (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 14:43:44 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:45504 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaALTnj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 14:41:03 -0500
-Date: Sun, 12 Jan 2014 11:40:58 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: David Herrmann <dh.herrmann@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
-Subject: Re: [PATCH 1/4] Input: uinput: add full absinfo support
-Message-ID: <20140112194057.GD13131@core.coreip.homeip.net>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
- <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
- <20131218222732.GA6315@yabbi.redhat.com>
+	Sun, 12 Jan 2014 14:43:39 -0500
+From: Florian Fainelli <florian@openwrt.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia@diku.dk>, apkm@linux-foundation.org
+Subject: Re: [patch] vlynq: fix another resource size off by 1 error
+Date: Sun, 12 Jan 2014 11:43:36 -0800
+Message-ID: <2337301.FMvHPCUCYL@lenovo>
+Organization: OpenWrt
+User-Agent: KMail/4.11.3 (Linux/3.11.0-15-generic; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20131111114827.GE5443@mwanda>
+References: <20130823081949.GD31293@elgon.mountain> <20131111114827.GE5443@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131218222732.GA6315@yabbi.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 19, 2013 at 08:27:32AM +1000, Peter Hutterer wrote:
-> On Tue, Dec 17, 2013 at 04:48:51PM +0100, David Herrmann wrote:
-> > +
-> > +	user_dev2->version = UINPUT_VERSION;
-> > +	memcpy(user_dev2->name, user_dev->name, UINPUT_MAX_NAME_SIZE);
-> > +	memcpy(&user_dev2->id, &user_dev->id, sizeof(struct input_id));
-> 
-> you copy the id bits one-by-one into the input_dev but you memcpy it here.
-> is this intentional?
+Le lundi 11 novembre 2013, 14:48:27 Dan Carpenter a écrit :
+> We still need to apply this fix.
 
-That should simply be:
-
-	user_dev2->id = user_dev->id;
-
-and in othe rplace as well I think.
+Sorry for this late answer, vlynq changes usually go through AKPM's tree as I 
+don't maintain one due to the low number of changes in this code.
 
 > 
-> > +	user_dev2->ff_effects_max = user_dev->ff_effects_max;
-> > +
-> > +	for (i = 0; i < ABS_CNT; ++i) {
-> > +		user_dev2->abs[i].value = 0;
-> > +		user_dev2->abs[i].maximum = user_dev->absmax[i];
-> > +		user_dev2->abs[i].minimum = user_dev->absmin[i];
-> > +		user_dev2->abs[i].fuzz = user_dev->absfuzz[i];
-> > +		user_dev2->abs[i].flat = user_dev->absflat[i];
-> > +		user_dev2->abs[i].resolution = 0;
-> > +	}
-> > +
-> > +	retval = uinput_setup_device(udev, user_dev2, ABS_CNT);
-> >  
-> > - exit:
-> >  	kfree(user_dev);
-> > -	return retval;
-> > +	kfree(user_dev2);
-> > +
-> > +	return retval ? retval : count;
-> > +}
-> > +
-> > +static int uinput_setup_device2(struct uinput_device *udev,
-> > +			       const char __user *buffer, size_t count)
-> > +{
-> > +	struct uinput_user_dev2	*user_dev2;
-> > +	int			retval;
-> > +	size_t			off, abscnt, max;
-> > +
-> > +	/* The first revision of "uinput_user_dev2" is bigger than
-> > +	 * "uinput_user_dev" and growing. Disallow any smaller payloads. */
-> > +	if (count <= sizeof(struct uinput_user_dev))
-> > +		return -EINVAL;
-> > +
-> > +	/* rough check to avoid huge kernel space allocations */
-> > +	max = ABS_CNT * sizeof(*user_dev2->abs) + sizeof(*user_dev2);
-> > +	if (count > max)
-> > +		return -EINVAL;
-> > +
-> > +	user_dev2 = memdup_user(buffer, count);
-> > +	if (IS_ERR(user_dev2))
-> > +		return PTR_ERR(user_dev2);
-> > +
-> > +	if (user_dev2->version > UINPUT_VERSION) {
-> > +		retval = -EINVAL;
-> > +	} else {
-> > +		off = offsetof(struct uinput_user_dev2, abs);
-> > +		abscnt = (count - off) / sizeof(*user_dev2->abs);
-> > +		retval = uinput_setup_device(udev, user_dev2, abscnt);
-> > +	}
-> > +
+> regards,
+> dan carpenter
 > 
-> I really wish uinput would be a bit easier to debug than just returning
-> -EINVAL when it's not happy. having said that, the only errno that would
-> remotely make sense is -ERANGE for count > max and even that is a bit meh.
-
-Maybe we should add a few dev_dbg() and rely on having dynamic debug to
-activate logging on demand?
-
-Thanks.
+> On Fri, Aug 23, 2013 at 11:19:49AM +0300, Dan Carpenter wrote:
+> > We fixed the call to request_mem_region() patch
+> > 3354f73 ('drivers/vlynq/vlynq.c: fix resource size off by 1 error').
+> > But we need to fix the call the release_mem_region() as well.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > ---
+> > Static checker stuff.
+> > 
+> > diff --git a/drivers/vlynq/vlynq.c b/drivers/vlynq/vlynq.c
+> > index 7b07135..c0227f9 100644
+> > --- a/drivers/vlynq/vlynq.c
+> > +++ b/drivers/vlynq/vlynq.c
+> > @@ -762,7 +762,8 @@ static int vlynq_remove(struct platform_device *pdev)
+> > 
+> >  	device_unregister(&dev->dev);
+> >  	iounmap(dev->local);
+> > 
+> > -	release_mem_region(dev->regs_start, dev->regs_end - dev->regs_start);
+> > +	release_mem_region(dev->regs_start,
+> > +			   dev->regs_end - dev->regs_start + 1);
+> > 
+> >  	kfree(dev);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Dmitry
+Florian
