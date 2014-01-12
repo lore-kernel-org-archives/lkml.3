@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaALSnh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 13:43:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46234 "EHLO
+	id S1752406AbaALSoh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 13:44:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46331 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269AbaALSnb (ORCPT
+	with ESMTP id S1752379AbaALSoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 13:43:31 -0500
-Date: Sun, 12 Jan 2014 10:42:57 -0800
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-f228c5b882602697a1adb50d61ff688b0df1eced@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, maria.n.dimakopoulou@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        maria.n.dimakopoulou@gmail.com
-In-Reply-To: <1389176153-3128-3-git-send-email-eranian@google.com>
-References: <1389176153-3128-3-git-send-email-eranian@google.com>
+	Sun, 12 Jan 2014 13:44:32 -0500
+Date: Sun, 12 Jan 2014 10:43:59 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-x9jgh45oeayzajz2mjt0y7d6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel:
-  Add Intel RAPL PP1 energy counter support
-Git-Commit-ID: f228c5b882602697a1adb50d61ff688b0df1eced
+Subject: [tip:sched/idle] sched/preempt:
+  Fix up missed PREEMPT_NEED_RESCHED folding
+Git-Commit-ID: eb797bf5bba817f2178e6126fb01efee27192a2d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,133 +26,150 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:43:04 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Sun, 12 Jan 2014 10:44:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f228c5b882602697a1adb50d61ff688b0df1eced
-Gitweb:     http://git.kernel.org/tip/f228c5b882602697a1adb50d61ff688b0df1eced
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Wed, 8 Jan 2014 11:15:53 +0100
+Commit-ID:  eb797bf5bba817f2178e6126fb01efee27192a2d
+Gitweb:     http://git.kernel.org/tip/eb797bf5bba817f2178e6126fb01efee27192a2d
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 20 Nov 2013 12:22:37 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 12 Jan 2014 10:16:08 +0100
+CommitDate: Sun, 12 Jan 2014 10:48:23 +0100
 
-perf/x86/intel: Add Intel RAPL PP1 energy counter support
+sched/preempt: Fix up missed PREEMPT_NEED_RESCHED folding
 
-This patch adds support for the Intel RAPL energy counter
-PP1 (Power Plane 1).
+With various drivers wanting to inject idle time; we get people
+calling idle routines outside of the idle loop proper.
 
-On client processors, it usually corresponds to the
-energy consumption of the builtin graphic card. That
-is why the sysfs event is called energy-gpu.
+Therefore we need to be extra careful about not missing
+TIF_NEED_RESCHED -> PREEMPT_NEED_RESCHED propagations.
 
-New event:
- - name: power/energy-gpu/
- - code: event=0x4
- - unit: 2^-32 Joules
+While looking at this, I also realized there's a small window in the
+existing idle loop where we can miss TIF_NEED_RESCHED; when it hits
+right after the tif_need_resched() test at the end of the loop but
+right before the need_resched() test at the start of the loop.
 
-On processors without graphics, this should count 0.
-The patch only enables this event on client processors.
+So move preempt_fold_need_resched() out of the loop where we're
+guaranteed to have TIF_NEED_RESCHED set.
 
-Reviewed-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: ak@linux.intel.com
-Cc: acme@redhat.com
-Cc: jolsa@redhat.com
-Cc: zheng.z.yan@intel.com
-Cc: bp@alien8.de
-Cc: vincent.weaver@maine.edu
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1389176153-3128-3-git-send-email-eranian@google.com
+Link: http://lkml.kernel.org/n/tip-x9jgh45oeayzajz2mjt0y7d6@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_rapl.c | 31 ++++++++++++++++++++++-------
- 1 file changed, 24 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/mwait.h |  2 +-
+ include/linux/preempt.h      | 15 +++++++++++++++
+ include/linux/sched.h        | 15 +++++++++++++++
+ kernel/cpu/idle.c            | 17 ++++++++++-------
+ kernel/sched/core.c          |  3 +--
+ 5 files changed, 42 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 0e3754e..5ad35ad 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -27,6 +27,10 @@
-  *	  event: rapl_energy_dram
-  *    perf code: 0x3
-  *
-+ * dram counter: consumption of the builtin-gpu domain (client only)
-+ *	  event: rapl_energy_gpu
-+ *    perf code: 0x4
-+ *
-  * We manage those counters as free running (read-only). They may be
-  * use simultaneously by other tools, such as turbostat.
-  *
-@@ -55,10 +59,13 @@
- #define INTEL_RAPL_PKG		0x2	/* pseudo-encoding */
- #define RAPL_IDX_RAM_NRG_STAT	2	/* DRAM */
- #define INTEL_RAPL_RAM		0x3	/* pseudo-encoding */
-+#define RAPL_IDX_PP1_NRG_STAT	3	/* DRAM */
-+#define INTEL_RAPL_PP1		0x4	/* pseudo-encoding */
- 
- /* Clients have PP0, PKG */
- #define RAPL_IDX_CLN	(1<<RAPL_IDX_PP0_NRG_STAT|\
--			 1<<RAPL_IDX_PKG_NRG_STAT)
-+			 1<<RAPL_IDX_PKG_NRG_STAT|\
-+			 1<<RAPL_IDX_PP1_NRG_STAT)
- 
- /* Servers have PP0, PKG, RAM */
- #define RAPL_IDX_SRV	(1<<RAPL_IDX_PP0_NRG_STAT|\
-@@ -315,6 +322,10 @@ static int rapl_pmu_event_init(struct perf_event *event)
- 		bit = RAPL_IDX_RAM_NRG_STAT;
- 		msr = MSR_DRAM_ENERGY_STATUS;
- 		break;
-+	case INTEL_RAPL_PP1:
-+		bit = RAPL_IDX_PP1_NRG_STAT;
-+		msr = MSR_PP1_ENERGY_STATUS;
-+		break;
- 	default:
- 		return -EINVAL;
+diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+index 19b71c4..1da25a5 100644
+--- a/arch/x86/include/asm/mwait.h
++++ b/arch/x86/include/asm/mwait.h
+@@ -53,7 +53,7 @@ static inline void mwait_idle_with_hints(unsigned long eax, unsigned long ecx)
+ 		if (!need_resched())
+ 			__mwait(eax, ecx);
  	}
-@@ -367,19 +378,22 @@ static struct attribute_group rapl_pmu_attr_group = {
- };
+-	__current_clr_polling();
++	current_clr_polling();
+ }
  
- EVENT_ATTR_STR(energy-cores, rapl_cores, "event=0x01");
--EVENT_ATTR_STR(energy-pkg  , rapl_pkg, "event=0x02");
--EVENT_ATTR_STR(energy-ram  , rapl_ram, "event=0x03");
-+EVENT_ATTR_STR(energy-pkg  ,   rapl_pkg, "event=0x02");
-+EVENT_ATTR_STR(energy-ram  ,   rapl_ram, "event=0x03");
-+EVENT_ATTR_STR(energy-gpu  ,   rapl_gpu, "event=0x04");
+ #endif /* _ASM_X86_MWAIT_H */
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index a3d9dc8..ef4e80c 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -116,6 +116,21 @@ do { \
  
- EVENT_ATTR_STR(energy-cores.unit, rapl_cores_unit, "Joules");
--EVENT_ATTR_STR(energy-pkg.unit  , rapl_pkg_unit, "Joules");
--EVENT_ATTR_STR(energy-ram.unit  , rapl_ram_unit, "Joules");
-+EVENT_ATTR_STR(energy-pkg.unit  ,   rapl_pkg_unit, "Joules");
-+EVENT_ATTR_STR(energy-ram.unit  ,   rapl_ram_unit, "Joules");
-+EVENT_ATTR_STR(energy-gpu.unit  ,   rapl_gpu_unit, "Joules");
+ #endif /* CONFIG_PREEMPT_COUNT */
  
- /*
-  * we compute in 0.23 nJ increments regardless of MSR
-  */
- EVENT_ATTR_STR(energy-cores.scale, rapl_cores_scale, "2.3283064365386962890625e-10");
--EVENT_ATTR_STR(energy-pkg.scale, rapl_pkg_scale, "2.3283064365386962890625e-10");
--EVENT_ATTR_STR(energy-ram.scale, rapl_ram_scale, "2.3283064365386962890625e-10");
-+EVENT_ATTR_STR(energy-pkg.scale,     rapl_pkg_scale, "2.3283064365386962890625e-10");
-+EVENT_ATTR_STR(energy-ram.scale,     rapl_ram_scale, "2.3283064365386962890625e-10");
-+EVENT_ATTR_STR(energy-gpu.scale,     rapl_gpu_scale, "2.3283064365386962890625e-10");
++#ifdef CONFIG_PREEMPT
++#define preempt_set_need_resched() \
++do { \
++	set_preempt_need_resched(); \
++} while (0)
++#define preempt_fold_need_resched() \
++do { \
++	if (tif_need_resched()) \
++		set_preempt_need_resched(); \
++} while (0)
++#else
++#define preempt_set_need_resched() do { } while (0)
++#define preempt_fold_need_resched() do { } while (0)
++#endif
++
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
  
- static struct attribute *rapl_events_srv_attr[] = {
- 	EVENT_PTR(rapl_cores),
-@@ -399,12 +413,15 @@ static struct attribute *rapl_events_srv_attr[] = {
- static struct attribute *rapl_events_cln_attr[] = {
- 	EVENT_PTR(rapl_cores),
- 	EVENT_PTR(rapl_pkg),
-+	EVENT_PTR(rapl_gpu),
+ struct preempt_notifier;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 53f97eb..6340654 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2627,6 +2627,21 @@ static inline bool __must_check current_clr_polling_and_test(void)
+ }
+ #endif
  
- 	EVENT_PTR(rapl_cores_unit),
- 	EVENT_PTR(rapl_pkg_unit),
-+	EVENT_PTR(rapl_gpu_unit),
++static inline void current_clr_polling(void)
++{
++	__current_clr_polling();
++
++	/*
++	 * Ensure we check TIF_NEED_RESCHED after we clear the polling bit.
++	 * Once the bit is cleared, we'll get IPIs with every new
++	 * TIF_NEED_RESCHED and the IPI handler, scheduler_ipi(), will also
++	 * fold.
++	 */
++	smp_mb(); /* paired with resched_task() */
++
++	preempt_fold_need_resched();
++}
++
+ static __always_inline bool need_resched(void)
+ {
+ 	return unlikely(tif_need_resched());
+diff --git a/kernel/cpu/idle.c b/kernel/cpu/idle.c
+index 988573a..277f494 100644
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -105,14 +105,17 @@ static void cpu_idle_loop(void)
+ 				__current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
+-			/*
+-			 * We need to test and propagate the TIF_NEED_RESCHED
+-			 * bit here because we might not have send the
+-			 * reschedule IPI to idle tasks.
+-			 */
+-			if (tif_need_resched())
+-				set_preempt_need_resched();
+ 		}
++
++		/*
++		 * Since we fell out of the loop above, we know
++		 * TIF_NEED_RESCHED must be set, propagate it into
++		 * PREEMPT_NEED_RESCHED.
++		 *
++		 * This is required because for polling idle loops we will
++		 * not have had an IPI to fold the state for us.
++		 */
++		preempt_set_need_resched();
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
+ 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a88f4a4..98a7a1c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1499,8 +1499,7 @@ void scheduler_ipi(void)
+ 	 * TIF_NEED_RESCHED remotely (for the first time) will also send
+ 	 * this IPI.
+ 	 */
+-	if (tif_need_resched())
+-		set_preempt_need_resched();
++	preempt_fold_need_resched();
  
- 	EVENT_PTR(rapl_cores_scale),
- 	EVENT_PTR(rapl_pkg_scale),
-+	EVENT_PTR(rapl_gpu_scale),
- 	NULL,
- };
- 
+ 	if (llist_empty(&this_rq()->wake_list)
+ 			&& !tick_nohz_full_cpu(smp_processor_id())
