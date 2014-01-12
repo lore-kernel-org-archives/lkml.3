@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227AbaALPmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 10:42:46 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:51101 "EHLO bear.ext.ti.com"
+	id S1751253AbaALPoe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 10:44:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46341 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751097AbaALPmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 10:42:43 -0500
-Message-ID: <52D2B7C8.4060103@ti.com>
-Date: Sun, 12 Jan 2014 10:42:00 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
-References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com> <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org> <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com> <20140112105958.GA9791@n2100.arm.linux.org.uk>
-In-Reply-To: <20140112105958.GA9791@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1750954AbaALPob convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 10:44:31 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] PPC: KVM: fix VCPU run for HV KVM
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1389338467-26303-1-git-send-email-aik@ozlabs.ru>
+Date: Sun, 12 Jan 2014 16:44:25 +0100
+Cc: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        kvm-ppc@vger.kernel.org,
+        "kvm@vger.kernel.org mailing list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AF6669B4-EF1A-44BD-9034-8824EFD94B5B@suse.de>
+References: <1389338467-26303-1-git-send-email-aik@ozlabs.ru>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 12 January 2014 05:59 AM, Russell King - ARM Linux wrote:
-> On Mon, Dec 09, 2013 at 08:02:30PM -0500, Santosh Shilimkar wrote:
->> On Monday 09 December 2013 07:54 PM, Russell King - ARM Linux wrote:
->>> The underlying reason is that - as I've already explained - ARM's __ffs()
->>> differs from other architectures in that it ends up being an int, whereas
->>> almost everyone else is unsigned long.
->>>
->>> The fix is to fix ARMs __ffs() to conform to other architectures.
->>>
->> I was just about to cross-post your reply here. Obviously I didn't think
->> this far when I made  $subject fix.
->>
->> So lets ignore the $subject patch which is not correct. Sorry for noise
-> 
-> Well, here we are, a month on, and this still remains unfixed despite
-> my comments pointing to what the problem is.  So, here's a patch to fix
-> this problem the correct way.  I took the time to add some comments to
-> these functions as I find that I wonder about their return values, and
-> these comments make the patch a little larger than it otherwise would be.
-> 
-The $subject warning fix [1] is already picked by Andrew with your ack
-and its in his queue [2]
 
-> This patch makes their types match exactly with x86's definitions of
-> the same, which is the basic problem: on ARM, they all took "int" values
-> and returned "int"s, which leads to min() in nobootmem.c complaining.
+On 10.01.2014, at 08:21, Alexey Kardashevskiy <aik@ozlabs.ru> wrote:
+
+> When write to MMIO happens and there is an ioeventfd for that and
+> is handled successfully, ioeventfd_write() returns 0 (success) and
+> kvmppc_handle_store() returns EMULATE_DONE. Then kvmppc_emulate_mmio()
+> converts EMULATE_DONE to RESUME_GUEST_NV and this broke from the loop.
 > 
-Not sure if you missed the thread but the right fix was picked. Ofcourse
-you do have additional clz optimisation in updated patch and some comments
-on those functions.
+> This adds handling of RESUME_GUEST_NV in kvmppc_vcpu_run_hv().
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Suggested-by: Paul Mackerras <paulus@samba.org>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+> 
+> This definitely needs a better commit message. Please, help.
+> ps. it seems like ioeventfd never worked on ppc64. hm.
+> 
+> ---
+> arch/powerpc/kvm/book3s_hv.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
+> index 072287f..24f363f 100644
+> --- a/arch/powerpc/kvm/book3s_hv.c
+> +++ b/arch/powerpc/kvm/book3s_hv.c
+> @@ -1569,7 +1569,7 @@ static int kvmppc_vcpu_run_hv(struct kvm_run *run, struct kvm_vcpu *vcpu)
+> 				vcpu->arch.fault_dar, vcpu->arch.fault_dsisr);
+> 			srcu_read_unlock(&vcpu->kvm->srcu, srcu_idx);
+> 		}
+> -	} while (r == RESUME_GUEST);
+> +	} while ((r == RESUME_GUEST_NV) || (r == RESUME_GUEST));
 
-Regards,
-Santosh
+How about
 
-[1] https://lkml.org/lkml/2013/12/9/811
-[2] http://ozlabs.org/~akpm/mmotm/broken-out/mm-arm-fix-arms-__ffs-to-conform-to-avoid-warning-with-no_bootmem.patch
+  while(!(r & RESUME_FLAG_HOST));
+
+That should cover all RESUME_GUEST_XXX cases just fine. Apart from that I agree that we should check for ! FLAG_HOST bit rather than the actual RESUME_GUEST value in all case where we check for it (read: please update all places).
+
+
+Alex
 
