@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309AbaALTip (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 14:38:45 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41114 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaALTil (ORCPT
+	id S1751357AbaALTk0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 14:40:26 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:62326 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaALTkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 14:38:41 -0500
-Date: Sun, 12 Jan 2014 11:38:37 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        linux-kernel@vger.kernel.org, input-tools@lists.freedesktop.org
-Subject: Re: [PATCH 1/4] Input: uinput: add full absinfo support
-Message-ID: <20140112193837.GC13131@core.coreip.homeip.net>
-References: <1387295334-1744-1-git-send-email-dh.herrmann@gmail.com>
- <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
+	Sun, 12 Jan 2014 14:40:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1387295334-1744-2-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140111122723.GA11475@amt.cnet>
+References: <1388654051-5968-1-git-send-email-chen.fan.fnst@cn.fujitsu.com>
+	<20140108211009.GD20624@amt.cnet>
+	<CAHqbYQt0ERa4kgK97D0NWZnZdF9TtdskaH0as7fZyO7N=5AzPw@mail.gmail.com>
+	<20140108232527.GA17874@amt.cnet>
+	<CAHqbYQu0rYfviVMJhgeEnBKYri5OVMA7XEp2ZCVGpvsiTYRJGg@mail.gmail.com>
+	<CAHqbYQs0f5bH1Sg1emeFfUzJ0SEQBoVUx3jXhH=wa7VJdeccMQ@mail.gmail.com>
+	<20140109184711.GB2309@amt.cnet>
+	<CAHqbYQtUtLQ38zbycjhSz=WCt7x_panWHXWz5b8=ZwYnDFTXqw@mail.gmail.com>
+	<20140111122723.GA11475@amt.cnet>
+Date: Sun, 12 Jan 2014 14:40:21 -0500
+Message-ID: <CAHqbYQu=UKmHUadT+LHFNaN93uNTfjcs3f=QNJ3+9mL-QzAGCA@mail.gmail.com>
+Subject: Re: [PATCH] kvm: x86: Fix debug typo error in lapic
+From: Hu Yaohui <loki2441@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chen Fan <chen.fan.fnst@cn.fujitsu.com>, gleb@redhat.com,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 17, 2013 at 04:48:51PM +0100, David Herrmann wrote:
-> +
-> +struct uinput_user_dev2 {
-> +	__u8 version;
+Thank you Marcelo!
+I really appreciate your explanation.
 
-It does not make sense to have version u8 since we going to have padding
-(1 byte I believe) padding between name and id. 
-
-> +	char name[UINPUT_MAX_NAME_SIZE];
-> +	struct input_id id;
-> +	__u32 ff_effects_max;
-> +	struct input_absinfo abs[ABS_CNT];
-> +};
-> +
->  #endif /* _UAPI__UINPUT_H_ */
-> -- 
-> 1.8.5.1
-> 
-
--- 
-Dmitry
+On Sat, Jan 11, 2014 at 7:27 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> On Thu, Jan 09, 2014 at 03:08:25PM -0500, Hu Yaohui wrote:
+>> Hi Marcelo,
+>> Thanks for your replying!
+>> I hope you have a good day! I am sorry that it's not that obvious to
+>> me after I checked that function.
+>> If the remote vcpu is not in the same pcpu as the sender which calls
+>> kvm_vpcu_kick.
+>> Before the remote vcpu received the Host-IPI, it could be in guest
+>> mode which could possibly access the stale tlb entry that have been
+>> modifed by the sender.
+>>
+>> For smp_call_function_wait, the wait parameter will only let the
+>> sender side wait until the function has been executed on all the
+>> target cpus, then return.
+>> For TLB Flush IPI, the sender has already invalidate one tlb entry,
+>> the received side should get the IPI ASAP to invalidate the specified
+>> tlb before it's accessed, or there should have some mechanisms to
+>> enusre that even the stale tlb entry is accessed, it's still ok. I am
+>> not sure what's the situation here after I reviewed all the source
+>> codes.
+>
+> The sender only considers the TLB entry (or entries) flushed when
+> smp_call_function_wait finishes, that is when the receiver cpu acknowledges
+> it has flushed its TLB.
+>
