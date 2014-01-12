@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaALRS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 12:18:56 -0500
-Received: from cassarossa.samfundet.no ([193.35.52.29]:53838 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaALRSx (ORCPT
+	id S1751236AbaALRWT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 12:22:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30463 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaALRWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 12:18:53 -0500
-Date: Sun, 12 Jan 2014 18:18:48 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Subject: Re: [PATCH] avr32: fix missing module.h causing build failure in
- mimc200/fram.c
-Message-ID: <20140112171848.GB3773@samfundet.no>
-References: <1389364179-18228-1-git-send-email-paul.gortmaker@windriver.com>
+	Sun, 12 Jan 2014 12:22:16 -0500
+To: dgilbert@interlog.com
+Cc: Sagi Grimberg <sagig@dev.mellanox.co.il>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	<1389212157-14540-8-git-send-email-nab@daterainc.com>
+	<52CE78EB.60108@mellanox.com> <yq1mwj3r2py.fsf@sermon.lab.mkp.net>
+	<52D286D9.5050500@dev.mellanox.co.il> <52D2C4C2.2040800@interlog.com>
+Date: Sun, 12 Jan 2014 12:21:51 -0500
+In-Reply-To: <52D2C4C2.2040800@interlog.com> (Douglas Gilbert's message of
+	"Sun, 12 Jan 2014 11:37:22 -0500")
+Message-ID: <yq1ppnxnmj4.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389364179-18228-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Fri 10 Jan 2014 09:29:39 -0500 or thereabout, Paul Gortmaker wrote:
-> Causing this:
-> 
-> In file included from arch/avr32/boards/mimc200/fram.c:13:
-> include/linux/miscdevice.h:51: error: field 'list' has incomplete type
-> include/linux/miscdevice.h:55: error: expected specifier-qualifier-list before 'mode_t'
-> arch/avr32/boards/mimc200/fram.c:42: error: 'THIS_MODULE' undeclared here (not in a function)
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>>>> "Doug" == Douglas Gilbert <dgilbert@interlog.com> writes:
 
-Thank you for fixing, almost identical to Sergei Trofimovich patch, which
-appeared first in my inbox.
+>> So this takes me to a corner I still don't understand, if a LUN is
+>> pre-formatted as T10-protected, what happens to unwritten blocks
+>> read?  I mean, SCSI login executes some reads from sevel LBAs which
+>> will probably fail as blocks are unwritten.
 
-Fix appended to the AVR32 tree.
+Doug> Some observations: I haven't seen any disks pre-formatted with
+Doug> T10-protection, they usually come pre-formatted without
+Doug> T10-protection. 
 
-> diff --git a/arch/avr32/boards/mimc200/fram.c b/arch/avr32/boards/mimc200/fram.c
-> index 9764a1a1073e..c1466a872b9c 100644
-> --- a/arch/avr32/boards/mimc200/fram.c
-> +++ b/arch/avr32/boards/mimc200/fram.c
-> @@ -11,6 +11,7 @@
->  #define FRAM_VERSION	"1.0"
->  
->  #include <linux/miscdevice.h>
-> +#include <linux/module.h>
->  #include <linux/proc_fs.h>
->  #include <linux/mm.h>
->  #include <linux/io.h>
+Depends where you buy them. All the drives we ship arrive formatted with
+T10 PI from the manufacturer.
+
+However, nobody expects you to format a LUN on an array. When you create
+a LUN on a PI-capable storage array, T10 PI is a storage management
+interface option just like size, RAID level, etc. Upon creation, arrays
+zero out newly provisioned LUN blocks and write parity, etc. If PI is
+enabled on a LUN, blocks are written with all zeroes in the data block
+and all ones in the trailing PI tuple. This is all part of the regular
+LUN setup procedure.
+
+In any case. The usage model is that you never format a disk unless you
+are a tinkerer and bought a retail SAS drive at Fry's. Drives will be
+delivered by your server vendor formatted with PI and ready to go.
+
+If you use a non-disk storage device, whether or not to enable PI is
+part of the LUN provisioning procedure (array management console, RAID
+or flash controller card config utility, etc.)
+
+Doug> So a tentative READ, for example checking if a disk has a
+Doug> partition table, could be preceded by a GET LBA STATUS
+Doug> command. IMO, if provisioning is enabled, LBPRZ=0 then the GET LBA
+Doug> STATUS command should be mandatory.  Otherwise a tentative READ is
+Doug> a lucky dip.
+
+It's perfectly valid to do a legacy/unprotected READ from a T10 PI
+device. Doesn't matter whether the blocks are unwritten or not.
+
 -- 
-mvh
-Hans-Christian Egtvedt
+Martin K. Petersen	Oracle Linux Engineering
