@@ -1,118 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091AbaALCHT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Jan 2014 21:07:19 -0500
+	id S1751180AbaALCHY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Jan 2014 21:07:24 -0500
 Received: from mga03.intel.com ([143.182.124.21]:10392 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938AbaALCHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Jan 2014 21:07:15 -0500
+	id S1750966AbaALCHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Jan 2014 21:07:16 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,645,1384329600"; 
-   d="scan'208";a="333643368"
+   d="scan'208";a="333643371"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH 1/5] x86, mpx: add documentation on Intel MPX
-Date: Sun, 12 Jan 2014 17:19:59 +0800
-Message-Id: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate bound tables
+Date: Sun, 12 Jan 2014 17:20:00 +0800
+Message-Id: <1389518403-7715-2-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Documentation/x86/intel_mpx.txt file with some
-information about Intel MPX.
+An access to an invalid bound directory entry will cause a #BR
+exception. This patch hook #BR exception handler to allocate
+one bound table and bind it with that buond directory entry.
+
+This will avoid the need of forwarding the #BR exception
+to the user space when bound directory has invalid entry.
 
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- Documentation/x86/intel_mpx.txt |   76 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 76 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/x86/intel_mpx.txt
+ arch/x86/include/asm/mpx.h |   35 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/Makefile   |    1 +
+ arch/x86/kernel/mpx.c      |   44 ++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c    |   46 +++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 125 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/include/asm/mpx.h
+ create mode 100644 arch/x86/kernel/mpx.c
 
-diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
+diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
 new file mode 100644
-index 0000000..778d06e
+index 0000000..d074153
 --- /dev/null
-+++ b/Documentation/x86/intel_mpx.txt
-@@ -0,0 +1,76 @@
-+Intel(R) MPX Overview:
-+=====================
++++ b/arch/x86/include/asm/mpx.h
+@@ -0,0 +1,35 @@
++#ifndef _ASM_X86_MPX_H
++#define _ASM_X86_MPX_H
 +
-+Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
-+capability introduced into Intel Architecture. Intel MPX can
-+increase the robustness of software when it is used in conjunction
-+with compiler changes to check that memory references intended
-+at compile time do not become unsafe at runtime.
++#include <linux/types.h>
++#include <asm/ptrace.h>
 +
-+Two of the most important goals of Intel MPX are to provide
-+this capability at very low performance overhead for newly
-+compiled code, and to provide compatibility mechanisms with
-+legacy software components. A direct benefit Intel MPX provides
-+is hardening software against malicious attacks designed to
-+cause or exploit buffer overruns.
++#ifdef CONFIG_X86_64
 +
-+For details about the Intel MPX instructions, see "Intel(R)
-+Architecture Instruction Set Extensions Programming Reference".
++#define MPX_L1_BITS	28
++#define MPX_L1_SHIFT	3
++#define MPX_L2_BITS	17
++#define MPX_L2_SHIFT	5
++#define MPX_IGN_BITS	3
++#define MPX_L2_NODE_ADDR_MASK	0xfffffffffffffff8UL
 +
-+Intel(R) MPX Programming Model
-+------------------------------
++#define MPX_BNDSTA_ADDR_MASK	0xfffffffffffffffcUL
++#define MPX_BNDCFG_ADDR_MASK	0xfffffffffffff000UL
 +
-+Intel MPX introduces new registers and new instructions that
-+operate on these registers. Some of the registers added are
-+bounds registers which store a pointer's lower bound and upper
-+bound limits. Whenever the pointer is used, the requested
-+reference is checked against the pointer's associated bounds,
-+thereby preventing out-of-bound memory access (such as buffer
-+overflows and overruns). Out-of-bounds memory references
-+initiate a #BR exception which can then be handled in an
-+appropriate manner.
++#else
 +
-+Loading and Storing Bounds using Translation
-+--------------------------------------------
++#define MPX_L1_BITS	20
++#define MPX_L1_SHIFT	2
++#define MPX_L2_BITS	10
++#define MPX_L2_SHIFT	4
++#define MPX_IGN_BITS	2
++#define MPX_L2_NODE_ADDR_MASK	0xfffffffcUL
 +
-+Intel MPX defines two instructions for load/store of the linear
-+address of a pointer to a buffer, along with the bounds of the
-+buffer into a paging structure of extended bounds. Specifically
-+when storing extended bounds, the processor will perform address
-+translation of the address where the pointer is stored to an
-+address in the Bound Table (BT) to determine the store location
-+of extended bounds. Loading of an extended bounds performs the
-+reverse sequence.
++#define MPX_BNDSTA_ADDR_MASK	0xfffffffcUL
++#define MPX_BNDCFG_ADDR_MASK	0xfffff000UL
 +
-+The structure in memory to load/store an extended bound is a
-+4-tuple consisting of lower bound, upper bound, pointer value
-+and a reserved field. Bound loads and stores access 32-bit or
-+64-bit operand size according to the operation mode. Thus,
-+a bound table entry is 4*32 bits in 32-bit mode and 4*64 bits
-+in 64-bit mode.
++#endif
 +
-+The linear address of a bound table is stored in a Bound
-+Directory (BD) entry. And the linear address of the bound
-+directory is derived from either BNDCFGU or BNDCFGS registers.
-+Bounds in memory are stored in Bound Tables (BT) as an extended
-+bound, which are accessed via Bound Directory (BD) and address
-+translation performed by BNDLDX/BNDSTX instructions.
++void do_mpx_bt_fault(struct xsave_struct *xsave_buf);
 +
-+Bounds Directory (BD) and Bounds Tables (BT) are stored in
-+application memory and are allocated by the application (in case
-+of kernel use, the structures will be in kernel memory). The
-+bound directory and each instance of bound table are in contiguous
-+linear memory.
++#endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index a5408b9..bba7a71 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -38,6 +38,7 @@ obj-y			+= resource.o
+ 
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
++obj-y				+= mpx.o
+ obj-y				+= ptrace.o
+ obj-$(CONFIG_X86_32)		+= tls.o
+ obj-$(CONFIG_IA32_EMULATION)	+= tls.o
+diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
+new file mode 100644
+index 0000000..767b3bf
+--- /dev/null
++++ b/arch/x86/kernel/mpx.c
+@@ -0,0 +1,44 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <asm/processor.h>
++#include <asm/mpx.h>
++#include <asm/mman.h>
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
++#include <asm/alternative.h>
 +
-+XSAVE/XRESTOR Support of Intel MPX State
-+----------------------------------------
++static bool allocate_bt(unsigned long bd_entry)
++{
++	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
++	unsigned long bt_addr, old_val;
 +
-+Enabling Intel MPX requires an OS to manage two bits in XCR0:
-+  - BNDREGS for saving and restoring registers BND0-BND3,
-+  - BNDCSR for saving and restoring the user-mode configuration
-+(BNDCFGU) and the status register (BNDSTATUS).
++	bt_addr = sys_mmap_pgoff(0, bt_size, PROT_READ | PROT_WRITE,
++			MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
++	if (bt_addr == -1) {
++		pr_err("L2 Node Allocation Failed at L1 addr %lx\n",
++				bd_entry);
++		return false;
++	}
++	bt_addr = (bt_addr & MPX_L2_NODE_ADDR_MASK) | 0x01;
 +
-+The reason for having two separate bits is that BND0-BND3 is
-+likely to be volatile state, while BNDCFGU and BNDSTATUS are not.
-+Therefore, an OS has flexibility in handling these two states
-+differently in saving or restoring them.
++	user_atomic_cmpxchg_inatomic(&old_val,
++			(long __user *)bd_entry, 0, bt_addr);
++	if (old_val)
++		vm_munmap(bt_addr & MPX_L2_NODE_ADDR_MASK, bt_size);
++
++	return true;
++}
++
++void do_mpx_bt_fault(struct xsave_struct *xsave_buf)
++{
++	unsigned long status;
++	unsigned long bd_entry, bd_base;
++	unsigned long bd_size = 1UL << (MPX_L1_BITS+MPX_L1_SHIFT);
++
++	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
++	status = xsave_buf->bndcsr.status_reg;
++
++	bd_entry = status & MPX_BNDSTA_ADDR_MASK;
++	if ((bd_entry >= bd_base) && (bd_entry < bd_base + bd_size))
++		allocate_bt(bd_entry);
++}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 8c8093b..eb04039 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -59,6 +59,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/mach_traps.h>
+ #include <asm/alternative.h>
++#include <asm/mpx.h>
+ 
+ #ifdef CONFIG_X86_64
+ #include <asm/x86_init.h>
+@@ -214,7 +215,6 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
+ DO_ERROR_INFO(X86_TRAP_DE, SIGFPE, "divide error", divide_error, FPE_INTDIV,
+ 		regs->ip)
+ DO_ERROR(X86_TRAP_OF, SIGSEGV, "overflow", overflow)
+-DO_ERROR(X86_TRAP_BR, SIGSEGV, "bounds", bounds)
+ DO_ERROR_INFO(X86_TRAP_UD, SIGILL, "invalid opcode", invalid_op, ILL_ILLOPN,
+ 		regs->ip)
+ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
+@@ -267,6 +267,50 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ }
+ #endif
+ 
++dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
++{
++	enum ctx_state prev_state;
++	unsigned long status;
++	struct xsave_struct *xsave_buf;
++	struct task_struct *tsk = current;
++
++	prev_state = exception_enter();
++	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
++			X86_TRAP_BR, SIGSEGV) == NOTIFY_STOP)
++		goto exit;
++	conditional_sti(regs);
++
++	if (!boot_cpu_has(X86_FEATURE_MPX)) {
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
++		goto exit;
++	}
++
++	fpu_xsave(&tsk->thread.fpu);
++	xsave_buf = &(tsk->thread.fpu.state->xsave);
++	status = xsave_buf->bndcsr.status_reg;
++
++	switch (status & 0x3) {
++	case 2:
++		/*
++		 * Bound directory has invalid entry.
++		 * No signal will be sent to the user space.
++		 */
++		do_mpx_bt_fault(xsave_buf);
++		break;
++
++	case 1: /* Bound violation. */
++	case 0: /* No MPX exception. */
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
++		break;
++
++	default:
++		break;
++	}
++
++exit:
++	exception_exit(prev_state);
++}
++
+ dotraplinkage void __kprobes
+ do_general_protection(struct pt_regs *regs, long error_code)
+ {
 -- 
 1.7.1
 
