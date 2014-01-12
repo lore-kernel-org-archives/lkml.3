@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751179AbaALPrG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 10:47:06 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:33466 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaALPrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 10:47:03 -0500
-Message-ID: <52D2B8F2.7000601@gmail.com>
-Date: Sun, 12 Jan 2014 08:46:58 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751322AbaALPro (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 10:47:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49562 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212AbaALPrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 10:47:42 -0500
+Message-ID: <52D2B8ED.2010006@ti.com>
+Date: Sun, 12 Jan 2014 10:46:53 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Joseph Schuchart <joseph.schuchart@tu-dresden.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        thomas.ilsche@tu-dresden.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Correct Assumptions about Sample Timestamps in
- Passes
-References: <20131223131051.GB585@localhost.localdomain> <52B84C49.70001@gmail.com> <20131226151429.GA15303@localhost.localdomain> <52BC4A13.1090508@gmail.com> <20131226153033.GC15303@localhost.localdomain> <52C46083.9070605@gmail.com> <20140103220745.GB11061@localhost.localdomain> <52C73D90.3020904@gmail.com> <20140104150539.GA17617@localhost.localdomain> <52CDC7B5.6060704@gmail.com> <20140109151955.GA9866@localhost.localdomain>
-In-Reply-To: <20140109151955.GA9866@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
+References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com> <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org> <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com> <20140112105958.GA9791@n2100.arm.linux.org.uk> <52D2B7C8.4060103@ti.com>
+In-Reply-To: <52D2B7C8.4060103@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/9/14, 8:19 AM, Frederic Weisbecker wrote:
-> On Wed, Jan 08, 2014 at 02:48:37PM -0700, David Ahern wrote:
->> The existing code does not work. Your unstable tsc patch did not
->> work. I have not tried Joseph's patch. Are you proposing that one or
->> do you have something else in mind?
->
-> I think we should integrate Joseph's patch (or mine, or some mixup, I mean
-> they do about the same IIRC) as it solves known and understood bugs in any case.
->
-> Then we need to check what is the real issue in your case.
->
->>
->>> Now there is still the problem of:
+On Sunday 12 January 2014 10:42 AM, Santosh Shilimkar wrote:
+> On Sunday 12 January 2014 05:59 AM, Russell King - ARM Linux wrote:
+>> On Mon, Dec 09, 2013 at 08:02:30PM -0500, Santosh Shilimkar wrote:
+>>> On Monday 09 December 2013 07:54 PM, Russell King - ARM Linux wrote:
+>>>> The underlying reason is that - as I've already explained - ARM's __ffs()
+>>>> differs from other architectures in that it ends up being an int, whereas
+>>>> almost everyone else is unsigned long.
+>>>>
+>>>> The fix is to fix ARMs __ffs() to conform to other architectures.
+>>>>
+>>> I was just about to cross-post your reply here. Obviously I didn't think
+>>> this far when I made  $subject fix.
 >>>
->>> 1) local timestamps not moving forward (could it happen when events happen in storm,
->>> when they overflow multiple times in once for example, and clock is not granular
->>> enough?)
+>>> So lets ignore the $subject patch which is not correct. Sorry for noise
 >>
->> Even at 650k events/sec I am not seeing this problem.
->
-> Yeah it happens mostly when a single event, supposed to overflow on period of 1, trigger
-> with a higher period. This is the case of sched stat runtime tracepoints for example
-> because it is a weighted tracepoint (see perf_count). So it demux into gazillions of
-> events all having very close timestamps. But normal tracepoints shouldn't have this problem.
->
+>> Well, here we are, a month on, and this still remains unfixed despite
+>> my comments pointing to what the problem is.  So, here's a patch to fix
+>> this problem the correct way.  I took the time to add some comments to
+>> these functions as I find that I wonder about their return values, and
+>> these comments make the patch a little larger than it otherwise would be.
 >>
->>> Anyway this should be solved with the patch that takes the earliest last event on all
->>> CPU buffer instead of the maximum of a round as a barrier.
->>>
->>> 2) local timestamps not monotonic due to interrupting events. This could be fixed
->>> in the kernel with moving perf_clock() snapshot in perf_output_sample().
->>>
+> The $subject warning fix [1] is already picked by Andrew with your ack
+> and its in his queue [2]
+> 
+>> This patch makes their types match exactly with x86's definitions of
+>> the same, which is the basic problem: on ARM, they all took "int" values
+>> and returned "int"s, which leads to min() in nobootmem.c complaining.
 >>
->> For perf-kvm the events are all tracepoints, so there should not be
->> a problem of overlap due to interruption.
->
-> Nope, I'm curious what kind of issue happens with kvm events. Could you send me a perf.data
-> that has this ordering problem?
-
-There's no data file in this case; it's perf kvm stat live. For this use 
-case the flush code in session.c causes the 'timestamp below last flush 
-error' really quick. That's what led me down the road of tweaking the 
-flush time in builtin-kvm.c. With the existing tweaks perf-kvm-stat-live 
-runs for a lot longer between timeslice failures. With my perf_clock 
-based flush time I have yet to the 'Timestamp below last timeslice 
-flush' error.
-
-David
-
+> Not sure if you missed the thread but the right fix was picked. Ofcourse
+> you do have additional clz optimisation in updated patch and some comments
+> on those functions.
+> 
+> Regards,
+> Santosh
+> 
+> [1] https://lkml.org/lkml/2013/12/9/811
+fixing the link since above was the link to the $subject thread and below is
+the correct link for updated patch
+[1] https://lkml.org/lkml/2013/12/20/497
+> [2] http://ozlabs.org/~akpm/mmotm/broken-out/mm-arm-fix-arms-__ffs-to-conform-to-avoid-warning-with-no_bootmem.patch
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
