@@ -1,132 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751259AbaALVLk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 16:11:40 -0500
-Received: from nwas12.bluewin.ch ([195.186.228.230]:60112 "EHLO
-	zhhdzmsp-nwas12.bluewin.ch" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750962AbaALVLi (ORCPT
+	id S1751232AbaALVTx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 16:19:53 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:64635 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaALVTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 16:11:38 -0500
-Date: Sun, 12 Jan 2014 22:11:25 +0100 (CET)
-From: Daniel Matuschek <daniel@matuschek.net>
-X-X-Sender: parallels@parallels-Parallels-Virtual-Platform
-To: alsa-devel@alsa-project.org
-cc: Dimitris.Papastamos@wolfsonmicro.com, lgirdwood@gmail.com,
-        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        info@crazy-audio.com
-Subject: [PATCH] ASoC: wm8804: Allow control of master clock divider in PLL
- generation
-Message-ID: <alpine.DEB.2.02.1401122206520.7929@parallels-Parallels-Virtual-Platform>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 12 Jan 2014 16:19:50 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ravi Patel <rapatel@apm.com>
+Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue Manager/Traffic Manager
+Date: Sun, 12 Jan 2014 22:19:11 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>, Loc Ho <lho@apm.com>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+References: <1387594651-25771-1-git-send-email-rapatel@apm.com> <CAN1v_PsaAeDiLaiP7FfTHFbNRG=UHuom6-2L6NMwzyOOyB+5cA@mail.gmail.com> <CAN1v_PuySRzi6r9aT_SJrQRMBh9gj-5yXOOY1QpyZ6V4wXyZCA@mail.gmail.com>
+In-Reply-To: <CAN1v_PuySRzi6r9aT_SJrQRMBh9gj-5yXOOY1QpyZ6V4wXyZCA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401122219.11593.arnd@arndb.de>
+X-Provags-ID: V02:K0:fYUu9/3kShSbm0gO8TSK6Z9HihCaZ0jkbZ1KrNxC6l/
+ odeG0fOrjs5W7qps3QWCDi45uu8ogb6hKfGM+edTZYYGdwtYqG
+ uvcgpZi00pN6z/h0fhdonHquOE81Z1WgduxdRBiHHrHjaZFDx3
+ Y+8I96fxox6UoBUmbulNmf7ip/A1AY5+whPDkVjBBPdIHxe+NN
+ G/kovi3a7wLn5/QUVGcas1rS8hwgEHkVDVKXtLDGCK09IhUA+a
+ 4GR5Zoi7qTLC2IqG4zo26F+4UgNTXVs+yR5fRh3UKrDyfcXbps
+ rA+Nnqqg5rh7we8s1YGqjXyabP0fVPtWND0CB3y2hgVxzX2TdG
+ +3rH4QH+AM1GVu5Z19g8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
+On Friday 10 January 2014, Ravi Patel wrote:
 
-After some discussions of the patch last week, here is a new version. 
-Simply reducing the post_table did not work, as for some frequencies
-both settings (MCLKDIV=0 and MCLKDIV=1) are needed (e.g. 96 and 192kHz)
+> Do you want any further clarification or document related to QMTM.
+> We want to make sure everyone is on same page, understand and
+> conclude upon that QMTM is a device and and not a bus or a dma
+> engine.
 
+I have a much better understanding now, but there are still a few open
+questions from my side. Let me try to explain in my own words what I
+think is the relevant information (part of this is still guessing).
+It took me a while to figure out what it does from your description,
+and then some more time to see what it's actually good for (as
+opposed to adding complexity).
 
-  WM8804 can run with PLL frequencies of 256xfs and 128xfs for
-  most sample rates. At 192kHz only 128xfs is supported. The
-  existing driver selects 128xfs automatically for some lower
-  samples rates. By using an additional mclk_div divider, is
-  is now possible to control the behaviour. This allows using
-  256xfs PLL frequency on all sample rates up to 96kHz. It
-  should allow lower jitter and better signal quality. The
-  behavior has to be controlled by the sound card driver,
-  because some sample frequency share the same setting. e.g.
-  192kHz and 96kHz use 24.576MHz master clock. The only
-  difference is the MCLK divider.
+Please confirm or correct the individual statements in this
+description:
 
----
-  sound/soc/codecs/wm8804.c |   17 ++++++++++++++---
-  sound/soc/codecs/wm8804.h |    4 ++++
-  2 files changed, 18 insertions(+), 3 deletions(-)
+The QMTM serves as a relay for short (a few bytes) messages between
+the OS software and various slave hardware blocks on the SoC.
+The messages are typically but not always DMA descriptors used by the
+slave device used for starting bus master transactions by the slave,
+or for notifying sofware about the competion of a DMA transaction.
 
-diff --git a/sound/soc/codecs/wm8804.c b/sound/soc/codecs/wm8804.c
-index 1704b1e..4619bf8 100644
---- a/sound/soc/codecs/wm8804.c
-+++ b/sound/soc/codecs/wm8804.c
-@@ -63,6 +63,7 @@ struct wm8804_priv {
-  	struct regmap *regmap;
-  	struct regulator_bulk_data supplies[WM8804_NUM_SUPPLIES];
-  	struct notifier_block disable_nb[WM8804_NUM_SUPPLIES];
-+	int mclk_div;
-  };
+The message format is specific to the slave device and the QMTM
+only understands the common header of the message.
 
-  static int txsrc_get(struct snd_kcontrol *kcontrol,
-@@ -318,7 +319,7 @@ static struct {
+OS software sees the messages in cache-coherent memory and does
+not require any cache flushes or MMIO access for inbound messages
+and only a single posted MMIO write for outbound messages.
 
-  #define FIXED_PLL_SIZE ((1ULL << 22) * 10)
-  static int pll_factors(struct pll_div *pll_div, unsigned int target,
--		       unsigned int source)
-+		       unsigned int source, unsigned int mclk_div)
-  {
-  	u64 Kpart;
-  	unsigned long int K, Ndiv, Nmod, tmp;
-@@ -330,7 +331,8 @@ static int pll_factors(struct pll_div *pll_div, unsigned int target,
-  	 */
-  	for (i = 0; i < ARRAY_SIZE(post_table); i++) {
-  		tmp = target * post_table[i].div;
--		if (tmp >= 90000000 && tmp <= 100000000) {
-+		if ((tmp >= 90000000 && tmp <= 100000000) &&
-+		    (mclk_div == post_table[i].mclkdiv)) {
-  			pll_div->freqmode = post_table[i].freqmode;
-  			pll_div->mclkdiv = post_table[i].mclkdiv;
-  			target *= post_table[i].div;
-@@ -387,8 +389,12 @@ static int wm8804_set_pll(struct snd_soc_dai *dai, int pll_id,
-  	} else {
-  		int ret;
-  		struct pll_div pll_div;
-+		struct wm8804_priv *wm8804;
+The queues are likely designed to be per-thread and don't require
+software-side locking.
 
--		ret = pll_factors(&pll_div, freq_out, freq_in);
-+		wm8804 = snd_soc_codec_get_drvdata(codec);
-+
-+		ret = pll_factors(&pll_div, freq_out, freq_in,
-+			wm8804->mclk_div);
-  		if (ret)
-  			return ret;
+For outbound messages, the QMTM is the bus master of a device-to-device
+DMA transaction that gets started once a message is queued and the
+device has signaled that it is ready for receiving it. The QMTM needs
+to know the bus address of the device as well as a slave ID for
+the signal pin.
+For inbound messages, the QMTM slave initiates a busmaster transaction
+and needs to know the bus address of its QMTM port, while the QMTM
+needs to know only the slave ID that is associated with the queue.
 
-@@ -452,6 +458,7 @@ static int wm8804_set_clkdiv(struct snd_soc_dai *dai,
-  			     int div_id, int div)
-  {
-  	struct snd_soc_codec *codec;
-+	struct wm8804_priv *wm8804;
+In addition to those hardware properties, the QMTM driver needs to
+set up a memory buffer for the message queue as seen by the CPU,
+and needs tell the QMTM the location as well as some other
+properties such as the message length.
 
-  	codec = dai->codec;
-  	switch (div_id) {
-@@ -459,6 +466,10 @@ static int wm8804_set_clkdiv(struct snd_soc_dai *dai,
-  		snd_soc_update_bits(codec, WM8804_PLL5, 0x30,
-  				    (div & 0x3) << 4);
-  		break;
-+	case WM8804_MCLK_DIV:
-+		wm8804 = snd_soc_codec_get_drvdata(codec);
-+		wm8804->mclk_div = div;
-+		break;
-  	default:
-  		dev_err(dai->dev, "Unknown clock divider: %d\n", div_id);
-  		return -EINVAL;
-diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
-index 8ec14f5..e72d4f4 100644
---- a/sound/soc/codecs/wm8804.h
-+++ b/sound/soc/codecs/wm8804.h
-@@ -57,5 +57,9 @@
-  #define WM8804_CLKOUT_SRC_OSCCLK		4
+For inbound messages, the QMTM serves a similar purpose as an MSI
+controller, ensuring that inbound DMA data has arrived in RAM
+before an interrupt is delivered to the CPU and thereby avoiding
+the need for an expensive MMIO read to serialize the DMA.
 
-  #define WM8804_CLKOUT_DIV			1
-+#define WM8804_MCLK_DIV				2
-+
-+#define WM8804_MCLKDIV_256FS			0
-+#define WM8804_MCLKDIV_128FS			1
+The resources managed by the QMTM are both SoC-global (e.g. bus
+bandwidth) and slave specific (e.g. ethernet bandwith or buffer space).
+Global resource management is performed to prevent one slave
+device from monopolizing the system or preventing other slaves
+from making forward progress.
+Examples for local resource management (I had to think about this 
+a long time, but probably some of these are wrong) would be
+* balancing between multiple non-busmaster devices connected to
+  a dma-engine
+* distributing incoming ethernet data to the available CPUs based on
+  a flow classifier in the MAC, e.g. by IOV MAC address, VLAN tag
+  or even individual TCP connection depending on the NIC's capabilities.
+* 802.1p flow control for incoming ethernet data based on the amount
+  of data queued up between the MAC and the driver
+* interrupt mitigation for both inbound data and outbound completion,
+  by delaying the IRQ to the OS until multiple messages have arrived
+  or a queue specific amount of time has passed.
+* controlling the amount of outbound buffer space per flow to minimize
+  buffer-bloat between an ethernet driver and the NIC hardware.
+* reordering data from outbound flows based on priority.
 
-  #endif  /* _WM8804_H */
--- 
-1.7.9.5
+This is basically my current interpretation, I hope I got at least
+some of it right this time ;-)
 
+	Arnd
