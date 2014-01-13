@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaAMI6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:58:30 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:9315 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751207AbaAMI61 (ORCPT
+	id S1751548AbaAMI7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:59:15 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:64617 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaAMI7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:58:27 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: <marc.zyngier@arm.com>, Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] arm64: fix typo in entry.S
-Date: Mon, 13 Jan 2014 16:57:56 +0800
-Message-ID: <1389603476-10494-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 13 Jan 2014 03:59:12 -0500
+X-AuditID: 9c93017d-b7b41ae000004b3e-3c-52d3aadec8ec
+From: Namhyung Kim <namhyung@kernel.org>
+To: Gaurav Jain <gjain@fb.com>
+Cc: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Don Zickus <dzickus@redhat.com>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH] perf tools: Synthesize anon MMAP records on the heap
+References: <1389501134-13116-1-git-send-email-gjain@fb.com>
+Date: Mon, 13 Jan 2014 17:59:10 +0900
+In-Reply-To: <1389501134-13116-1-git-send-email-gjain@fb.com> (Gaurav Jain's
+	message of "Sat, 11 Jan 2014 20:32:14 -0800")
+Message-ID: <87fvosb6ld.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-12_03:2014-01-10,2014-01-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1401130010
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 64681787 (arm64: let the core code deal with preempt_count)
-changed the code, but left the comments unchanged, fix it.
+Hi Gaurav,
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- arch/arm64/kernel/entry.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Sat, 11 Jan 2014 20:32:14 -0800, Gaurav Jain wrote:
+> Anon records usually do not have the 'execname' entry. However if they are on
+> the heap, the execname shows up as '[heap]'. The fix considers any executable
+> entries in the map that do not have a name or are on the heap as anon records
+> and sets the name to '//anon'.
+>
+> This fixes JIT profiling for records on the heap.
 
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index 4d2c6f3..ffce55e 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -314,7 +314,7 @@ el1_irq:
- 
- #ifdef CONFIG_PREEMPT
- 	get_thread_info tsk
--	ldr	w24, [tsk, #TI_PREEMPT]		// restore preempt count
-+	ldr	w24, [tsk, #TI_PREEMPT]		// get preempt count
- 	cbnz	w24, 1f				// preempt count != 0
- 	ldr	x0, [tsk, #TI_FLAGS]		// get flags
- 	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
--- 
-1.7.9.5
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
+Thanks,
+Namhyung
