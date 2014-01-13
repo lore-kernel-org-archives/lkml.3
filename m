@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaAMTe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:34:57 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36111 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752457AbaAMTex (ORCPT
+	id S1752658AbaAMTf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:35:56 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:63617 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752146AbaAMTfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:34:53 -0500
-X-Sasl-enc: 7kFmFQ0K+46nnaxVjotholm18QMEm7VZaikE/v0NYNby 1389641692
-Message-ID: <52D43FDB.9090003@iki.fi>
-Date: Mon, 13 Jan 2014 21:34:51 +0200
-From: Pekka Enberg <penberg@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, penberg@kernel.org
-CC: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, mpm@selenic.com
-Subject: Re: [PATCH] slub: use lockdep_assert_held
-References: <20140110122349.GN31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140110122349.GN31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 14:35:53 -0500
+Message-ID: <1389641750.19054.9.camel@x220>
+Subject: Re: [PATCH] xprtrdma: silence frame size warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "Miller David S." <davem@davemloft.net>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        netdev@vger.kernel.org, LKML Kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Jan 2014 20:35:50 +0100
+In-Reply-To: <D3560A1A-59B3-4480-8627-9114A4B9895C@oracle.com>
+References: <1389627955.20467.9.camel@x41>
+	 <CDD9CEF2-F91A-4ABA-8DA7-53AF8A749194@primarydata.com>
+	 <D3560A1A-59B3-4480-8627-9114A4B9895C@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 13 Jan 2014 19:35:51.0273 (UTC) FILETIME=[AABDAD90:01CF1096]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 02:23 PM, Peter Zijlstra wrote:
-> Instead of using comments in an attempt at getting the locking right,
-> use proper assertions that actively warn you if you got it wrong.
->
-> Also add extra braces in a few sites to comply with coding-style.
->
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->
+On Mon, 2014-01-13 at 11:17 -0500, Chuck Lever wrote:
+> I’m building a queue of NFS/RDMA work on bugzilla.kernel.org.  Let’s
+> create a defect report there to document this, and it will get
+> prioritized with the rest.  Paul, can you do that to start us off?
+> Product “File system”, Component “NFS”.
 
-Applied, thanks!
+Sure, see https://bugzilla.kernel.org/show_bug.cgi?id=68661 . Please
+feel free to edit the bug's title, etc, as you see fit.
+
+> I can’t say that a warning on 32-bit x86 is going to be an especially
+> high priority.
+
+I see. 32-bit x86 seems to be dropping in relevance quite fast.
+
+On the other hand, this is one of the last warnings I see when currently
+building x86 (32-bit, that is) and it would be rather nice to see this
+warning gone. Since my .config is basically a Fedora 20 .config, that
+would help make Fedora's 32-bit x86 build (almost) warning free too. 
+
+> However, the underlying issue of allocating arrays of data segments on
+> the stack is something that needs extended attention, and is already
+> in plan.
+
+Thanks,
+
+
+Paul Bolle
+
