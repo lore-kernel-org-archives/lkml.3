@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379AbaAMDYw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:24:52 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:20840
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751110AbaAMDYt (ORCPT
+	id S1751377AbaAMD0N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:26:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45136 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaAMD0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:24:49 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z579ehcb8kz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 13 Jan 2014 11:26:05 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: John Tobias <john.tobias.ph@gmail.com>
-CC: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <festevam@gmail.com>
-Subject: Re: [PATCH v4 2/2] cpufreq: imx6q-cpufreq driver depends on
- SOC_IMX6Q/SOC_IMX6SL
-Message-ID: <20140113032603.GG23525@S2101-09.ap.freescale.net>
-References: <1389321592-33220-1-git-send-email-john.tobias.ph@gmail.com>
- <1389321592-33220-2-git-send-email-john.tobias.ph@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1389321592-33220-2-git-send-email-john.tobias.ph@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Sun, 12 Jan 2014 22:26:09 -0500
+Date: Sun, 12 Jan 2014 19:27:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Shaohua Li <shli@fusionio.com>,
+        Bob Liu <bob.liu@oracle.com>, stable@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: Re: [PATCH] mm/swap: fix race on swap_info reuse between swapoff
+ and swapon
+Message-Id: <20140112192744.9bca5c6d.akpm@linux-foundation.org>
+In-Reply-To: <CAL1ERfPnaROPiRAeWHpvwGezHsqN4R8j=QSyS48xs25ax14AhA@mail.gmail.com>
+References: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
+	<20140110171108.32b2be171cd5e54bf22fb2a4@linux-foundation.org>
+	<CAL1ERfPnaROPiRAeWHpvwGezHsqN4R8j=QSyS48xs25ax14AhA@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 06:39:52PM -0800, John Tobias wrote:
-> The ARCH_HAS_CPUFREQ, HAVE_IMX_ANATOP and PM_OPP are moved up to ARCH_MCX.
-> The driver should show if the SOC_IMX6Q and/or SOC_IMX6SL is/are selected.
-> 
-> Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
-> ---
->  drivers/cpufreq/Kconfig.arm | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-> index 3ba5dcc..230c663 100644
-> --- a/drivers/cpufreq/Kconfig.arm
-> +++ b/drivers/cpufreq/Kconfig.arm
-> @@ -80,7 +80,7 @@ config ARM_HIGHBANK_CPUFREQ
->  
->  config ARM_IMX6Q_CPUFREQ
->  	tristate "Freescale i.MX6 cpufreq support"
-> -	depends on ARCH_MXC
-> +	depends on SOC_IMX6Q || SOC_IMX6SL
+On Mon, 13 Jan 2014 11:08:58 +0800 Weijie Yang <weijie.yang.kh@gmail.com> wrote:
 
-No.  We do not want to touch this line where there is another IMX6xx can
-reuse the driver.  Depending on ARCH_MXC is good enough, since we
-already have the symbol prompt and help text to tell the targets that
-the driver supports.
-
-Shawn
-
->  	depends on REGULATOR_ANATOP
->  	help
->  	  This adds cpufreq driver support for Freescale i.MX6 series SoCs.
-> -- 
-> 1.8.3.2
+> >> --- a/mm/swapfile.c
+> >> +++ b/mm/swapfile.c
+> >> @@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+> >>       p->swap_map = NULL;
+> >>       cluster_info = p->cluster_info;
+> >>       p->cluster_info = NULL;
+> >> -     p->flags = 0;
+> >>       frontswap_map = frontswap_map_get(p);
+> >>       spin_unlock(&p->lock);
+> >>       spin_unlock(&swap_lock);
+> >> @@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+> >>               mutex_unlock(&inode->i_mutex);
+> >>       }
+> >>       filp_close(swap_file, NULL);
+> >> +
+> >> +     /*
+> >> +     * clear SWP_USED flag after all resources freed
+> >> +     * so that swapon can reuse this swap_info in alloc_swap_info() safely
+> >> +     * it is ok to not hold p->lock after we cleared its SWP_WRITEOK
+> >> +     */
+> >> +     spin_lock(&swap_lock);
+> >> +     p->flags = 0;
+> >> +     spin_unlock(&swap_lock);
+> >> +
+> >>       err = 0;
+> >>       atomic_inc(&proc_poll_event);
+> >>       wake_up_interruptible(&proc_poll_wait);
+> >
+> > I didn't look too closely, but this patch might also address the race
+> > which Krzysztof addressed with
+> > http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch.
+> > Can we please check that out?
+> >
+> > I do prefer fixing all these swapon-vs-swapoff races with some large,
+> > simple, wide-scope exclusion scheme.  Perhaps SWP_USED is that scheme.
+> >
+> > An alternative would be to add another mutex and just make sys_swapon()
+> > and sys_swapoff() 100% exclusive.  But that is plastering yet another
+> > lock over this mess to hide the horrors which lurk within :(
+> >
 > 
+> Hi, Andrew. Thanks for your suggestion.
+> 
+> I checked Krzysztof's patch, it use the global swapon_mutex to protect
+> race condition among
+> swapon, swapoff and swap_start(). It is a kind of correct method, but
+> a heavy method.
+
+But do you agree that your
+http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
+makes Krzysztof's
+http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
+obsolete?
+
+I've been sitting on Krzysztof's
+swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
+for several months - Hugh had issues with it so I put it on hold and
+nothing further happened.
+
+> I will try to resend a patchset to make lock usage in swapfile.c clear
+> and fine grit
+
+OK, thanks.  In the meanwhile I'm planning on dropping Krzysztof's
+patch and merging your patch into 3.14-rc1, which is why I'd like
+confirmation that your patch addresses the issues which Krzysztof
+identified?
 
