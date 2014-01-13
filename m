@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbaAMQHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:07:42 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:59200 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819AbaAMQHi convert rfc822-to-8bit (ORCPT
+	id S1754744AbaAMQFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:05:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53810 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869AbaAMQF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:07:38 -0500
-Date: Mon, 13 Jan 2014 17:07:07 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 15/28] drm/i2c: tda998x: use the tda998x video format
- when cea mode
-Message-ID: <20140113170707.10b908dc@armhf>
-In-Reply-To: <20140111181832.GD15937@n2100.arm.linux.org.uk>
-References: <20140109120448.24d89eba@armhf>
-	<20140111181832.GD15937@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 13 Jan 2014 11:05:26 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 196/208] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
+Date: Mon, 13 Jan 2014 16:00:37 +0000
+Message-Id: <1389628849-1614-197-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan 2014 18:18:32 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, Jan 09, 2014 at 12:04:48PM +0100, Jean-Francois Moine wrote:
-> > This patch uses the tda998x video format tied to the CEA mode.
-> > This reduces the number of i2c exchanges.
-> 
-> It is my understanding that one of the major design goals of this driver
-> is to avoid the use of such a table, and therefore this change is
-> undesirable by the original driver authors.  This is more a comment for
-> Rob to pick up on.
+------------------
 
-I retrieved a message from Rabeeh who got this description from NXP
-(http://www.solid-run.com/phpbb/viewtopic.php?f=9&t=1205&start=10
- Thu Mar 28, 2013 10:59 am):
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-1. write register FF of CEC device to &h87.
-                (68ff = 87h)           -> activate all clock tree inc HDMI ones so you can then use HDMI device
-2. select page 00 of HDMI device :  write 00 in FF
-                (e0ff =00h)
-3. write register A0 of HDMI device to select predefined format :
-                (e0a0 = 06h)       -> select a predefined 1080p60 format
-4. write registers A5 and A6 with total number of pixels per line (or greater value)
-                (e0a5 = 08h)
-                (e0a6 = 97h) for example
-5. write register TBG_CTRL1 of HDMI device to select resync method
-                (e0cb = 7ch)        -> select
-6. write registers VIP_CTRL to configure RGB input ports :
-                (e020 = 45h)       -> select VP port configuration
-                (e021 = 01h)
-                (e022 = 23h)
-7. write register VIP_CTRL3 to 20h vto select external SP sync method
-                (e023 = 20h)
+commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
 
+Before we do an EMMS in the AMD FXSAVE information leak workaround we
+need to clear any pending exceptions, otherwise we trap with a
+floating-point exception inside this code.
+
+Reported-by: halfdog <me@halfdog.net>
+Tested-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/include/asm/fpu-internal.h | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 4d0bda7..5be9f87 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -293,12 +293,13 @@ static inline int restore_fpu_checking(struct task_struct *tsk)
+ 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. "m" is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"		/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (tsk->thread.fpu.has_fpu));
++	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
++		asm volatile(
++			"fnclex\n\t"
++			"emms\n\t"
++			"fildl %P[addr]"	/* set F?P to defined value */
++			: : [addr] "m" (tsk->thread.fpu.has_fpu));
++	}
+ 
+ 	return fpu_restore_checking(&tsk->thread.fpu);
+ }
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+1.8.3.2
+
