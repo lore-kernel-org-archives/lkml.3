@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306AbaAMDia (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:38:30 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:35257 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaAMDi1 (ORCPT
+	id S1751251AbaAMDuK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:50:10 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35226 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaAMDuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:38:27 -0500
-Message-ID: <52D35FAF.5050805@zankel.net>
-Date: Sun, 12 Jan 2014 19:38:23 -0800
-From: czankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 12 Jan 2014 22:50:06 -0500
+Date: Sun, 12 Jan 2014 19:49:57 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Daniel J Blueman <daniel@numascale.com>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140113034957.GJ10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <52D353C8.4000000@numascale.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: Re: linux-next: manual merge of the tip tree with the xtensa tree
-References: <20140113142642.6e1944155b1db50d2c70abb4@canb.auug.org.au>
-In-Reply-To: <20140113142642.6e1944155b1db50d2c70abb4@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D353C8.4000000@numascale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011303-9332-0000-0000-000002BC94F2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, Jan 13, 2014 at 10:47:36AM +0800, Daniel J Blueman wrote:
+> On Thursday, 9 January 2014 01:10:03 UTC+8, Waiman Long  wrote:
+> > This patch modifies the queue_write_unlock() function to use the
+> > new smp_store_release() function in another pending patch. It also
+> > removes the temporary implementation of smp_load_acquire() and
+> > smp_store_release() function in qrwlock.c.
+> >
+> > This patch should only be merged if PeterZ's linux-arch patch patch
+> > was merged.
+> >
+> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  include/asm-generic/qrwlock.h |    4 +---
+> >  kernel/locking/qrwlock.c      |   34 ----------------------------------
+> >  2 files changed, 1 insertions(+), 37 deletions(-)
+> >
+> > diff --git a/include/asm-generic/qrwlock.h
+> b/include/asm-generic/qrwlock.h
+> > index 2b9a7b4..4d4bd04 100644
+> > --- a/include/asm-generic/qrwlock.h
+> > +++ b/include/asm-generic/qrwlock.h
+> > @@ -179,9 +179,7 @@ static inline void queue_write_unlock(struct
+> qrwlock *lock)
+> >  	/*
+> >  	 * Make sure that none of the critical section will be leaked out.
+> >  	 */
+> > -	smp_mb__before_clear_bit();
+> > -	ACCESS_ONCE(lock->cnts.writer) = 0;
+> > -	smp_mb__after_clear_bit();
+> > +	smp_store_release(&lock->cnts.writer, 0)
+> 
+> This will fail compilation, so probably needs further testing with
+> Peter's load_acquire/store_release barrier patches.
 
-Thanks for the fix! I actually just got an updated set for most of the 
-patches currently in the for_next tree for xtensa and might have to do a 
-rebase to integrate them better. I'll include your fix when I come 
-across the issue.
+Peter's patch just hit -tip, so this should be esay to do.  In Waiman's
+defense, he does call attention to this in the commit log.
 
-Thanks again,
--Chris
-
-On 1/12/14 7:26 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the tip tree got a conflict in
-> arch/xtensa/include/asm/barrier.h between commit dbacef090841 ("xtensa:
-> add SMP support") from the xtensa tree and commit 93ea02bb8435 ("arch:
-> Clean up asm/barrier.h implementations using asm-generic/barrier.h") from
-> the tip tree.
->
-> I fixed it up (I am pretty sure - see below) and can carry the fix as
-> necessary (no action is required).
->
+							Thanx, Paul
 
