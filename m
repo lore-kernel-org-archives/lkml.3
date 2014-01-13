@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaAMO2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51599 "EHLO
+	id S1752939AbaAMO2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51567 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304AbaAMO1F (ORCPT
+	with ESMTP id S1752242AbaAMO04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:27:05 -0500
+	Mon, 13 Jan 2014 09:26:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wenliang Fan <fanwlexca@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 87/96] drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
-Date: Mon, 13 Jan 2014 14:24:50 +0000
-Message-Id: <1389623099-18783-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 81/96] net: drop_monitor: fix the value of maxattr
+Date: Mon, 13 Jan 2014 14:24:44 +0000
+Message-Id: <1389623099-18783-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wenliang Fan <fanwlexca@gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
 
-commit e9db5c21d3646a6454fcd04938dd215ac3ab620a upstream.
+commit d323e92cc3f4edd943610557c9ea1bb4bb5056e8 upstream.
 
-The local variable 'bi' comes from userspace. If userspace passed a
-large number to 'bi.data.calibrate', there would be an integer overflow
-in the following line:
-	s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
+maxattr in genl_family should be used to save the max attribute
+type, but not the max command type. Drop monitor doesn't support
+any attributes, so we should leave it as zero.
 
-Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/hamradio/hdlcdrv.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/core/drop_monitor.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/hamradio/hdlcdrv.c b/drivers/net/hamradio/hdlcdrv.c
-index a4a3516..3b3a7e0 100644
---- a/drivers/net/hamradio/hdlcdrv.c
-+++ b/drivers/net/hamradio/hdlcdrv.c
-@@ -571,6 +571,8 @@ static int hdlcdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case HDLCDRVCTL_CALIBRATE:
- 		if(!capable(CAP_SYS_RAWIO))
- 			return -EPERM;
-+		if (bi.data.calibrate > INT_MAX / s->par.bitrate)
-+			return -EINVAL;
- 		s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
- 		return 0;
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index d23b668..a974dfe 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -64,7 +64,6 @@ static struct genl_family net_drop_monitor_family = {
+ 	.hdrsize        = 0,
+ 	.name           = "NET_DM",
+ 	.version        = 2,
+-	.maxattr        = NET_DM_CMD_MAX,
+ };
  
+ static DEFINE_PER_CPU(struct per_cpu_dm_data, dm_cpu_data);
 -- 
 1.8.3.2
 
