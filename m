@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaAMXKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:10:19 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:47721 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbaAMXKR (ORCPT
+	id S1752563AbaAMXLg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:11:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53291 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaAMXLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:10:17 -0500
-Date: Mon, 13 Jan 2014 14:34:07 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
- of __lock_acquire()
-Message-ID: <20140113223407.GP10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
- <20140109163120.GA8038@redhat.com>
- <20140109170823.GF7572@laptop.programming.kicks-ass.net>
- <20140112094041.GB31809@gmail.com>
- <20140112174532.GA12147@redhat.com>
- <20140112174554.GB12147@redhat.com>
- <20140113170609.GA9873@redhat.com>
- <20140113172833.GT31570@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113172833.GT31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011323-7164-0000-0000-000005159E67
+	Mon, 13 Jan 2014 18:11:33 -0500
+Date: Mon, 13 Jan 2014 15:11:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 3/5] mm: vmscan: respect NUMA policy mask when shrinking
+ slab on direct reclaim
+Message-Id: <20140113151132.d07cbc938baf5af70f929120@linux-foundation.org>
+In-Reply-To: <a39e4c57c5a8db4d6e5bb8cd070ac807c8c6fce8.1389443272.git.vdavydov@parallels.com>
+References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
+	<a39e4c57c5a8db4d6e5bb8cd070ac807c8c6fce8.1389443272.git.vdavydov@parallels.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 06:28:33PM +0100, Peter Zijlstra wrote:
-> On Mon, Jan 13, 2014 at 06:06:09PM +0100, Oleg Nesterov wrote:
-> > On 01/12, Oleg Nesterov wrote:
-> > >
-> > > The "int check" argument of lock_acquire() and held_lock->check
-> > > are misleading and unneeded. This is only used as a boolean, 2
-> > > denotes "true", everything else is "false". And this boolean is
-> > > always equal to prove_locking.
-> > >
-> > > The only exception is __lockdep_no_validate__ which should make
-> > > this condition "false" in validate_chain().
-> > 
-> > And I missed mark_irqflags(),
-> > 
-> > > @@ -3136,7 +3130,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
-> > >  	hlock->holdtime_stamp = lockstat_clock();
-> > >  #endif
-> > >
-> > > -	if (check == 2 && !mark_irqflags(curr, hlock))
-> > > +	if (prove_locking && !mark_irqflags(curr, hlock))
-> > >  		return 0;
-> > 
-> > This change is not right, at least it is not equivalent.
-> > 
-> > And I just realized that rcu_lock_acquire() does lock_acquire(check => 1).
-> > Probably we can mark rcu_lock_map's as __lockdep_no_validate__.
-> 
-> Can't, RCU needs its own classes. Otherwise it cannot tell which version
-> of the RCU read lock its holding at just that moment.
+On Sat, 11 Jan 2014 16:36:33 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-Just confirming this.  RCU uses this to detected mismatches between
-the rcu_read_lock() group and the rcu_dereference() group.
+> When direct reclaim is executed by a process bound to a set of NUMA
+> nodes, we should scan only those nodes when possible, but currently we
+> will scan kmem from all online nodes even if the kmem shrinker is NUMA
+> aware. That said, binding a process to a particular NUMA node won't
+> prevent it from shrinking inode/dentry caches from other nodes, which is
+> not good. Fix this.
 
-							Thanx, Paul
+Seems right.  I worry that reducing the amount of shrinking which
+node-bound processes perform might affect workloads in unexpected ways.
 
-> > Anything else I missed?
-> 
-> Nothing springs to mind, but then, I totally missed the RCU thing too.
-> 
-> At the very least we can reduce check to a single bit.
-> 
-
+I think I'll save this one for 3.15-rc1, OK?
