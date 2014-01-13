@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529AbaAMQmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:42:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53244 "EHLO
+	id S1755484AbaAMQmE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:42:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53248 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaAMQDB (ORCPT
+	with ESMTP id S1753871AbaAMQDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:01 -0500
+	Mon, 13 Jan 2014 11:03:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 090/208] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
-Date: Mon, 13 Jan 2014 15:58:51 +0000
-Message-Id: <1389628849-1614-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 092/208] ARM: fix footbridge clockevent device
+Date: Mon, 13 Jan 2014 15:58:53 +0000
+Message-Id: <1389628849-1614-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -29,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
+commit 4ff859fe1dc0da0f87bbdfff78f527898878fa4a upstream.
 
-The current driver assumes that an skb fragment can only be upto jumbo
-size. Presumably this was a fast-path optimization. This assumption is
-no longer true as fragments can be upto 32k.
+The clockevents code was being told that the footbridge clock event
+device ticks at 16x the rate which it actually does.  This leads to
+timekeeping problems since it allows the clocksource to wrap before
+the kernel notices.  Fix this by using the correct clock.
 
-v2: Remove unnecessary parantheses per Eric Dumazet.
-
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 4e8d76373c9fd ("ARM: footbridge: convert to clockevents/clocksource")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-footbridge/dc21285-timer.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 9f535de..e7af885 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -7555,7 +7555,7 @@ static inline int tg3_4g_overflow_test(dma_addr_t mapping, int len)
+diff --git a/arch/arm/mach-footbridge/dc21285-timer.c b/arch/arm/mach-footbridge/dc21285-timer.c
+index 9ee78f7..782f6c7 100644
+--- a/arch/arm/mach-footbridge/dc21285-timer.c
++++ b/arch/arm/mach-footbridge/dc21285-timer.c
+@@ -96,11 +96,12 @@ static struct irqaction footbridge_timer_irq = {
+ void __init footbridge_timer_init(void)
  {
- 	u32 base = (u32) mapping & 0xffffffff;
+ 	struct clock_event_device *ce = &ckevt_dc21285;
++	unsigned rate = DIV_ROUND_CLOSEST(mem_fclk_21285, 16);
  
--	return (base > 0xffffdcc0) && (base + len + 8 < base);
-+	return base + len + 8 < base;
+-	clocksource_register_hz(&cksrc_dc21285, (mem_fclk_21285 + 8) / 16);
++	clocksource_register_hz(&cksrc_dc21285, rate);
+ 
+ 	setup_irq(ce->irq, &footbridge_timer_irq);
+ 
+ 	ce->cpumask = cpumask_of(smp_processor_id());
+-	clockevents_config_and_register(ce, mem_fclk_21285, 0x4, 0xffffff);
++	clockevents_config_and_register(ce, rate, 0x4, 0xffffff);
  }
- 
- /* Test for TSO DMA buffers that cross into regions which are within MSS bytes
 -- 
 1.8.3.2
 
