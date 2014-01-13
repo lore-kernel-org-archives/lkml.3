@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaAMPxk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:53:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60620 "EHLO
+	id S1752283AbaAMPxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:53:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60622 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaAMPxh (ORCPT
+	with ESMTP id S1751977AbaAMPxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 10:53:37 -0500
-Date: Mon, 13 Jan 2014 07:52:40 -0800
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-a52b89ebb6d4499be38780db8d176c5d3a6fbc17@git.kernel.org>
+Date: Mon, 13 Jan 2014 07:52:30 -0800
+From: tip-bot for Jason Low <tipbot@zytor.com>
+Message-ID: <tip-0d00c7b20c7716ce08399570ea48813ecf001aa8@git.kernel.org>
 Cc: mingo@kernel.org, torvalds@linux-foundation.org, efault@gmx.de,
         peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
-        tglx@linutronix.de, scott.norton@hp.com, davidlohr@hp.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, dvhart@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, tom.vaden@hp.com, jeffm@suse.com,
-        aswin@hp.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, efault@gmx.de, jason.low2@hp.com,
-        Waiman.Long@hp.com, tglx@linutronix.de, davidlohr@hp.com,
-        scott.norton@hp.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, scott.norton@hp.com,
+        davidlohr@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com, tom.vaden@hp.com,
         jeffm@suse.com, aswin@hp.com
-In-Reply-To: <1389569486-25487-3-git-send-email-davidlohr@hp.com>
-References: <1389569486-25487-3-git-send-email-davidlohr@hp.com>
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, efault@gmx.de, jason.low2@hp.com,
+        Waiman.Long@hp.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        davidlohr@hp.com, scott.norton@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        tom.vaden@hp.com, jeffm@suse.com, aswin@hp.com
+In-Reply-To: <1389569486-25487-2-git-send-email-davidlohr@hp.com>
+References: <1389569486-25487-2-git-send-email-davidlohr@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] futexes:
-  Increase hash table size for better performance
-Git-Commit-ID: a52b89ebb6d4499be38780db8d176c5d3a6fbc17
+Subject: [tip:core/locking] futexes: Clean up various details
+Git-Commit-ID: 0d00c7b20c7716ce08399570ea48813ecf001aa8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,71 +35,28 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:52:47 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:52:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a52b89ebb6d4499be38780db8d176c5d3a6fbc17
-Gitweb:     http://git.kernel.org/tip/a52b89ebb6d4499be38780db8d176c5d3a6fbc17
-Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Sun, 12 Jan 2014 15:31:23 -0800
+Commit-ID:  0d00c7b20c7716ce08399570ea48813ecf001aa8
+Gitweb:     http://git.kernel.org/tip/0d00c7b20c7716ce08399570ea48813ecf001aa8
+Author:     Jason Low <jason.low2@hp.com>
+AuthorDate: Sun, 12 Jan 2014 15:31:22 -0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 13 Jan 2014 11:45:18 +0100
+CommitDate: Mon, 13 Jan 2014 11:45:17 +0100
 
-futexes: Increase hash table size for better performance
+futexes: Clean up various details
 
-Currently, the futex global hash table suffers from its fixed,
-smallish (for today's standards) size of 256 entries, as well as
-its lack of NUMA awareness. Large systems, using many futexes,
-can be prone to high amounts of collisions; where these futexes
-hash to the same bucket and lead to extra contention on the same
-hb->lock. Furthermore, cacheline bouncing is a reality when we
-have multiple hb->locks residing on the same cacheline and
-different futexes hash to adjacent buckets.
-
-This patch keeps the current static size of 16 entries for small
-systems, or otherwise, 256 * ncpus (or larger as we need to
-round the number to a power of 2). Note that this number of CPUs
-accounts for all CPUs that can ever be available in the system,
-taking into consideration things like hotpluging. While we do
-impose extra overhead at bootup by making the hash table larger,
-this is a one time thing, and does not shadow the benefits of
-this patch.
-
-Furthermore, as suggested by tglx, by cache aligning the hash
-buckets we can avoid access across cacheline boundaries and also
-avoid massive cache line bouncing if multiple cpus are hammering
-away at different hash buckets which happen to reside in the
-same cache line.
-
-Also, similar to other core kernel components (pid, dcache,
-tcp), by using alloc_large_system_hash() we benefit from its
-NUMA awareness and thus the table is distributed among the nodes
-instead of in a single one.
-
-For a custom microbenchmark that pounds on the uaddr hashing --
-making the wait path fail at futex_wait_setup() returning
--EWOULDBLOCK for large amounts of futexes, we can see the
-following benefits on a 80-core, 8-socket 1Tb server:
-
- +---------+--------------------+------------------------+-----------------------+-------------------------------+
- | threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
- +---------+--------------------+------------------------+-----------------------+-------------------------------+
- |     512 |              32426 | 50531  (+55.8%)        | 255274  (+687.2%)     | 292553  (+802.2%)             |
- |     256 |              65360 | 99588  (+52.3%)        | 443563  (+578.6%)     | 508088  (+677.3%)             |
- |     128 |             125635 | 200075 (+59.2%)        | 742613  (+491.1%)     | 835452  (+564.9%)             |
- |      80 |             193559 | 323425 (+67.1%)        | 1028147 (+431.1%)     | 1130304 (+483.9%)             |
- |      64 |             247667 | 443740 (+79.1%)        | 997300  (+302.6%)     | 1145494 (+362.5%)             |
- |      32 |             628412 | 721401 (+14.7%)        | 965996  (+53.7%)      | 1122115 (+78.5%)              |
- +---------+--------------------+------------------------+-----------------------+-------------------------------+
+- Remove unnecessary head variables.
+- Delete unused parameter in queue_unlock().
 
 Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 Reviewed-by: Peter Zijlstra <peterz@infradead.org>
 Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Waiman Long <Waiman.Long@hp.com>
-Reviewed-and-tested-by: Jason Low <jason.low2@hp.com>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jason Low <jason.low2@hp.com>
 Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Jeff Mahoney <jeffm@suse.com>
@@ -108,82 +64,171 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Scott Norton <scott.norton@hp.com>
 Cc: Tom Vaden <tom.vaden@hp.com>
 Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Link: http://lkml.kernel.org/r/1389569486-25487-3-git-send-email-davidlohr@hp.com
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1389569486-25487-2-git-send-email-davidlohr@hp.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/futex.c | 26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ kernel/futex.c | 39 ++++++++++++---------------------------
+ 1 file changed, 12 insertions(+), 27 deletions(-)
 
 diff --git a/kernel/futex.c b/kernel/futex.c
-index 085f5fa..577481d 100644
+index f6ff019..085f5fa 100644
 --- a/kernel/futex.c
 +++ b/kernel/futex.c
-@@ -63,6 +63,7 @@
- #include <linux/sched/rt.h>
- #include <linux/hugetlb.h>
- #include <linux/freezer.h>
-+#include <linux/bootmem.h>
+@@ -598,13 +598,10 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ {
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	struct task_struct *p;
+ 	pid_t pid = uval & FUTEX_TID_MASK;
  
- #include <asm/futex.h>
- 
-@@ -70,8 +71,6 @@
- 
- int __read_mostly futex_cmpxchg_enabled;
- 
--#define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
+-	head = &hb->chain;
 -
- /*
-  * Futex flags used to encode options to functions and preserve them across
-  * restarts.
-@@ -149,9 +148,11 @@ static const struct futex_q futex_q_init = {
- struct futex_hash_bucket {
- 	spinlock_t lock;
- 	struct plist_head chain;
--};
-+} ____cacheline_aligned_in_smp;
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (match_futex(&this->key, key)) {
+ 			/*
+ 			 * Another waiter already exists - bump up
+@@ -986,7 +983,6 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ {
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	union futex_key key = FUTEX_KEY_INIT;
+ 	int ret;
  
--static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
-+static unsigned long __read_mostly futex_hashsize;
-+
-+static struct futex_hash_bucket *futex_queues;
+@@ -999,9 +995,8 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
  
- /*
-  * We hash on the keys returned from get_futex_key (see below).
-@@ -161,7 +162,7 @@ static struct futex_hash_bucket *hash_futex(union futex_key *key)
- 	u32 hash = jhash2((u32*)&key->both.word,
- 			  (sizeof(key->both.word)+sizeof(key->both.ptr))/4,
- 			  key->both.offset);
--	return &futex_queues[hash & ((1 << FUTEX_HASHBITS)-1)];
-+	return &futex_queues[hash & (futex_hashsize - 1)];
+ 	hb = hash_futex(&key);
+ 	spin_lock(&hb->lock);
+-	head = &hb->chain;
+ 
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (match_futex (&this->key, &key)) {
+ 			if (this->pi_state || this->rt_waiter) {
+ 				ret = -EINVAL;
+@@ -1034,7 +1029,6 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+ {
+ 	union futex_key key1 = FUTEX_KEY_INIT, key2 = FUTEX_KEY_INIT;
+ 	struct futex_hash_bucket *hb1, *hb2;
+-	struct plist_head *head;
+ 	struct futex_q *this, *next;
+ 	int ret, op_ret;
+ 
+@@ -1082,9 +1076,7 @@ retry_private:
+ 		goto retry;
+ 	}
+ 
+-	head = &hb1->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+ 		if (match_futex (&this->key, &key1)) {
+ 			if (this->pi_state || this->rt_waiter) {
+ 				ret = -EINVAL;
+@@ -1097,10 +1089,8 @@ retry_private:
+ 	}
+ 
+ 	if (op_ret > 0) {
+-		head = &hb2->chain;
+-
+ 		op_ret = 0;
+-		plist_for_each_entry_safe(this, next, head, list) {
++		plist_for_each_entry_safe(this, next, &hb2->chain, list) {
+ 			if (match_futex (&this->key, &key2)) {
+ 				if (this->pi_state || this->rt_waiter) {
+ 					ret = -EINVAL;
+@@ -1270,7 +1260,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+ 	int drop_count = 0, task_count = 0, ret;
+ 	struct futex_pi_state *pi_state = NULL;
+ 	struct futex_hash_bucket *hb1, *hb2;
+-	struct plist_head *head1;
+ 	struct futex_q *this, *next;
+ 	u32 curval2;
+ 
+@@ -1393,8 +1382,7 @@ retry_private:
+ 		}
+ 	}
+ 
+-	head1 = &hb1->chain;
+-	plist_for_each_entry_safe(this, next, head1, list) {
++	plist_for_each_entry_safe(this, next, &hb1->chain, list) {
+ 		if (task_count - nr_wake >= nr_requeue)
+ 			break;
+ 
+@@ -1494,7 +1482,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
  }
  
- /*
-@@ -2719,7 +2720,18 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- static int __init futex_init(void)
+ static inline void
+-queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
++queue_unlock(struct futex_hash_bucket *hb)
+ 	__releases(&hb->lock)
  {
- 	u32 curval;
--	int i;
-+	unsigned long i;
-+
-+#if CONFIG_BASE_SMALL
-+	futex_hashsize = 16;
-+#else
-+	futex_hashsize = roundup_pow_of_two(256 * num_possible_cpus());
-+#endif
-+
-+	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
-+					       futex_hashsize, 0,
-+					       futex_hashsize < 256 ? HASH_SMALL : 0,
-+					       NULL, NULL, futex_hashsize, futex_hashsize);
+ 	spin_unlock(&hb->lock);
+@@ -1867,7 +1855,7 @@ retry_private:
+ 	ret = get_futex_value_locked(&uval, uaddr);
  
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
-@@ -2734,7 +2746,7 @@ static int __init futex_init(void)
- 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
- 		futex_cmpxchg_enabled = 1;
+ 	if (ret) {
+-		queue_unlock(q, *hb);
++		queue_unlock(*hb);
  
--	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
-+	for (i = 0; i < futex_hashsize; i++) {
- 		plist_head_init(&futex_queues[i].chain);
- 		spin_lock_init(&futex_queues[i].lock);
+ 		ret = get_user(uval, uaddr);
+ 		if (ret)
+@@ -1881,7 +1869,7 @@ retry_private:
  	}
+ 
+ 	if (uval != val) {
+-		queue_unlock(q, *hb);
++		queue_unlock(*hb);
+ 		ret = -EWOULDBLOCK;
+ 	}
+ 
+@@ -2029,7 +2017,7 @@ retry_private:
+ 			 * Task is exiting and we just wait for the
+ 			 * exit to complete.
+ 			 */
+-			queue_unlock(&q, hb);
++			queue_unlock(hb);
+ 			put_futex_key(&q.key);
+ 			cond_resched();
+ 			goto retry;
+@@ -2081,7 +2069,7 @@ retry_private:
+ 	goto out_put_key;
+ 
+ out_unlock_put_key:
+-	queue_unlock(&q, hb);
++	queue_unlock(hb);
+ 
+ out_put_key:
+ 	put_futex_key(&q.key);
+@@ -2091,7 +2079,7 @@ out:
+ 	return ret != -EINTR ? ret : -ERESTARTNOINTR;
+ 
+ uaddr_faulted:
+-	queue_unlock(&q, hb);
++	queue_unlock(hb);
+ 
+ 	ret = fault_in_user_writeable(uaddr);
+ 	if (ret)
+@@ -2113,7 +2101,6 @@ static int futex_unlock_pi(u32 __user *uaddr, unsigned int flags)
+ {
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q *this, *next;
+-	struct plist_head *head;
+ 	union futex_key key = FUTEX_KEY_INIT;
+ 	u32 uval, vpid = task_pid_vnr(current);
+ 	int ret;
+@@ -2153,9 +2140,7 @@ retry:
+ 	 * Ok, other tasks may need to be woken up - check waiters
+ 	 * and do the wakeup if necessary:
+ 	 */
+-	head = &hb->chain;
+-
+-	plist_for_each_entry_safe(this, next, head, list) {
++	plist_for_each_entry_safe(this, next, &hb->chain, list) {
+ 		if (!match_futex (&this->key, &key))
+ 			continue;
+ 		ret = wake_futex_pi(uaddr, uval, this);
