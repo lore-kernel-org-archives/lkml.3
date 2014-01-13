@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaAMXFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:05:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53277 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaAMXFE (ORCPT
+	id S1752353AbaAMXHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:07:51 -0500
+Received: from mo4-p04-ob.smtp.rzone.de ([81.169.146.179]:19419 "EHLO
+	mo4-p04-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaAMXHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:05:04 -0500
-Date: Mon, 13 Jan 2014 15:05:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on
- memory
-Message-Id: <20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org>
-In-Reply-To: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
-References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 18:07:48 -0500
+X-RZG-CLASS-ID: mo04
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ4Kkzc/qnW2/7rNLk=
+Date: Tue, 14 Jan 2014 00:07:40 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, david.vrabel@citrix.com
+Subject: Re: [PATCH] xen-blkfront: remove type check from
+ blkfront_setup_discard
+Message-ID: <20140113230740.GA23544@aepfle.de>
+References: <1389371301-29532-1-git-send-email-olaf@aepfle.de>
+ <52D036FC.6000308@oracle.com>
+ <20140110213746.GA933@aepfle.de>
+ <52D073F0.5020400@oracle.com>
+ <20140113093032.GA13919@aepfle.de>
+ <52D3FD67.2060708@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52D3FD67.2060708@oracle.com>
+User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan 2014 16:36:31 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+On Mon, Jan 13, Boris Ostrovsky wrote:
 
-> When reclaiming kmem, we currently don't scan slabs that have less than
-> batch_size objects (see shrink_slab_node()):
+> On 01/13/2014 04:30 AM, Olaf Hering wrote:
+> >>Similarly, if xenbug_gather("discard-secure") fails, I think the code will
+> >>assume that secure discard has not been requested. I don't know what
+> >>security implications this will have but it sounds bad to me.
+> >There are no security implications, if the backend does not advertise it
+> >then its not present.
 > 
->         while (total_scan >= batch_size) {
->                 shrinkctl->nr_to_scan = batch_size;
->                 shrinker->scan_objects(shrinker, shrinkctl);
->                 total_scan -= batch_size;
->         }
-> 
-> If there are only a few shrinkers available, such a behavior won't cause
-> any problems, because the batch_size is usually small, but if we have a
-> lot of slab shrinkers, which is perfectly possible since FS shrinkers
-> are now per-superblock, we can end up with hundreds of megabytes of
-> practically unreclaimable kmem objects. For instance, mounting a
-> thousand of ext2 FS images with a hundred of files in each and iterating
-> over all the files using du(1) will result in about 200 Mb of FS caches
-> that cannot be dropped even with the aid of the vm.drop_caches sysctl!
+> Right. But my questions was what if the backend does advertise it and wants
+> the frontent to use it but xenbus_gather() in the frontend fails. Do we want
+> to silently continue without discard-secure? Is this safe?
 
-True.  I suspect this was an accidental consequence of the chosen
-implementation.  As you mentioned, I was thinking that the caches would
-all be large, and the remaining 1 ..  SHRINK_BATCH-1 objects just
-didn't matter.
+The frontend can not know that the backend advertised discard-secure
+because the frontend just failed to read the property which indicates
+discard-secure should be enabled.
 
-> This problem was initially pointed out by Glauber Costa [*]. Glauber
-> proposed to fix it by making the shrink_slab() always take at least one
-> pass, to put it simply, turning the scan loop above to a do{}while()
-> loop. However, this proposal was rejected, because it could result in
-> more aggressive and frequent slab shrinking even under low memory
-> pressure when total_scan is naturally very small.
-
-Well, it wasn't "rejected" - Mel pointed out that Glauber's change
-could potentially trigger problems which already exist in shrinkers.
-
-The potential issues seem pretty unlikely to me, and they're things we
-can fix up if they eventuate.
-
-So I'm thinking we should at least try Glauber's approach - it's a bit
-weird that we should treat the final 0 ..  batch_size-1 objects in a
-different manner from all the others.
-
-
-That being said, I think I'll schedule this patch as-is for 3.14.  Can
-you please take a look at implementing the simpler approach, send me
-something for 3.15-rc1?
-
+Olaf
