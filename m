@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaAMJDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:03:18 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49229 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaAMJDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:03:07 -0500
-X-AuditID: 9c93017e-b7ba2ae000003516-bb-52d3abc7b61f
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, mingo@kernel.org,
-        dsahern@gmail.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/9] perf, tools: fix BFD detection on opensuse
-References: <1389469379-13340-1-git-send-email-andi@firstfloor.org>
-	<1389469379-13340-2-git-send-email-andi@firstfloor.org>
-	<20140112151615.GA6524@krava.brq.redhat.com>
-Date: Mon, 13 Jan 2014 18:03:03 +0900
-In-Reply-To: <20140112151615.GA6524@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Sun, 12 Jan 2014 16:16:15 +0100")
-Message-ID: <87bnzgb6ew.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751684AbaAMJDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:03:38 -0500
+Received: from mail.aswsp.com ([193.34.35.150]:35151 "EHLO mail.aswsp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751659AbaAMJDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 04:03:34 -0500
+Message-ID: <52D3ABE2.10701@parrot.com>
+Date: Mon, 13 Jan 2014 10:03:30 +0100
+From: Damien Riegel <damien.riegel.ext@parrot.com>
+Reply-To: <damien.riegel.ext@parrot.com>
+Organization: Parrot
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Damien Riegel <damien.riegel.ext@parrot.com>
+Subject: [PATCH v2] clk: clk-divider: round divider to a valid value when
+ a table is used
+References: <1389277515-26444-1-git-send-email-damien.riegel.ext@parrot.com>
+In-Reply-To: <1389277515-26444-1-git-send-email-damien.riegel.ext@parrot.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.218.109.88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Jan 2014 16:16:15 +0100, Jiri Olsa wrote:
-> On Sat, Jan 11, 2014 at 11:42:51AM -0800, Andi Kleen wrote:
->> From: Andi Kleen <ak@linux.intel.com>
->> 
->> opensuse libbfd requires -lz -liberty to build. Add those
->> to the BFD feature detection.
->> 
->> Signed-off-by: Andi Kleen <ak@linux.intel.com>
->> ---
->>  tools/perf/config/Makefile                | 2 +-
->>  tools/perf/config/feature-checks/Makefile | 2 +-
->>  2 files changed, 2 insertions(+), 2 deletions(-)
->> 
->> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
->> index 01dd43d..d86d33c 100644
->> --- a/tools/perf/config/Makefile
->> +++ b/tools/perf/config/Makefile
->> @@ -478,7 +478,7 @@ else
->>  endif
->>  
->>  ifeq ($(feature-libbfd), 1)
->> -  EXTLIBS += -lbfd
->> +  EXTLIBS += -lbfd -lz -liberty
->>  endif
->
-> ok, Fedora is using linker script in place of libbfd.so which
-> adds those anyway..
->
-> ---
-> [jolsa@krava perf]$ cat /usr/lib64/libbfd.so 
-> /* GNU ld script */
->
-> /* Ensure this .so library will not be used by a link for a different format
->    on a multi-architecture system.  */
-> OUTPUT_FORMAT(elf64-x86-64)
->
-> /* The libz dependency is unexpected by legacy build scripts.  */
-> /* The libdl dependency is for plugin support.  (BZ 889134)  */
-> INPUT ( /usr/lib64/libbfd.a -liberty -lz -ldl )
-> ---
->
-> we also need to check and probably get rid of follow up settings of
-> EXTLIBS which seems useless now:
->
-> ...
->     ifneq ($(feature-libbfd), 1)
->       $(call feature_check,liberty)
->       ifeq ($(feature-liberty), 1)
->         EXTLIBS += -lbfd -liberty
->       else
->         $(call feature_check,liberty-z)
->         ifeq ($(feature-liberty-z), 1)
->           EXTLIBS += -lbfd -liberty -lz
-> ...
+clk_divider_bestdiv computes the bestdiv without taking into account if
+it is a valid value when CLK_SET_RATE_PARENT is not set, and it may not
+be if a table is used. round_rate then returns a rate that is not
+reachable by the clock, leading to a set_rate that does nothing but
+reports no error.
+This patch makes round_rate return a valid rate.
 
-Agreed.  I think it's only for keeping dependency minimal.  But no need
-to do it if it's always called with -liberty and -lz.
+Signed-off-by: Damien Riegel <damien.riegel.ext@parrot.com>
+---
+The previous version of this patch luckily worked with the clk_div_table
+I had. It might return a divider that was less than the computed div. This
+patch should now work in every case.
+---
+ drivers/clk/clk-divider.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-Thanks,
-Namhyung
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index 8d3009e44fba..658afbc39964 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -144,6 +144,22 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+ 	return true;
+ }
+ 
++static int _round_to_valid_div(struct clk_divider *divider, int div, int maxdiv)
++{
++	const struct clk_div_table *clkt = divider->table;
++	int bestdiv = maxdiv;
++
++	if (!clkt)
++		return div;
++
++	for (; clkt->div; clkt++) {
++		if (clkt->div >= div && bestdiv > clkt->div)
++			bestdiv = clkt->div;
++	}
++
++	return bestdiv;
++}
++
+ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+ 		unsigned long *best_parent_rate)
+ {
+@@ -161,7 +177,8 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+ 		parent_rate = *best_parent_rate;
+ 		bestdiv = DIV_ROUND_UP(parent_rate, rate);
+ 		bestdiv = bestdiv == 0 ? 1 : bestdiv;
+-		bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
++		bestdiv = bestdiv > maxdiv ? maxdiv :
++			_round_to_valid_div(divider, bestdiv, maxdiv);
+ 		return bestdiv;
+ 	}
+ 
+-- 
+1.7.10.4
+
