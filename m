@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873AbaAMQ1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:27:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53486 "EHLO
+	id S1754245AbaAMQEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:04:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53375 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258AbaAMQEI (ORCPT
+	with ESMTP id S1754080AbaAMQDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:08 -0500
+	Mon, 13 Jan 2014 11:03:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Drews <paul.drews@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 140/208] ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs
-Date: Mon, 13 Jan 2014 15:59:41 +0000
-Message-Id: <1389628849-1614-141-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 117/208] ceph: Add check returned value on func ceph_calc_ceph_pg.
+Date: Mon, 13 Jan 2014 15:59:18 +0000
+Message-Id: <1389628849-1614-118-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Drews <paul.drews@intel.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit f6308b36c411dc5afd6a6f73e6454722bfde57b7 upstream.
+commit 2fbcbff1d6b9243ef71c64a8ab993bc3c7bb7af1 upstream.
 
-This adds the new ACPI ID (INT33FC) for the BayTrail GPIO
-banks as seen on a BayTrail M System-On-Chip platform.  This
-ACPI ID is used by the BayTrail GPIO (pinctrl) driver to
-manage the Low Power Subsystem (LPSS).
+Func ceph_calc_ceph_pg maybe failed.So add check for returned value.
 
-Signed-off-by: Paul Drews <paul.drews@intel.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/acpi_lpss.c           | 1 +
- drivers/pinctrl/pinctrl-baytrail.c | 1 +
- 2 files changed, 2 insertions(+)
+ fs/ceph/ioctl.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index fb78bb9..ab19263 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -156,6 +156,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
- 	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
- 	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
- 	{ "INT33B2", },
-+	{ "INT33FC", },
+diff --git a/fs/ceph/ioctl.c b/fs/ceph/ioctl.c
+index a5ce62e..669622f 100644
+--- a/fs/ceph/ioctl.c
++++ b/fs/ceph/ioctl.c
+@@ -211,8 +211,12 @@ static long ceph_ioctl_get_dataloc(struct file *file, void __user *arg)
+ 	snprintf(dl.object_name, sizeof(dl.object_name), "%llx.%08llx",
+ 		 ceph_ino(inode), dl.object_no);
  
- 	{ }
- };
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index e9d735d..9041a6e 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -508,6 +508,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+-	ceph_calc_ceph_pg(&pgid, dl.object_name, osdc->osdmap,
+-		ceph_file_layout_pg_pool(ci->i_layout));
++	r = ceph_calc_ceph_pg(&pgid, dl.object_name, osdc->osdmap,
++				ceph_file_layout_pg_pool(ci->i_layout));
++	if (r < 0) {
++		up_read(&osdc->map_sem);
++		return r;
++	}
  
- static const struct acpi_device_id byt_gpio_acpi_match[] = {
- 	{ "INT33B2", 0 },
-+	{ "INT33FC", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+ 	dl.osd = ceph_calc_pg_primary(osdc->osdmap, pgid);
+ 	if (dl.osd >= 0) {
 -- 
 1.8.3.2
 
