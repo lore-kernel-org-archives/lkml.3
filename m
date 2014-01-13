@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaAMQDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:03:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53260 "EHLO
+	id S1755275AbaAMQhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:37:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53344 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886AbaAMQDH (ORCPT
+	with ESMTP id S1754029AbaAMQD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:07 -0500
+	Mon, 13 Jan 2014 11:03:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rob Herring <robh@kernel.org>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>, ocfs2-devel@oss.oracle.com,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 095/208] Revert "of/address: Handle #address-cells > 2 specially"
-Date: Mon, 13 Jan 2014 15:58:56 +0000
-Message-Id: <1389628849-1614-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 111/208] jbd2: don't BUG but return ENOSPC if a handle runs out of space
+Date: Mon, 13 Jan 2014 15:59:12 +0000
+Message-Id: <1389628849-1614-112-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,120 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <robh@kernel.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 13fcca8f25f4e9ce7f55da9cd353bb743236e212 upstream.
+commit f6c07cad081ba222d63623d913aafba5586c1d2c upstream.
 
-This reverts commit e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7.
+If a handle runs out of space, we currently stop the kernel with a BUG
+in jbd2_journal_dirty_metadata().  This makes it hard to figure out
+what might be going on.  So return an error of ENOSPC, so we can let
+the file system layer figure out what is going on, to make it more
+likely we can get useful debugging information).  This should make it
+easier to debug problems such as the one which was reported by:
 
-Nikita Yushchenko reports:
-While trying to make freescale p2020ds and  mpc8572ds boards working
-with mainline kernel, I faced that commit e38c0a1f (Handle
+    https://bugzilla.kernel.org/show_bug.cgi?id=44731
 
-Both these boards have uli1575 chip.
-Corresponding part in device tree is something like
+The only two callers of this function are ext4_handle_dirty_metadata()
+and ocfs2_journal_dirty().  The ocfs2 function will trigger a
+BUG_ON(), which means there will be no change in behavior.  The ext4
+function will call ext4_error_inode() which will print the useful
+debugging information and then handle the situation using ext4's error
+handling mechanisms (i.e., which might mean halting the kernel or
+remounting the file system read-only).
 
-                uli1575@0 {
-                        reg = <0x0 0x0 0x0 0x0 0x0>;
-                        #size-cells = <2>;
-                        #address-cells = <3>;
-                        ranges = <0x2000000 0x0 0x80000000
-                                  0x2000000 0x0 0x80000000
-                                  0x0 0x20000000
+Also, since both file systems already call WARN_ON(), drop the WARN_ON
+from jbd2_journal_dirty_metadata() to avoid two stack traces from
+being displayed.
 
-                                  0x1000000 0x0 0x0
-                                  0x1000000 0x0 0x0
-                                  0x0 0x10000>;
-                        isa@1e {
-...
-
-I.e. it has #address-cells = <3>
-
-With commit e38c0a1f reverted, devices under uli1575 are registered
-correctly, e.g. for rtc
-
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is default (na=2, ns=2) on /
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 00000000 ffc10000
-OF: with offset: 70
-OF: one level translation: 00000000 ffc10070
-OF: reached root node
-
-With commit e38c0a1f in place, address translation fails:
-
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: not found !
-
-Thierry Reding confirmed this commit was not needed after all:
-"We ended up merging a different address representation for Tegra PCIe
-and I've confirmed that reverting this commit doesn't cause any obvious
-regressions. I think all other drivers in drivers/pci/host ended up
-copying what we did on Tegra, so I wouldn't expect any other breakage
-either."
-
-There doesn't appear to be a simple way to support both behaviours, so
-reverting this as nothing should be depending on the new behaviour.
-
-Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: ocfs2-devel@oss.oracle.com
+Acked-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/of/address.c | 8 --------
- 1 file changed, 8 deletions(-)
+ fs/jbd2/transaction.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index b55c218..3c4b2af 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -69,14 +69,6 @@ static u64 of_bus_default_map(__be32 *addr, const __be32 *range,
- 		 (unsigned long long)cp, (unsigned long long)s,
- 		 (unsigned long long)da);
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index 7aa9a32..b0b74e5 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1290,7 +1290,10 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
+ 		 * once a transaction -bzzz
+ 		 */
+ 		jh->b_modified = 1;
+-		J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
++		if (handle->h_buffer_credits <= 0) {
++			ret = -ENOSPC;
++			goto out_unlock_bh;
++		}
+ 		handle->h_buffer_credits--;
+ 	}
  
--	/*
--	 * If the number of address cells is larger than 2 we assume the
--	 * mapping doesn't specify a physical address. Rather, the address
--	 * specifies an identifier that must match exactly.
--	 */
--	if (na > 2 && memcmp(range, addr, na * 4) != 0)
--		return OF_BAD_ADDR;
--
- 	if (da < cp || da >= (cp + s))
- 		return OF_BAD_ADDR;
- 	return da - cp;
+@@ -1373,7 +1376,6 @@ out_unlock_bh:
+ 	jbd2_journal_put_journal_head(jh);
+ out:
+ 	JBUFFER_TRACE(jh, "exit");
+-	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
+ 	return ret;
+ }
+ 
 -- 
 1.8.3.2
 
