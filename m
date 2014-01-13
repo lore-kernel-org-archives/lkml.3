@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaAMUy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:54:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40411 "EHLO
+	id S1753415AbaAMUyi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:54:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40402 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936AbaAMUsJ (ORCPT
+	with ESMTP id S1751966AbaAMUsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 15:48:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 06/38] perf evlist: Close fds on destructor
-Date: Mon, 13 Jan 2014 17:47:07 -0300
-Message-Id: <1389646059-24881-7-git-send-email-acme@infradead.org>
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 27/38] tools include: Move perf's bug.h to a generic place
+Date: Mon, 13 Jan 2014 17:47:28 -0300
+Message-Id: <1389646059-24881-28-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -29,250 +26,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Since it is safe to call perf_evlist__close() multiple times, autoclose
-it and remove the calls to the close from existing tools, reducing the
-tooling boilerplate.
+So that it can be shared with others like libtraceevent.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-2kq9v7p1rude1tqxa0aue2tk@git.kernel.org
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1389276059-8829-4-git-send-email-namhyung@kernel.org
+[ Added the new header to tools/perf/MANIFEST ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c               |  1 -
- tools/perf/builtin-trace.c                |  4 +---
- tools/perf/tests/code-reading.c           |  1 -
- tools/perf/tests/keep-tracking.c          |  1 -
- tools/perf/tests/mmap-basic.c             | 11 ++++-------
- tools/perf/tests/open-syscall-tp-fields.c |  4 +---
- tools/perf/tests/perf-record.c            |  4 +---
- tools/perf/tests/perf-time-to-tsc.c       |  1 -
- tools/perf/tests/sw-clock.c               |  4 +---
- tools/perf/tests/task-exit.c              |  4 +---
- tools/perf/util/evlist.c                  |  1 +
- 11 files changed, 10 insertions(+), 26 deletions(-)
+ tools/include/asm/bug.h           | 23 +++++++++++++++++++++++
+ tools/perf/MANIFEST               |  1 +
+ tools/perf/Makefile.perf          |  2 +-
+ tools/perf/util/include/asm/bug.h | 22 ----------------------
+ 4 files changed, 25 insertions(+), 23 deletions(-)
+ create mode 100644 tools/include/asm/bug.h
+ delete mode 100644 tools/perf/util/include/asm/bug.h
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 5149b41e63d1..b7f5e438276b 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -970,7 +970,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 	err = __cmd_record(&record, argc, argv);
- 
- 	perf_evlist__munmap(rec->evlist);
--	perf_evlist__close(rec->evlist);
- out_symbol_exit:
- 	symbol__exit();
- 	return err;
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index f4ddd14b8a9b..aa8a5f46c361 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1909,7 +1909,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
- 	if (err < 0) {
- 		fprintf(trace->output, "Couldn't mmap the events: %s\n", strerror(errno));
--		goto out_close_evlist;
-+		goto out_delete_evlist;
- 	}
- 
- 	perf_evlist__enable(evlist);
-@@ -1994,8 +1994,6 @@ out_disable:
- 	}
- 
- 	perf_evlist__munmap(evlist);
--out_close_evlist:
--	perf_evlist__close(evlist);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- out:
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index ddbc7756620c..2c0ce723749f 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -541,7 +541,6 @@ static int do_test_code_reading(bool try_kcore)
- out_err:
- 	if (evlist) {
- 		perf_evlist__munmap(evlist);
--		perf_evlist__close(evlist);
- 		perf_evlist__delete(evlist);
- 	} else {
- 		cpu_map__delete(cpus);
-diff --git a/tools/perf/tests/keep-tracking.c b/tools/perf/tests/keep-tracking.c
-index f9bc1fcd17cd..dd1c677510bd 100644
---- a/tools/perf/tests/keep-tracking.c
-+++ b/tools/perf/tests/keep-tracking.c
-@@ -143,7 +143,6 @@ out_err:
- 	if (evlist) {
- 		perf_evlist__disable(evlist);
- 		perf_evlist__munmap(evlist);
--		perf_evlist__close(evlist);
- 		perf_evlist__delete(evlist);
- 	} else {
- 		cpu_map__delete(cpus);
-diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
-index bbb334d2a864..111dd4a917ad 100644
---- a/tools/perf/tests/mmap-basic.c
-+++ b/tools/perf/tests/mmap-basic.c
-@@ -68,7 +68,7 @@ int test__basic_mmap(void)
- 		evsels[i] = perf_evsel__newtp("syscalls", name);
- 		if (evsels[i] == NULL) {
- 			pr_debug("perf_evsel__new\n");
--			goto out_free_evlist;
-+			goto out_delete_evlist;
- 		}
- 
- 		evsels[i]->attr.wakeup_events = 1;
-@@ -80,7 +80,7 @@ int test__basic_mmap(void)
- 			pr_debug("failed to open counter: %s, "
- 				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
- 				 strerror(errno));
--			goto out_close_fd;
-+			goto out_delete_evlist;
- 		}
- 
- 		nr_events[i] = 0;
-@@ -90,7 +90,7 @@ int test__basic_mmap(void)
- 	if (perf_evlist__mmap(evlist, 128, true) < 0) {
- 		pr_debug("failed to mmap events: %d (%s)\n", errno,
- 			 strerror(errno));
--		goto out_close_fd;
-+		goto out_delete_evlist;
- 	}
- 
- 	for (i = 0; i < nsyscalls; ++i)
-@@ -138,10 +138,7 @@ int test__basic_mmap(void)
- 
- out_munmap:
- 	perf_evlist__munmap(evlist);
--out_close_fd:
--	for (i = 0; i < nsyscalls; ++i)
--		perf_evsel__close_fd(evsels[i], 1, threads->nr);
--out_free_evlist:
-+out_delete_evlist:
- 	perf_evlist__delete(evlist);
- 	cpus	= NULL;
- 	threads = NULL;
-diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
-index 595b577172a6..0a00638a9ebb 100644
---- a/tools/perf/tests/open-syscall-tp-fields.c
-+++ b/tools/perf/tests/open-syscall-tp-fields.c
-@@ -54,7 +54,7 @@ int test__syscall_open_tp_fields(void)
- 	err = perf_evlist__mmap(evlist, UINT_MAX, false);
- 	if (err < 0) {
- 		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
--		goto out_close_evlist;
-+		goto out_delete_evlist;
- 	}
- 
- 	perf_evlist__enable(evlist);
-@@ -112,8 +112,6 @@ out_ok:
- 	err = 0;
- out_munmap:
- 	perf_evlist__munmap(evlist);
--out_close_evlist:
--	perf_evlist__close(evlist);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- out:
-diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
-index 266da9d41300..682978e66efe 100644
---- a/tools/perf/tests/perf-record.c
-+++ b/tools/perf/tests/perf-record.c
-@@ -132,7 +132,7 @@ int test__PERF_RECORD(void)
- 	err = perf_evlist__mmap(evlist, opts.mmap_pages, false);
- 	if (err < 0) {
- 		pr_debug("perf_evlist__mmap: %s\n", strerror(errno));
--		goto out_close_evlist;
-+		goto out_delete_evlist;
- 	}
- 
- 	/*
-@@ -304,8 +304,6 @@ found_exit:
- 	}
- out_err:
- 	perf_evlist__munmap(evlist);
--out_close_evlist:
--	perf_evlist__close(evlist);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- out:
-diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
-index 97d08fff1f8d..3d50f2d2a4d5 100644
---- a/tools/perf/tests/perf-time-to-tsc.c
-+++ b/tools/perf/tests/perf-time-to-tsc.c
-@@ -167,7 +167,6 @@ out_err:
- 	if (evlist) {
- 		perf_evlist__disable(evlist);
- 		perf_evlist__munmap(evlist);
--		perf_evlist__close(evlist);
- 		perf_evlist__delete(evlist);
- 	}
- 
-diff --git a/tools/perf/tests/sw-clock.c b/tools/perf/tests/sw-clock.c
-index 266d38127ba6..b366f0edca79 100644
---- a/tools/perf/tests/sw-clock.c
-+++ b/tools/perf/tests/sw-clock.c
-@@ -70,7 +70,7 @@ static int __test__sw_clock_freq(enum perf_sw_ids clock_id)
- 	if (err < 0) {
- 		pr_debug("failed to mmap event: %d (%s)\n", errno,
- 			 strerror(errno));
--		goto out_close_evlist;
-+		goto out_delete_evlist;
- 	}
- 
- 	perf_evlist__enable(evlist);
-@@ -107,8 +107,6 @@ next_event:
- 
- out_unmap_evlist:
- 	perf_evlist__munmap(evlist);
--out_close_evlist:
--	perf_evlist__close(evlist);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- 	return err;
-diff --git a/tools/perf/tests/task-exit.c b/tools/perf/tests/task-exit.c
-index fdeb2aa46a50..5511a0a929cd 100644
---- a/tools/perf/tests/task-exit.c
-+++ b/tools/perf/tests/task-exit.c
-@@ -89,7 +89,7 @@ int test__task_exit(void)
- 	if (perf_evlist__mmap(evlist, 128, true) < 0) {
- 		pr_debug("failed to mmap events: %d (%s)\n", errno,
- 			 strerror(errno));
--		goto out_close_evlist;
-+		goto out_delete_evlist;
- 	}
- 
- 	perf_evlist__start_workload(evlist);
-@@ -113,8 +113,6 @@ retry:
- 	}
- 
- 	perf_evlist__munmap(evlist);
--out_close_evlist:
--	perf_evlist__close(evlist);
- out_delete_evlist:
- 	perf_evlist__delete(evlist);
- 	return err;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 143eaf05178f..a083bdc4680e 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -107,6 +107,7 @@ void perf_evlist__exit(struct perf_evlist *evlist)
- 
- void perf_evlist__delete(struct perf_evlist *evlist)
- {
-+	perf_evlist__close(evlist);
- 	cpu_map__delete(evlist->cpus);
- 	thread_map__delete(evlist->threads);
- 	evlist->cpus = NULL;
+diff --git a/tools/include/asm/bug.h b/tools/include/asm/bug.h
+new file mode 100644
+index 000000000000..eca78df7b8f2
+--- /dev/null
++++ b/tools/include/asm/bug.h
+@@ -0,0 +1,23 @@
++#ifndef _TOOLS_ASM_BUG_H
++#define _TOOLS_ASM_BUG_H
++
++#define __WARN_printf(arg...)	do { fprintf(stderr, arg); } while (0)
++
++#define WARN(condition, format...) ({		\
++	int __ret_warn_on = !!(condition);	\
++	if (unlikely(__ret_warn_on))		\
++		__WARN_printf(format);		\
++	unlikely(__ret_warn_on);		\
++})
++
++#define WARN_ONCE(condition, format...)	({	\
++	static int __warned;			\
++	int __ret_warn_once = !!(condition);	\
++						\
++	if (unlikely(__ret_warn_once))		\
++		if (WARN(!__warned, format)) 	\
++			__warned = 1;		\
++	unlikely(__ret_warn_once);		\
++})
++
++#endif /* _TOOLS_ASM_BUG_H */
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index 285f28f7f821..4e535354f162 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -4,6 +4,7 @@ tools/lib/traceevent
+ tools/lib/lk
+ tools/lib/symbol/kallsyms.c
+ tools/lib/symbol/kallsyms.h
++tools/include/asm/bug.h
+ tools/include/linux/compiler.h
+ include/linux/const.h
+ include/linux/perf_event.h
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 6be06767da7b..87d7726cee2d 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -226,7 +226,7 @@ LIB_H += util/include/linux/string.h
+ LIB_H += util/include/linux/types.h
+ LIB_H += util/include/linux/linkage.h
+ LIB_H += util/include/asm/asm-offsets.h
+-LIB_H += util/include/asm/bug.h
++LIB_H += ../include/asm/bug.h
+ LIB_H += util/include/asm/byteorder.h
+ LIB_H += util/include/asm/hweight.h
+ LIB_H += util/include/asm/swab.h
+diff --git a/tools/perf/util/include/asm/bug.h b/tools/perf/util/include/asm/bug.h
+deleted file mode 100644
+index 7fcc6810adc2..000000000000
+--- a/tools/perf/util/include/asm/bug.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#ifndef _PERF_ASM_GENERIC_BUG_H
+-#define _PERF_ASM_GENERIC_BUG_H
+-
+-#define __WARN_printf(arg...)	do { fprintf(stderr, arg); } while (0)
+-
+-#define WARN(condition, format...) ({		\
+-	int __ret_warn_on = !!(condition);	\
+-	if (unlikely(__ret_warn_on))		\
+-		__WARN_printf(format);		\
+-	unlikely(__ret_warn_on);		\
+-})
+-
+-#define WARN_ONCE(condition, format...)	({	\
+-	static int __warned;			\
+-	int __ret_warn_once = !!(condition);	\
+-						\
+-	if (unlikely(__ret_warn_once))		\
+-		if (WARN(!__warned, format)) 	\
+-			__warned = 1;		\
+-	unlikely(__ret_warn_once);		\
+-})
+-#endif
 -- 
 1.8.1.4
 
