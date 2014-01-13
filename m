@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaAMRNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:13:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34542 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832AbaAMRNE (ORCPT
+	id S1754943AbaAMRMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:12:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52800 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbaAMQBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:13:04 -0500
-Date: Mon, 13 Jan 2014 18:12:38 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Marian Marinov <mm@yuhu.biz>
-Cc: lxc-devel@lists.linuxcontainers.org, cgroups@vger.kernel.org,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, Li Zefan <lizefan@huawei.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: Re: RFC: cgroups aware proc
-Message-ID: <20140113171238.GS31570@twins.programming.kicks-ass.net>
-References: <52D35CD0.9070602@huawei.com>
- <52D41316.5080508@yuhu.biz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D41316.5080508@yuhu.biz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 13 Jan 2014 11:01:02 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 006/208] staging: comedi: drivers: use comedi_dio_update_state() for simple cases
+Date: Mon, 13 Jan 2014 15:57:27 +0000
+Message-Id: <1389628849-1614-7-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 06:23:50PM +0200, Marian Marinov wrote:
-> Hello Peter,
-> 
-> I need help with the scheduler.
-> 
-> I'm currently trying to patch the /proc/loadavg to show the load that is
-> only related to the processes from the current cgroup.
-> 
-> I looked trough the code and I was hoping that tsk->sched_task_group->cfs_rq
-> struct will give me the needed information, but unfortunately for me, it did
-> not.
-> 
-> Can you advise me, how to approach this problem?
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-Yeah, don't :-) Really, loadavg is a stupid metric.
+------------------
 
-> I'm totally new to the scheduler code.
+From: Ian Abbott <abbotti@mev.co.uk>
 
-Luckily you won't actually have to touch much of it. Most of the actual
-loadavg code lives in the first ~400 lines of kernel/sched/proc.c, read
-and weep. Its one of the best documented bits around.
+commit 97f4289ad08cffe55de06d4ac4f89ac540450aee upstream.
 
-Your proposition however is extremely expensive, you turn something
-that's already expensive O(nr_cpus) into something O(nr_cpus *
-nr_cgroups).
+[Split from original patch subject: "staging: comedi: drivers: use
+comedi_dio_update_state() for simple cases"]
 
-I'm fairly sure people will not like that, esp. for something of such
-questionable use as the loadavg -- its really only a pretty number that
-doesn't mean all that much.
+Also, fix a bug in the amplc_pc263 and amplc_pci263 drivers where the
+current state is not returned in data[1].
 
-> -------- Original Message --------
-> From: Li Zefan <lizefan@huawei.com>
->
-> Then you should add Peter, Ingo and LKML to your Cc list. :)
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+[Ian: Applies to 3.10.y, 3.11.y and 3.12.y ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/staging/comedi/drivers/amplc_pc263.c  | 3 +++
+ drivers/staging/comedi/drivers/amplc_pci263.c | 3 +++
+ 2 files changed, 6 insertions(+)
 
-You failed that, let me fix that.
+diff --git a/drivers/staging/comedi/drivers/amplc_pc263.c b/drivers/staging/comedi/drivers/amplc_pc263.c
+index 6546095..f16c3f8 100644
+--- a/drivers/staging/comedi/drivers/amplc_pc263.c
++++ b/drivers/staging/comedi/drivers/amplc_pc263.c
+@@ -67,6 +67,9 @@ static int pc263_do_insn_bits(struct comedi_device *dev,
+ 		outb(s->state & 0xFF, dev->iobase);
+ 		outb(s->state >> 8, dev->iobase + 1);
+ 	}
++
++	data[1] = s->state;
++
+ 	return insn->n;
+ }
+ 
+diff --git a/drivers/staging/comedi/drivers/amplc_pci263.c b/drivers/staging/comedi/drivers/amplc_pci263.c
+index 4da900c..fe6aa5f 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci263.c
++++ b/drivers/staging/comedi/drivers/amplc_pci263.c
+@@ -54,6 +54,9 @@ static int pci263_do_insn_bits(struct comedi_device *dev,
+ 		outb(s->state & 0xFF, dev->iobase);
+ 		outb(s->state >> 8, dev->iobase + 1);
+ 	}
++
++	data[1] = s->state;
++
+ 	return insn->n;
+ }
+ 
+-- 
+1.8.3.2
+
