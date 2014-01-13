@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083AbaAMO0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:26:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51191 "EHLO
+	id S1752302AbaAMOor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:44:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaAMOZS (ORCPT
+	with ESMTP id S1752072AbaAMO0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:18 -0500
+	Mon, 13 Jan 2014 09:26:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>,
+Cc: Steven Whitehouse <swhiteho@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 10/96] selinux: process labeled IPsec TCP SYN-ACK packets properly in selinux_ip_postroute()
-Date: Mon, 13 Jan 2014 14:23:33 +0000
-Message-Id: <1389623099-18783-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 63/96] GFS2: Fix incorrect invalidation for DIO/buffered I/O
+Date: Mon, 13 Jan 2014 14:24:26 +0000
+Message-Id: <1389623099-18783-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,93 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit c0828e50485932b7e019df377a6b0a8d1ebd3080 upstream.
+commit dfd11184d894cd0a92397b25cac18831a1a6a5bc upstream.
 
-Due to difficulty in arriving at the proper security label for
-TCP SYN-ACK packets in selinux_ip_postroute(), we need to check packets
-while/before they are undergoing XFRM transforms instead of waiting
-until afterwards so that we can determine the correct security label.
+In patch 209806aba9d540dde3db0a5ce72307f85f33468f we allowed
+local deferred locks to be granted against a cached exclusive
+lock. That opened up a corner case which this patch now
+fixes.
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-[ Paul: backported to 3.4 kernel ]
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+The solution to the problem is to check whether we have cached
+pages each time we do direct I/O and if so to unmap, flush
+and invalidate those pages. Since the glock state machine
+normally does that for us, mostly the code will be a no-op.
+
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/hooks.c | 43 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 36 insertions(+), 7 deletions(-)
+ fs/gfs2/aops.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index a9ee3d1..0d3bef7 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4722,22 +4722,32 @@ static unsigned int selinux_ip_postroute(struct sk_buff *skb, int ifindex,
- 	 * as fast and as clean as possible. */
- 	if (!selinux_policycap_netpeer)
- 		return selinux_ip_postroute_compat(skb, ifindex, family);
-+
-+	secmark_active = selinux_secmark_enabled();
-+	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
-+	if (!secmark_active && !peerlbl_active)
-+		return NF_ACCEPT;
-+
-+	sk = skb->sk;
-+
- #ifdef CONFIG_XFRM
- 	/* If skb->dst->xfrm is non-NULL then the packet is undergoing an IPsec
- 	 * packet transformation so allow the packet to pass without any checks
- 	 * since we'll have another chance to perform access control checks
- 	 * when the packet is on it's final way out.
- 	 * NOTE: there appear to be some IPv6 multicast cases where skb->dst
--	 *       is NULL, in this case go ahead and apply access control. */
--	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL)
-+	 *       is NULL, in this case go ahead and apply access control.
-+	 *       is NULL, in this case go ahead and apply access control.
-+	 * NOTE: if this is a local socket (skb->sk != NULL) that is in the
-+	 *       TCP listening state we cannot wait until the XFRM processing
-+	 *       is done as we will miss out on the SA label if we do;
-+	 *       unfortunately, this means more work, but it is only once per
-+	 *       connection. */
-+	if (skb_dst(skb) != NULL && skb_dst(skb)->xfrm != NULL &&
-+	    !(sk != NULL && sk->sk_state == TCP_LISTEN))
- 		return NF_ACCEPT;
- #endif
--	secmark_active = selinux_secmark_enabled();
--	peerlbl_active = netlbl_enabled() || selinux_xfrm_enabled();
--	if (!secmark_active && !peerlbl_active)
--		return NF_ACCEPT;
+diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
+index e80a464..0111060 100644
+--- a/fs/gfs2/aops.c
++++ b/fs/gfs2/aops.c
+@@ -1011,6 +1011,7 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
++	struct address_space *mapping = inode->i_mapping;
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+ 	struct gfs2_holder gh;
+ 	int rv;
+@@ -1031,6 +1032,35 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
+ 	if (rv != 1)
+ 		goto out; /* dio not valid, fall back to buffered i/o */
  
--	sk = skb->sk;
- 	if (sk == NULL) {
- 		/* Without an associated socket the packet is either coming
- 		 * from the kernel or it is being forwarded; check the packet
-@@ -4765,6 +4775,25 @@ static unsigned int selinux_ip_postroute(struct sk_buff *skb, int ifindex,
- 		struct sk_security_struct *sksec = sk->sk_security;
- 		if (selinux_skb_peerlbl_sid(skb, family, &skb_sid))
- 			return NF_DROP;
-+		/* At this point, if the returned skb peerlbl is SECSID_NULL
-+		 * and the packet has been through at least one XFRM
-+		 * transformation then we must be dealing with the "final"
-+		 * form of labeled IPsec packet; since we've already applied
-+		 * all of our access controls on this packet we can safely
-+		 * pass the packet. */
-+		if (skb_sid == SECSID_NULL) {
-+			switch (family) {
-+			case PF_INET:
-+				if (IPCB(skb)->flags & IPSKB_XFRM_TRANSFORMED)
-+					return NF_ACCEPT;
-+				break;
-+			case PF_INET6:
-+				if (IP6CB(skb)->flags & IP6SKB_XFRM_TRANSFORMED)
-+					return NF_ACCEPT;
-+			default:
-+				return NF_DROP_ERR(-ECONNREFUSED);
-+			}
-+		}
- 		if (selinux_conn_sid(sksec->sid, skb_sid, &peer_sid))
- 			return NF_DROP;
- 		secmark_perm = PACKET__SEND;
++	/*
++	 * Now since we are holding a deferred (CW) lock at this point, you
++	 * might be wondering why this is ever needed. There is a case however
++	 * where we've granted a deferred local lock against a cached exclusive
++	 * glock. That is ok provided all granted local locks are deferred, but
++	 * it also means that it is possible to encounter pages which are
++	 * cached and possibly also mapped. So here we check for that and sort
++	 * them out ahead of the dio. The glock state machine will take care of
++	 * everything else.
++	 *
++	 * If in fact the cached glock state (gl->gl_state) is deferred (CW) in
++	 * the first place, mapping->nr_pages will always be zero.
++	 */
++	if (mapping->nrpages) {
++		loff_t lstart = offset & (PAGE_CACHE_SIZE - 1);
++		loff_t len = iov_length(iov, nr_segs);
++		loff_t end = PAGE_ALIGN(offset + len) - 1;
++
++		rv = 0;
++		if (len == 0)
++			goto out;
++		if (test_and_clear_bit(GIF_SW_PAGED, &ip->i_flags))
++			unmap_shared_mapping_range(ip->i_inode.i_mapping, offset, len);
++		rv = filemap_write_and_wait_range(mapping, lstart, end);
++		if (rv)
++			return rv;
++		truncate_inode_pages_range(mapping, lstart, end);
++	}
++
+ 	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
+ 				  offset, nr_segs, gfs2_get_block_direct,
+ 				  NULL, NULL, 0);
 -- 
 1.8.3.2
 
