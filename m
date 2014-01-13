@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075AbaAMQtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:49:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53121 "EHLO
+	id S1756107AbaAMQuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:50:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53111 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571AbaAMQC3 (ORCPT
+	with ESMTP id S1752130AbaAMQC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:29 -0500
+	Mon, 13 Jan 2014 11:02:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 057/208] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
-Date: Mon, 13 Jan 2014 15:58:18 +0000
-Message-Id: <1389628849-1614-58-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 066/208] cpupower: Fix segfault due to incorrect getopt_long arugments
+Date: Mon, 13 Jan 2014 15:58:27 +0000
+Message-Id: <1389628849-1614-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,67 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kirill Tkhai <tkhai@yandex.ru>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
+commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
 
-This patch touches the RT group scheduling case.
+If a user calls 'cpupower set --perf-bias 15', the process will end with
+a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
+call.  This is because the getopt_long structure currently has all of
+the options as having an optional_argument when they really have a
+required argument.  We change the structure to use required_argument to
+match the short options and it resolves the issue.
 
-Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
-priority, while rt_rq passed to them may be not the top-level rt_rq.
-This is wrong, because changing of priority on a child level does not
-guarantee that the priority is the highest all over the rq. So, this
-leak makes RT balancing unusable.
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
 
-The short example: the task having the highest priority among all rq's
-RT tasks (no one other task has the same priority) are waking on a
-throttle rt_rq.  The rq's cpupri is set to the task's priority
-equivalent, but real rq->rt.highest_prio.curr is less.
-
-The patch below fixes the problem.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/rt.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ tools/power/cpupower/utils/cpupower-set.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 01970c8..417b1b3 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -899,6 +899,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
+diff --git a/tools/power/cpupower/utils/cpupower-set.c b/tools/power/cpupower/utils/cpupower-set.c
+index dc4de37..bcf1d2f 100644
+--- a/tools/power/cpupower/utils/cpupower-set.c
++++ b/tools/power/cpupower/utils/cpupower-set.c
+@@ -18,9 +18,9 @@
+ #include "helpers/bitmask.h"
  
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && prio < prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
- }
-@@ -908,6 +915,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
+ static struct option set_opts[] = {
+-	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
+-	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
+-	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
++	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
++	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
++	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
+ 	{ },
+ };
  
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
- }
 -- 
 1.8.3.2
 
