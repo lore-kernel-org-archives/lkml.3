@@ -1,167 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaAMXiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:38:08 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64923 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaAMXiH (ORCPT
+	id S1752668AbaAMXh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:37:26 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47539 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaAMXhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:38:07 -0500
-X-AuditID: 9c93016f-b7c41ae000003ec1-c2-52d478dd9c21
-Date: Tue, 14 Jan 2014 08:38:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH 6/7] zram: remove workqueue for freeing removed pending
- slot
-Message-ID: <20140113233848.GT1992@bbox>
-References: <1389611942-15544-1-git-send-email-minchan@kernel.org>
- <1389611942-15544-7-git-send-email-minchan@kernel.org>
- <20140113194111.GA2322@swordfish>
+	Mon, 13 Jan 2014 18:37:24 -0500
+Date: Mon, 13 Jan 2014 15:37:20 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] fs: __fget_light() can use __fget() in slow path
+Message-ID: <20140113233720.GS10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140107181258.GA29288@redhat.com>
+ <20140108132852.GF10038@linux.vnet.ibm.com>
+ <20140108151918.GA5156@redhat.com>
+ <20140109011650.GI10038@linux.vnet.ibm.com>
+ <20140110153459.GA31491@redhat.com>
+ <20140111063438.GY10038@linux.vnet.ibm.com>
+ <20140111181908.GA7358@redhat.com>
+ <20140111222737.GE10038@linux.vnet.ibm.com>
+ <20140113154748.GA6496@redhat.com>
+ <20140113154906.GD6496@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140113194111.GA2322@swordfish>
+In-Reply-To: <20140113154906.GD6496@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011323-6688-0000-0000-0000057E5330
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sergey,
-
-On Mon, Jan 13, 2014 at 10:42:56PM +0300, Sergey Senozhatsky wrote:
-> On (01/13/14 20:19), Minchan Kim wrote:
-> > [1] introduced free request pending code to avoid scheduling
-> > by mutex under spinlock and it was a mess which made code
-> > lenghty and increased overhead.
-> > 
-> > Now, we don't need zram->lock any more to free slot so
-> > this patch reverts it and then, tb_lock should protect it.
-> > 
-> > [1] a0c516c, zram: don't grab mutex in zram_slot_free_noity
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  drivers/block/zram/zram_drv.c | 54 +++++--------------------------------------
-> >  drivers/block/zram/zram_drv.h | 10 --------
-> >  2 files changed, 6 insertions(+), 58 deletions(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 24e6426..f1a3c95 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -522,20 +522,6 @@ out:
-> >  	return ret;
-> >  }
-> >  
-> > -static void handle_pending_slot_free(struct zram *zram)
-> > -{
-> > -	struct zram_slot_free *free_rq;
-> > -
-> > -	spin_lock(&zram->slot_free_lock);
-> > -	while (zram->slot_free_rq) {
-> > -		free_rq = zram->slot_free_rq;
-> > -		zram->slot_free_rq = free_rq->next;
-> > -		zram_free_page(zram, free_rq->index);
-> > -		kfree(free_rq);
-> > -	}
-> > -	spin_unlock(&zram->slot_free_lock);
-> > -}
-> > -
-> >  static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  			int offset, struct bio *bio, int rw)
-> >  {
-> > @@ -547,7 +533,6 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  		up_read(&zram->lock);
-> >  	} else {
-> >  		down_write(&zram->lock);
-> > -		handle_pending_slot_free(zram);
-> >  		ret = zram_bvec_write(zram, bvec, index, offset);
-> >  		up_write(&zram->lock);
-> >  	}
-> > @@ -566,8 +551,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >  		return;
-> >  	}
-> >  
-> > -	flush_work(&zram->free_work);
-> > -
-> >  	meta = zram->meta;
-> >  	zram->init_done = 0;
-> >  
-> > @@ -769,40 +752,19 @@ error:
-> >  	bio_io_error(bio);
-> >  }
-> >  
-> > -static void zram_slot_free(struct work_struct *work)
-> > -{
-> > -	struct zram *zram;
-> > -
-> > -	zram = container_of(work, struct zram, free_work);
-> > -	down_write(&zram->lock);
-> > -	handle_pending_slot_free(zram);
-> > -	up_write(&zram->lock);
-> > -}
-> > -
-> > -static void add_slot_free(struct zram *zram, struct zram_slot_free *free_rq)
-> > -{
-> > -	spin_lock(&zram->slot_free_lock);
-> > -	free_rq->next = zram->slot_free_rq;
-> > -	zram->slot_free_rq = free_rq;
-> > -	spin_unlock(&zram->slot_free_lock);
-> > -}
-> > -
-> >  static void zram_slot_free_notify(struct block_device *bdev,
-> >  				unsigned long index)
-> >  {
-> >  	struct zram *zram;
-> > -	struct zram_slot_free *free_rq;
-> > +	struct zram_meta *meta;
-> >  
-> >  	zram = bdev->bd_disk->private_data;
-> > -	atomic64_inc(&zram->stats.notify_free);
-> > -
-> > -	free_rq = kmalloc(sizeof(struct zram_slot_free), GFP_ATOMIC);
-> > -	if (!free_rq)
-> > -		return;
-> > +	meta = zram->meta;
-> >  
-> > -	free_rq->index = index;
-> > -	add_slot_free(zram, free_rq);
-> > -	schedule_work(&zram->free_work);
-> > +	write_lock(&meta->tb_lock);
-> > +	zram_free_page(zram, index);
-> > +	write_unlock(&meta->tb_lock);
-> > +	atomic64_inc(&zram->stats.notify_free);
-> >  }
-> >  
+On Mon, Jan 13, 2014 at 04:49:06PM +0100, Oleg Nesterov wrote:
+> The slow path in __fget_light() can use __fget() to avoid the
+> code duplication. Saves 232 bytes.
 > 
-> Hello Minchan,
-> I think we need to down_write init_lock in zram_slot_free_notify(),
-> and thus can avoid locking meta->tb_lock. otherwise, I think,
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-zram_slot_free_notify is atomic path so we couldn't hold mutex.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> there is a chance that zram_slot_free_notify() can race with
-> device reset, e.g.
-> 	
-> 	zram_slot_free_notify()			zram_reset_device()
-> 						down_write(&zram->init_lock);
-> 	meta = zram->meta
-> 						zram_meta_free(zram->meta);
-> 						zram->meta = NULL;
-> 	write_lock(&meta->tb_lock);
-> 	[...]
-> 	write_unlock(&meta->tb_lock);
-> 						[..]
-> 						up_write(&zram->init_lock);
+> ---
+>  fs/file.c |   14 +++-----------
+>  1 files changed, 3 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/file.c b/fs/file.c
+> index 50c1208..771578b 100644
+> --- a/fs/file.c
+> +++ b/fs/file.c
+> @@ -694,17 +694,9 @@ struct file *__fget_light(unsigned int fd, fmode_t mask, int *fput_needed)
+>  		if (file && (file->f_mode & mask))
+>  			file = NULL;
+>  	} else {
+> -		rcu_read_lock();
+> -		file = fcheck_files(files, fd);
+> -		if (file) {
+> -			if (!(file->f_mode & mask) &&
+> -			    atomic_long_inc_not_zero(&file->f_count))
+> -				*fput_needed = 1;
+> -			else
+> -				/* Didn't get the reference, someone's freed */
+> -				file = NULL;
+> -		}
+> -		rcu_read_unlock();
+> +		file = __fget(fd, mask);
+> +		if (file)
+> +			*fput_needed = 1;
+>  	}
+> 
+>  	return file;
+> -- 
+> 1.5.5.1
+> 
 > 
 
-Nope. We couldn't reset active device by bdev->bd_holders check
-logic in reset_store.
-
-
-> 	-ss
--- 
-Kind regards,
-Minchan Kim
