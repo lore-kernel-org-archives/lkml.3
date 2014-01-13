@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaAMUvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:51:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40461 "EHLO
+	id S1752915AbaAMUvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:51:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40456 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262AbaAMUsL (ORCPT
+	with ESMTP id S1752219AbaAMUsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 15:48:11 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 29/38] perf tools: Add test for building detached source tarballs
-Date: Mon, 13 Jan 2014 17:47:30 -0300
-Message-Id: <1389646059-24881-30-git-send-email-acme@infradead.org>
+Subject: [PATCH 23/38] perf report: Move histogram entries collapsing to separate function
+Date: Mon, 13 Jan 2014 17:47:24 -0300
+Message-Id: <1389646059-24881-24-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -31,16 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Test one of the main kernel Makefile targets to generate a perf sources
-tarball suitable for build outside the full kernel sources.
-
-This is to test that the tools/perf/MANIFEST file lists all the files
-needed to be in such tarball, which sometimes gets broken when we move
-files around, like when we made some files that were in tools/perf/
-available to other tools/ codebases by moving it to tools/include/, etc.
-
-Now everytime we use 'make -C tools/perf -f tests/make' this test will
-be performed, helping detect such problems earlier in the devel cycle.
+Further uncluttering the main 'report' function by group related code in
+separate function.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -51,64 +43,108 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-gyivwbbu2j7c4j4pwpmttg2p@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-b594zsbwke8khir13kudwqmj@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/make               | 10 ++++++++--
- tools/perf/tests/perf-targz-src-pkg | 21 +++++++++++++++++++++
- 2 files changed, 29 insertions(+), 2 deletions(-)
- create mode 100755 tools/perf/tests/perf-targz-src-pkg
+ tools/perf/builtin-report.c | 73 ++++++++++++++++++++++++++++-----------------
+ 1 file changed, 45 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-index e341088de8f3..00544b8b644b 100644
---- a/tools/perf/tests/make
-+++ b/tools/perf/tests/make
-@@ -216,10 +216,16 @@ $(run_O):
- 	rm -rf $$TMP_O \
- 	rm -rf $$TMP_DEST
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 03941ad8fc46..cff9465847f2 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -486,13 +486,55 @@ static int report__browse_hists(struct report *rep)
+ 	return ret;
+ }
  
--all: $(run) $(run_O)
-+tarpkg:
-+	@cmd="$(PERF)/tests/perf-targz-src-pkg $(PERF)"; \
-+	echo "- $@: $$cmd" && echo $$cmd > $@ && \
-+	( eval $$cmd ) >> $@ 2>&1
-+	
++static u64 report__collapse_hists(struct report *rep)
++{
++	struct ui_progress prog;
++	struct perf_evsel *pos;
++	u64 nr_samples = 0;
++	/*
++ 	 * Count number of histogram entries to use when showing progress,
++ 	 * reusing nr_samples variable.
++ 	 */
++	list_for_each_entry(pos, &rep->session->evlist->entries, node)
++		nr_samples += pos->hists.nr_entries;
 +
-+all: $(run) $(run_O) tarpkg
- 	@echo OK
- 
- out: $(run_O)
- 	@echo OK
- 
--.PHONY: all $(run) $(run_O) clean
-+.PHONY: all $(run) $(run_O) tarpkg clean
-diff --git a/tools/perf/tests/perf-targz-src-pkg b/tools/perf/tests/perf-targz-src-pkg
-new file mode 100755
-index 000000000000..238aa3927c71
---- /dev/null
-+++ b/tools/perf/tests/perf-targz-src-pkg
-@@ -0,0 +1,21 @@
-+#!/bin/sh
-+# Test one of the main kernel Makefile targets to generate a perf sources tarball
-+# suitable for build outside the full kernel sources.
-+#
-+# This is to test that the tools/perf/MANIFEST file lists all the files needed to
-+# be in such tarball, which sometimes gets broken when we move files around,
-+# like when we made some files that were in tools/perf/ available to other tools/
-+# codebases by moving it to tools/include/, etc.
++	ui_progress__init(&prog, nr_samples, "Merging related events...");
++	/*
++	 * Count total number of samples, will be used to check if this
++ 	 * session had any.
++ 	 */
++	nr_samples = 0;
 +
-+PERF=$1
-+cd ${PERF}/../..
-+make perf-targz-src-pkg > /dev/null
-+TARBALL=$(ls -rt perf-*.tar.gz)
-+TMP_DEST=$(mktemp -d)
-+tar xf ${TARBALL} -C $TMP_DEST
-+rm -f ${TARBALL}
-+cd - > /dev/null
-+make -C $TMP_DEST/perf*/tools/perf > /dev/null 2>&1
-+RC=$?
-+rm -rf ${TMP_DEST}
-+exit $RC
++	list_for_each_entry(pos, &rep->session->evlist->entries, node) {
++		struct hists *hists = &pos->hists;
++
++		if (pos->idx == 0)
++			hists->symbol_filter_str = rep->symbol_filter_str;
++
++		hists__collapse_resort(hists, &prog);
++		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
++
++		/* Non-group events are considered as leader */
++		if (symbol_conf.event_group &&
++		    !perf_evsel__is_group_leader(pos)) {
++			struct hists *leader_hists = &pos->leader->hists;
++
++			hists__match(leader_hists, hists);
++			hists__link(leader_hists, hists);
++		}
++	}
++
++	ui_progress__finish();
++
++	return nr_samples;
++}
++
+ static int __cmd_report(struct report *rep)
+ {
+-	int ret = -EINVAL;
++	int ret;
+ 	u64 nr_samples;
+ 	struct perf_session *session = rep->session;
+ 	struct perf_evsel *pos;
+-	struct ui_progress prog;
+ 	struct perf_data_file *file = session->file;
+ 
+ 	signal(SIGINT, sig_handler);
+@@ -530,32 +572,7 @@ static int __cmd_report(struct report *rep)
+ 		}
+ 	}
+ 
+-	nr_samples = 0;
+-	list_for_each_entry(pos, &session->evlist->entries, node)
+-		nr_samples += pos->hists.nr_entries;
+-
+-	ui_progress__init(&prog, nr_samples, "Merging related events...");
+-
+-	nr_samples = 0;
+-	list_for_each_entry(pos, &session->evlist->entries, node) {
+-		struct hists *hists = &pos->hists;
+-
+-		if (pos->idx == 0)
+-			hists->symbol_filter_str = rep->symbol_filter_str;
+-
+-		hists__collapse_resort(hists, &prog);
+-		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+-
+-		/* Non-group events are considered as leader */
+-		if (symbol_conf.event_group &&
+-		    !perf_evsel__is_group_leader(pos)) {
+-			struct hists *leader_hists = &pos->leader->hists;
+-
+-			hists__match(leader_hists, hists);
+-			hists__link(leader_hists, hists);
+-		}
+-	}
+-	ui_progress__finish();
++	nr_samples = report__collapse_hists(rep);
+ 
+ 	if (session_done())
+ 		return 0;
 -- 
 1.8.1.4
 
