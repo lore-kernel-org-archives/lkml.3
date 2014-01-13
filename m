@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaAMPtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:49:19 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:59774 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751527AbaAMPtP (ORCPT
+	id S1752172AbaAMPtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:49:41 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48265 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaAMPtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:49:15 -0500
-Date: Mon, 13 Jan 2014 15:49:09 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an
- arbitrary pagetable
-Message-ID: <20140113154909.GI3256@console-pimps.org>
-References: <1389473370-1940-1-git-send-email-bp@alien8.de>
- <1389473370-1940-2-git-send-email-bp@alien8.de>
+	Mon, 13 Jan 2014 10:49:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389473370-1940-2-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140113154555.GR31570@twins.programming.kicks-ass.net>
+References: <1389176153-3128-2-git-send-email-eranian@google.com>
+	<tip-f3ae75de98c4bac145a87d830c156c96f9414022@git.kernel.org>
+	<20140113154555.GR31570@twins.programming.kicks-ass.net>
+Date: Mon, 13 Jan 2014 16:49:01 +0100
+Message-ID: <CABPqkBTjzwjB9m_5jAjHV=iNuwt3os44p=SSxs7pT7PwmJ+Khw@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf/x86: Fix active_entry initialization
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan, at 09:49:27PM, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> With reusing the ->trampoline_pgd page table for mapping EFI regions in
-> order to use them after having switched to EFI virtual mode, it is very
-> useful to be able to dump aforementioned page table in dmesg. This adds
-> that functionality through the walk_pgd_level() interface which can be
-> called from somewhere else.
-> 
-> The original functionality of dumping to debugfs remains untouched.
-> 
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/include/asm/pgtable.h |  3 +-
->  arch/x86/mm/dump_pagetables.c  | 77 ++++++++++++++++++++++++++++--------------
->  2 files changed, 53 insertions(+), 27 deletions(-)
+On Mon, Jan 13, 2014 at 4:45 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> On Sun, Jan 12, 2014 at 10:42:47AM -0800, tip-bot for Stephane Eranian wrote:
+> > -     union {
+> > -             struct hlist_node       hlist_entry;
+> > -             struct list_head        active_entry;
+> > -     };
+> > +     struct hlist_node               hlist_entry;
+> > +     struct list_head                active_entry;
+>
+> Fwiw, we could probably stick both of those in hw_perf_event.
+>
+> the software event's hrtimer isn't the biggest entry anymore, so we
+> could add the hlist_entry in there, and we can start a new entry for
+> RAPL events.
 
-[...]
-
-> @@ -296,7 +316,7 @@ static void walk_pud_level(struct seq_file *m, struct pg_state *st, pgd_t addr,
->  #define pgd_none(a)  pud_none(__pud(pgd_val(a)))
->  #endif
->  
-> -static void walk_pgd_level(struct seq_file *m)
-> +void walk_pgd_level(struct seq_file *m, pgd_t *pgd)
->  {
-
-If you're going to start exporting this function, might I suggest
-renaming it something like ptdump_walk_pgd_level()?
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Yeah, that would be possible.
+The other thing I noticed too in another uncore patch I am preparing is
+that we could also use that active_entry to avoid tracking association
+of uncore events to counters to update them in the hrtimer routine.
+All we need there is the list of active event on the uncore PMU and
+we iterate over them.
