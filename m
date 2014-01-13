@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaAMMth (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 07:49:37 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:48914 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaAMMtL (ORCPT
+	id S1751547AbaAMMzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 07:55:52 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:59807 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259AbaAMMzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 07:49:11 -0500
-From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, qiuxishi@huawei.com, dhowells@redhat.com,
-        daeseok.youn@gmail.com, liuj97@gmail.com, yinghai@kernel.org,
-        phacht@linux.vnet.ibm.com, zhangyanfei@cn.fujitsu.com,
-        santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
-        tangchen@cn.fujitsu.com
-Subject: [PATCH V2 0/2] mm/memblock: Excluded memory, free_all_bootmem
-Date: Mon, 13 Jan 2014 13:48:59 +0100
-Message-Id: <1389617341-568-1-git-send-email-phacht@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.4.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011312-2966-0000-0000-000009EB02B6
+	Mon, 13 Jan 2014 07:55:47 -0500
+Message-ID: <52D3E253.9090901@linaro.org>
+Date: Mon, 13 Jan 2014 13:55:47 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, preeti.lkml@gmail.com
+Subject: Re: [PATCH V2 0/8] sched: cleanup trigger_load_balance
+References: <1389008085-9069-1-git-send-email-daniel.lezcano@linaro.org> <20140106123219.GI31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140106123219.GI31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two patches fit (only) on top of linux-next!
+On 01/06/2014 01:32 PM, Peter Zijlstra wrote:
+> On Mon, Jan 06, 2014 at 12:34:37PM +0100, Daniel Lezcano wrote:
+>> This patchset does a cleanup on the parameters passed from the function
+>> 'trigger_load_balance' to the underneath functions.
+>
+> Whee.. it applies ;-)
 
-The first patch changes back the behavior of free_all_bootmem() to
-a more generic way: With CONFIG_DISCARD_MEMBLOCK memblock.memory
-and memblock.reserved will be freed (if allocated, of course).
-Removed the debugfs dependency. Think this is cleaner.
+Hi Peter,
 
-While further working on the s390 migration to memblock it is desirable
-to have memblock support unmapped (i.e. completely forgotten and unused)
-memory areas. The usual way of just forgetting about them by means of
-truncating the memblocks does not work for us because we still need the
-information about the real full memory structure at a later time.
+do you consider it for upstream ?
 
-Philipp Hachtmann (2):
-  mm/nobootmem: free_all_bootmem again
-  mm/memblock: Add support for excluded memory areas
 
- include/linux/memblock.h |  50 +++++++--
- mm/Kconfig               |   3 +
- mm/memblock.c            | 276 ++++++++++++++++++++++++++++++++++-------------
- mm/nobootmem.c           |  13 ++-
- 4 files changed, 255 insertions(+), 87 deletions(-)
+Thanks
+   -- Daniel
 
 -- 
-1.8.4.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
