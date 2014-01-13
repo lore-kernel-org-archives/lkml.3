@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbaAMQKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:10:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53825 "EHLO
+	id S1755063AbaAMQKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:10:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53820 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaAMQFb (ORCPT
+	with ESMTP id S1754634AbaAMQFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:31 -0500
+	Mon, 13 Jan 2014 11:05:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Guinot <sguinot@lacie.com>, Tejun Heo <tj@kernel.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 199/208] ahci: add PCI ID for Marvell 88SE9170 SATA controller
-Date: Mon, 13 Jan 2014 16:00:40 +0000
-Message-Id: <1389628849-1614-200-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 198/208] mac80211: move "bufferable MMPDU" check to fix AP mode scan
+Date: Mon, 13 Jan 2014 16:00:39 +0000
+Message-Id: <1389628849-1614-199-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <sguinot@lacie.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e098f5cbe9d410e7878b50f524dce36cc83ec40e upstream.
+commit 277d916fc2e959c3f106904116bb4f7b1148d47a upstream.
 
-This patch adds support for the PCI ID provided by the Marvell 88SE9170
-SATA controller.
+The check needs to apply to both multicast and unicast packets,
+otherwise probe requests on AP mode scans are sent through the multicast
+buffer queue, which adds long delays (often longer than the scanning
+interval).
 
-Signed-off-by: Simon Guinot <sguinot@lacie.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/mac80211/tx.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 7e4de82..54bf3f8 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -427,6 +427,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9125),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_MARVELL_EXT, 0x9178,
-+			 PCI_VENDOR_ID_MARVELL_EXT, 0x9170),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9170 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 4438aed..ebd9471 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -448,7 +448,6 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ {
+ 	struct sta_info *sta = tx->sta;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+ 	struct ieee80211_local *local = tx->local;
+ 
+ 	if (unlikely(!sta))
+@@ -459,15 +458,6 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
+ 		int ac = skb_get_queue_mapping(tx->skb);
+ 
+-		/* only deauth, disassoc and action are bufferable MMPDUs */
+-		if (ieee80211_is_mgmt(hdr->frame_control) &&
+-		    !ieee80211_is_deauth(hdr->frame_control) &&
+-		    !ieee80211_is_disassoc(hdr->frame_control) &&
+-		    !ieee80211_is_action(hdr->frame_control)) {
+-			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
+-			return TX_CONTINUE;
+-		}
+-
+ 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+@@ -510,9 +500,22 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ static ieee80211_tx_result debug_noinline
+ ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+ {
++	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
++	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
++
+ 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
+ 		return TX_CONTINUE;
+ 
++	/* only deauth, disassoc and action are bufferable MMPDUs */
++	if (ieee80211_is_mgmt(hdr->frame_control) &&
++	    !ieee80211_is_deauth(hdr->frame_control) &&
++	    !ieee80211_is_disassoc(hdr->frame_control) &&
++	    !ieee80211_is_action(hdr->frame_control)) {
++		if (tx->flags & IEEE80211_TX_UNICAST)
++			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
++		return TX_CONTINUE;
++	}
++
+ 	if (tx->flags & IEEE80211_TX_UNICAST)
+ 		return ieee80211_tx_h_unicast_ps_buf(tx);
+ 	else
 -- 
 1.8.3.2
 
