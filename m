@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128AbaAMQvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:51:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53085 "EHLO
+	id S1756146AbaAMQwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:52:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488AbaAMQCV (ORCPT
+	with ESMTP id S1753635AbaAMQCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:21 -0500
+	Mon, 13 Jan 2014 11:02:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jie Liu <jeff.liu@oracle.com>, Ben Myers <bpm@sgi.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 062/208] serial: 8250_dw: add new ACPI IDs
-Date: Mon, 13 Jan 2014 15:58:23 +0000
-Message-Id: <1389628849-1614-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 060/208] xfs: fix infinite loop by detaching the group/project hints from user dquot
+Date: Mon, 13 Jan 2014 15:58:21 +0000
+Message-Id: <1389628849-1614-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +27,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Jie Liu <jeff.liu@oracle.com>
 
-commit d24c195f90cb1adb178d26d84c722d4b9e551e05 upstream.
+commit 718cc6f88cbfc4fbd39609f28c4c86883945f90d upstream.
 
-Newer Intel PCHs with LPSS have the same Designware controllers than
-Haswell but ACPI IDs are different. Add these IDs to the driver list.
+xfs_quota(8) will hang up if trying to turn group/project quota off
+before the user quota is off, this could be 100% reproduced by:
+  # mount -ouquota,gquota /dev/sda7 /xfs
+  # mkdir /xfs/test
+  # xfs_quota -xc 'off -g' /xfs <-- hangs up
+  # echo w > /proc/sysrq-trigger
+  # dmesg
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  SysRq : Show Blocked State
+  task                        PC stack   pid father
+  xfs_quota       D 0000000000000000     0 27574   2551 0x00000000
+  [snip]
+  Call Trace:
+  [<ffffffff81aaa21d>] schedule+0xad/0xc0
+  [<ffffffff81aa327e>] schedule_timeout+0x35e/0x3c0
+  [<ffffffff8114b506>] ? mark_held_locks+0x176/0x1c0
+  [<ffffffff810ad6c0>] ? call_timer_fn+0x2c0/0x2c0
+  [<ffffffffa0c25380>] ? xfs_qm_shrink_count+0x30/0x30 [xfs]
+  [<ffffffff81aa3306>] schedule_timeout_uninterruptible+0x26/0x30
+  [<ffffffffa0c26155>] xfs_qm_dquot_walk+0x235/0x260 [xfs]
+  [<ffffffffa0c059d8>] ? xfs_perag_get+0x1d8/0x2d0 [xfs]
+  [<ffffffffa0c05805>] ? xfs_perag_get+0x5/0x2d0 [xfs]
+  [<ffffffffa0b7707e>] ? xfs_inode_ag_iterator+0xae/0xf0 [xfs]
+  [<ffffffffa0c22280>] ? xfs_trans_free_dqinfo+0x50/0x50 [xfs]
+  [<ffffffffa0b7709f>] ? xfs_inode_ag_iterator+0xcf/0xf0 [xfs]
+  [<ffffffffa0c261e6>] xfs_qm_dqpurge_all+0x66/0xb0 [xfs]
+  [<ffffffffa0c2497a>] xfs_qm_scall_quotaoff+0x20a/0x5f0 [xfs]
+  [<ffffffffa0c2b8f6>] xfs_fs_set_xstate+0x136/0x180 [xfs]
+  [<ffffffff8136cf7a>] do_quotactl+0x53a/0x6b0
+  [<ffffffff812fba4b>] ? iput+0x5b/0x90
+  [<ffffffff8136d257>] SyS_quotactl+0x167/0x1d0
+  [<ffffffff814cf2ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81abcd19>] system_call_fastpath+0x16/0x1b
+
+It's fine if we turn user quota off at first, then turn off other
+kind of quotas if they are enabled since the group/project dquot
+refcount is decreased to zero once the user quota if off. Otherwise,
+those dquots refcount is non-zero due to the user dquot might refer
+to them as hint(s).  Hence, above operation cause an infinite loop
+at xfs_qm_dquot_walk() while trying to purge dquot cache.
+
+This problem has been around since Linux 3.4, it was introduced by:
+  [ b84a3a9675 xfs: remove the per-filesystem list of dquots ]
+
+Originally we will release the group dquot pointers because the user
+dquots maybe carrying around as a hint via xfs_qm_detach_gdquots().
+However, with above change, there is no such work to be done before
+purging group/project dquot cache.
+
+In order to solve this problem, this patch introduces a special routine
+xfs_qm_dqpurge_hints(), and it would release the group/project dquot
+pointers the user dquots maybe carrying around as a hint, and then it
+will proceed to purge the user dquot cache if requested.
+
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/8250/8250_dw.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/xfs/xfs_qm.c | 71 ++++++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 50 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 76a8daa..b8cacb8 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -399,6 +399,8 @@ MODULE_DEVICE_TABLE(of, dw8250_of_match);
- static const struct acpi_device_id dw8250_acpi_match[] = {
- 	{ "INT33C4", 0 },
- 	{ "INT33C5", 0 },
-+	{ "INT3434", 0 },
-+	{ "INT3435", 0 },
- 	{ "80860F0A", 0 },
- 	{ },
- };
+diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+index d320794..c175029 100644
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -136,8 +136,6 @@ xfs_qm_dqpurge(
+ {
+ 	struct xfs_mount	*mp = dqp->q_mount;
+ 	struct xfs_quotainfo	*qi = mp->m_quotainfo;
+-	struct xfs_dquot	*gdqp = NULL;
+-	struct xfs_dquot	*pdqp = NULL;
+ 
+ 	xfs_dqlock(dqp);
+ 	if ((dqp->dq_flags & XFS_DQ_FREEING) || dqp->q_nrefs != 0) {
+@@ -145,21 +143,6 @@ xfs_qm_dqpurge(
+ 		return EAGAIN;
+ 	}
+ 
+-	/*
+-	 * If this quota has a hint attached, prepare for releasing it now.
+-	 */
+-	gdqp = dqp->q_gdquot;
+-	if (gdqp) {
+-		xfs_dqlock(gdqp);
+-		dqp->q_gdquot = NULL;
+-	}
+-
+-	pdqp = dqp->q_pdquot;
+-	if (pdqp) {
+-		xfs_dqlock(pdqp);
+-		dqp->q_pdquot = NULL;
+-	}
+-
+ 	dqp->dq_flags |= XFS_DQ_FREEING;
+ 
+ 	xfs_dqflock(dqp);
+@@ -211,11 +194,47 @@ xfs_qm_dqpurge(
+ 	mutex_unlock(&qi->qi_lru_lock);
+ 
+ 	xfs_qm_dqdestroy(dqp);
++	return 0;
++}
++
++/*
++ * Release the group or project dquot pointers the user dquots maybe carrying
++ * around as a hint, and proceed to purge the user dquot cache if requested.
++*/
++STATIC int
++xfs_qm_dqpurge_hints(
++	struct xfs_dquot	*dqp,
++	void			*data)
++{
++	struct xfs_dquot	*gdqp = NULL;
++	struct xfs_dquot	*pdqp = NULL;
++	uint			flags = *((uint *)data);
+ 
++	xfs_dqlock(dqp);
++	if (dqp->dq_flags & XFS_DQ_FREEING) {
++		xfs_dqunlock(dqp);
++		return EAGAIN;
++	}
++
++	/* If this quota has a hint attached, prepare for releasing it now */
++	gdqp = dqp->q_gdquot;
+ 	if (gdqp)
+-		xfs_qm_dqput(gdqp);
++		dqp->q_gdquot = NULL;
++
++	pdqp = dqp->q_pdquot;
+ 	if (pdqp)
+-		xfs_qm_dqput(pdqp);
++		dqp->q_pdquot = NULL;
++
++	xfs_dqunlock(dqp);
++
++	if (gdqp)
++		xfs_qm_dqrele(gdqp);
++	if (pdqp)
++		xfs_qm_dqrele(pdqp);
++
++	if (flags & XFS_QMOPT_UQUOTA)
++		return xfs_qm_dqpurge(dqp, NULL);
++
+ 	return 0;
+ }
+ 
+@@ -227,8 +246,18 @@ xfs_qm_dqpurge_all(
+ 	struct xfs_mount	*mp,
+ 	uint			flags)
+ {
+-	if (flags & XFS_QMOPT_UQUOTA)
+-		xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge, NULL);
++	/*
++	 * We have to release group/project dquot hint(s) from the user dquot
++	 * at first if they are there, otherwise we would run into an infinite
++	 * loop while walking through radix tree to purge other type of dquots
++	 * since their refcount is not zero if the user dquot refers to them
++	 * as hint.
++	 *
++	 * Call the special xfs_qm_dqpurge_hints() will end up go through the
++	 * general xfs_qm_dqpurge() against user dquot cache if requested.
++	 */
++	xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge_hints, &flags);
++
+ 	if (flags & XFS_QMOPT_GQUOTA)
+ 		xfs_qm_dquot_walk(mp, XFS_DQ_GROUP, xfs_qm_dqpurge, NULL);
+ 	if (flags & XFS_QMOPT_PQUOTA)
 -- 
 1.8.3.2
 
