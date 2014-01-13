@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaAMSPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:15:08 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:58786 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaAMSPE (ORCPT
+	id S1752552AbaAMSPZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:15:25 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:39957 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaAMSPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:15:04 -0500
-Date: Mon, 13 Jan 2014 15:14:58 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: perf probe: Build error with missing libraries
-Message-ID: <20140113181458.GE5318@ghostprotocols.net>
-References: <20140113180400.GD5318@ghostprotocols.net>
+	Mon, 13 Jan 2014 13:15:21 -0500
+Message-ID: <52D42D36.1020400@linaro.org>
+Date: Mon, 13 Jan 2014 10:15:18 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140113180400.GD5318@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Cochran <richardcochran@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
+ better w/ nohz
+References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org> <20140113175114.GA4271@netboy>
+In-Reply-To: <20140113175114.GA4271@netboy>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 13, 2014 at 03:04:00PM -0300, Arnaldo Carvalho de Melo escreveu:
-> On a Ubuntu system just installed (13.10, x86_64), I'm installing the
-> devel libs one by one to check if there are problems with the automatic
-> disabling of features that requires libraries not installed.
- 
-> Stumbled at this:
- 
-> util/probe-event.c: At top level:
-> util/probe-event.c:193:12: error: ‘get_text_start_address’ defined but
-> not used [-Werror=unused-function]
+On 01/13/2014 09:51 AM, Richard Cochran wrote:
+> On Mon, Jan 06, 2014 at 07:57:03PM -0800, John Stultz wrote:
+>> I still think this is probably 3.15 or later material, but I'd be
+>> very interested in feedback, thoughts, and testing.
+> Over the weekend I did a short test of this new approach. I compiled
+> two kernels, one plain v3.12.7 and one with the proposed fix. The
+> test was run on three different kernel variants, the current nohz
+> kernel, the same with nohz=off, and the same but with John's patch.
+>
+> I used a simple test script (see below). Using a PCIe express card as
+> a PHC, the Intel Corporation 82574L, I simply let the this clock run
+> free (not sync'ed to gps or anything), and then synchronized the Linux
+> system clock to the PHC using the phc2sys program with a sample rate
+> of once every 32 seconds. Each of the tests ran for at least three
+> hours on a system without any other load.
+>
+> - Linux 3.12.7-nohz-plain-20140106                nohz-plain.log
+> - Linux 3.12.7-nohz-plain-20140106 NOHZ=OFF       periodic-plain.log
+> - Linux 3.12.7-nohz-fix-20140106-00001-gd753140   nohz-fix.log
+>
+> The performance in the log files as reflected in the clock offset is
+> summarized in this table. The values are in nanoseconds.
+>
+>  |         | periodic-plain |      nohz-fix |    nohz-plain |
+>  |---------+----------------+---------------+---------------|
+>  | minimum |  -1.599000e+03 | -1.051000e+03 | -5.373700e+04 |
+>  | maximum |  +1.311000e+03 | +1.048000e+03 | +6.389500e+04 |
+>  | mean    |  +9.880240e-02 | -7.747305e+01 | +1.597904e+01 |
+>  | stddev  |  +4.610021e+02 | +3.960978e+02 | +1.491263e+04 |
+>
+> I also made two graphs.
+>
+>    http://linuxptp.sourceforge.net/nohz-fix/current_nohz.png
+>    http://linuxptp.sourceforge.net/nohz-fix/periodic_vs_fix.png
+>
+> (The log files and scripts are also in that directory.)
+>
+> So in this test, it looks like the new approach performed at least as
+> well as using regular, periodic ticks.
 
-> Investigating...
+That's great to hear! Thanks so much, I really appreciate the testing!
+And this is with HZ=?
 
-This patch below fixes it, applying.
+If you do get a chance to look again, I'd also be interested if running
+with nohz=off w/ the fix doesn't show any regression compared to the
+unmodified nohz=off case.
 
-Jiri, this is something else for the give-me-more-ponies list for
-tests/make: build it on freshly provisioned systems with multiple mixes
-of devel packages installed ;-)
+I've been trying to validate the ntpd case to ensure there aren't
+regressions when there's more erratic steering, but unfortunately got
+side-tracked with what seems to be an ntpd/virtualization issue.
 
-- Arnaldo
+thanks
+-john
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 86ed858..a4ee6b4 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -172,6 +172,7 @@ const char *kernel_get_module_path(const char *module)
- 	return (dso) ? dso->long_name : NULL;
- }
- 
-+#ifdef HAVE_DWARF_SUPPORT
- /* Copied from unwind.c */
- static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- 				    GElf_Shdr *shp, const char *name)
-@@ -217,6 +218,7 @@ out:
- 	elf_end(elf);
- 	return ret;
- }
-+#endif
- 
- static int init_user_exec(void)
- {
-@@ -750,7 +752,8 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 				struct probe_trace_event **tevs __maybe_unused,
--				int max_tevs __maybe_unused, const char *target)
-+				int max_tevs __maybe_unused,
-+				const char *target __maybe_unused)
- {
- 	if (perf_probe_event_need_dwarf(pev)) {
- 		pr_warning("Debuginfo-analysis is not supported.\n");
+
+
+
+
+
+
