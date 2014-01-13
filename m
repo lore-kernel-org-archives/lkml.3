@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaAMQFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:05:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53702 "EHLO
+	id S1754607AbaAMQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:05:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53725 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489AbaAMQE7 (ORCPT
+	with ESMTP id S1754561AbaAMQFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:59 -0500
+	Mon, 13 Jan 2014 11:05:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nat Gurumoorthy <natg@google.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 176/208] tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
-Date: Mon, 13 Jan 2014 16:00:17 +0000
-Message-Id: <1389628849-1614-177-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 181/208] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+Date: Mon, 13 Jan 2014 16:00:22 +0000
+Message-Id: <1389628849-1614-182-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,40 +28,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nat Gurumoorthy <natg@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 388d3335575f4c056dcf7138a30f1454e2145cd8 upstream.
+commit b1aac815c0891fe4a55a6b0b715910142227700f upstream.
 
-The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
-uninitialized. From power on reset this register may have garbage in it. The
-Register Base Address register defines the device local address of a
-register. The data pointed to by this location is read or written using
-the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
-garbage any read or write of Register Data Register (PCI 128) will cause the
-PCI bus to lock up. The TCO watchdog will fire and bring down the system.
+Jakub reported while working with nlmon netlink sniffer that parts of
+the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
+That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
 
-Signed-off-by: Nat Gurumoorthy <natg@google.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
+In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
+memory through this. At least, in udp_dump_one(), we allocate a skb in ...
+
+  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
+
+... and then pass that to inet_sk_diag_fill() that puts the whole struct
+inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
+r->id.idiag_dst[0] and leave the rest untouched:
+
+  r->id.idiag_src[0] = inet->inet_rcv_saddr;
+  r->id.idiag_dst[0] = inet->inet_daddr;
+
+struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
+fully filled out in IPv6 case, but for IPv4 not.
+
+So just zero them out by using plain memset (for this little amount of
+bytes it's probably not worth the extra check for idiag_family == AF_INET).
+
+Similarly, fix also other places where we fill that out.
+
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: used davem's backport to 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/inet_diag.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index e7af885..f9aec90 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -16436,6 +16436,9 @@ static int tg3_get_invariants(struct tg3 *tp, const struct pci_device_id *ent)
- 	/* Clear this out for sanity. */
- 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index 5f64875..31cf54d 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -106,6 +106,10 @@ int inet_sk_diag_fill(struct sock *sk, struct inet_connection_sock *icsk,
  
-+	/* Clear TG3PCI_REG_BASE_ADDR to prevent hangs. */
-+	tw32(TG3PCI_REG_BASE_ADDR, 0);
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = inet->inet_dport;
 +
- 	pci_read_config_dword(tp->pdev, TG3PCI_PCISTATE,
- 			      &pci_state_reg);
- 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
+ 	r->id.idiag_dst[0] = inet->inet_daddr;
+ 
+@@ -240,12 +244,19 @@ static int inet_twsk_diag_fill(struct inet_timewait_sock *tw,
+ 
+ 	r->idiag_family	      = tw->tw_family;
+ 	r->idiag_retrans      = 0;
++
+ 	r->id.idiag_if	      = tw->tw_bound_dev_if;
+ 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
++
+ 	r->id.idiag_sport     = tw->tw_sport;
+ 	r->id.idiag_dport     = tw->tw_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
+ 	r->id.idiag_dst[0]    = tw->tw_daddr;
++
+ 	r->idiag_state	      = tw->tw_substate;
+ 	r->idiag_timer	      = 3;
+ 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
+@@ -732,8 +743,13 @@ static int inet_diag_fill_req(struct sk_buff *skb, struct sock *sk,
+ 
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = ireq->rmt_port;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = ireq->loc_addr;
+ 	r->id.idiag_dst[0] = ireq->rmt_addr;
++
+ 	r->idiag_expires = jiffies_to_msecs(tmo);
+ 	r->idiag_rqueue = 0;
+ 	r->idiag_wqueue = 0;
 -- 
 1.8.3.2
 
