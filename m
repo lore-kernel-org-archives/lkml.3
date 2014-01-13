@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaAMU5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:57:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40395 "EHLO
+	id S1752427AbaAMU5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:57:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40405 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaAMUsI (ORCPT
+	with ESMTP id S1751884AbaAMUsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 15:48:08 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/38] perf stat: Don't show counter information when workload fails
-Date: Mon, 13 Jan 2014 17:47:02 -0300
-Message-Id: <1389646059-24881-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/38] perf tests: Fixup leak on error path in parse events test
+Date: Mon, 13 Jan 2014 17:47:09 -0300
+Message-Id: <1389646059-24881-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -31,40 +31,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-When starting a workload 'stat' wasn't using prepare_workload evlist
-method's signal based exec() error reporting mechanism.
+We need to call the evlist destructor when failing to parse events.
 
-Use it so that the we don't report 'not counted' counters.
-
-Before:
-
-  [acme@zoo linux]$ perf stat dfadsfa
-  dfadsfa: No such file or directory
-
-   Performance counter stats for 'dfadsfa':
-
-       <not counted>      task-clock
-       <not counted>      context-switches
-       <not counted>      cpu-migrations
-       <not counted>      page-faults
-       <not counted>      cycles
-       <not counted>      stalled-cycles-frontend
-     <not supported>      stalled-cycles-backend
-       <not counted>      instructions
-       <not counted>      branches
-       <not counted>      branch-misses
-
-         0.001831462 seconds time elapsed
-
-  [acme@zoo linux]$
-
-After:
-
-  [acme@zoo linux]$ perf stat dfadsfa
-  dfadsfa: No such file or directory
-  [acme@zoo linux]$
-
-Reported-by: David Ahern <dsahern@gmail.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -74,70 +42,30 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-5yui3bv7e3hitxucnjsn6z8q@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ilslu69s7v7bpvdgqtrlp8f5@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c | 26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ tools/perf/tests/parse-events.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 106a5e5b7842..1c76c7a66f78 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -509,6 +509,18 @@ static void handle_initial_delay(void)
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index e4ce8aed29d3..41dee5e67f63 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -1385,10 +1385,10 @@ static int test_event(struct evlist_test *e)
+ 	if (ret) {
+ 		pr_debug("failed to parse event '%s', err %d\n",
+ 			 e->name, ret);
+-		return ret;
++	} else {
++		ret = e->check(evlist);
  	}
- }
+-
+-	ret = e->check(evlist);
++	
+ 	perf_evlist__delete(evlist);
  
-+static volatile bool workload_exec_failed;
-+
-+/*
-+ * perf_evlist__prepare_workload will send a SIGUSR1
-+ * if the fork fails, since we asked by setting its
-+ * want_signal to true.
-+ */
-+static void workload_exec_failed_signal(int signo __maybe_unused)
-+{
-+	workload_exec_failed = true;
-+}
-+
- static int __run_perf_stat(int argc, const char **argv)
- {
- 	char msg[512];
-@@ -529,7 +541,7 @@ static int __run_perf_stat(int argc, const char **argv)
- 
- 	if (forks) {
- 		if (perf_evlist__prepare_workload(evsel_list, &target, argv,
--						  false, false) < 0) {
-+						  false, true) < 0) {
- 			perror("failed to prepare workload");
- 			return -1;
- 		}
-@@ -584,6 +596,14 @@ static int __run_perf_stat(int argc, const char **argv)
- 	clock_gettime(CLOCK_MONOTONIC, &ref_time);
- 
- 	if (forks) {
-+		/*
-+		 * perf_evlist__prepare_workload will, after we call
-+		 * perf_evlist__start_Workload, send a SIGUSR1 if the exec call
-+		 * fails, that we will catch in workload_signal to flip
-+		 * workload_exec_failed.
-+ 		 */
-+		signal(SIGUSR1, workload_exec_failed_signal);
-+
- 		perf_evlist__start_workload(evsel_list);
- 		handle_initial_delay();
- 
-@@ -594,6 +614,10 @@ static int __run_perf_stat(int argc, const char **argv)
- 			}
- 		}
- 		wait(&status);
-+
-+		if (workload_exec_failed)
-+			return -1;
-+
- 		if (WIFSIGNALED(status))
- 			psignal(WTERMSIG(status), argv[0]);
- 	} else {
+ 	return ret;
 -- 
 1.8.1.4
 
