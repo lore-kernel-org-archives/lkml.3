@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbaAMQFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:05:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53801 "EHLO
+	id S1754765AbaAMQFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:05:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53798 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751964AbaAMQFZ (ORCPT
+	with ESMTP id S1754629AbaAMQFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:25 -0500
+	Mon, 13 Jan 2014 11:05:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 193/208] net: llc: fix use after free in llc_ui_recvmsg
-Date: Mon, 13 Jan 2014 16:00:34 +0000
-Message-Id: <1389628849-1614-194-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 194/208] netpoll: Fix missing TXQ unlock and and OOPS.
+Date: Mon, 13 Jan 2014 16:00:35 +0000
+Message-Id: <1389628849-1614-195-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -30,68 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 4d231b76eef6c4a6bd9c96769e191517765942cb upstream.
+commit aca5f58f9ba803ec8c2e6bcf890db17589e8dfcc upstream.
 
-While commit 30a584d944fb fixes datagram interface in LLC, a use
-after free bug has been introduced for SOCK_STREAM sockets that do
-not make use of MSG_PEEK.
+The VLAN tag handling code in netpoll_send_skb_on_dev() has two problems.
 
-The flow is as follow ...
+1) It exits without unlocking the TXQ.
 
-  if (!(flags & MSG_PEEK)) {
-    ...
-    sk_eat_skb(sk, skb, false);
-    ...
-  }
-  ...
-  if (used + offset < skb->len)
-    continue;
+2) It then tries to queue a NULL skb to npinfo->txq.
 
-... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
-original length and work on skb_len to check partial reads.
-
-Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Reported-by: Ahmed Tamrawi <atamrawi@iastate.edu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/llc/af_llc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/core/netpoll.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index 8870988..c3ee805 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	unsigned long cpu_flags;
- 	size_t copied = 0;
- 	u32 peek_seq = 0;
--	u32 *seq;
-+	u32 *seq, skb_len;
- 	unsigned long used;
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
-@@ -812,6 +812,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		}
- 		continue;
- 	found_ok_skb:
-+		skb_len = skb->len;
- 		/* Ok so how much can we use? */
- 		used = skb->len - offset;
- 		if (len < used)
-@@ -844,7 +845,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		}
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index fc75c9e..0c1482c 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -386,8 +386,14 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 					    !vlan_hw_offload_capable(netif_skb_features(skb),
+ 								     skb->vlan_proto)) {
+ 						skb = __vlan_put_tag(skb, skb->vlan_proto, vlan_tx_tag_get(skb));
+-						if (unlikely(!skb))
+-							break;
++						if (unlikely(!skb)) {
++							/* This is actually a packet drop, but we
++							 * don't want the code at the end of this
++							 * function to try and re-queue a NULL skb.
++							 */
++							status = NETDEV_TX_OK;
++							goto unlock_txq;
++						}
+ 						skb->vlan_tci = 0;
+ 					}
  
- 		/* Partial read */
--		if (used + offset < skb->len)
-+		if (used + offset < skb_len)
- 			continue;
- 	} while (len > 0);
+@@ -395,6 +401,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 					if (status == NETDEV_TX_OK)
+ 						txq_trans_update(txq);
+ 				}
++			unlock_txq:
+ 				__netif_tx_unlock(txq);
  
+ 				if (status == NETDEV_TX_OK)
 -- 
 1.8.3.2
 
