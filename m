@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473AbaAMI1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:27:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60911 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291AbaAMI1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:27:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,651,1384329600"; 
-   d="scan'208";a="464173944"
-Message-ID: <52D3A243.5060409@intel.com>
-Date: Mon, 13 Jan 2014 16:22:27 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1751494AbaAMI1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:27:52 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:57968 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaAMI1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 03:27:50 -0500
+Message-ID: <52D3A385.8060504@linaro.org>
+Date: Mon, 13 Jan 2014 09:27:49 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] x86, mpx: extend siginfo structure to include bound
- violation information
-References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-5-git-send-email-qiaowei.ren@intel.com> <20140112093013.GB3664@pd.tnic> <52D2C791.2030802@zytor.com> <20140112170354.GC3655@pd.tnic> <52D358EA.8090800@intel.com>
-In-Reply-To: <52D358EA.8090800@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Axel Lin <axel.lin@ingics.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents/clocksource : new material for 3.14
+References: <52C1479E.80808@linaro.org> <20140112163318.GA21054@gmail.com>
+In-Reply-To: <20140112163318.GA21054@gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 11:09 AM, Ren Qiaowei wrote:
-> On 01/13/2014 01:03 AM, Borislav Petkov wrote:
->> On Sun, Jan 12, 2014 at 08:49:21AM -0800, H. Peter Anvin wrote:
->>> I saw a previous version of the code that did that, and it really
->>> didn't work out well -- it ended up being more complex and slower.
->>
->> I suspected as much.
->>
->> But, we still probably should use the generic struct insn, insn_field,
->> etc and act on them in mpx.c instead of defining our own mpx_insn,
->> mpx_insn_field, X86_MODRM_MOD, etc in the header which are more or less
->> copied from insn.h, right?
->>
->
-> I tried to use generic structure and macro, but many members of generic
-> struct insn are not used for MPX, and except this I have to add one
-> member into this structure. So I define mpx specific struct insn.
->
-> And so I guess only struct insn_field and several macros like X86_XXX
-> may use generic version. Anyway, I will try to use their generic version
-> in next version for this patchset.
->
-Because only struct insn_field and several macros may be replaced with 
-generic version, I guess it maybe be confused easily to include generic 
-insn header. What do you think about it?
+On 01/12/2014 05:33 PM, Ingo Molnar wrote:
 
-Thanks,
-Qiaowei
+[ ... ]
+
+> Pulled into tip:timers/core, thanks Daniel!
+>
+> Note that there was a conflict in drivers/clocksource/clksrc-of.c,
+> caused by interaction with this commit:
+>
+>    4c4b053235fa clocksource: clksrc-of: Do not drop unheld reference on device node
+>
+> I've resolved it, but please double check the end result once I've
+> pushed it all out.
+
+Done. The resolution is ok.
+
+Thanks !
+   -- Daniel
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
