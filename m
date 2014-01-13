@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130AbaAMQHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:07:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64552 "EHLO mx1.redhat.com"
+	id S1754835AbaAMQHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:07:42 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:59200 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631AbaAMQHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:07:17 -0500
-Date: Mon, 13 Jan 2014 17:07:05 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce
-	wait-type checks)
-Message-ID: <20140113160705.GA7616@redhat.com>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net> <20140109175448.GA17673@redhat.com> <20140112205814.GP7572@laptop.programming.kicks-ass.net>
+	id S1754819AbaAMQHi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:07:38 -0500
+Date: Mon, 13 Jan 2014 17:07:07 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 15/28] drm/i2c: tda998x: use the tda998x video format
+ when cea mode
+Message-ID: <20140113170707.10b908dc@armhf>
+In-Reply-To: <20140111181832.GD15937@n2100.arm.linux.org.uk>
+References: <20140109120448.24d89eba@armhf>
+	<20140111181832.GD15937@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140112205814.GP7572@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12, Peter Zijlstra wrote:
->
-> On Thu, Jan 09, 2014 at 06:54:48PM +0100, Oleg Nesterov wrote:
-> >
-> > --- a/kernel/locking/lockdep.c
-> > +++ b/kernel/locking/lockdep.c
-> > @@ -1939,7 +1939,8 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
-> >  		 * Only non-recursive-read entries get new dependencies
-> >  		 * added:
-> >  		 */
-> > -		if (hlock->read != 2) {
-> > +		if (hlock->read != 2 &&
-> > +		    hlock->instance->key != &__lockdep_no_validate__) {
-> >  			if (!check_prev_add(curr, hlock, next,
-> >  						distance, trylock_loop))
-> >  				return 0;
-> >
->
-> Hmm, you are quite right indeed;
+On Sat, 11 Jan 2014 18:18:32 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Thanks!
+> On Thu, Jan 09, 2014 at 12:04:48PM +0100, Jean-Francois Moine wrote:
+> > This patch uses the tda998x video format tied to the CEA mode.
+> > This reduces the number of i2c exchanges.
+> 
+> It is my understanding that one of the major design goals of this driver
+> is to avoid the use of such a table, and therefore this change is
+> undesirable by the original driver authors.  This is more a comment for
+> Rob to pick up on.
 
-> although I would write it like:
->
->   if (hlock->read != 2 && hlock->check == 2)
->
-> because the __lockdep_no_validate__ thing forces the ->check value to 1.
+I retrieved a message from Rabeeh who got this description from NXP
+(http://www.solid-run.com/phpbb/viewtopic.php?f=9&t=1205&start=10
+ Thu Mar 28, 2013 10:59 am):
 
-Agreed, hlock->check == 2 looks better. But this connects to another
-patch I sent which removes hlock->check...
+1. write register FF of CEC device to &h87.
+                (68ff = 87h)           -> activate all clock tree inc HDMI ones so you can then use HDMI device
+2. select page 00 of HDMI device :  write 00 in FF
+                (e0ff =00h)
+3. write register A0 of HDMI device to select predefined format :
+                (e0a0 = 06h)       -> select a predefined 1080p60 format
+4. write registers A5 and A6 with total number of pixels per line (or greater value)
+                (e0a5 = 08h)
+                (e0a6 = 97h) for example
+5. write register TBG_CTRL1 of HDMI device to select resync method
+                (e0cb = 7ch)        -> select
+6. write registers VIP_CTRL to configure RGB input ports :
+                (e020 = 45h)       -> select VP port configuration
+                (e021 = 01h)
+                (e022 = 23h)
+7. write register VIP_CTRL3 to 20h vto select external SP sync method
+                (e023 = 20h)
 
-OK, I'll wait for review on that patch, then resend this one with
-->check or __lockdep_no_validate__ depending on the result.
-
-Oleg.
-
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
