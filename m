@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaAMS1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:27:01 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:52208 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751316AbaAMS07 (ORCPT
+	id S1752265AbaAMS3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:29:13 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39149 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518AbaAMS3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:26:59 -0500
-Date: Mon, 13 Jan 2014 19:26:45 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Leela Krishna Amudala <l.krishna@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] watchdog: s3c2410_wdt: Report when the watchdog reset the system
-Message-ID: <20140113182645.GA22249@spo001.leaseweb.com>
-References: <1386267329-9941-2-git-send-email-dianders@chromium.org> <1386364088-6220-1-git-send-email-dianders@chromium.org>
+	Mon, 13 Jan 2014 13:29:10 -0500
+Message-ID: <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
+ attributes
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
+Date: Mon, 13 Jan 2014 10:30:59 -0800
+In-Reply-To: <yq161prr1p8.fsf@sermon.lab.mkp.net>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
+	 <yq161prr1p8.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386364088-6220-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.4.1i
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+Hey MKP,
 
-> A good watchdog driver is supposed to report when it was responsible
-> for resetting the system.  Implement this for the s3c2410, at least on
-> exynos5250 and exynos5420 where we already have a pointer to the PMU
-> registers to read the information.
+On Fri, 2014-01-10 at 16:01 -0500, Martin K. Petersen wrote:
+> >>>>> "nab" == Nicholas A Bellinger <nab@daterainc.com> writes:
 > 
-> Note that exynos4 SoCs also provide the reset status, but providing
-> that is left as an exercise for future changes and is not plumbed up
-> in this patch series.  Also note the exynos4 SoCs don't appear to need
-> any PMU config, which is why this patch separates the concepts of
-> having PMU Registers vs. needing PMU Config.
+> nab> This patch adds support for exposing DIF protection device
+> nab> attributes via configfs.  This includes:
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
+> nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
+> 
+> What's DIF v2?
+> 
 
-This patch has been added to linux-watchdog-next.
+This would be the proposed 16-byte protection scheme for SBC4.
 
-Kind regards,
-Wim.
+> nab>    pi_guard_type: Guard Type (1=DIF CRC, 2=IP CRC)
+> 
+> The IP checksum is only supported by DIX between OS and initiator, not
+> by the target. I guess we could signal to the initiator via a
+> vendor-private VPD that IP checksum is supported directly. But now what
+> we have hardware-accelerated T10 CRC I don't think it's a big deal.
+> 
+> (scsi_debug supports IP checksum because it's both initiator and
+> target).
+> 
+
+In that case, dropping the IP checksum related code now..
+
+--nab
 
