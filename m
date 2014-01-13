@@ -1,89 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414AbaAMJnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:43:52 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55387 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355AbaAMJns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:43:48 -0500
-Message-ID: <52D3B544.6070808@ti.com>
-Date: Mon, 13 Jan 2014 11:43:32 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751473AbaAMJo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:44:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:35618 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751327AbaAMJox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 04:44:53 -0500
+X-IronPort-AV: E=Sophos;i="4.95,651,1384272000"; 
+   d="scan'208";a="9409890"
+Message-ID: <52D3B397.1010908@cn.fujitsu.com>
+Date: Mon, 13 Jan 2014 17:36:23 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-CC: <plagnioj@jcrosoft.com>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
-        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Ivaylo Dimitrov <freemangordon@abv.bg>,
-        Archit Taneja <archit@ti.com>
-Subject: Re: [PATCH] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
-References: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-In-Reply-To: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="di3IfJUimkR1swHcb3b2PUMLoDw06ux9U"
+To: Chao Yu <chao2.yu@samsung.com>
+CC: "'Kim'" <jaegeuk.kim@samsung.com>,
+        "'fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
+Subject: Re: [f2fs-dev] [PATCH 1/3] f2fs: move grabing orphan pages out of
+ protection region
+References: <52CFC6BE.7020609@cn.fujitsu.com> <000001cf0e6c$77982430$66c86c90$@samsung.com>
+In-Reply-To: <000001cf0e6c$77982430$66c86c90$@samsung.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/13 17:42:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/01/13 17:42:41,
+	Serialize complete at 2014/01/13 17:42:41
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---di3IfJUimkR1swHcb3b2PUMLoDw06ux9U
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Yu,
+On 01/11/2014 09:27 AM, Chao Yu wrote:
 
-Hi,
+> Hi Gu,
+> 
+>> -----Original Message-----
+>> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
+>> Sent: Friday, January 10, 2014 6:09 PM
+>> To: Kim
+>> Cc: fsdevel; linux-kernel; f2fs
+>> Subject: [f2fs-dev] [PATCH 1/3] f2fs: move grabing orphan pages out of protection region
+>>
+>> Move grabing orphan block page out of protection region, and grab all
+>> the orphan block pages ahead.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> 
+> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+> 
+>> ---
+>>  fs/f2fs/checkpoint.c |   15 +++++++++------
+>>  1 files changed, 9 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> index 0d78bbe..af92c74 100644
+>> --- a/fs/f2fs/checkpoint.c
+>> +++ b/fs/f2fs/checkpoint.c
+>> @@ -303,22 +303,25 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t
+>> start_blk)
+>>  {
+>>  	struct list_head *head;
+>>  	struct f2fs_orphan_block *orphan_blk = NULL;
+>> -	struct page *page = NULL;
+>>  	unsigned int nentries = 0;
+>> -	unsigned short index = 1;
+>> -	unsigned short orphan_blocks;
+>> +	unsigned short index;
+>> +	unsigned short orphan_blocks = (unsigned short)((sbi->n_orphans +
+>> +		(F2FS_ORPHANS_PER_BLOCK - 1)) / F2FS_ORPHANS_PER_BLOCK);
+>> +	struct page *page = NULL;
+>> +	struct page *pages[orphan_blocks];
+>>  	struct orphan_inode_entry *orphan = NULL;
+>>
+>> -	orphan_blocks = (unsigned short)((sbi->n_orphans +
+>> -		(F2FS_ORPHANS_PER_BLOCK - 1)) / F2FS_ORPHANS_PER_BLOCK);
+>> +	for (index = 0; index < orphan_blocks; index++)
+>> +		pages[index] = grab_meta_page(sbi, start_blk + index);
+>>
+>> +	index = 1;
+>>  	mutex_lock(&sbi->orphan_inode_mutex);
+>>  	head = &sbi->orphan_inode_list;
+>>
+>>  	/* loop for each orphan inode entry and write them in Jornal block */
+>>  	list_for_each_entry(orphan, head, list) {
+>>  		if (!page) {
+>> -			page = grab_meta_page(sbi, start_blk);
+>> +			page = pages[index - 1];
+>>  			orphan_blk =
+>>  				(struct f2fs_orphan_block *)page_address(page);
+>>  			memset(orphan_blk, 0, sizeof(*orphan_blk));
+> 
+> It seems that we could remove the following code in write_orphan_inodes.
+> 			start_blk++;
 
-On 2014-01-11 14:42, Ivaylo Dimitrov wrote:
-> From: Ivaylo Dimitrov <freemangordon@abv.bg>
->=20
-> commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
-> synclost errors in OMAP3 introduces limits check to prevent SYNCLOST er=
-rors
-> on OMAP3. However, it misses the logic found in Nokia kernels that is
-> needed to correctly calculate whether 3 tap or 5 tap rescaler to be use=
-d as
-> well as the logic to fallback to 3 taps if 5 taps clock results in too
-> tight horizontal timings. Without that patch "horizontal timing too tig=
-ht"
-> errors are seen when a video with resolution above 640x350 is tried to =
-be
-> played. The patch is a forward-ported logic found in Nokia N900 and N9/=
-50
-> kernels.
->=20
-> Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Yes, you're right, thanks for your review.
 
-I had a quick test with this. Without the patch, on beagle-xm, my scaler
-test immediately gives "horizontal timing too tight". With the patch, no
-errors and the scaling seems to work. So looks good. I'll look at the
-patch a bit more, but I think this is 3.14 material.
+Regards,
+Gu
 
- Tomi
+> 
+>> --
+>> 1.7.7
+>>
+>>
+>> ------------------------------------------------------------------------------
+>> CenturyLink Cloud: The Leader in Enterprise Cloud Services.
+>> Learn Why More Businesses Are Choosing CenturyLink Cloud For
+>> Critical Workloads, Development Environments & Everything In Between.
+>> Get a Quote or Start a Free Trial Today.
+>> http://pubads.g.doubleclick.net/gampad/clk?id=119420431&iu=/4140/ostg.clktrk
+>> _______________________________________________
+>> Linux-f2fs-devel mailing list
+>> Linux-f2fs-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> 
+> 
 
 
-
---di3IfJUimkR1swHcb3b2PUMLoDw06ux9U
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJS07VEAAoJEPo9qoy8lh71CTMP/0fF8a8+EtwvrdmFNhAg/0OU
-e5iZSsohg0MWwGj2Ncve5UO3wdSbNhY1SLvEiEh0YRkBuoQE9uCf4cF4B01eoCot
-KG+7N78cdqgeuuC/9eDeklxwZPKZMeMGxjE/CB57GsI+JDdskjEFvwgKlC+En7D1
-PpY/UQvH9q4/wEFrK4iI+eHYkgE1gqR/UvEY0ulKOPjk2FunZycmA6A0G+qS/dKZ
-cPG88TgtLKV4SJ9z9upDjwAhA+a+8ycydLd6XmrfecvpOz16qmGfL6ANoRAZapgS
-jhQEGLErHFuk7TEqdjUE4XuzyIA6QD/VH9fE6Ag33l3SJ+F7253PsQwnsz3k9tj7
-KrSIwNpKnGNY6JG8e6DDleGQS2lDbqEqyiIBsLcNIP71sXPVRQXEwx5z7zq6KcEX
-TmOmYWSRoT2HOwD/KMV0woA9NKK9/Vv0005hv9d6yhuhrQxPCO0hgLioKUiZPXnD
-TTHwXM23djhMo8K0bM0Ej8F4zpwnYiX2sSB3mt1qAQvV8kEQNJW6Cd5sLcYEcD/L
-cqZ+s4N8PQPnAdARrWdkM0Z4Y++jTxJ2yrrujsERDCsSsyLK5T3arM+18MXy5dw9
-e2opDdeJwdtvdsHRQB0thxT45CvY+qVsoeXeVpl7Qw2lyKgql/Lo0PGWVVtKXo4l
-7K8uqdmt8wQbuLhur/Im
-=6nsW
------END PGP SIGNATURE-----
-
---di3IfJUimkR1swHcb3b2PUMLoDw06ux9U--
