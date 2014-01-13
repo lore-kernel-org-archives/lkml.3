@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaAMRjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:39:06 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53627 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaAMRjB (ORCPT
+	id S1753950AbaAMRjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:39:19 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:37248 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033AbaAMRjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:39:01 -0500
-Date: Mon, 13 Jan 2014 17:38:49 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, kuninori.morimoto.gx@renesas.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140113173849.GG29039@sirena.org.uk>
-References: <1389604088-16536-1-git-send-email-Li.Xiubo@freescale.com>
+	Mon, 13 Jan 2014 12:39:05 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QwltuPJOutxmIGiQ"
-Content-Disposition: inline
-In-Reply-To: <1389604088-16536-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: May I ask a question?
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: simple-card: use snd_soc_card_set/get_drvdata
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAA93t1pwLNeCXPXOO1yTPiREVP=sos1bwpob=VnLhSm_zocEkw@mail.gmail.com>
+References: <52B0AEAD.6050604@gmail.com> <20131218010207.GC15119@google.com>
+ <CAA93t1qh2Wn2uPKUGvbqrOJxDfqAqTNFSqOryC36Wm=gnygUog@mail.gmail.com>
+ <CAErSpo6A0=0Ph22vMZ1_eC1L7ndoi5S6162zRDYkMoPf53Fhcg@mail.gmail.com>
+ <4b24688d857e432eb7ecf9095c95b742@DM2PR05MB671.namprd05.prod.outlook.com>
+ <bfe1b6a0b2494c71be43fea45f413575@DM2PR05MB671.namprd05.prod.outlook.com>
+ <CAErSpo4gGW2r4X7UuefwcYTX=c4irWc60w2UCT0e_U-uSaujow@mail.gmail.com> <CAA93t1pwLNeCXPXOO1yTPiREVP=sos1bwpob=VnLhSm_zocEkw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 13 Jan 2014 10:38:44 -0700
+Message-ID: <CAErSpo72KZ-a2OSQLWoK71GCgwBt676XZdGt4tEYm-6UYnLmPw@mail.gmail.com>
+Subject: Re: [PATCH v3 4/8] pciehp: Don't disable the link permanently, during removal
+To: Rajat Jain <rajatxjain@gmail.com>
+Cc: Rajat Jain <rajatjain@juniper.net>, Rajat Jain <rajatjain.linux@gmail.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yhlu.kernel@gmail.com>, Guenter Roeck <groeck@juniper.net>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 13, 2014 at 1:30 AM, Rajat Jain <rajatxjain@gmail.com> wrote:
 
---QwltuPJOutxmIGiQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Yinghai: I am trying to understand what exactly is this platform bug
+> and how to add a quirk such that this platform remains unaffected. Can
+> you please help me by suggesting how to decide if this is _the_
+> platform that has the bug (the pcie repeater).
+>
+> Bjorn: It seems to be that identification of this platform will be out
+> PCI code (since the bug seems to be in a pcie repeater chip which is
+> not a PCI device visible to SW). So even if we find a way to identify
+> this platform (e.g DMI) , I doubt if you'd want me to add that in the
+> pciehp code (which is platform independent so far). At best, the only
+> way out I can see is to provide a knob from the pciehp, that can be
+> use by the platform code to either enable or disable the link state
+> hotplug. It could go back towards using a module parameter like
+> pciehp_use_link_events. Please suggest.
+>
+> The only other way I can think of, is that I can remove the debug
+> message altogether (Link up / Link down). (Or the user can change the
+> verbosity).
 
-On Mon, Jan 13, 2014 at 05:08:08PM +0800, Xiubo Li wrote:
-> Remove asoc_simple_get_card_info macro and use snd_soc_card_set_drvdata
-> and snd_soc_card_get_drvdata instead.
+I think it's perfectly fine to add a DMI-based quirk in pciehp.  Yes,
+it's a bit ugly, but that's just the nature of working around hardware
+defects.  Identify the platform, emit a diagnostic ("disabling link
+state because platform may be buggy"), enable the workaround.  That
+seems better than requiring the user to figure out what hardware he
+has and whether it has a defect.
 
-Applied, thanks.
+I would also be OK with adding a pciehp module parameter to explicitly
+enable or disable the workaround if that seems necessary.  I just want
+the common case of correctly working hardware to work without any
+switches.
 
---QwltuPJOutxmIGiQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Removing or rate-limiting the link up/down debug message is also fine with me.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1CSmAAoJELSic+t+oim9GvIP/iBaJyJZ9FQ3x3fhyqe9yFL2
-bSoqLHQPIHRLrG8y070L/3Ojx/aRDy3JhzHa6jvrA94XzgTjnuLxcCmxePd8g0Wz
-+1XRcR1plYlsucT9x23oZr/VbeIZSl5HbD2sjyJY708x19C/sSqm7BbtBG+QG/5i
-XNhonJ6LPWGW2EnKIldpDptvOJifdeiYQOF0bGKirpToGfNc8RNFdEiQlqFIeme6
-8gDrPvLrNoqYxaDtHijhZ/L9KpbDuaZP0i6w6zWzFOyICfJiSJzn8MB87pi2Ujn1
-5WwVLX61WIPwhENlYtSNYsgzQP1U8xsxIU39C/BrEkBIJ+pq/9cIDw1Symlz3gyD
-lQws/h6ZJkwVvH+SRsWbxJWAE3xPMlKu8uDjuWZv+hEoFFHe78PALimJk2fNbsIG
-Ra72W/Usl+mZGlEF25AG9StktaOQMZoKn56u+b5lri3eLk9cgmnUPMeSJqsLxSTV
-e3BVQfHBDX0kXDP27S/ue6EM0gkNt3iBmONpSGgO5TcDb3ga8hmfQ4C8lJQy6psd
-M5jllw8gO4TfAv3DytgSJRATR0vAIMyuHXetu0Cp+dNUnLgBVc/XP6VZ18xMATTr
-6GbnxF+5DsxMLVXJgoWpULGTj46j5SbwxaJqQzowM8hbLIxOKILVwulL2kixzei6
-zLFUMmbV/4MM5uRp1BlV
-=WLlD
------END PGP SIGNATURE-----
-
---QwltuPJOutxmIGiQ--
+Bjorn
