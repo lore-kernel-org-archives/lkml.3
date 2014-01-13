@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaAMO0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:26:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51159 "EHLO
+	id S1753243AbaAMOvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:51:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51364 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaAMOZM (ORCPT
+	with ESMTP id S1751902AbaAMO0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:12 -0500
+	Mon, 13 Jan 2014 09:26:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Cox <alan@linux.intel.com>, Wim Van Sebroeck <wim@iguana.be>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 04/96] sc1200_wdt: Fix oops
-Date: Mon, 13 Jan 2014 14:23:27 +0000
-Message-Id: <1389623099-18783-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 43/96] rtlwifi: pci: Fix oops on driver unload
+Date: Mon, 13 Jan 2014 14:24:06 +0000
+Message-Id: <1389623099-18783-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan <gnomes@lxorguk.ukuu.org.uk>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dace8bbfccfd9e4fcccfffcfbd82881fda3e756f upstream.
+commit 9278db6279e28d4d433bc8a848e10b4ece8793ed upstream.
 
-If loaded with isapnp = 0 the driver explodes. This is catching
-people out now and then. What should happen in the working case is
-a complete mystery and the code appears terminally confused, but we
-can at least make the error path work properly.
+On Fedora systems, unloading rtl8192ce causes an oops. This patch fixes the
+problem reported at https://bugzilla.redhat.com/show_bug.cgi?id=852761.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Partially-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=53991
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/watchdog/sc1200wdt.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/pci.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/sc1200wdt.c b/drivers/watchdog/sc1200wdt.c
-index 3fb83b0..ab6d3f5 100644
---- a/drivers/watchdog/sc1200wdt.c
-+++ b/drivers/watchdog/sc1200wdt.c
-@@ -409,8 +409,9 @@ static int __init sc1200wdt_init(void)
- #if defined CONFIG_PNP
- 	/* now that the user has specified an IO port and we haven't detected
- 	 * any devices, disable pnp support */
-+	if (isapnp)
-+		pnp_unregister_driver(&scl200wdt_pnp_driver);
- 	isapnp = 0;
--	pnp_unregister_driver(&scl200wdt_pnp_driver);
- #endif
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 2062ea1..4c4226f 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -679,6 +679,8 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 	};
+ 	int index = rtlpci->rx_ring[rx_queue_idx].idx;
  
- 	if (!request_region(io, io_len, SC1200_MODULE_NAME)) {
++	if (rtlpci->driver_is_goingto_unload)
++		return;
+ 	/*RX NORMAL PKT */
+ 	while (count--) {
+ 		/*rx descriptor */
+@@ -1555,6 +1557,7 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
+ 	 */
+ 	set_hal_stop(rtlhal);
+ 
++	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->disable_interrupt(hw);
+ 	cancel_work_sync(&rtlpriv->works.lps_leave_work);
+ 
+@@ -1572,7 +1575,6 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
+ 	ppsc->rfchange_inprogress = true;
+ 	spin_unlock_irqrestore(&rtlpriv->locks.rf_ps_lock, flags);
+ 
+-	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->hw_disable(hw);
+ 	/* some things are not needed if firmware not available */
+ 	if (!rtlpriv->max_fw_size)
 -- 
 1.8.3.2
 
