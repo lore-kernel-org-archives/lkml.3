@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaAMQkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:40:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53291 "EHLO
+	id S1755425AbaAMQlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:41:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53273 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630AbaAMQDP (ORCPT
+	with ESMTP id S1753759AbaAMQDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:15 -0500
+	Mon, 13 Jan 2014 11:03:10 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/208] staging: comedi: 8255_pci: fix for newer PCI-DIO48H
-Date: Mon, 13 Jan 2014 15:59:02 +0000
-Message-Id: <1389628849-1614-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 097/208] intel_pstate: Fail initialization if P-state information is missing
+Date: Mon, 13 Jan 2014 15:58:58 +0000
+Message-Id: <1389628849-1614-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,78 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 0283f7a100882684ad32b768f9f1ad81658a0b92 upstream.
+commit 98a947abdd54e5de909bebadfced1696ccad30cf upstream.
 
-At some point, Measurement Computing / ComputerBoards redesigned the
-PCI-DIO48H to use a PLX PCI interface chip instead of an AMCC chip.
-This meant they had to put their hardware registers in the PCI BAR 2
-region instead of PCI BAR 1.  Unfortunately, they kept the same PCI
-device ID for the new design.  This means the driver recognizes the
-newer cards, but doesn't work (and is likely to screw up the local
-configuration registers of the PLX chip) because it's using the wrong
-region.
+If pstate.current_pstate is 0 after the initial
+intel_pstate_get_cpu_pstates(), this means that we were unable to
+obtain any useful P-state information and there is no reason to
+continue, so free memory and return an error in that case.
 
-Since  the PCI subvendor and subdevice IDs were both zero on the old
-design, but are the same as the vendor and device on the new design, we
-can tell the old design and new design apart easily enough.  Split the
-existing entry for the PCI-DIO48H in `pci_8255_boards[]` into two new
-entries, referenced by different entries in the PCI device ID table
-`pci_8255_pci_table[]`.  Use the same board name for both entries.
+This fixes the following divide error occuring in a nested KVM
+guest:
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Intel P-state driver initializing.
+Intel pstate controlling: cpu 0
+cpufreq: __cpufreq_add_dev: ->get() failed
+divide error: 0000 [#1] SMP
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.13.0-0.rc4.git5.1.fc21.x86_64 #1
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+task: ffff88001ea20000 ti: ffff88001e9bc000 task.ti: ffff88001e9bc000
+RIP: 0010:[<ffffffff815c551d>]  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+RSP: 0000:ffff88001ee03e18  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: ffff88001a454348 RCX: 0000000000006100
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+RBP: ffff88001ee03e38 R08: 0000000000000000 R09: 0000000000000000
+R10: ffff88001ea20000 R11: 0000000000000000 R12: 00000c0a1ea20000
+R13: 1ea200001ea20000 R14: ffffffff815c5400 R15: ffff88001a454348
+FS:  0000000000000000(0000) GS:ffff88001ee00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 00000000000006f0
+Stack:
+ fffffffb1a454390 ffffffff821a4500 ffff88001a454390 0000000000000100
+ ffff88001ee03ea8 ffffffff81083e9a ffffffff81083e15 ffffffff82d5ed40
+ ffffffff8258cc60 0000000000000000 ffffffff81ac39de 0000000000000000
+Call Trace:
+ <IRQ>
+ [<ffffffff81083e9a>] call_timer_fn+0x8a/0x310
+ [<ffffffff81083e15>] ? call_timer_fn+0x5/0x310
+ [<ffffffff815c5400>] ? pid_param_set+0x130/0x130
+ [<ffffffff81084354>] run_timer_softirq+0x234/0x380
+ [<ffffffff8107aee4>] __do_softirq+0x104/0x430
+ [<ffffffff8107b5fd>] irq_exit+0xcd/0xe0
+ [<ffffffff81770645>] smp_apic_timer_interrupt+0x45/0x60
+ [<ffffffff8176efb2>] apic_timer_interrupt+0x72/0x80
+ <EOI>
+ [<ffffffff810e15cd>] ? vprintk_emit+0x1dd/0x5e0
+ [<ffffffff81757719>] printk+0x67/0x69
+ [<ffffffff815c1493>] __cpufreq_add_dev.isra.13+0x883/0x8d0
+ [<ffffffff815c14f0>] cpufreq_add_dev+0x10/0x20
+ [<ffffffff814a14d1>] subsys_interface_register+0xb1/0xf0
+ [<ffffffff815bf5cf>] cpufreq_register_driver+0x9f/0x210
+ [<ffffffff81fb19af>] intel_pstate_init+0x27d/0x3be
+ [<ffffffff81761e3e>] ? mutex_unlock+0xe/0x10
+ [<ffffffff81fb1732>] ? cpufreq_gov_dbs_init+0x12/0x12
+ [<ffffffff8100214a>] do_one_initcall+0xfa/0x1b0
+ [<ffffffff8109dbf5>] ? parse_args+0x225/0x3f0
+ [<ffffffff81f64193>] kernel_init_freeable+0x1fc/0x287
+ [<ffffffff81f638d0>] ? do_early_param+0x88/0x88
+ [<ffffffff8174b530>] ? rest_init+0x150/0x150
+ [<ffffffff8174b53e>] kernel_init+0xe/0x130
+ [<ffffffff8176e27c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8174b530>] ? rest_init+0x150/0x150
+Code: c1 e0 05 48 63 bc 03 10 01 00 00 48 63 83 d0 00 00 00 48 63 d6 48 c1 e2 08 c1 e1 08 4c 63 c2 48 c1 e0 08 48 98 48 c1 e0 08 48 99 <49> f7 f8 48 98 48 0f af f8 48 c1 ff 08 29 f9 89 ca c1 fa 1f 89
+RIP  [<ffffffff815c551d>] intel_pstate_timer_func+0x11d/0x2b0
+ RSP <ffff88001ee03e18>
+---[ end trace f166110ed22cc37a ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+
+Reported-and-tested-by: Kashyap Chamarthy <kchamart@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/8255_pci.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/cpufreq/intel_pstate.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/staging/comedi/drivers/8255_pci.c b/drivers/staging/comedi/drivers/8255_pci.c
-index 3d3547c..3d40a26 100644
---- a/drivers/staging/comedi/drivers/8255_pci.c
-+++ b/drivers/staging/comedi/drivers/8255_pci.c
-@@ -62,7 +62,8 @@ enum pci_8255_boardid {
- 	BOARD_ADLINK_PCI7296,
- 	BOARD_CB_PCIDIO24,
- 	BOARD_CB_PCIDIO24H,
--	BOARD_CB_PCIDIO48H,
-+	BOARD_CB_PCIDIO48H_OLD,
-+	BOARD_CB_PCIDIO48H_NEW,
- 	BOARD_CB_PCIDIO96H,
- 	BOARD_NI_PCIDIO96,
- 	BOARD_NI_PCIDIO96B,
-@@ -105,11 +106,16 @@ static const struct pci_8255_boardinfo pci_8255_boards[] = {
- 		.dio_badr	= 2,
- 		.n_8255		= 1,
- 	},
--	[BOARD_CB_PCIDIO48H] = {
-+	[BOARD_CB_PCIDIO48H_OLD] = {
- 		.name		= "cb_pci-dio48h",
- 		.dio_badr	= 1,
- 		.n_8255		= 2,
- 	},
-+	[BOARD_CB_PCIDIO48H_NEW] = {
-+		.name		= "cb_pci-dio48h",
-+		.dio_badr	= 2,
-+		.n_8255		= 2,
-+	},
- 	[BOARD_CB_PCIDIO96H] = {
- 		.name		= "cb_pci-dio96h",
- 		.dio_badr	= 2,
-@@ -263,7 +269,10 @@ static DEFINE_PCI_DEVICE_TABLE(pci_8255_pci_table) = {
- 	{ PCI_VDEVICE(ADLINK, 0x7296), BOARD_ADLINK_PCI7296 },
- 	{ PCI_VDEVICE(CB, 0x0028), BOARD_CB_PCIDIO24 },
- 	{ PCI_VDEVICE(CB, 0x0014), BOARD_CB_PCIDIO24H },
--	{ PCI_VDEVICE(CB, 0x000b), BOARD_CB_PCIDIO48H },
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_CB, 0x000b, 0x0000, 0x0000),
-+	  .driver_data = BOARD_CB_PCIDIO48H_OLD },
-+	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_CB, 0x000b, PCI_VENDOR_ID_CB, 0x000b),
-+	  .driver_data = BOARD_CB_PCIDIO48H_NEW },
- 	{ PCI_VDEVICE(CB, 0x0017), BOARD_CB_PCIDIO96H },
- 	{ PCI_VDEVICE(NI, 0x0160), BOARD_NI_PCIDIO96 },
- 	{ PCI_VDEVICE(NI, 0x1630), BOARD_NI_PCIDIO96B },
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 315c6f9..85f02a0 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -547,6 +547,11 @@ static int intel_pstate_init_cpu(unsigned int cpunum)
+ 	cpu = all_cpu_data[cpunum];
+ 
+ 	intel_pstate_get_cpu_pstates(cpu);
++	if (!cpu->pstate.current_pstate) {
++		all_cpu_data[cpunum] = NULL;
++		kfree(cpu);
++		return -ENODATA;
++	}
+ 
+ 	cpu->cpu = cpunum;
+ 	cpu->pstate_policy =
 -- 
 1.8.3.2
 
