@@ -1,72 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbaAMQln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:41:43 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:30214 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaAMQlk (ORCPT
+	id S1755588AbaAMQmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:42:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53243 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867AbaAMQDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:41:40 -0500
-Message-ID: <52D4172E.6030706@hp.com>
-Date: Mon, 13 Jan 2014 11:41:18 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Daniel J Blueman <daniel@numascale.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
-References: <52D353C8.4000000@numascale.com>
-In-Reply-To: <52D353C8.4000000@numascale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 11:03:01 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sachin Prabhu <sprabhu@redhat.com>, Steve French <smfrench@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 091/208] cifs: We do not drop reference to tlink in CIFSCheckMFSymlink()
+Date: Mon, 13 Jan 2014 15:58:52 +0000
+Message-Id: <1389628849-1614-92-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2014 09:47 PM, Daniel J Blueman wrote:
-> On Thursday, 9 January 2014 01:10:03 UTC+8, Waiman Long  wrote:
-> > This patch modifies the queue_write_unlock() function to use the
-> > new smp_store_release() function in another pending patch. It also
-> > removes the temporary implementation of smp_load_acquire() and
-> > smp_store_release() function in qrwlock.c.
-> >
-> > This patch should only be merged if PeterZ's linux-arch patch patch
-> > was merged.
-> >
-> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  include/asm-generic/qrwlock.h |    4 +---
-> >  kernel/locking/qrwlock.c      |   34 
-> ----------------------------------
-> >  2 files changed, 1 insertions(+), 37 deletions(-)
-> >
-> > diff --git a/include/asm-generic/qrwlock.h 
-> b/include/asm-generic/qrwlock.h
-> > index 2b9a7b4..4d4bd04 100644
-> > --- a/include/asm-generic/qrwlock.h
-> > +++ b/include/asm-generic/qrwlock.h
-> > @@ -179,9 +179,7 @@ static inline void queue_write_unlock(struct 
-> qrwlock *lock)
-> >      /*
-> >       * Make sure that none of the critical section will be leaked out.
-> >       */
-> > -    smp_mb__before_clear_bit();
-> > -    ACCESS_ONCE(lock->cnts.writer) = 0;
-> > -    smp_mb__after_clear_bit();
-> > +    smp_store_release(&lock->cnts.writer, 0)
->
-> This will fail compilation, so probably needs further testing with 
-> Peter's load_acquire/store_release barrier patches.
->
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-Peter,
+------------------
 
-I found out that the build failure was caused by the fact that the 
-__native_word() macro (used internally by compiletime_assert_atomic()) 
-allows only a size of 4 or 8 for x86-64. The data type that I used is a 
-byte. Is there a reason why byte and short are not considered native?
+From: Sachin Prabhu <sprabhu@redhat.com>
 
--Longman
+commit 750b8de6c4277d7034061e1da50663aa1b0479e4 upstream.
+
+When we obtain tcon from cifs_sb, we use cifs_sb_tlink() to first obtain
+tlink which also grabs a reference to it. We do not drop this reference
+to tlink once we are done with the call.
+
+The patch fixes this issue by instead passing tcon as a parameter and
+avoids having to obtain a reference to the tlink. A lookup for the tcon
+is already made in the calling functions and this way we avoid having to
+re-run the lookup. This is also consistent with the argument list for
+other similar calls for M-F symlinks.
+
+We should also return an ENOSYS when we do not find a protocol specific
+function to lookup the MF Symlink data.
+
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/cifs/cifsproto.h |  7 ++++---
+ fs/cifs/inode.c     |  6 ++++--
+ fs/cifs/link.c      | 26 +++++++++++---------------
+ 3 files changed, 19 insertions(+), 20 deletions(-)
+
+diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
+index b29a012..6727cd9 100644
+--- a/fs/cifs/cifsproto.h
++++ b/fs/cifs/cifsproto.h
+@@ -479,9 +479,10 @@ extern int CIFSGetExtAttr(const unsigned int xid, struct cifs_tcon *tcon,
+ 			const int netfid, __u64 *pExtAttrBits, __u64 *pMask);
+ extern void cifs_autodisable_serverino(struct cifs_sb_info *cifs_sb);
+ extern bool CIFSCouldBeMFSymlink(const struct cifs_fattr *fattr);
+-extern int CIFSCheckMFSymlink(struct cifs_fattr *fattr,
+-		const unsigned char *path,
+-		struct cifs_sb_info *cifs_sb, unsigned int xid);
++extern int CIFSCheckMFSymlink(unsigned int xid, struct cifs_tcon *tcon,
++			      struct cifs_sb_info *cifs_sb,
++			      struct cifs_fattr *fattr,
++			      const unsigned char *path);
+ extern int mdfour(unsigned char *, unsigned char *, int);
+ extern int E_md4hash(const unsigned char *passwd, unsigned char *p16,
+ 			const struct nls_table *codepage);
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 449b6cf..993983c 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -356,7 +356,8 @@ int cifs_get_inode_info_unix(struct inode **pinode,
+ 
+ 	/* check for Minshall+French symlinks */
+ 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS) {
+-		int tmprc = CIFSCheckMFSymlink(&fattr, full_path, cifs_sb, xid);
++		int tmprc = CIFSCheckMFSymlink(xid, tcon, cifs_sb, &fattr,
++					       full_path);
+ 		if (tmprc)
+ 			cifs_dbg(FYI, "CIFSCheckMFSymlink: %d\n", tmprc);
+ 	}
+@@ -759,7 +760,8 @@ cifs_get_inode_info(struct inode **inode, const char *full_path,
+ 
+ 	/* check for Minshall+French symlinks */
+ 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS) {
+-		tmprc = CIFSCheckMFSymlink(&fattr, full_path, cifs_sb, xid);
++		tmprc = CIFSCheckMFSymlink(xid, tcon, cifs_sb, &fattr,
++					   full_path);
+ 		if (tmprc)
+ 			cifs_dbg(FYI, "CIFSCheckMFSymlink: %d\n", tmprc);
+ 	}
+diff --git a/fs/cifs/link.c b/fs/cifs/link.c
+index 562044f..c6a097c 100644
+--- a/fs/cifs/link.c
++++ b/fs/cifs/link.c
+@@ -354,34 +354,30 @@ open_query_close_cifs_symlink(const unsigned char *path, char *pbuf,
+ 
+ 
+ int
+-CIFSCheckMFSymlink(struct cifs_fattr *fattr,
+-		   const unsigned char *path,
+-		   struct cifs_sb_info *cifs_sb, unsigned int xid)
++CIFSCheckMFSymlink(unsigned int xid, struct cifs_tcon *tcon,
++		   struct cifs_sb_info *cifs_sb, struct cifs_fattr *fattr,
++		   const unsigned char *path)
+ {
+-	int rc = 0;
++	int rc;
+ 	u8 *buf = NULL;
+ 	unsigned int link_len = 0;
+ 	unsigned int bytes_read = 0;
+-	struct cifs_tcon *ptcon;
+ 
+ 	if (!CIFSCouldBeMFSymlink(fattr))
+ 		/* it's not a symlink */
+ 		return 0;
+ 
+ 	buf = kmalloc(CIFS_MF_SYMLINK_FILE_SIZE, GFP_KERNEL);
+-	if (!buf) {
+-		rc = -ENOMEM;
+-		goto out;
+-	}
++	if (!buf)
++		return -ENOMEM;
+ 
+-	ptcon = tlink_tcon(cifs_sb_tlink(cifs_sb));
+-	if ((ptcon->ses) && (ptcon->ses->server->ops->query_mf_symlink))
+-		rc = ptcon->ses->server->ops->query_mf_symlink(path, buf,
+-						 &bytes_read, cifs_sb, xid);
++	if (tcon->ses->server->ops->query_mf_symlink)
++		rc = tcon->ses->server->ops->query_mf_symlink(path, buf,
++						&bytes_read, cifs_sb, xid);
+ 	else
+-		goto out;
++		rc = -ENOSYS;
+ 
+-	if (rc != 0)
++	if (rc)
+ 		goto out;
+ 
+ 	if (bytes_read == 0) /* not a symlink */
+-- 
+1.8.3.2
+
