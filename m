@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaAMLLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:11:50 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:50396 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaAMLLs (ORCPT
+	id S1751677AbaAMLMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:12:01 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36978 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751630AbaAMLL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:11:48 -0500
-Message-ID: <52D3C9EF.1030901@koalo.de>
-Date: Mon, 13 Jan 2014 12:11:43 +0100
-From: Florian Meier <florian.meier@koalo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
+	Mon, 13 Jan 2014 06:11:56 -0500
+Date: Mon, 13 Jan 2014 11:11:13 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>
-Subject: [PATCH 1/2] BCM2835: Add dmaengine driver to device tree
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [PATCH] arm64: fix typo in entry.S
+Message-ID: <20140113111112.GC1189@mudshark.cambridge.arm.com>
+References: <1389603476-10494-1-git-send-email-zhangwm@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389603476-10494-1-git-send-email-zhangwm@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the definitions for the BCM2835 dmaengine driver
-to the device tree. The dma-channel-mask is currently
-fixed. Later it should be set via the firmware.
+On Mon, Jan 13, 2014 at 08:57:56AM +0000, Neil Zhang wrote:
+> Commit 64681787 (arm64: let the core code deal with preempt_count)
+> changed the code, but left the comments unchanged, fix it.
+> 
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>  arch/arm64/kernel/entry.S |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index 4d2c6f3..ffce55e 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -314,7 +314,7 @@ el1_irq:
+>  
+>  #ifdef CONFIG_PREEMPT
+>  	get_thread_info tsk
+> -	ldr	w24, [tsk, #TI_PREEMPT]		// restore preempt count
+> +	ldr	w24, [tsk, #TI_PREEMPT]		// get preempt count
+>  	cbnz	w24, 1f				// preempt count != 0
+>  	ldr	x0, [tsk, #TI_FLAGS]		// get flags
+>  	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
 
-Signed-off-by: Florian Meier <florian.meier@koalo.de>
----
- arch/arm/boot/dts/bcm2835.dtsi | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+Makes sense:
 
-diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
-index b021c96..1da6b36 100644
---- a/arch/arm/boot/dts/bcm2835.dtsi
-+++ b/arch/arm/boot/dts/bcm2835.dtsi
-@@ -113,6 +113,27 @@
- 			reg = <0x7e980000 0x10000>;
- 			interrupts = <1 9>;
- 		};
-+
-+		dma: dma@7e007000 {
-+			compatible = "brcm,bcm2835-dma";
-+			reg = <0x7e007000 0xf00>;
-+			interrupts = <1 16>,
-+				     <1 17>,
-+				     <1 18>,
-+				     <1 19>,
-+				     <1 20>,
-+				     <1 21>,
-+				     <1 22>,
-+				     <1 23>,
-+				     <1 24>,
-+				     <1 25>,
-+				     <1 26>,
-+				     <1 27>,
-+				     <1 28>;
-+
-+			#dma-cells = <1>;
-+			brcm,dma-channel-mask = <0x7f35>;
-+		};
- 	};
- 
- 	clocks {
--- 
-1.8.3.2
+  Acked-by: Will Deacon <will.deacon@arm.com>
+
+Will
