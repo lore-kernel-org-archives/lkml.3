@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaAMP7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:59:50 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:61383 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640AbaAMP7o convert rfc822-to-8bit (ORCPT
+	id S1752648AbaAMQA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:00:26 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40304 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751557AbaAMQAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:59:44 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] xprtrdma: silence frame size warning
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <1389627955.20467.9.camel@x41>
-Date: Mon, 13 Jan 2014 10:59:40 -0500
-Cc: Dr Fields James Bruce <bfields@fieldses.org>,
-        "Miller David S." <davem@davemloft.net>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CDD9CEF2-F91A-4ABA-8DA7-53AF8A749194@primarydata.com>
-References: <1389627955.20467.9.camel@x41>
-To: Paul Bolle <pebolle@tiscali.nl>,
-        Lever Charles Edward <chuck.lever@oracle.com>
-X-Mailer: Apple Mail (2.1827)
+	Mon, 13 Jan 2014 11:00:22 -0500
+Date: Mon, 13 Jan 2014 16:00:18 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 2/4] efi: Dump the EFI page table
+Message-ID: <20140113160018.GJ3256@console-pimps.org>
+References: <1389473370-1940-1-git-send-email-bp@alien8.de>
+ <1389473370-1940-3-git-send-email-bp@alien8.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389473370-1940-3-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jan 13, 2014, at 10:45, Paul Bolle <pebolle@tiscali.nl> wrote:
-
-> Building verbs.o on 32 bits x86, with CONFIG_FRAME_WARN set to 1024, its
-> default value, triggers this GCC warning:
->    net/sunrpc/xprtrdma/verbs.c: In function ‘rpcrdma_register_default_external’:
->    net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+On Sat, 11 Jan, at 09:49:28PM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> Silence this warning by allocating "ipb" dynamically.
+> This is very useful for debugging issues with the recently added
+> pagetable switching code for EFI virtual mode.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
 > ---
-> 0) Compile tested only (on 32 bits x86). I don't have access to
-> Infiniband hardware.
+>  arch/x86/platform/efi/efi.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
 > 
-> 1) Please note that this is not a new warning. The oldest build log I
-> have still available on this machine is for a v3.8 rc, and it already
-> showed this warning. 
-> 
-> 2) I do hope my choice for the GFP_KERNEL flag is correct here.
-> 
-> net/sunrpc/xprtrdma/verbs.c | 6 +++++-
-> 1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-> index 93726560..939ccc8 100644
-> --- a/net/sunrpc/xprtrdma/verbs.c
-> +++ b/net/sunrpc/xprtrdma/verbs.c
-> @@ -1736,11 +1736,14 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
-> 	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
-> 				  IB_ACCESS_REMOTE_READ);
-> 	struct rpcrdma_mr_seg *seg1 = seg;
-> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
-> +	struct ib_phys_buf *ipb;
-> 	int len, i, rc = 0;
-> 
-> 	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
-> 		*nsegs = RPCRDMA_MAX_DATA_SEGS;
-> +	ipb = kmalloc(sizeof(*ipb) * *nsegs, GFP_KERNEL);
-> +	if (ipb == NULL)
-> +		return -ENOMEM;
-> 	for (len = 0, i = 0; i < *nsegs;) {
-> 		rpcrdma_map_one(ia, seg, writing);
-> 		ipb[i].addr = seg->mr_dma;
-> @@ -1770,6 +1773,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
-> 		seg1->mr_len = len;
-> 	}
-> 	*nsegs = i;
-> +	kfree(ipb);
-> 	return rc;
-> }
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index d62ec87a2b26..c34be4ce94c9 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -54,6 +54,7 @@
+>  #include <asm/rtc.h>
+>  
+>  #define EFI_DEBUG
+> +#undef EFI_PGT_DBG
 
-Hi Paul,
+Should this be a Kconfig option? Hacking source files to enable debug
+isn't the best idea. Plus you could make it depend on X86_PTDUMP.
 
-Unfortunately, the above could be called from a file write back context, so we cannot use GFP_KERNEL allocations. In fact, I suspect we should only use GFP_ATOMIC, and then have the rpc_task delay and retry if the allocation fails.
-
-The problem is that it looks to me as if xprt_rdma_send_request will currently fail, if we return an error from rpcrdma_register_default_external.
-
-Chuck, will you be able to look into the above issue as part of your RDMA work?
-
-Cheers
-  Trond
-
---
-Trond Myklebust
-Linux NFS client maintainer
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
