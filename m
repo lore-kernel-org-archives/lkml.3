@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaAMQ1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:27:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53479 "EHLO
+	id S1755914AbaAMQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:27:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53477 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaAMQEH (ORCPT
+	with ESMTP id S1754080AbaAMQEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:04:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Alex Hung <alex.hung@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 131/208] arm64: fix possible invalid FPSIMD initialization state
-Date: Mon, 13 Jan 2014 15:59:32 +0000
-Message-Id: <1389628849-1614-132-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 139/208] dell-wmi: Add KEY_MICMUTE to bios_to_linux_keycode
+Date: Mon, 13 Jan 2014 15:59:40 +0000
+Message-Id: <1389628849-1614-140-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -29,40 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <jiang.liu@huawei.com>
+From: Alex Hung <alex.hung@canonical.com>
 
-commit 6db83cea1c975b9a102e17def7d2795814e1ae2b upstream.
+commit cfb743bf6173063b57ef5a8185ea87f130209d4d upstream.
 
-If context switching happens during executing fpsimd_flush_thread(),
-stale value in FPSIMD registers will be saved into current thread's
-fpsimd_state by fpsimd_thread_switch(). That may cause invalid
-initialization state for the new process, so disable preemption
-when executing fpsimd_flush_thread().
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Alex Hung <alex.hung@canonical.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/kernel/fpsimd.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/platform/x86/dell-wmi.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
-index e8b8357..2fa308e 100644
---- a/arch/arm64/kernel/fpsimd.c
-+++ b/arch/arm64/kernel/fpsimd.c
-@@ -79,8 +79,10 @@ void fpsimd_thread_switch(struct task_struct *next)
+diff --git a/drivers/platform/x86/dell-wmi.c b/drivers/platform/x86/dell-wmi.c
+index fa9a217..60e0900 100644
+--- a/drivers/platform/x86/dell-wmi.c
++++ b/drivers/platform/x86/dell-wmi.c
+@@ -130,7 +130,8 @@ static const u16 bios_to_linux_keycode[256] __initconst = {
+ 	KEY_BRIGHTNESSUP,	KEY_UNKNOWN,	KEY_KBDILLUMTOGGLE,
+ 	KEY_UNKNOWN,	KEY_SWITCHVIDEOMODE,	KEY_UNKNOWN, KEY_UNKNOWN,
+ 	KEY_SWITCHVIDEOMODE,	KEY_UNKNOWN,	KEY_UNKNOWN, KEY_PROG2,
+-	KEY_UNKNOWN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
++	KEY_UNKNOWN,	KEY_UNKNOWN,	KEY_UNKNOWN,	KEY_UNKNOWN,
++	KEY_UNKNOWN,	KEY_UNKNOWN,	KEY_UNKNOWN,	KEY_MICMUTE,
+ 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+@@ -139,8 +140,8 @@ static const u16 bios_to_linux_keycode[256] __initconst = {
+ 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+ 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+-	KEY_PROG3
++	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
++	0, 0, 0, 0, 0, 0, 0, 0, 0, KEY_PROG3
+ };
  
- void fpsimd_flush_thread(void)
- {
-+	preempt_disable();
- 	memset(&current->thread.fpsimd_state, 0, sizeof(struct fpsimd_state));
- 	fpsimd_load_state(&current->thread.fpsimd_state);
-+	preempt_enable();
- }
- 
- /*
+ static struct input_dev *dell_wmi_input_dev;
 -- 
 1.8.3.2
 
