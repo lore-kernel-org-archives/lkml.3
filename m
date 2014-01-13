@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbaAMNqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 08:46:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14909 "EHLO mga02.intel.com"
+	id S1751832AbaAMNrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 08:47:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:23501 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472AbaAMNqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 08:46:13 -0500
+	id S1751038AbaAMNre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 08:47:34 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,653,1384329600"; 
-   d="scan'208";a="457906569"
-Date: Mon, 13 Jan 2014 21:46:09 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, Dave Hansen <dave@sr71.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
-Message-ID: <20140113134609.GB31640@localhost>
-References: <20140103180147.6566F7C1@viggo.jf.intel.com>
- <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org>
- <20140106043237.GE696@lge.com>
- <52D05D90.3060809@sr71.net>
- <20140110153913.844e84755256afd271371493@linux-foundation.org>
- <52D0854F.5060102@sr71.net>
- <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com>
- <alpine.DEB.2.10.1401111854580.6036@nuc>
- <20140113014408.GA25900@lge.com>
- <1389584218.11984.0.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389584218.11984.0.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="464292978"
+From: Zhang Rui <rui.zhang@intel.com>
+To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Cc: rjw@rjwysocki.net, grant.likely@secretlab.ca,
+        jarkko.nikula@linux.intel.com, mika.westerberg@linux.intel.com,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH 0/4] module autoloading fixes
+Date: Mon, 13 Jan 2014 21:47:23 +0800
+Message-Id: <1389620843-3755-1-git-send-email-rui.zhang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > So, I think
-> > that it is better to get more benchmark results to this patchset for convincing
-> > ourselves. If possible, how about asking Fengguang to run whole set of
-> > his benchmarks before going forward?
-> 
-> Cc'ing him.
+Hi, all,
 
-My pleasure. Is there a git tree for the patches? Git trees
-are most convenient for running automated tests and bisects.
+This patch set fixes a couple of module autoloading problem.
 
-Thanks,
-Fengguang
+Patch 1/4 fixes a bug in ACPI device 'modalias' and 'uevent' attributes,
+          although the bug can rarely be reproduced (only if there is an
+          output error of snprintf, or the ids are longer than 1024 bytes)
+Patch 2/4 introduces two new APIs for exporting ACPI style 'modalias' and
+          'uevent' attributes in other buses.
+Patch 3/4 introduce support for ACPI style 'modalias' and 'uevent'
+          attributes in platform, I2C and SPI bus.
+Patch 4/4 add OF style 'modalias' support for platform bus.
+
+I did some tests and can confirm that the code for ACPI enumerated platform
+bus device works well.
+I tried with a patch with convert ACPI Fan device/driver to platform bus,
+and can confirm that the code for ACPI enumerated platform device works well,
+both the platform Fan driver and device show their modalias as "acpi:PNP0C0B".
+
+thanks,
+rui
+
+----------------------------------------------------------------
+Zhang Rui (4):
+      ACPI: fix create_modalias() return value handling
+      ACPI: add module autoloading support for ACPI enumerated devices
+      fix module autoloading for ACPI enumerated devices
+      OF: introduce OF style 'modalias' support for platform bus.
+
+ drivers/acpi/scan.c       |   73 +++++++++++++++++++++++++++++++++++++++++----
+ drivers/base/platform.c   |   16 +++++++++-
+ drivers/i2c/i2c-core.c    |   11 +++++++
+ drivers/of/device.c       |    3 ++
+ drivers/spi/spi.c         |   10 +++++++
+ include/linux/acpi.h      |   15 ++++++++++
+ include/linux/of_device.h |    6 ++++
+ 7 files changed, 127 insertions(+), 7 deletions(-)
