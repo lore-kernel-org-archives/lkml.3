@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaAMDVP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:21:15 -0500
-Received: from ozlabs.org ([203.10.76.45]:52930 "EHLO ozlabs.org"
+	id S1751375AbaAMDW2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:22:28 -0500
+Received: from mga01.intel.com ([192.55.52.88]:24878 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110AbaAMDVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:21:13 -0500
-Date: Mon, 13 Jan 2014 14:20:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree with the net-next tree
-Message-Id: <20140113142059.f9f1c58c391b2c8bbd05699f@canb.auug.org.au>
-In-Reply-To: <20140113141824.4301cb76e8e5540d42d74015@canb.auug.org.au>
-References: <20140113141824.4301cb76e8e5540d42d74015@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Jan_2014_14_20_59_+1100_h/SpCkbPTL_TGL45"
+	id S1751110AbaAMDW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 22:22:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,650,1384329600"; 
+   d="scan'208";a="464080010"
+Message-ID: <52D35ABB.8070904@intel.com>
+Date: Mon, 13 Jan 2014 11:17:15 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] x86, mpx: hook #BR exception handler to allocate
+ bound tables
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-2-git-send-email-qiaowei.ren@intel.com> <20140112092019.GA3664@pd.tnic>
+In-Reply-To: <20140112092019.GA3664@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Jan_2014_14_20_59_+1100_h/SpCkbPTL_TGL45
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Mon, 13 Jan 2014 14:18:24 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On 01/12/2014 05:20 PM, Borislav Petkov wrote:
+> On Sun, Jan 12, 2014 at 05:20:00PM +0800, Qiaowei Ren wrote:
+>> +static bool allocate_bt(unsigned long bd_entry)
+>> +{
+>> +	unsigned long bt_size = 1UL << (MPX_L2_BITS+MPX_L2_SHIFT);
+>> +	unsigned long bt_addr, old_val;
+>> +
+>> +	bt_addr = sys_mmap_pgoff(0, bt_size, PROT_READ | PROT_WRITE,
+>> +			MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
 >
-> Today's linux-next merge of the tip tree got conflicts in
-> arch/arc/include/asm/Kbuild, arch/cris/include/asm/Kbuild,
-> arch/hexagon/include/asm/Kbuild, arch/microblaze/include/asm/Kbuild,
-> arch/parisc/include/asm/Kbuild and arch/score/include/asm/Kbuild between
-> commit e3fec2f74f7f ("lib: Add missing arch generic-y entries for
-> asm-generic/hash.h") from the net-next tree and commit 93ea02bb8435
-> ("arch: Clean up asm/barrier.h implementations using
-> asm-generic/barrier.h") from the tip tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
->=20
-> BTW: thanks for not keeping the Kbuild files sorted :-(
+> Are we sure about this? We can do a possible memory allocation in
+> mmap_region() in this exception handler context. And yes, we do a
+> conditional_sti(), which makes it all the more susceptible.
+>
+> Have you run this with lockdep enabled?
+>
+Yes, I run this with lockdep enabled.
 
-I missed arch/mn10300/include/asm/Kbuild the first time round.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/mn10300/include/asm/Kbuild
-index bc42f14c9c2e,367ef399ddf7..000000000000
---- a/arch/mn10300/include/asm/Kbuild
-+++ b/arch/mn10300/include/asm/Kbuild
-@@@ -1,6 -1,6 +1,7 @@@
- =20
-++generic-y +=3D barrier.h
-  generic-y +=3D clkdev.h
-  generic-y +=3D exec.h
-++generic-y +=3D hash.h
-  generic-y +=3D trace_clock.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
- -generic-y +=3D barrier.h
-
---Signature=_Mon__13_Jan_2014_14_20_59_+1100_h/SpCkbPTL_TGL45
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS01ufAAoJEMDTa8Ir7ZwV1cQP/2X1LVcKgmjfXyFT4F+xLFti
-b9s/COuWq871BphIx02tvSByY4EN+a+Wv46Z0bJlMxeFf4RcOgDkcS40QPxkkzYW
-agnW7vzx5EZniIZ5p1FHoBKCl9rx46fH9GampBw9Gftfv2SUZ5gw83f8Ru4H7Iih
-PV5zRL8kIJvAIT/nya0Pw1Xxx8GCBo5Hl1NRuB8GIXuzJ1nxBRe+tMV0T1+n2vTM
-AIToOkG93QzoT+9Nlzg5oNVitwIFaNfoNcgjswMQW7jNqLaL17VCFCx6XkDlvIQG
-CYrOQA7rtM4/zJKS34x88BnMHX2KEAAn5THGmF3aIGGhplX9hT2Bze2hlPIyjDa9
-qyuk0zPJHuBkr+pp+pX3BXiYfg/AH+9a21LXHEIMY1qD+o8Iv/+h4BUwiQ4Wx3WL
-i5af066ZLOltn81GPtHDPaojgsIS4G0ML0zPYx9lNqVoouX8gXixvpcPb5rV3jKN
-sh6gLH1Ot9/Fsgo6SO0mEwVA/u15nIhkbJ+VnJVkqRELBf5UkfMZ4/EH7inw5+bt
-bVqd7Ndk9BWpOExoMHARD+AWYw8YuPAKMswzLe2EWYhQQifXkY61tU6u0XHXztpK
-ngz/CPwkoQUckrIzYXCR79Il/TYZL1QfyjbsqCbtSID9cj2p1VH4GkoNE8vDm3ml
-GE05OUw435ykwjcp2eV9
-=KVJs
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Jan_2014_14_20_59_+1100_h/SpCkbPTL_TGL45--
+Thanks,
+Qiaowei
