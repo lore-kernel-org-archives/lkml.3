@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaAMMtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 07:49:14 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:60532 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280AbaAMMtK (ORCPT
+	id S1751813AbaAMMth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 07:49:37 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:48914 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaAMMtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 07:49:10 -0500
+	Mon, 13 Jan 2014 07:49:11 -0500
 From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
 To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, qiuxishi@huawei.com, dhowells@redhat.com,
@@ -14,92 +14,40 @@ Cc: linux-mm@kvack.org, qiuxishi@huawei.com, dhowells@redhat.com,
         phacht@linux.vnet.ibm.com, zhangyanfei@cn.fujitsu.com,
         santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
         tangchen@cn.fujitsu.com
-Subject: [PATCH V2 1/2] mm/nobootmem: free_all_bootmem again
-Date: Mon, 13 Jan 2014 13:49:00 +0100
-Message-Id: <1389617341-568-2-git-send-email-phacht@linux.vnet.ibm.com>
+Subject: [PATCH V2 0/2] mm/memblock: Excluded memory, free_all_bootmem
+Date: Mon, 13 Jan 2014 13:48:59 +0100
+Message-Id: <1389617341-568-1-git-send-email-phacht@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1389617341-568-1-git-send-email-phacht@linux.vnet.ibm.com>
-References: <1389617341-568-1-git-send-email-phacht@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011312-5024-0000-0000-0000086224BB
+x-cbid: 14011312-2966-0000-0000-000009EB02B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_allocated_memblock_reserved_regions_info() should work if it is
-compiled in. Extended the ifdef around
-get_allocated_memblock_memory_regions_info() to include
-get_allocated_memblock_reserved_regions_info() as well.
-Similar changes in nobootmem.c/free_low_memory_core_early() where
-the two functions are called.
+These two patches fit (only) on top of linux-next!
 
-Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
----
- mm/memblock.c  | 17 ++---------------
- mm/nobootmem.c |  4 ++--
- 2 files changed, 4 insertions(+), 17 deletions(-)
+The first patch changes back the behavior of free_all_bootmem() to
+a more generic way: With CONFIG_DISCARD_MEMBLOCK memblock.memory
+and memblock.reserved will be freed (if allocated, of course).
+Removed the debugfs dependency. Think this is cleaner.
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 64ed243..9c0aeef 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -266,33 +266,20 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
- 	}
- }
- 
-+#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-+
- phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
- 					phys_addr_t *addr)
- {
- 	if (memblock.reserved.regions == memblock_reserved_init_regions)
- 		return 0;
- 
--	/*
--	 * Don't allow nobootmem allocator to free reserved memory regions
--	 * array if
--	 *  - CONFIG_DEBUG_FS is enabled;
--	 *  - CONFIG_ARCH_DISCARD_MEMBLOCK is not enabled;
--	 *  - reserved memory regions array have been resized during boot.
--	 * Otherwise debug_fs entry "sys/kernel/debug/memblock/reserved"
--	 * will show garbage instead of state of memory reservations.
--	 */
--	if (IS_ENABLED(CONFIG_DEBUG_FS) &&
--	    !IS_ENABLED(CONFIG_ARCH_DISCARD_MEMBLOCK))
--		return 0;
--
- 	*addr = __pa(memblock.reserved.regions);
- 
- 	return PAGE_ALIGN(sizeof(struct memblock_region) *
- 			  memblock.reserved.max);
- }
- 
--#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
--
- phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
- 					phys_addr_t *addr)
- {
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 17c8902..e2906a5 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -122,13 +122,13 @@ static unsigned long __init free_low_memory_core_early(void)
- 	for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
- 		count += __free_memory_core(start, end);
- 
-+#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-+
- 	/* Free memblock.reserved array if it was allocated */
- 	size = get_allocated_memblock_reserved_regions_info(&start);
- 	if (size)
- 		count += __free_memory_core(start, start + size);
- 
--#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
--
- 	/* Free memblock.memory array if it was allocated */
- 	size = get_allocated_memblock_memory_regions_info(&start);
- 	if (size)
+While further working on the s390 migration to memblock it is desirable
+to have memblock support unmapped (i.e. completely forgotten and unused)
+memory areas. The usual way of just forgetting about them by means of
+truncating the memblocks does not work for us because we still need the
+information about the real full memory structure at a later time.
+
+Philipp Hachtmann (2):
+  mm/nobootmem: free_all_bootmem again
+  mm/memblock: Add support for excluded memory areas
+
+ include/linux/memblock.h |  50 +++++++--
+ mm/Kconfig               |   3 +
+ mm/memblock.c            | 276 ++++++++++++++++++++++++++++++++++-------------
+ mm/nobootmem.c           |  13 ++-
+ 4 files changed, 255 insertions(+), 87 deletions(-)
+
 -- 
 1.8.4.5
 
