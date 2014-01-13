@@ -1,48 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaAMLpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:45:12 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:47344 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaAMLpI convert rfc822-to-8bit (ORCPT
+	id S1751503AbaAMLrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:47:45 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37472 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaAMLrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:45:08 -0500
-X-Auth-Info: ua8q8sI3UfsQNfQHUmPoipFsLNcHO4YqhKkd+8SJ3h0=
-From: Marek Vasut <marex@denx.de>
-To: Lothar =?iso-8859-1?q?Wa=DFmann?= <LW@karo-electronics.de>
-Subject: Re: [PATCH] imx-drm: parallel-display: honor 'native-mode' property when selecting video mode from DT
-Date: Mon, 13 Jan 2014 12:43:57 +0100
-User-Agent: KMail/1.13.7 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jiada Wang <jiada_wang@mentor.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-References: <1389608673-10565-1-git-send-email-LW@KARO-electronics.de>
-In-Reply-To: <1389608673-10565-1-git-send-email-LW@KARO-electronics.de>
+	Mon, 13 Jan 2014 06:47:42 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201401131243.57573.marex@denx.de>
+Date: Mon, 13 Jan 2014 12:47:42 +0100
+Message-ID: <CACmBeS35RAEQ+t2vtYtFTKNT-VdQw20hURjTi193Jk8HG7UECA@mail.gmail.com>
+Subject: build_skb() and data corruption
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: netdev <netdev@vger.kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bhutchings@solarflare.com, alexander.h.duyck@intel.com,
+        Arnd Bergmann <arnd@arndb.de>, Florian Fainelli <florian@openwrt.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 13, 2014 at 11:24:33 AM, Lothar Waﬂmann wrote:
-> This patch allows to select a specific video mode from a list of modes
-> defined in DT by setting the 'native-mode' property appropriately.
-> 
-> Since all current users of this driver have only one mode defined in
-> their .dts files, the patch does not change the behaviour of this
-> driver on the affected platforms.
-> 
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+Please help,
 
-Looks OK to me, thanks.
+I think I see memory corruption with a driver recently added to linux-next.
 
-Reviewed-by: Marek Vasut <marex@denx.de>
+The following error occur downloading a large file with wget (or
+ncftp): "read error: Bad address"
+wget exits and leaves the file unfinished.
 
-Best regards,
-Marek Vasut
+The error goes away when build_skb() is patched out, in this case by
+allocating pages directly in RX loop.
+
+I currently have two branches with code placed under ifdef USE_BUILD_SKB:
+https://bitbucket.org/Kasreyn/linux-next/src/faa7c408a655fdfd7c383f79259031da5a05d61e/drivers/net/ethernet/moxa/moxart_ether.c#cl-472
+
+If build_skb() is the cause, is there something the driver can do about it?
+
+A quick search on "build_skb memory corruption" reveals the following
+commit, "igb: Revert support for build_skb in igb"
+f9d40f6a9921cc7d9385f64362314054e22152bd:
+
+"The reason for reverting this patch is that it can lead to data corruption.
+The following flow was pointed out by Ben Hutchings:
+1. skb is forwarded to another device
+2. Packet headers are modified and it's put into a queue
+3. Second packet is received into the other half of this page
+4. Page cannot be reused, so is DMA-unmapped
+5. The DMA mapping was non-coherent, so unmap copies or invalidates
+cache
+The headers added in step 2 get trashed in step 5."
+
+
+This is extra interesting, errors only happen on a locally mounted
+ext3 filesystem, never on tmpfs e.g.:
+
+# mount
+/dev/mmcblk0p1 on / type ext3
+(rw,relatime,errors=continue,barrier=1,data=ordered)
+tmpfs on /dev/shm type tmpfs (rw,relatime,mode=777)
+tmpfs on /tmp type tmpfs (rw,relatime)
+
+#cd /tmp
+# wget -c ftp://149.20.4.69/pub/linux/kernel/v2.6/linux-2.6.11.11.tar.gz
+Connecting to 149.20.4.69 (149.20.4.69:21)
+linux-2.6.11.11.tar.  25% |*******                        | 11374k
+0:01:36 ETAwget: short write
+[  153.560000] wget (383) used greatest stack depth: 4776 bytes left
+# rm linux-2.6.11.11.tar.gz
+# wget -c ftp://149.20.4.69/pub/linux/kernel/v2.6/linux-2.6.11.11.tar.gz
+Connecting to 149.20.4.69 (149.20.4.69:21)
+linux-2.6.11.11.tar.  25% |*******                        | 11315k
+0:01:34 ETAwget: short write
+# rm linux-2.6.11.11.tar.gz
+# wget -c ftp://149.20.4.69/pub/linux/kernel/v2.6/linux-2.6.11.11.tar.gz
+Connecting to 149.20.4.69 (149.20.4.69:21)
+linux-2.6.11.11.tar.  25% |*******                        | 11473k
+0:01:38 ETAwget: short write
+[  237.300000] wget (387) used greatest stack depth: 4752 bytes left
+
+# cd /root/
+# wget -c ftp://149.20.4.69/pub/linux/kernel/v2.6/linux-2.6.11.11.tar.gz
+Connecting to 149.20.4.69 (149.20.4.69:21)
+linux-2.6.11.11.tar.   3% |*                              |  1647k  0:03:02 ETA
+wget: read error: Bad address
+
+
+Regards,
+Jonas
