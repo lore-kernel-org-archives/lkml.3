@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaAMQIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:08:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53862 "EHLO
+	id S1754883AbaAMQIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:08:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53852 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044AbaAMQFn (ORCPT
+	with ESMTP id S1754726AbaAMQFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:43 -0500
+	Mon, 13 Jan 2014 11:05:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 207/208] SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
-Date: Mon, 13 Jan 2014 16:00:48 +0000
-Message-Id: <1389628849-1614-208-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 205/208] parisc: Ensure full cache coherency for kmap/kunmap
+Date: Mon, 13 Jan 2014 16:00:46 +0000
+Message-Id: <1389628849-1614-206-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,143 +27,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: John David Anglin <dave.anglin@bell.net>
 
-commit 3dc91d4338d698ce77832985f9cb183d8eeaf6be upstream.
+commit f8dae00684d678afa13041ef170cecfd1297ed40 upstream.
 
-While running stress tests on adding and deleting ftrace instances I hit
-this bug:
+Helge Deller noted a few weeks ago problems with the AIO support on
+parisc. This change is the result of numerous iterations on how best to
+deal with this problem.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-  IP: selinux_inode_permission+0x85/0x160
-  PGD 63681067 PUD 7ddbe067 PMD 0
-  Oops: 0000 [#1] PREEMPT
-  CPU: 0 PID: 5634 Comm: ftrace-test-mki Not tainted 3.13.0-rc4-test-00033-gd2a6dde-dirty #20
-  Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
-  task: ffff880078375800 ti: ffff88007ddb0000 task.ti: ffff88007ddb0000
-  RIP: 0010:[<ffffffff812d8bc5>]  [<ffffffff812d8bc5>] selinux_inode_permission+0x85/0x160
-  RSP: 0018:ffff88007ddb1c48  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: 0000000000800000 RCX: ffff88006dd43840
-  RDX: 0000000000000001 RSI: 0000000000000081 RDI: ffff88006ee46000
-  RBP: ffff88007ddb1c88 R08: 0000000000000000 R09: ffff88007ddb1c54
-  R10: 6e6576652f6f6f66 R11: 0000000000000003 R12: 0000000000000000
-  R13: 0000000000000081 R14: ffff88006ee46000 R15: 0000000000000000
-  FS:  00007f217b5b6700(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
-  CR2: 0000000000000020 CR3: 000000006a0fe000 CR4: 00000000000007f0
-  Call Trace:
-    security_inode_permission+0x1c/0x30
-    __inode_permission+0x41/0xa0
-    inode_permission+0x18/0x50
-    link_path_walk+0x66/0x920
-    path_openat+0xa6/0x6c0
-    do_filp_open+0x43/0xa0
-    do_sys_open+0x146/0x240
-    SyS_open+0x1e/0x20
-    system_call_fastpath+0x16/0x1b
-  Code: 84 a1 00 00 00 81 e3 00 20 00 00 89 d8 83 c8 02 40 f6 c6 04 0f 45 d8 40 f6 c6 08 74 71 80 cf 02 49 8b 46 38 4c 8d 4d cc 45 31 c0 <0f> b7 50 20 8b 70 1c 48 8b 41 70 89 d9 8b 78 04 e8 36 cf ff ff
-  RIP  selinux_inode_permission+0x85/0x160
-  CR2: 0000000000000020
+The solution adopted here is to provide full cache coherency in a
+uniform manner on all parisc systems. This involves calling
+flush_dcache_page() on kmap operations and flush_kernel_dcache_page() on
+kunmap operations. As a result, the copy_user_page() and
+clear_user_page() functions can be removed and the overall code is
+simpler.
 
-Investigating, I found that the inode->i_security was NULL, and the
-dereference of it caused the oops.
+The change ensures that both userspace and kernel aliases to a mapped
+page are invalidated and flushed. This is necessary for the correct
+operation of PA8800 and PA8900 based systems which do not support
+inequivalent aliases.
 
-in selinux_inode_permission():
+With this change, I have observed no cache related issues on c8000 and
+rp3440. It is now possible for example to do kernel builds with "-j64"
+on four way systems.
 
-	isec = inode->i_security;
+On systems using XFS file systems, the patch recently posted by Mikulas
+Patocka to "fix crash using XFS on loopback" is needed to avoid a hang
+caused by an uninitialized lock passed to flush_dcache_page() in the
+page struct.
 
-	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
-
-Note, the crash came from stressing the deletion and reading of debugfs
-files.  I was not able to recreate this via normal files.  But I'm not
-sure they are safe.  It may just be that the race window is much harder
-to hit.
-
-What seems to have happened (and what I have traced), is the file is
-being opened at the same time the file or directory is being deleted.
-As the dentry and inode locks are not held during the path walk, nor is
-the inodes ref counts being incremented, there is nothing saving these
-structures from being discarded except for an rcu_read_lock().
-
-The rcu_read_lock() protects against freeing of the inode, but it does
-not protect freeing of the inode_security_struct.  Now if the freeing of
-the i_security happens with a call_rcu(), and the i_security field of
-the inode is not changed (it gets freed as the inode gets freed) then
-there will be no issue here.  (Linus Torvalds suggested not setting the
-field to NULL such that we do not need to check if it is NULL in the
-permission check).
-
-Note, this is a hack, but it fixes the problem at hand.  A real fix is
-to restructure the destroy_inode() to call all the destructor handlers
-from the RCU callback.  But that is a major job to do, and requires a
-lot of work.  For now, we just band-aid this bug with this fix (it
-works), and work on a more maintainable solution in the future.
-
-Link: http://lkml.kernel.org/r/20140109101932.0508dec7@gandalf.local.home
-Link: http://lkml.kernel.org/r/20140109182756.17abaaa8@gandalf.local.home
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/hooks.c          | 20 ++++++++++++++++++--
- security/selinux/include/objsec.h |  5 ++++-
- 2 files changed, 22 insertions(+), 3 deletions(-)
+ arch/parisc/include/asm/cacheflush.h | 12 ++++--------
+ arch/parisc/include/asm/page.h       |  5 ++---
+ arch/parisc/kernel/cache.c           | 35 -----------------------------------
+ 3 files changed, 6 insertions(+), 46 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 56f7621..bf64893 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -220,6 +220,14 @@ static int inode_alloc_security(struct inode *inode)
- 	return 0;
- }
+diff --git a/arch/parisc/include/asm/cacheflush.h b/arch/parisc/include/asm/cacheflush.h
+index f0e2784..2f9b751 100644
+--- a/arch/parisc/include/asm/cacheflush.h
++++ b/arch/parisc/include/asm/cacheflush.h
+@@ -125,42 +125,38 @@ flush_anon_page(struct vm_area_struct *vma, struct page *page, unsigned long vma
+ void mark_rodata_ro(void);
+ #endif
  
-+static void inode_free_rcu(struct rcu_head *head)
-+{
-+	struct inode_security_struct *isec;
-+
-+	isec = container_of(head, struct inode_security_struct, rcu);
-+	kmem_cache_free(sel_inode_cache, isec);
-+}
-+
- static void inode_free_security(struct inode *inode)
+-#ifdef CONFIG_PA8X00
+-/* Only pa8800, pa8900 needs this */
+-
+ #include <asm/kmap_types.h>
+ 
+ #define ARCH_HAS_KMAP
+ 
+-void kunmap_parisc(void *addr);
+-
+ static inline void *kmap(struct page *page)
  {
- 	struct inode_security_struct *isec = inode->i_security;
-@@ -230,8 +238,16 @@ static void inode_free_security(struct inode *inode)
- 		list_del_init(&isec->list);
- 	spin_unlock(&sbsec->isec_lock);
- 
--	inode->i_security = NULL;
--	kmem_cache_free(sel_inode_cache, isec);
-+	/*
-+	 * The inode may still be referenced in a path walk and
-+	 * a call to selinux_inode_permission() can be made
-+	 * after inode_free_security() is called. Ideally, the VFS
-+	 * wouldn't do this, but fixing that is a much harder
-+	 * job. For now, simply free the i_security via RCU, and
-+	 * leave the current inode->i_security pointer intact.
-+	 * The inode will be freed after the RCU grace period too.
-+	 */
-+	call_rcu(&isec->rcu, inode_free_rcu);
+ 	might_sleep();
++	flush_dcache_page(page);
+ 	return page_address(page);
  }
  
- static int file_alloc_security(struct file *file)
-diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
-index aa47bca..6fd9dd2 100644
---- a/security/selinux/include/objsec.h
-+++ b/security/selinux/include/objsec.h
-@@ -38,7 +38,10 @@ struct task_security_struct {
+ static inline void kunmap(struct page *page)
+ {
+-	kunmap_parisc(page_address(page));
++	flush_kernel_dcache_page_addr(page_address(page));
+ }
  
- struct inode_security_struct {
- 	struct inode *inode;	/* back pointer to inode object */
--	struct list_head list;	/* list of inode_security_struct */
-+	union {
-+		struct list_head list;	/* list of inode_security_struct */
-+		struct rcu_head rcu;	/* for freeing the inode_security_struct */
-+	};
- 	u32 task_sid;		/* SID of creating task */
- 	u32 sid;		/* SID of this object */
- 	u16 sclass;		/* security class of this object */
+ static inline void *kmap_atomic(struct page *page)
+ {
+ 	pagefault_disable();
++	flush_dcache_page(page);
+ 	return page_address(page);
+ }
+ 
+ static inline void __kunmap_atomic(void *addr)
+ {
+-	kunmap_parisc(addr);
++	flush_kernel_dcache_page_addr(addr);
+ 	pagefault_enable();
+ }
+ 
+ #define kmap_atomic_prot(page, prot)	kmap_atomic(page)
+ #define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
+ #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
+-#endif
+ 
+ #endif /* _PARISC_CACHEFLUSH_H */
+ 
+diff --git a/arch/parisc/include/asm/page.h b/arch/parisc/include/asm/page.h
+index b7adb2a..c53fc63 100644
+--- a/arch/parisc/include/asm/page.h
++++ b/arch/parisc/include/asm/page.h
+@@ -28,9 +28,8 @@ struct page;
+ 
+ void clear_page_asm(void *page);
+ void copy_page_asm(void *to, void *from);
+-void clear_user_page(void *vto, unsigned long vaddr, struct page *pg);
+-void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
+-			   struct page *pg);
++#define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
++#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
+ 
+ /* #define CONFIG_PARISC_TMPALIAS */
+ 
+diff --git a/arch/parisc/kernel/cache.c b/arch/parisc/kernel/cache.c
+index c035673..a725455 100644
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -388,41 +388,6 @@ void flush_kernel_dcache_page_addr(void *addr)
+ }
+ EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
+ 
+-void clear_user_page(void *vto, unsigned long vaddr, struct page *page)
+-{
+-	clear_page_asm(vto);
+-	if (!parisc_requires_coherency())
+-		flush_kernel_dcache_page_asm(vto);
+-}
+-EXPORT_SYMBOL(clear_user_page);
+-
+-void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
+-	struct page *pg)
+-{
+-	/* Copy using kernel mapping.  No coherency is needed
+-	   (all in kmap/kunmap) on machines that don't support
+-	   non-equivalent aliasing.  However, the `from' page
+-	   needs to be flushed before it can be accessed through
+-	   the kernel mapping. */
+-	preempt_disable();
+-	flush_dcache_page_asm(__pa(vfrom), vaddr);
+-	preempt_enable();
+-	copy_page_asm(vto, vfrom);
+-	if (!parisc_requires_coherency())
+-		flush_kernel_dcache_page_asm(vto);
+-}
+-EXPORT_SYMBOL(copy_user_page);
+-
+-#ifdef CONFIG_PA8X00
+-
+-void kunmap_parisc(void *addr)
+-{
+-	if (parisc_requires_coherency())
+-		flush_kernel_dcache_page_addr(addr);
+-}
+-EXPORT_SYMBOL(kunmap_parisc);
+-#endif
+-
+ void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
+ {
+ 	unsigned long flags;
 -- 
 1.8.3.2
 
