@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaAMLUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:20:01 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64779 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbaAMLTg (ORCPT
+	id S1751944AbaAMLUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:20:38 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37177 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbaAMLT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:19:36 -0500
+	Mon, 13 Jan 2014 06:19:29 -0500
 From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
         Jerome Marchand <jmarchan@redhat.com>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 6/7] zram: remove workqueue for freeing removed pending slot
-Date: Mon, 13 Jan 2014 20:19:01 +0900
-Message-Id: <1389611942-15544-7-git-send-email-minchan@kernel.org>
+Subject: [PATCH 4/7] zram: use atomic operation for stat
+Date: Mon, 13 Jan 2014 20:18:59 +0900
+Message-Id: <1389611942-15544-5-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.8.4.3
 In-Reply-To: <1389611942-15544-1-git-send-email-minchan@kernel.org>
 References: <1389611942-15544-1-git-send-email-minchan@kernel.org>
@@ -23,153 +23,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[1] introduced free request pending code to avoid scheduling
-by mutex under spinlock and it was a mess which made code
-lenghty and increased overhead.
+Some of fields in zram->stats are protected by zram->lock which
+is rather coarse-grained so let's use atomic operation without
+explict locking.
 
-Now, we don't need zram->lock any more to free slot so
-this patch reverts it and then, tb_lock should protect it.
-
-[1] a0c516c, zram: don't grab mutex in zram_slot_free_noity
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/block/zram/zram_drv.c | 54 +++++--------------------------------------
- drivers/block/zram/zram_drv.h | 10 --------
- 2 files changed, 6 insertions(+), 58 deletions(-)
+ drivers/block/zram/zram_drv.c | 20 ++++++++++----------
+ drivers/block/zram/zram_drv.h | 16 ++++++----------
+ 2 files changed, 16 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 24e6426..f1a3c95 100644
+index ebfddd8..9ab8849 100644
 --- a/drivers/block/zram/zram_drv.c
 +++ b/drivers/block/zram/zram_drv.c
-@@ -522,20 +522,6 @@ out:
- 	return ret;
+@@ -104,7 +104,7 @@ static ssize_t zero_pages_show(struct device *dev,
+ {
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	return sprintf(buf, "%u\n", zram->stats.pages_zero);
++	return sprintf(buf, "%u\n", atomic_read(&zram->stats.pages_zero));
  }
  
--static void handle_pending_slot_free(struct zram *zram)
--{
--	struct zram_slot_free *free_rq;
--
--	spin_lock(&zram->slot_free_lock);
--	while (zram->slot_free_rq) {
--		free_rq = zram->slot_free_rq;
--		zram->slot_free_rq = free_rq->next;
--		zram_free_page(zram, free_rq->index);
--		kfree(free_rq);
--	}
--	spin_unlock(&zram->slot_free_lock);
--}
--
- static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			int offset, struct bio *bio, int rw)
- {
-@@ -547,7 +533,6 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		up_read(&zram->lock);
- 	} else {
- 		down_write(&zram->lock);
--		handle_pending_slot_free(zram);
- 		ret = zram_bvec_write(zram, bvec, index, offset);
- 		up_write(&zram->lock);
- 	}
-@@ -566,8 +551,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ static ssize_t orig_data_size_show(struct device *dev,
+@@ -113,7 +113,7 @@ static ssize_t orig_data_size_show(struct device *dev,
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+ 	return sprintf(buf, "%llu\n",
+-		(u64)(zram->stats.pages_stored) << PAGE_SHIFT);
++		(u64)(atomic_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
+ }
+ 
+ static ssize_t compr_data_size_show(struct device *dev,
+@@ -293,21 +293,21 @@ static void zram_free_page(struct zram *zram, size_t index)
+ 		 */
+ 		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
+ 			zram_clear_flag(meta, index, ZRAM_ZERO);
+-			zram->stats.pages_zero--;
++			atomic_dec(&zram->stats.pages_zero);
+ 		}
  		return;
  	}
  
--	flush_work(&zram->free_work);
--
- 	meta = zram->meta;
- 	zram->init_done = 0;
+ 	if (unlikely(size > max_zpage_size))
+-		zram->stats.bad_compress--;
++		atomic_dec(&zram->stats.bad_compress);
  
-@@ -769,40 +752,19 @@ error:
- 	bio_io_error(bio);
- }
+ 	zs_free(meta->mem_pool, handle);
  
--static void zram_slot_free(struct work_struct *work)
--{
--	struct zram *zram;
--
--	zram = container_of(work, struct zram, free_work);
--	down_write(&zram->lock);
--	handle_pending_slot_free(zram);
--	up_write(&zram->lock);
--}
--
--static void add_slot_free(struct zram *zram, struct zram_slot_free *free_rq)
--{
--	spin_lock(&zram->slot_free_lock);
--	free_rq->next = zram->slot_free_rq;
--	zram->slot_free_rq = free_rq;
--	spin_unlock(&zram->slot_free_lock);
--}
--
- static void zram_slot_free_notify(struct block_device *bdev,
- 				unsigned long index)
- {
- 	struct zram *zram;
--	struct zram_slot_free *free_rq;
-+	struct zram_meta *meta;
+ 	if (size <= PAGE_SIZE / 2)
+-		zram->stats.good_compress--;
++		atomic_dec(&zram->stats.good_compress);
  
- 	zram = bdev->bd_disk->private_data;
--	atomic64_inc(&zram->stats.notify_free);
--
--	free_rq = kmalloc(sizeof(struct zram_slot_free), GFP_ATOMIC);
--	if (!free_rq)
--		return;
-+	meta = zram->meta;
+ 	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
+-	zram->stats.pages_stored--;
++	atomic_dec(&zram->stats.pages_stored);
  
--	free_rq->index = index;
--	add_slot_free(zram, free_rq);
--	schedule_work(&zram->free_work);
-+	write_lock(&meta->tb_lock);
-+	zram_free_page(zram, index);
-+	write_unlock(&meta->tb_lock);
-+	atomic64_inc(&zram->stats.notify_free);
- }
+ 	meta->table[index].handle = 0;
+ 	meta->table[index].size = 0;
+@@ -435,7 +435,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		/* Free memory associated with this sector now. */
+ 		zram_free_page(zram, index);
  
- static const struct block_device_operations zram_devops = {
-@@ -849,10 +811,6 @@ static int create_device(struct zram *zram, int device_id)
- 	init_rwsem(&zram->lock);
- 	init_rwsem(&zram->init_lock);
+-		zram->stats.pages_zero++;
++		atomic_inc(&zram->stats.pages_zero);
+ 		zram_set_flag(meta, index, ZRAM_ZERO);
+ 		ret = 0;
+ 		goto out;
+@@ -456,7 +456,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	}
  
--	INIT_WORK(&zram->free_work, zram_slot_free);
--	spin_lock_init(&zram->slot_free_lock);
--	zram->slot_free_rq = NULL;
--
- 	zram->queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!zram->queue) {
- 		pr_err("Error allocating disk queue for device %d\n",
+ 	if (unlikely(clen > max_zpage_size)) {
+-		zram->stats.bad_compress++;
++		atomic_inc(&zram->stats.bad_compress);
+ 		clen = PAGE_SIZE;
+ 		src = NULL;
+ 		if (is_partial_io(bvec))
+@@ -493,9 +493,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 
+ 	/* Update stats */
+ 	atomic64_add(clen, &zram->stats.compr_size);
+-	zram->stats.pages_stored++;
++	atomic_inc(&zram->stats.pages_stored);
+ 	if (clen <= PAGE_SIZE / 2)
+-		zram->stats.good_compress++;
++		atomic_inc(&zram->stats.good_compress);
+ 
+ out:
+ 	if (is_partial_io(bvec))
 diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index c3f453f..d876300 100644
+index 0e46953..81b0170 100644
 --- a/drivers/block/zram/zram_drv.h
 +++ b/drivers/block/zram/zram_drv.h
-@@ -90,20 +90,11 @@ struct zram_meta {
- 	struct zs_pool *mem_pool;
+@@ -68,10 +68,6 @@ struct table {
+ 	u8 flags;
+ } __aligned(4);
+ 
+-/*
+- * All 64bit fields should only be manipulated by 64bit atomic accessors.
+- * All modifications to 32bit counter should be protected by zram->lock.
+- */
+ struct zram_stats {
+ 	atomic64_t compr_size;	/* compressed size of pages stored */
+ 	atomic64_t num_reads;	/* failed + successful */
+@@ -80,10 +76,10 @@ struct zram_stats {
+ 	atomic64_t failed_writes;	/* can happen when memory is too low */
+ 	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+ 	atomic64_t notify_free;	/* no. of swap slot free notifications */
+-	u32 pages_zero;		/* no. of zero filled pages */
+-	u32 pages_stored;	/* no. of pages currently stored */
+-	u32 good_compress;	/* % of pages with compression ratio<=50% */
+-	u32 bad_compress;	/* % of pages with compression ratio>=75% */
++	atomic_t pages_zero;		/* no. of zero filled pages */
++	atomic_t pages_stored;	/* no. of pages currently stored */
++	atomic_t good_compress;	/* % of pages with compression ratio<=50% */
++	atomic_t bad_compress;	/* % of pages with compression ratio>=75% */
  };
  
--struct zram_slot_free {
--	unsigned long index;
--	struct zram_slot_free *next;
--};
--
+ struct zram_meta {
+@@ -101,8 +97,8 @@ struct zram_slot_free {
  struct zram {
  	struct zram_meta *meta;
- 	struct rw_semaphore lock; /* protect compression buffers,
- 				   * reads and writes
- 				   */
--
--	struct work_struct free_work;  /* handle pending free request */
--	struct zram_slot_free *slot_free_rq; /* list head of free request */
--
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
-@@ -114,7 +105,6 @@ struct zram {
- 	 * we can store in a disk.
- 	 */
- 	u64 disksize;	/* bytes */
--	spinlock_t slot_free_lock;
+ 	struct rw_semaphore lock; /* protect compression buffers, table,
+-				   * 32bit stat counters against concurrent
+-				   * notifications, reads and writes */
++				   * reads and writes
++				   */
  
- 	struct zram_stats stats;
- };
+ 	struct work_struct free_work;  /* handle pending free request */
+ 	struct zram_slot_free *slot_free_rq; /* list head of free request */
 -- 
 1.8.4.3
 
