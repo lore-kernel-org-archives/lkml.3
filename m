@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaAMQbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:31:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53442 "EHLO
+	id S1754181AbaAMQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:03:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53328 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaAMQD7 (ORCPT
+	with ESMTP id S1754012AbaAMQD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:59 -0500
+	Mon, 13 Jan 2014 11:03:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 132/208] arm64: check for number of arguments in syscall_get/set_arguments()
-Date: Mon, 13 Jan 2014 15:59:33 +0000
-Message-Id: <1389628849-1614-133-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 108/208] Input: allocate absinfo data when setting ABS capability
+Date: Mon, 13 Jan 2014 15:59:09 +0000
+Message-Id: <1389628849-1614-109-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -29,55 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 7b22c03536a539142f931815528d55df455ffe2d upstream.
+commit 28a2a2e1aedbe2d8b2301e6e0e4e63f6e4177aca upstream.
 
-In ftrace_syscall_enter(),
-    syscall_get_arguments(..., 0, n, ...)
-        if (i == 0) { <handle orig_x0> ...; n--;}
-        memcpy(..., n * sizeof(args[0]));
-If 'number of arguments(n)' is zero and 'argument index(i)' is also zero in
-syscall_get_arguments(), none of arguments should be copied by memcpy().
-Otherwise 'n--' can be a big positive number and unexpected amount of data
-will be copied. Tracing system calls which take no argument, say sync(void),
-may hit this case and eventually make the system corrupted.
-This patch fixes the issue both in syscall_get_arguments() and
-syscall_set_arguments().
+We need to make sure we allocate absinfo data when we are setting one of
+EV_ABS/ABS_XXX capabilities, otherwise we may bomb when we try to emit this
+event.
 
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Brown <broonie@kernel.org>
+Rested-by: Paul Cercueil <pcercuei@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/include/asm/syscall.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/input/input.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
-index 89c047f..70ba9d4 100644
---- a/arch/arm64/include/asm/syscall.h
-+++ b/arch/arm64/include/asm/syscall.h
-@@ -59,6 +59,9 @@ static inline void syscall_get_arguments(struct task_struct *task,
- 					 unsigned int i, unsigned int n,
- 					 unsigned long *args)
- {
-+	if (n == 0)
-+		return;
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index c044699..66984e2 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1866,6 +1866,10 @@ void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int
+ 		break;
+ 
+ 	case EV_ABS:
++		input_alloc_absinfo(dev);
++		if (!dev->absinfo)
++			return;
 +
- 	if (i + n > SYSCALL_MAX_ARGS) {
- 		unsigned long *args_bad = args + SYSCALL_MAX_ARGS - i;
- 		unsigned int n_bad = n + i - SYSCALL_MAX_ARGS;
-@@ -82,6 +85,9 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 					 unsigned int i, unsigned int n,
- 					 const unsigned long *args)
- {
-+	if (n == 0)
-+		return;
-+
- 	if (i + n > SYSCALL_MAX_ARGS) {
- 		pr_warning("%s called with max args %d, handling only %d\n",
- 			   __func__, i + n, SYSCALL_MAX_ARGS);
+ 		__set_bit(code, dev->absbit);
+ 		break;
+ 
 -- 
 1.8.3.2
 
