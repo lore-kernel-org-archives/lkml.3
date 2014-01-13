@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaAMK1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 05:27:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39883 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024AbaAMK1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 05:27:37 -0500
-Date: Mon, 13 Jan 2014 11:27:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 4/4] efi: Make efi virtual runtime map passing more robust
-Message-ID: <20140113102734.GB5388@pd.tnic>
-References: <1389473370-1940-1-git-send-email-bp@alien8.de>
- <1389473370-1940-5-git-send-email-bp@alien8.de>
- <20140113054038.GB11237@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140113054038.GB11237@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751504AbaAMK2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 05:28:47 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:54224 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959AbaAMK2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 05:28:44 -0500
+From: Baruch Siach <baruch@tkos.co.il>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        Baruch Siach <baruch@tkos.co.il>
+Subject: [PATCH v3] perf: add support for the xtensa architecture
+Date: Mon, 13 Jan 2014 12:27:35 +0200
+Message-Id: <aafcdb22f04e2d3188d2938528939481be56b649.1389608855.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 01:40:39PM +0800, Dave Young wrote:
-> Adding a safeguard check for desc_size is better though currently it's
-> impossible for the desc_size > PAGE_SIZE?
+Tested using kernel tracepoints on a QEMU simulated environment. Kernel support
+for perf depends on the patch "xtensa: enable HAVE_PERF_EVENTS", which is
+scheduled for v3.14. Hardware performance counters are not supported under
+xtensa yet.
 
-Huh, what?
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+---
+v2: use the "core ID" field from /proc/cpuinfo (Max Filippov)
 
-sizeof(efi_memory_desc_t) is only 40 bytes AFAICT.
+v3: add testing and kernel dependency information (Ingo Molnar)
+---
+ tools/perf/perf.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index b079304bd53d..e441864dbe03 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -132,6 +132,13 @@
+ #define CPUINFO_PROC	"CPU"
+ #endif
+ 
++#ifdef __xtensa__
++#define mb()		asm volatile("memw" ::: "memory")
++#define wmb()		asm volatile("memw" ::: "memory")
++#define rmb()		asm volatile("" ::: "memory")
++#define CPUINFO_PROC	"core ID"
++#endif
++
+ #define barrier() asm volatile ("" ::: "memory")
+ 
+ #ifndef cpu_relax
 -- 
-Regards/Gruss,
-    Boris.
+1.8.5.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
