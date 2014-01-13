@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaAMQC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:02:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53045 "EHLO
+	id S1753925AbaAMQDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:03:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53197 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaAMQCK (ORCPT
+	with ESMTP id S1753630AbaAMQCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:10 -0500
+	Mon, 13 Jan 2014 11:02:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Robin H. Johnson" <robbat2@gentoo.org>, Tejun Heo <tj@kernel.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 053/208] libata: disable a disk via libata.force params
-Date: Mon, 13 Jan 2014 15:58:14 +0000
-Message-Id: <1389628849-1614-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 082/208] drm/radeon: fix asic gfx values for scrapper asics
+Date: Mon, 13 Jan 2014 15:58:43 +0000
+Message-Id: <1389628849-1614-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Robin H. Johnson" <robbat2@gentoo.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
+commit e2f6c88fb903e123edfd1106b0b8310d5117f774 upstream.
 
-A user on StackExchange had a failing SSD that's soldered directly
-onto the motherboard of his system. The BIOS does not give any option
-to disable it at all, so he can't just hide it from the OS via the
-BIOS.
+Fixes gfx corruption on certain TN/RL parts.
 
-The old IDE layer had hdX=noprobe override for situations like this,
-but that was never ported to the libata layer.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=60389
 
-This patch implements a disable flag for libata.force.
-
-Example use:
-
- libata.force=2.0:disable
-
-[v2 of the patch, removed the nodisable flag per Tejun Heo]
-
-Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
-Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
-Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/kernel-parameters.txt | 2 ++
- drivers/ata/libata-core.c           | 1 +
- 2 files changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/ni.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7f9d4f5..205cc23 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1460,6 +1460,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index 263d14b..b2a76f5 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -896,6 +896,10 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+ 		    (rdev->pdev->device == 0x999C)) {
+ 			rdev->config.cayman.max_simds_per_se = 6;
+ 			rdev->config.cayman.max_backends_per_se = 2;
++			rdev->config.cayman.max_hw_contexts = 8;
++			rdev->config.cayman.sx_max_export_size = 256;
++			rdev->config.cayman.sx_max_export_pos_size = 64;
++			rdev->config.cayman.sx_max_export_smx_size = 192;
+ 		} else if ((rdev->pdev->device == 0x9903) ||
+ 			   (rdev->pdev->device == 0x9904) ||
+ 			   (rdev->pdev->device == 0x990A) ||
+@@ -906,6 +910,10 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+ 			   (rdev->pdev->device == 0x999D)) {
+ 			rdev->config.cayman.max_simds_per_se = 4;
+ 			rdev->config.cayman.max_backends_per_se = 2;
++			rdev->config.cayman.max_hw_contexts = 8;
++			rdev->config.cayman.sx_max_export_size = 256;
++			rdev->config.cayman.sx_max_export_pos_size = 64;
++			rdev->config.cayman.sx_max_export_smx_size = 192;
+ 		} else if ((rdev->pdev->device == 0x9919) ||
+ 			   (rdev->pdev->device == 0x9990) ||
+ 			   (rdev->pdev->device == 0x9991) ||
+@@ -916,9 +924,17 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+ 			   (rdev->pdev->device == 0x99A0)) {
+ 			rdev->config.cayman.max_simds_per_se = 3;
+ 			rdev->config.cayman.max_backends_per_se = 1;
++			rdev->config.cayman.max_hw_contexts = 4;
++			rdev->config.cayman.sx_max_export_size = 128;
++			rdev->config.cayman.sx_max_export_pos_size = 32;
++			rdev->config.cayman.sx_max_export_smx_size = 96;
+ 		} else {
+ 			rdev->config.cayman.max_simds_per_se = 2;
+ 			rdev->config.cayman.max_backends_per_se = 1;
++			rdev->config.cayman.max_hw_contexts = 4;
++			rdev->config.cayman.sx_max_export_size = 128;
++			rdev->config.cayman.sx_max_export_pos_size = 32;
++			rdev->config.cayman.sx_max_export_smx_size = 96;
+ 		}
+ 		rdev->config.cayman.max_texture_channel_caches = 2;
+ 		rdev->config.cayman.max_gprs = 256;
+@@ -926,10 +942,6 @@ static void cayman_gpu_init(struct radeon_device *rdev)
+ 		rdev->config.cayman.max_gs_threads = 32;
+ 		rdev->config.cayman.max_stack_entries = 512;
+ 		rdev->config.cayman.sx_num_of_sets = 8;
+-		rdev->config.cayman.sx_max_export_size = 256;
+-		rdev->config.cayman.sx_max_export_pos_size = 64;
+-		rdev->config.cayman.sx_max_export_smx_size = 192;
+-		rdev->config.cayman.max_hw_contexts = 8;
+ 		rdev->config.cayman.sq_num_cf_insts = 2;
  
- 			* atapi_dmadir: Enable ATAPI DMADIR bridge support
- 
-+			* disable: Disable this device.
-+
- 			If there are multiple matching configurations changing
- 			the same attribute, the last one is used.
- 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index bcdbcff..bfd727a 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6509,6 +6509,7 @@ static int __init ata_parse_force_one(char **cur,
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
- 		{ "rstonce",	.lflags		= ATA_LFLAG_RST_ONCE },
- 		{ "atapi_dmadir", .horkage_on	= ATA_HORKAGE_ATAPI_DMADIR },
-+		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
+ 		rdev->config.cayman.sc_prim_fifo_size = 0x40;
 -- 
 1.8.3.2
 
