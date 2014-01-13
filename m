@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaAMO1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51248 "EHLO
+	id S1753158AbaAMOgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:36:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51618 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770AbaAMOZe (ORCPT
+	with ESMTP id S1752329AbaAMO1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:34 -0500
+	Mon, 13 Jan 2014 09:27:10 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 21/96] ceph: cleanup aborted requests when re-sending requests.
-Date: Mon, 13 Jan 2014 14:23:44 +0000
-Message-Id: <1389623099-18783-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 91/96] vlan: Fix header ops passthru when doing TX VLAN offload.
+Date: Mon, 13 Jan 2014 14:24:54 +0000
+Message-Id: <1389623099-18783-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit eb1b8af33c2e42a9a57fc0a7588f4a7b255d2e79 upstream.
+commit 2205369a314e12fcec4781cc73ac9c08fc2b47de upstream.
 
-Aborted requests usually get cleared when the reply is received.
-If MDS crashes, no reply will be received. So we need to cleanup
-aborted requests when re-sending requests.
+When the vlan code detects that the real device can do TX VLAN offloads
+in hardware, it tries to arrange for the real device's header_ops to
+be invoked directly.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Reviewed-by: Greg Farnum <greg@inktank.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+But it does so illegally, by simply hooking the real device's
+header_ops up to the VLAN device.
+
+This doesn't work because we will end up invoking a set of header_ops
+routines which expect a device type which matches the real device, but
+will see a VLAN device instead.
+
+Fix this by providing a pass-thru set of header_ops which will arrange
+to pass the proper real device instead.
+
+To facilitate this add a dev_rebuild_header().  There are
+implementations which provide a ->cache and ->create but not a
+->rebuild (f.e. PLIP).  So we need a helper function just like
+dev_hard_header() to avoid crashes.
+
+Use this helper in the one existing place where the
+header_ops->rebuild was being invoked, the neighbour code.
+
+With lots of help from Florian Westphal.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: used davem's backport to 3.4 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ceph/mds_client.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/netdevice.h |  9 +++++++++
+ net/8021q/vlan_dev.c      | 19 ++++++++++++++++++-
+ 2 files changed, 27 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index 0b26ea8..5efe309 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -1815,8 +1815,11 @@ static int __do_request(struct ceph_mds_client *mdsc,
- 	int mds = -1;
- 	int err = -EAGAIN;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 735cb59..e80df17 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1726,6 +1726,15 @@ static inline int dev_parse_header(const struct sk_buff *skb,
+ 	return dev->header_ops->parse(skb, haddr);
+ }
  
--	if (req->r_err || req->r_got_result)
-+	if (req->r_err || req->r_got_result) {
-+		if (req->r_aborted)
-+			__unregister_request(mdsc, req);
- 		goto out;
-+	}
++static inline int dev_rebuild_header(struct sk_buff *skb)
++{
++	const struct net_device *dev = skb->dev;
++
++	if (!dev->header_ops || !dev->header_ops->rebuild)
++		return 0;
++	return dev->header_ops->rebuild(skb);
++}
++
+ typedef int gifconf_func_t(struct net_device * dev, char __user * bufptr, int len);
+ extern int		register_gifconf(unsigned int family, gifconf_func_t * gifconf);
+ static inline int unregister_gifconf(unsigned int family)
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index b8cf84e..ce40df8 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -525,6 +525,23 @@ static const struct header_ops vlan_header_ops = {
+ 	.parse	 = eth_header_parse,
+ };
  
- 	if (req->r_timeout &&
- 	    time_after_eq(jiffies, req->r_started + req->r_timeout)) {
++static int vlan_passthru_hard_header(struct sk_buff *skb, struct net_device *dev,
++				     unsigned short type,
++				     const void *daddr, const void *saddr,
++				     unsigned int len)
++{
++	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
++	struct net_device *real_dev = vlan->real_dev;
++
++	return dev_hard_header(skb, real_dev, type, daddr, saddr, len);
++}
++
++static const struct header_ops vlan_passthru_header_ops = {
++	.create	 = vlan_passthru_hard_header,
++	.rebuild = dev_rebuild_header,
++	.parse	 = eth_header_parse,
++};
++
+ static const struct net_device_ops vlan_netdev_ops;
+ 
+ static int vlan_dev_init(struct net_device *dev)
+@@ -564,7 +581,7 @@ static int vlan_dev_init(struct net_device *dev)
+ 
+ 	dev->needed_headroom = real_dev->needed_headroom;
+ 	if (real_dev->features & NETIF_F_HW_VLAN_TX) {
+-		dev->header_ops      = real_dev->header_ops;
++		dev->header_ops      = &vlan_passthru_header_ops;
+ 		dev->hard_header_len = real_dev->hard_header_len;
+ 	} else {
+ 		dev->header_ops      = &vlan_header_ops;
 -- 
 1.8.3.2
 
