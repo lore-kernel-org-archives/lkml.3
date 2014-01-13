@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaAMQIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:08:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53860 "EHLO
+	id S1754851AbaAMQIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:08:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53862 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869AbaAMQFn (ORCPT
+	with ESMTP id S1753044AbaAMQFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:05:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 206/208] ftrace/x86: Load ftrace_ops in parameter not the variable holding it
-Date: Mon, 13 Jan 2014 16:00:47 +0000
-Message-Id: <1389628849-1614-207-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 207/208] SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
+Date: Mon, 13 Jan 2014 16:00:48 +0000
+Message-Id: <1389628849-1614-208-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -30,60 +30,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 1739f09e33d8f66bf48ddbc3eca615574da6c4f6 upstream.
+commit 3dc91d4338d698ce77832985f9cb183d8eeaf6be upstream.
 
-Function tracing callbacks expect to have the ftrace_ops that registered it
-passed to them, not the address of the variable that holds the ftrace_ops
-that registered it.
+While running stress tests on adding and deleting ftrace instances I hit
+this bug:
 
-Use a mov instead of a lea to store the ftrace_ops into the parameter
-of the function tracing callback.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+  IP: selinux_inode_permission+0x85/0x160
+  PGD 63681067 PUD 7ddbe067 PMD 0
+  Oops: 0000 [#1] PREEMPT
+  CPU: 0 PID: 5634 Comm: ftrace-test-mki Not tainted 3.13.0-rc4-test-00033-gd2a6dde-dirty #20
+  Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+  task: ffff880078375800 ti: ffff88007ddb0000 task.ti: ffff88007ddb0000
+  RIP: 0010:[<ffffffff812d8bc5>]  [<ffffffff812d8bc5>] selinux_inode_permission+0x85/0x160
+  RSP: 0018:ffff88007ddb1c48  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000800000 RCX: ffff88006dd43840
+  RDX: 0000000000000001 RSI: 0000000000000081 RDI: ffff88006ee46000
+  RBP: ffff88007ddb1c88 R08: 0000000000000000 R09: ffff88007ddb1c54
+  R10: 6e6576652f6f6f66 R11: 0000000000000003 R12: 0000000000000000
+  R13: 0000000000000081 R14: ffff88006ee46000 R15: 0000000000000000
+  FS:  00007f217b5b6700(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
+  CR2: 0000000000000020 CR3: 000000006a0fe000 CR4: 00000000000007f0
+  Call Trace:
+    security_inode_permission+0x1c/0x30
+    __inode_permission+0x41/0xa0
+    inode_permission+0x18/0x50
+    link_path_walk+0x66/0x920
+    path_openat+0xa6/0x6c0
+    do_filp_open+0x43/0xa0
+    do_sys_open+0x146/0x240
+    SyS_open+0x1e/0x20
+    system_call_fastpath+0x16/0x1b
+  Code: 84 a1 00 00 00 81 e3 00 20 00 00 89 d8 83 c8 02 40 f6 c6 04 0f 45 d8 40 f6 c6 08 74 71 80 cf 02 49 8b 46 38 4c 8d 4d cc 45 31 c0 <0f> b7 50 20 8b 70 1c 48 8b 41 70 89 d9 8b 78 04 e8 36 cf ff ff
+  RIP  selinux_inode_permission+0x85/0x160
+  CR2: 0000000000000020
+
+Investigating, I found that the inode->i_security was NULL, and the
+dereference of it caused the oops.
+
+in selinux_inode_permission():
+
+	isec = inode->i_security;
+
+	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
+
+Note, the crash came from stressing the deletion and reading of debugfs
+files.  I was not able to recreate this via normal files.  But I'm not
+sure they are safe.  It may just be that the race window is much harder
+to hit.
+
+What seems to have happened (and what I have traced), is the file is
+being opened at the same time the file or directory is being deleted.
+As the dentry and inode locks are not held during the path walk, nor is
+the inodes ref counts being incremented, there is nothing saving these
+structures from being discarded except for an rcu_read_lock().
+
+The rcu_read_lock() protects against freeing of the inode, but it does
+not protect freeing of the inode_security_struct.  Now if the freeing of
+the i_security happens with a call_rcu(), and the i_security field of
+the inode is not changed (it gets freed as the inode gets freed) then
+there will be no issue here.  (Linus Torvalds suggested not setting the
+field to NULL such that we do not need to check if it is NULL in the
+permission check).
+
+Note, this is a hack, but it fixes the problem at hand.  A real fix is
+to restructure the destroy_inode() to call all the destructor handlers
+from the RCU callback.  But that is a major job to do, and requires a
+lot of work.  For now, we just band-aid this bug with this fix (it
+works), and work on a more maintainable solution in the future.
+
+Link: http://lkml.kernel.org/r/20140109101932.0508dec7@gandalf.local.home
+Link: http://lkml.kernel.org/r/20140109182756.17abaaa8@gandalf.local.home
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/20131113152004.459787f9@gandalf.local.home
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/entry_32.S | 4 ++--
- arch/x86/kernel/entry_64.S | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ security/selinux/hooks.c          | 20 ++++++++++++++++++--
+ security/selinux/include/objsec.h |  5 ++++-
+ 2 files changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 2cfbc3a..bbc89cf 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1085,7 +1085,7 @@ ENTRY(ftrace_caller)
- 	pushl $0	/* Pass NULL as regs pointer */
- 	movl 4*4(%esp), %eax
- 	movl 0x4(%ebp), %edx
--	leal function_trace_op, %ecx
-+	movl function_trace_op, %ecx
- 	subl $MCOUNT_INSN_SIZE, %eax
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 56f7621..bf64893 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -220,6 +220,14 @@ static int inode_alloc_security(struct inode *inode)
+ 	return 0;
+ }
  
- .globl ftrace_call
-@@ -1143,7 +1143,7 @@ ENTRY(ftrace_regs_caller)
- 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
- 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
- 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
--	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
-+	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
- 	pushl %esp		/* Save pt_regs as 4th parameter */
++static void inode_free_rcu(struct rcu_head *head)
++{
++	struct inode_security_struct *isec;
++
++	isec = container_of(head, struct inode_security_struct, rcu);
++	kmem_cache_free(sel_inode_cache, isec);
++}
++
+ static void inode_free_security(struct inode *inode)
+ {
+ 	struct inode_security_struct *isec = inode->i_security;
+@@ -230,8 +238,16 @@ static void inode_free_security(struct inode *inode)
+ 		list_del_init(&isec->list);
+ 	spin_unlock(&sbsec->isec_lock);
  
- GLOBAL(ftrace_regs_call)
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1b69951..bcdb3ca 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -88,7 +88,7 @@ END(function_hook)
- 	MCOUNT_SAVE_FRAME \skip
+-	inode->i_security = NULL;
+-	kmem_cache_free(sel_inode_cache, isec);
++	/*
++	 * The inode may still be referenced in a path walk and
++	 * a call to selinux_inode_permission() can be made
++	 * after inode_free_security() is called. Ideally, the VFS
++	 * wouldn't do this, but fixing that is a much harder
++	 * job. For now, simply free the i_security via RCU, and
++	 * leave the current inode->i_security pointer intact.
++	 * The inode will be freed after the RCU grace period too.
++	 */
++	call_rcu(&isec->rcu, inode_free_rcu);
+ }
  
- 	/* Load the ftrace_ops into the 3rd parameter */
--	leaq function_trace_op, %rdx
-+	movq function_trace_op(%rip), %rdx
+ static int file_alloc_security(struct file *file)
+diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
+index aa47bca..6fd9dd2 100644
+--- a/security/selinux/include/objsec.h
++++ b/security/selinux/include/objsec.h
+@@ -38,7 +38,10 @@ struct task_security_struct {
  
- 	/* Load ip into the first parameter */
- 	movq RIP(%rsp), %rdi
+ struct inode_security_struct {
+ 	struct inode *inode;	/* back pointer to inode object */
+-	struct list_head list;	/* list of inode_security_struct */
++	union {
++		struct list_head list;	/* list of inode_security_struct */
++		struct rcu_head rcu;	/* for freeing the inode_security_struct */
++	};
+ 	u32 task_sid;		/* SID of creating task */
+ 	u32 sid;		/* SID of this object */
+ 	u16 sclass;		/* security class of this object */
 -- 
 1.8.3.2
 
