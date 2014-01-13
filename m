@@ -1,129 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaAMRnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:43:49 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:35046 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752380AbaAMRnq (ORCPT
+	id S1752443AbaAMRqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:46:42 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35827 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751316AbaAMRqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:43:46 -0500
-Message-ID: <52D425CF.9050507@free-electrons.com>
-Date: Mon, 13 Jan 2014 18:43:43 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 13 Jan 2014 12:46:40 -0500
+Date: Mon, 13 Jan 2014 17:46:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org,
+        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 15/28] drm/i2c: tda998x: use the tda998x video
+	format when cea mode
+Message-ID: <20140113174631.GC15937@n2100.arm.linux.org.uk>
+References: <20140109120448.24d89eba@armhf> <20140111181832.GD15937@n2100.arm.linux.org.uk> <20140113170707.10b908dc@armhf> <20140113161333.GA15937@n2100.arm.linux.org.uk> <20140113172220.521917ce@armhf> <20140113163501.GB15937@n2100.arm.linux.org.uk> <20140113182455.1f8c3f40@armhf>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3] mmc: atmel-mci: add vmmc-supply support
-References: <1382006808-22728-1-git-send-email-alexandre.belloni@free-electrons.com> <CAPDyKFoiWOE47DWrUHNWVPyihL=uCidpd52TV1vgUbq1aMNvbw@mail.gmail.com> <52B09FF0.4070200@free-electrons.com> <20131218081645.GA4268@ldesroches-Latitude-E6320>
-In-Reply-To: <20131218081645.GA4268@ldesroches-Latitude-E6320>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140113182455.1f8c3f40@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 13, 2014 at 06:24:55PM +0100, Jean-Francois Moine wrote:
+> On Mon, 13 Jan 2014 16:35:01 +0000
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> 
+> > Ah, I see.  It's a thread about your DRM driver, and about the lack of
+> > audio on 1080 resolutions.  Taking it in context, the reported issue
+> > appears to be lack of video when 1080p is selected, but the display
+> > doesn't support 1080p.  That's hardly surprising.
+> > 
+> > Then rabeeh posts his message about lack of audio at 1920x1080.
+> > 
+> > Well, I can say that with the tda998x as it stands, the 1080* modes
+> > work with audio with armada-drm, so there's no need to change this.
+> 
+> My DRM driver also has audio with and without the cea mode for all
+> resolutions. At the time of Rabeeh's message, I just had forgot to
+> switch the audio pins...
+> 
+> So, TDA998x CEA mode or not?
 
-I still don't see that on mmc.git, Any issue with that patch ? I would
-prefer not missing the 3.14 merge window.
+Firstly, why change something which isn't broken?
 
-Regards
+Secondly, you need to justify this change by explaining why it is
+beneficial to use the internally programmed modes rather than programming
+the timings to match the adjusted settings from DRM.
 
-On 18/12/2013 09:16, Ludovic Desroches wrote:
-> Hi Alexandre,
-> 
-> On Tue, Dec 17, 2013 at 08:03:12PM +0100, Alexandre Belloni wrote:
->> Hi,
->>
->> It seems that patch never made it to the mainline. Is it still missing
->> something ?
-> 
-> No reason on my side, maybe because my ack is missing but I thought I
-> gave it on a previous version, maybe I am wrong.
-> 
-> So Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> 
-> 
-> Regards
-> 
-> Ludovic
-> 
->>
->> Regards,
->>
->> On 17/10/2013 15:56, Ulf Hansson wrote:
->>> On 17 October 2013 12:46, Alexandre Belloni
->>> <alexandre.belloni@free-electrons.com> wrote:
->>>> Other MMC hosts handle a regulator named vmmc-supply that allows to power the
->>>> MMC card or SDIO device before communicating on the bus.
->>>>
->>>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->>> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
->>>
->>>> ---
->>>>
->>>> Changes in v2:
->>>>  - use mmc_regulator_get_supply instead of devm_regulator_get
->>>>
->>>> Changes in v3:
->>>>  - en/disable the regulator in .set_ios using mmc_regulator_set_ocr
->>>>
->>>>  drivers/mmc/host/atmel-mci.c | 7 +++++++
->>>>  1 file changed, 7 insertions(+)
->>>>
->>>> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
->>>> index 69e438e..a9e1ba6 100644
->>>> --- a/drivers/mmc/host/atmel-mci.c
->>>> +++ b/drivers/mmc/host/atmel-mci.c
->>>> @@ -1385,8 +1385,14 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->>>>                 clk_unprepare(host->mck);
->>>>
->>>>         switch (ios->power_mode) {
->>>> +       case MMC_POWER_OFF:
->>>> +               if (!IS_ERR(mmc->supply.vmmc))
->>>> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
->>>> +               break;
->>>>         case MMC_POWER_UP:
->>>>                 set_bit(ATMCI_CARD_NEED_INIT, &slot->flags);
->>>> +               if (!IS_ERR(mmc->supply.vmmc))
->>>> +                       mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, ios->vdd);
->>>>                 break;
->>>>         default:
->>>>                 /*
->>>> @@ -2196,6 +2202,7 @@ static int __init atmci_init_slot(struct atmel_mci *host,
->>>>         }
->>>>
->>>>         host->slot[id] = slot;
->>>> +       mmc_regulator_get_supply(mmc);
->>>>         mmc_add_host(mmc);
->>>>
->>>>         if (gpio_is_valid(slot->detect_pin)) {
->>>> --
->>>> 1.8.1.2
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->> -- 
->> Alexandre Belloni, Free Electrons
->> Embedded Linux, Kernel and Android engineering
->> http://free-electrons.com
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thirdly, one of your previous patches changed the programming to use the
+adjusted mode settings, which may be the CEA mode with slight tweaks.
+Have you considered the implication of the hardware generating the video
+being programmed with those tweaks vs the encoder using a fixed set of
+unadjusted timings?
 
+I'm not convinced that we need this patch at the present time, and I'm
+not convinced that we need to introduce a load of tables for no
+measurable gain.
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
