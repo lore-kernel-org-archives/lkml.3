@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaAMO2W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51380 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbaAMO0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:09 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 41/96] sched/rt: Fix rq's cpupri leak while enqueue/dequeue child RT entities
-Date: Mon, 13 Jan 2014 14:24:04 +0000
-Message-Id: <1389623099-18783-42-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1752085AbaAMObt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:31:49 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57722 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752759AbaAMO2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 09:28:20 -0500
+Message-ID: <52D3F7E0.3030206@ti.com>
+Date: Mon, 13 Jan 2014 09:27:44 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
+References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com> <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org> <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com> <20140112105958.GA9791@n2100.arm.linux.org.uk> <52D2B7C8.4060103@ti.com> <20140113123733.GU15937@n2100.arm.linux.org.uk>
+In-Reply-To: <20140113123733.GU15937@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.29 -stable review patch.  If anyone has any objections, please let me know.
+On Monday 13 January 2014 07:37 AM, Russell King - ARM Linux wrote:
+> On Sun, Jan 12, 2014 at 10:42:00AM -0500, Santosh Shilimkar wrote:
+>> On Sunday 12 January 2014 05:59 AM, Russell King - ARM Linux wrote:
+>>> On Mon, Dec 09, 2013 at 08:02:30PM -0500, Santosh Shilimkar wrote:
+>>>> On Monday 09 December 2013 07:54 PM, Russell King - ARM Linux wrote:
+>>>>> The underlying reason is that - as I've already explained - ARM's __ffs()
+>>>>> differs from other architectures in that it ends up being an int, whereas
+>>>>> almost everyone else is unsigned long.
+>>>>>
+>>>>> The fix is to fix ARMs __ffs() to conform to other architectures.
+>>>>>
+>>>> I was just about to cross-post your reply here. Obviously I didn't think
+>>>> this far when I made  $subject fix.
+>>>>
+>>>> So lets ignore the $subject patch which is not correct. Sorry for noise
+>>>
+>>> Well, here we are, a month on, and this still remains unfixed despite
+>>> my comments pointing to what the problem is.  So, here's a patch to fix
+>>> this problem the correct way.  I took the time to add some comments to
+>>> these functions as I find that I wonder about their return values, and
+>>> these comments make the patch a little larger than it otherwise would be.
+>>>
+>> The $subject warning fix [1] is already picked by Andrew with your ack
+>> and its in his queue [2]
+>>
+>>> This patch makes their types match exactly with x86's definitions of
+>>> the same, which is the basic problem: on ARM, they all took "int" values
+>>> and returned "int"s, which leads to min() in nobootmem.c complaining.
+>>>
+>> Not sure if you missed the thread but the right fix was picked. Ofcourse
+>> you do have additional clz optimisation in updated patch and some comments
+>> on those functions.
+> 
+> The problem here is that the patch fixing this is going via akpm's tree
+> (why?) yet you want the code which introduces the warning to be merged
+> via my tree.
+>
+> It seems to me to be absolutely silly to have code introduce a warning
+> yet push the fix for the warning via a completely different tree...
+> 
+I mixed it up. Sorry. Some how I thought there was some other build
+configuration thrown the same warning with memblock series and hence
+suggested the patch to go via Andrew's tree.
 
-------------------
-
-From: Kirill Tkhai <tkhai@yandex.ru>
-
-commit 757dfcaa41844595964f1220f1d33182dae49976 upstream.
-
-This patch touches the RT group scheduling case.
-
-Functions inc_rt_prio_smp() and dec_rt_prio_smp() change (global) rq's
-priority, while rt_rq passed to them may be not the top-level rt_rq.
-This is wrong, because changing of priority on a child level does not
-guarantee that the priority is the highest all over the rq. So, this
-leak makes RT balancing unusable.
-
-The short example: the task having the highest priority among all rq's
-RT tasks (no one other task has the same priority) are waking on a
-throttle rt_rq.  The rq's cpupri is set to the task's priority
-equivalent, but real rq->rt.highest_prio.curr is less.
-
-The patch below fixes the problem.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/49231385567953@web4m.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/sched/rt.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 2a05e56..8480912 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -948,6 +948,13 @@ inc_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && prio < prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, prio);
- }
-@@ -957,6 +964,13 @@ dec_rt_prio_smp(struct rt_rq *rt_rq, int prio, int prev_prio)
- {
- 	struct rq *rq = rq_of_rt_rq(rt_rq);
- 
-+#ifdef CONFIG_RT_GROUP_SCHED
-+	/*
-+	 * Change rq's cpupri only if rt_rq is the top queue.
-+	 */
-+	if (&rq->rt != rt_rq)
-+		return;
-+#endif
- 	if (rq->online && rt_rq->highest_prio.curr != prev_prio)
- 		cpupri_set(&rq->rd->cpupri, rq->cpu, rt_rq->highest_prio.curr);
- }
--- 
-1.8.3.2
-
+Regards,
+Santosh
