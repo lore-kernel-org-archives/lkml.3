@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaAMPnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:43:47 -0500
-Received: from www.sr71.net ([198.145.64.142]:40436 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647AbaAMPnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:43:45 -0500
-Message-ID: <52D40957.2020103@sr71.net>
-Date: Mon, 13 Jan 2014 07:42:15 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>, Davidlohr Bueso <davidlohr@hp.com>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
-References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net> <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com> <alpine.DEB.2.10.1401111854580.6036@nuc> <20140113014408.GA25900@lge.com> <1389584218.11984.0.camel@buesod1.americas.hpqcorp.net> <20140113134609.GB31640@localhost>
-In-Reply-To: <20140113134609.GB31640@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751611AbaAMPp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:45:59 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:61762 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751418AbaAMPp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 10:45:58 -0500
+Message-ID: <1389627955.20467.9.camel@x41>
+Subject: [PATCH] xprtrdma: silence frame size warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 13 Jan 2014 16:45:55 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 13 Jan 2014 15:45:56.0014 (UTC) FILETIME=[8C2034E0:01CF1076]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 05:46 AM, Fengguang Wu wrote:
->>> So, I think
->>> that it is better to get more benchmark results to this patchset for convincing
->>> ourselves. If possible, how about asking Fengguang to run whole set of
->>> his benchmarks before going forward?
->>
->> Cc'ing him.
-> 
-> My pleasure. Is there a git tree for the patches? Git trees
-> are most convenient for running automated tests and bisects.
+Building verbs.o on 32 bits x86, with CONFIG_FRAME_WARN set to 1024, its
+default value, triggers this GCC warning:
+    net/sunrpc/xprtrdma/verbs.c: In function ‘rpcrdma_register_default_external’:
+    net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]
 
-Here's a branch:
+Silence this warning by allocating "ipb" dynamically.
 
-https://github.com/hansendc/linux/tree/slub-reshrink-for-Fengguang-20140113
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested only (on 32 bits x86). I don't have access to
+Infiniband hardware.
 
-My patches are not broken out in there, but that's all the code that
-needs to get tested.
+1) Please note that this is not a new warning. The oldest build log I
+have still available on this machine is for a v3.8 rc, and it already
+showed this warning. 
+
+2) I do hope my choice for the GFP_KERNEL flag is correct here.
+
+ net/sunrpc/xprtrdma/verbs.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+index 93726560..939ccc8 100644
+--- a/net/sunrpc/xprtrdma/verbs.c
++++ b/net/sunrpc/xprtrdma/verbs.c
+@@ -1736,11 +1736,14 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+ 	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
+ 				  IB_ACCESS_REMOTE_READ);
+ 	struct rpcrdma_mr_seg *seg1 = seg;
+-	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
++	struct ib_phys_buf *ipb;
+ 	int len, i, rc = 0;
+ 
+ 	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
+ 		*nsegs = RPCRDMA_MAX_DATA_SEGS;
++	ipb = kmalloc(sizeof(*ipb) * *nsegs, GFP_KERNEL);
++	if (ipb == NULL)
++		return -ENOMEM;
+ 	for (len = 0, i = 0; i < *nsegs;) {
+ 		rpcrdma_map_one(ia, seg, writing);
+ 		ipb[i].addr = seg->mr_dma;
+@@ -1770,6 +1773,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+ 		seg1->mr_len = len;
+ 	}
+ 	*nsegs = i;
++	kfree(ipb);
+ 	return rc;
+ }
+ 
+-- 
+1.8.4.2
+
