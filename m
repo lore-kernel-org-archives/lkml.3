@@ -1,126 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaAMXcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:32:45 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44552 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbaAMXcm (ORCPT
+	id S1752628AbaAMXdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:33:41 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36066 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751994AbaAMXdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:32:42 -0500
-Date: Mon, 13 Jan 2014 15:32:37 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] fs: factor out common code in fget_light() and
- fget_raw_light()
-Message-ID: <20140113233237.GR10038@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140107181258.GA29288@redhat.com>
- <20140108132852.GF10038@linux.vnet.ibm.com>
- <20140108151918.GA5156@redhat.com>
- <20140109011650.GI10038@linux.vnet.ibm.com>
- <20140110153459.GA31491@redhat.com>
- <20140111063438.GY10038@linux.vnet.ibm.com>
- <20140111181908.GA7358@redhat.com>
- <20140111222737.GE10038@linux.vnet.ibm.com>
- <20140113154748.GA6496@redhat.com>
- <20140113154840.GC6496@redhat.com>
+	Mon, 13 Jan 2014 18:33:37 -0500
+Date: Mon, 13 Jan 2014 23:33:26 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
+Message-ID: <20140113233326.GG15937@n2100.arm.linux.org.uk>
+References: <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org> <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com> <20140112105958.GA9791@n2100.arm.linux.org.uk> <52D2B7C8.4060103@ti.com> <20140113123733.GU15937@n2100.arm.linux.org.uk> <52D3F7E0.3030206@ti.com> <20140113153128.6aaffb9af111ba75a7abd4db@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140113154840.GC6496@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011323-0928-0000-0000-0000055E4F8A
+In-Reply-To: <20140113153128.6aaffb9af111ba75a7abd4db@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 04:48:40PM +0100, Oleg Nesterov wrote:
-> Apart from FMODE_PATH check fget_light() and fget_raw_light() are
-> identical, shift the code into the new helper, __fget_light(fd, mask).
-> Saves 208 bytes.
+On Mon, Jan 13, 2014 at 03:31:28PM -0800, Andrew Morton wrote:
+> On Mon, 13 Jan 2014 09:27:44 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > > It seems to me to be absolutely silly to have code introduce a warning
+> > > yet push the fix for the warning via a completely different tree...
+> > > 
+> > I mixed it up. Sorry. Some how I thought there was some other build
+> > configuration thrown the same warning with memblock series and hence
+> > suggested the patch to go via Andrew's tree.
+> 
+> Yes, I too had assumed that the warning was caused by the bootmem
+> patches in -mm.
+> 
+> But it in fact occurs in Linus's current tree.  I'll drop
+> mm-arm-fix-arms-__ffs-to-conform-to-avoid-warning-with-no_bootmem.patch
+> and I'll assume that rmk will fix this up at an appropriate time.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Thanks.  I'll apply my version and then I can pull Santosh's nobootmem
+changes (which I've had a couple of times already) without adding to
+the warnings.
 
-> ---
->  fs/file.c |   33 +++++++++------------------------
->  1 files changed, 9 insertions(+), 24 deletions(-)
-> 
-> diff --git a/fs/file.c b/fs/file.c
-> index 4ed58a3..50c1208 100644
-> --- a/fs/file.c
-> +++ b/fs/file.c
-> @@ -683,21 +683,21 @@ EXPORT_SYMBOL(fget_raw);
->   * The fput_needed flag returned by fget_light should be passed to the
->   * corresponding fput_light.
->   */
-> -struct file *fget_light(unsigned int fd, int *fput_needed)
-> +struct file *__fget_light(unsigned int fd, fmode_t mask, int *fput_needed)
->  {
-> -	struct file *file;
->  	struct files_struct *files = current->files;
-> +	struct file *file;
-> 
->  	*fput_needed = 0;
->  	if (atomic_read(&files->count) == 1) {
->  		file = __fcheck_files(files, fd);
-> -		if (file && (file->f_mode & FMODE_PATH))
-> +		if (file && (file->f_mode & mask))
->  			file = NULL;
->  	} else {
->  		rcu_read_lock();
->  		file = fcheck_files(files, fd);
->  		if (file) {
-> -			if (!(file->f_mode & FMODE_PATH) &&
-> +			if (!(file->f_mode & mask) &&
->  			    atomic_long_inc_not_zero(&file->f_count))
->  				*fput_needed = 1;
->  			else
-> @@ -709,30 +709,15 @@ struct file *fget_light(unsigned int fd, int *fput_needed)
-> 
->  	return file;
->  }
-> +struct file *fget_light(unsigned int fd, int *fput_needed)
-> +{
-> +	return __fget_light(fd, FMODE_PATH, fput_needed);
-> +}
->  EXPORT_SYMBOL(fget_light);
-> 
->  struct file *fget_raw_light(unsigned int fd, int *fput_needed)
->  {
-> -	struct file *file;
-> -	struct files_struct *files = current->files;
-> -
-> -	*fput_needed = 0;
-> -	if (atomic_read(&files->count) == 1) {
-> -		file = __fcheck_files(files, fd);
-> -	} else {
-> -		rcu_read_lock();
-> -		file = fcheck_files(files, fd);
-> -		if (file) {
-> -			if (atomic_long_inc_not_zero(&file->f_count))
-> -				*fput_needed = 1;
-> -			else
-> -				/* Didn't get the reference, someone's freed */
-> -				file = NULL;
-> -		}
-> -		rcu_read_unlock();
-> -	}
-> -
-> -	return file;
-> +	return __fget_light(fd, 0, fput_needed);
->  }
-> 
->  void set_close_on_exec(unsigned int fd, int flag)
-> -- 
-> 1.5.5.1
-> 
-> 
-
+-- 
+FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+Estimate before purchase was "up to 13.2Mbit".
