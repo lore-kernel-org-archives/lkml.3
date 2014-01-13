@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842AbaAMQle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:41:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53253 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaAMQDE (ORCPT
+	id S1755462AbaAMQln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:41:43 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:30214 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893AbaAMQlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:04 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Steve Capper <steve.capper@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 093/208] ARM: 7923/1: mm: fix dcache flush logic for compound high pages
-Date: Mon, 13 Jan 2014 15:58:54 +0000
-Message-Id: <1389628849-1614-94-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 13 Jan 2014 11:41:40 -0500
+Message-ID: <52D4172E.6030706@hp.com>
+Date: Mon, 13 Jan 2014 11:41:18 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Daniel J Blueman <daniel@numascale.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+References: <52D353C8.4000000@numascale.com>
+In-Reply-To: <52D353C8.4000000@numascale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+On 01/12/2014 09:47 PM, Daniel J Blueman wrote:
+> On Thursday, 9 January 2014 01:10:03 UTC+8, Waiman Long  wrote:
+> > This patch modifies the queue_write_unlock() function to use the
+> > new smp_store_release() function in another pending patch. It also
+> > removes the temporary implementation of smp_load_acquire() and
+> > smp_store_release() function in qrwlock.c.
+> >
+> > This patch should only be merged if PeterZ's linux-arch patch patch
+> > was merged.
+> >
+> > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  include/asm-generic/qrwlock.h |    4 +---
+> >  kernel/locking/qrwlock.c      |   34 
+> ----------------------------------
+> >  2 files changed, 1 insertions(+), 37 deletions(-)
+> >
+> > diff --git a/include/asm-generic/qrwlock.h 
+> b/include/asm-generic/qrwlock.h
+> > index 2b9a7b4..4d4bd04 100644
+> > --- a/include/asm-generic/qrwlock.h
+> > +++ b/include/asm-generic/qrwlock.h
+> > @@ -179,9 +179,7 @@ static inline void queue_write_unlock(struct 
+> qrwlock *lock)
+> >      /*
+> >       * Make sure that none of the critical section will be leaked out.
+> >       */
+> > -    smp_mb__before_clear_bit();
+> > -    ACCESS_ONCE(lock->cnts.writer) = 0;
+> > -    smp_mb__after_clear_bit();
+> > +    smp_store_release(&lock->cnts.writer, 0)
+>
+> This will fail compilation, so probably needs further testing with 
+> Peter's load_acquire/store_release barrier patches.
+>
 
-------------------
+Peter,
 
-From: Steven Capper <steve.capper@linaro.org>
+I found out that the build failure was caused by the fact that the 
+__native_word() macro (used internally by compiletime_assert_atomic()) 
+allows only a size of 4 or 8 for x86-64. The data type that I used is a 
+byte. Is there a reason why byte and short are not considered native?
 
-commit 2a7cfcbc0553365d75716f69ee7b704cac7c9248 upstream.
-
-When given a compound high page, __flush_dcache_page will only flush
-the first page of the compound page repeatedly rather than the entire
-set of constituent pages.
-
-This error was introduced by:
-   0b19f93 ARM: mm: Add support for flushing HugeTLB pages.
-
-This patch corrects the logic such that all constituent pages are now
-flushed.
-
-Signed-off-by: Steve Capper <steve.capper@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm/mm/flush.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
-index 6d5ba9a..3387e60 100644
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -175,16 +175,16 @@ void __flush_dcache_page(struct address_space *mapping, struct page *page)
- 		unsigned long i;
- 		if (cache_is_vipt_nonaliasing()) {
- 			for (i = 0; i < (1 << compound_order(page)); i++) {
--				void *addr = kmap_atomic(page);
-+				void *addr = kmap_atomic(page + i);
- 				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
- 				kunmap_atomic(addr);
- 			}
- 		} else {
- 			for (i = 0; i < (1 << compound_order(page)); i++) {
--				void *addr = kmap_high_get(page);
-+				void *addr = kmap_high_get(page + i);
- 				if (addr) {
- 					__cpuc_flush_dcache_area(addr, PAGE_SIZE);
--					kunmap_high(page);
-+					kunmap_high(page + i);
- 				}
- 			}
- 		}
--- 
-1.8.3.2
-
+-Longman
