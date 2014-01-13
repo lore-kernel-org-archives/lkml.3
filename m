@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaAMTXC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:23:02 -0500
-Received: from mga01.intel.com ([192.55.52.88]:36641 "EHLO mga01.intel.com"
+	id S1752713AbaAMTXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:23:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24361 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221AbaAMTWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:22:54 -0500
+	id S1752576AbaAMTXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 14:23:00 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,654,1384329600"; 
-   d="scan'208";a="464459362"
-Subject: [PATCH 06/12] x86 Kconfig: scheduler options
+   d="scan'208";a="464459393"
+Subject: [PATCH 11/12] x86 Kconfig: create x86/Kconfig.virt
 To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
+Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>, bp@suse.de, dtor@vmware.com,
+        kys@microsoft.com, haiyangz@microsoft.com, agraf@suse.de,
+        gleb@redhat.com, pbonzini@redhat.com
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 13 Jan 2014 11:22:52 -0800
+Date: Mon, 13 Jan 2014 11:22:59 -0800
 References: <20140113192245.3F682C7F@viggo.jf.intel.com>
 In-Reply-To: <20140113192245.3F682C7F@viggo.jf.intel.com>
-Message-Id: <20140113192252.ACD0BDA5@viggo.jf.intel.com>
+Message-Id: <20140113192259.5E9DFB02@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,65 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-These are a few architecture-specific options that affect the
-scheduler.  Group them together.
+Right now, there is a "Enable paravirtualization code" option in
+the "Processor Features" menu, which means Xen.  There is also a
+group of paravirtualization options specific to KVM under the
+top-level "Virtualization" menu.
+
+This creates a new hypervisor-independent arch/x86/Kconfig.virt
+file, and moves the "Virtualization" menu to be defined in there.
+This also removes the very counterintuitive references to
+lguest/vhost code *from* kvm-specific code.
+
+This also removes the silly:
+
+	depends on HAVE_KVM || X86
+
+dependency.  It makes zero sense to have entries defined in
+arch/x86 depend on x86.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Dmitry Torokhov <dtor@vmware.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
 ---
 
- linux.git-davehans/arch/x86/Kconfig |   28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+ linux.git-davehans/arch/x86/Kconfig      |    2 +-
+ linux.git-davehans/arch/x86/Kconfig.virt |   18 ++++++++++++++++++
+ linux.git-davehans/arch/x86/kvm/Kconfig  |   19 -------------------
+ 3 files changed, 19 insertions(+), 20 deletions(-)
 
-diff -puN arch/x86/Kconfig~x86-scheduler-options arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~x86-scheduler-options	2014-01-13 11:11:35.553207750 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:35.555207841 -0800
-@@ -959,18 +959,6 @@ config X86_32_IRIS
+diff -puN arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2014-01-13 11:11:36.617255854 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:36.620255990 -0800
+@@ -2416,6 +2416,6 @@ source "security/Kconfig"
  
- 	  If unused, say N.
+ source "crypto/Kconfig"
  
--config SCHED_OMIT_FRAME_POINTER
--	def_bool y
--	prompt "Single-depth WCHAN output"
--	depends on X86
--	---help---
--	  Calculate simpler /proc/<PID>/wchan values. If this option
--	  is disabled then wchan values will recurse back to the
--	  caller function. This provides more accurate wchan values,
--	  at the expense of slightly more scheduling overhead.
--
--	  If in doubt, say "Y".
--
- menuconfig HYPERVISOR_GUEST
- 	bool "Linux guest support"
- 	---help---
-@@ -1186,6 +1174,8 @@ config IOMMU_HELPER
- 	def_bool y
- 	depends on CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU
+-source "arch/x86/kvm/Kconfig"
++source "arch/x86/Kconfig.virt"
  
-+menu "x86 Scheduler Options"
+ source "lib/Kconfig"
+diff -puN /dev/null arch/x86/Kconfig.virt
+--- /dev/null	2013-11-27 17:20:18.337162396 -0800
++++ linux.git-davehans/arch/x86/Kconfig.virt	2014-01-13 11:11:36.621256035 -0800
+@@ -0,0 +1,18 @@
 +
- config SCHED_SMT
- 	bool "SMT (Hyperthreading) scheduler support"
- 	depends on X86_HT
-@@ -1204,6 +1194,20 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
-+config SCHED_OMIT_FRAME_POINTER
-+	def_bool y
-+	prompt "Single-depth WCHAN output"
-+	depends on X86
++menuconfig VIRTUALIZATION
++	bool "Virtualization"
++	default y
 +	---help---
-+	  Calculate simpler /proc/<PID>/wchan values. If this option
-+	  is disabled then wchan values will recurse back to the
-+	  caller function. This provides more accurate wchan values,
-+	  at the expense of slightly more scheduling overhead.
++	  Say Y here to get to see options for using your Linux host to run other
++	  operating systems inside virtual machines (guests).
++	  This option alone does not add any kernel code.
 +
-+	  If in doubt, say "Y".
++	  If you say N, all options in this submenu will be skipped and disabled.
 +
-+endmenu # x86 Scheduler Options
++if VIRTUALIZATION
 +
- source "kernel/Kconfig.preempt"
++source arch/x86/kvm/Kconfig
++source drivers/vhost/Kconfig
++source drivers/lguest/Kconfig
++
++endif # VIRTUALIZATION
+diff -puN arch/x86/kvm/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/kvm/Kconfig
+--- linux.git/arch/x86/kvm/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2014-01-13 11:11:36.618255899 -0800
++++ linux.git-davehans/arch/x86/kvm/Kconfig	2014-01-13 11:11:36.621256035 -0800
+@@ -4,19 +4,6 @@
  
- config X86_UP_APIC
+ source "virt/kvm/Kconfig"
+ 
+-menuconfig VIRTUALIZATION
+-	bool "Virtualization"
+-	depends on HAVE_KVM || X86
+-	default y
+-	---help---
+-	  Say Y here to get to see options for using your Linux host to run other
+-	  operating systems inside virtual machines (guests).
+-	  This option alone does not add any kernel code.
+-
+-	  If you say N, all options in this submenu will be skipped and disabled.
+-
+-if VIRTUALIZATION
+-
+ config KVM
+ 	tristate "Kernel-based Virtual Machine (KVM) support"
+ 	depends on HAVE_KVM
+@@ -93,9 +80,3 @@ config KVM_DEVICE_ASSIGNMENT
+ 
+ 	  If unsure, say Y.
+ 
+-# OK, it's a little counter-intuitive to do this, but it puts it neatly under
+-# the virtualization menu.
+-source drivers/vhost/Kconfig
+-source drivers/lguest/Kconfig
+-
+-endif # VIRTUALIZATION
 _
