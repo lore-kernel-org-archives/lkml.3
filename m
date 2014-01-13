@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164AbaAMQLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:11:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53779 "EHLO
+	id S1755237AbaAMQMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:12:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53762 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754616AbaAMQFT (ORCPT
+	with ESMTP id S1754597AbaAMQFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:19 -0500
+	Mon, 13 Jan 2014 11:05:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jason Wang <jasowang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 190/208] virtio-net: make all RX paths handle errors consistently
-Date: Mon, 13 Jan 2014 16:00:31 +0000
-Message-Id: <1389628849-1614-191-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 187/208] net: rose: restore old recvmsg behavior
+Date: Mon, 13 Jan 2014 16:00:28 +0000
+Message-Id: <1389628849-1614-188-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,106 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit f121159d72091f25afb22007c833e60a6845e912 upstream.
+commit f81152e35001e91997ec74a7b4e040e6ab0acccf upstream.
 
-receive mergeable now handles errors internally.
-Do same for big and small packet paths, otherwise
-the logic is too hard to follow.
+recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
 
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Acked-by: Michael Dalton <mwdalton@google.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+(net: rework recvmsg handler msg_name and msg_namelen logic), we now
+always take the else branch due to namelen being initialized to 0.
+
+Digging in netdev-vger-cvs git repo shows that msg_namelen was
+initialized with a fixed-size since at least 1995, so the else branch
+was never taken.
+
+Compile tested only.
+
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/virtio_net.c | 56 +++++++++++++++++++++++++++++++-----------------
- 1 file changed, 36 insertions(+), 20 deletions(-)
+ net/rose/af_rose.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index ad9b385..ec0e9f2 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -294,6 +294,34 @@ static struct sk_buff *page_to_skb(struct receive_queue *rq,
- 	return skb;
- }
+diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
+index 33af772..62ced65 100644
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -1253,6 +1253,7 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
  
-+static struct sk_buff *receive_small(void *buf, unsigned int len)
-+{
-+	struct sk_buff * skb = buf;
-+
-+	len -= sizeof(struct virtio_net_hdr);
-+	skb_trim(skb, len);
-+
-+	return skb;
-+}
-+
-+static struct sk_buff *receive_big(struct net_device *dev,
-+				   struct receive_queue *rq,
-+				   void *buf)
-+{
-+	struct page *page = buf;
-+	struct sk_buff *skb = page_to_skb(rq, page, 0);
-+
-+	if (unlikely(!skb))
-+		goto err;
-+
-+	return skb;
-+
-+err:
-+	dev->stats.rx_dropped++;
-+	give_pages(rq, page);
-+	return NULL;
-+}
-+
- static struct sk_buff *receive_mergeable(struct net_device *dev,
- 					 struct receive_queue *rq,
- 					 void *buf,
-@@ -357,7 +385,6 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- 	struct net_device *dev = vi->dev;
- 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
- 	struct sk_buff *skb;
--	struct page *page;
- 	struct skb_vnet_hdr *hdr;
+ 	if (msg->msg_name) {
+ 		struct sockaddr_rose *srose;
++		struct full_sockaddr_rose *full_srose = msg->msg_name;
  
- 	if (unlikely(len < sizeof(struct virtio_net_hdr) + ETH_HLEN)) {
-@@ -369,26 +396,15 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
- 			dev_kfree_skb(buf);
- 		return;
- 	}
-+	if (vi->mergeable_rx_bufs)
-+		skb = receive_mergeable(dev, rq, buf, len);
-+	else if (vi->big_packets)
-+		skb = receive_big(dev, rq, buf);
-+	else
-+		skb = receive_small(buf, len);
- 
--	if (!vi->mergeable_rx_bufs && !vi->big_packets) {
--		skb = buf;
--		len -= sizeof(struct virtio_net_hdr);
--		skb_trim(skb, len);
--	} else {
--		page = buf;
--		if (vi->mergeable_rx_bufs) {
--			skb = receive_mergeable(dev, rq, page, len);
--			if (unlikely(!skb))
--				return;
+ 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
+ 		srose = msg->msg_name;
+@@ -1260,18 +1261,9 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		srose->srose_addr   = rose->dest_addr;
+ 		srose->srose_call   = rose->dest_call;
+ 		srose->srose_ndigis = rose->dest_ndigis;
+-		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
+-			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
+-			for (n = 0 ; n < rose->dest_ndigis ; n++)
+-				full_srose->srose_digis[n] = rose->dest_digis[n];
+-			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
 -		} else {
--			skb = page_to_skb(rq, page, len);
--			if (unlikely(!skb)) {
--				dev->stats.rx_dropped++;
--				give_pages(rq, page);
--				return;
+-			if (rose->dest_ndigis >= 1) {
+-				srose->srose_ndigis = 1;
+-				srose->srose_digi = rose->dest_digis[0];
 -			}
+-			msg->msg_namelen = sizeof(struct sockaddr_rose);
 -		}
--	}
-+	if (unlikely(!skb))
-+		return;
++		for (n = 0 ; n < rose->dest_ndigis ; n++)
++			full_srose->srose_digis[n] = rose->dest_digis[n];
++		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
+ 	}
  
- 	hdr = skb_vnet_hdr(skb);
- 
+ 	skb_free_datagram(sk, skb);
 -- 
 1.8.3.2
 
