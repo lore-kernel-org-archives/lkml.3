@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbaAMOiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:38:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51572 "EHLO
+	id S1753272AbaAMOjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:39:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51561 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaAMO06 (ORCPT
+	with ESMTP id S1752235AbaAMO0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:58 -0500
+	Mon, 13 Jan 2014 09:26:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>,
+Cc: Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 82/96] net: unix: allow set_peek_off to fail
-Date: Mon, 13 Jan 2014 14:24:45 +0000
-Message-Id: <1389623099-18783-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 79/96] macvtap: signal truncated packets
+Date: Mon, 13 Jan 2014 14:24:42 +0000
+Message-Id: <1389623099-18783-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,79 +31,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 12663bfc97c8b3fdb292428105dd92d563164050 upstream.
+commit ce232ce01d61b184202bb185103d119820e1260c upstream.
 
-unix_dgram_recvmsg() will hold the readlock of the socket until recv
-is complete.
+macvtap_put_user() never return a value grater than iov length, this in fact
+bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
+returning the size of packet plus the possible vlan header to let the trunca
+checking work.
 
-In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
-unix_dgram_recvmsg() will complete (which can take a while) without allowing
-us to break out of it, triggering a hung task spew.
-
-Instead, allow set_peek_off to fail, this way userspace will not hang.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/net.h | 2 +-
- net/core/sock.c     | 2 +-
- net/unix/af_unix.c  | 8 ++++++--
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/macvtap.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/net.h b/include/linux/net.h
-index f150cdf..2ece444 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -215,7 +215,7 @@ struct proto_ops {
- 				      int offset, size_t size, int flags);
- 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
- 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
--	void		(*set_peek_off)(struct sock *sk, int val);
-+	int		(*set_peek_off)(struct sock *sk, int val);
- };
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index b614ab4..eec890e 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -801,7 +801,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+-	int copied;
++	int copied, total;
  
- #define DECLARE_SOCKADDR(type, dst, src)	\
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 457ae99..5057305 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -787,7 +787,7 @@ set_rcvbuf:
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+@@ -816,7 +816,8 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+ 	}
+-	copied = vnet_hdr_len;
++	total = copied = vnet_hdr_len;
++	total += skb->len;
  
- 	case SO_PEEK_OFF:
- 		if (sock->ops->set_peek_off)
--			sock->ops->set_peek_off(sk, val);
-+			ret = sock->ops->set_peek_off(sk, val);
- 		else
- 			ret = -EOPNOTSUPP;
- 		break;
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index a0df32b..692d780 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -525,13 +525,17 @@ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
- static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
- 				  struct msghdr *, size_t, int);
+ 	if (!vlan_tx_tag_present(skb))
+ 		len = min_t(int, skb->len, len);
+@@ -831,6 +832,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
  
--static void unix_set_peek_off(struct sock *sk, int val)
-+static int unix_set_peek_off(struct sock *sk, int val)
- {
- 	struct unix_sock *u = unix_sk(sk);
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 		len = min_t(int, skb->len + VLAN_HLEN, len);
++		total += VLAN_HLEN;
  
--	mutex_lock(&u->readlock);
-+	if (mutex_lock_interruptible(&u->readlock))
-+		return -EINTR;
-+
- 	sk->sk_peek_off = val;
- 	mutex_unlock(&u->readlock);
-+
-+	return 0;
+ 		copy = min_t(int, vlan_offset, len);
+ 		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+@@ -848,10 +850,9 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 	}
+ 
+ 	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+-	copied += len;
+ 
+ done:
+-	return ret ? ret : copied;
++	return ret ? ret : total;
  }
  
+ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
+@@ -905,7 +906,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 	}
  
+ 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+-	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
++	ret = min_t(ssize_t, ret, len);
+ 	if (ret > 0)
+ 		iocb->ki_pos = ret;
+ out:
 -- 
 1.8.3.2
 
