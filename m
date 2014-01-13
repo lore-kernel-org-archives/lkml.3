@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaAMJfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:35:21 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60318 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaAMJfS (ORCPT
+	id S1751481AbaAMJft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:35:49 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:38228 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaAMJfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:35:18 -0500
-Message-ID: <52D3B0DE.3@linux.vnet.ibm.com>
-Date: Mon, 13 Jan 2014 17:24:46 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 13 Jan 2014 04:35:48 -0500
+Message-ID: <52D3B36D.8040902@codethink.co.uk>
+Date: Mon, 13 Jan 2014 09:35:41 +0000
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Al Viro <viro@zeniv.linux.org.uk>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] splice: fix unexpected size truncation
-Content-Type: text/plain; charset=UTF-8
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kernel@lists.codethink.co.uk,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Linus SH list <linux-sh@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI
+References: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk> <CAMuHMdU+SfjNJC_b_7ovT9Uf5p5MwB0iULjorzthcLJxYJ-00g@mail.gmail.com>
+In-Reply-To: <CAMuHMdU+SfjNJC_b_7ovT9Uf5p5MwB0iULjorzthcLJxYJ-00g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011309-7014-0000-0000-0000042D1DC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-@splice_desc.total_len is 32 bit(unsigned int) which is used to store the
-size passed from userspace which is 64 bit(size_t) so that the size is
-unexpectedly truncated
+On 13/01/14 09:28, Geert Uytterhoeven wrote:
+> On Fri, Jan 10, 2014 at 4:18 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+>> --- a/drivers/sh/Makefile
+>> +++ b/drivers/sh/Makefile
+>> @@ -3,7 +3,10 @@
+>>   #
+>>   obj-y  := intc/
+>>
+>> +ifeq ($(CONFIG_COMMON_CLK),n)
+>>   obj-$(CONFIG_HAVE_CLK)         += clk/
+>> +endif
+>> +
+>
+> This part breaks my Koelsch legacy (non-reference) build:
+>
+> arch/arm/kernel/built-in.o: In function `twd_local_timer_common_register':
+> io.c:(.init.text+0x1804): undefined reference to `clk_enable'
+> io.c:(.init.text+0x1828): undefined reference to `clk_get_rate'
+...
+>
+> Both of my Koelsch legacy and reference configs have CONFIG_HAVE_CLK=y,
+> but only the reference once has CONFIG_COMMON_CLK=y.
 
-That causes vmsplice can not work if the size passed from userspace is >= 4G,
-for example, we noticed in vmsplice, splice-reader does not do anything and
-splice-writer is waiting for available buffer forever if the size is 4G
+Hmm, thought undefined symbols got set to 'n'.
 
-Fix it by extending @splice_desc.total_len to 64 bits as well
+I can either fix this by
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- include/linux/splice.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ifneq ($(CONFIG_COMMON_CLK),y)
+endif
 
-diff --git a/include/linux/splice.h b/include/linux/splice.h
-index 74575cb..1e85396 100644
---- a/include/linux/splice.h
-+++ b/include/linux/splice.h
-@@ -24,7 +24,8 @@
-  * Passed to the actors
-  */
- struct splice_desc {
--	unsigned int len, total_len;	/* current and remaining length */
-+	size_t total_len;		/* remaining length */
-+	unsigned int len;		/* current length */
- 	unsigned int flags;		/* splice flags */
- 	/*
- 	 * actor() private data
+or adding an extra Kconfig for SH specific legacy clock code.
+
 -- 
-1.8.1.4
-
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
