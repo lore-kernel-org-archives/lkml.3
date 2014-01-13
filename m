@@ -1,140 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaAMSp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:45:57 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:37615 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaAMSpz (ORCPT
+	id S1752063AbaAMSqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:46:06 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:39035 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaAMSp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:45:55 -0500
+	Mon, 13 Jan 2014 13:45:57 -0500
 From: Trond Myklebust <trond.myklebust@primarydata.com>
 To: shaobingqing <shaobingqing@bwstor.com.cn>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] NFSv4.1: Don't trust attributes if a pNFS LAYOUTCOMMIT is outstanding
-Date: Mon, 13 Jan 2014 13:45:50 -0500
-Message-Id: <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com>
+Subject: [PATCH 2/2] NFSv4.1: Fix a race in nfs4_write_inode
+Date: Mon, 13 Jan 2014 13:45:51 -0500
+Message-Id: <1389638751-16173-2-git-send-email-trond.myklebust@primarydata.com>
 X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com>
+References: <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com>
 In-Reply-To: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
 References: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a LAYOUTCOMMIT is outstanding, then chances are that the metadata
-server may still be returning incorrect values for the change attribute,
-ctime, mtime and/or size.
-Just ignore those attributes for now, and wait for the LAYOUTCOMMIT
-rpc call to finish.
+nfs4_write_inode() must not be allowed to exit until the layoutcommit
+is done. That means that both NFS_INO_LAYOUTCOMMIT and
+NFS_INO_LAYOUTCOMMITTING have to be cleared.
 
-Reported-by: shaobingqing <shaobingqing@bwstor.com.cn>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 ---
- fs/nfs/inode.c    | 19 +++++++++++++++++--
- fs/nfs/nfs4proc.c |  5 ++---
- fs/nfs/pnfs.h     | 16 ++++++++++++++++
- 3 files changed, 35 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4super.c | 14 +++---------
+ fs/nfs/pnfs.c      | 67 ++++++++++++++++++++++++++++--------------------------
+ 2 files changed, 38 insertions(+), 43 deletions(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 5feec233895d..c63e15224466 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1283,12 +1283,28 @@ static int nfs_inode_attrs_need_update(const struct inode *inode, const struct n
- 		((long)nfsi->attr_gencount - (long)nfs_read_attr_generation_counter() > 0);
+diff --git a/fs/nfs/nfs4super.c b/fs/nfs/nfs4super.c
+index 65ab0a0ca1c4..808f29574412 100644
+--- a/fs/nfs/nfs4super.c
++++ b/fs/nfs/nfs4super.c
+@@ -77,17 +77,9 @@ static int nfs4_write_inode(struct inode *inode, struct writeback_control *wbc)
+ {
+ 	int ret = nfs_write_inode(inode, wbc);
+ 
+-	if (ret >= 0 && test_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(inode)->flags)) {
+-		int status;
+-		bool sync = true;
+-
+-		if (wbc->sync_mode == WB_SYNC_NONE)
+-			sync = false;
+-
+-		status = pnfs_layoutcommit_inode(inode, sync);
+-		if (status < 0)
+-			return status;
+-	}
++	if (ret == 0)
++		ret = pnfs_layoutcommit_inode(inode,
++				wbc->sync_mode == WB_SYNC_ALL);
+ 	return ret;
  }
  
-+/*
-+ * Don't trust the change_attribute, mtime, ctime or size if
-+ * a pnfs LAYOUTCOMMIT is outstanding
-+ */
-+static void nfs_inode_attrs_handle_layoutcommit(struct inode *inode,
-+		struct nfs_fattr *fattr)
+diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
+index d75d938d36cb..4755858e37a0 100644
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1790,6 +1790,15 @@ pnfs_generic_pg_readpages(struct nfs_pageio_descriptor *desc)
+ }
+ EXPORT_SYMBOL_GPL(pnfs_generic_pg_readpages);
+ 
++static void pnfs_clear_layoutcommitting(struct inode *inode)
 +{
-+	if (pnfs_layoutcommit_outstanding(inode))
-+		fattr->valid &= ~(NFS_ATTR_FATTR_CHANGE |
-+				NFS_ATTR_FATTR_MTIME |
-+				NFS_ATTR_FATTR_CTIME |
-+				NFS_ATTR_FATTR_SIZE);
++	unsigned long *bitlock = &NFS_I(inode)->flags;
++
++	clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
++	smp_mb__after_clear_bit();
++	wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
 +}
 +
- static int nfs_refresh_inode_locked(struct inode *inode, struct nfs_fattr *fattr)
+ /*
+  * There can be multiple RW segments.
+  */
+@@ -1807,7 +1816,6 @@ static void pnfs_list_write_lseg(struct inode *inode, struct list_head *listp)
+ static void pnfs_list_write_lseg_done(struct inode *inode, struct list_head *listp)
  {
- 	int ret;
+ 	struct pnfs_layout_segment *lseg, *tmp;
+-	unsigned long *bitlock = &NFS_I(inode)->flags;
  
- 	trace_nfs_refresh_inode_enter(inode);
+ 	/* Matched by references in pnfs_set_layoutcommit */
+ 	list_for_each_entry_safe(lseg, tmp, listp, pls_lc_list) {
+@@ -1815,9 +1823,7 @@ static void pnfs_list_write_lseg_done(struct inode *inode, struct list_head *lis
+ 		pnfs_put_lseg(lseg);
+ 	}
  
-+	nfs_inode_attrs_handle_layoutcommit(inode, fattr);
+-	clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
+-	smp_mb__after_clear_bit();
+-	wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
++	pnfs_clear_layoutcommitting(inode);
+ }
+ 
+ void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
+@@ -1881,43 +1887,37 @@ pnfs_layoutcommit_inode(struct inode *inode, bool sync)
+ 	struct nfs4_layoutcommit_data *data;
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+ 	loff_t end_pos;
+-	int status = 0;
++	int status;
+ 
+-	dprintk("--> %s inode %lu\n", __func__, inode->i_ino);
+-
+-	if (!test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
++	if (!pnfs_layoutcommit_outstanding(inode))
+ 		return 0;
+ 
+-	/* Note kzalloc ensures data->res.seq_res.sr_slot == NULL */
+-	data = kzalloc(sizeof(*data), GFP_NOFS);
+-	if (!data) {
+-		status = -ENOMEM;
+-		goto out;
+-	}
+-
+-	if (!test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
+-		goto out_free;
++	dprintk("--> %s inode %lu\n", __func__, inode->i_ino);
+ 
++	status = -EAGAIN;
+ 	if (test_and_set_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags)) {
+-		if (!sync) {
+-			status = -EAGAIN;
+-			goto out_free;
+-		}
+-		status = wait_on_bit_lock(&nfsi->flags, NFS_INO_LAYOUTCOMMITTING,
+-					nfs_wait_bit_killable, TASK_KILLABLE);
++		if (!sync)
++			goto out;
++		status = wait_on_bit_lock(&nfsi->flags,
++				NFS_INO_LAYOUTCOMMITTING,
++				nfs_wait_bit_killable,
++				TASK_KILLABLE);
+ 		if (status)
+-			goto out_free;
++			goto out;
+ 	}
+ 
+-	INIT_LIST_HEAD(&data->lseg_list);
++	status = -ENOMEM;
++	/* Note kzalloc ensures data->res.seq_res.sr_slot == NULL */
++	data = kzalloc(sizeof(*data), GFP_NOFS);
++	if (!data)
++		goto clear_layoutcommitting;
 +
- 	if (nfs_inode_attrs_need_update(inode, fattr))
- 		ret = nfs_update_inode(inode, fattr);
- 	else
-@@ -1518,8 +1534,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
- 		if (new_isize != cur_isize) {
- 			/* Do we perhaps have any outstanding writes, or has
- 			 * the file grown beyond our last write? */
--			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) ||
--			     new_isize > cur_isize) {
-+			if ((nfsi->npages == 0) || new_isize > cur_isize) {
- 				i_size_write(inode, new_isize);
- 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
- 			}
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 15052b81df42..f4908eb40a21 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -7780,10 +7780,7 @@ nfs4_layoutcommit_done(struct rpc_task *task, void *calldata)
- 	case -NFS4ERR_BADLAYOUT:     /* no layout */
- 	case -NFS4ERR_GRACE:	    /* loca_recalim always false */
- 		task->tk_status = 0;
--		break;
- 	case 0:
--		nfs_post_op_update_inode_force_wcc(data->args.inode,
--						   data->res.fattr);
- 		break;
- 	default:
- 		if (nfs4_async_handle_error(task, server, NULL) == -EAGAIN) {
-@@ -7798,6 +7795,8 @@ static void nfs4_layoutcommit_release(void *calldata)
- 	struct nfs4_layoutcommit_data *data = calldata;
++	status = 0;
+ 	spin_lock(&inode->i_lock);
+-	if (!test_and_clear_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) {
+-		clear_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags);
+-		spin_unlock(&inode->i_lock);
+-		wake_up_bit(&nfsi->flags, NFS_INO_LAYOUTCOMMITTING);
+-		goto out_free;
+-	}
++	if (!test_and_clear_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
++		goto out_unlock;
  
- 	pnfs_cleanup_layoutcommit(data);
-+	nfs_post_op_update_inode_force_wcc(data->args.inode,
-+					   data->res.fattr);
- 	put_rpccred(data->cred);
++	INIT_LIST_HEAD(&data->lseg_list);
+ 	pnfs_list_write_lseg(inode, &data->lseg_list);
+ 
+ 	end_pos = nfsi->layout->plh_lwb;
+@@ -1940,8 +1940,11 @@ out:
+ 		mark_inode_dirty_sync(inode);
+ 	dprintk("<-- %s status %d\n", __func__, status);
+ 	return status;
+-out_free:
++out_unlock:
++	spin_unlock(&inode->i_lock);
  	kfree(data);
- }
-diff --git a/fs/nfs/pnfs.h b/fs/nfs/pnfs.h
-index a4f41810a7f4..023793909778 100644
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -359,6 +359,15 @@ pnfs_ld_layoutret_on_setattr(struct inode *inode)
- 		PNFS_LAYOUTRET_ON_SETATTR;
++clear_layoutcommitting:
++	pnfs_clear_layoutcommitting(inode);
+ 	goto out;
  }
  
-+static inline bool
-+pnfs_layoutcommit_outstanding(struct inode *inode)
-+{
-+	struct nfs_inode *nfsi = NFS_I(inode);
-+
-+	return test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags) != 0 ||
-+		test_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags) != 0;
-+}
-+
- static inline int pnfs_return_layout(struct inode *ino)
- {
- 	struct nfs_inode *nfsi = NFS_I(ino);
-@@ -515,6 +524,13 @@ pnfs_use_threshold(struct nfs4_threshold **dst, struct nfs4_threshold *src,
- 	return false;
- }
- 
-+static inline bool
-+pnfs_layoutcommit_outstanding(struct inode *inode)
-+{
-+	return false;
-+}
-+
-+
- static inline struct nfs4_threshold *pnfs_mdsthreshold_alloc(void)
- {
- 	return NULL;
 -- 
 1.8.4.2
 
