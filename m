@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbaAMUQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:16:46 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34928 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751068AbaAMUQn (ORCPT
+	id S1752287AbaAMUUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:20:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:26571 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534AbaAMUUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 15:16:43 -0500
-Date: Mon, 13 Jan 2014 15:16:42 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Daniel Vetter <daniel@ffwll.ch>
-cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Excessive WARN()s in Intel 915 driver
-In-Reply-To: <20140108202108.GV4770@phenom.ffwll.local>
-Message-ID: <Pine.LNX.4.44L0.1401131512380.2032-100000@iolanthe.rowland.org>
+	Mon, 13 Jan 2014 15:20:06 -0500
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
+Subject: Re: [PATCH 09/14] target/configfs: Expose protection device attributes
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	<1389212157-14540-10-git-send-email-nab@daterainc.com>
+	<yq161prr1p8.fsf@sermon.lab.mkp.net>
+	<1389637859.5567.431.camel@haakon3.risingtidesystems.com>
+	<1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
+	<1389641243.5567.445.camel@haakon3.risingtidesystems.com>
+Date: Mon, 13 Jan 2014 15:19:47 -0500
+In-Reply-To: <1389641243.5567.445.camel@haakon3.risingtidesystems.com>
+	(Nicholas A. Bellinger's message of "Mon, 13 Jan 2014 11:27:23 -0800")
+Message-ID: <yq1a9ezocrg.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Jan 2014, Daniel Vetter wrote:
+>>>>> "nab" == Nicholas A Bellinger <nab@linux-iscsi.org> writes:
 
-> On Wed, Jan 08, 2014 at 01:34:02PM -0500, Alan Stern wrote:
-> > On Wed, 8 Jan 2014, Daniel Vetter wrote:
-> > 
-> > > On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
-> > > > On Tue, 7 Jan 2014, Daniel Vetter wrote:
-> > > > 
-> > > > > I really want users to report these issues, and excessive WARNs seems
-> > > > > to be the only way to get those reports. Please boot with
-> > > > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
-> > > > > Also, which precise kernel are you running? Testing latest -rc is
-> > > > > always recommended, this state checker code is fairly new and gets
-> > > > > constantly extended and bugs fixed ...
-> > > > 
-> > > > Here you go.  This is the dmesg output after booting with
-> > > > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
-> > > > string; this is pristine 3.13-rc7.
-> > > 
-> > > That's strange, I've thought we've fixed the last struggling mismatch in
-> > > the lvds borber bits stuff. Can you please try latest drm-intel-nightly
-> > > from
-> > > 
-> > > http://cgit.freedesktop.org/~danvet/drm-intel/
+>> What proposed 16 byte scheme?  The only DIF proposals I know for
+>> SBC-4 are 13-185R0 and 12-369R0 and that's a couple of new algorithms
+>> and types because we cannot change the 8 byte PI.
 
-I posted the output from the default branch in that repository last
-week:
+nab> Then I'm probably getting the SBC version wrong..  It's the one
+nab> that includes using CRC32C for the block guard, and larger space
+nab> for reference tag as mentioned by MKP.
 
-	http://marc.info/?l=linux-kernel&m=138922294308576&w=2
+This is the Type 4 we have been shopping among various vendors. It
+predates and is simpler than HP's proposal (which met resistance in T10
+and was subsequently dropped). So we revived our original Type 4
+proposal which is 16 bytes of protection information per interval
+(CRC32C, 48-bit LBA and 6 bytes of app tag). The proposal has been
+sitting around for a while waiting for SBC-4 to open.
 
-Have you had time to look at the results yet?
-
-Alan Stern
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
