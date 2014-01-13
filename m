@@ -1,64 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185AbaAMRTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:19:31 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:1587 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755629AbaAMRT3 (ORCPT
+	id S1752255AbaAMPxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:53:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60621 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599AbaAMPxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:19:29 -0500
-From: Josef Bacik <jbacik@fb.com>
-To: <mingo@kernel.org>, <linux-kernel@vger.kernel.org>, <peterz@infradead.org>
-Subject: [PATCH 1/2] rwsem: add rwsem_is_contended
-Date: Mon, 13 Jan 2014 12:18:50 -0500
-Message-ID: <1389633531-1921-1-git-send-email-jbacik@fb.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 13 Jan 2014 10:53:37 -0500
+Date: Mon, 13 Jan 2014 07:52:49 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-99b60ce69734dfeda58c6184a326b9475ce1dba3@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, efault@gmx.de,
+        peterz@infradead.org, rdunlap@infradead.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        scott.norton@hp.com, davidlohr@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        tom.vaden@hp.com, jeffm@suse.com, aswin@hp.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, efault@gmx.de, rdunlap@infradead.org,
+        jason.low2@hp.com, Waiman.Long@hp.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, davidlohr@hp.com, scott.norton@hp.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, dvhart@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, tom.vaden@hp.com, jeffm@suse.com,
+        aswin@hp.com
+In-Reply-To: <1389569486-25487-4-git-send-email-davidlohr@hp.com>
+References: <1389569486-25487-4-git-send-email-davidlohr@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] futexes:
+  Document multiprocessor ordering guarantees
+Git-Commit-ID: 99b60ce69734dfeda58c6184a326b9475ce1dba3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-13_02:2014-01-13,2014-01-13,1970-01-01 signatures=0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:52:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josef Bacik <jbacik@fusionio.com>
+Commit-ID:  99b60ce69734dfeda58c6184a326b9475ce1dba3
+Gitweb:     http://git.kernel.org/tip/99b60ce69734dfeda58c6184a326b9475ce1dba3
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Sun, 12 Jan 2014 15:31:24 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 13 Jan 2014 11:45:19 +0100
 
-Btrfs needs a simple way to know if it needs to let go of it's read lock on a
-rwsem.  Introduce rwsem_is_contended to check to see if there are any waiters on
-this rwsem currently.  This is just a hueristic, it is meant to be light and not
-100% accurate and called by somebody already holding on to the rwsem in either
-read or write.  Thanks,
+futexes: Document multiprocessor ordering guarantees
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+That's essential, if you want to hack on futexes.
+
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: Tom Vaden <tom.vaden@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Jason Low <jason.low2@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1389569486-25487-4-git-send-email-davidlohr@hp.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/rwsem.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
 
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index 0616ffe..03f3b05 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -75,6 +75,17 @@ do {								\
- } while (0)
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 577481d..fcc6850 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -69,6 +69,63 @@
+ 
+ #include "locking/rtmutex_common.h"
+ 
++/*
++ * Basic futex operation and ordering guarantees:
++ *
++ * The waiter reads the futex value in user space and calls
++ * futex_wait(). This function computes the hash bucket and acquires
++ * the hash bucket lock. After that it reads the futex user space value
++ * again and verifies that the data has not changed. If it has not
++ * changed it enqueues itself into the hash bucket, releases the hash
++ * bucket lock and schedules.
++ *
++ * The waker side modifies the user space value of the futex and calls
++ * futex_wake(). This functions computes the hash bucket and acquires
++ * the hash bucket lock. Then it looks for waiters on that futex in the
++ * hash bucket and wakes them.
++ *
++ * Note that the spin_lock serializes waiters and wakers, so that the
++ * following scenario is avoided:
++ *
++ * CPU 0                               CPU 1
++ * val = *futex;
++ * sys_futex(WAIT, futex, val);
++ *   futex_wait(futex, val);
++ *   uval = *futex;
++ *                                     *futex = newval;
++ *                                     sys_futex(WAKE, futex);
++ *                                       futex_wake(futex);
++ *                                       if (queue_empty())
++ *                                         return;
++ *   if (uval == val)
++ *      lock(hash_bucket(futex));
++ *      queue();
++ *     unlock(hash_bucket(futex));
++ *     schedule();
++ *
++ * This would cause the waiter on CPU 0 to wait forever because it
++ * missed the transition of the user space value from val to newval
++ * and the waker did not find the waiter in the hash bucket queue.
++ * The spinlock serializes that:
++ *
++ * CPU 0                               CPU 1
++ * val = *futex;
++ * sys_futex(WAIT, futex, val);
++ *   futex_wait(futex, val);
++ *   lock(hash_bucket(futex));
++ *   uval = *futex;
++ *                                     *futex = newval;
++ *                                     sys_futex(WAKE, futex);
++ *                                       futex_wake(futex);
++ *                                       lock(hash_bucket(futex));
++ *   if (uval == val)
++ *      queue();
++ *     unlock(hash_bucket(futex));
++ *     schedule();                       if (!queue_empty())
++ *                                         wake_waiters(futex);
++ *                                       unlock(hash_bucket(futex));
++ */
++
+ int __read_mostly futex_cmpxchg_enabled;
  
  /*
-+ * This is the same regardless of which rwsem implementation that is being used.
-+ * It is just a heuristic meant to be called by somebody alreadying holding the
-+ * rwsem to see if somebody from an incompatible type is wanting access to the
-+ * lock.
-+ */
-+static inline int rwsem_is_contended(struct rw_semaphore *sem)
-+{
-+	return !list_empty(&sem->wait_list);
-+}
-+
-+/*
-  * lock for reading
-  */
- extern void down_read(struct rw_semaphore *sem);
--- 
-1.8.3.1
-
