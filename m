@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaAMItg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:49:36 -0500
-Received: from mail-pb0-f65.google.com ([209.85.160.65]:54637 "EHLO
-	mail-pb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaAMItd (ORCPT
+	id S1751592AbaAMIuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:50:23 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:39611 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaAMIuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:49:33 -0500
-Message-ID: <52D3A885.2080107@gmail.com>
-Date: Mon, 13 Jan 2014 14:19:09 +0530
-From: sohny thomas <sohny.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 13 Jan 2014 03:50:20 -0500
 MIME-Version: 1.0
-To: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        yoshfuji@linux-ipv6.org, davem@davemloft.net,
-        kumuda <kumuda@linux.vnet.ibm.com>, hannes@stressinduktion.org
-Subject: Re: ipv6: default route for link local address is not added while
- assigning a address
-References: <52D2F201.1090903@gmail.com>
-In-Reply-To: <52D2F201.1090903@gmail.com>
-X-Forwarded-Message-Id: <52D2F201.1090903@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <52D38787.5030505@codethink.co.uk>
+References: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk>
+	<2133074.4EFCIDJZXE@avalon>
+	<52D38787.5030505@codethink.co.uk>
+Date: Mon, 13 Jan 2014 09:50:19 +0100
+X-Google-Sender-Auth: WDtkfd7tdgqnSsxCUyrK9rwtKf4
+Message-ID: <CAMuHMdXek5YhKt9p-1LPXRuifqv6sazwzTZ+k6Ps=1-Myepirw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] power: clock_ops.c: fixup clk prepare/unprepare count
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@lists.codethink.co.uk,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 January 2014 10:46 PM, Hannes Frederic Sowa wrote:
-> On Fri, Jan 10, 2014 at 05:33:08PM +0100, Nicolas Dichtel wrote:
->> CC: netdev
->>
->> Le 10/01/2014 13:20, sohny thomas a écrit :
->>> Default route for link local address is configured automatically if
->>> NETWORKING_IPV6=yes is in ifcfg-eth*.
->>> When the route table for the interface is flushed and a new address is
->>> added to
->>> the same device with out removing linklocal addr, default route for link
->>> local
->>> address has to added by default.
->> I would say that removing the link local route but not the link local
->> address
->> is a configuration problem.
->> If you remove a connected route but not the associated address, you will
->> have
->> the same problem.
-> We have some user accessible routes that are essential for IPv6 stack
-> to work at all. So I don't know if I can agree with that.
+On Mon, Jan 13, 2014 at 7:28 AM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+>> I've never noticed this on Lager, probably because Lager multiplatform
+>> doesn't
+>> make use of clock_ops.c as drivers/sh/pm_runtime.c (which you addressed in
+>> another patch that I've also replied to). I'm thus not sure we need to
+>> apply
+>> this as a fix and backport it to stable branches.
 >
-> Maybe flush is a bit too aggressive?
 >
-Hi ,
+> Yes, it seems that a lot of the lager drivers assume that this support
+> is there, and the work seems to have been sponsored by Renesas.
 
-Thank you for the inputs.
+I can confirm that applying both this and "[PATCH] ARM: shmobile: compile
+drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI" makes
 
-In the test for ipv6 default address selection , we are testing the rule
-2 as specified in RFC 6724
+    rcar_thermal e61f0000.thermal: thermal sensor was broken
 
-   If Scope(SA) < Scope(SB): If Scope(SA) < Scope(D), then prefer SB
-     and otherwise prefer SA.
-     Similarly, if Scope(SB) < Scope(SA): If Scope(SB) < Scope(D), then
-     prefer SA and otherwise prefer SB.
+go away on Koelsch.
 
-Test:
+Gr{oetje,eeting}s,
 
-   Check 04:
-      Destination: ff08::2(OS)
-      Candidate Source Addresses: fec0::1(SS) or LLA(LS)
-      Result: fec0::1(SS)
+                        Geert
 
-      Scope(LLA) < Scope(fec0::1): If Scope(LLA) < Scope(ff08::2),  yes, 
-prefer fec0::1
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
-Now in the test its flushing all the routes and adding an address ,
-which in causes to add route into the routing table including the link
-local routes.
-Earlier in 2.6.32 it used to work fine now due to the above mentioned
-check-in this is not happening
-
-Of course we can still just delete a route and add , but even if we
-delete the link local route, IMHO i think it should update the LLA route
-when the interface is next added an address or bought up which ever is
-the case.
-
-Regards,
-Sohny
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
