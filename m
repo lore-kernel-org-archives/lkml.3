@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaAMTnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:43:16 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45700 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752039AbaAMTnN (ORCPT
+	id S1752719AbaAMToB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:44:01 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:57649 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbaAMTn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:43:13 -0500
-Message-ID: <1389642191.12062.32.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
- attributes
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
-Date: Mon, 13 Jan 2014 11:43:11 -0800
-In-Reply-To: <1389641243.5567.445.camel@haakon3.risingtidesystems.com>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
-	 <yq161prr1p8.fsf@sermon.lab.mkp.net>
-	 <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
-	 <1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
-	 <1389641243.5567.445.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
+	Mon, 13 Jan 2014 14:43:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Feng Kan <fkan@apm.com>
+Subject: Re: [PATCH V2 1/6] Documentation: add dts binding for X-Gene reboot dts node.
+Date: Mon, 13 Jan 2014 20:43:51 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+References: <1389135041-16062-1-git-send-email-fkan@apm.com> <201401131619.35030.arnd@arndb.de> <CAL85gmCTsxng3jCaAcCjePE6Pxu7Jg98TDUqQrDFzsfW2GQwEg@mail.gmail.com>
+In-Reply-To: <CAL85gmCTsxng3jCaAcCjePE6Pxu7Jg98TDUqQrDFzsfW2GQwEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201401132043.52491.arnd@arndb.de>
+X-Provags-ID: V02:K0:AMxYXJhJITb/GN6YTSC+7MrvAICASYGLI3IXZkbpl09
+ TqQ3EjRMYZVJD/gFfTikmJeDl2lDOozveqqIluaacdU1Oi87T7
+ UPvJeFXfAFkipF1+wP2iUKA8riMIDm9LyYb33RPjrHGUAjKlrN
+ w15S0444v0uU9e8Ru/Pk5e3n4iq1+rEL+RDr0MCtCAGsbwL1dA
+ 4NsQ1XBY0YQJ4EBE9uM9Awm5ptvO1NzC7EUe6ur/ENkd2ej/9A
+ zQE9GTGeIlyWIzN9V4ChCl1C6xmrenaC+S1v3wvJHeK99zdek2
+ uL3DU1Tqp0rWHOuStVtVyN2rel96Qd68KSDeuoMgftsMRUG7Ao
+ Jfdpp/iQTNPOPNl3mjLg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 11:27 -0800, Nicholas A. Bellinger wrote:
-> On Mon, 2014-01-13 at 10:52 -0800, James Bottomley wrote:
-> > On Mon, 2014-01-13 at 10:30 -0800, Nicholas A. Bellinger wrote:
-> > > Hey MKP,
-> > > 
-> > > On Fri, 2014-01-10 at 16:01 -0500, Martin K. Petersen wrote:
-> > > > >>>>> "nab" == Nicholas A Bellinger <nab@daterainc.com> writes:
-> > > > 
-> > > > nab> This patch adds support for exposing DIF protection device
-> > > > nab> attributes via configfs.  This includes:
-> > > > 
-> > > > nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
-> > > > nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
-> > > > 
-> > > > What's DIF v2?
-> > > > 
-> > > 
-> > > This would be the proposed 16-byte protection scheme for SBC4.
-> > 
-> > What proposed 16 byte scheme?  The only DIF proposals I know for SBC-4
-> > are 13-185R0 and 12-369R0 and that's a couple of new algorithms and
-> > types because we cannot change the 8 byte PI.
-> > 
-> 
-> Then I'm probably getting the SBC version wrong..  It's the one that
-> includes using CRC32C for the block guard, and larger space for
-> reference tag as mentioned by MKP.
+On Monday 13 January 2014, Feng Kan wrote:
+> FKAN: I could remove this dts node and create another dts node that
+> describe the range of registers on the SCU and use that node in this driver.
+> I am not sure which subsystem I can use to handle this case, I do see a reset
+> subsystem in the kernel but more used for ip resets. Please kindly let
+> me know. Thanks for the great feedback.
 
-Well, this isn't reducing my confusion:  I think you're referring to
-12-369r0 which proposes to *eliminate* the reference tag (by moving it
-into the CRC calculation) and use the recovered 4 bytes to expand the
-CRC to CRC32 and add two bytes to the application tag, so they both
-become 4 bytes long, but the new PI still occupies only 8 bytes on disk.
+Is this related to the standard ARM SCU that manages multiprocessor
+systems, or a different unit that uses the same name?
 
-Perhaps it's also better to clarify the terminology:  The PI is composed
-of a Guard field, which is the checksum, an application tag, which is
-usable by the application for anything it wants and a reference tag
-which is designed to be derived from the on-disk location so it can be
-used to detect misplaced writes.  In Type 1 the reference tag has to be
-the lower 31 bits of the LBA and in type 3 it's application defined.  In
-all current types, the guard is two bytes and the application tag two
-bytes.
+Since this is a global register range with a variety of things in it,
+the best candidate IMHO would be to use the "syscon" driver. You can
+mark the device node as 'compatible="apm,xgene-scu","syscon"' to let
+it get picked up by the drivers/mfd/syscon driver, which creates
+a "regmap" structure for it.
 
-James
+The reset driver then uses a DT reference with a phandle to the
+SCU node and calls syscon_regmap_lookup_by_phandle() to get the
+regmap. It can get the register number inside the regmap from DT
+as well and use the regmap API to perform the reset.
 
-
+	Arnd
