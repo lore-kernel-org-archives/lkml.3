@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886AbaAMQ1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:27:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53481 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaAMQEH (ORCPT
+	id S1755175AbaAMQ2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:28:33 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:56509 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114AbaAMQ21 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:07 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        Glauber Costa <glommer@openvz.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 137/208] memcg: fix memcg_size() calculation
-Date: Mon, 13 Jan 2014 15:59:38 +0000
-Message-Id: <1389628849-1614-138-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 13 Jan 2014 11:28:27 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] nfs: don't update isize when NFS_INO_LAYOUTCOMMITTING in nfs_update_inode
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+In-Reply-To: <C689DB34-AC0A-49CF-94DC-74ACB1CB177F@primarydata.com>
+Date: Mon, 13 Jan 2014 11:28:22 -0500
+Cc: shaobingqing <shaobingqing@bwstor.com.cn>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
+References: <n> <1389599759-2711-1-git-send-email-shaobingqing@bwstor.com.cn> <C689DB34-AC0A-49CF-94DC-74ACB1CB177F@primarydata.com>
+To: Myklebust Trond <trond.myklebust@primarydata.com>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On Jan 13, 2014, at 8:34, Trond Myklebust <trond.myklebust@primarydata.com> wrote:
 
-From: Vladimir Davydov <vdavydov@parallels.com>
+> 
+> On Jan 13, 2014, at 2:55, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
+> 
+>> When a file is in NFS_INO_LAYOUTCOMMITING status, its isize perhaps has not been 
+>> transferred to the metadate server. So the isize getting from the metadata server
+>> perhaps is out of date and cannot be used to update the isize of the client.
+>> 
+>> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+>> ---
+>> fs/nfs/inode.c |    3 ++-
+>> 1 files changed, 2 insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+>> index ebeb94c..caf50a1 100644
+>> --- a/fs/nfs/inode.c
+>> +++ b/fs/nfs/inode.c
+>> @@ -1402,7 +1402,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+>> 		if (new_isize != cur_isize) {
+>> 			/* Do we perhaps have any outstanding writes, or has
+>> 			 * the file grown beyond our last write? */
+>> -			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) ||
+>> +			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags) &&
+>> +			     !test_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags)) ||
+>> 			     new_isize > cur_isize) {
+>> 				i_size_write(inode, new_isize);
+>> 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
+> 
+> Ugh. Is there any reason why we can’t just keep NFS_INO_LAYOUTCOMMIT set until the layout commit operation is finished instead of multiplying the tests for it in generic NFS code paths such as nfs_update_inode?
 
-commit 695c60830764945cf61a2cc623eb1392d137223e upstream.
+Actually, no. The above is bogus, because LAYOUTCOMMIT doesn’t just affect the file size: it affects the NFSv4 change attribute, ctime and mtime values too.
 
-The mem_cgroup structure contains nr_node_ids pointers to
-mem_cgroup_per_node objects, not the objects themselves.
+I’ll draft a patch...
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- mm/memcontrol.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index aa44621..97f2550 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -349,7 +349,7 @@ struct mem_cgroup {
- static size_t memcg_size(void)
- {
- 	return sizeof(struct mem_cgroup) +
--		nr_node_ids * sizeof(struct mem_cgroup_per_node);
-+		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
- }
- 
- /* internal only representation about the status of kmem accounting. */
--- 
-1.8.3.2
+--
+Trond Myklebust
+Linux NFS client maintainer
 
