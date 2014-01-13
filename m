@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaAMSwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:52:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbaAMSwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:52:41 -0500
-Date: Mon, 13 Jan 2014 19:52:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
-	of __lock_acquire()
-Message-ID: <20140113185238.GB14125@redhat.com>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net> <20140112094041.GB31809@gmail.com> <20140112174532.GA12147@redhat.com> <20140112174554.GB12147@redhat.com> <20140113170609.GA9873@redhat.com> <20140113172833.GT31570@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113172833.GT31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752421AbaAMSxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:53:01 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45463 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751893AbaAMSw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 13:52:59 -0500
+Message-ID: <1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
+ attributes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
+Date: Mon, 13 Jan 2014 10:52:57 -0800
+In-Reply-To: <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
+	 <yq161prr1p8.fsf@sermon.lab.mkp.net>
+	 <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13, Peter Zijlstra wrote:
->
-> On Mon, Jan 13, 2014 at 06:06:09PM +0100, Oleg Nesterov wrote:
-> >
-> > And I just realized that rcu_lock_acquire() does lock_acquire(check => 1).
-> > Probably we can mark rcu_lock_map's as __lockdep_no_validate__.
->
-> Can't, RCU needs its own classes. Otherwise it cannot tell which version
-> of the RCU read lock its holding at just that moment.
+On Mon, 2014-01-13 at 10:30 -0800, Nicholas A. Bellinger wrote:
+> Hey MKP,
+> 
+> On Fri, 2014-01-10 at 16:01 -0500, Martin K. Petersen wrote:
+> > >>>>> "nab" == Nicholas A Bellinger <nab@daterainc.com> writes:
+> > 
+> > nab> This patch adds support for exposing DIF protection device
+> > nab> attributes via configfs.  This includes:
+> > 
+> > nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
+> > nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
+> > 
+> > What's DIF v2?
+> > 
+> 
+> This would be the proposed 16-byte protection scheme for SBC4.
 
-Ah, indeed. Thanks.
+What proposed 16 byte scheme?  The only DIF proposals I know for SBC-4
+are 13-185R0 and 12-369R0 and that's a couple of new algorithms and
+types because we cannot change the 8 byte PI.
 
-Can't it do lock_acquire(trylock => 1, read => 2) ? this still means
-mark_irqflags(), but perhaps this won't hurt too much.
+James
 
-> At the very least we can reduce check to a single bit.
-
-Or this, yes.
-
-Oleg.
 
