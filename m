@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576AbaAMQCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:02:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52998 "EHLO
+	id S1756183AbaAMQxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:53:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53058 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158AbaAMQB4 (ORCPT
+	with ESMTP id S1753577AbaAMQCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:56 -0500
+	Mon, 13 Jan 2014 11:02:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/208] iser-target: fix error return code in isert_create_device_ib_res()
-Date: Mon, 13 Jan 2014 15:58:03 +0000
-Message-Id: <1389628849-1614-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 056/208] ASoC: wm5110: Correct HPOUT3 DAPM route typo
+Date: Mon, 13 Jan 2014 15:58:17 +0000
+Message-Id: <1389628849-1614-57-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,58 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 94a7111043d99819cd0a72d9b3174c7054adb2a0 upstream.
+commit 280484e708a3cc38fe6807718caa460e744c0b20 upstream.
 
-Fix to return a negative error code from the error handling
-case instead of 0, as done elsewhere in this function.
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Kyung-Kwee Ryu <kyung-kwee.ryu@wolfsonmicro.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ sound/soc/codecs/wm5110.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 3f62041..e0a95b8 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -242,21 +242,29 @@ isert_create_device_ib_res(struct isert_device *device)
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
- 						ISER_MAX_RX_CQ_LEN, i);
--		if (IS_ERR(device->dev_rx_cq[i]))
-+		if (IS_ERR(device->dev_rx_cq[i])) {
-+			ret = PTR_ERR(device->dev_rx_cq[i]);
-+			device->dev_rx_cq[i] = NULL;
- 			goto out_cq;
-+		}
+diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
+index 18cdee7..c923776 100644
+--- a/sound/soc/codecs/wm5110.c
++++ b/sound/soc/codecs/wm5110.c
+@@ -1032,7 +1032,7 @@ static const struct snd_soc_dapm_route wm5110_dapm_routes[] = {
+ 	{ "HPOUT2R", NULL, "OUT2R" },
  
- 		device->dev_tx_cq[i] = ib_create_cq(device->ib_device,
- 						isert_cq_tx_callback,
- 						isert_cq_event_callback,
- 						(void *)&cq_desc[i],
- 						ISER_MAX_TX_CQ_LEN, i);
--		if (IS_ERR(device->dev_tx_cq[i]))
-+		if (IS_ERR(device->dev_tx_cq[i])) {
-+			ret = PTR_ERR(device->dev_tx_cq[i]);
-+			device->dev_tx_cq[i] = NULL;
- 			goto out_cq;
-+		}
+ 	{ "HPOUT3L", NULL, "OUT3L" },
+-	{ "HPOUT3R", NULL, "OUT3L" },
++	{ "HPOUT3R", NULL, "OUT3R" },
  
--		if (ib_req_notify_cq(device->dev_rx_cq[i], IB_CQ_NEXT_COMP))
-+		ret = ib_req_notify_cq(device->dev_rx_cq[i], IB_CQ_NEXT_COMP);
-+		if (ret)
- 			goto out_cq;
- 
--		if (ib_req_notify_cq(device->dev_tx_cq[i], IB_CQ_NEXT_COMP))
-+		ret = ib_req_notify_cq(device->dev_tx_cq[i], IB_CQ_NEXT_COMP);
-+		if (ret)
- 			goto out_cq;
- 	}
- 
+ 	{ "SPKOUTLN", NULL, "OUT4L" },
+ 	{ "SPKOUTLP", NULL, "OUT4L" },
 -- 
 1.8.3.2
 
