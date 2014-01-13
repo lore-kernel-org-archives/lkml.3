@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915AbaAMO2m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51507 "EHLO
+	id S1752890AbaAMO2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51497 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaAMO0o (ORCPT
+	with ESMTP id S1752141AbaAMO0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:44 -0500
+	Mon, 13 Jan 2014 09:26:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
-        Chris J Arges <chris.j.arges@canonical.com>,
+Cc: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 70/96] sched: Fix race on toggling cfs_bandwidth_used
-Date: Mon, 13 Jan 2014 14:24:33 +0000
-Message-Id: <1389623099-18783-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 68/96] mm: ensure get_unmapped_area() returns higher address than mmap_min_addr
+Date: Mon, 13 Jan 2014 14:24:31 +0000
+Message-Id: <1389623099-18783-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -29,111 +31,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Segall <bsegall@google.com>
+From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-commit 1ee14e6c8cddeeb8a490d7b54cd9016e4bb900b4 upstream.
+commit 2afc745f3e3079ab16c826be4860da2529054dd2 upstream.
 
-When we transition cfs_bandwidth_used to false, any currently
-throttled groups will incorrectly return false from cfs_rq_throttled.
-While tg_set_cfs_bandwidth will unthrottle them eventually, currently
-running code (including at least dequeue_task_fair and
-distribute_cfs_runtime) will cause errors.
+This patch fixes the problem that get_unmapped_area() can return illegal
+address and result in failing mmap(2) etc.
 
-Fix this by turning off cfs_bandwidth_used only after unthrottling all
-cfs_rqs.
+In case that the address higher than PAGE_SIZE is set to
+/proc/sys/vm/mmap_min_addr, the address lower than mmap_min_addr can be
+returned by get_unmapped_area(), even if you do not pass any virtual
+address hint (i.e.  the second argument).
 
-Tested: toggle bandwidth back and forth on a loaded cgroup. Caused
-crashes in minutes without the patch, hasn't crashed with it.
+This is because the current get_unmapped_area() code does not take into
+account mmap_min_addr.
 
-Signed-off-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181611.22647.80365.stgit@sword-of-the-dawn.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+This leads to two actual problems as follows:
+
+1. mmap(2) can fail with EPERM on the process without CAP_SYS_RAWIO,
+   although any illegal parameter is not passed.
+
+2. The bottom-up search path after the top-down search might not work in
+   arch_get_unmapped_area_topdown().
+
+Note: The first and third chunk of my patch, which changes "len" check,
+are for more precise check using mmap_min_addr, and not for solving the
+above problem.
+
+[How to reproduce]
+
+	--- test.c -------------------------------------------------
+	#include <stdio.h>
+	#include <unistd.h>
+	#include <sys/mman.h>
+	#include <sys/errno.h>
+
+	int main(int argc, char *argv[])
+	{
+		void *ret = NULL, *last_map;
+		size_t pagesize = sysconf(_SC_PAGESIZE);
+
+		do {
+			last_map = ret;
+			ret = mmap(0, pagesize, PROT_NONE,
+				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	//		printf("ret=%p\n", ret);
+		} while (ret != MAP_FAILED);
+
+		if (errno != ENOMEM) {
+			printf("ERR: unexpected errno: %d (last map=%p)\n",
+			errno, last_map);
+		}
+
+		return 0;
+	}
+	---------------------------------------------------------------
+
+	$ gcc -m32 -o test test.c
+	$ sudo sysctl -w vm.mmap_min_addr=65536
+	vm.mmap_min_addr = 65536
+	$ ./test  (run as non-priviledge user)
+	ERR: unexpected errno: 1 (last map=0x10000)
+
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+[bwh: Backported to 3.2:
+ As we do not have vm_unmapped_area(), make arch_get_unmapped_area_topdown()
+ calculate the lower limit for the new area's end address and then compare
+ addresses with this instead of with len.  In the process, fix an off-by-one
+ error which could result in returning 0 if mm->mmap_base == len.]
+Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+[akira: Backported to 3.5:
+ Based on Ben's backport for 3.2-stable kernel. ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/core.c  |  9 ++++++++-
- kernel/sched/fair.c  | 16 +++++++++-------
- kernel/sched/sched.h |  3 ++-
- 3 files changed, 19 insertions(+), 9 deletions(-)
+ mm/mmap.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 89e8c2c..281f186 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -8084,7 +8084,12 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 7e24763..529f72c 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1443,7 +1443,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	struct vm_area_struct *vma;
+ 	unsigned long start_addr;
  
- 	runtime_enabled = quota != RUNTIME_INF;
- 	runtime_was_enabled = cfs_b->quota != RUNTIME_INF;
--	account_cfs_bandwidth_used(runtime_enabled, runtime_was_enabled);
-+	/*
-+	 * If we need to toggle cfs_bandwidth_used, off->on must occur
-+	 * before making related changes, and on->off must occur afterwards
-+	 */
-+	if (runtime_enabled && !runtime_was_enabled)
-+		cfs_bandwidth_usage_inc();
- 	raw_spin_lock_irq(&cfs_b->lock);
- 	cfs_b->period = ns_to_ktime(period);
- 	cfs_b->quota = quota;
-@@ -8110,6 +8115,8 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
- 			unthrottle_cfs_rq(cfs_rq);
- 		raw_spin_unlock_irq(&rq->lock);
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
+ 
+ 	if (flags & MAP_FIXED)
+@@ -1452,7 +1452,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 		    (!vma || addr + len <= vma->vm_start))
+ 			return addr;
  	}
-+	if (runtime_was_enabled && !runtime_enabled)
-+		cfs_bandwidth_usage_dec();
- out_unlock:
- 	mutex_unlock(&cfs_constraints_mutex);
+@@ -1515,9 +1515,10 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	struct vm_area_struct *vma;
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr = addr0, start_addr;
++	unsigned long low_limit = max(PAGE_SIZE, mmap_min_addr);
  
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 97ecdafd..e40a083 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1393,13 +1393,14 @@ static inline bool cfs_bandwidth_used(void)
- 	return static_key_false(&__cfs_bandwidth_used);
- }
+ 	/* requested length too big for entire address space */
+-	if (len > TASK_SIZE)
++	if (len > TASK_SIZE - mmap_min_addr)
+ 		return -ENOMEM;
  
--void account_cfs_bandwidth_used(int enabled, int was_enabled)
-+void cfs_bandwidth_usage_inc(void)
- {
--	/* only need to count groups transitioning between enabled/!enabled */
--	if (enabled && !was_enabled)
--		static_key_slow_inc(&__cfs_bandwidth_used);
--	else if (!enabled && was_enabled)
--		static_key_slow_dec(&__cfs_bandwidth_used);
-+	static_key_slow_inc(&__cfs_bandwidth_used);
-+}
-+
-+void cfs_bandwidth_usage_dec(void)
-+{
-+	static_key_slow_dec(&__cfs_bandwidth_used);
- }
- #else /* HAVE_JUMP_LABEL */
- static bool cfs_bandwidth_used(void)
-@@ -1407,7 +1408,8 @@ static bool cfs_bandwidth_used(void)
- 	return true;
- }
+ 	if (flags & MAP_FIXED)
+@@ -1527,7 +1528,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+-		if (TASK_SIZE - len >= addr &&
++		if (TASK_SIZE - len >= addr && addr >= mmap_min_addr &&
+ 				(!vma || addr + len <= vma->vm_start))
+ 			return addr;
+ 	}
+@@ -1542,7 +1543,7 @@ try_again:
+ 	/* either no address requested or can't fit in requested address hole */
+ 	start_addr = addr = mm->free_area_cache;
  
--void account_cfs_bandwidth_used(int enabled, int was_enabled) {}
-+void cfs_bandwidth_usage_inc(void) {}
-+void cfs_bandwidth_usage_dec(void) {}
- #endif /* HAVE_JUMP_LABEL */
+-	if (addr < len)
++	if (addr < low_limit + len)
+ 		goto fail;
  
- /*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 749f712..65bd8a8 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1142,7 +1142,8 @@ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
- extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
- extern void unthrottle_offline_cfs_rqs(struct rq *rq);
+ 	addr -= len;
+@@ -1563,7 +1564,7 @@ try_again:
  
--extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
-+extern void cfs_bandwidth_usage_inc(void);
-+extern void cfs_bandwidth_usage_dec(void);
+ 		/* try just below the current vma->vm_start */
+ 		addr = vma->vm_start-len;
+-	} while (len < vma->vm_start);
++	} while (vma->vm_start >= low_limit + len);
  
- #ifdef CONFIG_NO_HZ
- enum rq_nohz_flag_bits {
+ fail:
+ 	/*
 -- 
 1.8.3.2
 
