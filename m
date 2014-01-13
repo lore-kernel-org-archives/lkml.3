@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaAMO1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51289 "EHLO
+	id S1752521AbaAMO1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:27:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51298 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaAMOZn (ORCPT
+	with ESMTP id S1751824AbaAMOZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:43 -0500
+	Mon, 13 Jan 2014 09:25:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 28/96] ext4: fix del_timer() misuse for ->s_err_report
-Date: Mon, 13 Jan 2014 14:23:51 +0000
-Message-Id: <1389623099-18783-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 30/96] scripts/link-vmlinux.sh: only filter kernel symbols for arm
+Date: Mon, 13 Jan 2014 14:23:53 +0000
+Message-Id: <1389623099-18783-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 9105bb149bbbc555d2e11ba5166dfe7a24eae09e upstream.
+commit 7122c3e9154b5d9a7422f68f02d8acf050fad2b0 upstream.
 
-That thing should be del_timer_sync(); consider what happens
-if ext4_put_super() call of del_timer() happens to come just as it's
-getting run on another CPU.  Since that timer reschedules itself
-to run next day, you are pretty much guaranteed that you'll end up
-with kfree'd scheduled timer, with usual fun consequences.  AFAICS,
-that's -stable fodder all way back to 2010... [the second del_timer_sync()
-is almost certainly not needed, but it doesn't hurt either]
+Actually CONFIG_PAGE_OFFSET isn't same with PAGE_OFFSET, so
+it isn't easy to figue out PAGE_OFFSET defined in header
+file from scripts.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Because CONFIG_PAGE_OFFSET may not be defined in some ARCHs(
+64bit ARCH), or defined as bogus value in !MMU case, so
+this patch only applys the filter on ARM when CONFIG_PAGE_OFFSET
+is defined as the original problem is only on ARM.
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Fixes: f6537f2f0eba4eba3354e48dbe3047db6d8b6254
+Singed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/super.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ scripts/link-vmlinux.sh | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 0581e45..b2ae1e8 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -890,7 +890,7 @@ static void ext4_put_super(struct super_block *sb)
- 			ext4_abort(sb, "Couldn't clean up the journal");
- 	}
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 7a9f7f9..304c9f1 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -78,7 +78,9 @@ kallsyms()
+ 		kallsymopt=--all-symbols
+ 	fi
  
--	del_timer(&sbi->s_err_report);
-+	del_timer_sync(&sbi->s_err_report);
- 	ext4_release_system_zone(sb);
- 	ext4_mb_release(sb);
- 	ext4_ext_release(sb);
-@@ -3999,7 +3999,7 @@ failed_mount_wq:
- 		sbi->s_journal = NULL;
- 	}
- failed_mount3:
--	del_timer(&sbi->s_err_report);
-+	del_timer_sync(&sbi->s_err_report);
- 	if (sbi->s_flex_groups)
- 		ext4_kvfree(sbi->s_flex_groups);
- 	percpu_counter_destroy(&sbi->s_freeclusters_counter);
+-	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++	if [ -n "${CONFIG_ARM}" ] && [ -n "${CONFIG_PAGE_OFFSET}" ]; then
++		kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++	fi
+ 
+ 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
+ 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
 -- 
 1.8.3.2
 
