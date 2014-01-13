@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaAMO2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51345 "EHLO
+	id S1752728AbaAMO2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51342 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870AbaAMOZ7 (ORCPT
+	with ESMTP id S1751609AbaAMOZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 09:25:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Dave Airlie <airlied@redhat.com>,
+Cc: Miao Xie <miaox@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 40/96] drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
-Date: Mon, 13 Jan 2014 14:24:03 +0000
-Message-Id: <1389623099-18783-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 38/96] ftrace: Initialize the ftrace profiler for each possible cpu
+Date: Mon, 13 Jan 2014 14:24:01 +0000
+Message-Id: <1389623099-18783-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,61 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Miao Xie <miaox@cn.fujitsu.com>
 
-commit 49d45a31b71d7d9da74485922bdb63faf3dc9684 upstream.
+commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0 upstream.
 
-This bug in EDID was exposed by:
+Ftrace currently initializes only the online CPUs. This implementation has
+two problems:
+- If we online a CPU after we enable the function profile, and then run the
+  test, we will lose the trace information on that CPU.
+  Steps to reproduce:
+  # echo 0 > /sys/devices/system/cpu/cpu1/online
+  # cd <debugfs>/tracing/
+  # echo <some function name> >> set_ftrace_filter
+  # echo 1 > function_profile_enabled
+  # echo 1 > /sys/devices/system/cpu/cpu1/online
+  # run test
+- If we offline a CPU before we enable the function profile, we will not clear
+  the trace information when we enable the function profile. It will trouble
+  the users.
+  Steps to reproduce:
+  # cd <debugfs>/tracing/
+  # echo <some function name> >> set_ftrace_filter
+  # echo 1 > function_profile_enabled
+  # run test
+  # cat trace_stat/function*
+  # echo 0 > /sys/devices/system/cpu/cpu1/online
+  # echo 0 > function_profile_enabled
+  # echo 1 > function_profile_enabled
+  # cat trace_stat/function*
+  # run test
+  # cat trace_stat/function*
 
-commit eccea7920cfb009c2fa40e9ecdce8c36f61cab66
-Author: Alex Deucher <alexander.deucher@amd.com>
-Date:   Mon Mar 26 15:12:54 2012 -0400
+So it is better that we initialize the ftrace profiler for each possible cpu
+every time we enable the function profile instead of just the online ones.
 
-    drm/radeon/kms: improve bpc handling (v2)
+Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
 
-Which resulted in kind of regression in 3.5. This fixes
-https://bugs.freedesktop.org/show_bug.cgi?id=70934
-
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/drm_edid.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/trace/ftrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index bdbc6a2..92735dd 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -68,6 +68,8 @@
- #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
- /* Force reduced-blanking timings for detailed modes */
- #define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
-+/* Force 8bpc */
-+#define EDID_QUIRK_FORCE_8BPC			(1 << 8)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 9d7ae0c..7b7455a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -688,7 +688,7 @@ static int ftrace_profile_init(void)
+ 	int cpu;
+ 	int ret = 0;
  
- struct detailed_mode_closure {
- 	struct drm_connector *connector;
-@@ -128,6 +130,9 @@ static struct edid_quirk {
- 
- 	/* Medion MD 30217 PG */
- 	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
-+
-+	/* Panel in Samsung NP700G7A-S01PL notebook reports 6bpc */
-+	{ "SEC", 0xd033, EDID_QUIRK_FORCE_8BPC },
- };
- 
- /*** DDC fetch and block validation ***/
-@@ -1934,6 +1939,9 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
- 
- 	drm_add_display_info(edid, &connector->display_info);
- 
-+	if (quirks & EDID_QUIRK_FORCE_8BPC)
-+		connector->display_info.bpc = 8;
-+
- 	return num_modes;
- }
- EXPORT_SYMBOL(drm_add_edid_modes);
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		ret = ftrace_profile_init_cpu(cpu);
+ 		if (ret)
+ 			break;
 -- 
 1.8.3.2
 
