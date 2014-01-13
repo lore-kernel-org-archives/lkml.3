@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaAMVCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 16:02:23 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:52248 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751236AbaAMVCU (ORCPT
+	id S1751850AbaAMVGf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 16:06:35 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56718 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751024AbaAMVGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 16:02:20 -0500
-Date: Mon, 13 Jan 2014 22:02:11 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Markus Mayer <markus.mayer@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Christian Daudt <bcm@fixthebug.org>,
-        Linaro Patches <patches@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 0/2] watchdog: bcm281xx: Watchdog Driver
-Message-ID: <20140113210211.GB23454@spo001.leaseweb.com>
-References: <1385160964-18578-1-git-send-email-markus.mayer@linaro.org> <20131228204039.GA19982@spo001.leaseweb.com> <CAPdLdqkNtvPwETc+TK9xRSh-ru6q4VvUk7zfYEbjPb1TOESMaA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPdLdqkNtvPwETc+TK9xRSh-ru6q4VvUk7zfYEbjPb1TOESMaA@mail.gmail.com>
-User-Agent: Mutt/1.4.1i
+	Mon, 13 Jan 2014 16:06:31 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: daniel.lezcano@linaro.org, lenb@kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, kyungmin.park@samsung.com
+Subject: Re: [PATCH v2 0/9] cpuidle: rework device state count handling
+Date: Mon, 13 Jan 2014 22:20:27 +0100
+Message-ID: <1616617.RcagPEYAid@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <2079155.EyEBRDoJjP@vostro.rjw.lan>
+References: <1387565251-7051-1-git-send-email-b.zolnierkie@samsung.com> <2079155.EyEBRDoJjP@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Markus,
-
-> Now I have a question (or rather a comment) of my own. I noticed that
-> you "squashed" my two original patches into a single patch before
-> breaking out the debugfs related code. The side-effect of this was
-> that two lines of my bcm_defconfig change (CONFIG_WATCHDOG=y and
-> CONFIG_BCM_KONA_WDT=y) were included in the patch you took into
-> linux-watchdog-next.
+On Saturday, January 11, 2014 01:37:29 AM Rafael J. Wysocki wrote:
+> On Friday, December 20, 2013 07:47:22 PM Bartlomiej Zolnierkiewicz wrote:
+> > Hi,
+> > 
+> > Some cpuidle drivers assume that cpuidle core will handle cases where
+> > device->state_count is smaller than driver->state_count, unfortunately
+> > currently this is untrue (device->state_count is used only for handling
+> > cpuidle state sysfs entries and driver->state_count is used for all
+> > other cases) and will not be fixed in the future as device->state_count
+> > is planned to be removed [1].
+> > 
+> > This patchset fixes such drivers (ARM EXYNOS cpuidle driver and ACPI
+> > cpuidle driver), removes superflous device->state_count initialization
+> > from drivers for which device->state_count equals driver->state_count
+> > (POWERPC pseries cpuidle driver and intel_idle driver) and finally
+> > removes state_count field from struct cpuidle_device.
+> > 
+> > Additionaly (while at it) this patchset fixes C1E promotion disable
+> > quirk handling (in intel_idle driver) and converts cpuidle drivers code
+> > to use the common cpuidle_[un]register() routines (in POWERPC pseries
+> > cpuidle driver and intel_idle driver).
+> > 
+> > [1] http://permalink.gmane.org/gmane.linux.power-management.general/36908
+> > 
+> > Reference to v1:
+> > 	http://comments.gmane.org/gmane.linux.power-management.general/37390
+> > 
+> > Changes since v1:
+> > - synced patch series with next-20131220
+> > - added ACKs from Daniel Lezcano
 > 
-> If I understand correctly (and this is why I had broken out the
-> bcm_defconfig change into a separate patch), a defconfig change would
-> normally go through the platform maintainer's tree, in this case
-> Christian, whereas the actual driver would go upstream through your
-> tree.
+> This series breaks boot on one of my test machines with intel_idle, so I'm
+> not sure how well it has been tested.
 > 
-> I don't think it makes too much of a difference with regards to this
-> driver where the defconfig change goes. In fact, taking it all through
-> one tree might even be slightly easier and reduce the chance of
-> conflicts, but I still think Christian needs to at least be aware of
-> this change going through the watchdog tree. He owns bcm_defconfig,
-> after all.
+> I've dropped it entirely for now.  If I have the time, I will try to identify
+> the root cause of the failure, but that may not happen before the merge window.
+> Sorry about that.
 
-If it is an existing driver then it makes sense to go through the platform
-maintainer's tree. If it is a new driver then I prefer to keep it as one
-patch. Suppose the defconfig stuff get's in via the platform tree and I
-don't sent the watchdog driver; would be an annoying situation in my opinion...
-So that's why I prefer it as a single patch.
+The breakage was introduced by patch [8/9], so I've re-applied patches [1-7/9]
+from this series.  Please refer to Fengguang's report [1] for the breakage
+details.
 
-Kind regards,
-Wim.
+Thanks!
 
+[1] http://marc.info/?l=linux-kernel&m=138964167909907&w=2
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
