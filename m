@@ -1,67 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaAMWqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 17:46:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:39130 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaAMWqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 17:46:32 -0500
-Date: Mon, 13 Jan 2014 14:46:31 -0800 (PST)
-Message-Id: <20140113.144631.230680335708739346.davem@davemloft.net>
-To: shahed.shaikh@qlogic.com
-Cc: martin@kaiser.cx, himanshu.madhani@qlogic.com, rajesh.borundia@qlogic.com,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH -next] qlcnic: fix compiler warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <262CB373A6D1F14F9B81E82F74F77D5A46F52B8E@avmb2.qlogic.org>
-References: <20140109155908.GA4351@reykholt.kaiser.cx>
-	<262CB373A6D1F14F9B81E82F74F77D5A46F52B8E@avmb2.qlogic.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	id S1752558AbaAMWrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 17:47:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165AbaAMWrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 17:47:12 -0500
+Message-ID: <52D46CBB.9080103@redhat.com>
+Date: Mon, 13 Jan 2014 23:46:19 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
+MIME-Version: 1.0
+To: Dave Hansen <dave@sr71.net>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, bp@suse.de, dtor@vmware.com,
+        kys@microsoft.com, haiyangz@microsoft.com, agraf@suse.de,
+        gleb@redhat.com
+Subject: Re: [PATCH 11/12] x86 Kconfig: create x86/Kconfig.virt
+References: <20140113192245.3F682C7F@viggo.jf.intel.com> <20140113192259.5E9DFB02@viggo.jf.intel.com>
+In-Reply-To: <20140113192259.5E9DFB02@viggo.jf.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0DMkeG0027190
 
-From: Shahed Shaikh <shahed.shaikh@qlogic.com>
-Date: Fri, 10 Jan 2014 07:19:19 +0000
+Il 13/01/2014 20:22, Dave Hansen ha scritto:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> Right now, there is a "Enable paravirtualization code" option in
+> the "Processor Features" menu, which means Xen.  There is also a
+> group of paravirtualization options specific to KVM under the
+> top-level "Virtualization" menu.
+> 
+> This creates a new hypervisor-independent arch/x86/Kconfig.virt
+> file, and moves the "Virtualization" menu to be defined in there.
+> This also removes the very counterintuitive references to
+> lguest/vhost code *from* kvm-specific code.
+> 
+> This also removes the silly:
+> 
+> 	depends on HAVE_KVM || X86
+> 
+> dependency.  It makes zero sense to have entries defined in
+> arch/x86 depend on x86.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Dmitry Torokhov <dtor@vmware.com>
+> Cc: K. Y. Srinivasan <kys@microsoft.com>
+> Cc: Haiyang Zhang <haiyangz@microsoft.com>
+> Cc: Alexander Graf <agraf@suse.de>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 
+>  linux.git-davehans/arch/x86/Kconfig      |    2 +-
+>  linux.git-davehans/arch/x86/Kconfig.virt |   18 ++++++++++++++++++
+>  linux.git-davehans/arch/x86/kvm/Kconfig  |   19 -------------------
+>  3 files changed, 19 insertions(+), 20 deletions(-)
+> 
+> diff -puN arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/Kconfig
+> --- linux.git/arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2014-01-13 11:11:36.617255854 -0800
+> +++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:36.620255990 -0800
 
-> 
-> Adding netdev.
-> 
->> -----Original Message-----
->> From: Martin Kaiser,,, [mailto:martin@reykholt.kaiser.cx] On Behalf Of
->> Martin Kaiser
->> Sent: Thursday, January 09, 2014 9:29 PM
->> To: Himanshu Madhani; Rajesh Borundia
->> Cc: linux-kernel; trivial@kernel.org
->> Subject: [PATCH -next] qlcnic: fix compiler warning
->> 
->> Add an explicit cast to fix the following warning (seen on Debian Wheezy, gcc
->> 4.7.2)
->> 
->> CC [M]  drivers/net/wireless/rtlwifi/rtl8192ce/trx.o
->>     drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c: In function
->> ¡qlcnic_send_filter¢:
->>     drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:349:3: warning:
->>     passing argument 2 of ¡ether_addr_equal¢ from incompatible pointer type
->> [enabled by default]
->>     In file included from include/linux/if_vlan.h:16:0,
->>     from drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:9:
->>     include/linux/etherdevice.h:244:20: note: expected ¡const u8 *¢ but
->> argument is of type ¡u64 *¢
->>
-> 
-> If I am not wrong, this patch should go to David's net-next tree.
+These diff headers are unreadable...
+
+> @@ -2416,6 +2416,6 @@ source "security/Kconfig"
 >  
->> Signed-off-by: Martin Kaiser <martin@kaiser.cx>
-> 
-> Acked-by: Shahed Shaikh <shahed.shaikh@qlogic.com>
+>  source "crypto/Kconfig"
+>  
+> -source "arch/x86/kvm/Kconfig"
+> +source "arch/x86/Kconfig.virt"
+>  
+>  source "lib/Kconfig"
+> diff -puN /dev/null arch/x86/Kconfig.virt
+> --- /dev/null	2013-11-27 17:20:18.337162396 -0800
+> +++ linux.git-davehans/arch/x86/Kconfig.virt	2014-01-13 11:11:36.621256035 -0800
+> @@ -0,0 +1,18 @@
+> +
+> +menuconfig VIRTUALIZATION
+> +	bool "Virtualization"
 
-Please post the original patch to netdev so that it properly gets
-queued up in patchwork, thank you very much.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Please rename this to "Hypervisor support" or "Virtual guest support" to
+avoid confusion with KVM.  Note there is a reference to
+CONFIG_VIRTUALIZATION in configs/kvm_guest.config.
+
+> +	default y
+> +	---help---
+> +	  Say Y here to get to see options for using your Linux host to run other
+> +	  operating systems inside virtual machines (guests).
+> +	  This option alone does not add any kernel code.
+> +
+> +	  If you say N, all options in this submenu will be skipped and disabled.
+> +
+> +if VIRTUALIZATION
+> +
+> +source arch/x86/kvm/Kconfig
+> +source drivers/vhost/Kconfig
+> +source drivers/lguest/Kconfig
+> +
+> +endif # VIRTUALIZATION
+> diff -puN arch/x86/kvm/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/kvm/Kconfig
+> --- linux.git/arch/x86/kvm/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2014-01-13 11:11:36.618255899 -0800
+> +++ linux.git-davehans/arch/x86/kvm/Kconfig	2014-01-13 11:11:36.621256035 -0800
+> @@ -4,19 +4,6 @@
+>  
+>  source "virt/kvm/Kconfig"
+>  
+> -menuconfig VIRTUALIZATION
+> -	bool "Virtualization"
+> -	depends on HAVE_KVM || X86
+> -	default y
+> -	---help---
+> -	  Say Y here to get to see options for using your Linux host to run other
+> -	  operating systems inside virtual machines (guests).
+> -	  This option alone does not add any kernel code.
+> -
+> -	  If you say N, all options in this submenu will be skipped and disabled.
+> -
+> -if VIRTUALIZATION
+> -
+>  config KVM
+>  	tristate "Kernel-based Virtual Machine (KVM) support"
+>  	depends on HAVE_KVM
+
+Definitely a good idea to separate KVM from the virtualization submenu.
+
+> @@ -93,9 +80,3 @@ config KVM_DEVICE_ASSIGNMENT
+>  
+>  	  If unsure, say Y.
+>  
+> -# OK, it's a little counter-intuitive to do this, but it puts it neatly under
+> -# the virtualization menu.
+> -source drivers/vhost/Kconfig
+> -source drivers/lguest/Kconfig
+> -
+> -endif # VIRTUALIZATION
+> _
+> 
+
