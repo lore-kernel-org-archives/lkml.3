@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaAMO2r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51567 "EHLO
+	id S1752915AbaAMO2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51507 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242AbaAMO04 (ORCPT
+	with ESMTP id S1751668AbaAMO0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:56 -0500
+	Mon, 13 Jan 2014 09:26:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 81/96] net: drop_monitor: fix the value of maxattr
-Date: Mon, 13 Jan 2014 14:24:44 +0000
-Message-Id: <1389623099-18783-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 70/96] sched: Fix race on toggling cfs_bandwidth_used
+Date: Mon, 13 Jan 2014 14:24:33 +0000
+Message-Id: <1389623099-18783-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,32 +29,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Changli Gao <xiaosuo@gmail.com>
+From: Ben Segall <bsegall@google.com>
 
-commit d323e92cc3f4edd943610557c9ea1bb4bb5056e8 upstream.
+commit 1ee14e6c8cddeeb8a490d7b54cd9016e4bb900b4 upstream.
 
-maxattr in genl_family should be used to save the max attribute
-type, but not the max command type. Drop monitor doesn't support
-any attributes, so we should leave it as zero.
+When we transition cfs_bandwidth_used to false, any currently
+throttled groups will incorrectly return false from cfs_rq_throttled.
+While tg_set_cfs_bandwidth will unthrottle them eventually, currently
+running code (including at least dequeue_task_fair and
+distribute_cfs_runtime) will cause errors.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix this by turning off cfs_bandwidth_used only after unthrottling all
+cfs_rqs.
+
+Tested: toggle bandwidth back and forth on a loaded cgroup. Caused
+crashes in minutes without the patch, hasn't crashed with it.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181611.22647.80365.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/drop_monitor.c | 1 -
- 1 file changed, 1 deletion(-)
+ kernel/sched/core.c  |  9 ++++++++-
+ kernel/sched/fair.c  | 16 +++++++++-------
+ kernel/sched/sched.h |  3 ++-
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-index d23b668..a974dfe 100644
---- a/net/core/drop_monitor.c
-+++ b/net/core/drop_monitor.c
-@@ -64,7 +64,6 @@ static struct genl_family net_drop_monitor_family = {
- 	.hdrsize        = 0,
- 	.name           = "NET_DM",
- 	.version        = 2,
--	.maxattr        = NET_DM_CMD_MAX,
- };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 89e8c2c..281f186 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -8084,7 +8084,12 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
  
- static DEFINE_PER_CPU(struct per_cpu_dm_data, dm_cpu_data);
+ 	runtime_enabled = quota != RUNTIME_INF;
+ 	runtime_was_enabled = cfs_b->quota != RUNTIME_INF;
+-	account_cfs_bandwidth_used(runtime_enabled, runtime_was_enabled);
++	/*
++	 * If we need to toggle cfs_bandwidth_used, off->on must occur
++	 * before making related changes, and on->off must occur afterwards
++	 */
++	if (runtime_enabled && !runtime_was_enabled)
++		cfs_bandwidth_usage_inc();
+ 	raw_spin_lock_irq(&cfs_b->lock);
+ 	cfs_b->period = ns_to_ktime(period);
+ 	cfs_b->quota = quota;
+@@ -8110,6 +8115,8 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+ 			unthrottle_cfs_rq(cfs_rq);
+ 		raw_spin_unlock_irq(&rq->lock);
+ 	}
++	if (runtime_was_enabled && !runtime_enabled)
++		cfs_bandwidth_usage_dec();
+ out_unlock:
+ 	mutex_unlock(&cfs_constraints_mutex);
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 97ecdafd..e40a083 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1393,13 +1393,14 @@ static inline bool cfs_bandwidth_used(void)
+ 	return static_key_false(&__cfs_bandwidth_used);
+ }
+ 
+-void account_cfs_bandwidth_used(int enabled, int was_enabled)
++void cfs_bandwidth_usage_inc(void)
+ {
+-	/* only need to count groups transitioning between enabled/!enabled */
+-	if (enabled && !was_enabled)
+-		static_key_slow_inc(&__cfs_bandwidth_used);
+-	else if (!enabled && was_enabled)
+-		static_key_slow_dec(&__cfs_bandwidth_used);
++	static_key_slow_inc(&__cfs_bandwidth_used);
++}
++
++void cfs_bandwidth_usage_dec(void)
++{
++	static_key_slow_dec(&__cfs_bandwidth_used);
+ }
+ #else /* HAVE_JUMP_LABEL */
+ static bool cfs_bandwidth_used(void)
+@@ -1407,7 +1408,8 @@ static bool cfs_bandwidth_used(void)
+ 	return true;
+ }
+ 
+-void account_cfs_bandwidth_used(int enabled, int was_enabled) {}
++void cfs_bandwidth_usage_inc(void) {}
++void cfs_bandwidth_usage_dec(void) {}
+ #endif /* HAVE_JUMP_LABEL */
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 749f712..65bd8a8 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1142,7 +1142,8 @@ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+ extern void unthrottle_offline_cfs_rqs(struct rq *rq);
+ 
+-extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
++extern void cfs_bandwidth_usage_inc(void);
++extern void cfs_bandwidth_usage_dec(void);
+ 
+ #ifdef CONFIG_NO_HZ
+ enum rq_nohz_flag_bits {
 -- 
 1.8.3.2
 
