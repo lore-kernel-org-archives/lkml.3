@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaAMTZk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:25:40 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:33431 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaAMTZc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:25:32 -0500
-Message-ID: <1389641243.5567.445.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
- attributes
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
-Date: Mon, 13 Jan 2014 11:27:23 -0800
-In-Reply-To: <1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
-	 <yq161prr1p8.fsf@sermon.lab.mkp.net>
-	 <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
-	 <1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752656AbaAMTW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:22:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43446 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252AbaAMTWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 14:22:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,654,1384329600"; 
+   d="scan'208";a="464459367"
+Subject: [PATCH 07/12] x86 Kconfig: move memtest
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 13 Jan 2014 11:22:54 -0800
+References: <20140113192245.3F682C7F@viggo.jf.intel.com>
+In-Reply-To: <20140113192245.3F682C7F@viggo.jf.intel.com>
+Message-Id: <20140113192254.F574139F@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 10:52 -0800, James Bottomley wrote:
-> On Mon, 2014-01-13 at 10:30 -0800, Nicholas A. Bellinger wrote:
-> > Hey MKP,
-> > 
-> > On Fri, 2014-01-10 at 16:01 -0500, Martin K. Petersen wrote:
-> > > >>>>> "nab" == Nicholas A Bellinger <nab@daterainc.com> writes:
-> > > 
-> > > nab> This patch adds support for exposing DIF protection device
-> > > nab> attributes via configfs.  This includes:
-> > > 
-> > > nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
-> > > nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
-> > > 
-> > > What's DIF v2?
-> > > 
-> > 
-> > This would be the proposed 16-byte protection scheme for SBC4.
-> 
-> What proposed 16 byte scheme?  The only DIF proposals I know for SBC-4
-> are 13-185R0 and 12-369R0 and that's a couple of new algorithms and
-> types because we cannot change the 8 byte PI.
-> 
 
-Then I'm probably getting the SBC version wrong..  It's the one that
-includes using CRC32C for the block guard, and larger space for
-reference tag as mentioned by MKP.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
---nab
+Move the "Memtest" option over to the "Memory Debugging" menu.
+The code is not x86 specific at all, but it still resides in
+arch/x86, so keep the x86 dependency.
 
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
+ linux.git-davehans/arch/x86/Kconfig |   11 -----------
+ linux.git-davehans/mm/Kconfig.debug |   12 ++++++++++++
+ 2 files changed, 12 insertions(+), 11 deletions(-)
 
+diff -puN arch/x86/Kconfig~move-memtest arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~move-memtest	2014-01-13 11:11:35.761217154 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:35.764217289 -0800
+@@ -1045,17 +1045,6 @@ endif #HYPERVISOR_GUEST
+ config NO_BOOTMEM
+ 	def_bool y
+ 
+-config MEMTEST
+-	bool "Memtest"
+-	---help---
+-	  This option adds a kernel parameter 'memtest', which allows memtest
+-	  to be set.
+-	        memtest=0, mean disabled; -- default
+-	        memtest=1, mean do 1 test pattern;
+-	        ...
+-	        memtest=4, mean do 4 test patterns.
+-	  If you are unsure how to answer this question, answer N.
+-
+ config X86_SUMMIT_NUMA
+ 	def_bool y
+ 	depends on X86_32 && NUMA && X86_32_NON_STANDARD
+diff -puN mm/Kconfig.debug~move-memtest mm/Kconfig.debug
+--- linux.git/mm/Kconfig.debug~move-memtest	2014-01-13 11:11:35.762217199 -0800
++++ linux.git-davehans/mm/Kconfig.debug	2014-01-13 11:11:35.765217335 -0800
+@@ -1,3 +1,15 @@
++config MEMTEST
++	bool "Memtest"
++	depends on X86
++	---help---
++	  This option adds a kernel parameter 'memtest', which allows memtest
++	  to be set.
++	        memtest=0, mean disabled; -- default
++	        memtest=1, mean do 1 test pattern;
++	        ...
++	        memtest=4, mean do 4 test patterns.
++	  If you are unsure how to answer this question, answer N.
++
+ config DEBUG_PAGEALLOC
+ 	bool "Debug page memory allocations"
+ 	depends on DEBUG_KERNEL
+_
