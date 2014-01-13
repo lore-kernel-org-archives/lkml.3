@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaAMQFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:05:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53697 "EHLO
+	id S1755261AbaAMQOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:14:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53755 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbaAMQE6 (ORCPT
+	with ESMTP id S1752904AbaAMQFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:58 -0500
+	Mon, 13 Jan 2014 11:05:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>,
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 175/208] net: unix: allow set_peek_off to fail
-Date: Mon, 13 Jan 2014 16:00:16 +0000
-Message-Id: <1389628849-1614-176-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 185/208] ipv6: always set the new created dst's from in ip6_rt_copy
+Date: Mon, 13 Jan 2014 16:00:26 +0000
+Message-Id: <1389628849-1614-186-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,79 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit 12663bfc97c8b3fdb292428105dd92d563164050 upstream.
+commit 24f5b855e17df7e355eacd6c4a12cc4d6a6c9ff0 upstream.
 
-unix_dgram_recvmsg() will hold the readlock of the socket until recv
-is complete.
+ip6_rt_copy only sets dst.from if ort has flag RTF_ADDRCONF and RTF_DEFAULT.
+but the prefix routes which did get installed by hand locally can have an
+expiration, and no any flag combination which can ensure a potential from
+does never expire, so we should always set the new created dst's from.
 
-In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
-unix_dgram_recvmsg() will complete (which can take a while) without allowing
-us to break out of it, triggering a hung task spew.
+This also fixes the new created dst is always expired since the ort, which
+is created by RA, maybe has RTF_EXPIRES and RTF_ADDRCONF, but no RTF_DEFAULT.
 
-Instead, allow set_peek_off to fail, this way userspace will not hang.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+CC: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/net.h | 2 +-
- net/core/sock.c     | 2 +-
- net/unix/af_unix.c  | 8 ++++++--
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ net/ipv6/route.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 8bd9d92..41103f8 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -180,7 +180,7 @@ struct proto_ops {
- 				      int offset, size_t size, int flags);
- 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
- 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
--	void		(*set_peek_off)(struct sock *sk, int val);
-+	int		(*set_peek_off)(struct sock *sk, int val);
- };
- 
- #define DECLARE_SOCKADDR(type, dst, src)	\
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 8729d91..dca3102 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -887,7 +887,7 @@ set_rcvbuf:
- 
- 	case SO_PEEK_OFF:
- 		if (sock->ops->set_peek_off)
--			sock->ops->set_peek_off(sk, val);
-+			ret = sock->ops->set_peek_off(sk, val);
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 9e0f8e1..2a0f219 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1861,9 +1861,7 @@ static struct rt6_info *ip6_rt_copy(struct rt6_info *ort,
  		else
- 			ret = -EOPNOTSUPP;
- 		break;
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 6c66e8d..303dcec 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -530,13 +530,17 @@ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
- static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
- 				  struct msghdr *, size_t, int);
+ 			rt->rt6i_gateway = *dest;
+ 		rt->rt6i_flags = ort->rt6i_flags;
+-		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
+-		    (RTF_DEFAULT | RTF_ADDRCONF))
+-			rt6_set_from(rt, ort);
++		rt6_set_from(rt, ort);
+ 		rt->rt6i_metric = 0;
  
--static void unix_set_peek_off(struct sock *sk, int val)
-+static int unix_set_peek_off(struct sock *sk, int val)
- {
- 	struct unix_sock *u = unix_sk(sk);
- 
--	mutex_lock(&u->readlock);
-+	if (mutex_lock_interruptible(&u->readlock))
-+		return -EINTR;
-+
- 	sk->sk_peek_off = val;
- 	mutex_unlock(&u->readlock);
-+
-+	return 0;
- }
- 
- 
+ #ifdef CONFIG_IPV6_SUBTREES
 -- 
 1.8.3.2
 
