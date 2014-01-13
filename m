@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaAMO2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51342 "EHLO
+	id S1752712AbaAMO2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51343 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaAMOZ7 (ORCPT
+	with ESMTP id S1751617AbaAMOZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 09:25:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miao Xie <miaox@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
+Cc: "Robin H. Johnson" <robbat2@gentoo.org>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 38/96] ftrace: Initialize the ftrace profiler for each possible cpu
-Date: Mon, 13 Jan 2014 14:24:01 +0000
-Message-Id: <1389623099-18783-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 39/96] libata: disable a disk via libata.force params
+Date: Mon, 13 Jan 2014 14:24:02 +0000
+Message-Id: <1389623099-18783-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,62 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miao Xie <miaox@cn.fujitsu.com>
+From: "Robin H. Johnson" <robbat2@gentoo.org>
 
-commit c4602c1c818bd6626178d6d3fcc152d9f2f48ac0 upstream.
+commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
 
-Ftrace currently initializes only the online CPUs. This implementation has
-two problems:
-- If we online a CPU after we enable the function profile, and then run the
-  test, we will lose the trace information on that CPU.
-  Steps to reproduce:
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # cd <debugfs>/tracing/
-  # echo <some function name> >> set_ftrace_filter
-  # echo 1 > function_profile_enabled
-  # echo 1 > /sys/devices/system/cpu/cpu1/online
-  # run test
-- If we offline a CPU before we enable the function profile, we will not clear
-  the trace information when we enable the function profile. It will trouble
-  the users.
-  Steps to reproduce:
-  # cd <debugfs>/tracing/
-  # echo <some function name> >> set_ftrace_filter
-  # echo 1 > function_profile_enabled
-  # run test
-  # cat trace_stat/function*
-  # echo 0 > /sys/devices/system/cpu/cpu1/online
-  # echo 0 > function_profile_enabled
-  # echo 1 > function_profile_enabled
-  # cat trace_stat/function*
-  # run test
-  # cat trace_stat/function*
+A user on StackExchange had a failing SSD that's soldered directly
+onto the motherboard of his system. The BIOS does not give any option
+to disable it at all, so he can't just hide it from the OS via the
+BIOS.
 
-So it is better that we initialize the ftrace profiler for each possible cpu
-every time we enable the function profile instead of just the online ones.
+The old IDE layer had hdX=noprobe override for situations like this,
+but that was never ported to the libata layer.
 
-Link: http://lkml.kernel.org/r/1387178401-10619-1-git-send-email-miaox@cn.fujitsu.com
+This patch implements a disable flag for libata.force.
 
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Example use:
+
+ libata.force=2.0:disable
+
+[v2 of the patch, removed the nodisable flag per Tejun Heo]
+
+Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
+Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
+Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/kernel-parameters.txt | 3 +++
+ drivers/ata/libata-core.c           | 1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 9d7ae0c..7b7455a 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -688,7 +688,7 @@ static int ftrace_profile_init(void)
- 	int cpu;
- 	int ret = 0;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index b5576c6..546de15 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1364,6 +1364,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
  
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		ret = ftrace_profile_init_cpu(cpu);
- 		if (ret)
- 			break;
+ 			* dump_id: dump IDENTIFY data.
+ 
++
++			* disable: Disable this device.
++
+ 			If there are multiple matching configurations changing
+ 			the same attribute, the last one is used.
+ 
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 92f2d3d..f1e3b76 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -6402,6 +6402,7 @@ static int __init ata_parse_force_one(char **cur,
+ 		{ "nohrst",	.lflags		= ATA_LFLAG_NO_HRST },
+ 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
+ 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
++		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
+ 	};
+ 	char *start = *cur, *p = *cur;
+ 	char *id, *val, *endp;
 -- 
 1.8.3.2
 
