@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaAMTmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:42:10 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65012 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751875AbaAMTmC (ORCPT
+	id S1752680AbaAMTnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:43:16 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45700 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752039AbaAMTnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:42:02 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] power: clock_ops.c: check return of clk_enable() in pm_clk_resume()
-Date: Mon, 13 Jan 2014 20:55:58 +0100
-Message-ID: <1438385.ppqm7XWTt3@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389445540-21426-2-git-send-email-ben.dooks@codethink.co.uk>
-References: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk> <1389445540-21426-2-git-send-email-ben.dooks@codethink.co.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 13 Jan 2014 14:43:13 -0500
+Message-ID: <1389642191.12062.32.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
+ attributes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Nicholas A. Bellinger" <nab@daterainc.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
+Date: Mon, 13 Jan 2014 11:43:11 -0800
+In-Reply-To: <1389641243.5567.445.camel@haakon3.risingtidesystems.com>
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
+	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
+	 <yq161prr1p8.fsf@sermon.lab.mkp.net>
+	 <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
+	 <1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
+	 <1389641243.5567.445.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.5 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, January 11, 2014 01:05:39 PM Ben Dooks wrote:
-> The clk_enable() call in the pm_clk_resume() call returns an error
-> that is not being checked. If clk_enable() fails then we should
-> not set the state of the clock to PCE_STATUS_ENABLED.
+On Mon, 2014-01-13 at 11:27 -0800, Nicholas A. Bellinger wrote:
+> On Mon, 2014-01-13 at 10:52 -0800, James Bottomley wrote:
+> > On Mon, 2014-01-13 at 10:30 -0800, Nicholas A. Bellinger wrote:
+> > > Hey MKP,
+> > > 
+> > > On Fri, 2014-01-10 at 16:01 -0500, Martin K. Petersen wrote:
+> > > > >>>>> "nab" == Nicholas A Bellinger <nab@daterainc.com> writes:
+> > > > 
+> > > > nab> This patch adds support for exposing DIF protection device
+> > > > nab> attributes via configfs.  This includes:
+> > > > 
+> > > > nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
+> > > > nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
+> > > > 
+> > > > What's DIF v2?
+> > > > 
+> > > 
+> > > This would be the proposed 16-byte protection scheme for SBC4.
+> > 
+> > What proposed 16 byte scheme?  The only DIF proposals I know for SBC-4
+> > are 13-185R0 and 12-369R0 and that's a couple of new algorithms and
+> > types because we cannot change the 8 byte PI.
+> > 
 > 
-> Note, the issue of warning the user if this fails has not been
-> addressed in this patch as this is not the only place the driver
-> calls clk_enable().
-> 
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-sh@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
-> ---
->  drivers/base/power/clock_ops.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-> index b9dd8fa..9bb95ab 100644
-> --- a/drivers/base/power/clock_ops.c
-> +++ b/drivers/base/power/clock_ops.c
-> @@ -252,6 +252,7 @@ int pm_clk_resume(struct device *dev)
->  	struct pm_subsys_data *psd = dev_to_psd(dev);
->  	struct pm_clock_entry *ce;
->  	unsigned long flags;
-> +	int ret;
->  
->  	dev_dbg(dev, "%s()\n", __func__);
->  
-> @@ -262,8 +263,9 @@ int pm_clk_resume(struct device *dev)
->  
->  	list_for_each_entry(ce, &psd->clock_list, node) {
->  		if (ce->status < PCE_STATUS_ERROR) {
-> -			clk_enable(ce->clk);
-> -			ce->status = PCE_STATUS_ENABLED;
-> +			ret = clk_enable(ce->clk);
-> +			if (ret == 0)
+> Then I'm probably getting the SBC version wrong..  It's the one that
+> includes using CRC32C for the block guard, and larger space for
+> reference tag as mentioned by MKP.
 
-Can you please use if (!ret) here?
+Well, this isn't reducing my confusion:  I think you're referring to
+12-369r0 which proposes to *eliminate* the reference tag (by moving it
+into the CRC calculation) and use the recovered 4 bytes to expand the
+CRC to CRC32 and add two bytes to the application tag, so they both
+become 4 bytes long, but the new PI still occupies only 8 bytes on disk.
 
-And analogously in patch [3/3]?
+Perhaps it's also better to clarify the terminology:  The PI is composed
+of a Guard field, which is the checksum, an application tag, which is
+usable by the application for anything it wants and a reference tag
+which is designed to be derived from the on-disk location so it can be
+used to detect misplaced writes.  In Type 1 the reference tag has to be
+the lower 31 bits of the LBA and in type 3 it's application defined.  In
+all current types, the guard is two bytes and the application tag two
+bytes.
 
-> +				ce->status = PCE_STATUS_ENABLED;
->  		}
->  	}
->  
-> 
+James
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
