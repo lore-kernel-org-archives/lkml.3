@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaAMQ0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:26:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53491 "EHLO
+	id S1755873AbaAMQ1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:27:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53486 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaAMQEJ (ORCPT
+	with ESMTP id S1754258AbaAMQEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:09 -0500
+	Mon, 13 Jan 2014 11:04:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Whitney <enwlinux@gmail.com>,
+Cc: Paul Drews <paul.drews@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 141/208] ext4: fix bigalloc regression
-Date: Mon, 13 Jan 2014 15:59:42 +0000
-Message-Id: <1389628849-1614-142-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 140/208] ACPI: Add BayTrail SoC GPIO and LPSS ACPI IDs
+Date: Mon, 13 Jan 2014 15:59:41 +0000
+Message-Id: <1389628849-1614-141-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Whitney <enwlinux@gmail.com>
+From: Paul Drews <paul.drews@intel.com>
 
-commit d0abafac8c9162f39c4f6b2f8141b772a09b3770 upstream.
+commit f6308b36c411dc5afd6a6f73e6454722bfde57b7 upstream.
 
-Commit f5a44db5d2 introduced a regression on filesystems created with
-the bigalloc feature (cluster size > blocksize).  It causes xfstests
-generic/006 and /013 to fail with an unexpected JBD2 failure and
-transaction abort that leaves the test file system in a read only state.
-Other xfstests run on bigalloc file systems are likely to fail as well.
+This adds the new ACPI ID (INT33FC) for the BayTrail GPIO
+banks as seen on a BayTrail M System-On-Chip platform.  This
+ACPI ID is used by the BayTrail GPIO (pinctrl) driver to
+manage the Low Power Subsystem (LPSS).
 
-The cause is the accidental use of a cluster mask where a cluster
-offset was needed in ext4_ext_map_blocks().
-
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
+Signed-off-by: Paul Drews <paul.drews@intel.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/extents.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/acpi_lpss.c           | 1 +
+ drivers/pinctrl/pinctrl-baytrail.c | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index f8d6668..878338f 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4145,7 +4145,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
- 	 */
- 	map->m_flags &= ~EXT4_MAP_FROM_CLUSTER;
- 	newex.ee_block = cpu_to_le32(map->m_lblk);
--	cluster_offset = EXT4_LBLK_CMASK(sbi, map->m_lblk);
-+	cluster_offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index fb78bb9..ab19263 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -156,6 +156,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
+ 	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
+ 	{ "INT33B2", },
++	{ "INT33FC", },
  
- 	/*
- 	 * If we are doing bigalloc, check to see if the extent returned
+ 	{ }
+ };
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index e9d735d..9041a6e 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -508,6 +508,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+ 
+ static const struct acpi_device_id byt_gpio_acpi_match[] = {
+ 	{ "INT33B2", 0 },
++	{ "INT33FC", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
 -- 
 1.8.3.2
 
