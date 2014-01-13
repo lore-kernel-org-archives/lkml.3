@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaAMXCW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:02:22 -0500
-Received: from www.sr71.net ([198.145.64.142]:44806 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753AbaAMXCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:02:19 -0500
-Message-ID: <52D47020.6050306@sr71.net>
-Date: Mon, 13 Jan 2014 15:00:48 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, bp@suse.de, dtor@vmware.com,
-        kys@microsoft.com, haiyangz@microsoft.com, agraf@suse.de,
-        gleb@redhat.com
-Subject: Re: [PATCH 11/12] x86 Kconfig: create x86/Kconfig.virt
-References: <20140113192245.3F682C7F@viggo.jf.intel.com> <20140113192259.5E9DFB02@viggo.jf.intel.com> <52D46CBB.9080103@redhat.com>
-In-Reply-To: <52D46CBB.9080103@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752474AbaAMXFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:05:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53277 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157AbaAMXFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 18:05:04 -0500
+Date: Mon, 13 Jan 2014 15:05:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on
+ memory
+Message-Id: <20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org>
+In-Reply-To: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
+References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 02:46 PM, Paolo Bonzini wrote:
-> Il 13/01/2014 20:22, Dave Hansen ha scritto:
->> diff -puN arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization arch/x86/Kconfig
->> --- linux.git/arch/x86/Kconfig~x86-Kconfig-move-paravirt-under-virtualization	2014-01-13 11:11:36.617255854 -0800
->> +++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:36.620255990 -0800
+On Sat, 11 Jan 2014 16:36:31 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+
+> When reclaiming kmem, we currently don't scan slabs that have less than
+> batch_size objects (see shrink_slab_node()):
 > 
-> These diff headers are unreadable...
-
-Man, and I thought I was pedantic about about those kinds of things.  I
-guess git has spoiled everyone. :)
-
->> @@ -2416,6 +2416,6 @@ source "security/Kconfig"
->>  
->>  source "crypto/Kconfig"
->>  
->> -source "arch/x86/kvm/Kconfig"
->> +source "arch/x86/Kconfig.virt"
->>  
->>  source "lib/Kconfig"
->> diff -puN /dev/null arch/x86/Kconfig.virt
->> --- /dev/null	2013-11-27 17:20:18.337162396 -0800
->> +++ linux.git-davehans/arch/x86/Kconfig.virt	2014-01-13 11:11:36.621256035 -0800
->> @@ -0,0 +1,18 @@
->> +
->> +menuconfig VIRTUALIZATION
->> +	bool "Virtualization"
+>         while (total_scan >= batch_size) {
+>                 shrinkctl->nr_to_scan = batch_size;
+>                 shrinker->scan_objects(shrinker, shrinkctl);
+>                 total_scan -= batch_size;
+>         }
 > 
-> Please rename this to "Hypervisor support" or "Virtual guest support" to
-> avoid confusion with KVM.  Note there is a reference to
-> CONFIG_VIRTUALIZATION in configs/kvm_guest.config.
+> If there are only a few shrinkers available, such a behavior won't cause
+> any problems, because the batch_size is usually small, but if we have a
+> lot of slab shrinkers, which is perfectly possible since FS shrinkers
+> are now per-superblock, we can end up with hundreds of megabytes of
+> practically unreclaimable kmem objects. For instance, mounting a
+> thousand of ext2 FS images with a hundred of files in each and iterating
+> over all the files using du(1) will result in about 200 Mb of FS caches
+> that cannot be dropped even with the aid of the vm.drop_caches sysctl!
 
-I'm not sure I'm following.  When this gets done, we have a menu that says:
+True.  I suspect this was an accidental consequence of the chosen
+implementation.  As you mentioned, I was thinking that the caches would
+all be large, and the remaining 1 ..  SHRINK_BATCH-1 objects just
+didn't matter.
 
->         --- Virtualization                                                                          
->         <*>   Kernel-based Virtual Machine (KVM) support                                            
->         <*>     KVM for Intel processors support                                                    
->         <*>     KVM for AMD processors support
->         [*]     Audit KVM MMU                                                                       
->         [*]     KVM legacy PCI device assignment support                                            
->         < >   Host kernel accelerator for virtio net
->         [*]   Linux guest support  --->
+> This problem was initially pointed out by Glauber Costa [*]. Glauber
+> proposed to fix it by making the shrink_slab() always take at least one
+> pass, to put it simply, turning the scan loop above to a do{}while()
+> loop. However, this proposal was rejected, because it could result in
+> more aggressive and frequent slab shrinking even under low memory
+> pressure when total_scan is naturally very small.
 
-So this new menu grouping includes both KVM, Xen, and lguest.  It
-includes both the host-side and guest-side support.  Are you suggesting
-that we separate out host and guest somehow?
+Well, it wasn't "rejected" - Mel pointed out that Glauber's change
+could potentially trigger problems which already exist in shrinkers.
 
+The potential issues seem pretty unlikely to me, and they're things we
+can fix up if they eventuate.
+
+So I'm thinking we should at least try Glauber's approach - it's a bit
+weird that we should treat the final 0 ..  batch_size-1 objects in a
+different manner from all the others.
+
+
+That being said, I think I'll schedule this patch as-is for 3.14.  Can
+you please take a look at implementing the simpler approach, send me
+something for 3.15-rc1?
 
