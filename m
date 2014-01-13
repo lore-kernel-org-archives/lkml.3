@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaAMO1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51229 "EHLO
+	id S1753235AbaAMOiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:38:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51572 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaAMOZ2 (ORCPT
+	with ESMTP id S1752260AbaAMO06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:28 -0500
+	Mon, 13 Jan 2014 09:26:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shiva Krishna Merla <shivakrishna.merla@netapp.com>,
-        Mike Snitzer <snitzer@redhat.com>,
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 14/96] dm mpath: fix race condition between multipath_dtr and pg_init_done
-Date: Mon, 13 Jan 2014 14:23:37 +0000
-Message-Id: <1389623099-18783-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 82/96] net: unix: allow set_peek_off to fail
+Date: Mon, 13 Jan 2014 14:24:45 +0000
+Message-Id: <1389623099-18783-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,110 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 954a73d5d3073df2231820c718fdd2f18b0fe4c9 upstream.
+commit 12663bfc97c8b3fdb292428105dd92d563164050 upstream.
 
-Whenever multipath_dtr() is happening we must prevent queueing any
-further path activation work.  Implement this by adding a new
-'pg_init_disabled' flag to the multipath structure that denotes future
-path activation work should be skipped if it is set.  By disabling
-pg_init and then re-enabling in flush_multipath_work() we also avoid the
-potential for pg_init to be initiated while suspending an mpath device.
+unix_dgram_recvmsg() will hold the readlock of the socket until recv
+is complete.
 
-Without this patch a race condition exists that may result in a kernel
-panic:
+In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
+unix_dgram_recvmsg() will complete (which can take a while) without allowing
+us to break out of it, triggering a hung task spew.
 
-1) If after pg_init_done() decrements pg_init_in_progress to 0, a call
-   to wait_for_pg_init_completion() assumes there are no more pending path
-   management commands.
-2) If pg_init_required is set by pg_init_done(), due to retryable
-   mode_select errors, then process_queued_ios() will again queue the
-   path activation work.
-3) If free_multipath() completes before activate_path() work is called a
-   NULL pointer dereference like the following can be seen when
-   accessing members of the recently destructed multipath:
+Instead, allow set_peek_off to fail, this way userspace will not hang.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
-RIP: 0010:[<ffffffffa003db1b>]  [<ffffffffa003db1b>] activate_path+0x1b/0x30 [dm_multipath]
-[<ffffffff81090ac0>] worker_thread+0x170/0x2a0
-[<ffffffff81096c80>] ? autoremove_wake_function+0x0/0x40
-
-[switch to disabling pg_init in flush_multipath_work & header edits by Mike Snitzer]
-Signed-off-by: Shiva Krishna Merla <shivakrishna.merla@netapp.com>
-Reviewed-by: Krishnasamy Somasundaram <somasundaram.krishnasamy@netapp.com>
-Tested-by: Speagle Andy <Andy.Speagle@netapp.com>
-Acked-by: Junichi Nomura <j-nomura@ce.jp.nec.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[ luis: backported to 3.5:
-  - adjusted context
-  - bumped version to 1.4.1, not 1.6.0 ]
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-mpath.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ include/linux/net.h | 2 +-
+ net/core/sock.c     | 2 +-
+ net/unix/af_unix.c  | 8 ++++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index 86a56d8..274354d 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -85,6 +85,7 @@ struct multipath {
- 	unsigned queue_io:1;		/* Must we queue all I/O? */
- 	unsigned queue_if_no_path:1;	/* Queue I/O if last path fails? */
- 	unsigned saved_queue_if_no_path:1; /* Saved state during suspension */
-+	unsigned pg_init_disabled:1;	/* pg_init is not currently allowed */
+diff --git a/include/linux/net.h b/include/linux/net.h
+index f150cdf..2ece444 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -215,7 +215,7 @@ struct proto_ops {
+ 				      int offset, size_t size, int flags);
+ 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
+ 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
+-	void		(*set_peek_off)(struct sock *sk, int val);
++	int		(*set_peek_off)(struct sock *sk, int val);
+ };
  
- 	unsigned pg_init_retries;	/* Number of times to retry pg_init */
- 	unsigned pg_init_count;		/* Number of times pg_init called */
-@@ -496,7 +497,8 @@ static void process_queued_ios(struct work_struct *work)
- 	    (!pgpath && !m->queue_if_no_path))
- 		must_queue = 0;
+ #define DECLARE_SOCKADDR(type, dst, src)	\
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 457ae99..5057305 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -787,7 +787,7 @@ set_rcvbuf:
  
--	if (m->pg_init_required && !m->pg_init_in_progress && pgpath)
-+	if (m->pg_init_required && !m->pg_init_in_progress && pgpath &&
-+	    !m->pg_init_disabled)
- 		__pg_init_all_paths(m);
+ 	case SO_PEEK_OFF:
+ 		if (sock->ops->set_peek_off)
+-			sock->ops->set_peek_off(sk, val);
++			ret = sock->ops->set_peek_off(sk, val);
+ 		else
+ 			ret = -EOPNOTSUPP;
+ 		break;
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index a0df32b..692d780 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -525,13 +525,17 @@ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
+ static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
+ 				  struct msghdr *, size_t, int);
  
- 	spin_unlock_irqrestore(&m->lock, flags);
-@@ -909,10 +911,20 @@ static void multipath_wait_for_pg_init_completion(struct multipath *m)
- 
- static void flush_multipath_work(struct multipath *m)
+-static void unix_set_peek_off(struct sock *sk, int val)
++static int unix_set_peek_off(struct sock *sk, int val)
  {
-+	unsigned long flags;
+ 	struct unix_sock *u = unix_sk(sk);
+ 
+-	mutex_lock(&u->readlock);
++	if (mutex_lock_interruptible(&u->readlock))
++		return -EINTR;
 +
-+	spin_lock_irqsave(&m->lock, flags);
-+	m->pg_init_disabled = 1;
-+	spin_unlock_irqrestore(&m->lock, flags);
+ 	sk->sk_peek_off = val;
+ 	mutex_unlock(&u->readlock);
 +
- 	flush_workqueue(kmpath_handlerd);
- 	multipath_wait_for_pg_init_completion(m);
- 	flush_workqueue(kmultipathd);
- 	flush_work_sync(&m->trigger_event);
-+
-+	spin_lock_irqsave(&m->lock, flags);
-+	m->pg_init_disabled = 0;
-+	spin_unlock_irqrestore(&m->lock, flags);
++	return 0;
  }
  
- static void multipath_dtr(struct dm_target *ti)
-@@ -1131,7 +1143,7 @@ static int pg_init_limit_reached(struct multipath *m, struct pgpath *pgpath)
  
- 	spin_lock_irqsave(&m->lock, flags);
- 
--	if (m->pg_init_count <= m->pg_init_retries)
-+	if (m->pg_init_count <= m->pg_init_retries && !m->pg_init_disabled)
- 		m->pg_init_required = 1;
- 	else
- 		limit_reached = 1;
-@@ -1653,7 +1665,7 @@ out:
-  *---------------------------------------------------------------*/
- static struct target_type multipath_target = {
- 	.name = "multipath",
--	.version = {1, 4, 0},
-+	.version = {1, 4, 1},
- 	.module = THIS_MODULE,
- 	.ctr = multipath_ctr,
- 	.dtr = multipath_dtr,
 -- 
 1.8.3.2
 
