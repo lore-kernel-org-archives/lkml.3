@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaAMO1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51303 "EHLO
+	id S1752563AbaAMO1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:27:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51289 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaAMOZr (ORCPT
+	with ESMTP id S1751812AbaAMOZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:47 -0500
+	Mon, 13 Jan 2014 09:25:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 31/96] xhci: Limit the spurious wakeup fix only to HP machines
-Date: Mon, 13 Jan 2014 14:23:54 +0000
-Message-Id: <1389623099-18783-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 28/96] ext4: fix del_timer() misuse for ->s_err_report
+Date: Mon, 13 Jan 2014 14:23:51 +0000
+Message-Id: <1389623099-18783-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
+commit 9105bb149bbbc555d2e11ba5166dfe7a24eae09e upstream.
 
-We've got regression reports that my previous fix for spurious wakeups
-after S5 on HP Haswell machines leads to the automatic reboot at
-shutdown on some machines.  It turned out that the fix for one side
-triggers another BIOS bug in other side.  So, it's exclusive.
+That thing should be del_timer_sync(); consider what happens
+if ext4_put_super() call of del_timer() happens to come just as it's
+getting run on another CPU.  Since that timer reschedules itself
+to run next day, you are pretty much guaranteed that you'll end up
+with kfree'd scheduled timer, with usual fun consequences.  AFAICS,
+that's -stable fodder all way back to 2010... [the second del_timer_sync()
+is almost certainly not needed, but it doesn't hurt either]
 
-Since the original S5 wakeups have been confirmed only on HP machines,
-it'd be safer to apply it only to limited machines.  As a wild guess,
-limiting to machines with HP PCI SSID should suffice.
-
-This patch should be backported to kernels as old as 3.12, that
-contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
-spurious wakeups after S5 on Haswell".
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: <dashing.meng@gmail.com>
-Reported-by: Niklas Schnelle <niklas@komani.de>
-Reported-by: Giorgos <ganastasiouGR@gmail.com>
-Reported-by: <art1@vhex.net>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-pci.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ fs/ext4/super.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 085d018..a8c59c1 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -125,7 +125,12 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		 * any other sleep) on Haswell machines with LPT and LPT-LP
- 		 * with the new Intel BIOS
- 		 */
--		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+		/* Limit the quirk to only known vendors, as this triggers
-+		 * yet another BIOS bug on some other machines
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
-+		 */
-+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
-+			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 0581e45..b2ae1e8 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -890,7 +890,7 @@ static void ext4_put_super(struct super_block *sb)
+ 			ext4_abort(sb, "Couldn't clean up the journal");
  	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+ 
+-	del_timer(&sbi->s_err_report);
++	del_timer_sync(&sbi->s_err_report);
+ 	ext4_release_system_zone(sb);
+ 	ext4_mb_release(sb);
+ 	ext4_ext_release(sb);
+@@ -3999,7 +3999,7 @@ failed_mount_wq:
+ 		sbi->s_journal = NULL;
+ 	}
+ failed_mount3:
+-	del_timer(&sbi->s_err_report);
++	del_timer_sync(&sbi->s_err_report);
+ 	if (sbi->s_flex_groups)
+ 		ext4_kvfree(sbi->s_flex_groups);
+ 	percpu_counter_destroy(&sbi->s_freeclusters_counter);
 -- 
 1.8.3.2
 
