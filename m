@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444AbaAMRCs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:02:48 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47784 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081AbaAMRCm (ORCPT
+	id S1755342AbaAMRCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:02:45 -0500
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:47616 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089AbaAMRCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:02:42 -0500
-Message-ID: <52D41C2F.3050308@wwwdotorg.org>
-Date: Mon, 13 Jan 2014 10:02:39 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: tegra1x4: initialize at arch_initcall time
-References: <1389401416-29892-1-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1389401416-29892-1-git-send-email-abrestic@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 12:02:40 -0500
+From: William Roberts <bill.c.roberts@gmail.com>
+To: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        rgb@redhat.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        sds@tycho.nsa.gov
+Cc: William Roberts <wroberts@tresys.com>
+Subject: [RFC][PATCH v2 1/3] mm: Create utility function for accessing a tasks commandline value
+Date: Mon, 13 Jan 2014 12:02:33 -0500
+Message-Id: <1389632555-7039-1-git-send-email-wroberts@tresys.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 05:50 PM, Andrew Bresticker wrote:
-> Many devices rely on pinctrl/pinmux settings being applied
-> before probing and some of these may probe before device_initcall
-> time (e.g. i2c at subsys_initcall).  Move Tegra1x4 pinctrl driver
-> registration to arch_initcall time so that proper pin settings
-> can be applied earlier.
+introduce get_cmdline() for retreiving the value of a processes
+proc/self/cmdline value.
 
-NAK. We shouldn't play games with initcall levels to achieve probe
-ordering. It's not scalable and there's no actual guarantee it'll
-produce the desired result.
+Signed-off-by: William Roberts <wroberts@tresys.com>
+---
+ include/linux/mm.h |    1 +
+ mm/util.c          |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+)
 
-Instead, if one device depends on another, it should do so explicitly.
-In other words, the device that relies on a particular pinctrl setting
-should have a pinctrl state defined, that references the pin controller,
-which then triggers deferred probe until the pin controller is initialized.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3552717..01e7970 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1134,6 +1134,7 @@ void account_page_writeback(struct page *page);
+ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
++int get_cmdline(struct task_struct *task, char *buffer, int buflen);
+ 
+ /* Is the vma a continuation of the stack vma above it? */
+ static inline int vma_growsdown(struct vm_area_struct *vma, unsigned long addr)
+diff --git a/mm/util.c b/mm/util.c
+index f7bc209..5285ff0 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -410,6 +410,54 @@ unsigned long vm_commit_limit(void)
+ 		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+ }
+ 
++/**
++ * get_cmdline() - copy the cmdline value to a buffer.
++ * @task:     the task whose cmdline value to copy.
++ * @buffer:   the buffer to copy to.
++ * @buflen:   the length of the buffer. Larger cmdline values are truncated
++ *            to this length.
++ * Returns the size of the cmdline field copied. Note that the copy does
++ * not guarantee an ending NULL byte.
++ */
++int get_cmdline(struct task_struct *task, char *buffer, int buflen)
++{
++	int res = 0;
++	unsigned int len;
++	struct mm_struct *mm = get_task_mm(task);
++	if (!mm)
++		goto out;
++	if (!mm->arg_end)
++		goto out_mm;	/* Shh! No looking before we're done */
++
++	len = mm->arg_end - mm->arg_start;
++
++	if (len > buflen)
++		len = buflen;
++
++	res = access_process_vm(task, mm->arg_start, buffer, len, 0);
++
++	/*
++	 * If the nul at the end of args has been overwritten, then
++	 * assume application is using setproctitle(3).
++	 */
++	if (res > 0 && buffer[res-1] != '\0' && len < buflen) {
++		len = strnlen(buffer, res);
++		if (len < res) {
++			res = len;
++		} else {
++			len = mm->env_end - mm->env_start;
++			if (len > buflen - res)
++				len = buflen - res;
++			res += access_process_vm(task, mm->env_start,
++						 buffer+res, len, 0);
++			res = strnlen(buffer, res);
++		}
++	}
++out_mm:
++	mmput(mm);
++out:
++	return res;
++}
+ 
+ /* Tracepoints definitions. */
+ EXPORT_TRACEPOINT_SYMBOL(kmalloc);
+-- 
+1.7.9.5
 
-Since we initialize the whole pinctrl setup in one go in a state
-associated with the pin controller, rather than as separate states
-associated with each device, you'll need to have the leaf devices
-reference an empty pinctrl state defined in the desired pin controller.
