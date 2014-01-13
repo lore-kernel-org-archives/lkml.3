@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaAMO2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51604 "EHLO
+	id S1753048AbaAMO3A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:29:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51640 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaAMO1H (ORCPT
+	with ESMTP id S1752369AbaAMO1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:27:07 -0500
+	Mon, 13 Jan 2014 09:27:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 88/96] hamradio/yam: fix info leak in ioctl
-Date: Mon, 13 Jan 2014 14:24:51 +0000
-Message-Id: <1389623099-18783-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 95/96] mac80211: move "bufferable MMPDU" check to fix AP mode scan
+Date: Mon, 13 Jan 2014 14:24:58 +0000
+Message-Id: <1389623099-18783-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,33 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 8e3fbf870481eb53b2d3a322d1fc395ad8b367ed upstream.
+commit 277d916fc2e959c3f106904116bb4f7b1148d47a upstream.
 
-The yam_ioctl() code fails to initialise the cmd field
-of the struct yamdrv_ioctl_cfg. Add an explicit memset(0)
-before filling the structure to avoid the 4-byte info leak.
+The check needs to apply to both multicast and unicast packets,
+otherwise probe requests on AP mode scans are sent through the multicast
+buffer queue, which adds long delays (often longer than the scanning
+interval).
 
-Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/hamradio/yam.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/tx.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
-index 5a6412e..d8faeb6 100644
---- a/drivers/net/hamradio/yam.c
-+++ b/drivers/net/hamradio/yam.c
-@@ -1058,6 +1058,7 @@ static int yam_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		break;
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 83755a5..79cfca3 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -446,7 +446,6 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ {
+ 	struct sta_info *sta = tx->sta;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+ 	struct ieee80211_local *local = tx->local;
  
- 	case SIOCYAMGCFG:
-+		memset(&yi, 0, sizeof(yi));
- 		yi.cfg.mask = 0xffffffff;
- 		yi.cfg.iobase = yp->iobase;
- 		yi.cfg.irq = yp->irq;
+ 	if (unlikely(!sta))
+@@ -457,15 +456,6 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
+ 		int ac = skb_get_queue_mapping(tx->skb);
+ 
+-		/* only deauth, disassoc and action are bufferable MMPDUs */
+-		if (ieee80211_is_mgmt(hdr->frame_control) &&
+-		    !ieee80211_is_deauth(hdr->frame_control) &&
+-		    !ieee80211_is_disassoc(hdr->frame_control) &&
+-		    !ieee80211_is_action(hdr->frame_control)) {
+-			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
+-			return TX_CONTINUE;
+-		}
+-
+ #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
+ 		printk(KERN_DEBUG "STA %pM aid %d: PS buffer for AC %d\n",
+ 		       sta->sta.addr, sta->sta.aid, ac);
+@@ -514,9 +504,22 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ static ieee80211_tx_result debug_noinline
+ ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+ {
++	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
++	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
++
+ 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
+ 		return TX_CONTINUE;
+ 
++	/* only deauth, disassoc and action are bufferable MMPDUs */
++	if (ieee80211_is_mgmt(hdr->frame_control) &&
++	    !ieee80211_is_deauth(hdr->frame_control) &&
++	    !ieee80211_is_disassoc(hdr->frame_control) &&
++	    !ieee80211_is_action(hdr->frame_control)) {
++		if (tx->flags & IEEE80211_TX_UNICAST)
++			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
++		return TX_CONTINUE;
++	}
++
+ 	if (tx->flags & IEEE80211_TX_UNICAST)
+ 		return ieee80211_tx_h_unicast_ps_buf(tx);
+ 	else
 -- 
 1.8.3.2
 
