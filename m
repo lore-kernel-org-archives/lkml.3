@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaAMGEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 01:04:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52995 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220AbaAMGEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 01:04:44 -0500
-Date: Mon, 13 Jan 2014 07:04:41 +0100
-From: Jan Kara <jack@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH mmotm/next] fanotify: fix corruption preventing startup
-Message-ID: <20140113060441.GB3837@quack.suse.cz>
-References: <alpine.LSU.2.11.1401112245290.4960@eggly.anvils>
+	id S1751291AbaAMGPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 01:15:44 -0500
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:7243
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751220AbaAMGPl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 01:15:41 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: fsl-sai: Add device tree nodes and its availiable
+ check
+Thread-Topic: [PATCH] ASoC: fsl-sai: Add device tree nodes and its
+ availiable check
+Thread-Index: AQHPDbBgYX3a01s9p0am5sF4U50z3pp9zVkAgAQlirA=
+Date: Mon, 13 Jan 2014 06:15:24 +0000
+Message-ID: <8ea36054cbe745cf9ce5c5d4a786f9ff@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389319550-12238-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140110110900.GC29039@sirena.org.uk>
+In-Reply-To: <20140110110900.GC29039@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 00909363D5
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(51704005)(199002)(189002)(83072002)(85852003)(56816005)(51856001)(87266001)(87936001)(76796001)(93136001)(2656002)(33646001)(74502001)(74366001)(31966008)(80022001)(54316002)(47446002)(65816001)(74662001)(76482001)(63696002)(66066001)(74706001)(90146001)(74316001)(54356001)(46102001)(74876001)(83322001)(53806001)(69226001)(56776001)(4396001)(81816001)(79102001)(59766001)(92566001)(76786001)(76576001)(49866001)(80976001)(81686001)(77982001)(47976001)(47736001)(81342001)(50986001)(85306002)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401112245290.4960@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 11-01-14 22:54:15, Hugh Dickins wrote:
-> Two of my machines couldn't boot mmotm with fanotify enabled:
-> 0x40000020 was being or'ed into a group's notification_waitq next
-> pointer, with sad results.  It comes from an over-simplification in
-> fanotify_merge(): test_event isn't NULL when the loop finds no merge.
-  That's a really dumb bug. Thanks for the fix! It looks good, you can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
 
-  I was wondering why I didn't see this problem during my testing.  I was
-always running my tests with various debug options enabled (in a hope to
-catch more problems ;), in particular with spinlock debugging enabled which
-shifted the waitqueue pointers further and the corruption landed in
-spinlock debugging fields and never got noticed... Ew :-|
+> > +	if (!np || !of_device_is_available(np))
+> > +		return -ENODEV;
+> > +
+> 
+> I would expect the of_device_is_available() check to be done by the
+> driver core rather than by individual drivers - every single driver
+> should have that check.  Is this not happening?  The check for np is OK
+> though.
 
-								Honza
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
-> Fixes fsnotify-do-not-share-events-between-notification-groups.patch
-> 
->  fs/notify/fanotify/fanotify.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> --- mmotm/fs/notify/fanotify/fanotify.c	2014-01-10 18:25:01.700448941 -0800
-> +++ linux/fs/notify/fanotify/fanotify.c	2014-01-11 22:15:31.580961010 -0800
-> @@ -37,16 +37,19 @@ static bool should_merge(struct fsnotify
->  static struct fsnotify_event *fanotify_merge(struct list_head *list,
->  					     struct fsnotify_event *event)
->  {
-> -	struct fsnotify_event *test_event = NULL;
-> +	struct fsnotify_event *test_event;
-> +	bool do_merge = false;
->  
->  	pr_debug("%s: list=%p event=%p\n", __func__, list, event);
->  
->  	list_for_each_entry_reverse(test_event, list, list) {
-> -		if (should_merge(test_event, event))
-> +		if (should_merge(test_event, event)) {
-> +			do_merge = true;
->  			break;
-> +		}
->  	}
->  
-> -	if (!test_event)
-> +	if (!do_merge)
->  		return NULL;
->  
->  	test_event->mask |= event->mask;
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Yes, I hasn't found the core driver does that for now...
+
+And IMO this is needed since the SAI driver is only base dts. And maybe
+the device is not presently operational, but it might become operational
+in the future (for example, something is not plugged in, or switched off).
+Or A serious error was detected in the device, and it is unlikely to become
+operational without repair...
+
+And for now for the individual drivers, before calling the of_device_is_available
+the '!np' check is need, because:
+While in __of_device_is_available:
+ >	status = of_get_property(device, "status", &statlen);
+ >	if (status == NULL)
+ >		return 1;
+The status value returned from 'of_get_property()' will be NULL in two cases:
+Firstly: the 'device' value (device node) is NULL.
+Secondly: the 'status' property is actaully not exist.
+
+If the device node is NULL, the __of_device_is_available will return true too,
+that will mean the absent state of the 'status' property.
+
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
