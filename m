@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273AbaAMQEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:04:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53380 "EHLO
+	id S1755859AbaAMQ0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:26:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53491 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088AbaAMQDi (ORCPT
+	with ESMTP id S1751709AbaAMQEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:38 -0500
+	Mon, 13 Jan 2014 11:04:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Eric Whitney <enwlinux@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 118/208] libceph: fix error handling in handle_reply()
-Date: Mon, 13 Jan 2014 15:59:19 +0000
-Message-Id: <1389628849-1614-119-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 141/208] ext4: fix bigalloc regression
+Date: Mon, 13 Jan 2014 15:59:42 +0000
+Message-Id: <1389628849-1614-142-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Eric Whitney <enwlinux@gmail.com>
 
-commit 1874119664dafda3ef2ed9b51b4759a9540d4a1a upstream.
+commit d0abafac8c9162f39c4f6b2f8141b772a09b3770 upstream.
 
-We've tried to fix the error paths in this function before, but there
-is still a hidden goto in the ceph_decode_need() macro which goes to the
-wrong place.  We need to release the "req" and unlock a mutex before
-returning.
+Commit f5a44db5d2 introduced a regression on filesystems created with
+the bigalloc feature (cluster size > blocksize).  It causes xfstests
+generic/006 and /013 to fail with an unexpected JBD2 failure and
+transaction abort that leaves the test file system in a read only state.
+Other xfstests run on bigalloc file systems are likely to fail as well.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+The cause is the accidental use of a cluster mask where a cluster
+offset was needed in ext4_ext_map_blocks().
+
+Signed-off-by: Eric Whitney <enwlinux@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ceph/osd_client.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/ext4/extents.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index dbc0a73..559a832 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1488,14 +1488,14 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
- 	dout("handle_reply %p tid %llu req %p result %d\n", msg, tid,
- 	     req, result);
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index f8d6668..878338f 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4145,7 +4145,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
+ 	 */
+ 	map->m_flags &= ~EXT4_MAP_FROM_CLUSTER;
+ 	newex.ee_block = cpu_to_le32(map->m_lblk);
+-	cluster_offset = EXT4_LBLK_CMASK(sbi, map->m_lblk);
++	cluster_offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
  
--	ceph_decode_need(&p, end, 4, bad);
-+	ceph_decode_need(&p, end, 4, bad_put);
- 	numops = ceph_decode_32(&p);
- 	if (numops > CEPH_OSD_MAX_OP)
- 		goto bad_put;
- 	if (numops != req->r_num_ops)
- 		goto bad_put;
- 	payload_len = 0;
--	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad);
-+	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad_put);
- 	for (i = 0; i < numops; i++) {
- 		struct ceph_osd_op *op = p;
- 		int len;
-@@ -1513,7 +1513,7 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
- 		goto bad_put;
- 	}
- 
--	ceph_decode_need(&p, end, 4 + numops * 4, bad);
-+	ceph_decode_need(&p, end, 4 + numops * 4, bad_put);
- 	retry_attempt = ceph_decode_32(&p);
- 	for (i = 0; i < numops; i++)
- 		req->r_reply_op_result[i] = ceph_decode_32(&p);
+ 	/*
+ 	 * If we are doing bigalloc, check to see if the extent returned
 -- 
 1.8.3.2
 
