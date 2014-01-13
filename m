@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaAMRAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:00:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53016 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaAMQCA (ORCPT
+	id S1754953AbaAMRAf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:00:35 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:20288 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497AbaAMRAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:00 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 047/208] drm/radeon: add missing display tiling setup for oland
-Date: Mon, 13 Jan 2014 15:58:08 +0000
-Message-Id: <1389628849-1614-48-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 13 Jan 2014 12:00:31 -0500
+Message-ID: <1389632070.1792.184.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/4] EFI memmap fix v2
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Young <dyoung@redhat.com>
+Date: Mon, 13 Jan 2014 09:54:30 -0700
+In-Reply-To: <1389630165.1792.180.camel@misato.fc.hp.com>
+References: <1389473370-1940-1-git-send-email-bp@alien8.de>
+	 <1389630165.1792.180.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-01-13 at 09:22 -0700, Toshi Kani wrote:
+> On Sat, 2014-01-11 at 21:49 +0100, Borislav Petkov wrote:
+> > From: Borislav Petkov <bp@suse.de>
+> > 
+> > Ok, here's v2 rebased and rediffed against tip (which has the relevant
+> > efi branches).
+> > 
+> > Toshi, I'm pushing it to:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git#efi-fixes
+> > 
+> > so that you can give it another run and so that the build robot can poke
+> > at it.
+> 
+> I tested the 4 patches on top of Matt's efi tree under kexec branch.
+> Unfortunately, it hit the same panic again...  I will send you the full
+> dmesg with EFI_PGT_DBG enabled in a separate email.  I will also test
+> your git tree as well. 
 
-------------------
+The git tree kernel also hit the same panic.  Will send you the dmesg
+output in a separate email as well.
 
-From: Alex Deucher <alexander.deucher@amd.com>
+Thanks,
+-Toshi
 
-commit 227ae10f17a5f2fd1307b7e582b603ef7bbb7e97 upstream.
-
-Fixes improperly set up display params for 2D tiling on
-oland.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/atombios_crtc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/radeon/atombios_crtc.c b/drivers/gpu/drm/radeon/atombios_crtc.c
-index 4c5be9a..8b92676 100644
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -1196,7 +1196,9 @@ static int dce4_crtc_do_set_base(struct drm_crtc *crtc,
- 	} else if ((rdev->family == CHIP_TAHITI) ||
- 		   (rdev->family == CHIP_PITCAIRN))
- 		fb_format |= SI_GRPH_PIPE_CONFIG(SI_ADDR_SURF_P8_32x32_8x16);
--	else if (rdev->family == CHIP_VERDE)
-+	else if ((rdev->family == CHIP_VERDE) ||
-+		 (rdev->family == CHIP_OLAND) ||
-+		 (rdev->family == CHIP_HAINAN)) /* for completeness.  HAINAN has no display hw */
- 		fb_format |= SI_GRPH_PIPE_CONFIG(SI_ADDR_SURF_P4_8x16);
- 
- 	switch (radeon_crtc->crtc_id) {
--- 
-1.8.3.2
 
