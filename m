@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbaAMRHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:07:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52910 "EHLO
+	id S1756558AbaAMRHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:07:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52912 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355AbaAMQBc (ORCPT
+	with ESMTP id S1753356AbaAMQBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:01:32 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 026/208] drm/i915: Take modeset locks around intel_modeset_setup_hw_state()
-Date: Mon, 13 Jan 2014 15:57:47 +0000
-Message-Id: <1389628849-1614-27-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 019/208] TTY: pmac_zilog, check existence of ports in pmz_console_init()
+Date: Mon, 13 Jan 2014 15:57:40 +0000
+Message-Id: <1389628849-1614-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,44 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 027476642811f8559cbe00ef6cc54db230e48a20 upstream.
+commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
 
-Some lower level things get angry if we don't have modeset locks
-during intel_modeset_setup_hw_state(). Actually the resume and
-lid_notify codepaths alreday hold the locks, but the init codepath
-doesn't, so fix that.
+When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
+on the kernel command line, it crashes with:
 
-Note: This slipped through since we only disable pipes if the
-plane/pipe linking doesn't match. Which is only relevant on older
-gen3 mobile machines, if the BIOS fails to set up our preferred
-linking.
+Unable to handle kernel NULL pointer dereference at virtual address   (null)
+Oops: 00000000
+PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
+...
+Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
 
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Tested-and-reported-by: Paul Bolle <pebolle@tiscali.nl>
-[danvet: Add note now that I could confirm my theory with the log
-files Paul Bolle provided.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+The normal tty driver doesn't crash, because init_pmz() checks
+pmz_ports_count again after calling pmz_probe().
+
+In the serial console initialization path, pmz_console_init() doesn't do
+this, causing the driver to crash later.
+
+Add a check for pmz_ports_count to fix this.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/tty/serial/pmac_zilog.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 9d39620..af3e427 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9995,7 +9995,9 @@ void intel_modeset_gem_init(struct drm_device *dev)
+diff --git a/drivers/tty/serial/pmac_zilog.c b/drivers/tty/serial/pmac_zilog.c
+index b1785f5..7735bbd 100644
+--- a/drivers/tty/serial/pmac_zilog.c
++++ b/drivers/tty/serial/pmac_zilog.c
+@@ -2051,6 +2051,9 @@ static int __init pmz_console_init(void)
+ 	/* Probe ports */
+ 	pmz_probe();
  
- 	intel_setup_overlay(dev);
- 
-+	drm_modeset_lock_all(dev);
- 	intel_modeset_setup_hw_state(dev, false);
-+	drm_modeset_unlock_all(dev);
- }
- 
- void intel_modeset_cleanup(struct drm_device *dev)
++	if (pmz_ports_count == 0)
++		return -ENODEV;
++
+ 	/* TODO: Autoprobe console based on OF */
+ 	/* pmz_console.index = i; */
+ 	register_console(&pmz_console);
 -- 
 1.8.3.2
 
