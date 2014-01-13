@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634AbaAMMPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 07:15:11 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46421 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253AbaAMMPI (ORCPT
+	id S1751641AbaAMMQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 07:16:43 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40424 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751357AbaAMMQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 07:15:08 -0500
+	Mon, 13 Jan 2014 07:16:40 -0500
+Date: Mon, 13 Jan 2014 12:16:36 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Madper Xie <cxie@redhat.com>
+Cc: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [BUG] Kernel OOPS when reboot if I set reboot=efi,{warm, cold}
+ (and some questions :-)
+Message-ID: <20140113121636.GA3256@console-pimps.org>
+References: <8738l5zcfp.fsf@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbpXCns4Z+AiFuijnvLJ91ZgMjiwmZZLJ0owKW1Sr-+xw@mail.gmail.com>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-4-git-send-email-lpapp@kde.org>
-	<CACRpkdbAPYs=48RXr6r5kqkYj2V9GitRMT2BRKkn4_gT77wUEg@mail.gmail.com>
-	<CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
-	<CAOMwXhNyntnu7h_VOLWq3rh1EprNCnm8yByza6Bz-J9XQmA-sA@mail.gmail.com>
-	<CACRpkdbpXCns4Z+AiFuijnvLJ91ZgMjiwmZZLJ0owKW1Sr-+xw@mail.gmail.com>
-Date: Mon, 13 Jan 2014 12:15:07 +0000
-X-Google-Sender-Auth: tPV9KbVJbyD-wnvOkvlvt16abg8
-Message-ID: <CAOMwXhMx2E2UYNnC6+e3NRiTKyrEgqdc+Lz6VeTfJnV1EW=DbA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] gpio: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8738l5zcfp.fsf@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 9:48 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Jan 13, 2014 at 10:22 AM, Laszlo Papp <lpapp@kde.org> wrote:
->
->> I was giving a second thought to this. Would it be acceptable to add
->> the gpio driver now, and once the need arises, add the pinctrl thin
->> layer on top of it?
->
-> I will not accept the platform data setting the pull-ups.
+On Fri, 03 Jan, at 04:39:38PM, Madper Xie wrote:
+> Howdy Folks,
+>   Happy new yeah, happy new bug!
+>   With a uefi system, I meet following panic when reboot after I adding
+>   `reboot=efi,warm`
+> [call trace]:
+> <0>[  698.736637] reboot: Restarting system
+> <5>[  698.737407] reboot: machine restart
+> <1>[  698.738399] BUG: unable to handle kernel paging request at 00000000ded53e60
+> <1>[  698.738924] IP: [<ffff8800dedb946d>] 0xffff8800dedb946d
+> <4>[  698.739408] PGD 0 
+> <4>[  698.739868] Oops: 0000 [#1] SMP 
 
-OK.
+[...]
 
->> My concern is that I would not use anything else
->> than the gpio functionality of these pins. It would be a needless
->> additional work (i.e. investment) for my project and employer.
->
-> But you are still expecting me as a subsystem maintainer to
-> take responsibility of this driver for as long as I have this role?
+> According to Call Trace, the panic happen when call ResetSystem() which
+> is a uefi run time service. It's seems a asm code in efi_stub_64.S
+> I disassembly it with crash got following outputs:
+> crash> dis efi_call4
+> 0xffffffff810518f0 <efi_call4>: mov    %rsp,%rax
+> [ ... ]
+> 0xffffffff81051918 <efi_call4+40>:      movaps %xmm3,0x30(%rsp)
+> 0xffffffff8105191d <efi_call4+45>:      movaps %xmm4,0x20(%rsp)
+> 0xffffffff81051922 <efi_call4+50>:      movaps %xmm5,0x10(%rsp)
+> 0xffffffff81051927 <efi_call4+55>:      sub    $0x20,%rsp
+> [ ... ]
+> 
+> So it seems the panic happen when SAVE_XMM? Does SAVE_XMM will trigger
+> paging? (`unable to handle kernel paging request at 00000000ded53e60`)
+ 
+No, the crash is happening within the ResetSystem() runtime service.
+Checkout the RIP, it's in the direct mapping region (0xffff8800.....).
 
-Well, since we need to make sure that our product rocks and rolls, me
-and my employer would need be committed for a quite while, but I can
-understand where you are coming from.
+> in case it's a hardware special issue: My testbed is a DELL xps x8500
+> And I'll try to test it on another uefi system.
 
-> Rewriting code is a natural part of the community process,
-> noone claimed it would be easy ;-)
+It looks like your firmware is trying to access physical addresses. Can
+you build a kernel from the 'next' branch at,
 
-Yes, it is difficult, especially for a C++/OOP person like me... I am
-trying to do my best.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
 
->> Perhaps, the layer on top of that can be added later without any
->> drawback if anyone ever finds the need to have more functionality
->> supported by these pins?
->
-> Your driver already supports setting the pulls using a
-> *custom* platform data field. This is not OK, and shall be
-> implemented using the pin control subsystem. I will not
-> merge drivers using custom platform data fields like this.
->
-> The reason that the pin control subsystem even existed was
-> that at the time my drivers were NACKed because I tried to
-> shoehorn pin control into the GPIO subsystem, and as a
-> result now we have an apropriate subsystem for it, so please
-> use it.
+That branch includes Borislav's 1:1 mapping work and may fix your issue.
 
-OK, thanks.
+-- 
+Matt Fleming, Intel Open Source Technology Center
