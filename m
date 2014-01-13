@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaAMQCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:02:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52986 "EHLO
+	id S1755154AbaAMQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:58:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327AbaAMQBw (ORCPT
+	with ESMTP id S1751596AbaAMQCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:52 -0500
+	Mon, 13 Jan 2014 11:02:10 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Kent Overstreet <kmo@daterainc.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 040/208] drm/i915: don't update the dri1 breadcrumb with modesetting
-Date: Mon, 13 Jan 2014 15:58:01 +0000
-Message-Id: <1389628849-1614-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 054/208] bcache: Fix dirty_data accounting
+Date: Mon, 13 Jan 2014 15:58:15 +0000
+Message-Id: <1389628849-1614-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,59 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit 6c719faca2aceca72f1bf5b1645c1734ed3e9447 upstream.
+commit d24a6e1087030b6da286df9433add5fa2f21b83b upstream.
 
-The update is horribly racy since it doesn't protect at all against
-concurrent closing of the master fd. And it can't really since that
-requires us to grab a mutex.
+Dirty data accounting wasn't quite right - firstly, we were adding the key we're
+inserting after it could have merged with another dirty key already in the
+btree, and secondly we could sometimes pass the wrong offset to
+bcache_dev_sectors_dirty_add() for dirty data we were overwriting - which is
+important when tracking dirty data by stripe.
 
-Instead of jumping through hoops and offloading this to a worker
-thread just block this bit of code for the modesetting driver.
+NOTE FOR BACKPORTERS: For 3.10 (and 3.11?) there's other accounting fixes
+necessary that got squashed in with other patches; the full patch against 3.10
+is 408cc2f47eeac93a, available at:
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-3.10-writeback-fixes
 
-Note that the race is fairly easy to hit since we call the breadcrumb
-function for any interrupt. So the vblank interrupt (which usually
-keeps going for a bit) is enough. But even if we'd block this and only
-update the breadcrumb for user interrupts from the CS we could hit
-this race with kms/gem userspace: If a non-master is waiting somewhere
-(and hence has interrupts enabled) and the master closes its fd
-(probably due to crashing).
-
-v2: Add a code comment to explain why fixing this for real isn't
-really worth it. Also improve the commit message a bit.
-
-v3: Fix the spelling in the comment.
-
-Reported-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+[ luis: backported to 3.11:
+  - replaced usage of 'replace_key' by '&op->replace'
+    (all the additional bits required for 3.10 are already included ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/md/bcache/btree.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index fc34376..0c956e9 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -83,6 +83,14 @@ void i915_update_dri1_breadcrumb(struct drm_device *dev)
- 	drm_i915_private_t *dev_priv = dev->dev_private;
- 	struct drm_i915_master_private *master_priv;
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 9e6c9f5..230d81e 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1673,7 +1673,8 @@ static bool fix_overlapping_extents(struct btree *b,
+ 			if (KEY_START(k) > KEY_START(insert) + sectors_found)
+ 				goto check_failed;
  
-+	/*
-+	 * The dri breadcrumb update races against the drm master disappearing.
-+	 * Instead of trying to fix this (this is by far not the only ums issue)
-+	 * just don't do the update in kms mode.
-+	 */
-+	if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		return;
-+
- 	if (dev->primary->master) {
- 		master_priv = dev->primary->master->driver_priv;
- 		if (master_priv->sarea_priv)
+-			if (KEY_PTRS(&op->replace) != KEY_PTRS(k))
++			if (KEY_PTRS(k) != KEY_PTRS(&op->replace) ||
++			    KEY_DIRTY(k) != KEY_DIRTY(&op->replace))
+ 				goto check_failed;
+ 
+ 			/* skip past gen */
 -- 
 1.8.3.2
 
