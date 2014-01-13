@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaAMNe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 08:34:59 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:31975 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaAMNe4 (ORCPT
+	id S1751880AbaAMNfP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 08:35:15 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:56196 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaAMNe6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 08:34:56 -0500
-X-IronPort-AV: E=Sophos;i="4.95,653,1384300800"; 
-   d="scan'208";a="90168086"
-Message-ID: <1389620093.13654.58.camel@kazak.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check from
- blkfront_setup_discard
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Olaf Hering <olaf@aepfle.de>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 13 Jan 2014 13:34:53 +0000
-In-Reply-To: <52D3F535020000780011311B@nat28.tlf.novell.com>
-References: <1389608052-7139-1-git-send-email-olaf@aepfle.de>
-	 <52D3DAEE0200007800112FD4@nat28.tlf.novell.com>
-	 <20140113120131.GA15623@aepfle.de>
-	 <52D3EB5F02000078001130B5@nat28.tlf.novell.com>
-	 <1389618054.13654.57.camel@kazak.uk.xensource.com>
-	 <52D3F535020000780011311B@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
+	Mon, 13 Jan 2014 08:34:58 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] nfs: don't update isize when NFS_INO_LAYOUTCOMMITTING in nfs_update_inode
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+In-Reply-To: <1389599759-2711-1-git-send-email-shaobingqing@bwstor.com.cn>
+Date: Mon, 13 Jan 2014 08:34:54 -0500
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C689DB34-AC0A-49CF-94DC-74ACB1CB177F@primarydata.com>
+References: <n> <1389599759-2711-1-git-send-email-shaobingqing@bwstor.com.cn>
+To: shaobingqing <shaobingqing@bwstor.com.cn>
+X-Mailer: Apple Mail (2.1827)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 13:16 +0000, Jan Beulich wrote:
-> >>> On 13.01.14 at 14:00, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > On Mon, 2014-01-13 at 12:34 +0000, Jan Beulich wrote:
-> >> >>> On 13.01.14 at 13:01, Olaf Hering <olaf@aepfle.de> wrote:
-> >> > On Mon, Jan 13, Jan Beulich wrote:
-> >> > 
-> >> >> You can't do this in one go - the first two and the last one may be
-> >> >> set independently (and are independent in their meaning), and
-> >> >> hence need to be queried independently (xenbus_gather() fails
-> >> >> on the first absent value).
-> >> > 
-> >> > Yes, thats the purpose. Since the properties are required its an all or
-> >> > nothing thing. If they are truly optional then blkif.h should be updated
-> >> > to say that.
-> >> 
-> >> They _are_ optional.
-> > 
-> > But is it true that either they are all present or they are all absent?
+
+On Jan 13, 2014, at 2:55, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
+
+> When a file is in NFS_INO_LAYOUTCOMMITING status, its isize perhaps has not been 
+> transferred to the metadate server. So the isize getting from the metadata server
+> perhaps is out of date and cannot be used to update the isize of the client.
 > 
-> No, it's not. discard-secure is independent of the other two (but
-> those other two are tied together).
+> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
+> ---
+> fs/nfs/inode.c |    3 ++-
+> 1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> index ebeb94c..caf50a1 100644
+> --- a/fs/nfs/inode.c
+> +++ b/fs/nfs/inode.c
+> @@ -1402,7 +1402,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+> 		if (new_isize != cur_isize) {
+> 			/* Do we perhaps have any outstanding writes, or has
+> 			 * the file grown beyond our last write? */
+> -			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) ||
+> +			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags) &&
+> +			     !test_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags)) ||
+> 			     new_isize > cur_isize) {
+> 				i_size_write(inode, new_isize);
+> 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
 
-Thanks for clarifying.
+Ugh. Is there any reason why we can’t just keep NFS_INO_LAYOUTCOMMIT set until the layout commit operation is finished instead of multiplying the tests for it in generic NFS code paths such as nfs_update_inode?
 
+--
+Trond Myklebust
+Linux NFS client maintainer
 
