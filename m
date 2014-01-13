@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaAMO01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:26:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51143 "EHLO
+	id S1753440AbaAMOqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:46:02 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51447 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054AbaAMOZG (ORCPT
+	with ESMTP id S1752046AbaAMO00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:06 -0500
+	Mon, 13 Jan 2014 09:26:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>,
+Cc: Mathy Vanhoef <vanhoefm@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 01/96] ARM: OMAP3: hwmod data: Don't prevent RESET of USB Host module
-Date: Mon, 13 Jan 2014 14:23:24 +0000
-Message-Id: <1389623099-18783-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 59/96] ath9k_htc: properly set MAC address and BSSID mask
+Date: Mon, 13 Jan 2014 14:24:22 +0000
+Message-Id: <1389623099-18783-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Mathy Vanhoef <vanhoefm@gmail.com>
 
-commit 7f4d3641e2548d1ac5dee837ff434df668a2810c upstream.
+commit 657eb17d87852c42b55c4b06d5425baa08b2ddb3 upstream.
 
-Unlike what the comment states, errata i660 does not state that we
-can't RESET the USB host module. Instead it states that RESET is the
-only way to recover from a deadlock situation.
+Pick the MAC address of the first virtual interface as the new hardware MAC
+address. Set BSSID mask according to this MAC address. This fixes CVE-2013-4579.
 
-RESET ensures that the module is in a known good state irrespective
-of what bootloader does with the module, so it must be done at boot.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com> # Panda, BeagleXM
-Fixes: de231388cb80 ("ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3")
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++++++--------
+ drivers/net/wireless/ath/ath9k/main.c         |  5 +++--
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index b26d3c9..43058d4 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -1850,7 +1850,8 @@ static struct omap_hwmod_class_sysconfig omap3xxx_usb_host_hs_sysc = {
- 	.syss_offs	= 0x0014,
- 	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_CLOCKACTIVITY |
- 			   SYSC_HAS_SIDLEMODE | SYSC_HAS_ENAWAKEUP |
--			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE),
-+			   SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE |
-+			   SYSS_HAS_RESET_STATUS),
- 	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
- 			   MSTANDBY_FORCE | MSTANDBY_NO | MSTANDBY_SMART),
- 	.sysc_fields	= &omap_hwmod_sysc_type1,
-@@ -1928,15 +1929,7 @@ static struct omap_hwmod omap3xxx_usb_host_hs_hwmod = {
- 	 * hence HWMOD_SWSUP_MSTANDBY
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+index abbd6ef..204619e 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -139,21 +139,26 @@ static void ath9k_htc_bssid_iter(void *data, u8 *mac, struct ieee80211_vif *vif)
+ 	struct ath9k_vif_iter_data *iter_data = data;
+ 	int i;
+ 
+-	for (i = 0; i < ETH_ALEN; i++)
+-		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
++	if (iter_data->hw_macaddr != NULL) {
++		for (i = 0; i < ETH_ALEN; i++)
++			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
++	} else {
++		iter_data->hw_macaddr = mac;
++	}
+ }
+ 
+-static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
++static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
+ 				     struct ieee80211_vif *vif)
+ {
+ 	struct ath_common *common = ath9k_hw_common(priv->ah);
+ 	struct ath9k_vif_iter_data iter_data;
+ 
+ 	/*
+-	 * Use the hardware MAC address as reference, the hardware uses it
+-	 * together with the BSSID mask when matching addresses.
++	 * Pick the MAC address of the first interface as the new hardware
++	 * MAC address. The hardware will use it together with the BSSID mask
++	 * when matching addresses.
  	 */
+-	iter_data.hw_macaddr = common->macaddr;
++	iter_data.hw_macaddr = NULL;
+ 	memset(&iter_data.mask, 0xff, ETH_ALEN);
  
--	/*
--	 * During system boot; If the hwmod framework resets the module
--	 * the module will have smart idle settings; which can lead to deadlock
--	 * (above Errata Id:i660); so, dont reset the module during boot;
--	 * Use HWMOD_INIT_NO_RESET.
--	 */
--
--	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
--			  HWMOD_INIT_NO_RESET,
-+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
- };
+ 	if (vif)
+@@ -164,6 +169,10 @@ static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
+ 						   &iter_data);
  
- /*
+ 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
++
++	if (iter_data.hw_macaddr)
++		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
++
+ 	ath_hw_setbssidmask(common);
+ }
+ 
+@@ -1091,7 +1100,7 @@ static int ath9k_htc_add_interface(struct ieee80211_hw *hw,
+ 		goto out;
+ 	}
+ 
+-	ath9k_htc_set_bssid_mask(priv, vif);
++	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ 
+ 	priv->vif_slot |= (1 << avp->index);
+ 	priv->nvifs++;
+@@ -1154,7 +1163,7 @@ static void ath9k_htc_remove_interface(struct ieee80211_hw *hw,
+ 
+ 	ath9k_htc_set_opmode(priv);
+ 
+-	ath9k_htc_set_bssid_mask(priv, vif);
++	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ 
+ 	/*
+ 	 * Stop ANI only if there are no associated station interfaces.
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 278ce3d..2b9207e 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1297,8 +1297,9 @@ void ath9k_calculate_iter_data(struct ieee80211_hw *hw,
+ 	struct ath_common *common = ath9k_hw_common(ah);
+ 
+ 	/*
+-	 * Use the hardware MAC address as reference, the hardware uses it
+-	 * together with the BSSID mask when matching addresses.
++	 * Pick the MAC address of the first interface as the new hardware
++	 * MAC address. The hardware will use it together with the BSSID mask
++	 * when matching addresses.
+ 	 */
+ 	memset(iter_data, 0, sizeof(*iter_data));
+ 	iter_data->hw_macaddr = common->macaddr;
 -- 
 1.8.3.2
 
