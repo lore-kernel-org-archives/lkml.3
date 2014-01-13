@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaAMSNB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:13:01 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:42258 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751590AbaAMSM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:12:58 -0500
-Message-ID: <52D42C99.6050505@sgi.com>
-Date: Mon, 13 Jan 2014 10:12:41 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1752360AbaAMSNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:13:33 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35104 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209AbaAMSNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 13:13:21 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Jason Wessel <jason.wessel@windriver.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH 0/3] : KGDB/KDB/UV updates.
-References: <20131018185334.272062791@asylum.americas.sgi.com> <20131019085617.GA9717@gmail.com>
-In-Reply-To: <20131019085617.GA9717@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+r1Zhjqrmm8a9fVsjfXamCE1qQq=YBexpeU95ODi=BiSie7aA@mail.gmail.com>
+References: <CA+r1Zhjqrmm8a9fVsjfXamCE1qQq=YBexpeU95ODi=BiSie7aA@mail.gmail.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Mon, 13 Jan 2014 13:12:49 -0500
+X-Google-Sender-Auth: WNmohAdkeGvjYxFqkh3cffaQn_c
+Message-ID: <CAP=VYLqWGjOnH0uw_=JDYEy2p-V5a0y3DvfuNGi600ZVPgVjRA@mail.gmail.com>
+Subject: Re: randconfig build error with next-20140113, in net/netfilter/nft_reject.c
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, pablo@netfilter.org,
+        Patrick McHardy <kaber@trash.net>, kadlec@blackhole.kfki.hu,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 13, 2014 at 8:51 AM, Jim Davis <jim.epost@gmail.com> wrote:
+> Building with the attached random configuration file,
+>
+> warning: (NF_TABLES_INET) selects NF_TABLES_IPV6 which has unmet
+> direct dependencies (NET && INET && IPV6 && NETFILTER && NF_TABLES)
+> warning: (NF_TABLES_INET) selects NF_TABLES_IPV6 which has unmet
+> direct dependencies (NET && INET && IPV6 && NETFILTER && NF_TABLES)
+>
+>   LD      init/built-in.o
+> net/built-in.o: In function `nft_reject_eval':
+> nft_reject.c:(.text+0x67bc1): undefined reference to `nf_ip6_checksum'
+> nft_reject.c:(.text+0x67c28): undefined reference to `ip6_route_output'
+> nft_reject.c:(.text+0x67d09): undefined reference to `ip6_dst_hoplimit'
+> make: *** [vmlinux] Error 1
 
+I came across the same thing independently while working on an
+unrelated netfilter patch.  Bisected and fix sent.
 
-On 10/19/2013 1:56 AM, Ingo Molnar wrote:
-> 
-> * Mike Travis <travis@sgi.com> wrote:
-> 
->>
->> * Change the fix for KDB not defined build problem by changing
->>   the kgdb_nmicallin() interface to include the KDB specific
->>   reason code.  This removes a dependency on KDB in the debug
->>   core.  Also requires a change the call in from UV NMI handler.
->>
->> * Fix some problems found by the kbuild test robot.
->>
->> * Fix UV call into kgdb to depend only on whether KGDB is defined
->>   and not both KGDB and KDB.  This allows the power nmi command
->>   to use the gdb remote connection if enabled.  Note new action
->>   of 'kgdb' needs to be set as well to indicate user wants to
->>   wait for gdb to be connected.  If it's set to 'kdb' then an
->>   error message is displayed if KDB is not configured.
->> --
-> 
-> This looks better.
-> 
-> Jason, any objections?
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-
-I haven't heard anything back about this update.  Were there
-objections?  Looks like another merge window is closing?
-
-Thanks,
-Mike
-
+http://patchwork.ozlabs.org/patch/310298/
