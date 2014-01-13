@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588AbaAMQmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:42:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53243 "EHLO
+	id S1755529AbaAMQmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:42:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53244 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867AbaAMQDB (ORCPT
+	with ESMTP id S1752525AbaAMQDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:03:01 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sachin Prabhu <sprabhu@redhat.com>, Steve French <smfrench@gmail.com>,
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 091/208] cifs: We do not drop reference to tlink in CIFSCheckMFSymlink()
-Date: Mon, 13 Jan 2014 15:58:52 +0000
-Message-Id: <1389628849-1614-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 090/208] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
+Date: Mon, 13 Jan 2014 15:58:51 +0000
+Message-Id: <1389628849-1614-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,125 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 750b8de6c4277d7034061e1da50663aa1b0479e4 upstream.
+commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
 
-When we obtain tcon from cifs_sb, we use cifs_sb_tlink() to first obtain
-tlink which also grabs a reference to it. We do not drop this reference
-to tlink once we are done with the call.
+The current driver assumes that an skb fragment can only be upto jumbo
+size. Presumably this was a fast-path optimization. This assumption is
+no longer true as fragments can be upto 32k.
 
-The patch fixes this issue by instead passing tcon as a parameter and
-avoids having to obtain a reference to the tlink. A lookup for the tcon
-is already made in the calling functions and this way we avoid having to
-re-run the lookup. This is also consistent with the argument list for
-other similar calls for M-F symlinks.
+v2: Remove unnecessary parantheses per Eric Dumazet.
 
-We should also return an ENOSYS when we do not find a protocol specific
-function to lookup the MF Symlink data.
-
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/cifs/cifsproto.h |  7 ++++---
- fs/cifs/inode.c     |  6 ++++--
- fs/cifs/link.c      | 26 +++++++++++---------------
- 3 files changed, 19 insertions(+), 20 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
-index b29a012..6727cd9 100644
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -479,9 +479,10 @@ extern int CIFSGetExtAttr(const unsigned int xid, struct cifs_tcon *tcon,
- 			const int netfid, __u64 *pExtAttrBits, __u64 *pMask);
- extern void cifs_autodisable_serverino(struct cifs_sb_info *cifs_sb);
- extern bool CIFSCouldBeMFSymlink(const struct cifs_fattr *fattr);
--extern int CIFSCheckMFSymlink(struct cifs_fattr *fattr,
--		const unsigned char *path,
--		struct cifs_sb_info *cifs_sb, unsigned int xid);
-+extern int CIFSCheckMFSymlink(unsigned int xid, struct cifs_tcon *tcon,
-+			      struct cifs_sb_info *cifs_sb,
-+			      struct cifs_fattr *fattr,
-+			      const unsigned char *path);
- extern int mdfour(unsigned char *, unsigned char *, int);
- extern int E_md4hash(const unsigned char *passwd, unsigned char *p16,
- 			const struct nls_table *codepage);
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 449b6cf..993983c 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -356,7 +356,8 @@ int cifs_get_inode_info_unix(struct inode **pinode,
- 
- 	/* check for Minshall+French symlinks */
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS) {
--		int tmprc = CIFSCheckMFSymlink(&fattr, full_path, cifs_sb, xid);
-+		int tmprc = CIFSCheckMFSymlink(xid, tcon, cifs_sb, &fattr,
-+					       full_path);
- 		if (tmprc)
- 			cifs_dbg(FYI, "CIFSCheckMFSymlink: %d\n", tmprc);
- 	}
-@@ -759,7 +760,8 @@ cifs_get_inode_info(struct inode **inode, const char *full_path,
- 
- 	/* check for Minshall+French symlinks */
- 	if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_MF_SYMLINKS) {
--		tmprc = CIFSCheckMFSymlink(&fattr, full_path, cifs_sb, xid);
-+		tmprc = CIFSCheckMFSymlink(xid, tcon, cifs_sb, &fattr,
-+					   full_path);
- 		if (tmprc)
- 			cifs_dbg(FYI, "CIFSCheckMFSymlink: %d\n", tmprc);
- 	}
-diff --git a/fs/cifs/link.c b/fs/cifs/link.c
-index 562044f..c6a097c 100644
---- a/fs/cifs/link.c
-+++ b/fs/cifs/link.c
-@@ -354,34 +354,30 @@ open_query_close_cifs_symlink(const unsigned char *path, char *pbuf,
- 
- 
- int
--CIFSCheckMFSymlink(struct cifs_fattr *fattr,
--		   const unsigned char *path,
--		   struct cifs_sb_info *cifs_sb, unsigned int xid)
-+CIFSCheckMFSymlink(unsigned int xid, struct cifs_tcon *tcon,
-+		   struct cifs_sb_info *cifs_sb, struct cifs_fattr *fattr,
-+		   const unsigned char *path)
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 9f535de..e7af885 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7555,7 +7555,7 @@ static inline int tg3_4g_overflow_test(dma_addr_t mapping, int len)
  {
--	int rc = 0;
-+	int rc;
- 	u8 *buf = NULL;
- 	unsigned int link_len = 0;
- 	unsigned int bytes_read = 0;
--	struct cifs_tcon *ptcon;
+ 	u32 base = (u32) mapping & 0xffffffff;
  
- 	if (!CIFSCouldBeMFSymlink(fattr))
- 		/* it's not a symlink */
- 		return 0;
+-	return (base > 0xffffdcc0) && (base + len + 8 < base);
++	return base + len + 8 < base;
+ }
  
- 	buf = kmalloc(CIFS_MF_SYMLINK_FILE_SIZE, GFP_KERNEL);
--	if (!buf) {
--		rc = -ENOMEM;
--		goto out;
--	}
-+	if (!buf)
-+		return -ENOMEM;
- 
--	ptcon = tlink_tcon(cifs_sb_tlink(cifs_sb));
--	if ((ptcon->ses) && (ptcon->ses->server->ops->query_mf_symlink))
--		rc = ptcon->ses->server->ops->query_mf_symlink(path, buf,
--						 &bytes_read, cifs_sb, xid);
-+	if (tcon->ses->server->ops->query_mf_symlink)
-+		rc = tcon->ses->server->ops->query_mf_symlink(path, buf,
-+						&bytes_read, cifs_sb, xid);
- 	else
--		goto out;
-+		rc = -ENOSYS;
- 
--	if (rc != 0)
-+	if (rc)
- 		goto out;
- 
- 	if (bytes_read == 0) /* not a symlink */
+ /* Test for TSO DMA buffers that cross into regions which are within MSS bytes
 -- 
 1.8.3.2
 
