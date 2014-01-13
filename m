@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaAMQbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:31:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53425 "EHLO
+	id S1754135AbaAMQDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:03:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53303 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaAMQDx (ORCPT
+	with ESMTP id S1753966AbaAMQDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:53 -0500
+	Mon, 13 Jan 2014 11:03:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Durgin <josh.durgin@inktank.com>,
+Cc: Len Brown <len.brown@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 129/208] rbd: ignore unmapped snapshots that no longer exist
-Date: Mon, 13 Jan 2014 15:59:30 +0000
-Message-Id: <1389628849-1614-130-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 103/208] x86 idle: Repair large-server 50-watt idle-power regression
+Date: Mon, 13 Jan 2014 15:59:04 +0000
+Message-Id: <1389628849-1614-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: Len Brown <len.brown@intel.com>
 
-commit efadc98aab674153709cc357ba565f04e3164fcd upstream.
+commit 40e2d7f9b5dae048789c64672bf3027fbb663ffa upstream.
 
-This prevents erroring out while adding a device when a snapshot
-unrelated to the current mapping is deleted between reading the
-snapshot context and reading the snapshot names. If the mapped
-snapshot name is not found an error still occurs as usual.
+Linux 3.10 changed the timing of how thread_info->flags is touched:
 
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Alex Elder <elder@linaro.org>
+	x86: Use generic idle loop
+	(7d1a941731fabf27e5fb6edbebb79fe856edb4e5)
+
+This caused Intel NHM-EX and WSM-EX servers to experience a large number
+of immediate MONITOR/MWAIT break wakeups, which caused cpuidle to demote
+from deep C-states to shallow C-states, which caused these platforms
+to experience a significant increase in idle power.
+
+Note that this issue was already present before the commit above,
+however, it wasn't seen often enough to be noticed in power measurements.
+
+Here we extend an errata workaround from the Core2 EX "Dunnington"
+to extend to NHM-EX and WSM-EX, to prevent these immediate
+returns from MWAIT, reducing idle power on these platforms.
+
+While only acpi_idle ran on Dunnington, intel_idle
+may also run on these two newer systems.
+As of today, there are no other models that are known
+to need this tweak.
+
+Link: http://lkml.kernel.org/r/CAJvTdK=%2BaNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com
+Signed-off-by: Len Brown <len.brown@intel.com>
+Link: http://lkml.kernel.org/r/baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/rbd.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/intel.c | 3 ++-
+ drivers/idle/intel_idle.c   | 3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 0f5307f..9a2e922 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -4078,8 +4078,13 @@ static u64 rbd_v2_snap_id_by_name(struct rbd_device *rbd_dev, const char *name)
- 
- 		snap_id = snapc->snaps[which];
- 		snap_name = rbd_dev_v2_snap_name(rbd_dev, snap_id);
--		if (IS_ERR(snap_name))
--			break;
-+		if (IS_ERR(snap_name)) {
-+			/* ignore no-longer existing snapshots */
-+			if (PTR_ERR(snap_name) == -ENOENT)
-+				continue;
-+			else
-+				break;
-+		}
- 		found = !strcmp(name, snap_name);
- 		kfree(snap_name);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index ec72995..a51efc9 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -387,7 +387,8 @@ static void init_intel(struct cpuinfo_x86 *c)
+ 			set_cpu_cap(c, X86_FEATURE_PEBS);
  	}
+ 
+-	if (c->x86 == 6 && c->x86_model == 29 && cpu_has_clflush)
++	if (c->x86 == 6 && cpu_has_clflush &&
++	    (c->x86_model == 29 || c->x86_model == 46 || c->x86_model == 47))
+ 		set_cpu_cap(c, X86_FEATURE_CLFLUSH_MONITOR);
+ 
+ #ifdef CONFIG_X86_64
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index f116d66..d47bb0f 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -361,6 +361,9 @@ static int intel_idle(struct cpuidle_device *dev,
+ 
+ 	if (!current_set_polling_and_test()) {
+ 
++		if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+ 		smp_mb();
+ 		if (!need_resched())
 -- 
 1.8.3.2
 
