@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaAMKnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 05:43:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50371 "EHLO mail.skyhub.de"
+	id S1751628AbaAMKoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 05:44:14 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58138 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751256AbaAMKnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 05:43:08 -0500
-Date: Mon, 13 Jan 2014 11:43:06 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ren Qiaowei <qiaowei.ren@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] x86, mpx: extend siginfo structure to include bound
- violation information
-Message-ID: <20140113104306.GD5388@pd.tnic>
-References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com>
- <1389518403-7715-5-git-send-email-qiaowei.ren@intel.com>
- <20140112093013.GB3664@pd.tnic>
- <52D2C791.2030802@zytor.com>
- <20140112170354.GC3655@pd.tnic>
- <52D358EA.8090800@intel.com>
- <52D3A243.5060409@intel.com>
+	id S1751214AbaAMKoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 05:44:11 -0500
+Message-ID: <52D3C36E.9020107@ti.com>
+Date: Mon, 13 Jan 2014 12:43:58 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52D3A243.5060409@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH v5] video: add OpenCores VGA/LCD framebuffer driver
+References: <1389384793-4710-1-git-send-email-stefan.kristiansson@saunalahti.fi> <52D3A1FC.4090706@ti.com> <20140113102006.GA30877@chokladfabriken.org>
+In-Reply-To: <20140113102006.GA30877@chokladfabriken.org>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 04:22:27PM +0800, Ren Qiaowei wrote:
-> >I tried to use generic structure and macro, but many members of generic
-> >struct insn are not used for MPX,
+--Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-I think that's ok - there are a lot of examples in the kernel where only
-a subset of the struct members are used by a particular functionality.
+On 2014-01-13 12:20, Stefan Kristiansson wrote:
 
-> Because only struct insn_field and several macros may be replaced
-> with generic version, I guess it maybe be confused easily to include
-> generic insn header. What do you think about it?
+> The VGA/LCD in the subject comes from the name of the core,
+> the core itself presents a "vga-type" interface, but it can basically
+> be hooked up to any type of display (with a bit of glue-logic in some c=
+ases).
+>=20
+> That said - the reason why I went for the mode_options solution in the
+> first place, is that when I initially wrote this driver
+> (>2 years ago, time flies...) the display-timing device-tree bindings w=
+eren't
+> invented yet, so it seemed like the most viable option without coming u=
+p
+> with custom device-tree bindings.
+>=20
+> It's completely possible that this design choice should be revised now,=
 
-Yes, I think the idea is to use and, if needed, extend the generic
-functionality instead of growing our own here and there for obvious
-benefits.
+> and I wouldn't mind converting this driver to make use of the display-t=
+iming
+> dt properties if you think that's a good idea?
 
-Thanks.
+I don't have a strong opinion on this. It looks to me that even if the
+current driver is merged, it would be easy to add device tree
+display-timing later, and still keep full backward compatibility.
 
--- 
-Regards/Gruss,
-    Boris.
+Then again, you already have DT support in the driver, and if it's clear
+that the DT based videomode selection is better, then I'd just go
+straight to that one without intermediate steps.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+ Tomi
+
+
+
+--Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJS08NuAAoJEPo9qoy8lh71EEoP/jlCe+90pKMnPjsid76D5zrA
+iwBOOxn3PpqOZymH66CHMQxBCL7Qfu2IsPGiAb03A29bvfLtJWJGmpvN1Dz6FdAh
+4y+cMpGgRI3pHNV3+okqAzgzhZw9zrCkmtSl9fH7oaYKDW4tqzmC641QgLZ8RQoQ
+B3O615hVZw8iAodEjmWJQYM2lVjN7lbl+OKLnZtC2HP/aLZ4i8LSiaLnygUUPYP/
+mRlKg7ljjXjkHzBlsbem3SEs/CJgw9RFX3xtwc9l8DEMhEuenWGbzTAIH57a8yyq
+626FLSkuxJK6kIIYSZXnWYOS15CSMwGlYzoOe5Td+fddUkStWIrh3/GXgGYSnbHm
+40hQIqLYFcFYF3VUIo9Mza+3B6Ip1baIo870thOOJkgQ9YJBSwKKXKtb02LOi5M2
+1oyqaJmbhk21ZmlvWNNTZ6Z4i9/UNPqRiInJ6y8OhbsrHjGTShBo6O2lLhsUFtZV
+vcDSmSeIxF5cNlTibJqnIw5+JEP7FkUB7c12/nODSQCgqjqL7igsRmXz3vq2wOsr
+ZvZaOVAZpKkeF+U3cpW3MEPwnsaTurV+CpxHIKdCMUam0t3i1tqpgtkqlbXtGmzh
+o+m9Xr/upQ0zq/jPtJh+7gOCA0YGIzlZjI/Hc8Do2MgE/8lDN9F8XTS7P4u1aaXS
+9apZPIFF19aC8GrSn7K2
+=XVjb
+-----END PGP SIGNATURE-----
+
+--Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb--
