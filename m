@@ -1,144 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbaAMPxm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:53:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60621 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbaAMPxh (ORCPT
+	id S1756661AbaAMRUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:20:05 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:42103 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756648AbaAMRUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:53:37 -0500
-Date: Mon, 13 Jan 2014 07:52:49 -0800
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-99b60ce69734dfeda58c6184a326b9475ce1dba3@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, efault@gmx.de,
-        peterz@infradead.org, rdunlap@infradead.org, jason.low2@hp.com,
-        Waiman.Long@hp.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        scott.norton@hp.com, davidlohr@hp.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com,
-        tom.vaden@hp.com, jeffm@suse.com, aswin@hp.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, efault@gmx.de, rdunlap@infradead.org,
-        jason.low2@hp.com, Waiman.Long@hp.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, davidlohr@hp.com, scott.norton@hp.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, dvhart@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, tom.vaden@hp.com, jeffm@suse.com,
-        aswin@hp.com
-In-Reply-To: <1389569486-25487-4-git-send-email-davidlohr@hp.com>
-References: <1389569486-25487-4-git-send-email-davidlohr@hp.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] futexes:
-  Document multiprocessor ordering guarantees
-Git-Commit-ID: 99b60ce69734dfeda58c6184a326b9475ce1dba3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 13 Jan 2014 12:20:00 -0500
+From: Josef Bacik <jbacik@fb.com>
+To: <mingo@kernel.org>, <linux-kernel@vger.kernel.org>, <peterz@infradead.org>
+Subject: [PATCH 2/2] Btrfs: stop caching thread if extent_commit_sem is contended
+Date: Mon, 13 Jan 2014 12:18:51 -0500
+Message-ID: <1389633531-1921-2-git-send-email-jbacik@fb.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389633531-1921-1-git-send-email-jbacik@fb.com>
+References: <1389633531-1921-1-git-send-email-jbacik@fb.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:52:56 -0800 (PST)
+Content-Type: text/plain
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Spam-Reason: safe
+X-FB-Internal: Safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-13_02:2014-01-13,2014-01-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  99b60ce69734dfeda58c6184a326b9475ce1dba3
-Gitweb:     http://git.kernel.org/tip/99b60ce69734dfeda58c6184a326b9475ce1dba3
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 12 Jan 2014 15:31:24 -0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 13 Jan 2014 11:45:19 +0100
+From: Josef Bacik <jbacik@fusionio.com>
 
-futexes: Document multiprocessor ordering guarantees
+We can starve out the transaction commit with a bunch of caching threads all
+running at the same time.  This is because we will only drop the
+extent_commit_sem if we need_resched(), which isn't likely to happen since we
+will be reading a lot from the disk so have already schedule()'ed plenty.  Alex
+observed that he could starve out a transaction commit for up to a minute with
+32 caching threads all running at once.  This will allow us to drop the
+extent_commit_sem to allow the transaction commit to swap the commit_root out
+and then all the cachers will start back up. Here is an explanation provided by
+Igno
 
-That's essential, if you want to hack on futexes.
+So, just to fill in what happens in this loop:
 
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1389569486-25487-4-git-send-email-davidlohr@hp.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+                                mutex_unlock(&caching_ctl->mutex);
+                                cond_resched();
+                                goto again;
+
+where 'again:' takes caching_ctl->mutex and fs_info->extent_commit_sem
+again:
+
+        again:
+                mutex_lock(&caching_ctl->mutex);
+                /* need to make sure the commit_root doesn't disappear */
+                down_read(&fs_info->extent_commit_sem);
+
+So, if I'm reading the code correct, there can be a fair amount of
+concurrency here: there may be multiple 'caching kthreads' per filesystem
+active, while there's one fs_info->extent_commit_sem per filesystem
+AFAICS.
+
+So, what happens if there are a lot of CPUs all busy holding the
+->extent_commit_sem rwsem read-locked and a writer arrives? They'd all
+rush to try to release the fs_info->extent_commit_sem, and they'd block in
+the down_read() because there's a writer waiting.
+
+So there's a guarantee of forward progress. This should answer akpm's
+concern I think.
+
+Thanks,
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 ---
- kernel/futex.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
+ fs/btrfs/extent-tree.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 577481d..fcc6850 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -69,6 +69,63 @@
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 1c82bea..3d19dcc 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -442,7 +442,8 @@ next:
+ 			if (ret)
+ 				break;
  
- #include "locking/rtmutex_common.h"
- 
-+/*
-+ * Basic futex operation and ordering guarantees:
-+ *
-+ * The waiter reads the futex value in user space and calls
-+ * futex_wait(). This function computes the hash bucket and acquires
-+ * the hash bucket lock. After that it reads the futex user space value
-+ * again and verifies that the data has not changed. If it has not
-+ * changed it enqueues itself into the hash bucket, releases the hash
-+ * bucket lock and schedules.
-+ *
-+ * The waker side modifies the user space value of the futex and calls
-+ * futex_wake(). This functions computes the hash bucket and acquires
-+ * the hash bucket lock. Then it looks for waiters on that futex in the
-+ * hash bucket and wakes them.
-+ *
-+ * Note that the spin_lock serializes waiters and wakers, so that the
-+ * following scenario is avoided:
-+ *
-+ * CPU 0                               CPU 1
-+ * val = *futex;
-+ * sys_futex(WAIT, futex, val);
-+ *   futex_wait(futex, val);
-+ *   uval = *futex;
-+ *                                     *futex = newval;
-+ *                                     sys_futex(WAKE, futex);
-+ *                                       futex_wake(futex);
-+ *                                       if (queue_empty())
-+ *                                         return;
-+ *   if (uval == val)
-+ *      lock(hash_bucket(futex));
-+ *      queue();
-+ *     unlock(hash_bucket(futex));
-+ *     schedule();
-+ *
-+ * This would cause the waiter on CPU 0 to wait forever because it
-+ * missed the transition of the user space value from val to newval
-+ * and the waker did not find the waiter in the hash bucket queue.
-+ * The spinlock serializes that:
-+ *
-+ * CPU 0                               CPU 1
-+ * val = *futex;
-+ * sys_futex(WAIT, futex, val);
-+ *   futex_wait(futex, val);
-+ *   lock(hash_bucket(futex));
-+ *   uval = *futex;
-+ *                                     *futex = newval;
-+ *                                     sys_futex(WAKE, futex);
-+ *                                       futex_wake(futex);
-+ *                                       lock(hash_bucket(futex));
-+ *   if (uval == val)
-+ *      queue();
-+ *     unlock(hash_bucket(futex));
-+ *     schedule();                       if (!queue_empty())
-+ *                                         wake_waiters(futex);
-+ *                                       unlock(hash_bucket(futex));
-+ */
-+
- int __read_mostly futex_cmpxchg_enabled;
- 
- /*
+-			if (need_resched()) {
++			if (need_resched() ||
++			    rwsem_is_contended(&fs_info->extent_commit_sem)) {
+ 				caching_ctl->progress = last;
+ 				btrfs_release_path(path);
+ 				up_read(&fs_info->extent_commit_sem);
+-- 
+1.8.3.1
+
