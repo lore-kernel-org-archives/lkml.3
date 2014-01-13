@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaAMQFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:05:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53794 "EHLO
+	id S1754789AbaAMQFx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:05:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53830 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754627AbaAMQFX (ORCPT
+	with ESMTP id S1754651AbaAMQFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:23 -0500
+	Mon, 13 Jan 2014 11:05:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 192/208] virtio-net: fix refill races during restore
-Date: Mon, 13 Jan 2014 16:00:33 +0000
-Message-Id: <1389628849-1614-193-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 200/208] ACPI / TPM: fix memory leak when walking ACPI namespace
+Date: Mon, 13 Jan 2014 16:00:41 +0000
+Message-Id: <1389628849-1614-201-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -31,55 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-commit 6cd4ce0099da7702f885b6fa9ebb49e3831d90b4 upstream.
+commit df45c712d1f4ef37714245fb75de726f4ca2bf8d upstream.
 
-During restoring, try_fill_recv() was called with neither napi lock nor napi
-disabled. This can lead two try_fill_recv() was called in the same time. Fix
-this by refilling before trying to enable napi.
+In function ppi_callback(), memory allocated by acpi_get_name() will get
+leaked when current device isn't the desired TPM device, so fix the
+memory leak.
 
-Fixes 0741bcb5584f9e2390ae6261573c4de8314999f2
-(virtio: net: Add freeze, restore handlers to support S4).
-
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/virtio_net.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/char/tpm/tpm_ppi.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 68692af..a0c05e0 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1745,16 +1745,17 @@ static int virtnet_restore(struct virtio_device *vdev)
- 	if (err)
- 		return err;
- 
--	if (netif_running(vi->dev))
-+	if (netif_running(vi->dev)) {
-+		for (i = 0; i < vi->curr_queue_pairs; i++)
-+			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-+				schedule_delayed_work(&vi->refill, 0);
+diff --git a/drivers/char/tpm/tpm_ppi.c b/drivers/char/tpm/tpm_ppi.c
+index 2168d15..57a818b 100644
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -27,15 +27,18 @@ static char *tpm_device_name = "TPM";
+ static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
+ 				void **return_value)
+ {
+-	acpi_status status;
++	acpi_status status = AE_OK;
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+-	status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+-	if (strstr(buffer.pointer, context) != NULL) {
+-		*return_value = handle;
 +
- 		for (i = 0; i < vi->max_queue_pairs; i++)
- 			virtnet_napi_enable(&vi->rq[i]);
-+	}
++	if (ACPI_SUCCESS(acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer))) {
++		if (strstr(buffer.pointer, context) != NULL) {
++			*return_value = handle;
++			status = AE_CTRL_TERMINATE;
++		}
+ 		kfree(buffer.pointer);
+-		return AE_CTRL_TERMINATE;
+ 	}
+-	return AE_OK;
++
++	return status;
+ }
  
- 	netif_device_attach(vi->dev);
- 
--	for (i = 0; i < vi->curr_queue_pairs; i++)
--		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
--			schedule_delayed_work(&vi->refill, 0);
--
- 	mutex_lock(&vi->config_lock);
- 	vi->config_enable = true;
- 	mutex_unlock(&vi->config_lock);
+ static inline void ppi_assign_params(union acpi_object params[4],
 -- 
 1.8.3.2
 
