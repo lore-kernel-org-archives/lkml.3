@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011AbaAMUOy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:14:54 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:52195 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaAMUOv (ORCPT
+	id S1752206AbaAMUQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:16:46 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34928 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751068AbaAMUQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 15:14:51 -0500
-From: Joe Borg <cyborg101010@gmail.com>
-To: dan.carpenter@oracle.com
-Cc: cyborg101010@gmail.com, abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] DAS1800: Fixing foo * bar should be foo *bar
-Date: Mon, 13 Jan 2014 20:14:46 +0000
-Message-Id: <1389644086-6574-1-git-send-email-cyborg101010@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
+	Mon, 13 Jan 2014 15:16:43 -0500
+Date: Mon, 13 Jan 2014 15:16:42 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Excessive WARN()s in Intel 915 driver
+In-Reply-To: <20140108202108.GV4770@phenom.ffwll.local>
+Message-ID: <Pine.LNX.4.44L0.1401131512380.2032-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by Joe Borg <cyborg101010@gmail.com>
----
- drivers/staging/comedi/drivers/das1800.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, 8 Jan 2014, Daniel Vetter wrote:
 
-diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
-index 1880038..8fb87df 100644
---- a/drivers/staging/comedi/drivers/das1800.c
-+++ b/drivers/staging/comedi/drivers/das1800.c
-@@ -462,7 +462,7 @@ static inline uint16_t munge_bipolar_sample(const struct comedi_device *dev,
- 	return sample;
- }
- 
--static void munge_data(struct comedi_device *dev, uint16_t * array,
-+static void munge_data(struct comedi_device *dev, uint16_t *array,
- 		       unsigned int num_elements)
- {
- 	unsigned int i;
--- 
-1.8.5.2
+> On Wed, Jan 08, 2014 at 01:34:02PM -0500, Alan Stern wrote:
+> > On Wed, 8 Jan 2014, Daniel Vetter wrote:
+> > 
+> > > On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
+> > > > On Tue, 7 Jan 2014, Daniel Vetter wrote:
+> > > > 
+> > > > > I really want users to report these issues, and excessive WARNs seems
+> > > > > to be the only way to get those reports. Please boot with
+> > > > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
+> > > > > Also, which precise kernel are you running? Testing latest -rc is
+> > > > > always recommended, this state checker code is fairly new and gets
+> > > > > constantly extended and bugs fixed ...
+> > > > 
+> > > > Here you go.  This is the dmesg output after booting with
+> > > > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
+> > > > string; this is pristine 3.13-rc7.
+> > > 
+> > > That's strange, I've thought we've fixed the last struggling mismatch in
+> > > the lvds borber bits stuff. Can you please try latest drm-intel-nightly
+> > > from
+> > > 
+> > > http://cgit.freedesktop.org/~danvet/drm-intel/
+
+I posted the output from the default branch in that repository last
+week:
+
+	http://marc.info/?l=linux-kernel&m=138922294308576&w=2
+
+Have you had time to look at the results yet?
+
+Alan Stern
 
