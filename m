@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaAMQhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:37:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53344 "EHLO
+	id S1755420AbaAMQiD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:38:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53327 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbaAMQD3 (ORCPT
+	with ESMTP id S1754011AbaAMQD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:29 -0500
+	Mon, 13 Jan 2014 11:03:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, ocfs2-devel@oss.oracle.com,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 111/208] jbd2: don't BUG but return ENOSPC if a handle runs out of space
-Date: Mon, 13 Jan 2014 15:59:12 +0000
-Message-Id: <1389628849-1614-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 107/208] powerpc: Align p_end
+Date: Mon, 13 Jan 2014 15:59:08 +0000
+Message-Id: <1389628849-1614-108-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Anton Blanchard <anton@samba.org>
 
-commit f6c07cad081ba222d63623d913aafba5586c1d2c upstream.
+commit 286e4f90a72c0b0621dde0294af6ed4b0baddabb upstream.
 
-If a handle runs out of space, we currently stop the kernel with a BUG
-in jbd2_journal_dirty_metadata().  This makes it hard to figure out
-what might be going on.  So return an error of ENOSPC, so we can let
-the file system layer figure out what is going on, to make it more
-likely we can get useful debugging information).  This should make it
-easier to debug problems such as the one which was reported by:
+p_end is an 8 byte value embedded in the text section. This means it
+is only 4 byte aligned when it should be 8 byte aligned. Fix this
+by adding an explicit alignment.
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=44731
+This fixes an issue where POWER7 little endian builds with
+CONFIG_RELOCATABLE=y fail to boot.
 
-The only two callers of this function are ext4_handle_dirty_metadata()
-and ocfs2_journal_dirty().  The ocfs2 function will trigger a
-BUG_ON(), which means there will be no change in behavior.  The ext4
-function will call ext4_error_inode() which will print the useful
-debugging information and then handle the situation using ext4's error
-handling mechanisms (i.e., which might mean halting the kernel or
-remounting the file system read-only).
-
-Also, since both file systems already call WARN_ON(), drop the WARN_ON
-from jbd2_journal_dirty_metadata() to avoid two stack traces from
-being displayed.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: ocfs2-devel@oss.oracle.com
-Acked-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/jbd2/transaction.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/head_64.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
-index 7aa9a32..b0b74e5 100644
---- a/fs/jbd2/transaction.c
-+++ b/fs/jbd2/transaction.c
-@@ -1290,7 +1290,10 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
- 		 * once a transaction -bzzz
- 		 */
- 		jh->b_modified = 1;
--		J_ASSERT_JH(jh, handle->h_buffer_credits > 0);
-+		if (handle->h_buffer_credits <= 0) {
-+			ret = -ENOSPC;
-+			goto out_unlock_bh;
-+		}
- 		handle->h_buffer_credits--;
- 	}
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index b61363d..192a3f5 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -467,6 +467,7 @@ _STATIC(__after_prom_start)
+ 	mtctr	r8
+ 	bctr
  
-@@ -1373,7 +1376,6 @@ out_unlock_bh:
- 	jbd2_journal_put_journal_head(jh);
- out:
- 	JBUFFER_TRACE(jh, "exit");
--	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
- 	return ret;
- }
++.balign 8
+ p_end:	.llong	_end - _stext
  
+ 4:	/* Now copy the rest of the kernel up to _end */
 -- 
 1.8.3.2
 
