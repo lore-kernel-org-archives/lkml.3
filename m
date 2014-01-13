@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaAMP6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:58:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32810 "EHLO
+	id S1752855AbaAMP5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:57:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60969 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073AbaAMP6o (ORCPT
+	with ESMTP id S1751512AbaAMP5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:58:44 -0500
-Date: Mon, 13 Jan 2014 07:58:14 -0800
+	Mon, 13 Jan 2014 10:57:38 -0500
+Date: Mon, 13 Jan 2014 07:57:06 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-hrz87bo37qke25bty6pnfy4b@git.kernel.org>
+Message-ID: <tip-piu203ses5y1g36bnyw2n16x@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         peterz@infradead.org, tglx@linutronix.de
@@ -17,9 +17,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/clock, x86:
-  Avoid a runtime condition in native_sched_clock()
-Git-Commit-ID: 10b033d434c25a6c9e0f4f4dc2418af1b8236c63
+Subject: [tip:sched/core] sched/clock, x86: Use mul_u64_u32_shr()
+  for native_sched_clock()
+Git-Commit-ID: 5dd12c2152743747ca9f50ef80281e54cc416dc0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,85 +28,122 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:58:20 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:57:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  10b033d434c25a6c9e0f4f4dc2418af1b8236c63
-Gitweb:     http://git.kernel.org/tip/10b033d434c25a6c9e0f4f4dc2418af1b8236c63
+Commit-ID:  5dd12c2152743747ca9f50ef80281e54cc416dc0
+Gitweb:     http://git.kernel.org/tip/5dd12c2152743747ca9f50ef80281e54cc416dc0
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 28 Nov 2013 19:01:40 +0100
+AuthorDate: Fri, 29 Nov 2013 18:04:39 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 13 Jan 2014 15:13:17 +0100
+CommitDate: Mon, 13 Jan 2014 13:47:38 +0100
 
-sched/clock, x86: Avoid a runtime condition in native_sched_clock()
+sched/clock, x86: Use mul_u64_u32_shr() for native_sched_clock()
 
-Use a static_key to avoid touching tsc_disabled and a runtime
-condition in native_sched_clock() -- less cachelines touched is always
-better.
+Use mul_u64_u32_shr() so that x86_64 can use a single 64x64->128 mul.
 
-                        MAINLINE   PRE       POST
+Before:
 
-    sched_clock_stable: 1          1         1
-    (cold) sched_clock: 329841     215295    213039
-    (cold) local_clock: 301773     220773    216084
-    (warm) sched_clock: 38375      25659     25231
-    (warm) local_clock: 100371     27242     27601
-    (warm) rdtsc:       27340      24208     24203
-    sched_clock_stable: 0          0         0
-    (cold) sched_clock: 382634     237019    240055
-    (cold) local_clock: 396890     294819    299942
-    (warm) sched_clock: 38194      25609     25276
-    (warm) local_clock: 143452     71232     73232
-    (warm) rdtsc:       27345      24243     24244
+0000000000000560 <native_sched_clock>:
+ 560:   44 8b 1d 00 00 00 00    mov    0x0(%rip),%r11d        # 567 <native_sched_clock+0x7>
+ 567:   55                      push   %rbp
+ 568:   48 89 e5                mov    %rsp,%rbp
+ 56b:   45 85 db                test   %r11d,%r11d
+ 56e:   75 4f                   jne    5bf <native_sched_clock+0x5f>
+ 570:   0f 31                   rdtsc
+ 572:   89 c0                   mov    %eax,%eax
+ 574:   48 c1 e2 20             shl    $0x20,%rdx
+ 578:   48 c7 c1 00 00 00 00    mov    $0x0,%rcx
+ 57f:   48 09 c2                or     %rax,%rdx
+ 582:   48 c7 c7 00 00 00 00    mov    $0x0,%rdi
+ 589:   65 8b 04 25 00 00 00    mov    %gs:0x0,%eax
+ 590:   00
+ 591:   48 98                   cltq
+ 593:   48 8b 34 c5 00 00 00    mov    0x0(,%rax,8),%rsi
+ 59a:   00
+ 59b:   48 89 d0                mov    %rdx,%rax
+ 59e:   81 e2 ff 03 00 00       and    $0x3ff,%edx
+ 5a4:   48 c1 e8 0a             shr    $0xa,%rax
+ 5a8:   48 0f af 14 0e          imul   (%rsi,%rcx,1),%rdx
+ 5ad:   48 0f af 04 0e          imul   (%rsi,%rcx,1),%rax
+ 5b2:   5d                      pop    %rbp
+ 5b3:   48 03 04 3e             add    (%rsi,%rdi,1),%rax
+ 5b7:   48 c1 ea 0a             shr    $0xa,%rdx
+ 5bb:   48 01 d0                add    %rdx,%rax
+ 5be:   c3                      retq
+
+After:
+
+0000000000000550 <native_sched_clock>:
+ 550:   8b 3d 00 00 00 00       mov    0x0(%rip),%edi        # 556 <native_sched_clock+0x6>
+ 556:   55                      push   %rbp
+ 557:   48 89 e5                mov    %rsp,%rbp
+ 55a:   48 83 e4 f0             and    $0xfffffffffffffff0,%rsp
+ 55e:   85 ff                   test   %edi,%edi
+ 560:   75 2c                   jne    58e <native_sched_clock+0x3e>
+ 562:   0f 31                   rdtsc
+ 564:   89 c0                   mov    %eax,%eax
+ 566:   48 c1 e2 20             shl    $0x20,%rdx
+ 56a:   48 09 c2                or     %rax,%rdx
+ 56d:   65 48 8b 04 25 00 00    mov    %gs:0x0,%rax
+ 574:   00 00
+ 576:   89 c0                   mov    %eax,%eax
+ 578:   48 f7 e2                mul    %rdx
+ 57b:   65 48 8b 0c 25 00 00    mov    %gs:0x0,%rcx
+ 582:   00 00
+ 584:   c9                      leaveq
+ 585:   48 0f ac d0 0a          shrd   $0xa,%rdx,%rax
+ 58a:   48 01 c8                add    %rcx,%rax
+ 58d:   c3                      retq
+
+                        MAINLINE   POST
+
+    sched_clock_stable: 1	   1
+    (cold) sched_clock: 329841     331312
+    (cold) local_clock: 301773     310296
+    (warm) sched_clock: 38375      38247
+    (warm) local_clock: 100371     102713
+    (warm) rdtsc:       27340      27289
+    sched_clock_stable: 0          0
+    (cold) sched_clock: 382634     372706
+    (cold) local_clock: 396890     399275
+    (warm) sched_clock: 38194      38124
+    (warm) local_clock: 143452     148698
+    (warm) rdtsc:       27345      27365
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-hrz87bo37qke25bty6pnfy4b@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-piu203ses5y1g36bnyw2n16x@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/tsc.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/timer.h | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 53c1235..6377fb2 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -11,6 +11,7 @@
- #include <linux/clocksource.h>
+diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+index 34baa0e..10a78c0 100644
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -4,6 +4,7 @@
+ #include <linux/pm.h>
  #include <linux/percpu.h>
- #include <linux/timex.h>
-+#include <linux/static_key.h>
+ #include <linux/interrupt.h>
++#include <linux/math64.h>
  
- #include <asm/hpet.h>
- #include <asm/timer.h>
-@@ -37,6 +38,8 @@ static int __read_mostly tsc_unstable;
-    erroneous rdtsc usage on !cpu_has_tsc processors */
- static int __read_mostly tsc_disabled = -1;
+ #define TICK_SIZE (tick_nsec / 1000)
  
-+static struct static_key __use_tsc = STATIC_KEY_INIT;
-+
- int tsc_clocksource_reliable;
+@@ -57,10 +58,8 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
  
- /*
-@@ -282,7 +285,7 @@ u64 native_sched_clock(void)
- 	 *   very important for it to be as fast as the platform
- 	 *   can achieve it. )
- 	 */
--	if (unlikely(tsc_disabled)) {
-+	if (!static_key_false(&__use_tsc)) {
- 		/* No locking but a rare wrong value is not a big deal: */
- 		return (jiffies_64 - INITIAL_JIFFIES) * (1000000000 / HZ);
- 	}
-@@ -1193,7 +1196,9 @@ void __init tsc_init(void)
- 		return;
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
+-	int cpu = smp_processor_id();
+-	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
+-			(1UL << CYC2NS_SCALE_FACTOR));
++	unsigned long long ns = this_cpu_read(cyc2ns_offset);
++	ns += mul_u64_u32_shr(cyc, this_cpu_read(cyc2ns), CYC2NS_SCALE_FACTOR);
+ 	return ns;
+ }
  
- 	/* now allow native_sched_clock() to use rdtsc */
-+
- 	tsc_disabled = 0;
-+	static_key_slow_inc(&__use_tsc);
- 
- 	if (!no_sched_irq_time)
- 		enable_sched_clock_irqtime();
