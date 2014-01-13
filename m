@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649AbaAMQrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:47:10 -0500
-Received: from sauhun.de ([89.238.76.85]:38833 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754289AbaAMQrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:47:03 -0500
-Date: Mon, 13 Jan 2014 17:46:52 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: robert.valiquette@intel.com
-Cc: nhorman@tuxdriver.com, seth.heasley@intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 1/1] i2c-ismt: add the support of the
- I2C_SMBUS_I2C_BLOCK_DATA transaction type
-Message-ID: <20140113164652.GA14602@katana>
-References: <5285704e.jwiZWyk8R3ZEoySS%robert.valiquette@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <5285704e.jwiZWyk8R3ZEoySS%robert.valiquette@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755976AbaAMQpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:45:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53178 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777AbaAMQCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:02:44 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jianguo Wu <wujianguo@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 078/208] mm/memory-failure.c: recheck PageHuge() after hugetlb page migrate successfully
+Date: Mon, 13 Jan 2014 15:58:39 +0000
+Message-Id: <1389628849-1614-79-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+------------------
 
-On Thu, Nov 14, 2013 at 07:52:30PM -0500, robert.valiquette@intel.com wrote:
-> This patch adds the support of the I2C_SMBUS_I2C_BLOCK_DATA transaction t=
-ype for the iSMT SMBus Controller.
+From: Jianguo Wu <wujianguo@huawei.com>
 
-Wrap the long line next time, please.
+commit a49ecbcd7b0d5a1cda7d60e03df402dd0ef76ac8 upstream.
 
->=20
-> Signed-off-by: Robert Valiquette <robert.valiquette@intel.com>
-> ---
+After a successful hugetlb page migration by soft offline, the source
+page will either be freed into hugepage_freelists or buddy(over-commit
+page).  If page is in buddy, page_hstate(page) will be NULL.  It will
+hit a NULL pointer dereference in dequeue_hwpoisoned_huge_page().
 
-> +		/* Make sure the lenght is valid */
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+  IP: [<ffffffff81163761>] dequeue_hwpoisoned_huge_page+0x131/0x1d0
+  PGD c23762067 PUD c24be2067 PMD 0
+  Oops: 0000 [#1] SMP
 
-Fixed the typo and applied to for-next, thanks!
+So check PageHuge(page) after call migrate_pages() successfully.
 
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Tested-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11:
+  - replaced 'compound_order' usage by 'compound_trans_order' ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ mm/memory-failure.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 2c13aa7..b4cd46d 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1489,10 +1489,16 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
+ 	} else {
+-		set_page_hwpoison_huge_page(hpage);
+-		dequeue_hwpoisoned_huge_page(hpage);
+-		atomic_long_add(1 << compound_trans_order(hpage),
+-				&num_poisoned_pages);
++		/* overcommit hugetlb page will be freed to buddy */
++		if (PageHuge(page)) {
++			set_page_hwpoison_huge_page(hpage);
++			dequeue_hwpoisoned_huge_page(hpage);
++			atomic_long_add(1 << compound_trans_order(hpage),
++					&num_poisoned_pages);
++		} else {
++			SetPageHWPoison(page);
++			atomic_long_inc(&num_poisoned_pages);
++		}
+ 	}
+ 	return ret;
+ }
+-- 
+1.8.3.2
 
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1Bh7AAoJEBQN5MwUoCm2978P/RCSrZSRzk6XI+kRIowwJzg2
-q2Htk88WpdP/wUC1Tousp+6NZzO5Af6KVKxtZ9ad7kEPLHuDrdw0wIpxUiKEf3X1
-wYHOaJGKqQvdm33RAlrBH4eNjb2swX3q74v441uaued4yXLu0PmYfd3u+eHqOqUQ
-MBKQa1b/qeaAhx5NoY5YQLh2AO/yS5bkWlGx58INsLrimlJyu5NJctsbE5p/16jm
-UD9Bm5z+L9ah04Eyh7C1lYif33ExtMx1kPSSr5ZqLss9WJvWEUl0F7iXnIZHKaea
-Ii25tOnHLOly+yNBRlOK35M37pWfFx38zAq2SOOgRf3rPbDY51pYzQrkLsqlK3mI
-eLLOhaVr+/z4iMmxa+30P3xCRNU6AjcaN4sRW+x2bXkvLx9iB2ufU7icKoGBFAeq
-rbRQAazOkDOdUiGLAWS0B0H80SpGeGSsBM6WUgijLW95SWJH4efnlJxdCbedDKd3
-QtnteoJvDL3k3/yYqr3oXaCg4oCddrWEN90elzieNB5t/GIFZRpU9ZpuLnYXYC20
-OE8A0RmZWMpQ78RLBCg5WOMxbwMpurHP2vTGYt0GjZcjzXu92/GrKwASQl8ZWA6Z
-YuQacuhLeokZsg1mTtFfqxYLYQrSTy6uadyKPIfkFXXNXgwZCZ3qHMnIDMBeFKv1
-DwS3mkyZRoCm1U1skRhN
-=8hXC
------END PGP SIGNATURE-----
-
---G4iJoqBmSsgzjUCe--
