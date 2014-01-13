@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaAMQcg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:32:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53409 "EHLO
+	id S1754117AbaAMQDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:03:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53295 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaAMQDs (ORCPT
+	with ESMTP id S1752581AbaAMQDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:48 -0500
+	Mon, 13 Jan 2014 11:03:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Durgin <josh.durgin@inktank.com>,
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/208] libceph: add function to ensure notifies are complete
-Date: Mon, 13 Jan 2014 15:59:26 +0000
-Message-Id: <1389628849-1614-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 102/208] can: peak_usb: fix mem leak in pcan_usb_pro_init()
+Date: Mon, 13 Jan 2014 15:59:03 +0000
+Message-Id: <1389628849-1614-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit dd935f44a40f8fb02aff2cc0df2269c92422df1c upstream.
+commit 20fb4eb96fb0350d28fc4d7cbfd5506711079592 upstream.
 
-Without a way to flush the osd client's notify workqueue, a watch
-event that is unregistered could continue receiving callbacks
-indefinitely.
+This patch fixes a memory leak in pcan_usb_pro_init(). In patch
 
-Unregistering the event simply means no new notifies are added to the
-queue, but there may still be events in the queue that will call the
-watch callback for the event. If the queue is flushed after the event
-is unregistered, the caller can be sure no more watch callbacks will
-occur for the canceled watch.
+    f14e224 net: can: peak_usb: Do not do dma on the stack
 
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-Reviewed-by: Alex Elder <elder@linaro.org>
+the struct pcan_usb_pro_fwinfo *fi and struct pcan_usb_pro_blinfo *bi were
+converted from stack to dynamic allocation va kmalloc(). However the
+corresponding kfree() was not introduced.
+
+This patch adds the missing kfree().
+
+Reported-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/ceph/osd_client.h |  2 ++
- net/ceph/osd_client.c           | 11 +++++++++++
- 2 files changed, 13 insertions(+)
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/include/linux/ceph/osd_client.h b/include/linux/ceph/osd_client.h
-index ce6df39..8f47625 100644
---- a/include/linux/ceph/osd_client.h
-+++ b/include/linux/ceph/osd_client.h
-@@ -335,6 +335,8 @@ extern int ceph_osdc_wait_request(struct ceph_osd_client *osdc,
- 				  struct ceph_osd_request *req);
- extern void ceph_osdc_sync(struct ceph_osd_client *osdc);
+diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+index 8ee9d15..263dd92 100644
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -927,6 +927,9 @@ static int pcan_usb_pro_init(struct peak_usb_device *dev)
+ 	/* set LED in default state (end of init phase) */
+ 	pcan_usb_pro_set_led(dev, 0, 1);
  
-+extern void ceph_osdc_flush_notifies(struct ceph_osd_client *osdc);
++	kfree(bi);
++	kfree(fi);
 +
- extern int ceph_osdc_readpages(struct ceph_osd_client *osdc,
- 			       struct ceph_vino vino,
- 			       struct ceph_file_layout *layout,
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index 0c49ec4..1ee21cd 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -2209,6 +2209,17 @@ void ceph_osdc_sync(struct ceph_osd_client *osdc)
- EXPORT_SYMBOL(ceph_osdc_sync);
+ 	return 0;
  
- /*
-+ * Call all pending notify callbacks - for use after a watch is
-+ * unregistered, to make sure no more callbacks for it will be invoked
-+ */
-+extern void ceph_osdc_flush_notifies(struct ceph_osd_client *osdc)
-+{
-+	flush_workqueue(osdc->notify_wq);
-+}
-+EXPORT_SYMBOL(ceph_osdc_flush_notifies);
-+
-+
-+/*
-  * init, shutdown
-  */
- int ceph_osdc_init(struct ceph_osd_client *osdc, struct ceph_client *client)
+  err_out:
 -- 
 1.8.3.2
 
