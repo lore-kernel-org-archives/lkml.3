@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688AbaAMQYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:24:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53543 "EHLO
+	id S1755672AbaAMQYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:24:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53551 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331AbaAMQEU (ORCPT
+	with ESMTP id S1754333AbaAMQEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:20 -0500
+	Mon, 13 Jan 2014 11:04:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Alex Thorlton <athorlton@sgi.com>, Chegu Vinod <chegu_vinod@hp.com>,
+Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 147/208] mm: numa: do not clear PTE for pte_numa update
-Date: Mon, 13 Jan 2014 15:59:48 +0000
-Message-Id: <1389628849-1614-148-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 150/208] sched: numa: skip inaccessible VMAs
+Date: Mon, 13 Jan 2014 15:59:51 +0000
+Message-Id: <1389628849-1614-151-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -32,70 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 0c5f83c23ca703d32f930393825487257a5cde6d upstream.
+commit 3c67f474558748b604e247d92b55dfe89654c81d upstream.
 
-The TLB must be flushed if the PTE is updated but change_pte_range is
-clearing the PTE while marking PTEs pte_numa without necessarily
-flushing the TLB if it reinserts the same entry.  Without the flush,
-it's conceivable that two processors have different TLBs for the same
-virtual address and at the very least it would generate spurious faults.
+Inaccessible VMA should not be trapping NUMA hint faults. Skip them.
 
-This patch only unmaps the pages in change_pte_range for a full
-protection change.
-
-[riel@redhat.com: write pte_numa pte back to the page tables]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Rik van Riel <riel@redhat.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Alex Thorlton <athorlton@sgi.com>
-Cc: Chegu Vinod <chegu_vinod@hp.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/mprotect.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 6c3f56f..3277121 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -54,13 +54,14 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 			pte_t ptent;
- 			bool updated = false;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 66dae75..a07a479 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -974,6 +974,13 @@ void task_numa_work(struct callback_head *work)
+ 		if (vma->vm_end - vma->vm_start < HPAGE_SIZE)
+ 			continue;
  
--			ptent = ptep_modify_prot_start(mm, addr, pte);
- 			if (!prot_numa) {
-+				ptent = ptep_modify_prot_start(mm, addr, pte);
- 				ptent = pte_modify(ptent, newprot);
- 				updated = true;
- 			} else {
- 				struct page *page;
- 
-+				ptent = *pte;
- 				page = vm_normal_page(vma, addr, oldpte);
- 				if (page) {
- 					int this_nid = page_to_nid(page);
-@@ -73,6 +74,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 					if (!pte_numa(oldpte) &&
- 					    page_mapcount(page) == 1) {
- 						ptent = pte_mknuma(ptent);
-+						set_pte_at(mm, addr, pte, ptent);
- 						updated = true;
- 					}
- 				}
-@@ -89,7 +91,10 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 			if (updated)
- 				pages++;
--			ptep_modify_prot_commit(mm, addr, pte, ptent);
++		/*
++		 * Skip inaccessible VMAs to avoid any confusion between
++		 * PROT_NONE and NUMA hinting ptes
++		 */
++		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
++			continue;
 +
-+			/* Only !prot_numa always clears the pte */
-+			if (!prot_numa)
-+				ptep_modify_prot_commit(mm, addr, pte, ptent);
- 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
- 			swp_entry_t entry = pte_to_swp_entry(oldpte);
- 
+ 		do {
+ 			start = max(start, vma->vm_start);
+ 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
 -- 
 1.8.3.2
 
