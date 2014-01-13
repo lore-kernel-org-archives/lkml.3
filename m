@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaAMUyg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:54:36 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40404 "EHLO
+	id S1753323AbaAMUyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:54:25 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40415 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968AbaAMUsJ (ORCPT
+	with ESMTP id S1751976AbaAMUsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 15:48:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/38] perf tools: Automate setup of FEATURE_CHECK_(C|LD)FLAGS-all variables
-Date: Mon, 13 Jan 2014 17:47:17 -0300
-Message-Id: <1389646059-24881-17-git-send-email-acme@infradead.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 09/38] perf stat: Remove misplaced __maybe_unused
+Date: Mon, 13 Jan 2014 17:47:10 -0300
+Message-Id: <1389646059-24881-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -29,58 +29,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Instead of explicitly adding same value into
-FEATURE_CHECK_(C|LD)FLAGS-all variables we can do that automatically.
+That 'argc' argument _is_ being used.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1389098853-14466-2-git-send-email-jolsa@redhat.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-t2gsxc15zulkorieg8zq996o@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/config/Makefile | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ tools/perf/builtin-stat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f2bc659d20af..5d15b43b03c6 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -53,9 +53,6 @@ else
-   FEATURE_CHECK_LDFLAGS-libunwind = $(LIBUNWIND_LDFLAGS)
-   FEATURE_CHECK_CFLAGS-libunwind-debug-frame = $(LIBUNWIND_CFLAGS)
-   FEATURE_CHECK_LDFLAGS-libunwind-debug-frame = $(LIBUNWIND_LDFLAGS)
--  #  and the flags for the test-all case
--  FEATURE_CHECK_CFLAGS-all += $(LIBUNWIND_CFLAGS)
--  FEATURE_CHECK_LDFLAGS-all += $(LIBUNWIND_LDFLAGS)
- endif
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 6ca076660de5..b27b2645eb3c 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -645,7 +645,7 @@ static int __run_perf_stat(int argc, const char **argv)
+ 	return WEXITSTATUS(status);
+ }
  
- ifeq ($(NO_PERF_REGS),0)
-@@ -152,6 +149,17 @@ CORE_FEATURE_TESTS =			\
- 	stackprotector-all		\
- 	timerfd
+-static int run_perf_stat(int argc __maybe_unused, const char **argv)
++static int run_perf_stat(int argc, const char **argv)
+ {
+ 	int ret;
  
-+# Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
-+# If in the future we need per-feature checks/flags for features not
-+# mentioned in this list we need to refactor this ;-).
-+set_test_all_flags = $(eval $(set_test_all_flags_code))
-+define set_test_all_flags_code
-+  FEATURE_CHECK_CFLAGS-all  += $(FEATURE_CHECK_CFLAGS-$(1))
-+  FEATURE_CHECK_LDFLAGS-all += $(FEATURE_CHECK_LDFLAGS-$(1))
-+endef
-+
-+$(foreach feat,$(CORE_FEATURE_TESTS),$(call set_test_all_flags,$(feat)))
-+
- #
- # So here we detect whether test-all was rebuilt, to be able
- # to skip the print-out of the long features list if the file
 -- 
 1.8.1.4
 
