@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaAMQUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:20:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53628 "EHLO
+	id S1755515AbaAMQUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:20:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53616 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaAMQEl (ORCPT
+	with ESMTP id S1754425AbaAMQEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:41 -0500
+	Mon, 13 Jan 2014 11:04:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kamala R <kamala@aristanetworks.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 163/208] IPv6: Fixed support for blackhole and prohibit routes
-Date: Mon, 13 Jan 2014 16:00:04 +0000
-Message-Id: <1389628849-1614-164-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 159/208] sched: Guarantee new group-entities always have weight
+Date: Mon, 13 Jan 2014 16:00:00 +0000
+Message-Id: <1389628849-1614-160-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,100 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamala R <kamala@aristanetworks.com>
+From: Paul Turner <pjt@google.com>
 
-commit 7150aede5dd241539686e17d9592f5ebd28a2cda upstream.
+commit 0ac9b1c21874d2490331233b3242085f8151e166 upstream.
 
-The behaviour of blackhole and prohibit routes has been corrected by setting
-the input and output pointers of the dst variable appropriately. For
-blackhole routes, they are set to dst_discard and to ip6_pkt_discard and
-ip6_pkt_discard_out respectively for prohibit routes.
+Currently, group entity load-weights are initialized to zero. This
+admits some races with respect to the first time they are re-weighted in
+earlty use. ( Let g[x] denote the se for "g" on cpu "x". )
 
-ipv6: ip6_pkt_prohibit(_out) should not depend on
-CONFIG_IPV6_MULTIPLE_TABLES
+Suppose that we have root->a and that a enters a throttled state,
+immediately followed by a[0]->t1 (the only task running on cpu[0])
+blocking:
 
-We need ip6_pkt_prohibit(_out) available without
-CONFIG_IPV6_MULTIPLE_TABLES
+  put_prev_task(group_cfs_rq(a[0]), t1)
+  put_prev_entity(..., t1)
+  check_cfs_rq_runtime(group_cfs_rq(a[0]))
+  throttle_cfs_rq(group_cfs_rq(a[0]))
 
-Signed-off-by: Kamala R <kamala@aristanetworks.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Then, before unthrottling occurs, let a[0]->b[0]->t2 wake for the first
+time:
+
+  enqueue_task_fair(rq[0], t2)
+  enqueue_entity(group_cfs_rq(b[0]), t2)
+  enqueue_entity_load_avg(group_cfs_rq(b[0]), t2)
+  account_entity_enqueue(group_cfs_ra(b[0]), t2)
+  update_cfs_shares(group_cfs_rq(b[0]))
+  < skipped because b is part of a throttled hierarchy >
+  enqueue_entity(group_cfs_rq(a[0]), b[0])
+  ...
+
+We now have b[0] enqueued, yet group_cfs_rq(a[0])->load.weight == 0
+which violates invariants in several code-paths. Eliminate the
+possibility of this by initializing group entity weight.
+
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20131016181627.22647.47543.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/route.c | 22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ kernel/sched/fair.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index b297e11..ff3223c 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -84,6 +84,8 @@ static int		 ip6_dst_gc(struct dst_ops *ops);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5c83396..b051edd 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6131,7 +6131,8 @@ void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
+ 		se->cfs_rq = parent->my_q;
  
- static int		ip6_pkt_discard(struct sk_buff *skb);
- static int		ip6_pkt_discard_out(struct sk_buff *skb);
-+static int		ip6_pkt_prohibit(struct sk_buff *skb);
-+static int		ip6_pkt_prohibit_out(struct sk_buff *skb);
- static void		ip6_link_failure(struct sk_buff *skb);
- static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
- 					   struct sk_buff *skb, u32 mtu);
-@@ -234,9 +236,6 @@ static const struct rt6_info ip6_null_entry_template = {
- 
- #ifdef CONFIG_IPV6_MULTIPLE_TABLES
- 
--static int ip6_pkt_prohibit(struct sk_buff *skb);
--static int ip6_pkt_prohibit_out(struct sk_buff *skb);
--
- static const struct rt6_info ip6_prohibit_entry_template = {
- 	.dst = {
- 		.__refcnt	= ATOMIC_INIT(1),
-@@ -1521,21 +1520,24 @@ int ip6_route_add(struct fib6_config *cfg)
- 				goto out;
- 			}
- 		}
--		rt->dst.output = ip6_pkt_discard_out;
--		rt->dst.input = ip6_pkt_discard;
- 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
- 		switch (cfg->fc_type) {
- 		case RTN_BLACKHOLE:
- 			rt->dst.error = -EINVAL;
-+			rt->dst.output = dst_discard;
-+			rt->dst.input = dst_discard;
- 			break;
- 		case RTN_PROHIBIT:
- 			rt->dst.error = -EACCES;
-+			rt->dst.output = ip6_pkt_prohibit_out;
-+			rt->dst.input = ip6_pkt_prohibit;
- 			break;
- 		case RTN_THROW:
--			rt->dst.error = -EAGAIN;
--			break;
- 		default:
--			rt->dst.error = -ENETUNREACH;
-+			rt->dst.error = (cfg->fc_type == RTN_THROW) ? -EAGAIN
-+					: -ENETUNREACH;
-+			rt->dst.output = ip6_pkt_discard_out;
-+			rt->dst.input = ip6_pkt_discard;
- 			break;
- 		}
- 		goto install_route;
-@@ -2100,8 +2102,6 @@ static int ip6_pkt_discard_out(struct sk_buff *skb)
- 	return ip6_pkt_drop(skb, ICMPV6_NOROUTE, IPSTATS_MIB_OUTNOROUTES);
+ 	se->my_q = cfs_rq;
+-	update_load_set(&se->load, 0);
++	/* guarantee group entities always have weight */
++	update_load_set(&se->load, NICE_0_LOAD);
+ 	se->parent = parent;
  }
  
--#ifdef CONFIG_IPV6_MULTIPLE_TABLES
--
- static int ip6_pkt_prohibit(struct sk_buff *skb)
- {
- 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_INNOROUTES);
-@@ -2113,8 +2113,6 @@ static int ip6_pkt_prohibit_out(struct sk_buff *skb)
- 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
- }
- 
--#endif
--
- /*
-  *	Allocate a dst for local (unicast / anycast) address.
-  */
 -- 
 1.8.3.2
 
