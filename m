@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaAMOnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:43:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51480 "EHLO
+	id S1752107AbaAMO0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:26:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51199 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbaAMO0g (ORCPT
+	with ESMTP id S1751649AbaAMOZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:36 -0500
+	Mon, 13 Jan 2014 09:25:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Wang <liwang@ubuntukylin.com>, Sage Weil <sage@inktank.com>,
+Cc: Len Brown <len.brown@intel.com>, Vinson Lee <vlee@twopensource.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 66/96] ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
-Date: Mon, 13 Jan 2014 14:24:29 +0000
-Message-Id: <1389623099-18783-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 11/96] intel_idle: initial IVB support
+Date: Mon, 13 Jan 2014 14:23:34 +0000
+Message-Id: <1389623099-18783-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Wang <liwang@ubuntukylin.com>
+From: Len Brown <len.brown@intel.com>
 
-commit 56f91aad69444d650237295f68c195b74d888d95 upstream.
+commit 6edab08c24f9141d69cfa4683a0a027d86ab303e upstream.
 
-If the length of data to be read in readpage() is exactly
-PAGE_CACHE_SIZE, the original code does not flush d-cache
-for data consistency after finishing reading. This patches fixes
-this.
+>From an OS point of view, IVB looks like SNB, but quicker.
 
-Signed-off-by: Li Wang <liwang@ubuntukylin.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Vinson Lee <vlee@twopensource.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ceph/addr.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/idle/intel_idle.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 32ee086..95f0bef 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -213,9 +213,13 @@ static int readpage_nounlock(struct file *filp, struct page *page)
- 	if (err < 0) {
- 		SetPageError(page);
- 		goto out;
--	} else if (err < PAGE_CACHE_SIZE) {
-+	} else {
-+		if (err < PAGE_CACHE_SIZE) {
- 		/* zero fill remainder of page */
--		zero_user_segment(page, err, PAGE_CACHE_SIZE);
-+			zero_user_segment(page, err, PAGE_CACHE_SIZE);
-+		} else {
-+			flush_dcache_page(page);
-+		}
- 	}
- 	SetPageUptodate(page);
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 04eced7..377ec9a 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -169,6 +169,38 @@ static struct cpuidle_state snb_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 		.enter = &intel_idle },
+ };
  
++static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
++	{ /* MWAIT C0 */ },
++	{ /* MWAIT C1 */
++		.name = "C1-IVB",
++		.desc = "MWAIT 0x00",
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 1,
++		.target_residency = 1,
++		.enter = &intel_idle },
++	{ /* MWAIT C2 */
++		.name = "C3-IVB",
++		.desc = "MWAIT 0x10",
++		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.exit_latency = 59,
++		.target_residency = 156,
++		.enter = &intel_idle },
++	{ /* MWAIT C3 */
++		.name = "C6-IVB",
++		.desc = "MWAIT 0x20",
++		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.exit_latency = 80,
++		.target_residency = 300,
++		.enter = &intel_idle },
++	{ /* MWAIT C4 */
++		.name = "C7-IVB",
++		.desc = "MWAIT 0x30",
++		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
++		.exit_latency = 87,
++		.target_residency = 300,
++		.enter = &intel_idle },
++};
++
+ static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
+ 	{ /* MWAIT C0 */ },
+ 	{ /* MWAIT C1 */
+@@ -347,6 +379,10 @@ static const struct idle_cpu idle_cpu_snb = {
+ 	.state_table = snb_cstates,
+ };
+ 
++static const struct idle_cpu idle_cpu_ivb = {
++	.state_table = ivb_cstates,
++};
++
+ #define ICPU(model, cpu) \
+ 	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
+ 
+@@ -362,6 +398,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
+ 	ICPU(0x2f, idle_cpu_nehalem),
+ 	ICPU(0x2a, idle_cpu_snb),
+ 	ICPU(0x2d, idle_cpu_snb),
++	ICPU(0x3a, idle_cpu_ivb),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
 -- 
 1.8.3.2
 
