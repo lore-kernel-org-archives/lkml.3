@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaAMOGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:06:24 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:36616 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaAMOGU (ORCPT
+	id S1751814AbaAMOHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:07:20 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50560 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751617AbaAMOHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:06:20 -0500
+	Mon, 13 Jan 2014 09:07:15 -0500
+Date: Mon, 13 Jan 2014 14:06:08 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Joe Perches <joe@perches.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] efi: style neatening
+Message-ID: <20140113140608.GC3256@console-pimps.org>
+References: <cover.1388793978.git.joe@perches.com>
+ <e0a37bd26a7cd9cee5cd5bb2341e6617783ce069.1388793978.git.joe@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohponJ5n6Vr56nFJT7nXX5ByOCFHDET7-E_=xsfGK80X3jag@mail.gmail.com>
-References: <1353403339-11679-1-git-send-email-dmitry.torokhov@gmail.com>
-	<1353403339-11679-3-git-send-email-dmitry.torokhov@gmail.com>
-	<CAKohpomA=vSGuKfD-_zwiSnXGkqAQjtiVqxT2Po=D-LDA_FESg@mail.gmail.com>
-	<20121216115756.GO14363@n2100.arm.linux.org.uk>
-	<20121217054240.GA13300@core.coreip.homeip.net>
-	<CAKohponJ5n6Vr56nFJT7nXX5ByOCFHDET7-E_=xsfGK80X3jag@mail.gmail.com>
-Date: Mon, 13 Jan 2014 16:06:20 +0200
-Message-ID: <CAHp75Ve=G1reCgdgWcor3ChGKk=kFnMxOsfL-U82cWyit7ipgw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] CLK: uninline clk_prepare_enable() and clk_disable_unprepare()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>,
-        linux-arm Mailing List <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e0a37bd26a7cd9cee5cd5bb2341e6617783ce069.1388793978.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry, what is the status of this patchseries? Are you continue to
-make it upstream?
+On Fri, 03 Jan, at 04:08:48PM, Joe Perches wrote:
+> Coalesce formats and remove spaces before tabs.
+> Move __initdata after the variable declaration.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/x86/platform/efi/efi.c | 30 +++++++++++++-----------------
+>  1 file changed, 13 insertions(+), 17 deletions(-)
 
-On Mon, Apr 8, 2013 at 1:19 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 17 December 2012 11:12, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
->> They do not _have_ to be non-inline, I think we should simply drop the
->> first 2 patches and I will refresh and ressend the 3rd one.
->
-> I haven't seen this patch since a long time? Any updates?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
-
-
+Thanks Joe, I picked this one up.
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Matt Fleming, Intel Open Source Technology Center
