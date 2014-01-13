@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaAMIFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:05:37 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:34817 "EHLO song.cn.fujitsu.com"
+	id S1751369AbaAMILS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:11:18 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:18355 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309AbaAMIFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:05:34 -0500
+	id S1751292AbaAMILO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 03:11:14 -0500
 X-IronPort-AV: E=Sophos;i="4.95,651,1384272000"; 
-   d="scan'208";a="9409353"
-Message-ID: <52D45498.3030608@cn.fujitsu.com>
-Date: Mon, 13 Jan 2014 16:03:20 -0500
+   d="scan'208";a="9409381"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, artagnon@gmail.com
-Subject: Re: [PATCH 6/8] perf tools: Make --raw-dump work as a proper option
- for perf list.
-References: <cover.1388416837.git.yangds.fnst@cn.fujitsu.com> <a8eee4e15aba50c210ae64aa034bc75b8270b14e.1388416837.git.yangds.fnst@cn.fujitsu.com> <20140108152032.GE2626@infradead.org> <52CDC6D5.9040308@gmail.com> <52CEB3DF.1000908@cn.fujitsu.com> <52D01215.7010004@gmail.com>
-In-Reply-To: <52D01215.7010004@gmail.com>
+To: linux-kernel@vger.kernel.org, acme@redhat.com
+Cc: dsahern@gmail.com, artagnon@gmail.com,
+        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 5/7 v4] perf tools: Make --raw-dump work as a proper option for perf list.
+Date: Mon, 13 Jan 2014 16:08:58 -0500
+Message-Id: <1389647338-1177-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <75f70aae9764ff54292b14c3128e969a022c8ec8.1389305623.git.yangds.fnst@cn.fujitsu.com>
+References: <75f70aae9764ff54292b14c3128e969a022c8ec8.1389305623.git.yangds.fnst@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/13 16:04:22,
+ 2014/01/13 16:10:01,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/13 16:04:23,
-	Serialize complete at 2014/01/13 16:04:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+ 2014/01/13 16:10:01,
+	Serialize complete at 2014/01/13 16:10:01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 10:30 AM, David Ahern wrote:
-> On 1/9/14, 7:36 AM, Dongsheng Yang wrote:
->> On 01/08/2014 04:44 PM, David Ahern wrote:
->>> On 1/8/14, 8:20 AM, Arnaldo Carvalho de Melo wrote:
->>>> Em Mon, Dec 30, 2013 at 10:26:41AM -0500, Dongsheng Yang escreveu:
->>>>> >Ramkumar reported that perf list --raw-dump was broken by 44d742e.
->>>>> >Fix by making raw-dump a proper argument.
->>>>> >
->>>>> >Signed-off-by: David Ahern<dsahern@gmail.com>
->>>> Are you sure David Signed-off-by' this, isn't this just an Acked-by or
->>>> perhaps a Reviewed-by? David?
->>>
->>> I thought the last version of the patch came from Ramkumar.
->>>
->>> This version seems like an add-on to the last patch.
->>>
->>
->> So, David, do you mind I add "Signed-off-by: David Ahern" in this patch?
->
-> I didn't write it and content wise very little comes from me.
->
+Ramkumar reported that perf list --raw-dump was broken by 44d742e.
+Fix by making raw-dump a proper argument.
 
-Okey, David, thanx for your reply. I will remove this line in my patch 
-next version.
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+	Changelog:
+		Remove "Signed-off-by: David Ahern" in commit message.
 
-> David
->
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ tools/perf/builtin-list.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1aac451..9cf98f4 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -19,8 +19,10 @@
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int i;
++	bool raw_dump = false;
+ 	unsigned int count = 0;
+ 	const struct option list_options[] = {
++		OPT_BOOLEAN(0, "raw-dump", &raw_dump, "raw dump for completion"),
+ 		OPT_END()
+ 	};
+ 	const char * const list_usage[] = {
+@@ -34,7 +36,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	setup_pager();
+ 
+ 	if (argc == 0) {
+-		print_events(NULL, false);
++		print_events(NULL, raw_dump);
+ 		return 0;
+ 	}
+ 
+@@ -42,26 +44,24 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		if (i)
+ 			putchar('\n');
+ 		if (strncmp(argv[i], "tracepoint", 10) == 0)
+-			count += print_tracepoint_events(NULL, NULL, false);
++			count += print_tracepoint_events(NULL, NULL, raw_dump);
+ 		else if (strcmp(argv[i], "hw") == 0 ||
+ 			 strcmp(argv[i], "hardware") == 0)
+-			count += print_events_type(PERF_TYPE_HARDWARE);
++			count += print_events_type(PERF_TYPE_HARDWARE, raw_dump);
+ 		else if (strcmp(argv[i], "sw") == 0 ||
+ 			 strcmp(argv[i], "software") == 0)
+-			count += print_events_type(PERF_TYPE_SOFTWARE);
++			count += print_events_type(PERF_TYPE_SOFTWARE, raw_dump);
+ 		else if (strcmp(argv[i], "cache") == 0 ||
+ 			 strcmp(argv[i], "hwcache") == 0)
+-			count += print_hwcache_events(NULL, false);
++			count += print_hwcache_events(NULL, raw_dump);
+ 		else if (strcmp(argv[i], "pmu") == 0)
+-			count += print_pmu_events(NULL, false);
+-		else if (strcmp(argv[i], "--raw-dump") == 0)
+-			count += print_events(NULL, true);
++			count += print_pmu_events(NULL, raw_dump);
+ 		else {
+ 			char *sep = strchr(argv[i], ':'), *s;
+ 			int sep_idx;
+ 
+ 			if (sep == NULL) {
+-				if(!(count += print_events(argv[i], false)))
++				if(!(count += print_events(argv[i], raw_dump)))
+ 					goto err_out;
+ 				continue;
+ 			}
+@@ -71,7 +71,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				return -1;
+ 
+ 			s[sep_idx] = '\0';
+-			if (!(count += print_tracepoint_events(s, s + sep_idx + 1, false)))
++			if (!(count += print_tracepoint_events(s, s + sep_idx + 1, raw_dump)))
+ 				goto err_out;
+ 			free(s);
+ 		}
+-- 
+1.8.2.1
 
