@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbaAMQFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:05:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53798 "EHLO
+	id S1754807AbaAMQF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:05:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53834 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629AbaAMQFX (ORCPT
+	with ESMTP id S1754656AbaAMQFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:23 -0500
+	Mon, 13 Jan 2014 11:05:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 194/208] netpoll: Fix missing TXQ unlock and and OOPS.
-Date: Mon, 13 Jan 2014 16:00:35 +0000
-Message-Id: <1389628849-1614-195-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 201/208] intel_pstate: Add X86_FEATURE_APERFMPERF to cpu match parameters.
+Date: Mon, 13 Jan 2014 16:00:42 +0000
+Message-Id: <1389628849-1614-202-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit aca5f58f9ba803ec8c2e6bcf890db17589e8dfcc upstream.
+commit 6cbd7ee10e2842a3d1f9b60abede1c8f3d1f1130 upstream.
 
-The VLAN tag handling code in netpoll_send_skb_on_dev() has two problems.
+KVM environments do not support APERF/MPERF MSRs. intel_pstate cannot
+operate without these registers.
 
-1) It exits without unlocking the TXQ.
+The previous validity checks in intel_pstate_msrs_not_valid() are
+insufficent in nested KVMs.
 
-2) It then tries to queue a NULL skb to npinfo->txq.
-
-Reported-by: Ahmed Tamrawi <atamrawi@iastate.edu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1046317
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/netpoll.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/cpufreq/intel_pstate.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index fc75c9e..0c1482c 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -386,8 +386,14 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
- 					    !vlan_hw_offload_capable(netif_skb_features(skb),
- 								     skb->vlan_proto)) {
- 						skb = __vlan_put_tag(skb, skb->vlan_proto, vlan_tx_tag_get(skb));
--						if (unlikely(!skb))
--							break;
-+						if (unlikely(!skb)) {
-+							/* This is actually a packet drop, but we
-+							 * don't want the code at the end of this
-+							 * function to try and re-queue a NULL skb.
-+							 */
-+							status = NETDEV_TX_OK;
-+							goto unlock_txq;
-+						}
- 						skb->vlan_tci = 0;
- 					}
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 85f02a0..8d10dda 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -520,7 +520,8 @@ static void intel_pstate_timer_func(unsigned long __data)
+ }
  
-@@ -395,6 +401,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
- 					if (status == NETDEV_TX_OK)
- 						txq_trans_update(txq);
- 				}
-+			unlock_txq:
- 				__netif_tx_unlock(txq);
+ #define ICPU(model, policy) \
+-	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_ANY, (unsigned long)&policy }
++	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_APERFMPERF,\
++			(unsigned long)&policy }
  
- 				if (status == NETDEV_TX_OK)
+ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
+ 	ICPU(0x2a, default_policy),
 -- 
 1.8.3.2
 
