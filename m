@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260AbaAMDJB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:09:01 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65344 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaAMDI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:08:59 -0500
+	id S1751259AbaAMDOn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:14:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30927 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751110AbaAMDOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 22:14:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,650,1384329600"; 
+   d="scan'208";a="464077914"
+Message-ID: <52D358EA.8090800@intel.com>
+Date: Mon, 13 Jan 2014 11:09:30 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20140110171108.32b2be171cd5e54bf22fb2a4@linux-foundation.org>
-References: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
-	<20140110171108.32b2be171cd5e54bf22fb2a4@linux-foundation.org>
-Date: Mon, 13 Jan 2014 11:08:58 +0800
-Message-ID: <CAL1ERfPnaROPiRAeWHpvwGezHsqN4R8j=QSyS48xs25ax14AhA@mail.gmail.com>
-Subject: Re: [PATCH] mm/swap: fix race on swap_info reuse between swapoff and swapon
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Shaohua Li <shli@fusionio.com>,
-        Bob Liu <bob.liu@oracle.com>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] x86, mpx: extend siginfo structure to include bound
+ violation information
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-5-git-send-email-qiaowei.ren@intel.com> <20140112093013.GB3664@pd.tnic> <52D2C791.2030802@zytor.com> <20140112170354.GC3655@pd.tnic>
+In-Reply-To: <20140112170354.GC3655@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 9:11 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 09 Jan 2014 13:39:55 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+On 01/13/2014 01:03 AM, Borislav Petkov wrote:
+> On Sun, Jan 12, 2014 at 08:49:21AM -0800, H. Peter Anvin wrote:
+>> I saw a previous version of the code that did that, and it really
+>> didn't work out well -- it ended up being more complex and slower.
 >
->> swapoff clear swap_info's SWP_USED flag prematurely and free its resources
->> after that. A concurrent swapon will reuse this swap_info while its previous
->> resources are not cleared completely.
->>
->> These late freed resources are:
->> - p->percpu_cluster
->> - swap_cgroup_ctrl[type]
->> - block_device setting
->> - inode->i_flags &= ~S_SWAPFILE
->>
->> This patch clear SWP_USED flag after all its resources freed, so that swapon
->> can reuse this swap_info by alloc_swap_info() safely.
->>
->> ...
->>
->> --- a/mm/swapfile.c
->> +++ b/mm/swapfile.c
->> @@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->>       p->swap_map = NULL;
->>       cluster_info = p->cluster_info;
->>       p->cluster_info = NULL;
->> -     p->flags = 0;
->>       frontswap_map = frontswap_map_get(p);
->>       spin_unlock(&p->lock);
->>       spin_unlock(&swap_lock);
->> @@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->>               mutex_unlock(&inode->i_mutex);
->>       }
->>       filp_close(swap_file, NULL);
->> +
->> +     /*
->> +     * clear SWP_USED flag after all resources freed
->> +     * so that swapon can reuse this swap_info in alloc_swap_info() safely
->> +     * it is ok to not hold p->lock after we cleared its SWP_WRITEOK
->> +     */
->> +     spin_lock(&swap_lock);
->> +     p->flags = 0;
->> +     spin_unlock(&swap_lock);
->> +
->>       err = 0;
->>       atomic_inc(&proc_poll_event);
->>       wake_up_interruptible(&proc_poll_wait);
+> I suspected as much.
 >
-> I didn't look too closely, but this patch might also address the race
-> which Krzysztof addressed with
-> http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch.
-> Can we please check that out?
->
-> I do prefer fixing all these swapon-vs-swapoff races with some large,
-> simple, wide-scope exclusion scheme.  Perhaps SWP_USED is that scheme.
->
-> An alternative would be to add another mutex and just make sys_swapon()
-> and sys_swapoff() 100% exclusive.  But that is plastering yet another
-> lock over this mess to hide the horrors which lurk within :(
+> But, we still probably should use the generic struct insn, insn_field,
+> etc and act on them in mpx.c instead of defining our own mpx_insn,
+> mpx_insn_field, X86_MODRM_MOD, etc in the header which are more or less
+> copied from insn.h, right?
 >
 
-Hi, Andrew. Thanks for your suggestion.
+I tried to use generic structure and macro, but many members of generic 
+struct insn are not used for MPX, and except this I have to add one 
+member into this structure. So I define mpx specific struct insn.
 
-I checked Krzysztof's patch, it use the global swapon_mutex to protect
-race condition among
-swapon, swapoff and swap_start(). It is a kind of correct method, but
-a heavy method.
+And so I guess only struct insn_field and several macros like X86_XXX 
+may use generic version. Anyway, I will try to use their generic version 
+in next version for this patchset.
 
-I will try to resend a patchset to make lock usage in swapfile.c clear
-and fine grit
+Thanks,
+Qiaowei
