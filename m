@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729AbaAMQdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:33:52 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:57960 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120AbaAMQdp (ORCPT
+	id S1754923AbaAMQeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:34:07 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:57113 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078AbaAMQeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:33:45 -0500
-Message-ID: <52D41563.9050309@dev.mellanox.co.il>
-Date: Mon, 13 Jan 2014 18:33:39 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: dgilbert@interlog.com, "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Sagi Grimberg <sagig@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 07/14] target/sbc: Add P_TYPE + PROT_EN bits to READ_CAPACITY_16
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	<1389212157-14540-8-git-send-email-nab@daterainc.com>	<52CE78EB.60108@mellanox.com> <yq1mwj3r2py.fsf@sermon.lab.mkp.net>	<52D286D9.5050500@dev.mellanox.co.il> <52D2C4C2.2040800@interlog.com> <yq1ppnxnmj4.fsf@sermon.lab.mkp.net> <52D2E4A9.7010004@interlog.com>
-In-Reply-To: <52D2E4A9.7010004@interlog.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 11:34:00 -0500
+From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+To: tomi.valkeinen@ti.com
+Cc: archit@ti.com, plagnioj@jcrosoft.com, pali.rohar@gmail.com, pavel@ucw.cz,
+        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+Subject: [PATCH v2] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
+Date: Mon, 13 Jan 2014 18:33:02 +0200
+Message-Id: <1389630782-1764-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
+In-Reply-To: <52D3C3EB.6000104@ti.com>
+References: <52D3C3EB.6000104@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ivaylo Dimitrov <freemangordon@abv.bg>
 
-> Back to the original question, I don't think Sagi was
-> asking if it was valid to do a legacy/unprotected READ,
-> it was what to expect with a protected READ on
-> unwritten blocks:
->
-> > So this takes me to a corner I still don't understand, if
-> > a LUN is pre-formatted as T10-protected, what happens to
-> > unwritten blocks read?
->
-> So the precise answer is: the PI will be all 0xff bytes,
-> unless logical provisioning is enabled, LBPRZ=0 and the
-> device's compliance predates sbc3r34.pdf (November 2012).
->
-> Doug Gilbert
->
->
+commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
+synclost errors in OMAP3 introduces limits check to prevent SYNCLOST errors
+on OMAP3. However, it misses the logic found in Nokia kernels that is
+needed to correctly calculate whether 3 tap or 5 tap rescaler to be used as
+well as the logic to fallback to 3 taps if 5 taps clock results in too
+tight horizontal timings. Without that patch "horizontal timing too tight"
+errors are seen when a video with resolution above 640x350 is tried to be
+played. The patch is a forward-ported logic found in Nokia N900 and N9/50
+kernels.
 
-Thanks Doug,
+Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+---
+ drivers/video/omap2/dss/dispc.c |   31 ++++++++++++++++++++++---------
+ 1 files changed, 22 insertions(+), 9 deletions(-)
 
-This answer translates directly into a fix in my T10-PI offload API.
+diff --git a/drivers/video/omap2/dss/dispc.c b/drivers/video/omap2/dss/dispc.c
+index 67e413e..66e0849 100644
+--- a/drivers/video/omap2/dss/dispc.c
++++ b/drivers/video/omap2/dss/dispc.c
+@@ -1999,7 +1999,8 @@ static void calc_tiler_rotation_offset(u16 screen_width, u16 width,
+  */
+ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
+ 		const struct omap_video_timings *t, u16 pos_x,
+-		u16 width, u16 height, u16 out_width, u16 out_height)
++		u16 width, u16 height, u16 out_width, u16 out_height,
++		bool five_taps)
+ {
+ 	const int ds = DIV_ROUND_UP(height, out_height);
+ 	unsigned long nonactive;
+@@ -2019,6 +2020,10 @@ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
+ 	if (blank <= limits[i])
+ 		return -EINVAL;
+ 
++	/* FIXME add checks for 3-tap filter once the limitations are known */
++	if (!five_taps)
++		return 0;
++
+ 	/*
+ 	 * Pixel data should be prepared before visible display point starts.
+ 	 * So, atleast DS-2 lines must have already been fetched by DISPC
+@@ -2194,22 +2199,30 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
+ 	do {
+ 		in_height = DIV_ROUND_UP(height, *decim_y);
+ 		in_width = DIV_ROUND_UP(width, *decim_x);
+-		*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
+-			in_width, in_height, out_width, out_height, color_mode);
+-
+-		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
+-				pos_x, in_width, in_height, out_width,
+-				out_height);
++		*five_taps = in_height > out_height;
+ 
+ 		if (in_width > maxsinglelinewidth)
+ 			if (in_height > out_height &&
+ 						in_height < out_height * 2)
+ 				*five_taps = false;
+-		if (!*five_taps)
++again:
++		if (*five_taps)
++			*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
++						in_width, in_height, out_width,
++						out_height, color_mode);
++		else
+ 			*core_clk = dispc.feat->calc_core_clk(pclk, in_width,
+ 					in_height, out_width, out_height,
+ 					mem_to_mem);
+ 
++		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
++				pos_x, in_width, in_height, out_width,
++				out_height, *five_taps);
++		if (error && *five_taps) {
++			*five_taps = false;
++			goto again;
++		}
++
+ 		error = (error || in_width > maxsinglelinewidth * 2 ||
+ 			(in_width > maxsinglelinewidth && *five_taps) ||
+ 			!*core_clk || *core_clk > dispc_core_clk_rate());
+@@ -2226,7 +2239,7 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
+ 	} while (*decim_x <= *x_predecim && *decim_y <= *y_predecim && error);
+ 
+ 	if (check_horiz_timing_omap3(pclk, lclk, mgr_timings, pos_x, width,
+-				height, out_width, out_height)){
++				height, out_width, out_height, *five_taps)) {
+ 			DSSERR("horizontal timing too tight\n");
+ 			return -EINVAL;
+ 	}
+-- 
+1.5.6.1
 
-Sagi.
