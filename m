@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaAMO0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:26:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51176 "EHLO
+	id S1753022AbaAMOss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:48:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51402 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaAMOZP (ORCPT
+	with ESMTP id S1751625AbaAMO0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:15 -0500
+	Mon, 13 Jan 2014 09:26:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Peter Korsgaard <peter@korsgaard.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 07/96] staging: comedi: pcmuio: fix possible NULL deref on detach
-Date: Mon, 13 Jan 2014 14:23:30 +0000
-Message-Id: <1389623099-18783-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 50/96] dm9601: work around tx fifo sync issue on dm962x
+Date: Mon, 13 Jan 2014 14:24:13 +0000
+Message-Id: <1389623099-18783-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Peter Korsgaard <peter@korsgaard.com>
 
-commit 2fd2bdfccae61efe18f6b92b6a45fbf936d75b48 upstream.
+commit 4263c86dca5198da6bd3ad826d0b2304fbe25776 upstream.
 
-pcmuio_detach() is called by the comedi core even if pcmuio_attach()
-returned an error, so `dev->private` might be `NULL`.  Check for that
-before dereferencing it.
+Certain dm962x revisions contain an bug, where if a USB bulk transfer retry
+(E.G. if bulk crc mismatch) happens right after a transfer with odd or
+maxpacket length, the internal tx hardware fifo gets out of sync causing
+the interface to stop working.
 
-Also, as pointed out by Dan Carpenter, there is no need to check the
-pointer passed to `kfree()` is non-NULL, so remove that check.
+Work around it by adding up to 3 bytes of padding to ensure this situation
+cannot trigger.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ Ian: Applies to 3.5.y only ]
+This workaround also means we never pass multiple-of-maxpacket size skb's
+to usbnet, so the length adjustment to handle usbnet's padding of those can
+be removed.
+
+Reported-by: Joseph Chang <joseph_chang@davicom.com.tw>
+Signed-off-by: Peter Korsgaard <peter@korsgaard.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/pcmuio.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/net/usb/dm9601.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
-index 623381d..d49c873 100644
---- a/drivers/staging/comedi/drivers/pcmuio.c
-+++ b/drivers/staging/comedi/drivers/pcmuio.c
-@@ -914,12 +914,13 @@ static void pcmuio_detach(struct comedi_device *dev)
+diff --git a/drivers/net/usb/dm9601.c b/drivers/net/usb/dm9601.c
+index a1b1b67..65ec48a 100644
+--- a/drivers/net/usb/dm9601.c
++++ b/drivers/net/usb/dm9601.c
+@@ -536,7 +536,7 @@ static int dm9601_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ static struct sk_buff *dm9601_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 				       gfp_t flags)
+ {
+-	int len;
++	int len, pad;
  
- 	if (dev->iobase)
- 		release_region(dev->iobase, ASIC_IOSIZE * thisboard->num_asics);
--	for (i = 0; i < MAX_ASICS; ++i) {
--		if (devpriv->asics[i].irq)
--			free_irq(devpriv->asics[i].irq, dev);
--	}
--	if (devpriv && devpriv->sprivs)
-+	if (devpriv) {
-+		for (i = 0; i < MAX_ASICS; ++i) {
-+			if (devpriv->asics[i].irq)
-+				free_irq(devpriv->asics[i].irq, dev);
-+		}
- 		kfree(devpriv->sprivs);
+ 	/* format:
+ 	   b1: packet length low
+@@ -544,12 +544,23 @@ static struct sk_buff *dm9601_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 	   b3..n: packet data
+ 	*/
+ 
+-	len = skb->len;
++	len = skb->len + DM_TX_OVERHEAD;
++
++	/* workaround for dm962x errata with tx fifo getting out of
++	 * sync if a USB bulk transfer retry happens right after a
++	 * packet with odd / maxpacket length by adding up to 3 bytes
++	 * padding.
++	 */
++	while ((len & 1) || !(len % dev->maxpacket))
++		len++;
+ 
+-	if (skb_headroom(skb) < DM_TX_OVERHEAD) {
++	len -= DM_TX_OVERHEAD; /* hw header doesn't count as part of length */
++	pad = len - skb->len;
++
++	if (skb_headroom(skb) < DM_TX_OVERHEAD || skb_tailroom(skb) < pad) {
+ 		struct sk_buff *skb2;
+ 
+-		skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, 0, flags);
++		skb2 = skb_copy_expand(skb, DM_TX_OVERHEAD, pad, flags);
+ 		dev_kfree_skb_any(skb);
+ 		skb = skb2;
+ 		if (!skb)
+@@ -558,10 +569,10 @@ static struct sk_buff *dm9601_tx_fixup(struct usbnet *dev, struct sk_buff *skb,
+ 
+ 	__skb_push(skb, DM_TX_OVERHEAD);
+ 
+-	/* usbnet adds padding if length is a multiple of packet size
+-	   if so, adjust length value in header */
+-	if ((skb->len % dev->maxpacket) == 0)
+-		len++;
++	if (pad) {
++		memset(skb->data + skb->len, 0, pad);
++		__skb_put(skb, pad);
 +	}
- }
  
- static const struct pcmuio_board pcmuio_boards[] = {
+ 	skb->data[0] = len;
+ 	skb->data[1] = len >> 8;
 -- 
 1.8.3.2
 
