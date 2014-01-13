@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216AbaAMRMs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:12:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52795 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147AbaAMQBC (ORCPT
+	id S1755438AbaAMRNI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:13:08 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34542 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832AbaAMRNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:02 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 005/208] staging: comedi: ssv_dnp: use comedi_dio_update_state()
-Date: Mon, 13 Jan 2014 15:57:26 +0000
-Message-Id: <1389628849-1614-6-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 13 Jan 2014 12:13:04 -0500
+Date: Mon, 13 Jan 2014 18:12:38 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Marian Marinov <mm@yuhu.biz>
+Cc: lxc-devel@lists.linuxcontainers.org, cgroups@vger.kernel.org,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, Li Zefan <lizefan@huawei.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: Fwd: Re: RFC: cgroups aware proc
+Message-ID: <20140113171238.GS31570@twins.programming.kicks-ass.net>
+References: <52D35CD0.9070602@huawei.com>
+ <52D41316.5080508@yuhu.biz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D41316.5080508@yuhu.biz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 13, 2014 at 06:23:50PM +0200, Marian Marinov wrote:
+> Hello Peter,
+> 
+> I need help with the scheduler.
+> 
+> I'm currently trying to patch the /proc/loadavg to show the load that is
+> only related to the processes from the current cgroup.
+> 
+> I looked trough the code and I was hoping that tsk->sched_task_group->cfs_rq
+> struct will give me the needed information, but unfortunately for me, it did
+> not.
+> 
+> Can you advise me, how to approach this problem?
 
-------------------
+Yeah, don't :-) Really, loadavg is a stupid metric.
 
-From: Ian Abbott <abbotti@mev.co.uk>
+> I'm totally new to the scheduler code.
 
-commit f6b316bcd8c421acd6fa5a6e18b4c846ecb9d965 upstream.
+Luckily you won't actually have to touch much of it. Most of the actual
+loadavg code lives in the first ~400 lines of kernel/sched/proc.c, read
+and weep. Its one of the best documented bits around.
 
-Use comedi_dio_update_state() to handle the boilerplate code to update
-the subdevice s->state.
+Your proposition however is extremely expensive, you turn something
+that's already expensive O(nr_cpus) into something O(nr_cpus *
+nr_cgroups).
 
-Also, fix a bug where the state of the channels is returned in data[0].
-The comedi core expects it to be returned in data[1].
+I'm fairly sure people will not like that, esp. for something of such
+questionable use as the loadavg -- its really only a pretty number that
+doesn't mean all that much.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-[ Ian: Applies to all stable kernels from 2.6.32.y to 3.12.y ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/staging/comedi/drivers/ssv_dnp.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> -------- Original Message --------
+> From: Li Zefan <lizefan@huawei.com>
+>
+> Then you should add Peter, Ingo and LKML to your Cc list. :)
 
-diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
-index 45c661c..1e34421 100644
---- a/drivers/staging/comedi/drivers/ssv_dnp.c
-+++ b/drivers/staging/comedi/drivers/ssv_dnp.c
-@@ -82,11 +82,11 @@ static int dnp_dio_insn_bits(struct comedi_device *dev,
- 
- 	/* on return, data[1] contains the value of the digital input lines. */
- 	outb(PADR, CSCIR);
--	data[0] = inb(CSCDR);
-+	data[1] = inb(CSCDR);
- 	outb(PBDR, CSCIR);
--	data[0] += inb(CSCDR) << 8;
-+	data[1] += inb(CSCDR) << 8;
- 	outb(PCDR, CSCIR);
--	data[0] += ((inb(CSCDR) & 0xF0) << 12);
-+	data[1] += ((inb(CSCDR) & 0xF0) << 12);
- 
- 	return insn->n;
- 
--- 
-1.8.3.2
-
+You failed that, let me fix that.
