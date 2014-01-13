@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaAMQB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:01:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52850 "EHLO
+	id S1756563AbaAMRId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:08:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277AbaAMQBQ (ORCPT
+	with ESMTP id S1752444AbaAMQB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:16 -0500
+	Mon, 13 Jan 2014 11:01:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>,
+Cc: Michele Baldessari <michele@acksyn.org>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 015/208] selinux: look for IPsec labels on both inbound and outbound packets
-Date: Mon, 13 Jan 2014 15:57:36 +0000
-Message-Id: <1389628849-1614-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 023/208] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8
+Date: Mon, 13 Jan 2014 15:57:44 +0000
+Message-Id: <1389628849-1614-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,142 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Michele Baldessari <michele@acksyn.org>
 
-commit 817eff718dca4e54d5721211ddde0914428fbb7c upstream.
+commit 87809942d3fa60bafb7a58d0bdb1c79e90a6821d upstream.
 
-Previously selinux_skb_peerlbl_sid() would only check for labeled
-IPsec security labels on inbound packets, this patch enables it to
-check both inbound and outbound traffic for labeled IPsec security
-labels.
+We've received multiple reports in Fedora via (BZ 907193)
+that the Seagate Momentus SpinPoint M8 errors out when enabling AA:
+[    2.555905] ata2.00: failed to enable AA (error_mask=0x1)
+[    2.568482] ata2.00: failed to enable AA (error_mask=0x1)
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-[ Paul: backported to 3.4 kernel ]
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Add the ATA_HORKAGE_BROKEN_FPDMA_AA for this specific harddisk.
+
+Reported-by: Nicholas <arealityfarbetween@googlemail.com>
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Tested-by: Nicholas <arealityfarbetween@googlemail.com>
+Acked-by: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/hooks.c        |  2 +-
- security/selinux/include/xfrm.h |  9 +++----
- security/selinux/xfrm.c         | 53 ++++++++++++++++++++++++++++++++---------
- 3 files changed, 48 insertions(+), 16 deletions(-)
+ drivers/ata/libata-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index dc3aa33..8af8855 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3798,7 +3798,7 @@ static int selinux_skb_peerlbl_sid(struct sk_buff *skb, u16 family, u32 *sid)
- 	u32 nlbl_sid;
- 	u32 nlbl_type;
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 738cd76..bcdbcff 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4140,6 +4140,9 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
+ 	{ "ST3320[68]13AS",	"SD1[5-9]",	ATA_HORKAGE_NONCQ |
+ 						ATA_HORKAGE_FIRMWARE_WARN },
  
--	selinux_skb_xfrm_sid(skb, &xfrm_sid);
-+	selinux_xfrm_skb_sid(skb, &xfrm_sid);
- 	selinux_netlbl_skbuff_getsid(skb, family, &nlbl_type, &nlbl_sid);
- 
- 	err = security_net_peersid_resolve(nlbl_sid, nlbl_type, xfrm_sid, sid);
-diff --git a/security/selinux/include/xfrm.h b/security/selinux/include/xfrm.h
-index 65f67cb..3ffdadc 100644
---- a/security/selinux/include/xfrm.h
-+++ b/security/selinux/include/xfrm.h
-@@ -47,6 +47,7 @@ int selinux_xfrm_sock_rcv_skb(u32 sid, struct sk_buff *skb,
- int selinux_xfrm_postroute_last(u32 isec_sid, struct sk_buff *skb,
- 			struct common_audit_data *ad, u8 proto);
- int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall);
-+int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid);
- 
- static inline void selinux_xfrm_notify_policyload(void)
- {
-@@ -80,12 +81,12 @@ static inline int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int
- static inline void selinux_xfrm_notify_policyload(void)
- {
- }
--#endif
- 
--static inline void selinux_skb_xfrm_sid(struct sk_buff *skb, u32 *sid)
-+static inline int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
- {
--	int err = selinux_xfrm_decode_session(skb, sid, 0);
--	BUG_ON(err);
-+	*sid = SECSID_NULL;
-+	return 0;
- }
-+#endif
- 
- #endif /* _SELINUX_XFRM_H_ */
-diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
-index d030818..78504a1 100644
---- a/security/selinux/xfrm.c
-+++ b/security/selinux/xfrm.c
-@@ -152,21 +152,13 @@ int selinux_xfrm_state_pol_flow_match(struct xfrm_state *x, struct xfrm_policy *
- 	return rc;
- }
- 
--/*
-- * LSM hook implementation that checks and/or returns the xfrm sid for the
-- * incoming packet.
-- */
--
--int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
-+static int selinux_xfrm_skb_sid_ingress(struct sk_buff *skb,
-+					u32 *sid, int ckall)
- {
--	struct sec_path *sp;
-+	struct sec_path *sp = skb->sp;
- 
- 	*sid = SECSID_NULL;
- 
--	if (skb == NULL)
--		return 0;
--
--	sp = skb->sp;
- 	if (sp) {
- 		int i, sid_set = 0;
- 
-@@ -190,6 +182,45 @@ int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
- 	return 0;
- }
- 
-+static u32 selinux_xfrm_skb_sid_egress(struct sk_buff *skb)
-+{
-+	struct dst_entry *dst = skb_dst(skb);
-+	struct xfrm_state *x;
++	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
++	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
 +
-+	if (dst == NULL)
-+		return SECSID_NULL;
-+	x = dst->xfrm;
-+	if (x == NULL || !selinux_authorizable_xfrm(x))
-+		return SECSID_NULL;
-+
-+	return x->security->ctx_sid;
-+}
-+
-+/*
-+ * LSM hook implementation that checks and/or returns the xfrm sid for the
-+ * incoming packet.
-+ */
-+
-+int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
-+{
-+	if (skb == NULL) {
-+		*sid = SECSID_NULL;
-+		return 0;
-+	}
-+	return selinux_xfrm_skb_sid_ingress(skb, sid, ckall);
-+}
-+
-+int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
-+{
-+	int rc;
-+
-+	rc = selinux_xfrm_skb_sid_ingress(skb, sid, 0);
-+	if (rc == 0 && *sid == SECSID_NULL)
-+		*sid = selinux_xfrm_skb_sid_egress(skb);
-+
-+	return rc;
-+}
-+
- /*
-  * Security blob allocation for xfrm_policy and xfrm_state
-  * CTX does not have a meaningful value on input
+ 	/* Blacklist entries taken from Silicon Image 3124/3132
+ 	   Windows driver .inf file - also several Linux problem reports */
+ 	{ "HTS541060G9SA00",    "MB3OC60D",     ATA_HORKAGE_NONCQ, },
 -- 
 1.8.3.2
 
