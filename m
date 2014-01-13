@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535AbaAMRFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:05:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52939 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399AbaAMQBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:38 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 031/208] drm/i915: Hold mutex across i915_gem_release
-Date: Mon, 13 Jan 2014 15:57:52 +0000
-Message-Id: <1389628849-1614-32-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755307AbaAMRGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:06:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755091AbaAMRGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 12:06:13 -0500
+Date: Mon, 13 Jan 2014 18:06:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
+	of __lock_acquire()
+Message-ID: <20140113170609.GA9873@redhat.com>
+References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net> <20140112094041.GB31809@gmail.com> <20140112174532.GA12147@redhat.com> <20140112174554.GB12147@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140112174554.GB12147@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+On 01/12, Oleg Nesterov wrote:
+>
+> The "int check" argument of lock_acquire() and held_lock->check
+> are misleading and unneeded. This is only used as a boolean, 2
+> denotes "true", everything else is "false". And this boolean is
+> always equal to prove_locking.
+>
+> The only exception is __lockdep_no_validate__ which should make
+> this condition "false" in validate_chain().
 
-------------------
+And I missed mark_irqflags(),
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+> @@ -3136,7 +3130,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+>  	hlock->holdtime_stamp = lockstat_clock();
+>  #endif
+>
+> -	if (check == 2 && !mark_irqflags(curr, hlock))
+> +	if (prove_locking && !mark_irqflags(curr, hlock))
+>  		return 0;
 
-commit 0d1430a3f4b7cfd8779b78740a4182321f3ca7f3 upstream.
+This change is not right, at least it is not equivalent.
 
-Inorder to serialise the closing of the file descriptor and its
-subsequent release of client requests with i915_gem_free_request(), we
-need to hold the struct_mutex in i915_gem_release(). Failing to do so
-has the potential to trigger an OOPS, later with a use-after-free.
+And I just realized that rcu_lock_acquire() does lock_acquire(check => 1).
+Probably we can mark rcu_lock_map's as __lockdep_no_validate__.
 
-Testcase: igt/gem_close_race
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70874
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71029
-Reported-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/i915/i915_dma.c         | 2 ++
- drivers/gpu/drm/i915/i915_gem_context.c | 2 --
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Anything else I missed?
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index f466980..fc34376 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1831,8 +1831,10 @@ void i915_driver_lastclose(struct drm_device * dev)
- 
- void i915_driver_preclose(struct drm_device * dev, struct drm_file *file_priv)
- {
-+	mutex_lock(&dev->struct_mutex);
- 	i915_gem_context_close(dev, file_priv);
- 	i915_gem_release(dev, file_priv);
-+	mutex_unlock(&dev->struct_mutex);
- }
- 
- void i915_driver_postclose(struct drm_device *dev, struct drm_file *file)
-diff --git a/drivers/gpu/drm/i915/i915_gem_context.c b/drivers/gpu/drm/i915/i915_gem_context.c
-index 51b7a21..90b0491 100644
---- a/drivers/gpu/drm/i915/i915_gem_context.c
-+++ b/drivers/gpu/drm/i915/i915_gem_context.c
-@@ -335,10 +335,8 @@ void i915_gem_context_close(struct drm_device *dev, struct drm_file *file)
- {
- 	struct drm_i915_file_private *file_priv = file->driver_priv;
- 
--	mutex_lock(&dev->struct_mutex);
- 	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
- 	idr_destroy(&file_priv->context_idr);
--	mutex_unlock(&dev->struct_mutex);
- }
- 
- static struct i915_hw_context *
--- 
-1.8.3.2
+Oleg.
 
