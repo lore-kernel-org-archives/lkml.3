@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751309AbaAMA3F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 19:29:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10037 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019AbaAMA3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 19:29:02 -0500
-Date: Sun, 12 Jan 2014 19:28:11 -0500
-From: Dave Jones <davej@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
- of __lock_acquire()
-Message-ID: <20140113002811.GA24735@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
- <20140109163120.GA8038@redhat.com>
- <20140109170823.GF7572@laptop.programming.kicks-ass.net>
- <20140112094041.GB31809@gmail.com>
- <20140112174532.GA12147@redhat.com>
- <20140112174554.GB12147@redhat.com>
+	id S1751350AbaAMAa1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 19:30:27 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:41919 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaAMAaW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 19:30:22 -0500
+Date: Mon, 13 Jan 2014 09:30:14 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Linus SH list <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for
+ CONFIG_ARCH_SHMOBILE_MULTI
+Message-ID: <20140113003014.GG15296@verge.net.au>
+References: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140112174554.GB12147@redhat.com>
+In-Reply-To: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 12, 2014 at 06:45:54PM +0100, Oleg Nesterov wrote:
- 
- > diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
- > index 92b1bfc..13bd13d 100644
- > --- a/include/linux/lockdep.h
- > +++ b/include/linux/lockdep.h
- > @@ -252,7 +252,6 @@ struct held_lock {
- >  	unsigned int trylock:1;						/* 16 bits */
- >  
- >  	unsigned int read:2;        /* see lock_acquire() comment */
- > -	unsigned int check:2;       /* see lock_acquire() comment */
- >  	unsigned int hardirqs_off:1;
- >  	unsigned int references:11;					/* 32 bits */
+On Fri, Jan 10, 2014 at 03:18:15PM +0000, Ben Dooks wrote:
+> If the kernel is built to support multi-arm configurmation with shmobile
+> support built in, then the drivers/sh is not built. This contains drivers
+> that are essential to devices support by that configuration, including the
+> PM runtime code in drivers/sh/pm_runtime.c (which implicitly enables the
+> bus clocks for all devices).
+> 
+> If CONFIG_ARCH_SHMOBILE_MULTI then build the drivers/sh directory,
+> but ensure that bits that may conflict (drivers/sh/clk if the common
+> clock framework is not enabled) are built.
+> 
+> The ARCH_SHMOBILE_MULTI was added by efacfce5f8a ("ARM: shmobile: Introduce
+> ARCH_SHMOBILE_MULTI") but this has only just recently been found due to
+> building device-tree only kernels.
+> 
+> Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+> Cc: Linus SH list <linux-sh@vger.kernel.org>
+> Cc: Simon Horman <horms@verge.net.au>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
+> ---
+>  drivers/Makefile    | 1 +
+>  drivers/sh/Makefile | 3 +++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/drivers/Makefile b/drivers/Makefile
+> index 8e3b8b0..abc4744 100644
+> --- a/drivers/Makefile
+> +++ b/drivers/Makefile
+> @@ -118,6 +118,7 @@ obj-$(CONFIG_SGI_SN)		+= sn/
+>  obj-y				+= firmware/
+>  obj-$(CONFIG_CRYPTO)		+= crypto/
+>  obj-$(CONFIG_SUPERH)		+= sh/
+> +obj-$(CONFIG_ARCH_SHMOBILE_MULTI)	+= sh/
+>  obj-$(CONFIG_ARCH_SHMOBILE_LEGACY)	+= sh/
 
-The 'bits' comments seem to be crap, even before your patch.
+Can't we just do the following?
 
-	Dave
+  obj-$(CONFIG_ARCH_SHMOBILE)	+= sh/
 
+>  ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
+>  obj-y				+= clocksource/
+> diff --git a/drivers/sh/Makefile b/drivers/sh/Makefile
+> index fc67f56..86604a5 100644
+> --- a/drivers/sh/Makefile
+> +++ b/drivers/sh/Makefile
+> @@ -3,7 +3,10 @@
+>  #
+>  obj-y	:= intc/
+>  
+> +ifeq ($(CONFIG_COMMON_CLK),n)
+>  obj-$(CONFIG_HAVE_CLK)		+= clk/
+> +endif
+> +
+>  obj-$(CONFIG_MAPLE)		+= maple/
+>  obj-$(CONFIG_SUPERHYWAY)	+= superhyway/
+>  
+> -- 
+> 1.8.5.2
+> 
