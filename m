@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaAMOhC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:37:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51614 "EHLO
+	id S1752309AbaAMO1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:27:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51239 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320AbaAMO1J (ORCPT
+	with ESMTP id S1751725AbaAMOZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:27:09 -0500
+	Mon, 13 Jan 2014 09:25:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, "David S. Miller" <davem@davemloft.net>,
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 90/96] net: rose: restore old recvmsg behavior
-Date: Mon, 13 Jan 2014 14:24:53 +0000
-Message-Id: <1389623099-18783-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 19/96] Staging: zram: Fix memory leak by refcount mismatch
+Date: Mon, 13 Jan 2014 14:23:42 +0000
+Message-Id: <1389623099-18783-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Rashika Kheria <rashika.kheria@gmail.com>
 
-commit f81152e35001e91997ec74a7b4e040e6ab0acccf upstream.
+commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
 
-recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
+As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
+get the block device (bdget_disk()) but it does not put it (bdput()) when
+it's done using it. The usage count is therefore incremented but never
+decremented."
 
-After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic), we now
-always take the else branch due to namelen being initialized to 0.
+This patch also puts bdput() for all error cases.
 
-Digging in netdev-vger-cvs git repo shows that msg_namelen was
-initialized with a fixed-size since at least 1995, so the else branch
-was never taken.
-
-Compile tested only.
-
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5:
+  - adjusted filename: zram_drv.c -> zram_sysfs.c
+  - adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/rose/af_rose.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ drivers/staging/zram/zram_sysfs.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
-index ce5f5b9..bde7d69 100644
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1257,6 +1257,7 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index 01f9a79..aafcf03 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -99,18 +99,23 @@ static ssize_t reset_store(struct device *dev,
+ 		return -ENOMEM;
  
- 	if (msg->msg_name) {
- 		struct sockaddr_rose *srose;
-+		struct full_sockaddr_rose *full_srose = msg->msg_name;
+ 	/* Do not reset an active device! */
+-	if (bdev->bd_holders)
+-		return -EBUSY;
++	if (bdev->bd_holders) {
++		ret = -EBUSY;
++		goto out;
++	}
  
- 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
- 		srose = msg->msg_name;
-@@ -1264,18 +1265,9 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
- 		srose->srose_ndigis = rose->dest_ndigis;
--		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
--			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
--			for (n = 0 ; n < rose->dest_ndigis ; n++)
--				full_srose->srose_digis[n] = rose->dest_digis[n];
--			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
--		} else {
--			if (rose->dest_ndigis >= 1) {
--				srose->srose_ndigis = 1;
--				srose->srose_digi = rose->dest_digis[0];
--			}
--			msg->msg_namelen = sizeof(struct sockaddr_rose);
--		}
-+		for (n = 0 ; n < rose->dest_ndigis ; n++)
-+			full_srose->srose_digis[n] = rose->dest_digis[n];
-+		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
- 	}
+ 	ret = kstrtou16(buf, 10, &do_reset);
+ 	if (ret)
+-		return ret;
++		goto out;
  
- 	skb_free_datagram(sk, skb);
+-	if (!do_reset)
+-		return -EINVAL;
++	if (!do_reset) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	/* Make sure all pending I/O is finished */
+ 	fsync_bdev(bdev);
++	bdput(bdev);
+ 
+ 	down_write(&zram->init_lock);
+ 	if (zram->init_done)
+@@ -118,6 +123,10 @@ static ssize_t reset_store(struct device *dev,
+ 	up_write(&zram->init_lock);
+ 
+ 	return len;
++
++out:
++	bdput(bdev);
++	return ret;
+ }
+ 
+ static ssize_t num_reads_show(struct device *dev,
 -- 
 1.8.3.2
 
