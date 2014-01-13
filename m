@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaAMSdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:33:15 -0500
-Received: from void.printf.net ([89.145.121.20]:55201 "EHLO void.printf.net"
+	id S1751659AbaAMSgD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:36:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbaAMSdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:33:13 -0500
-From: Chris Ball <chris@printf.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-gpio\@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/4] mmc: sdhci-acpi: convert to use GPIO descriptor API
-References: <1389177657-29266-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1389177657-29266-3-git-send-email-mika.westerberg@linux.intel.com>
-	<CACRpkdYhynQ4ooHcZyc-nrgVK9gbvtsYR6ZVv1u0sfBVEaK93A@mail.gmail.com>
-Date: Mon, 13 Jan 2014 18:32:56 +0000
-In-Reply-To: <CACRpkdYhynQ4ooHcZyc-nrgVK9gbvtsYR6ZVv1u0sfBVEaK93A@mail.gmail.com>
-	(Linus Walleij's message of "Wed, 8 Jan 2014 12:54:13 +0100")
-Message-ID: <86ppnvbulj.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751029AbaAMSgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 13:36:00 -0500
+Date: Mon, 13 Jan 2014 19:35:55 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 0/1] lockdep: Kill held_lock->check and "int check" arg
+	of __lock_acquire()
+Message-ID: <20140113183555.GA14125@redhat.com>
+References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net> <20140112094041.GB31809@gmail.com> <20140112174532.GA12147@redhat.com> <20140112200049.GO7572@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140112200049.GO7572@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Wed, Jan 08 2014, Linus Walleij wrote:
-> On Wed, Jan 8, 2014 at 11:40 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
+On 01/12, Peter Zijlstra wrote:
 >
->> The new descriptor based GPIO interface is now the recommended and safer
->> way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
->> use that interface.
->>
->> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> Acked-by: Adrian Hunter <adrian.hunter@intel.com>
->> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+> On Sun, Jan 12, 2014 at 06:45:32PM +0100, Oleg Nesterov wrote:
+> > But could someone please explain me what should lockdep_no_validate
+> > actually do? 1704f47b5 "lockdep: Add novalidate class for dev->mutex
+> > conversion" doesn't tell which kind of warnings it tries to avoid,
+> > and it looks buggy (see another email from me).
 >
-> I've tentatively applied this to the GPIO tree now, as it was acked by
-> Adrian who is a long time MMC subsystem contributor and we need
-> it to proceed with the rest of the refactorings.
->
-> Chris, beat me up if you're unhappy with this.
->
-> (If it explodes in linux-next I'll just back it all out.)
+> It should disable lock-order checks for the locks that set that as
+> class. So we can still do the simple checks like detect if we free
+> memory with a held lock in and make sure we do not return to userspace
+> with a held lock; but the class should not participate in the lock
+> graph.
 
-That's fine.  Feel free to add:
+Yes, this is what I more or less understood, but I was confused anyway.
+Somehow I thought that this patch tries to suppress the warnings caused
+by rw_semaphore -> mutex conversion, and I was completely puzzled. But
+3142788b79 "drivers/base: Convert dev->sem to mutex" actually did the
+semaphore -> mutex change!
 
-Acked-by: Chris Ball <chris@printf.net>
+Everything is clear now, thanks!
 
-Thanks,
+Oleg.
 
-- Chris.
--- 
-Chris Ball   <chris@printf.net>   <http://printf.net/>
