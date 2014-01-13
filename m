@@ -1,123 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473AbaAMJo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:44:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:35618 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327AbaAMJox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:44:53 -0500
-X-IronPort-AV: E=Sophos;i="4.95,651,1384272000"; 
-   d="scan'208";a="9409890"
-Message-ID: <52D3B397.1010908@cn.fujitsu.com>
-Date: Mon, 13 Jan 2014 17:36:23 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751494AbaAMJrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:47:14 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46893 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaAMJrM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 04:47:12 -0500
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: "'Kim'" <jaegeuk.kim@samsung.com>,
-        "'fsdevel'" <linux-fsdevel@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'f2fs'" <linux-f2fs-devel@lists.sourceforge.net>
-Subject: Re: [f2fs-dev] [PATCH 1/3] f2fs: move grabing orphan pages out of
- protection region
-References: <52CFC6BE.7020609@cn.fujitsu.com> <000001cf0e6c$77982430$66c86c90$@samsung.com>
-In-Reply-To: <000001cf0e6c$77982430$66c86c90$@samsung.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/13 17:42:40,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/01/13 17:42:41,
-	Serialize complete at 2014/01/13 17:42:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <52D3B36D.8040902@codethink.co.uk>
+References: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk>
+	<CAMuHMdU+SfjNJC_b_7ovT9Uf5p5MwB0iULjorzthcLJxYJ-00g@mail.gmail.com>
+	<52D3B36D.8040902@codethink.co.uk>
+Date: Mon, 13 Jan 2014 10:47:11 +0100
+X-Google-Sender-Auth: yG8Tr2quObdTz18ln2GbOiF5Tts
+Message-ID: <CAMuHMdWHywXYJL5j_hNUhhshpegm4s7j=R2Qsh3WuiwnHX5+yg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Linus SH list <linux-sh@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yu,
-On 01/11/2014 09:27 AM, Chao Yu wrote:
+Hi Ben,
 
-> Hi Gu,
-> 
->> -----Original Message-----
->> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
->> Sent: Friday, January 10, 2014 6:09 PM
->> To: Kim
->> Cc: fsdevel; linux-kernel; f2fs
->> Subject: [f2fs-dev] [PATCH 1/3] f2fs: move grabing orphan pages out of protection region
+On Mon, Jan 13, 2014 at 10:35 AM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> On 13/01/14 09:28, Geert Uytterhoeven wrote:
+>> On Fri, Jan 10, 2014 at 4:18 PM, Ben Dooks <ben.dooks@codethink.co.uk>
+>> wrote:
+>>>
+>>> --- a/drivers/sh/Makefile
+>>> +++ b/drivers/sh/Makefile
+>>> @@ -3,7 +3,10 @@
+>>>   #
+>>>   obj-y  := intc/
+>>>
+>>> +ifeq ($(CONFIG_COMMON_CLK),n)
+>>>   obj-$(CONFIG_HAVE_CLK)         += clk/
+>>> +endif
+>>> +
 >>
->> Move grabing orphan block page out of protection region, and grab all
->> the orphan block pages ahead.
 >>
->> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> 
-> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-> 
->> ---
->>  fs/f2fs/checkpoint.c |   15 +++++++++------
->>  1 files changed, 9 insertions(+), 6 deletions(-)
+>> This part breaks my Koelsch legacy (non-reference) build:
 >>
->> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
->> index 0d78bbe..af92c74 100644
->> --- a/fs/f2fs/checkpoint.c
->> +++ b/fs/f2fs/checkpoint.c
->> @@ -303,22 +303,25 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t
->> start_blk)
->>  {
->>  	struct list_head *head;
->>  	struct f2fs_orphan_block *orphan_blk = NULL;
->> -	struct page *page = NULL;
->>  	unsigned int nentries = 0;
->> -	unsigned short index = 1;
->> -	unsigned short orphan_blocks;
->> +	unsigned short index;
->> +	unsigned short orphan_blocks = (unsigned short)((sbi->n_orphans +
->> +		(F2FS_ORPHANS_PER_BLOCK - 1)) / F2FS_ORPHANS_PER_BLOCK);
->> +	struct page *page = NULL;
->> +	struct page *pages[orphan_blocks];
->>  	struct orphan_inode_entry *orphan = NULL;
+>> arch/arm/kernel/built-in.o: In function `twd_local_timer_common_register':
+>> io.c:(.init.text+0x1804): undefined reference to `clk_enable'
+>> io.c:(.init.text+0x1828): undefined reference to `clk_get_rate'
+>
+> ...
+>
 >>
->> -	orphan_blocks = (unsigned short)((sbi->n_orphans +
->> -		(F2FS_ORPHANS_PER_BLOCK - 1)) / F2FS_ORPHANS_PER_BLOCK);
->> +	for (index = 0; index < orphan_blocks; index++)
->> +		pages[index] = grab_meta_page(sbi, start_blk + index);
->>
->> +	index = 1;
->>  	mutex_lock(&sbi->orphan_inode_mutex);
->>  	head = &sbi->orphan_inode_list;
->>
->>  	/* loop for each orphan inode entry and write them in Jornal block */
->>  	list_for_each_entry(orphan, head, list) {
->>  		if (!page) {
->> -			page = grab_meta_page(sbi, start_blk);
->> +			page = pages[index - 1];
->>  			orphan_blk =
->>  				(struct f2fs_orphan_block *)page_address(page);
->>  			memset(orphan_blk, 0, sizeof(*orphan_blk));
-> 
-> It seems that we could remove the following code in write_orphan_inodes.
-> 			start_blk++;
+>> Both of my Koelsch legacy and reference configs have CONFIG_HAVE_CLK=y,
+>> but only the reference once has CONFIG_COMMON_CLK=y.
+>
+> Hmm, thought undefined symbols got set to 'n'.
 
-Yes, you're right, thanks for your review.
+No, they're empty.
+Doh, should have realized that myself...
 
-Regards,
-Gu
+> I can either fix this by
+>
+> ifneq ($(CONFIG_COMMON_CLK),y)
+> endif
 
-> 
->> --
->> 1.7.7
->>
->>
->> ------------------------------------------------------------------------------
->> CenturyLink Cloud: The Leader in Enterprise Cloud Services.
->> Learn Why More Businesses Are Choosing CenturyLink Cloud For
->> Critical Workloads, Development Environments & Everything In Between.
->> Get a Quote or Start a Free Trial Today.
->> http://pubads.g.doubleclick.net/gampad/clk?id=119420431&iu=/4140/ostg.clktrk
->> _______________________________________________
->> Linux-f2fs-devel mailing list
->> Linux-f2fs-devel@lists.sourceforge.net
->> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-> 
-> 
+That's the typical pattern for this.
 
+Sometimes people use
 
+    obj-$(CONFIG_COMMON_CLK)$(CONFIG_HAVE_CLK) += clk/
+
+but that's less readable.
+
+> or adding an extra Kconfig for SH specific legacy clock code.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
