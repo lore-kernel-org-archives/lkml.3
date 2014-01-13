@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaAMJrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:47:14 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:46893 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaAMJrM (ORCPT
+	id S1751472AbaAMJsE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:48:04 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:49707 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaAMJsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:47:12 -0500
+	Mon, 13 Jan 2014 04:48:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <52D3B36D.8040902@codethink.co.uk>
-References: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk>
-	<CAMuHMdU+SfjNJC_b_7ovT9Uf5p5MwB0iULjorzthcLJxYJ-00g@mail.gmail.com>
-	<52D3B36D.8040902@codethink.co.uk>
-Date: Mon, 13 Jan 2014 10:47:11 +0100
-X-Google-Sender-Auth: yG8Tr2quObdTz18ln2GbOiF5Tts
-Message-ID: <CAMuHMdWHywXYJL5j_hNUhhshpegm4s7j=R2Qsh3WuiwnHX5+yg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-kernel@lists.codethink.co.uk,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Linus SH list <linux-sh@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAOMwXhNyntnu7h_VOLWq3rh1EprNCnm8yByza6Bz-J9XQmA-sA@mail.gmail.com>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	<1387814889-16670-4-git-send-email-lpapp@kde.org>
+	<CACRpkdbAPYs=48RXr6r5kqkYj2V9GitRMT2BRKkn4_gT77wUEg@mail.gmail.com>
+	<CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
+	<CAOMwXhNyntnu7h_VOLWq3rh1EprNCnm8yByza6Bz-J9XQmA-sA@mail.gmail.com>
+Date: Mon, 13 Jan 2014 10:48:01 +0100
+Message-ID: <CACRpkdbpXCns4Z+AiFuijnvLJ91ZgMjiwmZZLJ0owKW1Sr-+xw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] gpio: MAX6650/6651 support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Laszlo Papp <lpapp@kde.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Mon, Jan 13, 2014 at 10:22 AM, Laszlo Papp <lpapp@kde.org> wrote:
 
-On Mon, Jan 13, 2014 at 10:35 AM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
-> On 13/01/14 09:28, Geert Uytterhoeven wrote:
->> On Fri, Jan 10, 2014 at 4:18 PM, Ben Dooks <ben.dooks@codethink.co.uk>
->> wrote:
->>>
->>> --- a/drivers/sh/Makefile
->>> +++ b/drivers/sh/Makefile
->>> @@ -3,7 +3,10 @@
->>>   #
->>>   obj-y  := intc/
->>>
->>> +ifeq ($(CONFIG_COMMON_CLK),n)
->>>   obj-$(CONFIG_HAVE_CLK)         += clk/
->>> +endif
->>> +
->>
->>
->> This part breaks my Koelsch legacy (non-reference) build:
->>
->> arch/arm/kernel/built-in.o: In function `twd_local_timer_common_register':
->> io.c:(.init.text+0x1804): undefined reference to `clk_enable'
->> io.c:(.init.text+0x1828): undefined reference to `clk_get_rate'
->
-> ...
->
->>
->> Both of my Koelsch legacy and reference configs have CONFIG_HAVE_CLK=y,
->> but only the reference once has CONFIG_COMMON_CLK=y.
->
-> Hmm, thought undefined symbols got set to 'n'.
+> I was giving a second thought to this. Would it be acceptable to add
+> the gpio driver now, and once the need arises, add the pinctrl thin
+> layer on top of it?
 
-No, they're empty.
-Doh, should have realized that myself...
+I will not accept the platform data setting the pull-ups.
 
-> I can either fix this by
->
-> ifneq ($(CONFIG_COMMON_CLK),y)
-> endif
+> My concern is that I would not use anything else
+> than the gpio functionality of these pins. It would be a needless
+> additional work (i.e. investment) for my project and employer.
 
-That's the typical pattern for this.
+But you are still expecting me as a subsystem maintainer to
+take responsibility of this driver for as long as I have this role?
 
-Sometimes people use
+Rewriting code is a natural part of the community process,
+noone claimed it would be easy ;-)
 
-    obj-$(CONFIG_COMMON_CLK)$(CONFIG_HAVE_CLK) += clk/
+> Perhaps, the layer on top of that can be added later without any
+> drawback if anyone ever finds the need to have more functionality
+> supported by these pins?
 
-but that's less readable.
+Your driver already supports setting the pulls using a
+*custom* platform data field. This is not OK, and shall be
+implemented using the pin control subsystem. I will not
+merge drivers using custom platform data fields like this.
 
-> or adding an extra Kconfig for SH specific legacy clock code.
+The reason that the pin control subsystem even existed was
+that at the time my drivers were NACKed because I tried to
+shoehorn pin control into the GPIO subsystem, and as a
+result now we have an apropriate subsystem for it, so please
+use it.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Yours,
+Linus Walleij
