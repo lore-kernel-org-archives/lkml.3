@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984AbaAMQMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:12:38 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:24472 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751695AbaAMQMe (ORCPT
+	id S1755241AbaAMQNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:13:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53757 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929AbaAMQFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:12:34 -0500
-X-IronPort-AV: E=Sophos;i="4.95,653,1384297200"; 
-   d="scan'208";a="53033621"
-Date: Mon, 13 Jan 2014 17:12:09 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: Omar Ramirez Luna <omar.ramirez@copitl.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] staging: tidspbridge: adjust error return code
- (bugfix)
-Message-ID: <alpine.DEB.2.10.1401131711220.2084@hadrien>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 13 Jan 2014 11:05:13 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 186/208] rds: prevent dereference of a NULL device
+Date: Mon, 13 Jan 2014 16:00:27 +0000
+Message-Id: <1389628849-1614-187-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-The variable status is initialized to either 0 or an error code.  Return
-status to propagate the error value.
+------------------
 
-A simplified version of the semantic patch that fixes this problem is as
-follows: (http://coccinelle.lip6.fr/)
+From: Sasha Levin <sasha.levin@oracle.com>
 
-// <smpl>
-@@
-type T;
-identifier i;
-constant c;
-@@
+commit c2349758acf1874e4c2b93fe41d072336f1a31d0 upstream.
 
--T i;
-<... when != i
--i = c;
-...>
-// </smpl>
+Binding might result in a NULL device, which is dereferenced
+causing this BUG:
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
+4
+[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
+[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1317.264179] Dumping ftrace buffer:
+[ 1317.264774]    (ftrace buffer empty)
+[ 1317.265220] Modules linked in:
+[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
+next-20131218-sasha-00013-g2cebb9b-dirty #4159
+[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
+[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
+0x82/0x110
+[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
+[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
+[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
+[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
+[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
+[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
+0000
+[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
+[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
+[ 1317.270230] Stack:
+[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
+[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
+[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
+[ 1317.270230] Call Trace:
+[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
+[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
+[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
+[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
+[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
+[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
+[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
+[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
+[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
+[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
+89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
+4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
+[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.270230]  RSP <ffff8803cd31bdf8>
+[ 1317.270230] CR2: 0000000000000974
 
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
-Most remove functions only return 0, as this one did before the change.  So
-perhaps the correct solution is to remove the status variable?
+ net/rds/ib.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- drivers/staging/tidspbridge/rmgr/drv_interface.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index cafca46..74d31da 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -589,7 +589,7 @@ func_cont:
- 		class_destroy(bridge_class);
-
- 	}
--	return 0;
-+	return status;
- }
-
- #ifdef CONFIG_PM
+diff --git a/net/rds/ib.c b/net/rds/ib.c
+index b4c8b00..ba2dffe 100644
+--- a/net/rds/ib.c
++++ b/net/rds/ib.c
+@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 addr)
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support iWARP devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_IB_CA)
+ 		ret = -EADDRNOTAVAIL;
+ 
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
+-- 
+1.8.3.2
 
