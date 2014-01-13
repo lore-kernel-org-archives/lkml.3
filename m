@@ -1,90 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaAMODp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:03:45 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:50542 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751280AbaAMODn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:03:43 -0500
-Date: Mon, 13 Jan 2014 14:03:34 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Joe Perches <joe@perches.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] efi: Fix krealloc defect
-Message-ID: <20140113140334.GB3256@console-pimps.org>
-References: <cover.1388793978.git.joe@perches.com>
- <9a8eb1c9478049318e834d5223053a5fb7484bff.1388793978.git.joe@perches.com>
+	id S1751683AbaAMOEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:04:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60985 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634AbaAMOD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 09:03:58 -0500
+Message-ID: <52D3F248.7030803@suse.cz>
+Date: Mon, 13 Jan 2014 15:03:52 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9a8eb1c9478049318e834d5223053a5fb7484bff.1388793978.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>, Bob Liu <bob.liu@oracle.com>,
+        Nick Piggin <npiggin@suse.de>,
+        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH] mm/mlock: fix BUG_ON unlocked page for nolinear VMAs
+References: <1387267550-8689-1-git-send-email-liwanp@linux.vnet.ibm.com>	<52b1138b.0201430a.19a8.605dSMTPIN_ADDED_BROKEN@mx.google.com>	<52B11765.8030005@oracle.com>	<52b120a5.a3b2440a.3acf.ffffd7c3SMTPIN_ADDED_BROKEN@mx.google.com>	<52B166CF.6080300@suse.cz>	<52b1699f.87293c0a.75d1.34d3SMTPIN_ADDED_BROKEN@mx.google.com>	<20131218134316.977d5049209d9278e1dad225@linux-foundation.org>	<52C71ACC.20603@oracle.com>	<CA+55aFzDcFyyXwUUu5bLP3fsiuzxU7VPivpTPHgp8smvdTeESg@mail.gmail.com>	<52C74972.6050909@suse.cz> <CA+55aFzq1iQqddGo-m=vutwMYn5CPf65Ergov5svKR4AWC3rUQ@mail.gmail.com> <6B2BA408B38BA1478B473C31C3D2074E2BF812BC82@SV-EXCHANGE1.Corp.FC.LOCAL> <52CC16DC.9070308@suse.cz> <6B2BA408B38BA1478B473C31C3D2074E2C386DF586@SV-EXCHANGE1.Corp.FC.LOCAL>
+In-Reply-To: <6B2BA408B38BA1478B473C31C3D2074E2C386DF586@SV-EXCHANGE1.Corp.FC.LOCAL>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 03 Jan, at 04:08:47PM, Joe Perches wrote:
-> krealloc should use a temporary pointer for allocations
-> and check the temporary pointer returned against NULL too.
+On 01/10/2014 06:48 PM, Motohiro Kosaki wrote:
+>> diff --git a/mm/rmap.c b/mm/rmap.c
+>> index 068522d..b99c742 100644
+>> --- a/mm/rmap.c
+>> +++ b/mm/rmap.c
+>> @@ -1389,9 +1389,19 @@ static int try_to_unmap_cluster(unsigned long
+>> cursor, unsigned int *mapcount,
+>>   		BUG_ON(!page || PageAnon(page));
+>>
+>>   		if (locked_vma) {
+>> -			mlock_vma_page(page);   /* no-op if already
+>> mlocked */
+>> -			if (page == check_page)
+>> +			if (page == check_page) {
+>> +				/* we know we have check_page locked */
+>> +				mlock_vma_page(page);
+>>   				ret = SWAP_MLOCK;
+>> +			} else if (trylock_page(page)) {
+>> +				/*
+>> +				 * If we can lock the page, perform mlock.
+>> +				 * Otherwise leave the page alone, it will be
+>> +				 * eventually encountered again later.
+>> +				 */
+>> +				mlock_vma_page(page);
+>> +				unlock_page(page);
+>> +			}
+>>   			continue;	/* don't unmap */
+>>   		}
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> cc: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  arch/x86/platform/efi/efi.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
+> I audited all related mm code. However I couldn't find any race that it can close.
 
-Thanks Joe, but I've already got the following commit queued up from
-Borislav that addresses this,
+Well, I would say the lock here closes the race with page migration, no? (As discussed below)
 
----
+> First off,  current munlock code is crazy tricky.
 
->From ee41143027706d9f342dfe05487a00b20887fde7 Mon Sep 17 00:00:00 2001
-From: Borislav Petkov <bp@suse.de>
-Date: Thu, 31 Oct 2013 17:25:09 +0100
-Subject: [PATCH] x86/efi: Check krealloc return value
+Oops, that's actually a result of my patches to speed up munlock by batching pages (since 3.12).
 
-Check it just in case. We might just as well panic there because runtime
-won't be functioning anyway.
+> munlock
+> 	down_write(mmap_sem)
+> 	do_mlock()
+> 		mlock_fixup
+> 			munlock_vma_pages_range
+> 				__munlock_pagevec
+> 					spin_lock_irq(zone->lru_lock)
+> 					TestClearPageMlocked(page)
+> 					del_page_from_lru_list
+> 					spin_unlock_irq(zone->lru_lock)
+> 					lock_page
+> 					__munlock_isolated_page
+> 					unlock_page
+> 				
+> 	up_write(mmap_sem)
+> 
+> Look, TestClearPageMlocked(page) is not protected by lock_page.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/platform/efi/efi.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Right :( That's my fault, when developing the patch series I didn't see the page
+migration race, and it seemed that lock is only needed to protect the rmap operations
+in __munlock_isolated_page()
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index b453069236fd..3fac4dee492f 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -860,6 +860,9 @@ void __init efi_enter_virtual_mode(void)
- 		new_memmap = krealloc(new_memmap,
- 				      (count + 1) * memmap.desc_size,
- 				      GFP_KERNEL);
-+		if (!new_memmap)
-+			goto err_out;
-+
- 		memcpy(new_memmap + (count * memmap.desc_size), md,
- 		       memmap.desc_size);
- 		count++;
-@@ -914,6 +917,11 @@ void __init efi_enter_virtual_mode(void)
- 			 EFI_VARIABLE_BOOTSERVICE_ACCESS |
- 			 EFI_VARIABLE_RUNTIME_ACCESS,
- 			 0, NULL);
-+
-+	return;
-+
-+ err_out:
-+	pr_err("Error reallocating memory, EFI runtime non-functional!\n");
- }
+> But this is still
+> safe because Page_mocked mean one or more vma marked VM_LOCKED then we
+> only need care about turning down final VM_LOCKED. I.e. mmap_sem protect them.
+> 
+> And,
+> 
+> 					spin_lock_irq(zone->lru_lock)
+> 					del_page_from_lru_list
+> 					spin_unlock_irq(zone->lru_lock)
+> 
+> This idiom ensures I or someone else isolate the page from lru and isolated pages
+> will be put back by putback_lru_page in anycase. So, the pages will move the right
+> lru eventually.
+> 
+> And then, taking page-lock doesn't help to close vs munlock race.
+> 
+> On the other hands, page migration has the following call stack.
+> 
+> some-caller [isolate_lru_page]
+> 	unmap_and_move
+> 		__unmap_and_move
+> 		trylock_page
+> 		try_to_unmap
+> 		move_to_new_page
+> 			migrate_page
+> 				migrate_page_copy
+> 		unlock_page
+> 
+> The critical part (i.e. migrate_page_copy) is protected by both page isolation and page lock.
+
+However, none of that protects against setting PG_mlocked in try_to_unmap_cluster() -> mlock_vma_page(),
+or clearing PG_mlocked in __munlock_pagevec().
+
+The race I have in mind for munlock is:
+
+CPU1 does page migration
+ some-caller [isolate_lru_page]
+ 	unmap_and_move
+ 		__unmap_and_move
+ 		trylock_page
+ 		try_to_unmap
+ 		move_to_new_page
+ 			migrate_page
+ 				migrate_page_copy
+					mlock_migrate_page - transfers PG_mlocked from old page to new page
+
+CPU2 does munlock:
+ munlock
+ 	down_write(mmap_sem)
+ 	do_mlock()
+ 		mlock_fixup
+ 			munlock_vma_pages_range
+ 				__munlock_pagevec
+ 					spin_lock_irq(zone->lru_lock)
+ 					TestClearPageMlocked(page) - here it finds PG_mlocked already cleared
+					so it stops, but meanwhile new page already has PG_mlocked set and will
+					stay inevictable
+
+> Page fault path take lock page and doesn't use page isolation. This is correct.
+> try_to_unmap_cluster doesn't take page lock, but it ensure the page is isolated. This is correct too.
+
+I don't see where try_to_unmap_cluster() has guaranteed that pages other than check_page are isolated?
+(I might just be missing that). So in the race example above, CPU2 could be doing try_to_unmap_cluster()
+and set PG_mlocked on old page, with no effect on the new page. Not fatal for the design of lazy mlocking,
+but a distorted accounting anyway.
+
+> Plus, do_wp_page() has the following comment. But it is wrong. This lock is necessary to protect against
+> page migration, but not lru manipulation.
+> 
+> 		if ((ret & VM_FAULT_WRITE) && (vma->vm_flags & VM_LOCKED)) {
+> 			lock_page(old_page);	/* LRU manipulation */
+> 			munlock_vma_page(old_page);
+> 			unlock_page(old_page);
+> 		}
+> 
+> 
+> But, you know, this is crazy ugly lock design. I'm ok to change the rule to that PG_mlocked must be protected
+> page lock. If so, I propose to add PageMlocked() like this
+> 
+> 			} else if (!PageMlocked() && trylock_page(page)) {
+> 				/*
+> 				 * If we can lock the page, perform mlock.
+> 				 * Otherwise leave the page alone, it will be
+> 				 * eventually encountered again later.
+> 				 */
+> 				mlock_vma_page(page);
+> 				unlock_page(page);
+> 
+> This is safe. Even if race is happen and vmscan failed to mark PG_mlocked, that's no problem. Next vmscan may
+> do the right job and will fix the mistake.
+> 
+> Anyway,  I'm also sure this is not recent issue. It lived 5 years. It is no reason to rush.
  
- /*
--- 
-1.8.3.1
+Yeah but there's the new issue with __munlock_pagevec() :( Perhaps a more serious one as it could leave pages inevictable
+when they shouldn't be. I'm not sure if the performance benefits of that could be preserved with full page locking.
+Another option would be that page migration would somehow deal with the race, or just leave the target pages without
+PG_mlocked and let them be dealt with later.
+But if we go with the rule that page lock must protect PG_mlocked, then there's also clear_page_mlock() to consider.
+And finally, we could then at least replace the atomic test and set with faster non-atomic variants.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
