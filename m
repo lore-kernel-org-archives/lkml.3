@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbaAMOjW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:39:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51563 "EHLO
+	id S1752230AbaAMO0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:26:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51225 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbaAMO0z (ORCPT
+	with ESMTP id S1751673AbaAMOZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:55 -0500
+	Mon, 13 Jan 2014 09:25:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jan Kara <jack@suse.cz>, Roland Dreier <roland@purestorage.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 80/96] ipv6: don't count addrconf generated routes against gc limit
-Date: Mon, 13 Jan 2014 14:24:43 +0000
-Message-Id: <1389623099-18783-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 16/96] IB/qib: Convert qib_user_sdma_pin_pages() to use get_user_pages_fast()
+Date: Mon, 13 Jan 2014 14:23:39 +0000
+Message-Id: <1389623099-18783-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jan Kara <jack@suse.cz>
 
-commit a3300ef4bbb1f1e33ff0400e1e6cf7733d988f4f upstream.
+commit 603e7729920e42b3c2f4dbfab9eef4878cb6e8fa upstream.
 
-Brett Ciphery reported that new ipv6 addresses failed to get installed
-because the addrconf generated dsts where counted against the dst gc
-limit. We don't need to count those routes like we currently don't count
-administratively added routes.
+qib_user_sdma_queue_pkts() gets called with mmap_sem held for
+writing. Except for get_user_pages() deep down in
+qib_user_sdma_pin_pages() we don't seem to need mmap_sem at all.  Even
+more interestingly the function qib_user_sdma_queue_pkts() (and also
+qib_user_sdma_coalesce() called somewhat later) call copy_from_user()
+which can hit a page fault and we deadlock on trying to get mmap_sem
+when handling that fault.
 
-Because the max_addresses check enforces a limit on unbounded address
-generation first in case someone plays with router advertisments, we
-are still safe here.
+So just make qib_user_sdma_pin_pages() use get_user_pages_fast() and
+leave mmap_sem locking for mm.
 
-Reported-by: Brett Ciphery <brett.ciphery@windriver.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: adjusted context ]
+This deadlock has actually been observed in the wild when the node
+is under memory pressure.
+
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Adjust indentation and nr_pages argument in qib_user_sdma_pin_pages()]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/route.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/qib/qib_user_sdma.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 2367444..5b8eac8 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2112,13 +2112,11 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
- {
- 	struct net *net = dev_net(idev->dev);
- 	struct rt6_info *rt = ip6_dst_alloc(&net->ipv6.ip6_dst_ops,
--					    net->loopback_dev, 0);
-+					    net->loopback_dev, DST_NOCOUNT);
- 	int err;
+diff --git a/drivers/infiniband/hw/qib/qib_user_sdma.c b/drivers/infiniband/hw/qib/qib_user_sdma.c
+index 8244208..573b460 100644
+--- a/drivers/infiniband/hw/qib/qib_user_sdma.c
++++ b/drivers/infiniband/hw/qib/qib_user_sdma.c
+@@ -284,8 +284,7 @@ static int qib_user_sdma_pin_pages(const struct qib_devdata *dd,
+ 	int j;
+ 	int ret;
  
--	if (!rt) {
--		net_warn_ratelimited("Maximum number of routes reached, consider increasing route/max_size\n");
-+	if (!rt)
- 		return ERR_PTR(-ENOMEM);
--	}
+-	ret = get_user_pages(current, current->mm, addr,
+-			     npages, 0, 1, pages, NULL);
++	ret = get_user_pages_fast(addr, npages, 0, pages);
  
- 	in6_dev_hold(idev);
+ 	if (ret != npages) {
+ 		int i;
+@@ -830,10 +829,7 @@ int qib_user_sdma_writev(struct qib_ctxtdata *rcd,
+ 	while (dim) {
+ 		const int mxp = 8;
  
+-		down_write(&current->mm->mmap_sem);
+ 		ret = qib_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
+-		up_write(&current->mm->mmap_sem);
+-
+ 		if (ret <= 0)
+ 			goto done_unlock;
+ 		else {
 -- 
 1.8.3.2
 
