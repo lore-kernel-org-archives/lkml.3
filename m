@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaAMCCX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 21:02:23 -0500
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:49644
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751110AbaAMCCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 21:02:20 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: "broonie@linaro.org" <broonie@linaro.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>
-Subject: RE: [alsa-devel] [PATCH] ASoC: simple-card: fix one bug to writing
- to the platform data
-Thread-Topic: [alsa-devel] [PATCH] ASoC: simple-card: fix one bug to writing
- to the platform data
-Thread-Index: AQHPDdQrauQsfk2sU0qCxbYVSBSSFZqB6M7A
-Date: Mon, 13 Jan 2014 02:02:16 +0000
-Message-ID: <56f71334ad4f41ceaa6237d387e2b478@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <20140110081729.035ce46f@armhf>
-In-Reply-To: <20140110081729.035ce46f@armhf>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 00909363D5
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(51704005)(199002)(189002)(164054003)(54356001)(79102001)(53806001)(54316002)(49866001)(46102001)(50986001)(47976001)(65816001)(66066001)(63696002)(51856001)(47736001)(80976001)(83322001)(92566001)(33646001)(81816001)(93136001)(76796001)(76786001)(56776001)(76482001)(59766001)(77982001)(76576001)(74876001)(87936001)(31966008)(4396001)(81342001)(81686001)(80022001)(87266001)(85306002)(69226001)(74662001)(56816005)(2656002)(83072002)(47446002)(74316001)(90146001)(74706001)(81542001)(74366001)(74502001)(85852003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751299AbaAMCRM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 21:17:12 -0500
+Received: from ozlabs.org ([203.10.76.45]:60496 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaAMCRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 21:17:10 -0500
+Date: Mon, 13 Jan 2014 13:17:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <chris@printf.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: linux-next: manual merge of the mmc tree with Linus' tree
+Message-Id: <20140113131700.840c214536826d7e9a92ef8b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Jan_2014_13_17_00_+1100_NAUCTjMUOU5GXuxH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0D22Rl9018512
 
-Hi Jean-Francois,
+--Signature=_Mon__13_Jan_2014_13_17_00_+1100_NAUCTjMUOU5GXuxH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> If the original cinfo is not used anymore, the use of its structure to
-> handle the card information is not a good idea:
-> 
-> - almost all cinfo information are in the struct snd_soc_card,
-> 
-> - this cinfo structure cannot be extended to handle many DAI links,
-> 
-> - it contains simple-card information which are of no use for the
->   platform caller.
-> 
-> So, I'd rather have seen:
-> 
-> - the removal of 'snd_link' and 'snd_card' from the platform interface
->   (struct asoc_simple_card_info),
-> 
-> - the definition of a local struct simple_card_data containing the
->   struct snd_soc_card and a pointer to an array of fmt/sysclk values
->   (one per DAI link).
-> 
+Hi Chris,
 
-I have sent one patch to fix some of these and mainly fixed the bug from
-Mark's comments in another early email.
+Today's linux-next merge of the mmc tree got a conflict in MAINTAINERS
+between commit c2fd4e380322 ("MAINTAINERS: set up proper record for
+Xilinx Zynq") from Linus' tree and commit 45f210424b4b ("mmc: arasan: Add
+driver for Arasan SDHCI") from the mmc tree.
 
-Thanks,
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
---
-Best Regards,
-Xiubo
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc MAINTAINERS
+index 64b39e610589,518bf717b02b..000000000000
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@@ -1387,9 -1371,7 +1387,10 @@@ T:	git git://git.xilinx.com/linux-xlnx.
+  S:	Supported
+  F:	arch/arm/mach-zynq/
+  F:	drivers/cpuidle/cpuidle-zynq.c
+ +N:	zynq
+ +N:	xilinx
+ +F:	drivers/clocksource/cadence_ttc_timer.c
++ F:	drivers/mmc/host/sdhci-of-arasan.c
+ =20
+  ARM SMMU DRIVER
+  M:	Will Deacon <will.deacon@arm.com>
+
+
+--Signature=_Mon__13_Jan_2014_13_17_00_+1100_NAUCTjMUOU5GXuxH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS00ykAAoJEMDTa8Ir7ZwVpMkP/Aykpev6fHXvuQNM84kH352I
+iq5xuzuqAXwke28QGN/e0FpT6ztd4uuwdz+jdBc1ZNnWd5QPXSoslcQUa5546x5O
+WkISCMDDX6Pgx0ZRWaZNFU1IzdjTSR82/Tc2ao8CNYsVVJctagE6st+G2taFiAIQ
+9sBXaORg2krXokAuRSdNaLal1x7HbORqYKag5A9DHeMxu9hLFGi92pLfPWnwvqWz
+0/LHZ7qLpTYgp8HDywhghU2xTErcN7nyjpO7w3YdGuMBpZ+Qa0tx4uoWriLG/Kx1
+L6f9+rWr3lWE9SVXItRBFFUCniHie4smwBE+RTQdKtZRxPacVuLAoYZuBMbakz5N
+H85hvTLMZT+e2mdK8G6SN2O5tCP8qVDJctzPlZfpbWMMACnibmFhth54s9Gk2/OB
+N8SBwepKHqEb7/9PFLijjSAhSJFBJwmfdg9FdFXKb3XP0mNycfMNg3e6UNKh3rmb
+ndRxbYB8t3hTTabikHN5bim95deXvj50M45Rgyj6GBARX0VPfY2xoK4NQWRMKWnj
+OjZ67tofRk8H2nNwN5q0xY67P9Pd97lcTY9e1UGPndZserKCjb1aR+TvU7OQkeal
+M0xUXHmaH6pifqmKMnbPb8luUpf4+RJEM/UosBOsf+J/v9Z74hVyDjNrldml9ILH
+c0Rlh+ZuMfSro1BTJAsj
+=4lCb
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Jan_2014_13_17_00_+1100_NAUCTjMUOU5GXuxH--
