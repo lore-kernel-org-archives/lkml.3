@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaAMRZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:25:30 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:39991 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284AbaAMRZ1 convert rfc822-to-8bit (ORCPT
+	id S1753458AbaAMR3C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:29:02 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:34942 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaAMR25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:25:27 -0500
-Date: Mon, 13 Jan 2014 18:24:55 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 15/28] drm/i2c: tda998x: use the tda998x video format
- when cea mode
-Message-ID: <20140113182455.1f8c3f40@armhf>
-In-Reply-To: <20140113163501.GB15937@n2100.arm.linux.org.uk>
-References: <20140109120448.24d89eba@armhf>
-	<20140111181832.GD15937@n2100.arm.linux.org.uk>
-	<20140113170707.10b908dc@armhf>
-	<20140113161333.GA15937@n2100.arm.linux.org.uk>
-	<20140113172220.521917ce@armhf>
-	<20140113163501.GB15937@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Mon, 13 Jan 2014 12:28:57 -0500
+Date: Mon, 13 Jan 2014 18:28:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
+ of __lock_acquire()
+Message-ID: <20140113172833.GT31570@twins.programming.kicks-ass.net>
+References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
+ <20140109163120.GA8038@redhat.com>
+ <20140109170823.GF7572@laptop.programming.kicks-ass.net>
+ <20140112094041.GB31809@gmail.com>
+ <20140112174532.GA12147@redhat.com>
+ <20140112174554.GB12147@redhat.com>
+ <20140113170609.GA9873@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140113170609.GA9873@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014 16:35:01 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-
-> Ah, I see.  It's a thread about your DRM driver, and about the lack of
-> audio on 1080 resolutions.  Taking it in context, the reported issue
-> appears to be lack of video when 1080p is selected, but the display
-> doesn't support 1080p.  That's hardly surprising.
+On Mon, Jan 13, 2014 at 06:06:09PM +0100, Oleg Nesterov wrote:
+> On 01/12, Oleg Nesterov wrote:
+> >
+> > The "int check" argument of lock_acquire() and held_lock->check
+> > are misleading and unneeded. This is only used as a boolean, 2
+> > denotes "true", everything else is "false". And this boolean is
+> > always equal to prove_locking.
+> >
+> > The only exception is __lockdep_no_validate__ which should make
+> > this condition "false" in validate_chain().
 > 
-> Then rabeeh posts his message about lack of audio at 1920x1080.
+> And I missed mark_irqflags(),
 > 
-> Well, I can say that with the tda998x as it stands, the 1080* modes
-> work with audio with armada-drm, so there's no need to change this.
+> > @@ -3136,7 +3130,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+> >  	hlock->holdtime_stamp = lockstat_clock();
+> >  #endif
+> >
+> > -	if (check == 2 && !mark_irqflags(curr, hlock))
+> > +	if (prove_locking && !mark_irqflags(curr, hlock))
+> >  		return 0;
+> 
+> This change is not right, at least it is not equivalent.
+> 
+> And I just realized that rcu_lock_acquire() does lock_acquire(check => 1).
+> Probably we can mark rcu_lock_map's as __lockdep_no_validate__.
 
-My DRM driver also has audio with and without the cea mode for all
-resolutions. At the time of Rabeeh's message, I just had forgot to
-switch the audio pins...
+Can't, RCU needs its own classes. Otherwise it cannot tell which version
+of the RCU read lock its holding at just that moment.
 
-So, TDA998x CEA mode or not?
+> Anything else I missed?
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Nothing springs to mind, but then, I totally missed the RCU thing too.
+
+At the very least we can reduce check to a single bit.
