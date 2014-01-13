@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaAMQDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:03:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53262 "EHLO
+	id S1755348AbaAMQgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:36:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53366 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891AbaAMQDH (ORCPT
+	with ESMTP id S1754064AbaAMQDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:07 -0500
+	Mon, 13 Jan 2014 11:03:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 094/208] powerpc: Fix bad stack check in exception entry
-Date: Mon, 13 Jan 2014 15:58:55 +0000
-Message-Id: <1389628849-1614-95-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 112/208] sh: always link in helper functions extracted from libgcc
+Date: Mon, 13 Jan 2014 15:59:13 +0000
+Message-Id: <1389628849-1614-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 90ff5d688e61f49f23545ffab6228bd7e87e6dc7 upstream.
+commit 84ed8a99058e61567f495cc43118344261641c5f upstream.
 
-In EXCEPTION_PROLOG_COMMON() we check to see if the stack pointer (r1)
-is valid when coming from the kernel.  If it's not valid, we die but
-with a nice oops message.
+E.g. landisk_defconfig, which has CONFIG_NTFS_FS=m:
 
-Currently we allocate a stack frame (subtract INT_FRAME_SIZE) before we
-check to see if the stack pointer is negative.  Unfortunately, this
-won't detect a bad stack where r1 is less than INT_FRAME_SIZE.
+  ERROR: "__ashrdi3" [fs/ntfs/ntfs.ko] undefined!
 
-This patch fixes the check to compare the modified r1 with
--INT_FRAME_SIZE.  With this, bad kernel stack pointers (including NULL
-pointers) are correctly detected again.
+For "lib-y", if no symbols in a compilation unit are referenced by other
+units, the compilation unit will not be included in vmlinux.  This
+breaks modules that do reference those symbols.
 
-Kudos to Paulus for finding this.
+Use "obj-y" instead to fix this.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+http://kisskb.ellerman.id.au/kisskb/buildresult/8838077/
+
+This doesn't fix all cases. There are others, e.g. udivsi3.
+This is also not limited to sh, many architectures handle this in the
+same way.
+
+A simple solution is to unconditionally include all helper functions.
+A more complex solution is to make the choice of "lib-y" or "obj-y" depend
+on CONFIG_MODULES:
+
+  obj-$(CONFIG_MODULES) += ...
+  lib-y($CONFIG_MODULES) += ...
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Tested-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Reviewed-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/include/asm/exception-64s.h | 2 +-
+ arch/sh/lib/Makefile | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/exception-64s.h b/arch/powerpc/include/asm/exception-64s.h
-index 07ca627..e17d94d 100644
---- a/arch/powerpc/include/asm/exception-64s.h
-+++ b/arch/powerpc/include/asm/exception-64s.h
-@@ -264,7 +264,7 @@ do_kvm_##n:								\
- 	subi	r1,r1,INT_FRAME_SIZE;	/* alloc frame on kernel stack	*/ \
- 	beq-	1f;							   \
- 	ld	r1,PACAKSAVE(r13);	/* kernel stack to use		*/ \
--1:	cmpdi	cr1,r1,0;		/* check if r1 is in userspace	*/ \
-+1:	cmpdi	cr1,r1,-INT_FRAME_SIZE;	/* check if r1 is in userspace	*/ \
- 	blt+	cr1,3f;			/* abort if it is		*/ \
- 	li	r1,(n);			/* will be reloaded later	*/ \
- 	sth	r1,PACA_TRAP_SAVE(r13);					   \
+diff --git a/arch/sh/lib/Makefile b/arch/sh/lib/Makefile
+index 7b95f29..3baff31 100644
+--- a/arch/sh/lib/Makefile
++++ b/arch/sh/lib/Makefile
+@@ -6,7 +6,7 @@ lib-y  = delay.o memmove.o memchr.o \
+ 	 checksum.o strlen.o div64.o div64-generic.o
+ 
+ # Extracted from libgcc
+-lib-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
++obj-y += movmem.o ashldi3.o ashrdi3.o lshrdi3.o \
+ 	 ashlsi3.o ashrsi3.o ashiftrt.o lshrsi3.o \
+ 	 udiv_qrnnd.o
+ 
 -- 
 1.8.3.2
 
