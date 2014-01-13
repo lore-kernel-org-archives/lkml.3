@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaAMQFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:05:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53810 "EHLO
+	id S1754871AbaAMQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:08:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53860 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869AbaAMQF0 (ORCPT
+	with ESMTP id S1752869AbaAMQFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:26 -0500
+	Mon, 13 Jan 2014 11:05:43 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 196/208] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
-Date: Mon, 13 Jan 2014 16:00:37 +0000
-Message-Id: <1389628849-1614-197-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 206/208] ftrace/x86: Load ftrace_ops in parameter not the variable holding it
+Date: Mon, 13 Jan 2014 16:00:47 +0000
+Message-Id: <1389628849-1614-207-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
+commit 1739f09e33d8f66bf48ddbc3eca615574da6c4f6 upstream.
 
-Before we do an EMMS in the AMD FXSAVE information leak workaround we
-need to clear any pending exceptions, otherwise we trap with a
-floating-point exception inside this code.
+Function tracing callbacks expect to have the ftrace_ops that registered it
+passed to them, not the address of the variable that holds the ftrace_ops
+that registered it.
 
-Reported-by: halfdog <me@halfdog.net>
-Tested-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Use a mov instead of a lea to store the ftrace_ops into the parameter
+of the function tracing callback.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/20131113152004.459787f9@gandalf.local.home
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/asm/fpu-internal.h | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/x86/kernel/entry_32.S | 4 ++--
+ arch/x86/kernel/entry_64.S | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 4d0bda7..5be9f87 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -293,12 +293,13 @@ static inline int restore_fpu_checking(struct task_struct *tsk)
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. "m" is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"		/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (tsk->thread.fpu.has_fpu));
-+	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %P[addr]"	/* set F?P to defined value */
-+			: : [addr] "m" (tsk->thread.fpu.has_fpu));
-+	}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 2cfbc3a..bbc89cf 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1085,7 +1085,7 @@ ENTRY(ftrace_caller)
+ 	pushl $0	/* Pass NULL as regs pointer */
+ 	movl 4*4(%esp), %eax
+ 	movl 0x4(%ebp), %edx
+-	leal function_trace_op, %ecx
++	movl function_trace_op, %ecx
+ 	subl $MCOUNT_INSN_SIZE, %eax
  
- 	return fpu_restore_checking(&tsk->thread.fpu);
- }
+ .globl ftrace_call
+@@ -1143,7 +1143,7 @@ ENTRY(ftrace_regs_caller)
+ 	movl 12*4(%esp), %eax	/* Load ip (1st parameter) */
+ 	subl $MCOUNT_INSN_SIZE, %eax	/* Adjust ip */
+ 	movl 0x4(%ebp), %edx	/* Load parent ip (2nd parameter) */
+-	leal function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
++	movl function_trace_op, %ecx /* Save ftrace_pos in 3rd parameter */
+ 	pushl %esp		/* Save pt_regs as 4th parameter */
+ 
+ GLOBAL(ftrace_regs_call)
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1b69951..bcdb3ca 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -88,7 +88,7 @@ END(function_hook)
+ 	MCOUNT_SAVE_FRAME \skip
+ 
+ 	/* Load the ftrace_ops into the 3rd parameter */
+-	leaq function_trace_op, %rdx
++	movq function_trace_op(%rip), %rdx
+ 
+ 	/* Load ip into the first parameter */
+ 	movq RIP(%rsp), %rdi
 -- 
 1.8.3.2
 
