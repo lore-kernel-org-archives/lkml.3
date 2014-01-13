@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaAMTXO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:23:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31655 "EHLO mga02.intel.com"
+	id S1753018AbaAMTYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:24:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:14852 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717AbaAMTXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:23:07 -0500
+	id S1752734AbaAMTXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 14:23:13 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,654,1384329600"; 
-   d="scan'208";a="458081185"
-Subject: [PATCH 04/12] x86 Kconfig: processor options menu
+   d="scan'208";a="438183718"
+Subject: [PATCH 03/12] x86 Kconfig: move highmem
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 13 Jan 2014 11:22:50 -0800
+Date: Mon, 13 Jan 2014 11:22:49 -0800
 References: <20140113192245.3F682C7F@viggo.jf.intel.com>
 In-Reply-To: <20140113192245.3F682C7F@viggo.jf.intel.com>
-Message-Id: <20140113192250.38D9ADDB@viggo.jf.intel.com>
+Message-Id: <20140113192249.3A34B048@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,271 +24,279 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-This tries to consolidate the actual processor options that
-someone might want to configure.  It's a bit arbitrary how you
-might separate these, but I at least took a stab at it.
-
-The real goal here was to hide stuff that folks will rarely look
-at, and to make them easier to find when folks _do_ need to
-change them.
+This just continues to move things under the Memory and NUMA
+Options menu, breaking it up a bit to make the patches easier to
+audit.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/arch/x86/Kconfig |  208 ++++++++++++++++++------------------
- 1 file changed, 106 insertions(+), 102 deletions(-)
+ linux.git-davehans/arch/x86/Kconfig |  248 ++++++++++++++++++------------------
+ 1 file changed, 124 insertions(+), 124 deletions(-)
 
-diff -puN arch/x86/Kconfig~processor-options arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~processor-options	2014-01-13 11:11:35.138188988 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:35.141189123 -0800
-@@ -264,6 +264,8 @@ source "kernel/Kconfig.freezer"
+diff -puN arch/x86/Kconfig~x86-config-move-highmem arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~x86-config-move-highmem	2014-01-13 11:11:34.925179358 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:34.928179494 -0800
+@@ -546,6 +546,130 @@ config X86_SUPPORTS_MEMORY_FAILURE
+ 	depends on X86_64 || !SPARSEMEM
+ 	select ARCH_SUPPORTS_MEMORY_FAILURE
  
- menu "Processor type and features"
- 
-+menu "Processor Options and Features"
++choice
++	prompt "High Memory Support"
++	default HIGHMEM64G if X86_NUMAQ
++	default HIGHMEM4G
++	depends on X86_32
 +
- config SMP
- 	bool "Symmetric multi-processing support"
- 	---help---
-@@ -292,6 +294,110 @@ config SMP
- 
- 	  If you don't know what to do here, say N.
- 
-+config MAXSMP
-+	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
-+	depends on X86_64 && SMP && DEBUG_KERNEL
-+	select CPUMASK_OFFSTACK
++config NOHIGHMEM
++	bool "off"
++	depends on !X86_NUMAQ
 +	---help---
-+	  Enable maximum number of CPUS and NUMA Nodes for this architecture.
-+	  If unsure, say N.
++	  Linux can use up to 64 Gigabytes of physical memory on x86 systems.
++	  However, the address space of 32-bit x86 processors is only 4
++	  Gigabytes large. That means that, if you have a large amount of
++	  physical memory, not all of it can be "permanently mapped" by the
++	  kernel. The physical memory that's not permanently mapped is called
++	  "high memory".
 +
-+config NR_CPUS
-+	int "Maximum number of CPUs" if SMP && !MAXSMP
-+	range 2 8 if SMP && X86_32 && !X86_BIGSMP
-+	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
-+	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
-+	default "1" if !SMP
-+	default "8192" if MAXSMP
-+	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
-+	default "8" if SMP
++	  If you are compiling a kernel which will never run on a machine with
++	  more than 1 Gigabyte total physical RAM, answer "off" here (default
++	  choice and suitable for most users). This will result in a "3GB/1GB"
++	  split: 3GB are mapped so that each process sees a 3GB virtual memory
++	  space and the remaining part of the 4GB virtual memory space is used
++	  by the kernel to permanently map as much physical memory as
++	  possible.
++
++	  If the machine has between 1 and 4 Gigabytes physical RAM, then
++	  answer "4GB" here.
++
++	  If more than 4 Gigabytes is used then answer "64GB" here. This
++	  selection turns Intel PAE (Physical Address Extension) mode on.
++	  PAE implements 3-level paging on IA32 processors. PAE is fully
++	  supported by Linux, PAE mode is implemented on all recent Intel
++	  processors (Pentium Pro and better). NOTE: If you say "64GB" here,
++	  then the kernel will not boot on CPUs that don't support PAE!
++
++	  The actual amount of total physical memory will either be
++	  auto detected or can be forced by using a kernel command line option
++	  such as "mem=256M". (Try "man bootparam" or see the documentation of
++	  your boot loader (lilo or loadlin) about how to pass options to the
++	  kernel at boot time.)
++
++	  If unsure, say "off".
++
++config HIGHMEM4G
++	bool "4GB"
++	depends on !X86_NUMAQ
 +	---help---
-+	  This allows you to specify the maximum number of CPUs which this
-+	  kernel will support.  If CPUMASK_OFFSTACK is enabled, the maximum
-+	  supported value is 4096, otherwise the maximum value is 512.  The
-+	  minimum value which makes sense is 2.
++	  Select this if you have a 32-bit processor and between 1 and 4
++	  gigabytes of physical RAM.
 +
-+	  This is purely to save memory - each supported CPU adds
-+	  approximately eight kilobytes to the kernel image.
-+
-+config HOTPLUG_CPU
-+	bool "Support for hot-pluggable CPUs"
-+	depends on SMP
++config HIGHMEM64G
++	bool "64GB"
++	depends on !M486
++	select X86_PAE
 +	---help---
-+	  Say Y here to allow turning CPUs off and on. CPUs can be
-+	  controlled through /sys/devices/system/cpu.
-+	  ( Note: power management support will enable this option
-+	    automatically on SMP systems. )
-+	  Say N if you want to disable CPU hotplug.
++	  Select this if you have a 32-bit processor and more than 4
++	  gigabytes of physical RAM.
 +
-+config BOOTPARAM_HOTPLUG_CPU0
-+	bool "Set default setting of cpu0_hotpluggable"
-+	default n
-+	depends on HOTPLUG_CPU
++endchoice
++
++choice
++	prompt "Memory split" if EXPERT
++	default VMSPLIT_3G
++	depends on X86_32
 +	---help---
-+	  Set whether default state of cpu0_hotpluggable is on or off.
++	  Select the desired split between kernel and user memory.
 +
-+	  Say Y here to enable CPU0 hotplug by default. If this switch
-+	  is turned on, there is no need to give cpu0_hotplug kernel
-+	  parameter and the CPU0 hotplug feature is enabled by default.
++	  If the address range available to the kernel is less than the
++	  physical memory installed, the remaining memory will be available
++	  as "high memory". Accessing high memory is a little more costly
++	  than low memory, as it needs to be mapped into the kernel first.
++	  Note that increasing the kernel address space limits the range
++	  available to user programs, making the address space there
++	  tighter.  Selecting anything other than the default 3G/1G split
++	  will also likely make your kernel incompatible with binary-only
++	  kernel modules.
 +
-+	  Please note: there are two known CPU0 dependencies if you want
-+	  to enable the CPU0 hotplug feature either by this switch or by
-+	  cpu0_hotplug kernel parameter.
++	  If you are not absolutely sure what you are doing, leave this
++	  option alone!
 +
-+	  First, resume from hibernate or suspend always starts from CPU0.
-+	  So hibernate and suspend are prevented if CPU0 is offline.
++	config VMSPLIT_3G
++		bool "3G/1G user/kernel split"
++	config VMSPLIT_3G_OPT
++		depends on !X86_PAE
++		bool "3G/1G user/kernel split (for full 1G low memory)"
++	config VMSPLIT_2G
++		bool "2G/2G user/kernel split"
++	config VMSPLIT_2G_OPT
++		depends on !X86_PAE
++		bool "2G/2G user/kernel split (for full 2G low memory)"
++	config VMSPLIT_1G
++		bool "1G/3G user/kernel split"
++endchoice
 +
-+	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
-+	  offline if any interrupt can not migrate out of CPU0. There may
-+	  be other CPU0 dependencies.
++config PAGE_OFFSET
++	hex
++	default 0xB0000000 if VMSPLIT_3G_OPT
++	default 0x80000000 if VMSPLIT_2G
++	default 0x78000000 if VMSPLIT_2G_OPT
++	default 0x40000000 if VMSPLIT_1G
++	default 0xC0000000
++	depends on X86_32
 +
-+	  Please make sure the dependencies are under your control before
-+	  you enable this feature.
-+
-+	  Say N if you don't want to enable CPU0 hotplug feature by default.
-+	  You still can enable the CPU0 hotplug feature at boot by kernel
-+	  parameter cpu0_hotplug.
-+
-+config DEBUG_HOTPLUG_CPU0
-+	def_bool n
-+	prompt "Debug CPU0 hotplug"
-+	depends on HOTPLUG_CPU
-+	---help---
-+	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
-+	  soon as possible and boots up userspace with CPU0 offlined. User
-+	  can online CPU0 back after boot time.
-+
-+	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
-+	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
-+	  compilation or giving cpu0_hotplug kernel parameter at boot.
-+
-+	  If unsure, say N.
-+
-+source "arch/x86/Kconfig.cpu"
-+
-+config ARCH_RANDOM
++config HIGHMEM
 +	def_bool y
-+	prompt "x86 architectural random number generator" if EXPERT
-+	---help---
-+	  Enable the x86 architectural RDRAND instruction
-+	  (Intel Bull Mountain technology) to generate random numbers.
-+	  If supported, this is a high bandwidth, cryptographically
-+	  secure hardware random number generator.
++	depends on X86_32 && (HIGHMEM64G || HIGHMEM4G)
 +
-+config X86_SMAP
++config X86_PAE
++	bool "PAE (Physical Address Extension) Support"
++	depends on X86_32 && !HIGHMEM4G
++	---help---
++	  PAE is required for NX support, and furthermore enables
++	  larger swapspace support for non-overcommit purposes. It
++	  has the cost of more pagetable lookup overhead, and also
++	  consumes more pagetable space per process.
++
++config ARCH_PHYS_ADDR_T_64BIT
 +	def_bool y
-+	prompt "Supervisor Mode Access Prevention" if EXPERT
-+	---help---
-+	  Supervisor Mode Access Prevention (SMAP) is a security
-+	  feature in newer Intel processors.  There is a small
-+	  performance cost if this enabled and turned on; there is
-+	  also a small increase in the kernel size if this is enabled.
++	depends on X86_64 || X86_PAE
 +
-+	  If unsure, say Y.
++config ARCH_DMA_ADDR_T_64BIT
++	def_bool y
++	depends on X86_64 || HIGHMEM64G
 +
-+endmenu # Processor Options
-+
- config X86_X2APIC
- 	bool "Support x2apic"
- 	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
-@@ -884,8 +990,6 @@ config X86_CYCLONE_TIMER
- 	def_bool y
- 	depends on X86_SUMMIT
+ endmenu # Memory and NUMA Options
  
--source "arch/x86/Kconfig.cpu"
+ if X86_WANT_INTEL_MID
+@@ -1174,130 +1298,6 @@ config X86_CPUID
+ 	  with major 203 and minors 0 to 31 for /dev/cpu/0/cpuid to
+ 	  /dev/cpu/31/cpuid.
+ 
+-choice
+-	prompt "High Memory Support"
+-	default HIGHMEM64G if X86_NUMAQ
+-	default HIGHMEM4G
+-	depends on X86_32
 -
- config HPET_TIMER
- 	def_bool X86_64
- 	prompt "HPET Timer Support" if X86_32
-@@ -996,32 +1100,6 @@ config IOMMU_HELPER
- 	def_bool y
- 	depends on CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU
- 
--config MAXSMP
--	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
--	depends on X86_64 && SMP && DEBUG_KERNEL
--	select CPUMASK_OFFSTACK
+-config NOHIGHMEM
+-	bool "off"
+-	depends on !X86_NUMAQ
 -	---help---
--	  Enable maximum number of CPUS and NUMA Nodes for this architecture.
--	  If unsure, say N.
+-	  Linux can use up to 64 Gigabytes of physical memory on x86 systems.
+-	  However, the address space of 32-bit x86 processors is only 4
+-	  Gigabytes large. That means that, if you have a large amount of
+-	  physical memory, not all of it can be "permanently mapped" by the
+-	  kernel. The physical memory that's not permanently mapped is called
+-	  "high memory".
 -
--config NR_CPUS
--	int "Maximum number of CPUs" if SMP && !MAXSMP
--	range 2 8 if SMP && X86_32 && !X86_BIGSMP
--	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
--	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
--	default "1" if !SMP
--	default "8192" if MAXSMP
--	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
--	default "8" if SMP
+-	  If you are compiling a kernel which will never run on a machine with
+-	  more than 1 Gigabyte total physical RAM, answer "off" here (default
+-	  choice and suitable for most users). This will result in a "3GB/1GB"
+-	  split: 3GB are mapped so that each process sees a 3GB virtual memory
+-	  space and the remaining part of the 4GB virtual memory space is used
+-	  by the kernel to permanently map as much physical memory as
+-	  possible.
+-
+-	  If the machine has between 1 and 4 Gigabytes physical RAM, then
+-	  answer "4GB" here.
+-
+-	  If more than 4 Gigabytes is used then answer "64GB" here. This
+-	  selection turns Intel PAE (Physical Address Extension) mode on.
+-	  PAE implements 3-level paging on IA32 processors. PAE is fully
+-	  supported by Linux, PAE mode is implemented on all recent Intel
+-	  processors (Pentium Pro and better). NOTE: If you say "64GB" here,
+-	  then the kernel will not boot on CPUs that don't support PAE!
+-
+-	  The actual amount of total physical memory will either be
+-	  auto detected or can be forced by using a kernel command line option
+-	  such as "mem=256M". (Try "man bootparam" or see the documentation of
+-	  your boot loader (lilo or loadlin) about how to pass options to the
+-	  kernel at boot time.)
+-
+-	  If unsure, say "off".
+-
+-config HIGHMEM4G
+-	bool "4GB"
+-	depends on !X86_NUMAQ
 -	---help---
--	  This allows you to specify the maximum number of CPUs which this
--	  kernel will support.  If CPUMASK_OFFSTACK is enabled, the maximum
--	  supported value is 4096, otherwise the maximum value is 512.  The
--	  minimum value which makes sense is 2.
+-	  Select this if you have a 32-bit processor and between 1 and 4
+-	  gigabytes of physical RAM.
 -
--	  This is purely to save memory - each supported CPU adds
--	  approximately eight kilobytes to the kernel image.
+-config HIGHMEM64G
+-	bool "64GB"
+-	depends on !M486
+-	select X86_PAE
+-	---help---
+-	  Select this if you have a 32-bit processor and more than 4
+-	  gigabytes of physical RAM.
 -
- config SCHED_SMT
- 	bool "SMT (Hyperthreading) scheduler support"
- 	depends on X86_HT
-@@ -1409,26 +1487,6 @@ config ARCH_USES_PG_UNCACHED
- 	def_bool y
- 	depends on X86_PAT
- 
--config ARCH_RANDOM
+-endchoice
+-
+-choice
+-	prompt "Memory split" if EXPERT
+-	default VMSPLIT_3G
+-	depends on X86_32
+-	---help---
+-	  Select the desired split between kernel and user memory.
+-
+-	  If the address range available to the kernel is less than the
+-	  physical memory installed, the remaining memory will be available
+-	  as "high memory". Accessing high memory is a little more costly
+-	  than low memory, as it needs to be mapped into the kernel first.
+-	  Note that increasing the kernel address space limits the range
+-	  available to user programs, making the address space there
+-	  tighter.  Selecting anything other than the default 3G/1G split
+-	  will also likely make your kernel incompatible with binary-only
+-	  kernel modules.
+-
+-	  If you are not absolutely sure what you are doing, leave this
+-	  option alone!
+-
+-	config VMSPLIT_3G
+-		bool "3G/1G user/kernel split"
+-	config VMSPLIT_3G_OPT
+-		depends on !X86_PAE
+-		bool "3G/1G user/kernel split (for full 1G low memory)"
+-	config VMSPLIT_2G
+-		bool "2G/2G user/kernel split"
+-	config VMSPLIT_2G_OPT
+-		depends on !X86_PAE
+-		bool "2G/2G user/kernel split (for full 2G low memory)"
+-	config VMSPLIT_1G
+-		bool "1G/3G user/kernel split"
+-endchoice
+-
+-config PAGE_OFFSET
+-	hex
+-	default 0xB0000000 if VMSPLIT_3G_OPT
+-	default 0x80000000 if VMSPLIT_2G
+-	default 0x78000000 if VMSPLIT_2G_OPT
+-	default 0x40000000 if VMSPLIT_1G
+-	default 0xC0000000
+-	depends on X86_32
+-
+-config HIGHMEM
 -	def_bool y
--	prompt "x86 architectural random number generator" if EXPERT
--	---help---
--	  Enable the x86 architectural RDRAND instruction
--	  (Intel Bull Mountain technology) to generate random numbers.
--	  If supported, this is a high bandwidth, cryptographically
--	  secure hardware random number generator.
+-	depends on X86_32 && (HIGHMEM64G || HIGHMEM4G)
 -
--config X86_SMAP
+-config X86_PAE
+-	bool "PAE (Physical Address Extension) Support"
+-	depends on X86_32 && !HIGHMEM4G
+-	---help---
+-	  PAE is required for NX support, and furthermore enables
+-	  larger swapspace support for non-overcommit purposes. It
+-	  has the cost of more pagetable lookup overhead, and also
+-	  consumes more pagetable space per process.
+-
+-config ARCH_PHYS_ADDR_T_64BIT
 -	def_bool y
--	prompt "Supervisor Mode Access Prevention" if EXPERT
--	---help---
--	  Supervisor Mode Access Prevention (SMAP) is a security
--	  feature in newer Intel processors.  There is a small
--	  performance cost if this enabled and turned on; there is
--	  also a small increase in the kernel size if this is enabled.
+-	depends on X86_64 || X86_PAE
 -
--	  If unsure, say Y.
+-config ARCH_DMA_ADDR_T_64BIT
+-	def_bool y
+-	depends on X86_64 || HIGHMEM64G
 -
- config EFI
- 	bool "EFI runtime service support"
- 	depends on ACPI
-@@ -1614,60 +1672,6 @@ config PHYSICAL_ALIGN
- 
- 	  Don't change this unless you know what you are doing.
- 
--config HOTPLUG_CPU
--	bool "Support for hot-pluggable CPUs"
--	depends on SMP
--	---help---
--	  Say Y here to allow turning CPUs off and on. CPUs can be
--	  controlled through /sys/devices/system/cpu.
--	  ( Note: power management support will enable this option
--	    automatically on SMP systems. )
--	  Say N if you want to disable CPU hotplug.
--
--config BOOTPARAM_HOTPLUG_CPU0
--	bool "Set default setting of cpu0_hotpluggable"
--	default n
--	depends on HOTPLUG_CPU
--	---help---
--	  Set whether default state of cpu0_hotpluggable is on or off.
--
--	  Say Y here to enable CPU0 hotplug by default. If this switch
--	  is turned on, there is no need to give cpu0_hotplug kernel
--	  parameter and the CPU0 hotplug feature is enabled by default.
--
--	  Please note: there are two known CPU0 dependencies if you want
--	  to enable the CPU0 hotplug feature either by this switch or by
--	  cpu0_hotplug kernel parameter.
--
--	  First, resume from hibernate or suspend always starts from CPU0.
--	  So hibernate and suspend are prevented if CPU0 is offline.
--
--	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
--	  offline if any interrupt can not migrate out of CPU0. There may
--	  be other CPU0 dependencies.
--
--	  Please make sure the dependencies are under your control before
--	  you enable this feature.
--
--	  Say N if you don't want to enable CPU0 hotplug feature by default.
--	  You still can enable the CPU0 hotplug feature at boot by kernel
--	  parameter cpu0_hotplug.
--
--config DEBUG_HOTPLUG_CPU0
--	def_bool n
--	prompt "Debug CPU0 hotplug"
--	depends on HOTPLUG_CPU
--	---help---
--	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
--	  soon as possible and boots up userspace with CPU0 offlined. User
--	  can online CPU0 back after boot time.
--
--	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
--	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
--	  compilation or giving cpu0_hotplug kernel parameter at boot.
--
--	  If unsure, say N.
--
- config COMPAT_VDSO
- 	def_bool y
- 	prompt "Compat VDSO support"
+ config MATH_EMULATION
+ 	bool
+ 	prompt "Math emulation" if X86_32
 _
