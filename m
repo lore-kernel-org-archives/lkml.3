@@ -1,82 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaAMKpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 05:45:21 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56349 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778AbaAMKpT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 05:45:19 -0500
-X-AuditID: 9c93017e-b7ba2ae000003516-34-52d3c3bc1248
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 25/28] perf top: Convert to hist_entry_iter
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
-	<1389170793-21926-26-git-send-email-namhyung@kernel.org>
-	<20140111163529.GF1131@krava.brq.redhat.com>
-	<87ob3gb6r1.fsf@sejong.aot.lge.com>
-Date: Mon, 13 Jan 2014 19:45:16 +0900
-In-Reply-To: <87ob3gb6r1.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Mon, 13 Jan 2014 17:55:46 +0900")
-Message-ID: <877ga4b1oj.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751906AbaAMKqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 05:46:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58243 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377AbaAMKqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 05:46:20 -0500
+Message-ID: <52D3C3EB.6000104@ti.com>
+Date: Mon, 13 Jan 2014 16:16:03 +0530
+From: Archit Taneja <archit@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>, <tomi.valkeinen@ti.com>
+CC: <plagnioj@jcrosoft.com>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: Re: [PATCH] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
+References: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+In-Reply-To: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.145.166]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014 17:55:46 +0900, Namhyung Kim wrote:
-> On Sat, 11 Jan 2014 17:35:29 +0100, Jiri Olsa wrote:
->> On Wed, Jan 08, 2014 at 05:46:30PM +0900, Namhyung Kim wrote:
->>> Reuse hist_entry_iter__add() function to share the similar code with
->>> perf report.  Note that it needs to be called with hists.lock so tweak
->>> some internal functions not to deadlock or hold the lock too long.
->>> 
->>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->>> ---
->>>  tools/perf/builtin-top.c | 75 ++++++++++++++++++++++++------------------------
->>>  1 file changed, 37 insertions(+), 38 deletions(-)
->>> 
->>> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
->>> index f0f55e6030cd..cf330c66bed7 100644
->>> --- a/tools/perf/builtin-top.c
->>> +++ b/tools/perf/builtin-top.c
->>> @@ -186,9 +186,6 @@ static void perf_top__record_precise_ip(struct perf_top *top,
->>>  	sym = he->ms.sym;
->>>  	notes = symbol__annotation(sym);
->>>  
->>> -	if (pthread_mutex_trylock(&notes->lock))
->>> -		return;
->>> -
->>>  	ip = he->ms.map->map_ip(he->ms.map, ip);
->>>  	err = hist_entry__inc_addr_samples(he, counter, ip);
->>>  
->>> @@ -201,6 +198,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
->>>  		       sym->name);
->>>  		sleep(1);
->>>  	}
->>> +
->>> +	pthread_mutex_lock(&notes->lock);
->>>  }
->>
->> locking on function exit.. does not look right ;-)
->
-> Yes, it looks weird.. but it's because of the change in locking.  After
-> I changed perf top to use the hist_entry_iter, it needed to protect
-> the whole hist_entry_iter__add() by hists->lock so the
-> perf_top__record_precise_ip() should be called with the lock acquired.
+Hi,
 
-Argh, it was a different lock..  But it seems still need to dance
-anyway. ;-)
+On Saturday 11 January 2014 06:12 PM, Ivaylo Dimitrov wrote:
+> From: Ivaylo Dimitrov <freemangordon@abv.bg>
+>
+> commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
+> synclost errors in OMAP3 introduces limits check to prevent SYNCLOST errors
+> on OMAP3. However, it misses the logic found in Nokia kernels that is
+> needed to correctly calculate whether 3 tap or 5 tap rescaler to be used as
+> well as the logic to fallback to 3 taps if 5 taps clock results in too
+> tight horizontal timings. Without that patch "horizontal timing too tight"
+> errors are seen when a video with resolution above 640x350 is tried to be
+> played. The patch is a forward-ported logic found in Nokia N900 and N9/50
+> kernels.
+>
+> Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+> ---
+>   drivers/video/omap2/dss/dispc.c |   36 +++++++++++++++++++++++++-----------
+>   1 files changed, 25 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/video/omap2/dss/dispc.c b/drivers/video/omap2/dss/dispc.c
+> index 67e413e..9d1aa25 100644
+> --- a/drivers/video/omap2/dss/dispc.c
+> +++ b/drivers/video/omap2/dss/dispc.c
+> @@ -1999,7 +1999,8 @@ static void calc_tiler_rotation_offset(u16 screen_width, u16 width,
+>    */
+>   static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
+>   		const struct omap_video_timings *t, u16 pos_x,
+> -		u16 width, u16 height, u16 out_width, u16 out_height)
+> +		u16 width, u16 height, u16 out_width, u16 out_height,
+> +		bool five_taps)
+>   {
+>   	const int ds = DIV_ROUND_UP(height, out_height);
+>   	unsigned long nonactive;
+> @@ -2019,6 +2020,10 @@ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
+>   	if (blank <= limits[i])
+>   		return -EINVAL;
+>
+> +	/* FIXME add checks for 3-tap filter once the limitations are known */
+> +	if (!five_taps)
+> +		return 0;
+> +
+>   	/*
+>   	 * Pixel data should be prepared before visible display point starts.
+>   	 * So, atleast DS-2 lines must have already been fetched by DISPC
+> @@ -2191,24 +2196,33 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
+>   	const int maxsinglelinewidth =
+>   			dss_feat_get_param_max(FEAT_PARAM_LINEWIDTH);
+>
+> +	*five_taps = height > out_height;
+> +
+
+We should consider the decimated height when calculating the five taps. 
+I suggest the change below:
+
+>   	do {
+>   		in_height = DIV_ROUND_UP(height, *decim_y);
+>   		in_width = DIV_ROUND_UP(width, *decim_x);
+> -		*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
+> -			in_width, in_height, out_width, out_height, color_mode);
+> -
+> -		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
+> -				pos_x, in_width, in_height, out_width,
+> -				out_height);
+>
+
+set "*five_taps = in_height > out_height;" here. The rest of the code 
+remains the same.
+
+>   		if (in_width > maxsinglelinewidth)
+>   			if (in_height > out_height &&
+>   						in_height < out_height * 2)
+>   				*five_taps = false;
+> -		if (!*five_taps)
+> +again:
+> +		if (*five_taps)
+> +			*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
+> +						in_width, in_height, out_width,
+> +						out_height, color_mode);
+> +		else
+>   			*core_clk = dispc.feat->calc_core_clk(pclk, in_width,
+> -					in_height, out_width, out_height,
+> -					mem_to_mem);
+> +				in_height, out_width, out_height,
+> +				mem_to_mem);
+> +
+> +		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
+> +				pos_x, in_width, in_height, out_width,
+> +				out_height, *five_taps);
+> +		if (error && *five_taps) {
+> +			*five_taps = false;
+> +			goto again;
+> +		}
+>
+>   		error = (error || in_width > maxsinglelinewidth * 2 ||
+>   			(in_width > maxsinglelinewidth && *five_taps) ||
+> @@ -2226,7 +2240,7 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
+>   	} while (*decim_x <= *x_predecim && *decim_y <= *y_predecim && error);
+>
+>   	if (check_horiz_timing_omap3(pclk, lclk, mgr_timings, pos_x, width,
+> -				height, out_width, out_height)){
+> +				height, out_width, out_height, *five_taps)) {
+>   			DSSERR("horizontal timing too tight\n");
+>   			return -EINVAL;
+>   	}
+>
 
 Thanks,
-Namhyung
+Archit
+
