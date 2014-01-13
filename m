@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584AbaAMQok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:44:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53204 "EHLO
+	id S1755768AbaAMQo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:44:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53200 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798AbaAMQCu (ORCPT
+	with ESMTP id S1753795AbaAMQCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:50 -0500
+	Mon, 13 Jan 2014 11:02:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Len Brown <len.brown@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        kbuild test robot <fengguang.wu@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/208] ext4: add explicit casts when masking cluster sizes
-Date: Mon, 13 Jan 2014 15:58:44 +0000
-Message-Id: <1389628849-1614-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 081/208] libata, freezer: avoid block device removal while system is frozen
+Date: Mon, 13 Jan 2014 15:58:42 +0000
+Message-Id: <1389628849-1614-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,188 +32,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Tejun Heo <tj@kernel.org>
 
-commit f5a44db5d2d677dfbf12deee461f85e9ec633961 upstream.
+commit 85fbd722ad0f5d64d1ad15888cd1eb2188bfb557 upstream.
 
-The missing casts can cause the high 64-bits of the physical blocks to
-be lost.  Set up new macros which allows us to make sure the right
-thing happen, even if at some point we end up supporting larger
-logical block numbers.
+Freezable kthreads and workqueues are fundamentally problematic in
+that they effectively introduce a big kernel lock widely used in the
+kernel and have already been the culprit of several deadlock
+scenarios.  This is the latest occurrence.
 
-Thanks to the Emese Revfy and the PaX security team for reporting this
-issue.
+During resume, libata rescans all the ports and revalidates all
+pre-existing devices.  If it determines that a device has gone
+missing, the device is removed from the system which involves
+invalidating block device and flushing bdi while holding driver core
+layer locks.  Unfortunately, this can race with the rest of device
+resume.  Because freezable kthreads and workqueues are thawed after
+device resume is complete and block device removal depends on
+freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
+progress, this can lead to deadlock - block device removal can't
+proceed because kthreads are frozen and kthreads can't be thawed
+because device resume is blocked behind block device removal.
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Reported-by: Emese Revfy <re.emese@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+839a8e8660b6 ("writeback: replace custom worker pool implementation
+with unbound workqueue") made this particular deadlock scenario more
+visible but the underlying problem has always been there - the
+original forker task and jbd2 are freezable too.  In fact, this is
+highly likely just one of many possible deadlock scenarios given that
+freezer behaves as a big kernel lock and we don't have any debug
+mechanism around it.
+
+I believe the right thing to do is getting rid of freezable kthreads
+and workqueues.  This is something fundamentally broken.  For now,
+implement a funny workaround in libata - just avoid doing block device
+hot[un]plug while the system is frozen.  Kernel engineering at its
+finest.  :(
+
+v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
+    as a module.
+
+v3: Comment updated and polling interval changed to 10ms as suggested
+    by Rafael.
+
+v4: Add #ifdef CONFIG_FREEZER around the hack as pm_freezing is not
+    defined when FREEZER is not configured thus breaking build.
+    Reported by kbuild test robot.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
+Reviewed-by: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
+Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/ext4.h    | 10 ++++++++++
- fs/ext4/extents.c | 26 ++++++++++++--------------
- fs/ext4/mballoc.c |  6 +++---
- 3 files changed, 25 insertions(+), 17 deletions(-)
+ drivers/ata/libata-scsi.c | 21 +++++++++++++++++++++
+ kernel/freezer.c          |  6 ++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 0ab26fb..caa5e5b 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -270,6 +270,16 @@ struct ext4_io_submit {
- /* Translate # of blks to # of clusters */
- #define EXT4_NUM_B2C(sbi, blks)	(((blks) + (sbi)->s_cluster_ratio - 1) >> \
- 				 (sbi)->s_cluster_bits)
-+/* Mask out the low bits to get the starting block of the cluster */
-+#define EXT4_PBLK_CMASK(s, pblk) ((pblk) &				\
-+				  ~((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
-+#define EXT4_LBLK_CMASK(s, lblk) ((lblk) &				\
-+				  ~((ext4_lblk_t) (s)->s_cluster_ratio - 1))
-+/* Get the cluster offset */
-+#define EXT4_PBLK_COFF(s, pblk) ((pblk) &				\
-+				 ((ext4_fsblk_t) (s)->s_cluster_ratio - 1))
-+#define EXT4_LBLK_COFF(s, lblk) ((lblk) &				\
-+				 ((ext4_lblk_t) (s)->s_cluster_ratio - 1))
- 
- /*
-  * Structure of a blocks group descriptor
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index f2eace4..f8d6668 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1772,8 +1772,7 @@ static unsigned int ext4_ext_check_overlap(struct ext4_sb_info *sbi,
- 	depth = ext_depth(inode);
- 	if (!path[depth].p_ext)
- 		goto out;
--	b2 = le32_to_cpu(path[depth].p_ext->ee_block);
--	b2 &= ~(sbi->s_cluster_ratio - 1);
-+	b2 = EXT4_LBLK_CMASK(sbi, le32_to_cpu(path[depth].p_ext->ee_block));
- 
- 	/*
- 	 * get the next allocated block if the extent in the path
-@@ -1783,7 +1782,7 @@ static unsigned int ext4_ext_check_overlap(struct ext4_sb_info *sbi,
- 		b2 = ext4_ext_next_allocated_block(path);
- 		if (b2 == EXT_MAX_BLOCKS)
- 			goto out;
--		b2 &= ~(sbi->s_cluster_ratio - 1);
-+		b2 = EXT4_LBLK_CMASK(sbi, b2);
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 94d72f3c..df64fca 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3863,6 +3863,27 @@ void ata_scsi_hotplug(struct work_struct *work)
+ 		return;
  	}
  
- 	/* check for wrap through zero on extent logical start block*/
-@@ -2463,7 +2462,7 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
- 		 * extent, we have to mark the cluster as used (store negative
- 		 * cluster number in partial_cluster).
- 		 */
--		unaligned = pblk & (sbi->s_cluster_ratio - 1);
-+		unaligned = EXT4_PBLK_COFF(sbi, pblk);
- 		if (unaligned && (ee_len == num) &&
- 		    (*partial_cluster != -((long long)EXT4_B2C(sbi, pblk))))
- 			*partial_cluster = EXT4_B2C(sbi, pblk);
-@@ -2557,7 +2556,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 			 * accidentally freeing it later on
- 			 */
- 			pblk = ext4_ext_pblock(ex);
--			if (pblk & (sbi->s_cluster_ratio - 1))
-+			if (EXT4_PBLK_COFF(sbi, pblk))
- 				*partial_cluster =
- 					-((long long)EXT4_B2C(sbi, pblk));
- 			ex--;
-@@ -3697,7 +3696,7 @@ int ext4_find_delalloc_cluster(struct inode *inode, ext4_lblk_t lblk)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	ext4_lblk_t lblk_start, lblk_end;
--	lblk_start = lblk & (~(sbi->s_cluster_ratio - 1));
-+	lblk_start = EXT4_LBLK_CMASK(sbi, lblk);
- 	lblk_end = lblk_start + sbi->s_cluster_ratio - 1;
++	/*
++	 * XXX - UGLY HACK
++	 *
++	 * The block layer suspend/resume path is fundamentally broken due
++	 * to freezable kthreads and workqueue and may deadlock if a block
++	 * device gets removed while resume is in progress.  I don't know
++	 * what the solution is short of removing freezable kthreads and
++	 * workqueues altogether.
++	 *
++	 * The following is an ugly hack to avoid kicking off device
++	 * removal while freezer is active.  This is a joke but does avoid
++	 * this particular deadlock scenario.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
++	 * http://marc.info/?l=linux-kernel&m=138695698516487
++	 */
++#ifdef CONFIG_FREEZER
++	while (pm_freezing)
++		msleep(10);
++#endif
++
+ 	DPRINTK("ENTER\n");
+ 	mutex_lock(&ap->scsi_scan_mutex);
  
- 	return ext4_find_delalloc_range(inode, lblk_start, lblk_end);
-@@ -3756,9 +3755,9 @@ get_reserved_cluster_alloc(struct inode *inode, ext4_lblk_t lblk_start,
- 	trace_ext4_get_reserved_cluster_alloc(inode, lblk_start, num_blks);
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index b462fa1..aa6a8aa 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
+ bool pm_freezing;
+ bool pm_nosig_freezing;
  
- 	/* Check towards left side */
--	c_offset = lblk_start & (sbi->s_cluster_ratio - 1);
-+	c_offset = EXT4_LBLK_COFF(sbi, lblk_start);
- 	if (c_offset) {
--		lblk_from = lblk_start & (~(sbi->s_cluster_ratio - 1));
-+		lblk_from = EXT4_LBLK_CMASK(sbi, lblk_start);
- 		lblk_to = lblk_from + c_offset - 1;
++/*
++ * Temporary export for the deadlock workaround in ata_scsi_hotplug().
++ * Remove once the hack becomes unnecessary.
++ */
++EXPORT_SYMBOL_GPL(pm_freezing);
++
+ /* protects freezing and frozen transitions */
+ static DEFINE_SPINLOCK(freezer_lock);
  
- 		if (ext4_find_delalloc_range(inode, lblk_from, lblk_to))
-@@ -3766,7 +3765,7 @@ get_reserved_cluster_alloc(struct inode *inode, ext4_lblk_t lblk_start,
- 	}
- 
- 	/* Now check towards right. */
--	c_offset = (lblk_start + num_blks) & (sbi->s_cluster_ratio - 1);
-+	c_offset = EXT4_LBLK_COFF(sbi, lblk_start + num_blks);
- 	if (allocated_clusters && c_offset) {
- 		lblk_from = lblk_start + num_blks;
- 		lblk_to = lblk_from + (sbi->s_cluster_ratio - c_offset) - 1;
-@@ -3974,7 +3973,7 @@ static int get_implied_cluster_alloc(struct super_block *sb,
- 				     struct ext4_ext_path *path)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
--	ext4_lblk_t c_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
-+	ext4_lblk_t c_offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
- 	ext4_lblk_t ex_cluster_start, ex_cluster_end;
- 	ext4_lblk_t rr_cluster_start;
- 	ext4_lblk_t ee_block = le32_to_cpu(ex->ee_block);
-@@ -3992,8 +3991,7 @@ static int get_implied_cluster_alloc(struct super_block *sb,
- 	    (rr_cluster_start == ex_cluster_start)) {
- 		if (rr_cluster_start == ex_cluster_end)
- 			ee_start += ee_len - 1;
--		map->m_pblk = (ee_start & ~(sbi->s_cluster_ratio - 1)) +
--			c_offset;
-+		map->m_pblk = EXT4_PBLK_CMASK(sbi, ee_start) + c_offset;
- 		map->m_len = min(map->m_len,
- 				 (unsigned) sbi->s_cluster_ratio - c_offset);
- 		/*
-@@ -4147,7 +4145,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
- 	 */
- 	map->m_flags &= ~EXT4_MAP_FROM_CLUSTER;
- 	newex.ee_block = cpu_to_le32(map->m_lblk);
--	cluster_offset = map->m_lblk & (sbi->s_cluster_ratio-1);
-+	cluster_offset = EXT4_LBLK_CMASK(sbi, map->m_lblk);
- 
- 	/*
- 	 * If we are doing bigalloc, check to see if the extent returned
-@@ -4215,7 +4213,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
- 	 * needed so that future calls to get_implied_cluster_alloc()
- 	 * work correctly.
- 	 */
--	offset = map->m_lblk & (sbi->s_cluster_ratio - 1);
-+	offset = EXT4_LBLK_COFF(sbi, map->m_lblk);
- 	ar.len = EXT4_NUM_B2C(sbi, offset+allocated);
- 	ar.goal -= offset;
- 	ar.logical -= offset;
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index f243825..cb1ffce 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4108,7 +4108,7 @@ ext4_mb_initialize_context(struct ext4_allocation_context *ac,
- 	ext4_get_group_no_and_offset(sb, goal, &group, &block);
- 
- 	/* set up allocation goals */
--	ac->ac_b_ex.fe_logical = ar->logical & ~(sbi->s_cluster_ratio - 1);
-+	ac->ac_b_ex.fe_logical = EXT4_LBLK_CMASK(sbi, ar->logical);
- 	ac->ac_status = AC_STATUS_CONTINUE;
- 	ac->ac_sb = sb;
- 	ac->ac_inode = ar->inode;
-@@ -4649,7 +4649,7 @@ void ext4_free_blocks(handle_t *handle, struct inode *inode,
- 	 * blocks at the beginning or the end unless we are explicitly
- 	 * requested to avoid doing so.
- 	 */
--	overflow = block & (sbi->s_cluster_ratio - 1);
-+	overflow = EXT4_PBLK_COFF(sbi, block);
- 	if (overflow) {
- 		if (flags & EXT4_FREE_BLOCKS_NOFREE_FIRST_CLUSTER) {
- 			overflow = sbi->s_cluster_ratio - overflow;
-@@ -4663,7 +4663,7 @@ void ext4_free_blocks(handle_t *handle, struct inode *inode,
- 			count += overflow;
- 		}
- 	}
--	overflow = count & (sbi->s_cluster_ratio - 1);
-+	overflow = EXT4_LBLK_COFF(sbi, count);
- 	if (overflow) {
- 		if (flags & EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER) {
- 			if (count > overflow)
 -- 
 1.8.3.2
 
