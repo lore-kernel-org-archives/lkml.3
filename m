@@ -1,352 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaAMQ63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:58:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580AbaAMQyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:54:50 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
-        Cliff Wickman <cpw@sgi.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 11/11] mempolicy: apply page table walker on queue_pages_range()
-Date: Mon, 13 Jan 2014 11:54:11 -0500
-Message-Id: <1389632051-25159-12-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1753549AbaAMQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:02:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52986 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbaAMQBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:01:52 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 040/208] drm/i915: don't update the dri1 breadcrumb with modesetting
+Date: Mon, 13 Jan 2014 15:58:01 +0000
+Message-Id: <1389628849-1614-41-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-queue_pages_range() does page table walking in its own way now,
-so this patch rewrites it with walk_page_range().
-One difficulty was that queue_pages_range() needed to check vmas
-to determine whether we queue pages from a given vma or skip it.
-Now we have test_walk() callback in mm_walk for that purpose,
-so we can do the replacement cleanly. queue_pages_test_walk()
-depends on not only the current vma but also the previous one,
-so we use queue_pages->prev to keep it.
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-ChangeLog v2:
-- rebase onto mmots
-- add VM_PFNMAP check on queue_pages_test_walk()
+------------------
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+
+commit 6c719faca2aceca72f1bf5b1645c1734ed3e9447 upstream.
+
+The update is horribly racy since it doesn't protect at all against
+concurrent closing of the master fd. And it can't really since that
+requires us to grab a mutex.
+
+Instead of jumping through hoops and offloading this to a worker
+thread just block this bit of code for the modesetting driver.
+
+Note that the race is fairly easy to hit since we call the breadcrumb
+function for any interrupt. So the vblank interrupt (which usually
+keeps going for a bit) is enough. But even if we'd block this and only
+update the breadcrumb for user interrupts from the CS we could hit
+this race with kms/gem userspace: If a non-master is waiting somewhere
+(and hence has interrupts enabled) and the master closes its fd
+(probably due to crashing).
+
+v2: Add a code comment to explain why fixing this for real isn't
+really worth it. Also improve the commit message a bit.
+
+v3: Fix the spelling in the comment.
+
+Reported-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Tested-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/mempolicy.c | 255 ++++++++++++++++++++++-----------------------------------
- 1 file changed, 99 insertions(+), 156 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git mmotm-2014-01-09-16-23.orig/mm/mempolicy.c mmotm-2014-01-09-16-23/mm/mempolicy.c
-index 9bfb1a020aa6..1007bed55678 100644
---- mmotm-2014-01-09-16-23.orig/mm/mempolicy.c
-+++ mmotm-2014-01-09-16-23/mm/mempolicy.c
-@@ -476,140 +476,66 @@ static const struct mempolicy_operations mpol_ops[MPOL_MAX] = {
- static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 				unsigned long flags);
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index fc34376..0c956e9 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -83,6 +83,14 @@ void i915_update_dri1_breadcrumb(struct drm_device *dev)
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+ 	struct drm_i915_master_private *master_priv;
  
-+struct queue_pages {
-+	struct list_head *pagelist;
-+	unsigned long flags;
-+	nodemask_t *nmask;
-+	struct vm_area_struct *prev;
-+};
-+
- /*
-  * Scan through pages checking if pages follow certain conditions,
-  * and move them to the pagelist if they do.
-  */
--static int queue_pages_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
-+static int queue_pages_pte(pte_t *pte, unsigned long addr,
-+			unsigned long next, struct mm_walk *walk)
- {
--	pte_t *orig_pte;
--	pte_t *pte;
--	spinlock_t *ptl;
--
--	orig_pte = pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	do {
--		struct page *page;
--		int nid;
-+	struct vm_area_struct *vma = walk->vma;
-+	struct page *page;
-+	struct queue_pages *qp = walk->private;
-+	unsigned long flags = qp->flags;
-+	int nid;
- 
--		if (!pte_present(*pte))
--			continue;
--		page = vm_normal_page(vma, addr, *pte);
--		if (!page)
--			continue;
--		/*
--		 * vm_normal_page() filters out zero pages, but there might
--		 * still be PageReserved pages to skip, perhaps in a VDSO.
--		 */
--		if (PageReserved(page))
--			continue;
--		nid = page_to_nid(page);
--		if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
--			continue;
-+	if (!pte_present(*pte))
-+		return 0;
-+	page = vm_normal_page(vma, addr, *pte);
-+	if (!page)
-+		return 0;
 +	/*
-+	 * vm_normal_page() filters out zero pages, but there might
-+	 * still be PageReserved pages to skip, perhaps in a VDSO.
++	 * The dri breadcrumb update races against the drm master disappearing.
++	 * Instead of trying to fix this (this is by far not the only ums issue)
++	 * just don't do the update in kms mode.
 +	 */
-+	if (PageReserved(page))
-+		return 0;
-+	nid = page_to_nid(page);
-+	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
-+		return 0;
- 
--		if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
--			migrate_page_add(page, private, flags);
--		else
--			break;
--	} while (pte++, addr += PAGE_SIZE, addr != end);
--	pte_unmap_unlock(orig_pte, ptl);
--	return addr != end;
-+	if (flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
-+		migrate_page_add(page, qp->pagelist, flags);
-+	return 0;
- }
- 
--static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
--		pmd_t *pmd, const nodemask_t *nodes, unsigned long flags,
--				    void *private)
-+static int queue_pages_hugetlb(pte_t *pte, unsigned long addr,
-+				unsigned long next, struct mm_walk *walk)
- {
- #ifdef CONFIG_HUGETLB_PAGE
-+	struct queue_pages *qp = walk->private;
-+	unsigned long flags = qp->flags;
- 	int nid;
- 	struct page *page;
--	spinlock_t *ptl;
- 
--	ptl = huge_pte_lock(hstate_vma(vma), vma->vm_mm, (pte_t *)pmd);
--	page = pte_page(huge_ptep_get((pte_t *)pmd));
-+	page = pte_page(huge_ptep_get(pte));
- 	nid = page_to_nid(page);
--	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
--		goto unlock;
-+	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
-+		return 0;
- 	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
- 	if (flags & (MPOL_MF_MOVE_ALL) ||
- 	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
--		isolate_huge_page(page, private);
--unlock:
--	spin_unlock(ptl);
-+		isolate_huge_page(page, qp->pagelist);
- #else
- 	BUG();
- #endif
--}
--
--static inline int queue_pages_pmd_range(struct vm_area_struct *vma, pud_t *pud,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pmd_t *pmd;
--	unsigned long next;
--
--	pmd = pmd_offset(pud, addr);
--	do {
--		next = pmd_addr_end(addr, end);
--		if (!pmd_present(*pmd))
--			continue;
--		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
--			queue_pages_hugetlb_pmd_range(vma, pmd, nodes,
--						flags, private);
--			continue;
--		}
--		split_huge_page_pmd(vma, addr, pmd);
--		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
--			continue;
--		if (queue_pages_pte_range(vma, pmd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pmd++, addr = next, addr != end);
--	return 0;
--}
--
--static inline int queue_pages_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pud_t *pud;
--	unsigned long next;
--
--	pud = pud_offset(pgd, addr);
--	do {
--		next = pud_addr_end(addr, end);
--		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
--			continue;
--		if (pud_none_or_clear_bad(pud))
--			continue;
--		if (queue_pages_pmd_range(vma, pud, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pud++, addr = next, addr != end);
--	return 0;
--}
--
--static inline int queue_pages_pgd_range(struct vm_area_struct *vma,
--		unsigned long addr, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags,
--		void *private)
--{
--	pgd_t *pgd;
--	unsigned long next;
--
--	pgd = pgd_offset(vma->vm_mm, addr);
--	do {
--		next = pgd_addr_end(addr, end);
--		if (pgd_none_or_clear_bad(pgd))
--			continue;
--		if (queue_pages_pud_range(vma, pgd, addr, next, nodes,
--				    flags, private))
--			return -EIO;
--	} while (pgd++, addr = next, addr != end);
- 	return 0;
- }
- 
-@@ -643,6 +569,45 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
- }
- #endif /* CONFIG_ARCH_USES_NUMA_PROT_NONE */
- 
-+static int queue_pages_test_walk(unsigned long start, unsigned long end,
-+				struct mm_walk *walk)
-+{
-+	struct vm_area_struct *vma = walk->vma;
-+	struct queue_pages *qp = walk->private;
-+	unsigned long endvma = vma->vm_end;
-+	unsigned long flags = qp->flags;
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		return;
 +
-+	if (endvma > end)
-+		endvma = end;
-+	if (vma->vm_start > start)
-+		start = vma->vm_start;
-+
-+	if (!(flags & MPOL_MF_DISCONTIG_OK)) {
-+		if (!vma->vm_next && vma->vm_end < end)
-+			return -EFAULT;
-+		if (qp->prev && qp->prev->vm_end < vma->vm_start)
-+			return -EFAULT;
-+	}
-+
-+	qp->prev = vma;
-+	walk->skip = 1;
-+
-+	if (vma->vm_flags & VM_PFNMAP)
-+		return 0;
-+
-+	if (flags & MPOL_MF_LAZY) {
-+		change_prot_numa(vma, start, endvma);
-+		return 0;
-+	}
-+
-+	if ((flags & MPOL_MF_STRICT) ||
-+	    ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
-+	     vma_migratable(vma)))
-+		/* queue pages from current vma */
-+		walk->skip = 0;
-+	return 0;
-+}
-+
- /*
-  * Walk through page tables and collect pages to be migrated.
-  *
-@@ -652,51 +617,29 @@ static unsigned long change_prot_numa(struct vm_area_struct *vma,
-  */
- static struct vm_area_struct *
- queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
--		const nodemask_t *nodes, unsigned long flags, void *private)
-+		nodemask_t *nodes, unsigned long flags,
-+		struct list_head *pagelist)
- {
- 	int err;
--	struct vm_area_struct *first, *vma, *prev;
--
--
--	first = find_vma(mm, start);
--	if (!first)
--		return ERR_PTR(-EFAULT);
--	prev = NULL;
--	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
--		unsigned long endvma = vma->vm_end;
--
--		if (endvma > end)
--			endvma = end;
--		if (vma->vm_start > start)
--			start = vma->vm_start;
--
--		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
--			if (!vma->vm_next && vma->vm_end < end)
--				return ERR_PTR(-EFAULT);
--			if (prev && prev->vm_end < vma->vm_start)
--				return ERR_PTR(-EFAULT);
--		}
--
--		if (flags & MPOL_MF_LAZY) {
--			change_prot_numa(vma, start, endvma);
--			goto next;
--		}
--
--		if ((flags & MPOL_MF_STRICT) ||
--		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
--		      vma_migratable(vma))) {
--
--			err = queue_pages_pgd_range(vma, start, endvma, nodes,
--						flags, private);
--			if (err) {
--				first = ERR_PTR(err);
--				break;
--			}
--		}
--next:
--		prev = vma;
--	}
--	return first;
-+	struct queue_pages qp = {
-+		.pagelist = pagelist,
-+		.flags = flags,
-+		.nmask = nodes,
-+		.prev = NULL,
-+	};
-+	struct mm_walk queue_pages_walk = {
-+		.hugetlb_entry = queue_pages_hugetlb,
-+		.pte_entry = queue_pages_pte,
-+		.test_walk = queue_pages_test_walk,
-+		.mm = mm,
-+		.private = &qp,
-+	};
-+
-+	err = walk_page_range(start, end, &queue_pages_walk);
-+	if (err < 0)
-+		return ERR_PTR(err);
-+	else
-+		return find_vma(mm, start);
- }
- 
- /*
+ 	if (dev->primary->master) {
+ 		master_priv = dev->primary->master->driver_priv;
+ 		if (master_priv->sarea_priv)
 -- 
-1.8.4.2
+1.8.3.2
 
