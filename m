@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaAMTXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:23:16 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2008 "EHLO mga02.intel.com"
+	id S1752763AbaAMTXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:23:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31655 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576AbaAMTXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:23:06 -0500
+	id S1752717AbaAMTXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 14:23:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,654,1384329600"; 
-   d="scan'208";a="465999829"
-Subject: [PATCH 02/12] x86 Kconfig: memory options
+   d="scan'208";a="458081185"
+Subject: [PATCH 04/12] x86 Kconfig: processor options menu
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 13 Jan 2014 11:22:48 -0800
+Date: Mon, 13 Jan 2014 11:22:50 -0800
 References: <20140113192245.3F682C7F@viggo.jf.intel.com>
 In-Reply-To: <20140113192245.3F682C7F@viggo.jf.intel.com>
-Message-Id: <20140113192248.BC4B996A@viggo.jf.intel.com>
+Message-Id: <20140113192250.38D9ADDB@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,500 +24,271 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-This consolidates a bunch of VM, memory and NUMA options down to
-be under a single Kconfig menu.  Most of this stuff is pretty
-obscure, like HIGHPTE or ZONE_DMA support.  It doesn't really
-deserve to be in the top-level menu.
+This tries to consolidate the actual processor options that
+someone might want to configure.  It's a bit arbitrary how you
+might separate these, but I at least took a stab at it.
 
-For what it's worth "Processor type and features" seems to have
-become mostly a dumping ground for architecture-specific
-features.  Maybe we should just change the name of the menu too?
+The real goal here was to hide stuff that folks will rarely look
+at, and to make them easier to find when folks _do_ need to
+change them.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/arch/x86/Kconfig |  450 ++++++++++++++++++------------------
- 1 file changed, 227 insertions(+), 223 deletions(-)
+ linux.git-davehans/arch/x86/Kconfig |  208 ++++++++++++++++++------------------
+ 1 file changed, 106 insertions(+), 102 deletions(-)
 
-diff -puN arch/x86/Kconfig~x86-memory-options arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~x86-memory-options	2014-01-13 11:11:34.717169954 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:34.720170090 -0800
-@@ -264,16 +264,6 @@ source "kernel/Kconfig.freezer"
+diff -puN arch/x86/Kconfig~processor-options arch/x86/Kconfig
+--- linux.git/arch/x86/Kconfig~processor-options	2014-01-13 11:11:35.138188988 -0800
++++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:35.141189123 -0800
+@@ -264,6 +264,8 @@ source "kernel/Kconfig.freezer"
  
  menu "Processor type and features"
  
--config ZONE_DMA
--	bool "DMA memory allocation support" if EXPERT
--	default y
--	help
--	  DMA memory allocation support allows devices with less than 32-bit
--	  addressing to allocate within the first 16MB of address space.
--	  Disable if no such devices will be used.
--
--	  If unsure, say Y.
--
++menu "Processor Options and Features"
++
  config SMP
  	bool "Symmetric multi-processing support"
  	---help---
-@@ -331,6 +321,233 @@ config GOLDFISH
-        def_bool y
-        depends on X86_GOLDFISH
+@@ -292,6 +294,110 @@ config SMP
  
-+menu "Memory and NUMA Options"
+ 	  If you don't know what to do here, say N.
+ 
++config MAXSMP
++	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
++	depends on X86_64 && SMP && DEBUG_KERNEL
++	select CPUMASK_OFFSTACK
++	---help---
++	  Enable maximum number of CPUS and NUMA Nodes for this architecture.
++	  If unsure, say N.
 +
-+config ZONE_DMA
-+	bool "DMA memory allocation support" if EXPERT
-+	default y
-+	help
-+	  DMA memory allocation support allows devices with less than 32-bit
-+	  addressing to allocate within the first 16MB of address space.
-+	  Disable if no such devices will be used.
++config NR_CPUS
++	int "Maximum number of CPUs" if SMP && !MAXSMP
++	range 2 8 if SMP && X86_32 && !X86_BIGSMP
++	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
++	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
++	default "1" if !SMP
++	default "8192" if MAXSMP
++	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
++	default "8" if SMP
++	---help---
++	  This allows you to specify the maximum number of CPUs which this
++	  kernel will support.  If CPUMASK_OFFSTACK is enabled, the maximum
++	  supported value is 4096, otherwise the maximum value is 512.  The
++	  minimum value which makes sense is 2.
++
++	  This is purely to save memory - each supported CPU adds
++	  approximately eight kilobytes to the kernel image.
++
++config HOTPLUG_CPU
++	bool "Support for hot-pluggable CPUs"
++	depends on SMP
++	---help---
++	  Say Y here to allow turning CPUs off and on. CPUs can be
++	  controlled through /sys/devices/system/cpu.
++	  ( Note: power management support will enable this option
++	    automatically on SMP systems. )
++	  Say N if you want to disable CPU hotplug.
++
++config BOOTPARAM_HOTPLUG_CPU0
++	bool "Set default setting of cpu0_hotpluggable"
++	default n
++	depends on HOTPLUG_CPU
++	---help---
++	  Set whether default state of cpu0_hotpluggable is on or off.
++
++	  Say Y here to enable CPU0 hotplug by default. If this switch
++	  is turned on, there is no need to give cpu0_hotplug kernel
++	  parameter and the CPU0 hotplug feature is enabled by default.
++
++	  Please note: there are two known CPU0 dependencies if you want
++	  to enable the CPU0 hotplug feature either by this switch or by
++	  cpu0_hotplug kernel parameter.
++
++	  First, resume from hibernate or suspend always starts from CPU0.
++	  So hibernate and suspend are prevented if CPU0 is offline.
++
++	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
++	  offline if any interrupt can not migrate out of CPU0. There may
++	  be other CPU0 dependencies.
++
++	  Please make sure the dependencies are under your control before
++	  you enable this feature.
++
++	  Say N if you don't want to enable CPU0 hotplug feature by default.
++	  You still can enable the CPU0 hotplug feature at boot by kernel
++	  parameter cpu0_hotplug.
++
++config DEBUG_HOTPLUG_CPU0
++	def_bool n
++	prompt "Debug CPU0 hotplug"
++	depends on HOTPLUG_CPU
++	---help---
++	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
++	  soon as possible and boots up userspace with CPU0 offlined. User
++	  can online CPU0 back after boot time.
++
++	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
++	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
++	  compilation or giving cpu0_hotplug kernel parameter at boot.
++
++	  If unsure, say N.
++
++source "arch/x86/Kconfig.cpu"
++
++config ARCH_RANDOM
++	def_bool y
++	prompt "x86 architectural random number generator" if EXPERT
++	---help---
++	  Enable the x86 architectural RDRAND instruction
++	  (Intel Bull Mountain technology) to generate random numbers.
++	  If supported, this is a high bandwidth, cryptographically
++	  secure hardware random number generator.
++
++config X86_SMAP
++	def_bool y
++	prompt "Supervisor Mode Access Prevention" if EXPERT
++	---help---
++	  Supervisor Mode Access Prevention (SMAP) is a security
++	  feature in newer Intel processors.  There is a small
++	  performance cost if this enabled and turned on; there is
++	  also a small increase in the kernel size if this is enabled.
 +
 +	  If unsure, say Y.
 +
-+config DIRECT_GBPAGES
-+	bool "Enable 1GB pages for kernel pagetables" if EXPERT
-+	default y
-+	depends on X86_64
-+	---help---
-+	  Allow the kernel linear mapping to use 1GB pages on CPUs that
-+	  support it. This can improve the kernel's performance a tiny bit by
-+	  reducing TLB pressure. If in doubt, say "Y".
++endmenu # Processor Options
 +
-+# Common NUMA Features
-+config NUMA
-+	bool "Numa Memory Allocation and Scheduler Support"
-+	depends on SMP
-+	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI))
-+	default y if (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP)
-+	---help---
-+	  Enable NUMA (Non Uniform Memory Access) support.
-+
-+	  The kernel will try to allocate memory used by a CPU on the
-+	  local memory controller of the CPU and add some more
-+	  NUMA awareness to the kernel.
-+
-+	  For 64-bit this is recommended if the system is Intel Core i7
-+	  (or later), AMD Opteron, or EM64T NUMA.
-+
-+	  For 32-bit this is only needed on (rare) 32-bit-only platforms
-+	  that support NUMA topologies, such as NUMAQ / Summit, or if you
-+	  boot a 32-bit kernel on a 64-bit NUMA platform.
-+
-+	  Otherwise, you should say N.
-+
-+comment "NUMA (Summit) requires SMP, 64GB highmem support, ACPI"
-+	depends on X86_32 && X86_SUMMIT && (!HIGHMEM64G || !ACPI)
-+
-+config AMD_NUMA
-+	def_bool y
-+	prompt "Old style AMD Opteron NUMA detection"
-+	depends on X86_64 && NUMA && PCI
-+	---help---
-+	  Enable AMD NUMA node topology detection.  You should say Y here if
-+	  you have a multi processor AMD system. This uses an old method to
-+	  read the NUMA configuration directly from the builtin Northbridge
-+	  of Opteron. It is recommended to use X86_64_ACPI_NUMA instead,
-+	  which also takes priority if both are compiled in.
-+
-+config X86_64_ACPI_NUMA
-+	def_bool y
-+	prompt "ACPI NUMA detection"
-+	depends on X86_64 && NUMA && ACPI && PCI
-+	select ACPI_NUMA
-+	---help---
-+	  Enable ACPI SRAT based node topology detection.
-+
-+# Some NUMA nodes have memory ranges that span
-+# other nodes.  Even though a pfn is valid and
-+# between a node's start and end pfns, it may not
-+# reside on that node.  See memmap_init_zone()
-+# for details.
-+config NODES_SPAN_OTHER_NODES
-+	def_bool y
-+	depends on X86_64_ACPI_NUMA
-+
-+config NUMA_EMU
-+	bool "NUMA emulation"
-+	depends on NUMA
-+	---help---
-+	  Enable NUMA emulation. A flat machine will be split
-+	  into virtual nodes when booted with "numa=fake=N", where N is the
-+	  number of nodes. This is only useful for debugging.
-+
-+config NODES_SHIFT
-+	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
-+	range 1 10
-+	default "10" if MAXSMP
-+	default "6" if X86_64
-+	default "4" if X86_NUMAQ
-+	default "3"
-+	depends on NEED_MULTIPLE_NODES
-+	---help---
-+	  Specify the maximum number of NUMA Nodes available on the target
-+	  system.  Increases memory reserved to accommodate various tables.
-+
-+config ARCH_HAVE_MEMORY_PRESENT
-+	def_bool y
-+	depends on X86_32 && DISCONTIGMEM
-+
-+config NEED_NODE_MEMMAP_SIZE
-+	def_bool y
-+	depends on X86_32 && (DISCONTIGMEM || SPARSEMEM)
-+
-+config ARCH_FLATMEM_ENABLE
-+	def_bool y
-+	depends on X86_32 && !NUMA
-+
-+config ARCH_DISCONTIGMEM_ENABLE
-+	def_bool y
-+	depends on NUMA && X86_32
-+
-+config ARCH_DISCONTIGMEM_DEFAULT
-+	def_bool y
-+	depends on NUMA && X86_32
-+
-+config ARCH_SPARSEMEM_ENABLE
-+	def_bool y
-+	depends on X86_64 || NUMA || X86_32 || X86_32_NON_STANDARD
-+	select SPARSEMEM_STATIC if X86_32
-+	select SPARSEMEM_VMEMMAP_ENABLE if X86_64
-+
-+config ARCH_SPARSEMEM_DEFAULT
-+	def_bool y
-+	depends on X86_64
-+
-+config ARCH_SELECT_MEMORY_MODEL
-+	def_bool y
-+	depends on ARCH_SPARSEMEM_ENABLE
-+
-+config ARCH_MEMORY_PROBE
-+	bool "Enable sysfs memory/probe interface"
-+	depends on X86_64 && MEMORY_HOTPLUG
-+	help
-+	  This option enables a sysfs memory/probe interface for testing.
-+	  See Documentation/memory-hotplug.txt for more information.
-+	  If you are unsure how to answer this question, answer N.
-+
-+config ARCH_PROC_KCORE_TEXT
-+	def_bool y
-+	depends on X86_64 && PROC_KCORE
-+
-+config ILLEGAL_POINTER_VALUE
-+       hex
-+       default 0 if X86_32
-+       default 0xdead000000000000 if X86_64
-+
-+source "mm/Kconfig"
-+
-+config HIGHPTE
-+	bool "Allocate 3rd-level pagetables from highmem"
-+	depends on HIGHMEM
-+	---help---
-+	  The VM uses one page table entry for each page of physical memory.
-+	  For systems with a lot of RAM, this can be wasteful of precious
-+	  low memory.  Setting this option will put user-space page table
-+	  entries in high memory.
-+
-+config X86_CHECK_BIOS_CORRUPTION
-+	bool "Check for low memory corruption"
-+	---help---
-+	  Periodically check for memory corruption in low memory, which
-+	  is suspected to be caused by BIOS.  Even when enabled in the
-+	  configuration, it is disabled at runtime.  Enable it by
-+	  setting "memory_corruption_check=1" on the kernel command
-+	  line.  By default it scans the low 64k of memory every 60
-+	  seconds; see the memory_corruption_check_size and
-+	  memory_corruption_check_period parameters in
-+	  Documentation/kernel-parameters.txt to adjust this.
-+
-+	  When enabled with the default parameters, this option has
-+	  almost no overhead, as it reserves a relatively small amount
-+	  of memory and scans it infrequently.  It both detects corruption
-+	  and prevents it from affecting the running system.
-+
-+	  It is, however, intended as a diagnostic tool; if repeatable
-+	  BIOS-originated corruption always affects the same memory,
-+	  you can use memmap= to prevent the kernel from using that
-+	  memory.
-+
-+config X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK
-+	bool "Set the default setting of memory_corruption_check"
-+	depends on X86_CHECK_BIOS_CORRUPTION
-+	default y
-+	---help---
-+	  Set whether the default state of memory_corruption_check is
-+	  on or off.
-+
-+config X86_RESERVE_LOW
-+	int "Amount of low memory, in kilobytes, to reserve for the BIOS"
-+	default 64
-+	range 4 640
-+	---help---
-+	  Specify the amount of low memory to reserve for the BIOS.
-+
-+	  The first page contains BIOS data structures that the kernel
-+	  must not use, so that page must always be reserved.
-+
-+	  By default we reserve the first 64K of physical RAM, as a
-+	  number of BIOSes are known to corrupt that memory range
-+	  during events such as suspend/resume or monitor cable
-+	  insertion, so it must not be used by the kernel.
-+
-+	  You can set this to 4 if you are absolutely sure that you
-+	  trust the BIOS to get all its memory reservations and usages
-+	  right.  If you know your BIOS have problems beyond the
-+	  default 64K area, you can set this to 640 to avoid using the
-+	  entire low memory range.
-+
-+	  If you have doubts about the BIOS (e.g. suspend/resume does
-+	  not work or there's kernel crashes after certain hardware
-+	  hotplug events) then you might want to enable
-+	  X86_CHECK_BIOS_CORRUPTION=y to allow the kernel to check
-+	  typical corruption patterns.
-+
-+	  Leave this to the default value of 64 if you are unsure.
-+
-+config X86_SUPPORTS_MEMORY_FAILURE
-+	def_bool y
-+	# MCE code calls memory_failure():
-+	depends on X86_MCE
-+	# On 32-bit this adds too big of NODES_SHIFT and we run out of page flags:
-+	depends on !X86_NUMAQ
-+	# On 32-bit SPARSEMEM adds too big of SECTIONS_WIDTH:
-+	depends on X86_64 || !SPARSEMEM
-+	select ARCH_SUPPORTS_MEMORY_FAILURE
-+
-+endmenu # Memory and NUMA Options
-+
- if X86_WANT_INTEL_MID
- 
- config X86_INTEL_MID
-@@ -370,16 +587,6 @@ config X86_INTEL_LPSS
- 	  things like clock tree (common clock framework) and pincontrol
- 	  which are needed by the LPSS peripheral drivers.
- 
--config X86_SUPPORTS_MEMORY_FAILURE
--	def_bool y
--	# MCE code calls memory_failure():
--	depends on X86_MCE
--	# On 32-bit this adds too big of NODES_SHIFT and we run out of page flags:
--	depends on !X86_NUMAQ
--	# On 32-bit SPARSEMEM adds too big of SECTIONS_WIDTH:
--	depends on X86_64 || !SPARSEMEM
--	select ARCH_SUPPORTS_MEMORY_FAILURE
--
- config X86_VISWS
- 	bool "SGI 320/540 (Visual Workstation)"
- 	depends on X86_32 && PCI && X86_MPPARSE && PCI_GODIRECT
-@@ -1091,209 +1298,6 @@ config ARCH_DMA_ADDR_T_64BIT
+ config X86_X2APIC
+ 	bool "Support x2apic"
+ 	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+@@ -884,8 +990,6 @@ config X86_CYCLONE_TIMER
  	def_bool y
- 	depends on X86_64 || HIGHMEM64G
+ 	depends on X86_SUMMIT
  
--config DIRECT_GBPAGES
--	bool "Enable 1GB pages for kernel pagetables" if EXPERT
--	default y
--	depends on X86_64
--	---help---
--	  Allow the kernel linear mapping to use 1GB pages on CPUs that
--	  support it. This can improve the kernel's performance a tiny bit by
--	  reducing TLB pressure. If in doubt, say "Y".
+-source "arch/x86/Kconfig.cpu"
 -
--# Common NUMA Features
--config NUMA
--	bool "Numa Memory Allocation and Scheduler Support"
+ config HPET_TIMER
+ 	def_bool X86_64
+ 	prompt "HPET Timer Support" if X86_32
+@@ -996,32 +1100,6 @@ config IOMMU_HELPER
+ 	def_bool y
+ 	depends on CALGARY_IOMMU || GART_IOMMU || SWIOTLB || AMD_IOMMU
+ 
+-config MAXSMP
+-	bool "Enable Maximum number of SMP Processors and NUMA Nodes"
+-	depends on X86_64 && SMP && DEBUG_KERNEL
+-	select CPUMASK_OFFSTACK
+-	---help---
+-	  Enable maximum number of CPUS and NUMA Nodes for this architecture.
+-	  If unsure, say N.
+-
+-config NR_CPUS
+-	int "Maximum number of CPUs" if SMP && !MAXSMP
+-	range 2 8 if SMP && X86_32 && !X86_BIGSMP
+-	range 2 512 if SMP && !MAXSMP && !CPUMASK_OFFSTACK
+-	range 2 8192 if SMP && !MAXSMP && CPUMASK_OFFSTACK && X86_64
+-	default "1" if !SMP
+-	default "8192" if MAXSMP
+-	default "32" if SMP && (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP || X86_ES7000)
+-	default "8" if SMP
+-	---help---
+-	  This allows you to specify the maximum number of CPUs which this
+-	  kernel will support.  If CPUMASK_OFFSTACK is enabled, the maximum
+-	  supported value is 4096, otherwise the maximum value is 512.  The
+-	  minimum value which makes sense is 2.
+-
+-	  This is purely to save memory - each supported CPU adds
+-	  approximately eight kilobytes to the kernel image.
+-
+ config SCHED_SMT
+ 	bool "SMT (Hyperthreading) scheduler support"
+ 	depends on X86_HT
+@@ -1409,26 +1487,6 @@ config ARCH_USES_PG_UNCACHED
+ 	def_bool y
+ 	depends on X86_PAT
+ 
+-config ARCH_RANDOM
+-	def_bool y
+-	prompt "x86 architectural random number generator" if EXPERT
+-	---help---
+-	  Enable the x86 architectural RDRAND instruction
+-	  (Intel Bull Mountain technology) to generate random numbers.
+-	  If supported, this is a high bandwidth, cryptographically
+-	  secure hardware random number generator.
+-
+-config X86_SMAP
+-	def_bool y
+-	prompt "Supervisor Mode Access Prevention" if EXPERT
+-	---help---
+-	  Supervisor Mode Access Prevention (SMAP) is a security
+-	  feature in newer Intel processors.  There is a small
+-	  performance cost if this enabled and turned on; there is
+-	  also a small increase in the kernel size if this is enabled.
+-
+-	  If unsure, say Y.
+-
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
+@@ -1614,60 +1672,6 @@ config PHYSICAL_ALIGN
+ 
+ 	  Don't change this unless you know what you are doing.
+ 
+-config HOTPLUG_CPU
+-	bool "Support for hot-pluggable CPUs"
 -	depends on SMP
--	depends on X86_64 || (X86_32 && HIGHMEM64G && (X86_NUMAQ || X86_BIGSMP || X86_SUMMIT && ACPI))
--	default y if (X86_NUMAQ || X86_SUMMIT || X86_BIGSMP)
 -	---help---
--	  Enable NUMA (Non Uniform Memory Access) support.
+-	  Say Y here to allow turning CPUs off and on. CPUs can be
+-	  controlled through /sys/devices/system/cpu.
+-	  ( Note: power management support will enable this option
+-	    automatically on SMP systems. )
+-	  Say N if you want to disable CPU hotplug.
 -
--	  The kernel will try to allocate memory used by a CPU on the
--	  local memory controller of the CPU and add some more
--	  NUMA awareness to the kernel.
--
--	  For 64-bit this is recommended if the system is Intel Core i7
--	  (or later), AMD Opteron, or EM64T NUMA.
--
--	  For 32-bit this is only needed on (rare) 32-bit-only platforms
--	  that support NUMA topologies, such as NUMAQ / Summit, or if you
--	  boot a 32-bit kernel on a 64-bit NUMA platform.
--
--	  Otherwise, you should say N.
--
--comment "NUMA (Summit) requires SMP, 64GB highmem support, ACPI"
--	depends on X86_32 && X86_SUMMIT && (!HIGHMEM64G || !ACPI)
--
--config AMD_NUMA
--	def_bool y
--	prompt "Old style AMD Opteron NUMA detection"
--	depends on X86_64 && NUMA && PCI
+-config BOOTPARAM_HOTPLUG_CPU0
+-	bool "Set default setting of cpu0_hotpluggable"
+-	default n
+-	depends on HOTPLUG_CPU
 -	---help---
--	  Enable AMD NUMA node topology detection.  You should say Y here if
--	  you have a multi processor AMD system. This uses an old method to
--	  read the NUMA configuration directly from the builtin Northbridge
--	  of Opteron. It is recommended to use X86_64_ACPI_NUMA instead,
--	  which also takes priority if both are compiled in.
+-	  Set whether default state of cpu0_hotpluggable is on or off.
 -
--config X86_64_ACPI_NUMA
--	def_bool y
--	prompt "ACPI NUMA detection"
--	depends on X86_64 && NUMA && ACPI && PCI
--	select ACPI_NUMA
+-	  Say Y here to enable CPU0 hotplug by default. If this switch
+-	  is turned on, there is no need to give cpu0_hotplug kernel
+-	  parameter and the CPU0 hotplug feature is enabled by default.
+-
+-	  Please note: there are two known CPU0 dependencies if you want
+-	  to enable the CPU0 hotplug feature either by this switch or by
+-	  cpu0_hotplug kernel parameter.
+-
+-	  First, resume from hibernate or suspend always starts from CPU0.
+-	  So hibernate and suspend are prevented if CPU0 is offline.
+-
+-	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
+-	  offline if any interrupt can not migrate out of CPU0. There may
+-	  be other CPU0 dependencies.
+-
+-	  Please make sure the dependencies are under your control before
+-	  you enable this feature.
+-
+-	  Say N if you don't want to enable CPU0 hotplug feature by default.
+-	  You still can enable the CPU0 hotplug feature at boot by kernel
+-	  parameter cpu0_hotplug.
+-
+-config DEBUG_HOTPLUG_CPU0
+-	def_bool n
+-	prompt "Debug CPU0 hotplug"
+-	depends on HOTPLUG_CPU
 -	---help---
--	  Enable ACPI SRAT based node topology detection.
+-	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
+-	  soon as possible and boots up userspace with CPU0 offlined. User
+-	  can online CPU0 back after boot time.
 -
--# Some NUMA nodes have memory ranges that span
--# other nodes.  Even though a pfn is valid and
--# between a node's start and end pfns, it may not
--# reside on that node.  See memmap_init_zone()
--# for details.
--config NODES_SPAN_OTHER_NODES
--	def_bool y
--	depends on X86_64_ACPI_NUMA
+-	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
+-	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
+-	  compilation or giving cpu0_hotplug kernel parameter at boot.
 -
--config NUMA_EMU
--	bool "NUMA emulation"
--	depends on NUMA
--	---help---
--	  Enable NUMA emulation. A flat machine will be split
--	  into virtual nodes when booted with "numa=fake=N", where N is the
--	  number of nodes. This is only useful for debugging.
+-	  If unsure, say N.
 -
--config NODES_SHIFT
--	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
--	range 1 10
--	default "10" if MAXSMP
--	default "6" if X86_64
--	default "4" if X86_NUMAQ
--	default "3"
--	depends on NEED_MULTIPLE_NODES
--	---help---
--	  Specify the maximum number of NUMA Nodes available on the target
--	  system.  Increases memory reserved to accommodate various tables.
--
--config ARCH_HAVE_MEMORY_PRESENT
--	def_bool y
--	depends on X86_32 && DISCONTIGMEM
--
--config NEED_NODE_MEMMAP_SIZE
--	def_bool y
--	depends on X86_32 && (DISCONTIGMEM || SPARSEMEM)
--
--config ARCH_FLATMEM_ENABLE
--	def_bool y
--	depends on X86_32 && !NUMA
--
--config ARCH_DISCONTIGMEM_ENABLE
--	def_bool y
--	depends on NUMA && X86_32
--
--config ARCH_DISCONTIGMEM_DEFAULT
--	def_bool y
--	depends on NUMA && X86_32
--
--config ARCH_SPARSEMEM_ENABLE
--	def_bool y
--	depends on X86_64 || NUMA || X86_32 || X86_32_NON_STANDARD
--	select SPARSEMEM_STATIC if X86_32
--	select SPARSEMEM_VMEMMAP_ENABLE if X86_64
--
--config ARCH_SPARSEMEM_DEFAULT
--	def_bool y
--	depends on X86_64
--
--config ARCH_SELECT_MEMORY_MODEL
--	def_bool y
--	depends on ARCH_SPARSEMEM_ENABLE
--
--config ARCH_MEMORY_PROBE
--	bool "Enable sysfs memory/probe interface"
--	depends on X86_64 && MEMORY_HOTPLUG
--	help
--	  This option enables a sysfs memory/probe interface for testing.
--	  See Documentation/memory-hotplug.txt for more information.
--	  If you are unsure how to answer this question, answer N.
--
--config ARCH_PROC_KCORE_TEXT
--	def_bool y
--	depends on X86_64 && PROC_KCORE
--
--config ILLEGAL_POINTER_VALUE
--       hex
--       default 0 if X86_32
--       default 0xdead000000000000 if X86_64
--
--source "mm/Kconfig"
--
--config HIGHPTE
--	bool "Allocate 3rd-level pagetables from highmem"
--	depends on HIGHMEM
--	---help---
--	  The VM uses one page table entry for each page of physical memory.
--	  For systems with a lot of RAM, this can be wasteful of precious
--	  low memory.  Setting this option will put user-space page table
--	  entries in high memory.
--
--config X86_CHECK_BIOS_CORRUPTION
--	bool "Check for low memory corruption"
--	---help---
--	  Periodically check for memory corruption in low memory, which
--	  is suspected to be caused by BIOS.  Even when enabled in the
--	  configuration, it is disabled at runtime.  Enable it by
--	  setting "memory_corruption_check=1" on the kernel command
--	  line.  By default it scans the low 64k of memory every 60
--	  seconds; see the memory_corruption_check_size and
--	  memory_corruption_check_period parameters in
--	  Documentation/kernel-parameters.txt to adjust this.
--
--	  When enabled with the default parameters, this option has
--	  almost no overhead, as it reserves a relatively small amount
--	  of memory and scans it infrequently.  It both detects corruption
--	  and prevents it from affecting the running system.
--
--	  It is, however, intended as a diagnostic tool; if repeatable
--	  BIOS-originated corruption always affects the same memory,
--	  you can use memmap= to prevent the kernel from using that
--	  memory.
--
--config X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK
--	bool "Set the default setting of memory_corruption_check"
--	depends on X86_CHECK_BIOS_CORRUPTION
--	default y
--	---help---
--	  Set whether the default state of memory_corruption_check is
--	  on or off.
--
--config X86_RESERVE_LOW
--	int "Amount of low memory, in kilobytes, to reserve for the BIOS"
--	default 64
--	range 4 640
--	---help---
--	  Specify the amount of low memory to reserve for the BIOS.
--
--	  The first page contains BIOS data structures that the kernel
--	  must not use, so that page must always be reserved.
--
--	  By default we reserve the first 64K of physical RAM, as a
--	  number of BIOSes are known to corrupt that memory range
--	  during events such as suspend/resume or monitor cable
--	  insertion, so it must not be used by the kernel.
--
--	  You can set this to 4 if you are absolutely sure that you
--	  trust the BIOS to get all its memory reservations and usages
--	  right.  If you know your BIOS have problems beyond the
--	  default 64K area, you can set this to 640 to avoid using the
--	  entire low memory range.
--
--	  If you have doubts about the BIOS (e.g. suspend/resume does
--	  not work or there's kernel crashes after certain hardware
--	  hotplug events) then you might want to enable
--	  X86_CHECK_BIOS_CORRUPTION=y to allow the kernel to check
--	  typical corruption patterns.
--
--	  Leave this to the default value of 64 if you are unsure.
--
- config MATH_EMULATION
- 	bool
- 	prompt "Math emulation" if X86_32
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
 _
