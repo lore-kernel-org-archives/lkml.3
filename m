@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319AbaAMQza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:55:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24534 "EHLO mx1.redhat.com"
+	id S1756397AbaAMQzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:55:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754241AbaAMQzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:55:25 -0500
+	id S1756342AbaAMQzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:55:40 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -17,98 +17,166 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
         kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/11] pagewalk: remove argument hmask from hugetlb_entry()
-Date: Mon, 13 Jan 2014 11:54:10 -0500
-Message-Id: <1389632051-25159-11-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 05/11] pagemap: redefine callback functions for page table walker
+Date: Mon, 13 Jan 2014 11:54:05 -0500
+Message-Id: <1389632051-25159-6-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hugetlb_entry() doesn't use the argument hmask any more,
-so let's remove it now.
+pagemap_pte_range() connected to pmd_entry() does both of pmd loop and
+pte loop. So this patch moves pte part into pagemap_pte() on pte_entry().
+
+We remove VM_SOFTDIRTY check in pagemap_pte_range(), because in the new
+page table walker we call __walk_page_range() for each vma separately,
+so we never experience multiple vmas in single pgd/pud/pmd/pte loop.
+
+ChangeLog v2:
+- remove cond_sched() (moved it to walk_hugetlb_range())
+- rebase onto mmots
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/proc/task_mmu.c | 12 ++++++------
- include/linux/mm.h |  5 ++---
- mm/pagewalk.c      |  2 +-
- 3 files changed, 9 insertions(+), 10 deletions(-)
+ fs/proc/task_mmu.c | 76 ++++++++++++++++++++----------------------------------
+ 1 file changed, 28 insertions(+), 48 deletions(-)
 
 diff --git mmotm-2014-01-09-16-23.orig/fs/proc/task_mmu.c mmotm-2014-01-09-16-23/fs/proc/task_mmu.c
-index a1903e4b9514..80507c589d30 100644
+index 2d343d909f0b..637d676c01b4 100644
 --- mmotm-2014-01-09-16-23.orig/fs/proc/task_mmu.c
 +++ mmotm-2014-01-09-16-23/fs/proc/task_mmu.c
-@@ -1030,8 +1030,7 @@ static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *
+@@ -965,19 +965,33 @@ static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemap
+ }
+ #endif
+ 
+-static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
++static int pagemap_pte(pte_t *pte, unsigned long addr, unsigned long end,
+ 			     struct mm_walk *walk)
+ {
+-	struct vm_area_struct *vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	struct pagemapread *pm = walk->private;
+-	spinlock_t *ptl;
+-	pte_t *pte;
++	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
++
++	if (vma && vma->vm_start <= addr && end <= vma->vm_end) {
++		pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
++		/* unmap before userspace copy */
++		pte_unmap(pte);
++	}
++	return add_to_pagemap(addr, &pme, pm);
++}
++
++static int pagemap_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
++			     struct mm_walk *walk)
++{
+ 	int err = 0;
++	struct vm_area_struct *vma = walk->vma;
++	struct pagemapread *pm = walk->private;
+ 	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
++	spinlock_t *ptl;
+ 
+-	/* find the first VMA at or above 'addr' */
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
++	if (!vma)
++		return err;
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		int pmd_flags2;
+ 
+ 		if ((vma->vm_flags & VM_SOFTDIRTY) || pmd_soft_dirty(*pmd))
+@@ -996,41 +1010,9 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 				break;
+ 		}
+ 		spin_unlock(ptl);
+-		return err;
+-	}
+-
+-	if (pmd_trans_unstable(pmd))
+-		return 0;
+-	for (; addr != end; addr += PAGE_SIZE) {
+-		int flags2;
+-
+-		/* check to see if we've left 'vma' behind
+-		 * and need a new, higher one */
+-		if (vma && (addr >= vma->vm_end)) {
+-			vma = find_vma(walk->mm, addr);
+-			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
+-				flags2 = __PM_SOFT_DIRTY;
+-			else
+-				flags2 = 0;
+-			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
+-		}
+-
+-		/* check that 'vma' actually covers this address,
+-		 * and that it isn't a huge page vma */
+-		if (vma && (vma->vm_start <= addr) &&
+-		    !is_vm_hugetlb_page(vma)) {
+-			pte = pte_offset_map(pmd, addr);
+-			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+-			/* unmap before userspace copy */
+-			pte_unmap(pte);
+-		}
+-		err = add_to_pagemap(addr, &pme, pm);
+-		if (err)
+-			return err;
++		/* don't call pagemap_pte() */
++		walk->skip = 1;
+ 	}
+-
+-	cond_resched();
+-
+ 	return err;
  }
  
- /* This function walks within one hugetlb entry in the single call */
--static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
--				 unsigned long addr, unsigned long end,
-+static int pagemap_hugetlb(pte_t *pte, unsigned long addr, unsigned long end,
+@@ -1053,12 +1035,11 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
  				 struct mm_walk *walk)
  {
  	struct pagemapread *pm = walk->private;
-@@ -1039,6 +1038,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+-	struct vm_area_struct *vma;
++	struct vm_area_struct *vma = walk->vma;
  	int err = 0;
  	int flags2;
  	pagemap_entry_t pme;
-+	unsigned long hmask;
  
+-	vma = find_vma(walk->mm, addr);
  	WARN_ON_ONCE(!vma);
  
-@@ -1300,8 +1300,8 @@ static int gather_pmd_stats(pmd_t *pmd, unsigned long addr,
- 	return 0;
- }
- #ifdef CONFIG_HUGETLB_PAGE
--static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
--		unsigned long addr, unsigned long end, struct mm_walk *walk)
-+static int gather_hugetlb_stats(pte_t *pte, unsigned long addr,
-+				unsigned long end, struct mm_walk *walk)
- {
- 	struct numa_maps *md;
- 	struct page *page;
-@@ -1319,8 +1319,8 @@ static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
- }
+ 	if (vma && (vma->vm_flags & VM_SOFTDIRTY))
+@@ -1066,6 +1047,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ 	else
+ 		flags2 = 0;
  
- #else
--static int gather_hugetlb_stats(pte_t *pte, unsigned long hmask,
--		unsigned long addr, unsigned long end, struct mm_walk *walk)
-+static int gather_hugetlb_stats(pte_t *pte, unsigned long addr,
-+				unsigned long end, struct mm_walk *walk)
- {
- 	return 0;
- }
-diff --git mmotm-2014-01-09-16-23.orig/include/linux/mm.h mmotm-2014-01-09-16-23/include/linux/mm.h
-index 262e9d943533..0601ce59465a 100644
---- mmotm-2014-01-09-16-23.orig/include/linux/mm.h
-+++ mmotm-2014-01-09-16-23/include/linux/mm.h
-@@ -1008,9 +1008,8 @@ struct mm_walk {
- 			 unsigned long next, struct mm_walk *walk);
- 	int (*pte_hole)(unsigned long addr, unsigned long next,
- 			struct mm_walk *walk);
--	int (*hugetlb_entry)(pte_t *pte, unsigned long hmask,
--			     unsigned long addr, unsigned long next,
--			     struct mm_walk *walk);
-+	int (*hugetlb_entry)(pte_t *pte, unsigned long addr,
-+			unsigned long next, struct mm_walk *walk);
- 	int (*test_walk)(unsigned long addr, unsigned long next,
- 			struct mm_walk *walk);
- 	struct mm_struct *mm;
-diff --git mmotm-2014-01-09-16-23.orig/mm/pagewalk.c mmotm-2014-01-09-16-23/mm/pagewalk.c
-index 98a2385616a2..b639964c7b11 100644
---- mmotm-2014-01-09-16-23.orig/mm/pagewalk.c
-+++ mmotm-2014-01-09-16-23/mm/pagewalk.c
-@@ -198,7 +198,7 @@ static int walk_hugetlb_range(unsigned long addr, unsigned long end,
- 		 * in walk->hugetlb_entry().
- 		 */
- 		if (pte && walk->hugetlb_entry)
--			err = walk->hugetlb_entry(pte, hmask, addr, next, walk);
-+			err = walk->hugetlb_entry(pte, addr, next, walk);
- 		spin_unlock(ptl);
++	hmask = huge_page_mask(hstate_vma(vma));
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
+ 		huge_pte_to_pagemap_entry(&pme, pm, *pte, offset, flags2);
+@@ -1073,9 +1055,6 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
  		if (err)
- 			break;
+ 			return err;
+ 	}
+-
+-	cond_resched();
+-
+ 	return err;
+ }
+ #endif /* HUGETLB_PAGE */
+@@ -1142,10 +1121,11 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 	if (!mm || IS_ERR(mm))
+ 		goto out_free;
+ 
+-	pagemap_walk.pmd_entry = pagemap_pte_range;
++	pagemap_walk.pte_entry = pagemap_pte;
++	pagemap_walk.pmd_entry = pagemap_pmd;
+ 	pagemap_walk.pte_hole = pagemap_pte_hole;
+ #ifdef CONFIG_HUGETLB_PAGE
+-	pagemap_walk.hugetlb_entry = pagemap_hugetlb_range;
++	pagemap_walk.hugetlb_entry = pagemap_hugetlb;
+ #endif
+ 	pagemap_walk.mm = mm;
+ 	pagemap_walk.private = &pm;
 -- 
 1.8.4.2
 
