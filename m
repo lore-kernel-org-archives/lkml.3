@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154AbaAMQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:58:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53046 "EHLO
+	id S1753527AbaAMQCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:02:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52990 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbaAMQCK (ORCPT
+	with ESMTP id S1753202AbaAMQBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:10 -0500
+	Mon, 13 Jan 2014 11:01:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kent Overstreet <kmo@daterainc.com>,
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 054/208] bcache: Fix dirty_data accounting
-Date: Mon, 13 Jan 2014 15:58:15 +0000
-Message-Id: <1389628849-1614-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 041/208] iscsi-target: Fix-up all zero data-length CDBs with R/W_BIT set
+Date: Mon, 13 Jan 2014 15:58:02 +0000
+Message-Id: <1389628849-1614-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit d24a6e1087030b6da286df9433add5fa2f21b83b upstream.
+commit 4454b66cb67f14c33cd70ddcf0ff4985b26324b7 upstream.
 
-Dirty data accounting wasn't quite right - firstly, we were adding the key we're
-inserting after it could have merged with another dirty key already in the
-btree, and secondly we could sometimes pass the wrong offset to
-bcache_dev_sectors_dirty_add() for dirty data we were overwriting - which is
-important when tracking dirty data by stripe.
+This patch changes special case handling for ISCSI_OP_SCSI_CMD
+where an initiator sends a zero length Expected Data Transfer
+Length (EDTL), but still sets the WRITE and/or READ flag bits
+when no payload transfer is requested.
 
-NOTE FOR BACKPORTERS: For 3.10 (and 3.11?) there's other accounting fixes
-necessary that got squashed in with other patches; the full patch against 3.10
-is 408cc2f47eeac93a, available at:
-  git://evilpiepirate.org/~kent/linux-bcache.git bcache-3.10-writeback-fixes
+Many, many moons ago two special cases where added for an ancient
+version of ESX that has long since been fixed, so instead of adding
+a new special case for the reported bug with a Broadcom 57800 NIC,
+go ahead and always strip off the incorrect WRITE + READ flag bits.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-[ luis: backported to 3.11:
-  - replaced usage of 'replace_key' by '&op->replace'
-    (all the additional bits required for 3.10 are already included ]
+Also, avoid sending a reject here, as RFC-3720 does mandate this
+case be handled without protocol error.
+
+Reported-by: Witold Bazakbal <865perl@wp.pl>
+Tested-by: Witold Bazakbal <865perl@wp.pl>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/bcache/btree.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 9e6c9f5..230d81e 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1673,7 +1673,8 @@ static bool fix_overlapping_extents(struct btree *b,
- 			if (KEY_START(k) > KEY_START(insert) + sectors_found)
- 				goto check_failed;
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index 3a17930..db96e21 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -838,24 +838,22 @@ int iscsit_setup_scsi_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd,
+ 	if (((hdr->flags & ISCSI_FLAG_CMD_READ) ||
+ 	     (hdr->flags & ISCSI_FLAG_CMD_WRITE)) && !hdr->data_length) {
+ 		/*
+-		 * Vmware ESX v3.0 uses a modified Cisco Initiator (v3.4.2)
+-		 * that adds support for RESERVE/RELEASE.  There is a bug
+-		 * add with this new functionality that sets R/W bits when
+-		 * neither CDB carries any READ or WRITE datapayloads.
++		 * From RFC-3720 Section 10.3.1:
++		 *
++		 * "Either or both of R and W MAY be 1 when either the
++		 *  Expected Data Transfer Length and/or Bidirectional Read
++		 *  Expected Data Transfer Length are 0"
++		 *
++		 * For this case, go ahead and clear the unnecssary bits
++		 * to avoid any confusion with ->data_direction.
+ 		 */
+-		if ((hdr->cdb[0] == 0x16) || (hdr->cdb[0] == 0x17)) {
+-			hdr->flags &= ~ISCSI_FLAG_CMD_READ;
+-			hdr->flags &= ~ISCSI_FLAG_CMD_WRITE;
+-			goto done;
+-		}
++		hdr->flags &= ~ISCSI_FLAG_CMD_READ;
++		hdr->flags &= ~ISCSI_FLAG_CMD_WRITE;
  
--			if (KEY_PTRS(&op->replace) != KEY_PTRS(k))
-+			if (KEY_PTRS(k) != KEY_PTRS(&op->replace) ||
-+			    KEY_DIRTY(k) != KEY_DIRTY(&op->replace))
- 				goto check_failed;
+-		pr_err("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
++		pr_warn("ISCSI_FLAG_CMD_READ or ISCSI_FLAG_CMD_WRITE"
+ 			" set when Expected Data Transfer Length is 0 for"
+-			" CDB: 0x%02x. Bad iSCSI Initiator.\n", hdr->cdb[0]);
+-		return iscsit_add_reject_cmd(cmd,
+-					     ISCSI_REASON_BOOKMARK_INVALID, buf);
++			" CDB: 0x%02x, Fixing up flags\n", hdr->cdb[0]);
+ 	}
+-done:
  
- 			/* skip past gen */
+ 	if (!(hdr->flags & ISCSI_FLAG_CMD_READ) &&
+ 	    !(hdr->flags & ISCSI_FLAG_CMD_WRITE) && (hdr->data_length != 0)) {
 -- 
 1.8.3.2
 
