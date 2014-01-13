@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaAMQEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:04:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53657 "EHLO
+	id S1754334AbaAMQQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:16:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53692 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424AbaAMQEs (ORCPT
+	with ESMTP id S1754522AbaAMQE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:48 -0500
+	Mon, 13 Jan 2014 11:04:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 168/208] macvtap: update file current position
-Date: Mon, 13 Jan 2014 16:00:09 +0000
-Message-Id: <1389628849-1614-169-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 174/208] net: drop_monitor: fix the value of maxattr
+Date: Mon, 13 Jan 2014 16:00:15 +0000
+Message-Id: <1389628849-1614-175-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,30 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+From: Changli Gao <xiaosuo@gmail.com>
 
-commit e6ebc7f16ca1434a334647aa56399c546be4e64b upstream.
+commit d323e92cc3f4edd943610557c9ea1bb4bb5056e8 upstream.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+maxattr in genl_family should be used to save the max attribute
+type, but not the max command type. Drop monitor doesn't support
+any attributes, so we should leave it as zero.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/macvtap.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/core/drop_monitor.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 70d5800..fa54f0e 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -979,6 +979,8 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index 5e78d44..f27d126 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -64,7 +64,6 @@ static struct genl_family net_drop_monitor_family = {
+ 	.hdrsize        = 0,
+ 	.name           = "NET_DM",
+ 	.version        = 2,
+-	.maxattr        = NET_DM_CMD_MAX,
+ };
  
- 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
-+	if (ret > 0)
-+		iocb->ki_pos = ret;
- out:
- 	return ret;
- }
+ static DEFINE_PER_CPU(struct per_cpu_dm_data, dm_cpu_data);
 -- 
 1.8.3.2
 
