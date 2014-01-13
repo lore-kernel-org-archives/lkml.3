@@ -1,104 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433AbaAMQRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:17:44 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35572 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaAMQRh convert rfc822-to-8bit (ORCPT
+	id S1755394AbaAMQR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:17:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53682 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501AbaAMQEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:17:37 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] xprtrdma: silence frame size warning
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <CDD9CEF2-F91A-4ABA-8DA7-53AF8A749194@primarydata.com>
-Date: Mon, 13 Jan 2014 11:17:19 -0500
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Miller David S." <davem@davemloft.net>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        netdev@vger.kernel.org, LKML Kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D3560A1A-59B3-4480-8627-9114A4B9895C@oracle.com>
-References: <1389627955.20467.9.camel@x41> <CDD9CEF2-F91A-4ABA-8DA7-53AF8A749194@primarydata.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Paul Bolle <pebolle@tiscali.nl>
-X-Mailer: Apple Mail (2.1827)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 13 Jan 2014 11:04:54 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 172/208] packet: fix send path when running with proto == 0
+Date: Mon, 13 Jan 2014 16:00:13 +0000
+Message-Id: <1389628849-1614-173-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi-
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-On Jan 13, 2014, at 10:59 AM, Trond Myklebust <trond.myklebust@primarydata.com> wrote:
+------------------
 
-> 
-> On Jan 13, 2014, at 10:45, Paul Bolle <pebolle@tiscali.nl> wrote:
-> 
->> Building verbs.o on 32 bits x86, with CONFIG_FRAME_WARN set to 1024, its
->> default value, triggers this GCC warning:
->>   net/sunrpc/xprtrdma/verbs.c: In function ‘rpcrdma_register_default_external’:
->>   net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]
->> 
->> Silence this warning by allocating "ipb" dynamically.
->> 
->> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> 0) Compile tested only (on 32 bits x86). I don't have access to
->> Infiniband hardware.
->> 
->> 1) Please note that this is not a new warning. The oldest build log I
->> have still available on this machine is for a v3.8 rc, and it already
->> showed this warning. 
->> 
->> 2) I do hope my choice for the GFP_KERNEL flag is correct here.
->> 
->> net/sunrpc/xprtrdma/verbs.c | 6 +++++-
->> 1 file changed, 5 insertions(+), 1 deletion(-)
->> 
->> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
->> index 93726560..939ccc8 100644
->> --- a/net/sunrpc/xprtrdma/verbs.c
->> +++ b/net/sunrpc/xprtrdma/verbs.c
->> @@ -1736,11 +1736,14 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
->> 	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
->> 				  IB_ACCESS_REMOTE_READ);
->> 	struct rpcrdma_mr_seg *seg1 = seg;
->> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
->> +	struct ib_phys_buf *ipb;
->> 	int len, i, rc = 0;
->> 
->> 	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
->> 		*nsegs = RPCRDMA_MAX_DATA_SEGS;
->> +	ipb = kmalloc(sizeof(*ipb) * *nsegs, GFP_KERNEL);
->> +	if (ipb == NULL)
->> +		return -ENOMEM;
->> 	for (len = 0, i = 0; i < *nsegs;) {
->> 		rpcrdma_map_one(ia, seg, writing);
->> 		ipb[i].addr = seg->mr_dma;
->> @@ -1770,6 +1773,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
->> 		seg1->mr_len = len;
->> 	}
->> 	*nsegs = i;
->> +	kfree(ipb);
->> 	return rc;
->> }
-> 
-> Hi Paul,
-> 
-> Unfortunately, the above could be called from a file write back context, so we cannot use GFP_KERNEL allocations. In fact, I suspect we should only use GFP_ATOMIC, and then have the rpc_task delay and retry if the allocation fails.
-> 
-> The problem is that it looks to me as if xprt_rdma_send_request will currently fail, if we return an error from rpcrdma_register_default_external.
-> 
-> Chuck, will you be able to look into the above issue as part of your RDMA work?
+From: Daniel Borkmann <dborkman@redhat.com>
 
-I’m building a queue of NFS/RDMA work on bugzilla.kernel.org.  Let’s create a defect report there to document this, and it will get prioritized with the rest.  Paul, can you do that to start us off?  Product “File system”, Component “NFS”.
+commit 66e56cd46b93ef407c60adcac62cf33b06119d50 upstream.
 
-I can’t say that a warning on 32-bit x86 is going to be an especially high priority.  However, the underlying issue of allocating arrays of data segments on the stack is something that needs extended attention, and is already in plan.
+Commit e40526cb20b5 introduced a cached dev pointer, that gets
+hooked into register_prot_hook(), __unregister_prot_hook() to
+update the device used for the send path.
 
---
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
+We need to fix this up, as otherwise this will not work with
+sockets created with protocol = 0, plus with sll_protocol = 0
+passed via sockaddr_ll when doing the bind.
 
+So instead, assign the pointer directly. The compiler can inline
+these helper functions automagically.
 
+While at it, also assume the cached dev fast-path as likely(),
+and document this variant of socket creation as it seems it is
+not widely used (seems not even the author of TX_RING was aware
+of that in his reference example [1]). Tested with reproducer
+from e40526cb20b5.
+
+ [1] http://wiki.ipxwarzone.com/index.php5?title=Linux_packet_mmap#Example
+
+Fixes: e40526cb20b5 ("packet: fix use after free race in send path when dev is released")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Salam Noureddine <noureddine@aristanetworks.com>
+Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ Documentation/networking/packet_mmap.txt | 10 +++++
+ net/packet/af_packet.c                   | 65 ++++++++++++++++++++------------
+ 2 files changed, 50 insertions(+), 25 deletions(-)
+
+diff --git a/Documentation/networking/packet_mmap.txt b/Documentation/networking/packet_mmap.txt
+index 8572796..f56c278 100644
+--- a/Documentation/networking/packet_mmap.txt
++++ b/Documentation/networking/packet_mmap.txt
+@@ -123,6 +123,16 @@ Transmission process is similar to capture as shown below.
+ [shutdown]  close() --------> destruction of the transmission socket and
+                               deallocation of all associated resources.
+ 
++Socket creation and destruction is also straight forward, and is done
++the same way as in capturing described in the previous paragraph:
++
++ int fd = socket(PF_PACKET, mode, 0);
++
++The protocol can optionally be 0 in case we only want to transmit
++via this socket, which avoids an expensive call to packet_rcv().
++In this case, you also need to bind(2) the TX_RING with sll_protocol = 0
++set. Otherwise, htons(ETH_P_ALL) or any other protocol, for example.
++
+ Binding the socket to your network interface is mandatory (with zero copy) to
+ know the header size of frames used in the circular buffer.
+ 
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 151e8ae..1b6d773 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -237,6 +237,30 @@ struct packet_skb_cb {
+ static void __fanout_unlink(struct sock *sk, struct packet_sock *po);
+ static void __fanout_link(struct sock *sk, struct packet_sock *po);
+ 
++static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++{
++	struct net_device *dev;
++
++	rcu_read_lock();
++	dev = rcu_dereference(po->cached_dev);
++	if (likely(dev))
++		dev_hold(dev);
++	rcu_read_unlock();
++
++	return dev;
++}
++
++static void packet_cached_dev_assign(struct packet_sock *po,
++				     struct net_device *dev)
++{
++	rcu_assign_pointer(po->cached_dev, dev);
++}
++
++static void packet_cached_dev_reset(struct packet_sock *po)
++{
++	RCU_INIT_POINTER(po->cached_dev, NULL);
++}
++
+ /* register_prot_hook must be invoked with the po->bind_lock held,
+  * or from a context in which asynchronous accesses to the packet
+  * socket is not possible (packet_create()).
+@@ -246,12 +270,10 @@ static void register_prot_hook(struct sock *sk)
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	if (!po->running) {
+-		if (po->fanout) {
++		if (po->fanout)
+ 			__fanout_link(sk, po);
+-		} else {
++		else
+ 			dev_add_pack(&po->prot_hook);
+-			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
+-		}
+ 
+ 		sock_hold(sk);
+ 		po->running = 1;
+@@ -270,12 +292,11 @@ static void __unregister_prot_hook(struct sock *sk, bool sync)
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	po->running = 0;
+-	if (po->fanout) {
++
++	if (po->fanout)
+ 		__fanout_unlink(sk, po);
+-	} else {
++	else
+ 		__dev_remove_pack(&po->prot_hook);
+-		RCU_INIT_POINTER(po->cached_dev, NULL);
+-	}
+ 
+ 	__sock_put(sk);
+ 
+@@ -2048,19 +2069,6 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 	return tp_len;
+ }
+ 
+-static struct net_device *packet_cached_dev_get(struct packet_sock *po)
+-{
+-	struct net_device *dev;
+-
+-	rcu_read_lock();
+-	dev = rcu_dereference(po->cached_dev);
+-	if (dev)
+-		dev_hold(dev);
+-	rcu_read_unlock();
+-
+-	return dev;
+-}
+-
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+ 	struct sk_buff *skb;
+@@ -2077,7 +2085,7 @@ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ 
+ 	mutex_lock(&po->pg_vec_lock);
+ 
+-	if (saddr == NULL) {
++	if (likely(saddr == NULL)) {
+ 		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+@@ -2231,7 +2239,7 @@ static int packet_snd(struct socket *sock,
+ 	 *	Get and verify the address.
+ 	 */
+ 
+-	if (saddr == NULL) {
++	if (likely(saddr == NULL)) {
+ 		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+@@ -2440,6 +2448,8 @@ static int packet_release(struct socket *sock)
+ 
+ 	spin_lock(&po->bind_lock);
+ 	unregister_prot_hook(sk, false);
++	packet_cached_dev_reset(po);
++
+ 	if (po->prot_hook.dev) {
+ 		dev_put(po->prot_hook.dev);
+ 		po->prot_hook.dev = NULL;
+@@ -2495,14 +2505,17 @@ static int packet_do_bind(struct sock *sk, struct net_device *dev, __be16 protoc
+ 
+ 	spin_lock(&po->bind_lock);
+ 	unregister_prot_hook(sk, true);
++
+ 	po->num = protocol;
+ 	po->prot_hook.type = protocol;
+ 	if (po->prot_hook.dev)
+ 		dev_put(po->prot_hook.dev);
+-	po->prot_hook.dev = dev;
+ 
++	po->prot_hook.dev = dev;
+ 	po->ifindex = dev ? dev->ifindex : 0;
+ 
++	packet_cached_dev_assign(po, dev);
++
+ 	if (protocol == 0)
+ 		goto out_unlock;
+ 
+@@ -2615,7 +2628,8 @@ static int packet_create(struct net *net, struct socket *sock, int protocol,
+ 	po = pkt_sk(sk);
+ 	sk->sk_family = PF_PACKET;
+ 	po->num = proto;
+-	RCU_INIT_POINTER(po->cached_dev, NULL);
++
++	packet_cached_dev_reset(po);
+ 
+ 	sk->sk_destruct = packet_sock_destruct;
+ 	sk_refcnt_debug_inc(sk);
+@@ -3370,6 +3384,7 @@ static int packet_notifier(struct notifier_block *this,
+ 						sk->sk_error_report(sk);
+ 				}
+ 				if (msg == NETDEV_UNREGISTER) {
++					packet_cached_dev_reset(po);
+ 					po->ifindex = -1;
+ 					if (po->prot_hook.dev)
+ 						dev_put(po->prot_hook.dev);
+-- 
+1.8.3.2
 
