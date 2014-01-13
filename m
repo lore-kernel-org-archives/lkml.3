@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719AbaAMMkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 07:40:36 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.221]:38750 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaAMMkb (ORCPT
+	id S1751557AbaAMMrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 07:47:31 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58311 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaAMMr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 07:40:31 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWMTlsoxCss+iCqhAw1vkA==
-X-RZG-CLASS-ID: mo00
-Date: Mon, 13 Jan 2014 13:40:29 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: david.vrabel@citrix.com, xen-devel@lists.xen.org,
-        boris.ostrovsky@oracle.com, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check from
- blkfront_setup_discard
-Message-ID: <20140113124029.GA19027@aepfle.de>
-References: <1389608052-7139-1-git-send-email-olaf@aepfle.de>
- <52D3DAEE0200007800112FD4@nat28.tlf.novell.com>
- <20140113120131.GA15623@aepfle.de>
- <52D3EB5F02000078001130B5@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52D3EB5F02000078001130B5@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
+	Mon, 13 Jan 2014 07:47:28 -0500
+X-Nat-Received: from [202.181.97.72]:51499 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1389617170.32502
+To: miklos@szeredi.hu, viro@ZenIV.linux.org.uk,
+        linux-security-module@vger.kernel.org
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
+        jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: Re: [PATCH 00/11] cross rename v3
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+In-Reply-To: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+Message-Id: <201401132146.BAF65659.QJSOFVOtFHMOFL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 13 Jan 2014 21:46:05 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 13012014 #7314088, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, Jan Beulich wrote:
+Miklos Szeredi wrote:
+> Please consider for -next (3.14).
 
-> >>> On 13.01.14 at 13:01, Olaf Hering <olaf@aepfle.de> wrote:
-> > On Mon, Jan 13, Jan Beulich wrote:
-> > 
-> >> You can't do this in one go - the first two and the last one may be
-> >> set independently (and are independent in their meaning), and
-> >> hence need to be queried independently (xenbus_gather() fails
-> >> on the first absent value).
-> > 
-> > Yes, thats the purpose. Since the properties are required its an all or
-> > nothing thing. If they are truly optional then blkif.h should be updated
-> > to say that.
-> 
-> They _are_ optional.
-
-In this case my first patch is correct and should be used.
-
-Olaf
+Excuse me, but did you explain to CONFIG_SECURITY_PATH=y users?
+I don't see changes in TOMOYO and AppArmor directories.
+TOMOYO might want to use new keyword like "file swapname"
+rather than using "file rename" for cross rename operation.
