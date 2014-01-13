@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaAMQZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:25:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53525 "EHLO
+	id S1755757AbaAMQZa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:25:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53519 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaAMQER (ORCPT
+	with ESMTP id S1754301AbaAMQEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:17 -0500
+	Mon, 13 Jan 2014 11:04:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
@@ -14,9 +14,9 @@ Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 146/208] mm: numa: do not clear PMD during PTE update scan
-Date: Mon, 13 Jan 2014 15:59:47 +0000
-Message-Id: <1389628849-1614-147-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 145/208] mm: clear pmd_numa before invalidating
+Date: Mon, 13 Jan 2014 15:59:46 +0000
+Message-Id: <1389628849-1614-146-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -31,12 +31,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 5a6dac3ec5f583cc8ee7bc53b5500a207c4ca433 upstream.
+commit 67f87463d3a3362424efcbe8b40e4772fd34fc61 upstream.
 
-If the PMD is flushed then a parallel fault in handle_mm_fault() will
-enter the pmd_none and do_huge_pmd_anonymous_page() path where it'll
-attempt to insert a huge zero page.  This is wasteful so the patch
-avoids clearing the PMD when setting pmd_numa.
+On x86, PMD entries are similar to _PAGE_PROTNONE protection and are
+handled as NUMA hinting faults.  The following two page table protection
+bits are what defines them
+
+	_PAGE_NUMA:set	_PAGE_PRESENT:clear
+
+A PMD is considered present if any of the _PAGE_PRESENT, _PAGE_PROTNONE,
+_PAGE_PSE or _PAGE_NUMA bits are set.  If pmdp_invalidate encounters a
+pmd_numa, it clears the present bit leaving _PAGE_NUMA which will be
+considered not present by the CPU but present by pmd_present.  The
+existing caller of pmdp_invalidate should handle it but it's an
+inconsistent state for a PMD.  This patch keeps the state consistent
+when calling pmdp_invalidate.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
@@ -45,38 +54,23 @@ Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/huge_memory.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ mm/pgtable-generic.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 72da10d..ac2546c 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1486,20 +1486,22 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
- 		pmd_t entry;
--		entry = pmdp_get_and_clear(mm, addr, pmd);
- 		if (!prot_numa) {
-+			entry = pmdp_get_and_clear(mm, addr, pmd);
- 			entry = pmd_modify(entry, newprot);
- 			BUG_ON(pmd_write(entry));
-+			set_pmd_at(mm, addr, pmd, entry);
- 		} else {
- 			struct page *page = pmd_page(*pmd);
-+			entry = *pmd;
- 
- 			/* only check non-shared pages */
- 			if (page_mapcount(page) == 1 &&
- 			    !pmd_numa(*pmd)) {
- 				entry = pmd_mknuma(entry);
-+				set_pmd_at(mm, addr, pmd, entry);
- 			}
- 		}
--		set_pmd_at(mm, addr, pmd, entry);
- 		spin_unlock(&vma->vm_mm->page_table_lock);
- 		ret = 1;
- 	}
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index e1a6e4f..0e083c5 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -167,6 +167,9 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
+ 		     pmd_t *pmdp)
+ {
++	pmd_t entry = *pmdp;
++	if (pmd_numa(entry))
++		entry = pmd_mknonnuma(entry);
+ 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(*pmdp));
+ 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
+ }
 -- 
 1.8.3.2
 
