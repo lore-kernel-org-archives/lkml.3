@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaAMQ0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:26:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53503 "EHLO
+	id S1754273AbaAMQEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:04:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53380 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277AbaAMQEN (ORCPT
+	with ESMTP id S1754088AbaAMQDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:13 -0500
+	Mon, 13 Jan 2014 11:03:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 143/208] mm: numa: serialise parallel get_user_page against THP migration
-Date: Mon, 13 Jan 2014 15:59:44 +0000
-Message-Id: <1389628849-1614-144-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 118/208] libceph: fix error handling in handle_reply()
+Date: Mon, 13 Jan 2014 15:59:19 +0000
+Message-Id: <1389628849-1614-119-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -29,196 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 2b4847e73004c10ae6666c2e27b5c5430aed8698 upstream.
+commit 1874119664dafda3ef2ed9b51b4759a9540d4a1a upstream.
 
-Base pages are unmapped and flushed from cache and TLB during normal
-page migration and replaced with a migration entry that causes any
-parallel NUMA hinting fault or gup to block until migration completes.
+We've tried to fix the error paths in this function before, but there
+is still a hidden goto in the ceph_decode_need() macro which goes to the
+wrong place.  We need to release the "req" and unlock a mutex before
+returning.
 
-THP does not unmap pages due to a lack of support for migration entries
-at a PMD level.  This allows races with get_user_pages and
-get_user_pages_fast which commit 3f926ab945b6 ("mm: Close races between
-THP migration and PMD numa clearing") made worse by introducing a
-pmd_clear_flush().
-
-This patch forces get_user_page (fast and normal) on a pmd_numa page to
-go through the slow get_user_page path where it will serialise against
-THP migration and properly account for the NUMA hinting fault.  On the
-migration side the page table lock is taken for each PTE update.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/mm/gup.c | 13 +++++++++++++
- mm/huge_memory.c  | 24 ++++++++++++++++--------
- mm/migrate.c      | 38 +++++++++++++++++++++++++++++++-------
- 3 files changed, 60 insertions(+), 15 deletions(-)
+ net/ceph/osd_client.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..0596e8e 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -83,6 +83,12 @@ static noinline int gup_pte_range(pmd_t pmd, unsigned long addr,
- 		pte_t pte = gup_get_pte(ptep);
- 		struct page *page;
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index dbc0a73..559a832 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1488,14 +1488,14 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+ 	dout("handle_reply %p tid %llu req %p result %d\n", msg, tid,
+ 	     req, result);
  
-+		/* Similar to the PMD case, NUMA hinting must take slow path */
-+		if (pte_numa(pte)) {
-+			pte_unmap(ptep);
-+			return 0;
-+		}
-+
- 		if ((pte_flags(pte) & (mask | _PAGE_SPECIAL)) != mask) {
- 			pte_unmap(ptep);
- 			return 0;
-@@ -167,6 +173,13 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
- 			return 0;
- 		if (unlikely(pmd_large(pmd))) {
-+			/*
-+			 * NUMA hinting faults need to be handled in the GUP
-+			 * slowpath for accounting purposes and so that they
-+			 * can be serialised against THP migration.
-+			 */
-+			if (pmd_numa(pmd))
-+				return 0;
- 			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
- 				return 0;
- 		} else {
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 12acb0b..72da10d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1252,6 +1252,10 @@ struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
- 	if ((flags & FOLL_DUMP) && is_huge_zero_pmd(*pmd))
- 		return ERR_PTR(-EFAULT);
- 
-+	/* Full NUMA hinting faults to serialise migration in fault paths */
-+	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-+		goto out;
-+
- 	page = pmd_page(*pmd);
- 	VM_BUG_ON(!PageHead(page));
- 	if (flags & FOLL_TOUCH) {
-@@ -1318,23 +1322,27 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		/* If the page was locked, there are no parallel migrations */
- 		if (page_locked)
- 			goto clear_pmdnuma;
-+	}
- 
--		/*
--		 * Otherwise wait for potential migrations and retry. We do
--		 * relock and check_same as the page may no longer be mapped.
--		 * As the fault is being retried, do not account for it.
--		 */
-+	/*
-+	 * If there are potential migrations, wait for completion and retry. We
-+	 * do not relock and check_same as the page may no longer be mapped.
-+	 * Furtermore, even if the page is currently misplaced, there is no
-+	 * guarantee it is still misplaced after the migration completes.
-+	 */
-+	if (!page_locked) {
- 		spin_unlock(&mm->page_table_lock);
- 		wait_on_page_locked(page);
- 		page_nid = -1;
- 		goto out;
+-	ceph_decode_need(&p, end, 4, bad);
++	ceph_decode_need(&p, end, 4, bad_put);
+ 	numops = ceph_decode_32(&p);
+ 	if (numops > CEPH_OSD_MAX_OP)
+ 		goto bad_put;
+ 	if (numops != req->r_num_ops)
+ 		goto bad_put;
+ 	payload_len = 0;
+-	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad);
++	ceph_decode_need(&p, end, numops * sizeof(struct ceph_osd_op), bad_put);
+ 	for (i = 0; i < numops; i++) {
+ 		struct ceph_osd_op *op = p;
+ 		int len;
+@@ -1513,7 +1513,7 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+ 		goto bad_put;
  	}
  
--	/* Page is misplaced, serialise migrations and parallel THP splits */
-+	/*
-+	 * Page is misplaced. Page lock serialises migrations. Acquire anon_vma
-+	 * to serialises splits
-+	 */
- 	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
--	if (!page_locked)
--		lock_page(page);
- 	anon_vma = page_lock_anon_vma_read(page);
- 
- 	/* Confirm the PTE did not while locked */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index d22f6f0..b3ffb81 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1658,6 +1658,7 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	struct page *new_page = NULL;
- 	struct mem_cgroup *memcg = NULL;
- 	int page_lru = page_is_file_cache(page);
-+	pmd_t orig_entry;
- 
- 	/*
- 	 * Don't migrate pages that are mapped in multiple processes.
-@@ -1699,7 +1700,8 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 
- 	/* Recheck the target PMD */
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(*pmd, entry))) {
-+	if (unlikely(!pmd_same(*pmd, entry) || page_count(page) != 2)) {
-+fail_putback:
- 		spin_unlock(&mm->page_table_lock);
- 
- 		/* Reverse changes made by migrate_page_copy() */
-@@ -1729,16 +1731,34 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	 */
- 	mem_cgroup_prepare_migration(page, new_page, &memcg);
- 
-+	orig_entry = *pmd;
- 	entry = mk_pmd(new_page, vma->vm_page_prot);
--	entry = pmd_mknonnuma(entry);
--	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 	entry = pmd_mkhuge(entry);
-+	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
- 
-+	/*
-+	 * Clear the old entry under pagetable lock and establish the new PTE.
-+	 * Any parallel GUP will either observe the old page blocking on the
-+	 * page lock, block on the page table lock or observe the new page.
-+	 * The SetPageUptodate on the new page and page_add_new_anon_rmap
-+	 * guarantee the copy is visible before the pagetable update.
-+	 */
-+	flush_cache_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
-+	page_add_new_anon_rmap(new_page, vma, haddr);
- 	pmdp_clear_flush(vma, haddr, pmd);
- 	set_pmd_at(mm, haddr, pmd, entry);
--	page_add_new_anon_rmap(new_page, vma, haddr);
- 	update_mmu_cache_pmd(vma, address, &entry);
-+
-+	if (page_count(page) != 2) {
-+		set_pmd_at(mm, haddr, pmd, orig_entry);
-+		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
-+		update_mmu_cache_pmd(vma, address, &entry);
-+		page_remove_rmap(new_page);
-+		goto fail_putback;
-+	}
-+
- 	page_remove_rmap(page);
-+
- 	/*
- 	 * Finish the charge transaction under the page table lock to
- 	 * prevent split_huge_page() from dividing up the charge
-@@ -1763,9 +1783,13 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- out_fail:
- 	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
- out_dropref:
--	entry = pmd_mknonnuma(entry);
--	set_pmd_at(mm, haddr, pmd, entry);
--	update_mmu_cache_pmd(vma, address, &entry);
-+	spin_lock(&mm->page_table_lock);
-+	if (pmd_same(*pmd, entry)) {
-+		entry = pmd_mknonnuma(entry);
-+		set_pmd_at(mm, haddr, pmd, entry);
-+		update_mmu_cache_pmd(vma, address, &entry);
-+	}
-+	spin_unlock(&mm->page_table_lock);
- 
- 	unlock_page(page);
- 	put_page(page);
+-	ceph_decode_need(&p, end, 4 + numops * 4, bad);
++	ceph_decode_need(&p, end, 4 + numops * 4, bad_put);
+ 	retry_attempt = ceph_decode_32(&p);
+ 	for (i = 0; i < numops; i++)
+ 		req->r_reply_op_result[i] = ceph_decode_32(&p);
 -- 
 1.8.3.2
 
