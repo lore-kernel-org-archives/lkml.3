@@ -1,127 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989AbaAMQp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:45:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53176 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaAMQCo (ORCPT
+	id S1756016AbaAMQqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:46:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33676 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924AbaAMQqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:44 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/208] target/file: Update hw_max_sectors based on current block_size
-Date: Mon, 13 Jan 2014 15:58:40 +0000
-Message-Id: <1389628849-1614-80-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 13 Jan 2014 11:46:13 -0500
+Date: Mon, 13 Jan 2014 08:45:35 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, arjan@linux.intel.com,
+        peterz@infradead.org, bitbucket@online.de, davem@davemloft.net,
+        eliezer.tamir@linux.intel.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, torvalds@linux-foundation.org,
+        peterz@infradead.org, bitbucket@online.de, davem@davemloft.net,
+        eliezer.tamir@linux.intel.com, akpm@linux-foundation.org,
+        tglx@linutronix.de
+In-Reply-To: <20131119151338.GF3694@twins.programming.kicks-ass.net>
+References: <20131119151338.GF3694@twins.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched, net: Clean up preempt_enable_no_resched()
+  abuse
+Git-Commit-ID: 1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 08:45:42 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf
+Gitweb:     http://git.kernel.org/tip/1774e9f3e5c8b38de3b3bc8bd0eacd280f655baf
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 19 Nov 2013 16:13:38 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 13 Jan 2014 17:39:04 +0100
 
-------------------
+sched, net: Clean up preempt_enable_no_resched() abuse
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+The only valid use of preempt_enable_no_resched() is if the very next
+line is schedule() or if we know preemption cannot actually be enabled
+by that statement due to known more preempt_count 'refs'.
 
-commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
-
-This patch allows FILEIO to update hw_max_sectors based on the current
-max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
-a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
-needs to be calculated based on block_size.
-
-This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
-sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
-the block_size=4096 case.
-
-(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
-
-Reported-by: Henrik Goldman <hg@x-formation.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: rjw@rjwysocki.net
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: rui.zhang@intel.com
+Cc: jacob.jun.pan@linux.intel.com
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: hpa@zytor.com
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: lenb@kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20131119151338.GF3694@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/target/target_core_device.c | 5 +++++
- drivers/target/target_core_file.c   | 8 ++++----
- drivers/target/target_core_file.h   | 5 ++++-
- include/target/target_core_base.h   | 1 +
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ net/ipv4/tcp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 8f4142f..717d35b 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1078,6 +1078,11 @@ int se_dev_set_block_size(struct se_device *dev, u32 block_size)
- 	dev->dev_attrib.block_size = block_size;
- 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
- 			dev, block_size);
-+
-+	if (dev->dev_attrib.max_bytes_per_io)
-+		dev->dev_attrib.hw_max_sectors =
-+			dev->dev_attrib.max_bytes_per_io / block_size;
-+
- 	return 0;
- }
- 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index b11890d..3b28793 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -66,9 +66,8 @@ static int fd_attach_hba(struct se_hba *hba, u32 host_id)
- 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
- 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
- 		TARGET_CORE_MOD_VERSION);
--	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
--		" MaxSectors: %u\n",
--		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
-+	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
-+		hba->hba_id, fd_host->fd_host_id);
- 
- 	return 0;
- }
-@@ -220,7 +219,8 @@ static int fd_configure_device(struct se_device *dev)
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index c4638e6..82de786 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1623,11 +1623,11 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 		    (len > sysctl_tcp_dma_copybreak) && !(flags & MSG_PEEK) &&
+ 		    !sysctl_tcp_low_latency &&
+ 		    net_dma_find_channel()) {
+-			preempt_enable_no_resched();
++			preempt_enable();
+ 			tp->ucopy.pinned_list =
+ 					dma_pin_iovec_pages(msg->msg_iov, len);
+ 		} else {
+-			preempt_enable_no_resched();
++			preempt_enable();
+ 		}
  	}
- 
- 	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
--	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
-+	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
-+	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
- 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
- 
- 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-index 37ffc5b..d7772c1 100644
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -7,7 +7,10 @@
- #define FD_DEVICE_QUEUE_DEPTH	32
- #define FD_MAX_DEVICE_QUEUE_DEPTH 128
- #define FD_BLOCKSIZE		512
--#define FD_MAX_SECTORS		2048
-+/*
-+ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
-+ */
-+#define FD_MAX_BYTES		8388608
- 
- #define RRF_EMULATE_CDB		0x01
- #define RRF_GOT_LBA		0x02
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index e34fc90..93e7991 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -604,6 +604,7 @@ struct se_dev_attrib {
- 	u32		unmap_granularity;
- 	u32		unmap_granularity_alignment;
- 	u32		max_write_same_len;
-+	u32		max_bytes_per_io;
- 	struct se_device *da_dev;
- 	struct config_group da_group;
- };
--- 
-1.8.3.2
-
+ #endif
