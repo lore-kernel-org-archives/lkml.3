@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaAMQik (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:38:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53319 "EHLO
+	id S1755270AbaAMQjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:39:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53309 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843AbaAMQDW (ORCPT
+	with ESMTP id S1753981AbaAMQDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:22 -0500
+	Mon, 13 Jan 2014 11:03:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathy Vanhoef <vanhoefm@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Suman Anna <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Paul Walmsley <paul@pwsan.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 106/208] ath9k_htc: properly set MAC address and BSSID mask
-Date: Mon, 13 Jan 2014 15:59:07 +0000
-Message-Id: <1389628849-1614-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/208] ARM: OMAP2+: hwmod_data: fix missing OMAP_INTC_START in irq data
+Date: Mon, 13 Jan 2014 15:59:05 +0000
+Message-Id: <1389628849-1614-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,103 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathy Vanhoef <vanhoefm@gmail.com>
+From: Suman Anna <s-anna@ti.com>
 
-commit 657eb17d87852c42b55c4b06d5425baa08b2ddb3 upstream.
+commit 6d4c88304794442055eaea1c07f3c7b988b8c924 upstream.
 
-Pick the MAC address of the first virtual interface as the new hardware MAC
-address. Set BSSID mask according to this MAC address. This fixes CVE-2013-4579.
+Commit 7d7e1eb (ARM: OMAP2+: Prepare for irqs.h removal) and commit
+ec2c082 (ARM: OMAP2+: Remove hardcoded IRQs and enable SPARSE_IRQ)
+updated the way interrupts for OMAP2/3 devices are defined in the
+HWMOD data structures to being an index plus a fixed offset (defined
+by OMAP_INTC_START).
 
-Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Couple of irqs in the OMAP2/3 hwmod data were misconfigured completely
+as they were missing this OMAP_INTC_START relative offset. Add this
+offset back to fix the incorrect irq data for the following modules:
+	OMAP2 - GPMC, RNG
+	OMAP3 - GPMC, ISP MMU & IVA MMU
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Fixes: 7d7e1eba7e92 ("ARM: OMAP2+: Prepare for irqs.h removal")
+Fixes: ec2c0825ca31 ("ARM: OMAP2+: Remove hardcoded IRQs and enable SPARSE_IRQ")
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++++++--------
- drivers/net/wireless/ath/ath9k/main.c         |  5 +++--
- 2 files changed, 20 insertions(+), 10 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c | 4 ++--
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-index 5c1bec1..de02522 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -147,21 +147,26 @@ static void ath9k_htc_bssid_iter(void *data, u8 *mac, struct ieee80211_vif *vif)
- 	struct ath9k_vif_iter_data *iter_data = data;
- 	int i;
+diff --git a/arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c b/arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c
+index 56cebb0..d23c77f 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_2xxx_ipblock_data.c
+@@ -796,7 +796,7 @@ struct omap_hwmod omap2xxx_counter_32k_hwmod = {
  
--	for (i = 0; i < ETH_ALEN; i++)
--		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	if (iter_data->hw_macaddr != NULL) {
-+		for (i = 0; i < ETH_ALEN; i++)
-+			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
-+	} else {
-+		iter_data->hw_macaddr = mac;
-+	}
- }
+ /* gpmc */
+ static struct omap_hwmod_irq_info omap2xxx_gpmc_irqs[] = {
+-	{ .irq = 20 },
++	{ .irq = 20 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
  
--static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
-+static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
- 				     struct ieee80211_vif *vif)
- {
- 	struct ath_common *common = ath9k_hw_common(priv->ah);
- 	struct ath9k_vif_iter_data iter_data;
+@@ -841,7 +841,7 @@ static struct omap_hwmod_class omap2_rng_hwmod_class = {
+ };
  
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
--	iter_data.hw_macaddr = common->macaddr;
-+	iter_data.hw_macaddr = NULL;
- 	memset(&iter_data.mask, 0xff, ETH_ALEN);
+ static struct omap_hwmod_irq_info omap2_rng_mpu_irqs[] = {
+-	{ .irq = 52 },
++	{ .irq = 52 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
  
- 	if (vif)
-@@ -173,6 +178,10 @@ static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
- 		ath9k_htc_bssid_iter, &iter_data);
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index f234cbe..60f2344 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -2165,7 +2165,7 @@ static struct omap_hwmod_class omap3xxx_gpmc_hwmod_class = {
+ };
  
- 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
-+
-+	if (iter_data.hw_macaddr)
-+		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
-+
- 	ath_hw_setbssidmask(common);
- }
+ static struct omap_hwmod_irq_info omap3xxx_gpmc_irqs[] = {
+-	{ .irq = 20 },
++	{ .irq = 20 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
  
-@@ -1083,7 +1092,7 @@ static int ath9k_htc_add_interface(struct ieee80211_hw *hw,
- 		goto out;
- 	}
+@@ -2999,7 +2999,7 @@ static struct omap_mmu_dev_attr mmu_isp_dev_attr = {
  
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ static struct omap_hwmod omap3xxx_mmu_isp_hwmod;
+ static struct omap_hwmod_irq_info omap3xxx_mmu_isp_irqs[] = {
+-	{ .irq = 24 },
++	{ .irq = 24 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
  
- 	priv->vif_slot |= (1 << avp->index);
- 	priv->nvifs++;
-@@ -1148,7 +1157,7 @@ static void ath9k_htc_remove_interface(struct ieee80211_hw *hw,
+@@ -3041,7 +3041,7 @@ static struct omap_mmu_dev_attr mmu_iva_dev_attr = {
  
- 	ath9k_htc_set_opmode(priv);
+ static struct omap_hwmod omap3xxx_mmu_iva_hwmod;
+ static struct omap_hwmod_irq_info omap3xxx_mmu_iva_irqs[] = {
+-	{ .irq = 28 },
++	{ .irq = 28 + OMAP_INTC_START, },
+ 	{ .irq = -1 }
+ };
  
--	ath9k_htc_set_bssid_mask(priv, vif);
-+	ath9k_htc_set_mac_bssid_mask(priv, vif);
- 
- 	/*
- 	 * Stop ANI only if there are no associated station interfaces.
-diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
-index 5697c7a..76e6cd4 100644
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -888,8 +888,9 @@ void ath9k_calculate_iter_data(struct ieee80211_hw *hw,
- 	struct ath_common *common = ath9k_hw_common(ah);
- 
- 	/*
--	 * Use the hardware MAC address as reference, the hardware uses it
--	 * together with the BSSID mask when matching addresses.
-+	 * Pick the MAC address of the first interface as the new hardware
-+	 * MAC address. The hardware will use it together with the BSSID mask
-+	 * when matching addresses.
- 	 */
- 	memset(iter_data, 0, sizeof(*iter_data));
- 	memset(&iter_data->mask, 0xff, ETH_ALEN);
 -- 
 1.8.3.2
 
