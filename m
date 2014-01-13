@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbaAMO2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51317 "EHLO
+	id S1752685AbaAMO2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51329 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaAMOZw (ORCPT
+	with ESMTP id S1751837AbaAMOZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:52 -0500
+	Mon, 13 Jan 2014 09:25:55 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 34/96] drm/radeon: Fix sideport problems on certain RS690 boards
-Date: Mon, 13 Jan 2014 14:23:57 +0000
-Message-Id: <1389623099-18783-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 36/96] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
+Date: Mon, 13 Jan 2014 14:23:59 +0000
+Message-Id: <1389623099-18783-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,47 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 8333f0fe133be420ce3fcddfd568c3a559ab274e upstream.
+commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
 
-Some RS690 boards with 64MB of sideport memory show up as
-having 128MB sideport + 256MB of UMA.  In this case,
-just skip the sideport memory and use UMA.  This fixes
-rendering corruption and should improve performance.
+We should be writing bits here but instead we're writing the
+numbers that correspond to the bits we want to write. Fix it by
+wrapping the numbers in the BIT() macro. This fixes gpios acting
+as interrupts.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=35457
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/rs690.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/gpio/gpio-msm-v2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
-index bcfb0a3..024ceeb 100644
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -160,6 +160,17 @@ void rs690_mc_init(struct radeon_device *rdev)
- 	base = RREG32_MC(R_000100_MCCFG_FB_LOCATION);
- 	base = G_000100_MC_FB_START(base) << 16;
- 	rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
-+	/* Some boards seem to be configured for 128MB of sideport memory,
-+	 * but really only have 64MB.  Just skip the sideport and use
-+	 * UMA memory.
-+	 */
-+	if (rdev->mc.igp_sideport_enabled &&
-+	    (rdev->mc.real_vram_size == (384 * 1024 * 1024))) {
-+		base += 128 * 1024 * 1024;
-+		rdev->mc.real_vram_size -= 128 * 1024 * 1024;
-+		rdev->mc.mc_vram_size = rdev->mc.real_vram_size;
-+	}
-+
- 	rs690_pm_info(rdev);
- 	radeon_vram_location(rdev, &rdev->mc, base);
- 	rdev->mc.gtt_base_align = rdev->mc.gtt_size - 1;
+diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
+index 5cb1227..3104502 100644
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -249,7 +249,7 @@ static void msm_gpio_irq_mask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
+-	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	__clear_bit(gpio, msm_gpio.enabled_irqs);
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
+@@ -261,7 +261,7 @@ static void msm_gpio_irq_unmask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	__set_bit(gpio, msm_gpio.enabled_irqs);
+-	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
 -- 
 1.8.3.2
 
