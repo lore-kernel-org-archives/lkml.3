@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaAMQCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:02:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53069 "EHLO
+	id S1755989AbaAMQp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:45:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53176 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaAMQCQ (ORCPT
+	with ESMTP id S1753609AbaAMQCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:16 -0500
+	Mon, 13 Jan 2014 11:02:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/208] drm/radeon: check for 0 count in speaker allocation and SAD code
-Date: Mon, 13 Jan 2014 15:58:20 +0000
-Message-Id: <1389628849-1614-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 079/208] target/file: Update hw_max_sectors based on current block_size
+Date: Mon, 13 Jan 2014 15:58:40 +0000
+Message-Id: <1389628849-1614-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b67ce39a30976171e7b96b30a94a0216ab89df97 upstream.
+commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
 
-If there is no speaker allocation block or SAD block, bail
-early.
+This patch allows FILEIO to update hw_max_sectors based on the current
+max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
+a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
+needs to be calculated based on block_size.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=72283
+This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
+sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
+the block_size=4096 case.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.11:
-  - applied changes to evergreen_hdmi_write_sad_regs() function only ]
+(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
+
+Reported-by: Henrik Goldman <hg@x-formation.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_device.c | 5 +++++
+ drivers/target/target_core_file.c   | 8 ++++----
+ drivers/target/target_core_file.h   | 5 ++++-
+ include/target/target_core_base.h   | 1 +
+ 4 files changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-index 869b4d6..7a0e347 100644
---- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-+++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-@@ -88,7 +88,7 @@ static void evergreen_hdmi_write_sad_regs(struct drm_encoder *encoder)
+diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
+index 8f4142f..717d35b 100644
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -1078,6 +1078,11 @@ int se_dev_set_block_size(struct se_device *dev, u32 block_size)
+ 	dev->dev_attrib.block_size = block_size;
+ 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
+ 			dev, block_size);
++
++	if (dev->dev_attrib.max_bytes_per_io)
++		dev->dev_attrib.hw_max_sectors =
++			dev->dev_attrib.max_bytes_per_io / block_size;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index b11890d..3b28793 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -66,9 +66,8 @@ static int fd_attach_hba(struct se_hba *hba, u32 host_id)
+ 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
+ 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
+ 		TARGET_CORE_MOD_VERSION);
+-	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
+-		" MaxSectors: %u\n",
+-		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
++	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
++		hba->hba_id, fd_host->fd_host_id);
+ 
+ 	return 0;
+ }
+@@ -220,7 +219,8 @@ static int fd_configure_device(struct se_device *dev)
  	}
  
- 	sad_count = drm_edid_to_sad(radeon_connector->edid, &sads);
--	if (sad_count < 0) {
-+	if (sad_count <= 0) {
- 		DRM_ERROR("Couldn't read SADs: %d\n", sad_count);
- 		return;
- 	}
+ 	dev->dev_attrib.hw_block_size = fd_dev->fd_block_size;
+-	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
++	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
++	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
+ 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
+ 
+ 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
+diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
+index 37ffc5b..d7772c1 100644
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -7,7 +7,10 @@
+ #define FD_DEVICE_QUEUE_DEPTH	32
+ #define FD_MAX_DEVICE_QUEUE_DEPTH 128
+ #define FD_BLOCKSIZE		512
+-#define FD_MAX_SECTORS		2048
++/*
++ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
++ */
++#define FD_MAX_BYTES		8388608
+ 
+ #define RRF_EMULATE_CDB		0x01
+ #define RRF_GOT_LBA		0x02
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index e34fc90..93e7991 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -604,6 +604,7 @@ struct se_dev_attrib {
+ 	u32		unmap_granularity;
+ 	u32		unmap_granularity_alignment;
+ 	u32		max_write_same_len;
++	u32		max_bytes_per_io;
+ 	struct se_device *da_dev;
+ 	struct config_group da_group;
+ };
 -- 
 1.8.3.2
 
