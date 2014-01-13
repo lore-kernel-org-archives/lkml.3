@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaAMUb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:31:29 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:37346 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaAMUbZ (ORCPT
+	id S1752088AbaAMUft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:35:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:30788 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962AbaAMUfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 15:31:25 -0500
+	Mon, 13 Jan 2014 15:35:47 -0500
+Date: Mon, 13 Jan 2014 23:32:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Borg <cyborg101010@gmail.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, abbotti@mev.co.uk,
+        Levente Kurusa <levex@linux.com>
+Subject: Re: [PATCH] AlarmDev: Changing is_wakeup() to be a function to pass
+ checkpatch
+Message-ID: <20140113203204.GG7444@mwanda>
+References: <1389643836-6170-1-git-send-email-cyborg101010@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52D32962.5050908@redhat.com>
-References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
- <1389380698-19361-4-git-send-email-prarit@redhat.com> <alpine.DEB.2.02.1401111624170.20677@be1.lrz>
- <52D32962.5050908@redhat.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Mon, 13 Jan 2014 15:31:04 -0500
-Message-ID: <CAHGf_=qWB81f8fdDdjaXXh1JoSDUsJmcEHwH+CEJ2E-5XWz6qA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory
- mapping is specified by user [v2]
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: Bodo Eggert <7eggert@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linn Crosetto <linn@hp.com>, Pekka Enberg <penberg@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
-        dyoung@redhat.com, linux-acpi@vger.kernel.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389643836-6170-1-git-send-email-cyborg101010@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 12, 2014 at 6:46 PM, Prarit Bhargava <prarit@redhat.com> wrote:
->
->
-> On 01/11/2014 11:35 AM, 7eggert@gmx.de wrote:
->>
->>
->> On Fri, 10 Jan 2014, Prarit Bhargava wrote:
->>
->>> kdump uses memmap=exactmap and mem=X values to configure the memory
->>> mapping for the kdump kernel.  If memory is hotadded during the boot of
->>> the kdump kernel it is possible that the page tables for the new memory
->>> cause the kdump kernel to run out of memory.
->>>
->>> Since the user has specified a specific mapping ACPI Memory Hotplug should be
->>> disabled in this case.
->>
->> I'll ask just in case: Is it possible to want memory hotplug in spite of
->> using memmap=exactmap or mem=X?
->
-> Good question -- I can't think of a case.  When a user specifies "memmap" or
-> "mem" IMO they are asking for a very specific memory configuration.  Having
-> extra memory added above what the user has specified seems to defeat the purpose
-> of "memmap" and "mem".
+On Mon, Jan 13, 2014 at 08:10:36PM +0000, Joe Borg wrote:
+> Signed-off-by Joe Borg <cyborg101010@gmail.com>
+> ---
+>  drivers/staging/android/alarm-dev.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+> index 647694f..87f2a02 100644
+> --- a/drivers/staging/android/alarm-dev.c
+> +++ b/drivers/staging/android/alarm-dev.c
+> @@ -66,13 +66,15 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
+>   *
+>   * Return: 1 if this is a wakeup alarm, otherwise 0
+>   */
+> -static int is_wakeup(enum android_alarm_type type)
+> +static int is_wakeup(enum andriod_alarm_type type)
 
-May be yes, may be no.
+Levente already pointed out that this breaks the build.  Really
+Levente said was spot on and still applies to the v2 of the patch.
 
-They are often used for a wrokaround to avoid broken firmware issue.
-If we have no way
-to explicitly enable hotplug. We will lose a workaround.
+regards,
+dan carpenter
 
-Perhaps, there is no matter. Today, memory hotplug is only used on
-high-end machine
-and their firmware is carefully developped and don't have a serious
-issue almostly. Though.
