@@ -1,53 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaAMXdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:33:41 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36066 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751994AbaAMXdh (ORCPT
+	id S1752665AbaAMXe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:34:27 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:42798 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaAMXeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:33:37 -0500
-Date: Mon, 13 Jan 2014 23:33:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
-Message-ID: <20140113233326.GG15937@n2100.arm.linux.org.uk>
-References: <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com> <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org> <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com> <20140112105958.GA9791@n2100.arm.linux.org.uk> <52D2B7C8.4060103@ti.com> <20140113123733.GU15937@n2100.arm.linux.org.uk> <52D3F7E0.3030206@ti.com> <20140113153128.6aaffb9af111ba75a7abd4db@linux-foundation.org>
+	Mon, 13 Jan 2014 18:34:24 -0500
+X-AuditID: 9c93017e-b7ba2ae000003516-2e-52d477fee98d
+Date: Tue, 14 Jan 2014 08:35:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Cai Liu <cai.liu@samsung.com>
+Cc: sjenning@linux.vnet.ibm.com, akpm@linux-foundation.org, bob.liu@oracle.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, liucai.lfn@gmail.com
+Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
+Message-ID: <20140113233505.GS1992@bbox>
+References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140113153128.6aaffb9af111ba75a7abd4db@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 03:31:28PM -0800, Andrew Morton wrote:
-> On Mon, 13 Jan 2014 09:27:44 -0500 Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
-> 
-> > > It seems to me to be absolutely silly to have code introduce a warning
-> > > yet push the fix for the warning via a completely different tree...
-> > > 
-> > I mixed it up. Sorry. Some how I thought there was some other build
-> > configuration thrown the same warning with memblock series and hence
-> > suggested the patch to go via Andrew's tree.
-> 
-> Yes, I too had assumed that the warning was caused by the bootmem
-> patches in -mm.
-> 
-> But it in fact occurs in Linus's current tree.  I'll drop
-> mm-arm-fix-arms-__ffs-to-conform-to-avoid-warning-with-no_bootmem.patch
-> and I'll assume that rmk will fix this up at an appropriate time.
+Hello,
 
-Thanks.  I'll apply my version and then I can pull Santosh's nobootmem
-changes (which I've had a couple of times already) without adding to
-the warnings.
+On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
+> zswap can support multiple swapfiles. So we need to check
+> all zbud pool pages in zswap.
+
+True but this patch is rather costly that we should iterate
+zswap_tree[MAX_SWAPFILES] to check it. SIGH.
+
+How about defining zswap_tress as linked list instead of static
+array? Then, we could reduce unnecessary iteration too much.
+
+Other question:
+Why do we need to update zswap_pool_pages too frequently?
+As I read the code, I think it's okay to update it only when user
+want to see it by debugfs and zswap_is_full is called.
+So could we optimize it out?
+
+> 
+> Signed-off-by: Cai Liu <cai.liu@samsung.com>
+> ---
+>  mm/zswap.c |   18 +++++++++++++++---
+>  1 file changed, 15 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index d93afa6..2438344 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -291,7 +291,6 @@ static void zswap_free_entry(struct zswap_tree *tree,
+>  	zbud_free(tree->pool, entry->handle);
+>  	zswap_entry_cache_free(entry);
+>  	atomic_dec(&zswap_stored_pages);
+> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+>  }
+>  
+>  /* caller must hold the tree lock */
+> @@ -405,10 +404,24 @@ cleanup:
+>  /*********************************
+>  * helpers
+>  **********************************/
+> +static u64 get_zswap_pool_pages(void)
+> +{
+> +	int i;
+> +	u64 pool_pages = 0;
+> +
+> +	for (i = 0; i < MAX_SWAPFILES; i++) {
+> +		if (zswap_trees[i])
+> +			pool_pages += zbud_get_pool_size(zswap_trees[i]->pool);
+> +	}
+> +	zswap_pool_pages = pool_pages;
+> +
+> +	return pool_pages;
+> +}
+> +
+>  static bool zswap_is_full(void)
+>  {
+>  	return (totalram_pages * zswap_max_pool_percent / 100 <
+> -		zswap_pool_pages);
+> +		get_zswap_pool_pages());
+>  }
+>  
+>  /*********************************
+> @@ -716,7 +729,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+>  
+>  	/* update stats */
+>  	atomic_inc(&zswap_stored_pages);
+> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+>  
+>  	return 0;
+>  
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+Kind regards,
+Minchan Kim
