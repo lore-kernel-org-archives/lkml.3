@@ -1,194 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751289AbaAMDSf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:18:35 -0500
-Received: from ozlabs.org ([203.10.76.45]:44581 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110AbaAMDSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:18:31 -0500
-Date: Mon, 13 Jan 2014 14:18:24 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the tip tree with the net-next tree
-Message-Id: <20140113141824.4301cb76e8e5540d42d74015@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__13_Jan_2014_14_18_24_+1100_YKCljIiZFd4XvnrD"
+	id S1751318AbaAMDTv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:19:51 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:39144
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751110AbaAMDTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 22:19:48 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 13 Jan 2014 11:20:45 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: John Tobias <john.tobias.ph@gmail.com>
+CC: <rjw@rjwysocki.net>, <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <festevam@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: imx: add select on ARCH_MXC for cpufreq
+ support
+Message-ID: <20140113032043.GF23525@S2101-09.ap.freescale.net>
+References: <1389321592-33220-1-git-send-email-john.tobias.ph@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1389321592-33220-1-git-send-email-john.tobias.ph@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__13_Jan_2014_14_18_24_+1100_YKCljIiZFd4XvnrD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 09, 2014 at 06:39:51PM -0800, John Tobias wrote:
+> Moved ARCH_HAS_CPUFREQ, HAVE_IMX_ANATOP and PM_OPP on ARCH_MXC so that
+> the user can enable the cpufreq support for iMX6Q and/or iMX6SL.
 
-Hi all,
+All I was asking is to move the following:
 
-Today's linux-next merge of the tip tree got conflicts in
-arch/arc/include/asm/Kbuild, arch/cris/include/asm/Kbuild,
-arch/hexagon/include/asm/Kbuild, arch/microblaze/include/asm/Kbuild,
-arch/parisc/include/asm/Kbuild and arch/score/include/asm/Kbuild between
-commit e3fec2f74f7f ("lib: Add missing arch generic-y entries for
-asm-generic/hash.h") from the net-next tree and commit 93ea02bb8435
-("arch: Clean up asm/barrier.h implementations using
-asm-generic/barrier.h") from the tip tree.
+	select ARCH_HAS_CPUFREQ
+	select ARCH_HAS_OPP
+	select PM_OPP if PM
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+So leave HAVE_IMX_ANATOP out there, and only move the above ones please.
 
-BTW: thanks for not keeping the Kbuild files sorted :-(
+Shawn
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> Signed-off-by: John Tobias <john.tobias.ph@gmail.com>
+> ---
+>  arch/arm/mach-imx/Kconfig | 13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index 7a6e6f7..d6aa34d 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -1,5 +1,6 @@
+>  config ARCH_MXC
+>  	bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7
+> +	select ARCH_HAS_CPUFREQ
+>  	select ARCH_REQUIRE_GPIOLIB
+>  	select ARM_CPU_SUSPEND if PM
+>  	select ARM_PATCH_PHYS_VIRT
+> @@ -9,8 +10,10 @@ config ARCH_MXC
+>  	select GENERIC_ALLOCATOR
+>  	select GENERIC_CLOCKEVENTS
+>  	select GENERIC_IRQ_CHIP
+> +	select HAVE_IMX_ANATOP if SOC_IMX6Q || SOC_IMX6SL
+>  	select MIGHT_HAVE_CACHE_L2X0 if ARCH_MULTI_V6_V7
+>  	select MULTI_IRQ_HANDLER
+> +	select PM_OPP if PM
+>  	select SOC_BUS
+>  	select SPARSE_IRQ
+>  	select USE_OF
+> @@ -779,16 +782,14 @@ config	SOC_IMX53
+>  
+>  config SOC_IMX6Q
+>  	bool "i.MX6 Quad/DualLite support"
+> -	select ARCH_HAS_CPUFREQ
+> -	select ARCH_HAS_OPP
+> +	select ARCH_HAS_OPP	
+>  	select ARM_ERRATA_754322
+>  	select ARM_ERRATA_764369 if SMP
+>  	select ARM_ERRATA_775420
+>  	select ARM_GIC
+>  	select CPU_V7
+>  	select HAVE_ARM_SCU if SMP
+> -	select HAVE_ARM_TWD if SMP
+> -	select HAVE_IMX_ANATOP
+> +	select HAVE_ARM_TWD if SMP	
+>  	select HAVE_IMX_GPC
+>  	select HAVE_IMX_MMDC
+>  	select HAVE_IMX_SRC
+> @@ -800,8 +801,7 @@ config SOC_IMX6Q
+>  	select PINCTRL_IMX6Q
+>  	select PL310_ERRATA_588369 if CACHE_PL310
+>  	select PL310_ERRATA_727915 if CACHE_PL310
+> -	select PL310_ERRATA_769419 if CACHE_PL310
+> -	select PM_OPP if PM
+> +	select PL310_ERRATA_769419 if CACHE_PL310	
+>  
+>  	help
+>  	  This enables support for Freescale i.MX6 Quad processor.
+> @@ -812,7 +812,6 @@ config SOC_IMX6SL
+>  	select ARM_ERRATA_775420
+>  	select ARM_GIC
+>  	select CPU_V7
+> -	select HAVE_IMX_ANATOP
+>  	select HAVE_IMX_GPC
+>  	select HAVE_IMX_MMDC
+>  	select HAVE_IMX_SRC
+> -- 
+> 1.8.3.2
+> 
 
-diff --cc arch/arc/include/asm/Kbuild
-index 93e6ca919620,e07c786011af..000000000000
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@@ -1,4 -1,4 +1,5 @@@
-  generic-y +=3D auxvec.h
-++generic-y +=3D barrier.h
-  generic-y +=3D bugs.h
-  generic-y +=3D bitsperlong.h
-  generic-y +=3D clkdev.h
-@@@ -11,6 -11,6 +12,7 @@@ generic-y +=3D fcntl.
-  generic-y +=3D fb.h
-  generic-y +=3D ftrace.h
-  generic-y +=3D hardirq.h
-++generic-y +=3D hash.h
-  generic-y +=3D hw_irq.h
-  generic-y +=3D ioctl.h
-  generic-y +=3D ioctls.h
-@@@ -47,4 -47,4 +49,3 @@@ generic-y +=3D user.
-  generic-y +=3D vga.h
-  generic-y +=3D xor.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
- -generic-y +=3D barrier.h
-diff --cc arch/cris/include/asm/Kbuild
-index c5963b3e4624,35ec2e5ca832..000000000000
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@@ -3,8 -3,8 +3,10 @@@ header-y +=3D arch-v10
-  header-y +=3D arch-v32/
- =20
- =20
-++generic-y +=3D barrier.h
-  generic-y +=3D clkdev.h
-  generic-y +=3D exec.h
-++generic-y +=3D hash.h
-  generic-y +=3D kvm_para.h
-  generic-y +=3D linkage.h
-  generic-y +=3D module.h
-@@@ -12,4 -12,4 +14,3 @@@ generic-y +=3D trace_clock.
-  generic-y +=3D vga.h
-  generic-y +=3D xor.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
- -generic-y +=3D barrier.h
-diff --cc arch/hexagon/include/asm/Kbuild
-index 469d223950ff,a614ec9747a6..000000000000
---- a/arch/hexagon/include/asm/Kbuild
-+++ b/arch/hexagon/include/asm/Kbuild
-@@@ -2,6 -2,6 +2,7 @@@
-  header-y +=3D ucontext.h
- =20
-  generic-y +=3D auxvec.h
-++generic-y +=3D barrier.h
-  generic-y +=3D bug.h
-  generic-y +=3D bugs.h
-  generic-y +=3D clkdev.h
-@@@ -15,6 -15,6 +16,7 @@@ generic-y +=3D fb.
-  generic-y +=3D fcntl.h
-  generic-y +=3D ftrace.h
-  generic-y +=3D hardirq.h
-++generic-y +=3D hash.h
-  generic-y +=3D hw_irq.h
-  generic-y +=3D ioctl.h
-  generic-y +=3D ioctls.h
-@@@ -54,4 -54,4 +56,3 @@@ generic-y +=3D ucontext.
-  generic-y +=3D unaligned.h
-  generic-y +=3D xor.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
- -generic-y +=3D barrier.h
-diff --cc arch/microblaze/include/asm/Kbuild
-index 43eec338ff50,f77fb6630b11..000000000000
---- a/arch/microblaze/include/asm/Kbuild
-+++ b/arch/microblaze/include/asm/Kbuild
-@@@ -1,7 -1,7 +1,8 @@@
- =20
-++generic-y +=3D barrier.h
-  generic-y +=3D clkdev.h
-  generic-y +=3D exec.h
-++generic-y +=3D hash.h
-  generic-y +=3D trace_clock.h
-  generic-y +=3D syscalls.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
- -generic-y +=3D barrier.h
-diff --cc arch/parisc/include/asm/Kbuild
-index 75edd5fcc6ff,8df06d0074f4..000000000000
---- a/arch/parisc/include/asm/Kbuild
-+++ b/arch/parisc/include/asm/Kbuild
-@@@ -1,8 -1,8 +1,9 @@@
- =20
-++generic-y +=3D barrier.h
-  generic-y +=3D word-at-a-time.h auxvec.h user.h cputime.h emergency-resta=
-rt.h \
-  	  segment.h topology.h vga.h device.h percpu.h hw_irq.h mutex.h \
-  	  div64.h irq_regs.h kdebug.h kvm_para.h local64.h local.h param.h \
-  	  poll.h xor.h clkdev.h exec.h
-++generic-y +=3D hash.h
-  generic-y +=3D trace_clock.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
- -generic-y +=3D barrier.h
-diff --cc arch/score/include/asm/Kbuild
-index 099e7ba40599,ee2993b6e5d1..000000000000
---- a/arch/score/include/asm/Kbuild
-+++ b/arch/score/include/asm/Kbuild
-@@@ -1,9 -1,8 +1,9 @@@
- =20
-  header-y +=3D
- =20
-++generic-y +=3D barrier.h
-  generic-y +=3D clkdev.h
-++generic-y +=3D hash.h
-  generic-y +=3D trace_clock.h
-  generic-y +=3D xor.h
-  generic-y +=3D preempt.h
-- generic-y +=3D hash.h
--=20
- -generic-y +=3D barrier.h
-
---Signature=_Mon__13_Jan_2014_14_18_24_+1100_YKCljIiZFd4XvnrD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS01sEAAoJEMDTa8Ir7ZwV6zcQAJKcYEZCmdkhK7hXWa8Ea/GI
-62mzyUs/jWArJhEWvkjgxJmLevFHzHH0ehxQJaifi9IZRcTaIe35+ZHhsX5ARFqL
-/lMEWAPU978p08edz7TglzhDXqOLE3u4MxfsVGoi1DSoJw8ZQlnIIUgRr1X2SDvX
-Pvf96k1QzytxV4dkCp/to/PeYckWwhdF2cKuRr40oVJuIhytn/juf0SsWR45jo1S
-/zrouvJZQ/7Ckr72CD4MngG/fQsIVknS3IInzmI0HBGwPUNcd19PW74v6JWT6Yqu
-CZFUqoCZrmoJHXpaOBreooqKWCvfPQh4+MlAjyPhnRNGnP/a25KXKlPMDS2D8obK
-cDy3xhLQsxSisvf3JKO6kc+qF1MkPEKhat4tt+mrbsLX+KWfgL8ZhXNWSjN4Hd8O
-5auW1Fqi0r/76zrtwK4JWH1GLuPUezbneQg5GyJXQqeB8tcvd5uiaxMbqJc9FTqk
-MtLGljZeQrylSf32l/UZ7oovsZJ/fUB6NR3lek22LIYlY9XxxLkE1AglnLRHw2T1
-MR9HJsjSeKd6dRhvmAIKI6UmdUynYRVOb15SSTwA+Z7Ors3pMLrzcGc28bzFDJat
-euYp/+6jJJ2fcFxDq/Mmy/MTXw8iKxPxdtEh7D38hCwehVwcCSkHa5bVo+hTL6LU
-GD2z2JdqCUr+ukxYa1Zc
-=rdHc
------END PGP SIGNATURE-----
-
---Signature=_Mon__13_Jan_2014_14_18_24_+1100_YKCljIiZFd4XvnrD--
