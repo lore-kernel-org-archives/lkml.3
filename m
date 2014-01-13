@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaAMKsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 05:48:45 -0500
-Received: from guitar.tcltek.co.il ([192.115.133.116]:54247 "EHLO
-	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322AbaAMKsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 05:48:43 -0500
-Date: Mon, 13 Jan 2014 12:48:39 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: design.txt: remove mention of
- set_perf_event_pending
-Message-ID: <20140113104839.GN4944@tarshish>
-References: <bd81da79fb3cfca28d7e990566c8794ec14328c7.1385647452.git.baruch@tkos.co.il>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bd81da79fb3cfca28d7e990566c8794ec14328c7.1385647452.git.baruch@tkos.co.il>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751913AbaAMKs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 05:48:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:46118 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751770AbaAMKsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 05:48:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,652,1384329600"; 
+   d="scan'208";a="465766323"
+Message-ID: <1389610131.2326.16.camel@loki>
+Subject: Re: [alsa-devel] [PATCH] ASoC: dpcm: don't do hw_param when BE has
+ done	hw_param
+From: Liam Girdwood <liam.r.girdwood@linux.intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nenghua Cao <nhcao@marvell.com>
+Date: Mon, 13 Jan 2014 10:48:51 +0000
+In-Reply-To: <s5hzjn2n9ne.wl%tiwai@suse.de>
+References: <1389332195-15900-1-git-send-email-nhcao@marvell.com>
+	 <s5htxdcxg0q.wl%tiwai@suse.de> <52CFD7BE.5030907@marvell.com>
+	 <1389354435.2293.32.camel@loki> <52CFE0AE.1030606@marvell.com>
+	 <s5hk3e8xcz2.wl%tiwai@suse.de> <1389356948.2293.55.camel@loki>
+	 <s5hd2k0x833.wl%tiwai@suse.de> <1389379389.2293.114.camel@loki>
+	 <s5hzjn2n9ne.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi perf maintainers,
+On Sat, 2014-01-11 at 10:35 +0100, Takashi Iwai wrote:
+> At Fri, 10 Jan 2014 18:43:09 +0000,
+> Liam Girdwood wrote:
+> > 
+> > On Fri, 2014-01-10 at 14:46 +0100, Takashi Iwai wrote:
+> > > At Fri, 10 Jan 2014 12:29:08 +0000,
+> > > Liam Girdwood wrote:
+> > > > 
 
-Ping?
-
-On Thu, Nov 28, 2013 at 04:04:12PM +0200, Baruch Siach wrote:
-> set_perf_event_pending() was removed in e360adbe (irq_work: Add generic hardirq
-> context callbacks)
+> > 
+> > The intention was to use the existing alsa-lib/tinyalsa PCM hw_params
+> > APIs. The BE would just export itself to usespace as a PCM (but without
+> > the capability for direct playback/capture - just format, rate setting)
 > 
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> ---
->  tools/perf/design.txt | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/tools/perf/design.txt b/tools/perf/design.txt
-> index 67e5d0c..63a0e6f 100644
-> --- a/tools/perf/design.txt
-> +++ b/tools/perf/design.txt
-> @@ -454,7 +454,6 @@ So to start with, in order to add HAVE_PERF_EVENTS to your Kconfig, you
->  will need at least this:
->  	- asm/perf_event.h - a basic stub will suffice at first
->  	- support for atomic64 types (and associated helper functions)
-> -	- set_perf_event_pending() implemented
->  
->  If your architecture does have hardware capabilities, you can override the
->  weak stub hw_perf_event_init() to register hardware counters.
+> Does it mean that, from kernel perspective, a BE creates a dedicated
+> (virtual) PCM device and expose it to user-space?  Or just through
+> special API?
 
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+I'm thinking a virtual PCM if you agree. 
+
+We could keep the same userspace API for configuration OR we could
+extend the API slightly to add some snd_pcm_virtual_() functions.
+Extending the API would imply the virtual PCM only supports a subset of
+PCM API calls (avoiding any confusion/mixing with regular PCM APIs).
+
+Thanks
+
+Liam    
+
+
