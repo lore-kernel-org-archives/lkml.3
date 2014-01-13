@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616AbaAMQoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:44:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53212 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530AbaAMQCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753809AbaAMQCw (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 13 Jan 2014 11:02:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53103 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530AbaAMQC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:02:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 085/208] drm/radeon: 0x9649 is SUMO2 not SUMO
-Date: Mon, 13 Jan 2014 15:58:46 +0000
-Message-Id: <1389628849-1614-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/208] rtlwifi: pci: Fix oops on driver unload
+Date: Mon, 13 Jan 2014 15:58:25 +0000
+Message-Id: <1389628849-1614-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit d00adcc8ae9e22eca9d8af5f66c59ad9a74c90ec upstream.
+commit 9278db6279e28d4d433bc8a848e10b4ece8793ed upstream.
 
-Fixes rendering corruption due to incorrect
-gfx configuration.
+On Fedora systems, unloading rtl8192ce causes an oops. This patch fixes the
+problem reported at https://bugzilla.redhat.com/show_bug.cgi?id=852761.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=63599
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/drm/drm_pciids.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/pci.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index 961013a..50ea823 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -588,7 +588,7 @@
- 	{0x1002, 0x9645, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
--	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
-+	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
- 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
- 	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 703f839..bb3b72e 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -741,6 +741,8 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 	};
+ 	int index = rtlpci->rx_ring[rx_queue_idx].idx;
+ 
++	if (rtlpci->driver_is_goingto_unload)
++		return;
+ 	/*RX NORMAL PKT */
+ 	while (count--) {
+ 		/*rx descriptor */
+@@ -1637,6 +1639,7 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
+ 	 */
+ 	set_hal_stop(rtlhal);
+ 
++	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->disable_interrupt(hw);
+ 	cancel_work_sync(&rtlpriv->works.lps_change_work);
+ 
+@@ -1654,7 +1657,6 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
+ 	ppsc->rfchange_inprogress = true;
+ 	spin_unlock_irqrestore(&rtlpriv->locks.rf_ps_lock, flags);
+ 
+-	rtlpci->driver_is_goingto_unload = true;
+ 	rtlpriv->cfg->ops->hw_disable(hw);
+ 	/* some things are not needed if firmware not available */
+ 	if (!rtlpriv->max_fw_size)
 -- 
 1.8.3.2
 
