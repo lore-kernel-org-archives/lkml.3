@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaAMXpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 18:45:52 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45133 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253AbaAMXpu (ORCPT
+	id S1751623AbaAMXuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 18:50:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53523 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaAMXuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 18:45:50 -0500
-Date: Mon, 13 Jan 2014 23:45:38 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] fget*() cleanups
-Message-ID: <20140113234538.GQ10323@ZenIV.linux.org.uk>
-References: <20140107181258.GA29288@redhat.com>
- <20140108132852.GF10038@linux.vnet.ibm.com>
- <20140108151918.GA5156@redhat.com>
- <20140109011650.GI10038@linux.vnet.ibm.com>
- <20140110153459.GA31491@redhat.com>
- <20140111063438.GY10038@linux.vnet.ibm.com>
- <20140111181908.GA7358@redhat.com>
- <20140111222737.GE10038@linux.vnet.ibm.com>
- <20140113154748.GA6496@redhat.com>
+	Mon, 13 Jan 2014 18:50:06 -0500
+Date: Mon, 13 Jan 2014 15:50:42 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Borg <cyborg101010@gmail.com>
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] DAS1800: Fixing foo * bar should be foo *bar
+Message-ID: <20140113235042.GA22328@kroah.com>
+References: <1389655155-20071-1-git-send-email-cyborg101010@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140113154748.GA6496@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389655155-20071-1-git-send-email-cyborg101010@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 04:47:48PM +0100, Oleg Nesterov wrote:
-> On 01/11, Paul E. McKenney wrote:
-> >
-> > On Sat, Jan 11, 2014 at 07:19:08PM +0100, Oleg Nesterov wrote:
-> > >
-> > > It seems that you misunderstood me, let me send v2 for review.
-> >
-> > Ah, I did misunderstand you.  For both:
-> >
-> > Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Thanks!
-> 
-> While at it, can't we factor out the code in fget*() ?
-> 
-> Probably I dislike the code duplications too much, but imho fget*()
-> abuse the copy-and-paste.
-> 
-> On top of this series, saves 600 bytes.
+On Mon, Jan 13, 2014 at 11:19:15PM +0000, Joe Borg wrote:
+> Fixed an error flagged by checkpatch.pl, 'foo * bar should be foo
+> *bar' in the parameters of function munge_data().
 
-Applied, along with fcheck_files() stuff.  Sorry about late reply, I'm
-digging through huge piles of mail and putting a queue for -next right
-now...
+Ok, real minor nits here, but I'd like you to make them for future
+patches as it makes my life easier, and I don't like to edit patches by
+hand, as I don't scale very well.
+
+Your subject should be:
+	[PATCH] staging: comedi: das1800: fix for * bar to be foo *bar
+
+you need to add the driver subsystem, and specific area and driver.  And
+no kernel drivers are ALL CAPS, so that should never be used.
+
+I've taken this patch as-is, but in the future please try to do this.
+
+Oh, one more thing:
+
+> Signed-off-by Joe Borg <cyborg101010@gmail.com>
+
+You forgot a ':' here :)
+
+thanks,
+
+greg k-h
