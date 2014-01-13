@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaAMQxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:53:46 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:33688 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153AbaAMQw5 (ORCPT
+	id S1756209AbaAMQyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:54:09 -0500
+Received: from top.free-electrons.com ([176.31.233.9]:34348 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753557AbaAMQCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:52:57 -0500
-Date: Mon, 13 Jan 2014 11:52:53 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jan Kaluza <jkaluza@redhat.com>
-Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, eparis@redhat.com, rgb@redhat.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v4 3/3] Send cgroup_path in SCM_CGROUP
-Message-ID: <20140113165253.GC29053@htj.dyndns.org>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
- <1389600109-30739-1-git-send-email-jkaluza@redhat.com>
- <1389600109-30739-4-git-send-email-jkaluza@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389600109-30739-4-git-send-email-jkaluza@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Jan 2014 11:02:11 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Marek Vasut <marex@denx.de>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/3] iio: mxs-lradc fixes
+Date: Mon, 13 Jan 2014 17:02:00 +0100
+Message-Id: <1389628923-8689-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 09:01:49AM +0100, Jan Kaluza wrote:
-> Server-like processes in many cases need credentials and other
-> metadata of the peer, to decide if the calling process is allowed to
-> request a specific action, or the server just wants to log away this
-> type of information for auditing tasks.
-> 
-> The current practice to retrieve such process metadata is to look that
-> information up in procfs with the $PID received over SCM_CREDENTIALS.
-> This is sufficient for long-running tasks, but introduces a race which
-> cannot be worked around for short-living processes; the calling
-> process and all the information in /proc/$PID/ is gone before the
-> receiver of the socket message can look it up.
-> 
-> This introduces a new SCM type called SCM_CGROUP to allow the direct
-> attaching of "cgroup_path" to SCM, which is significantly more
-> efficient and will reliably avoid the race with the round-trip over
-> procfs.
-> 
-> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
+Here are a few fixes to get in before 3.14.
 
-For cgroup related part:
+Two of those are because I wasn't careful engouh when reordering my patch before
+thos of Hector, it made me drop a part. and I forgot to reintroduce it when
+rebasing.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+The first patch fixes a buffer overflow found by smatch.
 
-Thanks.
+The second patch doesn't really have any impact as we control the input but is
+there for correctness.
+
+The last one removes useless scale_available files for channel 8 and 9 as they
+are read has a temperature channel. I feel it is safe to do as no releases were
+made with those so we are not really breaking the ABI.
+
+Alexandre Belloni (3):
+  iio: mxs-lradc: fix buffer overflow
+  iio: mxs-lradc: fix invalid channel number detection
+  iio: mxs-lradc: remove useless scale_available files
+
+ drivers/staging/iio/adc/mxs-lradc.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
 -- 
-tejun
+1.8.3.2
+
