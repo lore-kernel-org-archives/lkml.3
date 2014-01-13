@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaAMUsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:48:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40354 "EHLO
+	id S1752841AbaAMUvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:51:01 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40461 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548AbaAMUsH (ORCPT
+	with ESMTP id S1752262AbaAMUsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 15:48:07 -0500
+	Mon, 13 Jan 2014 15:48:11 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 36/38] perf diff: Color the Weighted Diff column
-Date: Mon, 13 Jan 2014 17:47:37 -0300
-Message-Id: <1389646059-24881-37-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 29/38] perf tools: Add test for building detached source tarballs
+Date: Mon, 13 Jan 2014 17:47:30 -0300
+Message-Id: <1389646059-24881-30-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -24,78 +29,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-In
+Test one of the main kernel Makefile targets to generate a perf sources
+tarball suitable for build outside the full kernel sources.
 
-  $ perf diff -c wdiff:M,N
+This is to test that the tools/perf/MANIFEST file lists all the files
+needed to be in such tarball, which sometimes gets broken when we move
+files around, like when we made some files that were in tools/perf/
+available to other tools/ codebases by moving it to tools/include/, etc.
 
-color the numbers in the Weighted Diff column using color_snprintf(),
-picking the colors using get_percent_color().
+Now everytime we use 'make -C tools/perf -f tests/make' this test will
+be performed, helping detect such problems earlier in the devel cycle.
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1388390555-10808-1-git-send-email-artagnon@gmail.com
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-gyivwbbu2j7c4j4pwpmttg2p@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ tools/perf/tests/make               | 10 ++++++++--
+ tools/perf/tests/perf-targz-src-pkg | 21 +++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 2 deletions(-)
+ create mode 100755 tools/perf/tests/perf-targz-src-pkg
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 73d8bffdd484..a77e31246c00 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -778,6 +778,7 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
- 	struct hist_entry *pair = get_pair_fmt(he, dfmt);
- 	double diff;
-+	s64 wdiff;
- 	char pfmt[20] = " ";
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index e341088de8f3..00544b8b644b 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -216,10 +216,16 @@ $(run_O):
+ 	rm -rf $$TMP_O \
+ 	rm -rf $$TMP_DEST
  
- 	if (!pair)
-@@ -806,6 +807,18 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
- 		return value_color_snprintf(hpp->buf, hpp->size,
- 					pfmt, diff);
-+	case COMPUTE_WEIGHTED_DIFF:
-+		if (he->dummy)
-+			goto dummy_print;
-+		if (pair->diff.computed)
-+			wdiff = pair->diff.wdiff;
-+		else
-+			wdiff = compute_wdiff(he, pair);
+-all: $(run) $(run_O)
++tarpkg:
++	@cmd="$(PERF)/tests/perf-targz-src-pkg $(PERF)"; \
++	echo "- $@: $$cmd" && echo $$cmd > $@ && \
++	( eval $$cmd ) >> $@ 2>&1
++	
 +
-+		scnprintf(pfmt, 20, "%%14ld", dfmt->header_width);
-+		return color_snprintf(hpp->buf, hpp->size,
-+				get_percent_color(wdiff),
-+				pfmt, wdiff);
- 	default:
- 		BUG_ON(1);
- 	}
-@@ -826,6 +839,12 @@ static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
- 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
- }
++all: $(run) $(run_O) tarpkg
+ 	@echo OK
  
-+static int hpp__color_wdiff(struct perf_hpp_fmt *fmt,
-+			struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	return __hpp__color_compare(fmt, hpp, he, COMPUTE_WEIGHTED_DIFF);
-+}
+ out: $(run_O)
+ 	@echo OK
+ 
+-.PHONY: all $(run) $(run_O) clean
++.PHONY: all $(run) $(run_O) tarpkg clean
+diff --git a/tools/perf/tests/perf-targz-src-pkg b/tools/perf/tests/perf-targz-src-pkg
+new file mode 100755
+index 000000000000..238aa3927c71
+--- /dev/null
++++ b/tools/perf/tests/perf-targz-src-pkg
+@@ -0,0 +1,21 @@
++#!/bin/sh
++# Test one of the main kernel Makefile targets to generate a perf sources tarball
++# suitable for build outside the full kernel sources.
++#
++# This is to test that the tools/perf/MANIFEST file lists all the files needed to
++# be in such tarball, which sometimes gets broken when we move files around,
++# like when we made some files that were in tools/perf/ available to other tools/
++# codebases by moving it to tools/include/, etc.
 +
- static void
- hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
- {
-@@ -1007,6 +1026,9 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	case PERF_HPP_DIFF__RATIO:
- 		fmt->color = hpp__color_ratio;
- 		break;
-+	case PERF_HPP_DIFF__WEIGHTED_DIFF:
-+		fmt->color = hpp__color_wdiff;
-+		break;
- 	default:
- 		break;
- 	}
++PERF=$1
++cd ${PERF}/../..
++make perf-targz-src-pkg > /dev/null
++TARBALL=$(ls -rt perf-*.tar.gz)
++TMP_DEST=$(mktemp -d)
++tar xf ${TARBALL} -C $TMP_DEST
++rm -f ${TARBALL}
++cd - > /dev/null
++make -C $TMP_DEST/perf*/tools/perf > /dev/null 2>&1
++RC=$?
++rm -rf ${TMP_DEST}
++exit $RC
 -- 
 1.8.1.4
 
