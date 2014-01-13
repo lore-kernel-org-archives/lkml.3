@@ -1,144 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaAMKpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 05:45:23 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:38699 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722AbaAMKpT (ORCPT
+	id S1751885AbaAMKpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 05:45:30 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:38042 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaAMKpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 05:45:19 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-90-52d3c3be05c5
+	Mon, 13 Jan 2014 05:45:25 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-a4-52d3c3c39d66
 From: Alexey Perevalov <a.perevalov@samsung.com>
 To: linux-kernel@vger.kernel.org, john.stultz@linaro.org
-Cc: Anton Vorontsov <anton@scarybugs.org>, anton@enomsg.org,
-        kyungmin.park@samsung.com, akpm@linux-foundation.org,
-        cw00.choi@samsung.com, Anton Vorontsov <anton.vorontsov@linaro.org>,
+Cc: Anton Vorontsov <anton@enomsg.org>, kyungmin.park@samsung.com,
+        akpm@linux-foundation.org, cw00.choi@samsung.com,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
         Alexey Perevalov <a.perevalov@samsung.com>
-Subject: [PATCH v2 1/3] kernel/time: Add new helpers to convert ktime to/from
- jiffies
-Date: Mon, 13 Jan 2014 14:43:53 +0400
-Message-id: <1389609835-24377-2-git-send-email-a.perevalov@samsung.com>
+Subject: [PATCH v2 2/3] timerfd: Factor out timer-type unspecific
+ timerfd_expire()
+Date: Mon, 13 Jan 2014 14:43:54 +0400
+Message-id: <1389609835-24377-3-git-send-email-a.perevalov@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
 References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4Nd19hy8HGfw6zWEx9+55Fos569ew
-	WVxsvc1icXCrpkXr405Wi+tfnrNanPmta3G26Q27xeVdc9gcOD0m9H9i9LhzbQ+bx4kZv1k8
-	+rasYvR4fHg1i8fnTXIBbFFcNimpOZllqUX6dglcGR/bzQv6JSuu7N3J3sD4RqSLkZNDQsBE
-	4tGGmawQtpjEhXvr2UBsIYGljBLrTzh2MXIB2TOYJCadus7cxcjBwSZgILHvni1IjYiAhcSd
-	V/9ZQWqYBV4wStxb+pYFJCEsEC7x9GYbM4jNIqAqcbHtDyOIzSvgLnH6w2OwORICChJzJtmA
-	hDkFPCSOL9nKCLHXXeL4/K+MExh5FzAyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICbUv
-	OxgXH7M6xCjAwajEw7tD6HKQEGtiWXFl7iFGCQ5mJRHewkNAId6UxMqq1KL8+KLSnNTiQ4xM
-	HJxSDYwi0y9fMU51DVWx2vFn3nLZD1u3/XW66T4nY5rdslV3NpSEf/nw9X9b/4wtn+4rtGhe
-	vq/objVrUfTMVSp+XL+ZxOcHpm4OE/p+PMWeOzPgQAqLemXUGV5/YZbFLwLbNe2v8GfFfl34
-	dOMxb8d7Bu+XWhpt7dM7926OrdWdtqqW6Mtzkj74Sb1RYinOSDTUYi4qTgQA/iBwmBMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xa7qHD18OMtiyQdRi7t3zLBZz1q9h
+	s7jYepvF4uBWTYvrX56zWpz5rWtxtukNu8XlXXPYHDg8JvR/YvS4c20Pm8eJGb9ZPPq2rGL0
+	+LxJLoA1issmJTUnsyy1SN8ugSvjw85e5oJtQhV3d51ibmC8wNfFyMkhIWAisf/UXiYIW0zi
+	wr31bF2MXBxCAksZJVYdusYK4cxgkrg25wuQw8HBJmAgse+eLUiDiICFxJ1X/8FqmAUuM0o0
+	HjvHCpIQFgiR+Nu/jxHEZhFQlejZB2HzCrhLHFp6nRlkjoSAgsScSTYgYU4BD4njS7aClQgB
+	lRyf/5VxAiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghofV1B+PSY1aHGAU4GJV4
+	eHcIXQ4SYk0sK67MPcQowcGsJMJbeAgoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgfHoK9fu16a5
+	bRMmMj/s/rVOsIHnxmvTZQtYT/zRqg2d8XjJz6nTwzY+zz/19ZVUsoH59YcbW084zZ1vPu+t
+	H5/Jg1tbEl7u+hHc9j0/KT6zbXqnj+ecrD6N8Oqm78pipzbW7Xhz9XDcMmajGXttpp1VYeA/
+	b1tt9nqyFcN7HfuvG7JW233MYf6hxFKckWioxVxUnAgA+JCgigsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <anton@scarybugs.org>
+From: Anton Vorontsov <anton@enomsg.org>
 
-Two new functions: jiffies_to_ktime() and ktime_to_jiffies(), we'll use
-them for timerfd deferred timers handling.
-
-We fully reuse the logic from timespec implementations, so the functions
-are pretty straightforward.
-
-The only tricky part is in headers: we have to include jiffies.h after
-we defined ktime_t, this is because ktime.h needs some declarations from
-jiffies.h (e.g. TICK_NSEC).
+There is nothing hrtimer-specific inside the timerfd_tmrproc(), except
+the function prototype. We're about to add other timer types, so factor
+out generic timerfd_expire() helper from timerfd_tmrproc().
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Signed-off-by: Alexey Perevalov <a.perevalov@samsung.com>
 ---
- include/linux/jiffies.h |    4 +++-
- include/linux/ktime.h   |    3 ++-
- kernel/time.c           |   23 +++++++++++++++++++++++
- 3 files changed, 28 insertions(+), 2 deletions(-)
+ fs/timerfd.c |   40 +++++++++++++++++++---------------------
+ 1 file changed, 19 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index d235e88..1ba02ae 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -6,6 +6,7 @@
- #include <linux/types.h>
- #include <linux/time.h>
- #include <linux/timex.h>
-+#include <linux/ktime.h>
- #include <asm/param.h>			/* for HZ */
- 
- /*
-@@ -302,7 +303,8 @@ extern void jiffies_to_timespec(const unsigned long jiffies,
- extern unsigned long timeval_to_jiffies(const struct timeval *value);
- extern void jiffies_to_timeval(const unsigned long jiffies,
- 			       struct timeval *value);
--
-+extern unsigned long ktime_to_jiffies(ktime_t *value);
-+extern void jiffies_to_ktime(const unsigned long jiffies, ktime_t *value);
- extern clock_t jiffies_to_clock_t(unsigned long x);
- static inline clock_t jiffies_delta_to_clock_t(long delta)
- {
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index 31c0cd1..e8ed619 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -22,7 +22,6 @@
- #define _LINUX_KTIME_H
- 
- #include <linux/time.h>
--#include <linux/jiffies.h>
- 
- /*
-  * ktime_t:
-@@ -58,6 +57,8 @@ union ktime {
- 
- typedef union ktime ktime_t;		/* Kill this */
- 
-+#include <linux/jiffies.h>
-+
- /*
-  * ktime_t definitions when using the 64-bit scalar representation:
-  */
-diff --git a/kernel/time.c b/kernel/time.c
-index 7c7964c..22580a0 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -29,6 +29,7 @@
- 
- #include <linux/export.h>
- #include <linux/timex.h>
-+#include <linux/ktime.h>
- #include <linux/capability.h>
- #include <linux/timekeeper_internal.h>
- #include <linux/errno.h>
-@@ -575,6 +576,28 @@ void jiffies_to_timeval(const unsigned long jiffies, struct timeval *value)
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 9293121..3561ce7 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -229,6 +229,23 @@ static unsigned int timerfd_poll(struct file *file, poll_table *wait)
+ 	return events;
  }
- EXPORT_SYMBOL(jiffies_to_timeval);
  
-+unsigned long ktime_to_jiffies(ktime_t *value)
++static u64 timerfd_rearm(struct timerfd_ctx *ctx)
 +{
-+	struct timespec ts = ktime_to_timespec(*value);
++	u64 orun;
 +
-+	/*
-+	 * nsecs_to_jiffies(ktime_to_ns(*ktime)) is unsafe as nsecs_to_jiffies
-+	 * doesn't handle MAX_JIFFY_OFFSET. So we reuse the logic from the
-+	 * timespec to jiffies conversion function.
-+	 */
-+	return timespec_to_jiffies(&ts);
++	if (isalarm(ctx)) {
++		orun += alarm_forward_now(
++			&ctx->t.alarm, ctx->tintv) - 1;
++		alarm_restart(&ctx->t.alarm);
++	} else {
++		orun += hrtimer_forward_now(&ctx->t.tmr,
++		     ctx->tintv) - 1;
++		hrtimer_restart(&ctx->t.tmr);
++	}
++
++	return orun;
 +}
-+EXPORT_SYMBOL(ktime_to_jiffies);
 +
-+void jiffies_to_ktime(const unsigned long jiffies, ktime_t *value)
-+{
-+	struct timespec ts;
-+
-+	jiffies_to_timespec(jiffies, &ts);
-+	*value = timespec_to_ktime(ts);
-+}
-+EXPORT_SYMBOL(jiffies_to_ktime);
-+
- /*
-  * Convert jiffies/jiffies_64 to clock_t and back.
-  */
+ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 			    loff_t *ppos)
+ {
+@@ -265,15 +282,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 			 * callback to avoid DoS attacks specifying a very
+ 			 * short timer period.
+ 			 */
+-			if (isalarm(ctx)) {
+-				ticks += alarm_forward_now(
+-					&ctx->t.alarm, ctx->tintv) - 1;
+-				alarm_restart(&ctx->t.alarm);
+-			} else {
+-				ticks += hrtimer_forward_now(&ctx->t.tmr,
+-							     ctx->tintv) - 1;
+-				hrtimer_restart(&ctx->t.tmr);
+-			}
++			ticks += timerfd_rearm(ctx);
+ 		}
+ 		ctx->expired = 0;
+ 		ctx->ticks = 0;
+@@ -421,18 +430,7 @@ static int do_timerfd_gettime(int ufd, struct itimerspec *t)
+ 	spin_lock_irq(&ctx->wqh.lock);
+ 	if (ctx->expired && ctx->tintv.tv64) {
+ 		ctx->expired = 0;
+-
+-		if (isalarm(ctx)) {
+-			ctx->ticks +=
+-				alarm_forward_now(
+-					&ctx->t.alarm, ctx->tintv) - 1;
+-			alarm_restart(&ctx->t.alarm);
+-		} else {
+-			ctx->ticks +=
+-				hrtimer_forward_now(&ctx->t.tmr, ctx->tintv)
+-				- 1;
+-			hrtimer_restart(&ctx->t.tmr);
+-		}
++		ctx->ticks += timerfd_rearm(ctx);
+ 	}
+ 	t->it_value = ktime_to_timespec(timerfd_get_remaining(ctx));
+ 	t->it_interval = ktime_to_timespec(ctx->tintv);
 -- 
 1.7.9.5
 
