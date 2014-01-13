@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751377AbaAMD0N (ORCPT <rfc822;w@1wt.eu>);
+	id S1751413AbaAMD0T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:26:19 -0500
+Received: from numascale.com ([213.162.240.84]:57913 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751362AbaAMD0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 12 Jan 2014 22:26:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45136 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaAMD0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:26:09 -0500
-Date: Sun, 12 Jan 2014 19:27:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Shaohua Li <shli@fusionio.com>,
-        Bob Liu <bob.liu@oracle.com>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: Re: [PATCH] mm/swap: fix race on swap_info reuse between swapoff
- and swapon
-Message-Id: <20140112192744.9bca5c6d.akpm@linux-foundation.org>
-In-Reply-To: <CAL1ERfPnaROPiRAeWHpvwGezHsqN4R8j=QSyS48xs25ax14AhA@mail.gmail.com>
-References: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
-	<20140110171108.32b2be171cd5e54bf22fb2a4@linux-foundation.org>
-	<CAL1ERfPnaROPiRAeWHpvwGezHsqN4R8j=QSyS48xs25ax14AhA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Greylist: delayed 2312 seconds by postgrey-1.27 at vger.kernel.org; Sun, 12 Jan 2014 22:26:13 EST
+Message-ID: <52D353C8.4000000@numascale.com>
+Date: Mon, 13 Jan 2014 10:47:36 +0800
+From: Daniel J Blueman <daniel@numascale.com>
+Organization: Numascale AS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Waiman Long <Waiman.Long@hp.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014 11:08:58 +0800 Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+On Thursday, 9 January 2014 01:10:03 UTC+8, Waiman Long  wrote:
+ > This patch modifies the queue_write_unlock() function to use the
+ > new smp_store_release() function in another pending patch. It also
+ > removes the temporary implementation of smp_load_acquire() and
+ > smp_store_release() function in qrwlock.c.
+ >
+ > This patch should only be merged if PeterZ's linux-arch patch patch
+ > was merged.
+ >
+ > Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+ > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+ > ---
+ >  include/asm-generic/qrwlock.h |    4 +---
+ >  kernel/locking/qrwlock.c      |   34 ----------------------------------
+ >  2 files changed, 1 insertions(+), 37 deletions(-)
+ >
+ > diff --git a/include/asm-generic/qrwlock.h 
+b/include/asm-generic/qrwlock.h
+ > index 2b9a7b4..4d4bd04 100644
+ > --- a/include/asm-generic/qrwlock.h
+ > +++ b/include/asm-generic/qrwlock.h
+ > @@ -179,9 +179,7 @@ static inline void queue_write_unlock(struct 
+qrwlock *lock)
+ >  	/*
+ >  	 * Make sure that none of the critical section will be leaked out.
+ >  	 */
+ > -	smp_mb__before_clear_bit();
+ > -	ACCESS_ONCE(lock->cnts.writer) = 0;
+ > -	smp_mb__after_clear_bit();
+ > +	smp_store_release(&lock->cnts.writer, 0)
 
-> >> --- a/mm/swapfile.c
-> >> +++ b/mm/swapfile.c
-> >> @@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
-> >>       p->swap_map = NULL;
-> >>       cluster_info = p->cluster_info;
-> >>       p->cluster_info = NULL;
-> >> -     p->flags = 0;
-> >>       frontswap_map = frontswap_map_get(p);
-> >>       spin_unlock(&p->lock);
-> >>       spin_unlock(&swap_lock);
-> >> @@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
-> >>               mutex_unlock(&inode->i_mutex);
-> >>       }
-> >>       filp_close(swap_file, NULL);
-> >> +
-> >> +     /*
-> >> +     * clear SWP_USED flag after all resources freed
-> >> +     * so that swapon can reuse this swap_info in alloc_swap_info() safely
-> >> +     * it is ok to not hold p->lock after we cleared its SWP_WRITEOK
-> >> +     */
-> >> +     spin_lock(&swap_lock);
-> >> +     p->flags = 0;
-> >> +     spin_unlock(&swap_lock);
-> >> +
-> >>       err = 0;
-> >>       atomic_inc(&proc_poll_event);
-> >>       wake_up_interruptible(&proc_poll_wait);
-> >
-> > I didn't look too closely, but this patch might also address the race
-> > which Krzysztof addressed with
-> > http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch.
-> > Can we please check that out?
-> >
-> > I do prefer fixing all these swapon-vs-swapoff races with some large,
-> > simple, wide-scope exclusion scheme.  Perhaps SWP_USED is that scheme.
-> >
-> > An alternative would be to add another mutex and just make sys_swapon()
-> > and sys_swapoff() 100% exclusive.  But that is plastering yet another
-> > lock over this mess to hide the horrors which lurk within :(
-> >
-> 
-> Hi, Andrew. Thanks for your suggestion.
-> 
-> I checked Krzysztof's patch, it use the global swapon_mutex to protect
-> race condition among
-> swapon, swapoff and swap_start(). It is a kind of correct method, but
-> a heavy method.
+This will fail compilation, so probably needs further testing with 
+Peter's load_acquire/store_release barrier patches.
 
-But do you agree that your
-http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
-makes Krzysztof's
-http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
-obsolete?
-
-I've been sitting on Krzysztof's
-swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
-for several months - Hugh had issues with it so I put it on hold and
-nothing further happened.
-
-> I will try to resend a patchset to make lock usage in swapfile.c clear
-> and fine grit
-
-OK, thanks.  In the meanwhile I'm planning on dropping Krzysztof's
-patch and merging your patch into 3.14-rc1, which is why I'd like
-confirmation that your patch addresses the issues which Krzysztof
-identified?
-
+Thanks,
+   Daniel
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale
