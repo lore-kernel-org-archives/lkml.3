@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaAMO1F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51239 "EHLO
+	id S1753185AbaAMOhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:37:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51609 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaAMOZb (ORCPT
+	with ESMTP id S1751699AbaAMO1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:31 -0500
+	Mon, 13 Jan 2014 09:27:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 19/96] Staging: zram: Fix memory leak by refcount mismatch
-Date: Mon, 13 Jan 2014 14:23:42 +0000
-Message-Id: <1389623099-18783-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 89/96] rds: prevent dereference of a NULL device
+Date: Mon, 13 Jan 2014 14:24:52 +0000
+Message-Id: <1389623099-18783-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,73 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rashika Kheria <rashika.kheria@gmail.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 1b672224d128ec2570eb37572ff803cfe452b4f7 upstream.
+commit c2349758acf1874e4c2b93fe41d072336f1a31d0 upstream.
 
-As suggested by Minchan Kim and Jerome Marchand "The code in reset_store
-get the block device (bdget_disk()) but it does not put it (bdput()) when
-it's done using it. The usage count is therefore incremented but never
-decremented."
+Binding might result in a NULL device, which is dereferenced
+causing this BUG:
 
-This patch also puts bdput() for all error cases.
+[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
+4
+[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
+[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1317.264179] Dumping ftrace buffer:
+[ 1317.264774]    (ftrace buffer empty)
+[ 1317.265220] Modules linked in:
+[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
+next-20131218-sasha-00013-g2cebb9b-dirty #4159
+[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
+[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
+0x82/0x110
+[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
+[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
+[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
+[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
+[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
+[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
+0000
+[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
+[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
+[ 1317.270230] Stack:
+[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
+[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
+[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
+[ 1317.270230] Call Trace:
+[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
+[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
+[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
+[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
+[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
+[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
+[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
+[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
+[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
+[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
+89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
+4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
+[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.270230]  RSP <ffff8803cd31bdf8>
+[ 1317.270230] CR2: 0000000000000974
 
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5:
-  - adjusted filename: zram_drv.c -> zram_sysfs.c
-  - adjusted context ]
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_sysfs.c | 19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ net/rds/ib.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index 01f9a79..aafcf03 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -99,18 +99,23 @@ static ssize_t reset_store(struct device *dev,
- 		return -ENOMEM;
+diff --git a/net/rds/ib.c b/net/rds/ib.c
+index b4c8b00..ba2dffe 100644
+--- a/net/rds/ib.c
++++ b/net/rds/ib.c
+@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 addr)
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support iWARP devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_IB_CA)
+ 		ret = -EADDRNOTAVAIL;
  
- 	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
-+	if (bdev->bd_holders) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	ret = kstrtou16(buf, 10, &do_reset);
- 	if (ret)
--		return ret;
-+		goto out;
- 
--	if (!do_reset)
--		return -EINVAL;
-+	if (!do_reset) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Make sure all pending I/O is finished */
- 	fsync_bdev(bdev);
-+	bdput(bdev);
- 
- 	down_write(&zram->init_lock);
- 	if (zram->init_done)
-@@ -118,6 +123,10 @@ static ssize_t reset_store(struct device *dev,
- 	up_write(&zram->init_lock);
- 
- 	return len;
-+
-+out:
-+	bdput(bdev);
-+	return ret;
- }
- 
- static ssize_t num_reads_show(struct device *dev,
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 -- 
 1.8.3.2
 
