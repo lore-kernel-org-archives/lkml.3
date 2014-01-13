@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaAMO6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:58:34 -0500
-Received: from mga02.intel.com ([134.134.136.20]:9868 "EHLO mga02.intel.com"
+	id S1752315AbaAMO6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:58:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16954 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098AbaAMO62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:58:28 -0500
+	id S1752098AbaAMO6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 09:58:35 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,653,1384329600"; 
-   d="scan'208";a="457939248"
+   d="scan'208";a="457939312"
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 To: <linux-usb@vger.kernel.org>
 Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
         <linux-kernel@vger.kernel.org>,
         Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC 02/10] xhci: use a command structure internally in xhci_address_device()
-Date: Mon, 13 Jan 2014 17:05:51 +0200
-Message-Id: <1389625559-32414-3-git-send-email-mathias.nyman@linux.intel.com>
+Subject: [RFC 04/10] xhci: use command structures for xhci_queue_stop_endpoint()
+Date: Mon, 13 Jan 2014 17:05:53 +0200
+Message-Id: <1389625559-32414-5-git-send-email-mathias.nyman@linux.intel.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1389625559-32414-1-git-send-email-mathias.nyman@linux.intel.com>
 References: <1389625559-32414-1-git-send-email-mathias.nyman@linux.intel.com>
@@ -24,99 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preparing for the global command queue by using command strucure
-in xhci_address_device
+Prepare for the global command ring by using command structures
+internally in functions calling xhci_queue_stop_endpoint()
 
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 ---
- drivers/usb/host/xhci.c | 22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci-hub.c | 14 ++++++++++++--
+ drivers/usb/host/xhci.c     |  3 +++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 5e65052..0167a1c 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3732,7 +3732,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u64 temp_64;
--	union xhci_trb *cmd_trb;
-+	struct xhci_command *command;
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 805f234..f93c842 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -20,7 +20,8 @@
+  * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
  
- 	if (!udev->slot_id) {
- 		xhci_dbg_trace(xhci, trace_xhci_dbg_address,
-@@ -3753,11 +3753,19 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 		return -EINVAL;
- 	}
+-#include <linux/gfp.h>
++
++#include <linux/slab.h>
+ #include <asm/unaligned.h>
  
-+	command = xhci_alloc_command(xhci, false, false, GFP_KERNEL);
-+	if (!command)
-+		return -ENOMEM;
-+
-+	command->in_ctx = virt_dev->in_ctx;
-+	command->completion = &xhci->addr_dev;
-+
- 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
- 	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
- 	if (!ctrl_ctx) {
- 		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",
- 				__func__);
-+		kfree(command);
- 		return -EINVAL;
- 	}
- 	/*
-@@ -3779,20 +3787,22 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 				slot_ctx->dev_info >> 27);
+ #include "xhci.h"
+@@ -284,8 +285,17 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
  
  	spin_lock_irqsave(&xhci->lock, flags);
--	cmd_trb = xhci_find_next_enqueue(xhci->cmd_ring);
-+	command->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
- 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
- 					udev->slot_id);
- 	if (ret) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		xhci_dbg_trace(xhci, trace_xhci_dbg_address,
- 				"FIXME: allocate a command ring segment");
-+		kfree(command);
- 		return ret;
+ 	for (i = LAST_EP_INDEX; i > 0; i--) {
+-		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue)
++		if (virt_dev->eps[i].ring && virt_dev->eps[i].ring->dequeue) {
++			struct xhci_command *command;
++			command = xhci_alloc_command(xhci, false, false,
++						     GFP_NOIO);
++			if (!command) {
++				xhci_free_command(xhci, cmd);
++				return -ENOMEM;
++			}
+ 			xhci_queue_stop_endpoint(xhci, slot_id, i, suspend);
++			kfree(command);
++		}
  	}
- 	xhci_ring_cmd_db(xhci);
+ 	cmd->command_trb = xhci_find_next_enqueue(xhci->cmd_ring);
+ 	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index a60e432..054132b 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1467,6 +1467,7 @@ int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 	unsigned int ep_index;
+ 	struct xhci_ring *ep_ring;
+ 	struct xhci_virt_ep *ep;
++	struct xhci_command *command;
+ 
+ 	xhci = hcd_to_xhci(hcd);
+ 	spin_lock_irqsave(&xhci->lock, flags);
+@@ -1536,6 +1537,7 @@ int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 	 * the first cancellation to be handled.
+ 	 */
+ 	if (!(ep->ep_state & EP_HALT_PENDING)) {
++		command = xhci_alloc_command(xhci, false, false, GFP_ATOMIC);
+ 		ep->ep_state |= EP_HALT_PENDING;
+ 		ep->stop_cmds_pending++;
+ 		ep->stop_cmd_timer.expires = jiffies +
+@@ -1543,6 +1545,7 @@ int xhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 		add_timer(&ep->stop_cmd_timer);
+ 		xhci_queue_stop_endpoint(xhci, urb->dev->slot_id, ep_index, 0);
+ 		xhci_ring_cmd_db(xhci);
++		kfree(command);
+ 	}
+ done:
  	spin_unlock_irqrestore(&xhci->lock, flags);
- 
- 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
--	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
-+	timeleft = wait_for_completion_interruptible_timeout(
-+			command->completion,
- 			XHCI_CMD_DEFAULT_TIMEOUT);
- 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
- 	 * the SetAddress() "recovery interval" required by USB and aborting the
-@@ -3802,7 +3812,8 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 		xhci_warn(xhci, "%s while waiting for address device command\n",
- 				timeleft == 0 ? "Timeout" : "Signal");
- 		/* cancel the address device command */
--		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
-+		ret = xhci_cancel_cmd(xhci, NULL, command->command_trb);
-+		kfree(command);
- 		if (ret < 0)
- 			return ret;
- 		return -ETIME;
-@@ -3838,6 +3849,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 		break;
- 	}
- 	if (ret) {
-+		kfree(command);
- 		return ret;
- 	}
- 	temp_64 = xhci_read_64(xhci, &xhci->op_regs->dcbaa_ptr);
-@@ -3872,7 +3884,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_address,
- 		       "Internal device address = %d",
- 		       le32_to_cpu(slot_ctx->dev_state) & DEV_ADDR_MASK);
--
-+	kfree(command);
- 	return 0;
- }
- 
 -- 
 1.8.1.2
 
