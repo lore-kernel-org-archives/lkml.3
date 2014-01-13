@@ -1,99 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaAMSnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:43:52 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:53515 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaAMSnu (ORCPT
+	id S1751955AbaAMSp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:45:57 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:37615 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaAMSpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:43:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 4/5] arm: Add [U]EFI runtime services support
-Date: Mon, 13 Jan 2014 19:43:09 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-efi@vger.kernel.org,
-        linux@arm.linux.org.uk, patches@linaro.org,
-        Will Deacon <will.deacon@arm.com>, roy.franz@linaro.org,
-        matt.fleming@intel.com, msalter@redhat.com
-References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org> <1389445524-30623-5-git-send-email-leif.lindholm@linaro.org>
-In-Reply-To: <1389445524-30623-5-git-send-email-leif.lindholm@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401131943.10352.arnd@arndb.de>
-X-Provags-ID: V02:K0:U2hKmoTjn46JhiFoGrwhabvWuE7H6E3cHlNsr8VkqKy
- eiQCCeVP+GqL1FRi6t1xIqiZshfSXeN/RlRXwrJLqicj1dGpdY
- NwQ5mypOGd9hXHD8gmgpYUrAULb8UWW+M7wSfteGzw34IY0iTY
- 1YF/CpUmPcgKUCrrdx/ma1LNzaYb6TAuclFiT+dKaUzTzcxYNx
- gG7nPZB43XS6691evh7VBCShGSgfviPKyXxsgVxHl9gfAy+qt5
- IqbbJYm4EW2+Y4r59TKOcdlDUupX2FkNMenk7dvJIXRrHeYWPm
- C5fFiivrX3CNpWKpwqYjhJx/JFhe37NwcBzo35vv9X+5hGVLo1
- zd7+jgPGHuLdzjNpEdUo=
+	Mon, 13 Jan 2014 13:45:55 -0500
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: shaobingqing <shaobingqing@bwstor.com.cn>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] NFSv4.1: Don't trust attributes if a pNFS LAYOUTCOMMIT is outstanding
+Date: Mon, 13 Jan 2014 13:45:50 -0500
+Message-Id: <1389638751-16173-1-git-send-email-trond.myklebust@primarydata.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
+References: <395EC1ED-E67E-4666-B170-5C5F00264496@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 11 January 2014, Leif Lindholm wrote:
-> This patch implements basic support for UEFI runtime services in the
-> ARM architecture - a requirement for using efibootmgr to read and update
-> the system boot configuration.
-> 
-> It uses the generic configuration table scanning to populate ACPI and
-> SMBIOS pointers.
+If a LAYOUTCOMMIT is outstanding, then chances are that the metadata
+server may still be returning incorrect values for the change attribute,
+ctime, mtime and/or size.
+Just ignore those attributes for now, and wait for the LAYOUTCOMMIT
+rpc call to finish.
 
-As far as I'm concerned there are no plans to have ACPI support on ARM32,
-so I wonder what the code to populate the ACPI tables is about. Can
-you clarify this?
+Reported-by: shaobingqing <shaobingqing@bwstor.com.cn>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+---
+ fs/nfs/inode.c    | 19 +++++++++++++++++--
+ fs/nfs/nfs4proc.c |  5 ++---
+ fs/nfs/pnfs.h     | 16 ++++++++++++++++
+ 3 files changed, 35 insertions(+), 5 deletions(-)
+
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 5feec233895d..c63e15224466 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -1283,12 +1283,28 @@ static int nfs_inode_attrs_need_update(const struct inode *inode, const struct n
+ 		((long)nfsi->attr_gencount - (long)nfs_read_attr_generation_counter() > 0);
+ }
  
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 78a79a6a..1ab24cc 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1853,6 +1853,20 @@ config EARLY_IOREMAP
->  	  the same virtual memory range as kmap so all early mappings must
->  	  be unapped before paging_init() is called.
->  
-> +config EFI
-> +	bool "UEFI runtime service support"
-> +	depends on OF && !CPU_BIG_ENDIAN
++/*
++ * Don't trust the change_attribute, mtime, ctime or size if
++ * a pnfs LAYOUTCOMMIT is outstanding
++ */
++static void nfs_inode_attrs_handle_layoutcommit(struct inode *inode,
++		struct nfs_fattr *fattr)
++{
++	if (pnfs_layoutcommit_outstanding(inode))
++		fattr->valid &= ~(NFS_ATTR_FATTR_CHANGE |
++				NFS_ATTR_FATTR_MTIME |
++				NFS_ATTR_FATTR_CTIME |
++				NFS_ATTR_FATTR_SIZE);
++}
++
+ static int nfs_refresh_inode_locked(struct inode *inode, struct nfs_fattr *fattr)
+ {
+ 	int ret;
+ 
+ 	trace_nfs_refresh_inode_enter(inode);
+ 
++	nfs_inode_attrs_handle_layoutcommit(inode, fattr);
++
+ 	if (nfs_inode_attrs_need_update(inode, fattr))
+ 		ret = nfs_update_inode(inode, fattr);
+ 	else
+@@ -1518,8 +1534,7 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
+ 		if (new_isize != cur_isize) {
+ 			/* Do we perhaps have any outstanding writes, or has
+ 			 * the file grown beyond our last write? */
+-			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) ||
+-			     new_isize > cur_isize) {
++			if ((nfsi->npages == 0) || new_isize > cur_isize) {
+ 				i_size_write(inode, new_isize);
+ 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
+ 			}
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 15052b81df42..f4908eb40a21 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7780,10 +7780,7 @@ nfs4_layoutcommit_done(struct rpc_task *task, void *calldata)
+ 	case -NFS4ERR_BADLAYOUT:     /* no layout */
+ 	case -NFS4ERR_GRACE:	    /* loca_recalim always false */
+ 		task->tk_status = 0;
+-		break;
+ 	case 0:
+-		nfs_post_op_update_inode_force_wcc(data->args.inode,
+-						   data->res.fattr);
+ 		break;
+ 	default:
+ 		if (nfs4_async_handle_error(task, server, NULL) == -EAGAIN) {
+@@ -7798,6 +7795,8 @@ static void nfs4_layoutcommit_release(void *calldata)
+ 	struct nfs4_layoutcommit_data *data = calldata;
+ 
+ 	pnfs_cleanup_layoutcommit(data);
++	nfs_post_op_update_inode_force_wcc(data->args.inode,
++					   data->res.fattr);
+ 	put_rpccred(data->cred);
+ 	kfree(data);
+ }
+diff --git a/fs/nfs/pnfs.h b/fs/nfs/pnfs.h
+index a4f41810a7f4..023793909778 100644
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -359,6 +359,15 @@ pnfs_ld_layoutret_on_setattr(struct inode *inode)
+ 		PNFS_LAYOUTRET_ON_SETATTR;
+ }
+ 
++static inline bool
++pnfs_layoutcommit_outstanding(struct inode *inode)
++{
++	struct nfs_inode *nfsi = NFS_I(inode);
++
++	return test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags) != 0 ||
++		test_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags) != 0;
++}
++
+ static inline int pnfs_return_layout(struct inode *ino)
+ {
+ 	struct nfs_inode *nfsi = NFS_I(ino);
+@@ -515,6 +524,13 @@ pnfs_use_threshold(struct nfs4_threshold **dst, struct nfs4_threshold *src,
+ 	return false;
+ }
+ 
++static inline bool
++pnfs_layoutcommit_outstanding(struct inode *inode)
++{
++	return false;
++}
++
++
+ static inline struct nfs4_threshold *pnfs_mdsthreshold_alloc(void)
+ {
+ 	return NULL;
+-- 
+1.8.4.2
 
-What is the dependency on !CPU_BIG_ENDIAN? We try hard to have
-all kernel code support both big-endian and little-endian, and
-I'm guessing there is a significant overlap between the people
-that want UEFI support and those that want big-endian kernels.
-
-> +struct efi_memory_map memmap;
-
-"memmap" is not a good name for a global identifier, particularly because
-it's easily confused with the well-known "mem_map" array. This
-wants namespace prefix like you other variable, or a "static" tag,
-preferably both.
-
-> +/*
-> + * This function switches the UEFI runtime services to virtual mode.
-> + * This operation must be performed only once in the system's lifetime,
-> + * including any kecec calls.
-
-                   kexec
-
-> diff --git a/include/linux/efi.h b/include/linux/efi.h
-> index fa7d950..afaeb85 100644
-> --- a/include/linux/efi.h
-> +++ b/include/linux/efi.h
-> @@ -664,7 +664,7 @@ extern int __init efi_setup_pcdp_console(char *);
->  #define EFI_64BIT		5	/* Is the firmware 64-bit? */
->  
->  #ifdef CONFIG_EFI
-> -# ifdef CONFIG_X86
-> +# if defined(CONFIG_X86) || defined(CONFIG_ARM)
->  extern int efi_enabled(int facility);
->  # else
->  static inline int efi_enabled(int facility)
-
-Maybe better #ifndef CONFIG_IA64? It seems that is the odd one out and
-all possible future architectures would be like x86 and ARM.
-
-	Arnd
