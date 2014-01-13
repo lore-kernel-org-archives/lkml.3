@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209AbaAMQyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:54:09 -0500
-Received: from top.free-electrons.com ([176.31.233.9]:34348 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753557AbaAMQCL (ORCPT
+	id S1756199AbaAMQyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:54:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53053 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562AbaAMQCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:02:11 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Marek Vasut <marex@denx.de>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 0/3] iio: mxs-lradc fixes
-Date: Mon, 13 Jan 2014 17:02:00 +0100
-Message-Id: <1389628923-8689-1-git-send-email-alexandre.belloni@free-electrons.com>
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/208] drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
+Date: Mon, 13 Jan 2014 15:58:16 +0000
+Message-Id: <1389628849-1614-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a few fixes to get in before 3.14.
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-Two of those are because I wasn't careful engouh when reordering my patch before
-thos of Hector, it made me drop a part. and I forgot to reintroduce it when
-rebasing.
+------------------
 
-The first patch fixes a buffer overflow found by smatch.
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
 
-The second patch doesn't really have any impact as we control the input but is
-there for correctness.
+commit 49d45a31b71d7d9da74485922bdb63faf3dc9684 upstream.
 
-The last one removes useless scale_available files for channel 8 and 9 as they
-are read has a temperature channel. I feel it is safe to do as no releases were
-made with those so we are not really breaking the ABI.
+This bug in EDID was exposed by:
 
-Alexandre Belloni (3):
-  iio: mxs-lradc: fix buffer overflow
-  iio: mxs-lradc: fix invalid channel number detection
-  iio: mxs-lradc: remove useless scale_available files
+commit eccea7920cfb009c2fa40e9ecdce8c36f61cab66
+Author: Alex Deucher <alexander.deucher@amd.com>
+Date:   Mon Mar 26 15:12:54 2012 -0400
 
- drivers/staging/iio/adc/mxs-lradc.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+    drm/radeon/kms: improve bpc handling (v2)
 
+Which resulted in kind of regression in 3.5. This fixes
+https://bugs.freedesktop.org/show_bug.cgi?id=70934
+
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/drm_edid.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index 70fc133..9beb790 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -68,6 +68,8 @@
+ #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
+ /* Force reduced-blanking timings for detailed modes */
+ #define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
++/* Force 8bpc */
++#define EDID_QUIRK_FORCE_8BPC			(1 << 8)
+ 
+ struct detailed_mode_closure {
+ 	struct drm_connector *connector;
+@@ -128,6 +130,9 @@ static struct edid_quirk {
+ 
+ 	/* Medion MD 30217 PG */
+ 	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
++
++	/* Panel in Samsung NP700G7A-S01PL notebook reports 6bpc */
++	{ "SEC", 0xd033, EDID_QUIRK_FORCE_8BPC },
+ };
+ 
+ /*
+@@ -3032,6 +3037,9 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
+ 
+ 	drm_add_display_info(edid, &connector->display_info);
+ 
++	if (quirks & EDID_QUIRK_FORCE_8BPC)
++		connector->display_info.bpc = 8;
++
+ 	return num_modes;
+ }
+ EXPORT_SYMBOL(drm_add_edid_modes);
 -- 
 1.8.3.2
 
