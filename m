@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaAMQNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:13:48 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35759 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752997AbaAMQNm (ORCPT
+	id S1754583AbaAMQFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:05:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53697 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539AbaAMQE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:13:42 -0500
-Date: Mon, 13 Jan 2014 16:13:34 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Rob Clark <robdclark@gmail.com>, dri-devel@lists.freedesktop.org,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 15/28] drm/i2c: tda998x: use the tda998x video
-	format when cea mode
-Message-ID: <20140113161333.GA15937@n2100.arm.linux.org.uk>
-References: <20140109120448.24d89eba@armhf> <20140111181832.GD15937@n2100.arm.linux.org.uk> <20140113170707.10b908dc@armhf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113170707.10b908dc@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 13 Jan 2014 11:04:58 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 175/208] net: unix: allow set_peek_off to fail
+Date: Mon, 13 Jan 2014 16:00:16 +0000
+Message-Id: <1389628849-1614-176-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 05:07:07PM +0100, Jean-Francois Moine wrote:
-> On Sat, 11 Jan 2014 18:18:32 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> 
-> > On Thu, Jan 09, 2014 at 12:04:48PM +0100, Jean-Francois Moine wrote:
-> > > This patch uses the tda998x video format tied to the CEA mode.
-> > > This reduces the number of i2c exchanges.
-> > 
-> > It is my understanding that one of the major design goals of this driver
-> > is to avoid the use of such a table, and therefore this change is
-> > undesirable by the original driver authors.  This is more a comment for
-> > Rob to pick up on.
-> 
-> I retrieved a message from Rabeeh who got this description from NXP
-> (http://www.solid-run.com/phpbb/viewtopic.php?f=9&t=1205&start=10
->  Thu Mar 28, 2013 10:59 am):
-> 
-> 1. write register FF of CEC device to &h87.
->                 (68ff = 87h)           -> activate all clock tree inc HDMI ones so you can then use HDMI device
-> 2. select page 00 of HDMI device :  write 00 in FF
->                 (e0ff =00h)
-> 3. write register A0 of HDMI device to select predefined format :
->                 (e0a0 = 06h)       -> select a predefined 1080p60 format
-> 4. write registers A5 and A6 with total number of pixels per line (or greater value)
->                 (e0a5 = 08h)
->                 (e0a6 = 97h) for example
-> 5. write register TBG_CTRL1 of HDMI device to select resync method
->                 (e0cb = 7ch)        -> select
-> 6. write registers VIP_CTRL to configure RGB input ports :
->                 (e020 = 45h)       -> select VP port configuration
->                 (e021 = 01h)
->                 (e022 = 23h)
-> 7. write register VIP_CTRL3 to 20h vto select external SP sync method
->                 (e023 = 20h)
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-Sorry, I don't see what bearing your response to my reply has.
+------------------
 
+From: Sasha Levin <sasha.levin@oracle.com>
+
+commit 12663bfc97c8b3fdb292428105dd92d563164050 upstream.
+
+unix_dgram_recvmsg() will hold the readlock of the socket until recv
+is complete.
+
+In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
+unix_dgram_recvmsg() will complete (which can take a while) without allowing
+us to break out of it, triggering a hung task spew.
+
+Instead, allow set_peek_off to fail, this way userspace will not hang.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/linux/net.h | 2 +-
+ net/core/sock.c     | 2 +-
+ net/unix/af_unix.c  | 8 ++++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/net.h b/include/linux/net.h
+index 8bd9d92..41103f8 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -180,7 +180,7 @@ struct proto_ops {
+ 				      int offset, size_t size, int flags);
+ 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
+ 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
+-	void		(*set_peek_off)(struct sock *sk, int val);
++	int		(*set_peek_off)(struct sock *sk, int val);
+ };
+ 
+ #define DECLARE_SOCKADDR(type, dst, src)	\
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 8729d91..dca3102 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -887,7 +887,7 @@ set_rcvbuf:
+ 
+ 	case SO_PEEK_OFF:
+ 		if (sock->ops->set_peek_off)
+-			sock->ops->set_peek_off(sk, val);
++			ret = sock->ops->set_peek_off(sk, val);
+ 		else
+ 			ret = -EOPNOTSUPP;
+ 		break;
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 6c66e8d..303dcec 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -530,13 +530,17 @@ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
+ static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
+ 				  struct msghdr *, size_t, int);
+ 
+-static void unix_set_peek_off(struct sock *sk, int val)
++static int unix_set_peek_off(struct sock *sk, int val)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
+ 
+-	mutex_lock(&u->readlock);
++	if (mutex_lock_interruptible(&u->readlock))
++		return -EINTR;
++
+ 	sk->sk_peek_off = val;
+ 	mutex_unlock(&u->readlock);
++
++	return 0;
+ }
+ 
+ 
 -- 
-FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
-in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
-Estimate before purchase was "up to 13.2Mbit".
+1.8.3.2
+
