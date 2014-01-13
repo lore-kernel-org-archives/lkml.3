@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422AbaAMIZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:25:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48093 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaAMIZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:25:10 -0500
-Date: Mon, 13 Jan 2014 11:21:24 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Monam Agarwal <monamagarwal123@gmail.com>
-Cc: gregkh@linuxfoundation.org, andreas.dilger@intel.com,
-        peter.p.waskiewicz.jr@intel.com, tao.peng@emc.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Staging: lustre: Use of fls to find last set bit
-Message-ID: <20140113082124.GC7444@mwanda>
-References: <1389468763-25662-1-git-send-email-monamagarwal123@gmail.com>
- <1389471351-31782-1-git-send-email-monamagarwal123@gmail.com>
+	id S1751473AbaAMI1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:27:40 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60911 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291AbaAMI1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 03:27:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,651,1384329600"; 
+   d="scan'208";a="464173944"
+Message-ID: <52D3A243.5060409@intel.com>
+Date: Mon, 13 Jan 2014 16:22:27 +0800
+From: Ren Qiaowei <qiaowei.ren@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389471351-31782-1-git-send-email-monamagarwal123@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] x86, mpx: extend siginfo structure to include bound
+ violation information
+References: <1389518403-7715-1-git-send-email-qiaowei.ren@intel.com> <1389518403-7715-5-git-send-email-qiaowei.ren@intel.com> <20140112093013.GB3664@pd.tnic> <52D2C791.2030802@zytor.com> <20140112170354.GC3655@pd.tnic> <52D358EA.8090800@intel.com>
+In-Reply-To: <52D358EA.8090800@intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 12, 2014 at 01:45:51AM +0530, Monam Agarwal wrote:
-> This introduces fls in lustre/ldlm/ldlm_extent.c
-> to find the last set bit.
-> 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
-> ---
-> Changes since v1:
-> * Incorrect commit message
-> * Use of fls function
-> Changes since v2:
-> * Removal of extra variable
-> 
->  drivers/staging/lustre/lustre/ldlm/ldlm_extent.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
-> index ac5d66a..a4f382d 100644
-> --- a/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
-> +++ b/drivers/staging/lustre/lustre/ldlm/ldlm_extent.c
-> @@ -153,7 +153,7 @@ static inline int lock_mode_to_index(ldlm_mode_t mode)
->  
->  	LASSERT(mode != 0);
->  	LASSERT(IS_PO2(mode));
-> -	for (index = -1; mode; index++, mode >>= 1) ;
-> +	index = fls(mode)-1;
+On 01/13/2014 11:09 AM, Ren Qiaowei wrote:
+> On 01/13/2014 01:03 AM, Borislav Petkov wrote:
+>> On Sun, Jan 12, 2014 at 08:49:21AM -0800, H. Peter Anvin wrote:
+>>> I saw a previous version of the code that did that, and it really
+>>> didn't work out well -- it ended up being more complex and slower.
+>>
+>> I suspected as much.
+>>
+>> But, we still probably should use the generic struct insn, insn_field,
+>> etc and act on them in mpx.c instead of defining our own mpx_insn,
+>> mpx_insn_field, X86_MODRM_MOD, etc in the header which are more or less
+>> copied from insn.h, right?
+>>
+>
+> I tried to use generic structure and macro, but many members of generic
+> struct insn are not used for MPX, and except this I have to add one
+> member into this structure. So I define mpx specific struct insn.
+>
+> And so I guess only struct insn_field and several macros like X86_XXX
+> may use generic version. Anyway, I will try to use their generic version
+> in next version for this patchset.
+>
+Because only struct insn_field and several macros may be replaced with 
+generic version, I guess it maybe be confused easily to include generic 
+insn header. What do you think about it?
 
-Put spaces around math operations.  Just cut and paste what Joe wrote.
-
-regards,
-dan carpenter
-
+Thanks,
+Qiaowei
