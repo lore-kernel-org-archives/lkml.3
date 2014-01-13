@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaAMOZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:25:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51167 "EHLO
+	id S1752254AbaAMO05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:26:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51234 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbaAMOZM (ORCPT
+	with ESMTP id S1751713AbaAMOZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:12 -0500
+	Mon, 13 Jan 2014 09:25:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
+Cc: Sergei Ianovich <ynvich@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 06/96] staging: comedi: ssv_dnp: use comedi_dio_update_state()
-Date: Mon, 13 Jan 2014 14:23:29 +0000
-Message-Id: <1389623099-18783-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 18/96] ARM: pxa: prevent PXA270 occasional reboot freezes
+Date: Mon, 13 Jan 2014 14:23:41 +0000
+Message-Id: <1389623099-18783-19-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Sergei Ianovich <ynvich@gmail.com>
 
-commit f6b316bcd8c421acd6fa5a6e18b4c846ecb9d965 upstream.
+commit ff88b4724fde18056a4c539f7327389aec0f4c2d upstream.
 
-Use comedi_dio_update_state() to handle the boilerplate code to update
-the subdevice s->state.
+Erratum 71 of PXA270M Processor Family Specification Update
+(April 19, 2010) explains that watchdog reset time is just
+8us insead of 10ms in EMTS.
 
-Also, fix a bug where the state of the channels is returned in data[0].
-The comedi core expects it to be returned in data[1].
+If SDRAM is not reset, it causes memory bus congestion and
+the device hangs. We put SDRAM in selfresh mode before watchdog
+reset, removing potential freezes.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-[ Ian: Applies to all stable kernels from 2.6.32.y to 3.12.y ]
+Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
+reboots. With this patch it has successfully rebooted 500 times.
+
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers/ssv_dnp.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-pxa/reset.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/ssv_dnp.c b/drivers/staging/comedi/drivers/ssv_dnp.c
-index 16c4f5a..7f8a37e 100644
---- a/drivers/staging/comedi/drivers/ssv_dnp.c
-+++ b/drivers/staging/comedi/drivers/ssv_dnp.c
-@@ -111,11 +111,11 @@ static int dnp_dio_insn_bits(struct comedi_device *dev,
+diff --git a/arch/arm/mach-pxa/reset.c b/arch/arm/mach-pxa/reset.c
+index b452889..7f8cda4 100644
+--- a/arch/arm/mach-pxa/reset.c
++++ b/arch/arm/mach-pxa/reset.c
+@@ -13,6 +13,7 @@
  
- 	/* on return, data[1] contains the value of the digital input lines. */
- 	outb(PADR, CSCIR);
--	data[0] = inb(CSCDR);
-+	data[1] = inb(CSCDR);
- 	outb(PBDR, CSCIR);
--	data[0] += inb(CSCDR) << 8;
-+	data[1] += inb(CSCDR) << 8;
- 	outb(PCDR, CSCIR);
--	data[0] += ((inb(CSCDR) & 0xF0) << 12);
-+	data[1] += ((inb(CSCDR) & 0xF0) << 12);
+ #include <mach/regs-ost.h>
+ #include <mach/reset.h>
++#include <mach/smemc.h>
  
- 	return 2;
+ unsigned int reset_status;
+ EXPORT_SYMBOL(reset_status);
+@@ -80,6 +81,12 @@ static void do_hw_reset(void)
+ 	OWER = OWER_WME;
+ 	OSSR = OSSR_M3;
+ 	OSMR3 = OSCR + 368640;	/* ... in 100 ms */
++	/*
++	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
++	 * we put SDRAM into self-refresh to prevent that
++	 */
++	while (1)
++		writel_relaxed(MDREFR_SLFRSH, MDREFR);
+ }
  
+ void pxa_restart(char mode, const char *cmd)
+@@ -103,4 +110,3 @@ void pxa_restart(char mode, const char *cmd)
+ 		break;
+ 	}
+ }
+-
 -- 
 1.8.3.2
 
