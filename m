@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558AbaAMRHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:07:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52912 "EHLO
+	id S1753348AbaAMQB3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:01:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52864 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaAMQBc (ORCPT
+	with ESMTP id S1753233AbaAMQBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:32 -0500
+	Mon, 13 Jan 2014 11:01:20 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jan Kara <jack@suse.cz>, Roland Dreier <roland@purestorage.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 019/208] TTY: pmac_zilog, check existence of ports in pmz_console_init()
-Date: Mon, 13 Jan 2014 15:57:40 +0000
-Message-Id: <1389628849-1614-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 017/208] IB/qib: Convert qib_user_sdma_pin_pages() to use get_user_pages_fast()
+Date: Mon, 13 Jan 2014 15:57:38 +0000
+Message-Id: <1389628849-1614-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -30,50 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Jan Kara <jack@suse.cz>
 
-commit dc1dc2f8a5dd863bf2e79f338fc3ae29e99c683a upstream.
+commit 603e7729920e42b3c2f4dbfab9eef4878cb6e8fa upstream.
 
-When booting a multi-platform m68k kernel on a non-Mac with "console=ttyS0"
-on the kernel command line, it crashes with:
+qib_user_sdma_queue_pkts() gets called with mmap_sem held for
+writing. Except for get_user_pages() deep down in
+qib_user_sdma_pin_pages() we don't seem to need mmap_sem at all.  Even
+more interestingly the function qib_user_sdma_queue_pkts() (and also
+qib_user_sdma_coalesce() called somewhat later) call copy_from_user()
+which can hit a page fault and we deadlock on trying to get mmap_sem
+when handling that fault.
 
-Unable to handle kernel NULL pointer dereference at virtual address   (null)
-Oops: 00000000
-PC: [<0013ad28>] __pmz_startup+0x32/0x2a0
-...
-Call Trace: [<002c5d3e>] pmz_console_setup+0x64/0xe4
+So just make qib_user_sdma_pin_pages() use get_user_pages_fast() and
+leave mmap_sem locking for mm.
 
-The normal tty driver doesn't crash, because init_pmz() checks
-pmz_ports_count again after calling pmz_probe().
+This deadlock has actually been observed in the wild when the node
+is under memory pressure.
 
-In the serial console initialization path, pmz_console_init() doesn't do
-this, causing the driver to crash later.
-
-Add a check for pmz_ports_count to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Finn Thain <fthain@telegraphics.com.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Adjust indentation and nr_pages argument in qib_user_sdma_pin_pages()]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/pmac_zilog.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/infiniband/hw/qib/qib_user_sdma.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/tty/serial/pmac_zilog.c b/drivers/tty/serial/pmac_zilog.c
-index b1785f5..7735bbd 100644
---- a/drivers/tty/serial/pmac_zilog.c
-+++ b/drivers/tty/serial/pmac_zilog.c
-@@ -2051,6 +2051,9 @@ static int __init pmz_console_init(void)
- 	/* Probe ports */
- 	pmz_probe();
+diff --git a/drivers/infiniband/hw/qib/qib_user_sdma.c b/drivers/infiniband/hw/qib/qib_user_sdma.c
+index 8244208..573b460 100644
+--- a/drivers/infiniband/hw/qib/qib_user_sdma.c
++++ b/drivers/infiniband/hw/qib/qib_user_sdma.c
+@@ -284,8 +284,7 @@ static int qib_user_sdma_pin_pages(const struct qib_devdata *dd,
+ 	int j;
+ 	int ret;
  
-+	if (pmz_ports_count == 0)
-+		return -ENODEV;
-+
- 	/* TODO: Autoprobe console based on OF */
- 	/* pmz_console.index = i; */
- 	register_console(&pmz_console);
+-	ret = get_user_pages(current, current->mm, addr,
+-			     npages, 0, 1, pages, NULL);
++	ret = get_user_pages_fast(addr, npages, 0, pages);
+ 
+ 	if (ret != npages) {
+ 		int i;
+@@ -830,10 +829,7 @@ int qib_user_sdma_writev(struct qib_ctxtdata *rcd,
+ 	while (dim) {
+ 		const int mxp = 8;
+ 
+-		down_write(&current->mm->mmap_sem);
+ 		ret = qib_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
+-		up_write(&current->mm->mmap_sem);
+-
+ 		if (ret <= 0)
+ 			goto done_unlock;
+ 		else {
 -- 
 1.8.3.2
 
