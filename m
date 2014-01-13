@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500AbaAMQUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:20:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53623 "EHLO
+	id S1754888AbaAMQVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:21:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53604 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793AbaAMQEj (ORCPT
+	with ESMTP id S1754407AbaAMQEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:39 -0500
+	Mon, 13 Jan 2014 11:04:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 162/208] xhci: Limit the spurious wakeup fix only to HP machines
-Date: Mon, 13 Jan 2014 16:00:03 +0000
-Message-Id: <1389628849-1614-163-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 158/208] sched: Fix hrtimer_cancel()/rq->lock deadlock
+Date: Mon, 13 Jan 2014 15:59:59 +0000
+Message-Id: <1389628849-1614-159-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,53 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Ben Segall <bsegall@google.com>
 
-commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
+commit 927b54fccbf04207ec92f669dce6806848cbec7d upstream.
 
-We've got regression reports that my previous fix for spurious wakeups
-after S5 on HP Haswell machines leads to the automatic reboot at
-shutdown on some machines.  It turned out that the fix for one side
-triggers another BIOS bug in other side.  So, it's exclusive.
+__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
+waiting for the hrtimer to finish. However, if sched_cfs_period_timer
+runs for another loop iteration, the hrtimer can attempt to take
+rq->lock, resulting in deadlock.
 
-Since the original S5 wakeups have been confirmed only on HP machines,
-it'd be safer to apply it only to limited machines.  As a wild guess,
-limiting to machines with HP PCI SSID should suffice.
+Fix this by ensuring that cfs_b->timer_active is cleared only if the
+_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
+__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
+that to succeed or timer_active == 1.
 
-This patch should be backported to kernels as old as 3.12, that
-contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
-spurious wakeups after S5 on Haswell".
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: <dashing.meng@gmail.com>
-Reported-by: Niklas Schnelle <niklas@komani.de>
-Reported-by: Giorgos <ganastasiouGR@gmail.com>
-Reported-by: <art1@vhex.net>
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-pci.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index c79e3b9..32ef829 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -124,7 +124,12 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 		 * any other sleep) on Haswell machines with LPT and LPT-LP
- 		 * with the new Intel BIOS
- 		 */
--		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+		/* Limit the quirk to only known vendors, as this triggers
-+		 * yet another BIOS bug on some other machines
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
-+		 */
-+		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
-+			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 260f98ec..5c83396 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2459,6 +2459,13 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 	if (idle)
+ 		goto out_unlock;
+ 
++	/*
++	 * if we have relooped after returning idle once, we need to update our
++	 * status as actually running, so that other cpus doing
++	 * __start_cfs_bandwidth will stop trying to cancel us.
++	 */
++	cfs_b->timer_active = 1;
++
+ 	__refill_cfs_bandwidth_runtime(cfs_b);
+ 
+ 	if (!throttled) {
+@@ -2727,11 +2734,11 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+ 	 * (timer_active==0 becomes visible before the hrtimer call-back
+ 	 * terminates).  In either case we ensure that it's re-programmed
+ 	 */
+-	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
++	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
++	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
++		/* bounce the lock to allow do_sched_cfs_period_timer to run */
+ 		raw_spin_unlock(&cfs_b->lock);
+-		/* ensure cfs_b->lock is available while we wait */
+-		hrtimer_cancel(&cfs_b->period_timer);
+-
++		cpu_relax();
+ 		raw_spin_lock(&cfs_b->lock);
+ 		/* if someone else restarted the timer then we're done */
+ 		if (cfs_b->timer_active)
 -- 
 1.8.3.2
 
