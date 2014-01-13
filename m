@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaAMWp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 17:45:59 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53286 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbaAMWpy (ORCPT
+	id S1752460AbaAMWqf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 17:46:35 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39130 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaAMWqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 17:45:54 -0500
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, james.l.morris@oracle.com,
-        akpm@linux-foundation.com, oleg@redhat.com, viro@zeniv.linux.org.uk,
-        nschichan@freebox.fr, Will Drewry <wad@chromium.org>, rob@landley.net,
-        linux-doc@vger.kernel.org
-Subject: [PATCH 3/3] Documentation/prctl/seccomp_filter.txt: document extensions
-Date: Mon, 13 Jan 2014 16:42:18 -0600
-Message-Id: <1389652941-19030-1-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389645028-17157-2-git-send-email-wad@chromium.org>
-References: <1389645028-17157-2-git-send-email-wad@chromium.org>
+	Mon, 13 Jan 2014 17:46:32 -0500
+Date: Mon, 13 Jan 2014 14:46:31 -0800 (PST)
+Message-Id: <20140113.144631.230680335708739346.davem@davemloft.net>
+To: shahed.shaikh@qlogic.com
+Cc: martin@kaiser.cx, himanshu.madhani@qlogic.com, rajesh.borundia@qlogic.com,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH -next] qlcnic: fix compiler warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <262CB373A6D1F14F9B81E82F74F77D5A46F52B8E@avmb2.qlogic.org>
+References: <20140109155908.GA4351@reykholt.kaiser.cx>
+	<262CB373A6D1F14F9B81E82F74F77D5A46F52B8E@avmb2.qlogic.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0DMkeG0027190
 
-(missed this on the first run)
+From: Shahed Shaikh <shahed.shaikh@qlogic.com>
+Date: Fri, 10 Jan 2014 07:19:19 +0000
 
-Add an entry for the PR_SECCOMP_EXT entry point and the
-only existing consumer, SECCOMP_EXT_ACT_TSYNC.
+> 
+> Adding netdev.
+> 
+>> -----Original Message-----
+>> From: Martin Kaiser,,, [mailto:martin@reykholt.kaiser.cx] On Behalf Of
+>> Martin Kaiser
+>> Sent: Thursday, January 09, 2014 9:29 PM
+>> To: Himanshu Madhani; Rajesh Borundia
+>> Cc: linux-kernel; trivial@kernel.org
+>> Subject: [PATCH -next] qlcnic: fix compiler warning
+>> 
+>> Add an explicit cast to fix the following warning (seen on Debian Wheezy, gcc
+>> 4.7.2)
+>> 
+>> CC [M]  drivers/net/wireless/rtlwifi/rtl8192ce/trx.o
+>>     drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c: In function
+>> ¡qlcnic_send_filter¢:
+>>     drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:349:3: warning:
+>>     passing argument 2 of ¡ether_addr_equal¢ from incompatible pointer type
+>> [enabled by default]
+>>     In file included from include/linux/if_vlan.h:16:0,
+>>     from drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:9:
+>>     include/linux/etherdevice.h:244:20: note: expected ¡const u8 *¢ but
+>> argument is of type ¡u64 *¢
+>>
+> 
+> If I am not wrong, this patch should go to David's net-next tree.
+>  
+>> Signed-off-by: Martin Kaiser <martin@kaiser.cx>
+> 
+> Acked-by: Shahed Shaikh <shahed.shaikh@qlogic.com>
 
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- Documentation/prctl/seccomp_filter.txt |   28 +++++++++++++++++++++++++++-
- 1 file changed, 27 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
-index 1e469ef..b296701 100644
---- a/Documentation/prctl/seccomp_filter.txt
-+++ b/Documentation/prctl/seccomp_filter.txt
-@@ -166,10 +166,36 @@ The samples/seccomp/ directory contains both an x86-specific example
- and a more generic example of a higher level macro interface for BPF
- program generation.
- 
-+Extensions
-+----------
-+
-+SECCOMP_MODE_FILTER supports an additional entry point for accessing
-+extended behavior through prctl(PR_SECCOMP_EXT).  Only one extension
-+exists today:
-+
-+SECCOMP_EXT_ACT_TSYNC:
-+	If the calling task is running under SECCOMP_MODE_FILTER, it
-+	may call prctl() to synchronize the seccomp filter of its
-+	threads.  As seccomp behavior is per-task, any thread under
-+	SECCOMP_MODE_STRICT will be unaffected, as will any thread
-+	under SECCOMP_MODE_FILTER that does not have a filter that is
-+	in the filter tree ancestry for the caller.  Any threads that
-+	are in SECCOMP_MODE_NONE will be transitioned to
-+	SECCOMP_MODE_FILTER if possible.
-+
-+	Usage:
-+		prctl(PR_SECCOMP_EXT, SECCOMP_EXT_ACT_TSYNC, 0, 0);
-+
-+	If any threads cannot be transitioned, the call will return one
-+	of the process ids.  All other threads will have been transitioned.
-+	A return value of 0 indicates success. On a negative return value,
-+	the errno will be populated appropriately:
-+		EINVAL indicates invalid arguments.
-+		EACCES indicates invalid seccomp mode.
- 
- 
- Adding architecture support
-------------------------
-+---------------------------
- 
- See arch/Kconfig for the authoritative requirements.  In general, if an
- architecture supports both ptrace_event and seccomp, it will be able to
--- 
-1.7.9.5
-
+Please post the original patch to netdev so that it properly gets
+queued up in patchwork, thank you very much.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
