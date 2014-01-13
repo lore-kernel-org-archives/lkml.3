@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaAMIzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:55:51 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47511 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaAMIzt (ORCPT
+	id S1751482AbaAMI5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:57:06 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53680 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaAMI5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:55:49 -0500
-X-AuditID: 9c930179-b7c5fae000006619-70-52d3aa12b088
+	Mon, 13 Jan 2014 03:57:04 -0500
+X-AuditID: 9c930197-b7c20ae000001031-fc-52d3aa5e8828
 From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 25/28] perf top: Convert to hist_entry_iter
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
-	<1389170793-21926-26-git-send-email-namhyung@kernel.org>
-	<20140111163529.GF1131@krava.brq.redhat.com>
-Date: Mon, 13 Jan 2014 17:55:46 +0900
-In-Reply-To: <20140111163529.GF1131@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Sat, 11 Jan 2014 17:35:29 +0100")
-Message-ID: <87ob3gb6r1.fsf@sejong.aot.lge.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, tools: Add --initial-delay support to perf record v3
+References: <1389476307-2124-1-git-send-email-andi@firstfloor.org>
+Date: Mon, 13 Jan 2014 17:57:02 +0900
+In-Reply-To: <1389476307-2124-1-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Sat, 11 Jan 2014 13:38:27 -0800")
+Message-ID: <87k3e4b6ox.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -33,51 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan 2014 17:35:29 +0100, Jiri Olsa wrote:
-> On Wed, Jan 08, 2014 at 05:46:30PM +0900, Namhyung Kim wrote:
->> Reuse hist_entry_iter__add() function to share the similar code with
->> perf report.  Note that it needs to be called with hists.lock so tweak
->> some internal functions not to deadlock or hold the lock too long.
->> 
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/builtin-top.c | 75 ++++++++++++++++++++++++------------------------
->>  1 file changed, 37 insertions(+), 38 deletions(-)
->> 
->> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
->> index f0f55e6030cd..cf330c66bed7 100644
->> --- a/tools/perf/builtin-top.c
->> +++ b/tools/perf/builtin-top.c
->> @@ -186,9 +186,6 @@ static void perf_top__record_precise_ip(struct perf_top *top,
->>  	sym = he->ms.sym;
->>  	notes = symbol__annotation(sym);
->>  
->> -	if (pthread_mutex_trylock(&notes->lock))
->> -		return;
->> -
->>  	ip = he->ms.map->map_ip(he->ms.map, ip);
->>  	err = hist_entry__inc_addr_samples(he, counter, ip);
->>  
->> @@ -201,6 +198,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
->>  		       sym->name);
->>  		sleep(1);
->>  	}
->> +
->> +	pthread_mutex_lock(&notes->lock);
->>  }
+Hi Andi,
+
+On Sat, 11 Jan 2014 13:38:27 -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 >
-> locking on function exit.. does not look right ;-)
+> perf stat has a --delay option to delay measuring the workload.
+> This is useful to skip measuring the startup phase of the program, which
+> is often very different from the main workload.
+>
+> The same is useful for perf record when sampling.
+>
+> --no-delay was already taken, so add a --initial-delay
+> to perf record too.
+> -D was already taken for record, so there is only a long option.
+>
+> v2: Don't disable group members (Namhyung Kim)
+> v3: port to latest perf/core
+>     rename to --initial-delay to avoid conflict with --no-delay
 
-Yes, it looks weird.. but it's because of the change in locking.  After
-I changed perf top to use the hist_entry_iter, it needed to protect
-the whole hist_entry_iter__add() by hists->lock so the
-perf_top__record_precise_ip() should be called with the lock acquired.
-
-I might remove the lock in the function completely, but it seemed not
-good since it goes to sleep with the lock then.  So I added the
-(reverse) unlock/lock dance to avoid it.
-
-So yes, I think I need to add a comment to explain this. :)
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
 Thanks,
 Namhyung
