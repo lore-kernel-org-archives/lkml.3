@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaAMLMB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:12:01 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36978 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751630AbaAMLL4 (ORCPT
+	id S1751748AbaAMLNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:13:55 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:56292 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395AbaAMLNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:11:56 -0500
-Date: Mon, 13 Jan 2014 11:11:13 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+	Mon, 13 Jan 2014 06:13:52 -0500
+Message-ID: <52D3CA6E.1010803@koalo.de>
+Date: Mon, 13 Jan 2014 12:13:50 +0100
+From: Florian Meier <florian.meier@koalo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH] arm64: fix typo in entry.S
-Message-ID: <20140113111112.GC1189@mudshark.cambridge.arm.com>
-References: <1389603476-10494-1-git-send-email-zhangwm@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389603476-10494-1-git-send-email-zhangwm@marvell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        devicetree <devicetree@vger.kernel.org>
+Subject: [PATCH 2/2] BCM2835: Add I2S driver to device tree
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 08:57:56AM +0000, Neil Zhang wrote:
-> Commit 64681787 (arm64: let the core code deal with preempt_count)
-> changed the code, but left the comments unchanged, fix it.
-> 
-> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> ---
->  arch/arm64/kernel/entry.S |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index 4d2c6f3..ffce55e 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -314,7 +314,7 @@ el1_irq:
->  
->  #ifdef CONFIG_PREEMPT
->  	get_thread_info tsk
-> -	ldr	w24, [tsk, #TI_PREEMPT]		// restore preempt count
-> +	ldr	w24, [tsk, #TI_PREEMPT]		// get preempt count
->  	cbnz	w24, 1f				// preempt count != 0
->  	ldr	x0, [tsk, #TI_FLAGS]		// get flags
->  	tbz	x0, #TIF_NEED_RESCHED, 1f	// needs rescheduling?
+This adds the definitions for the BCM2835 I2S driver
+to the device tree. Some GPIO settings are needed for
+the correct pin functions.
 
-Makes sense:
+Signed-off-by: Florian Meier <florian.meier@koalo.de>
+---
+ arch/arm/boot/dts/bcm2835-rpi-b.dts | 12 +++++++++++-
+ arch/arm/boot/dts/bcm2835.dtsi      | 10 ++++++++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+diff --git a/arch/arm/boot/dts/bcm2835-rpi-b.dts
+b/arch/arm/boot/dts/bcm2835-rpi-b.dts
+index 2a3b1c1..e83ed2f 100644
+--- a/arch/arm/boot/dts/bcm2835-rpi-b.dts
++++ b/arch/arm/boot/dts/bcm2835-rpi-b.dts
+@@ -23,7 +23,7 @@
 
-Will
+ &gpio {
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&gpioout &alt0 &alt3>;
++	pinctrl-0 = <&gpioout &alt0 &alt2 &alt3>;
+
+ 	gpioout: gpioout {
+ 		brcm,pins = <6>;
+@@ -39,6 +39,16 @@
+ 		brcm,pins = <48 49 50 51 52 53>;
+ 		brcm,function = <7>; /* alt3 */
+ 	};
++
++	/* I2S interface */
++	alt2: alt2 {
++		brcm,pins = <28 29 30 31>;
++		brcm,function = <6>; /* alt2 */
++	};
++};
++
++&bcm2835_i2s {
++	status = "okay";
+ };
+
+ &i2c0 {
+diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
+index 1da6b36..ca2259c 100644
+--- a/arch/arm/boot/dts/bcm2835.dtsi
++++ b/arch/arm/boot/dts/bcm2835.dtsi
+@@ -134,6 +134,16 @@
+ 			#dma-cells = <1>;
+ 			brcm,dma-channel-mask = <0x7f35>;
+ 		};
++
++		bcm2835_i2s: i2s@7e203000 {
++			compatible = "brcm,bcm2835-i2s";
++			reg = <0x7e203000 0x20>,
++			      <0x7e101098 0x02>;
++
++			dmas = <&dma 2>,
++			       <&dma 3>;
++			dma-names = "tx", "rx";
++		};
+ 	};
+
+ 	clocks {
+-- 
+1.8.3.2
