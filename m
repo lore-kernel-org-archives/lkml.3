@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaAMO14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51308 "EHLO
+	id S1752581AbaAMO1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:27:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51303 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaAMOZt (ORCPT
+	with ESMTP id S1751825AbaAMOZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:49 -0500
+	Mon, 13 Jan 2014 09:25:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Takashi Iwai <tiwai@suse.de>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 32/96] drm/i915: don't update the dri1 breadcrumb with modesetting
-Date: Mon, 13 Jan 2014 14:23:55 +0000
-Message-Id: <1389623099-18783-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 31/96] xhci: Limit the spurious wakeup fix only to HP machines
+Date: Mon, 13 Jan 2014 14:23:54 +0000
+Message-Id: <1389623099-18783-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,59 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 6c719faca2aceca72f1bf5b1645c1734ed3e9447 upstream.
+commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
 
-The update is horribly racy since it doesn't protect at all against
-concurrent closing of the master fd. And it can't really since that
-requires us to grab a mutex.
+We've got regression reports that my previous fix for spurious wakeups
+after S5 on HP Haswell machines leads to the automatic reboot at
+shutdown on some machines.  It turned out that the fix for one side
+triggers another BIOS bug in other side.  So, it's exclusive.
 
-Instead of jumping through hoops and offloading this to a worker
-thread just block this bit of code for the modesetting driver.
+Since the original S5 wakeups have been confirmed only on HP machines,
+it'd be safer to apply it only to limited machines.  As a wild guess,
+limiting to machines with HP PCI SSID should suffice.
 
-Note that the race is fairly easy to hit since we call the breadcrumb
-function for any interrupt. So the vblank interrupt (which usually
-keeps going for a bit) is enough. But even if we'd block this and only
-update the breadcrumb for user interrupts from the CS we could hit
-this race with kms/gem userspace: If a non-master is waiting somewhere
-(and hence has interrupts enabled) and the master closes its fd
-(probably due to crashing).
+This patch should be backported to kernels as old as 3.12, that
+contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
+spurious wakeups after S5 on Haswell".
 
-v2: Add a code comment to explain why fixing this for real isn't
-really worth it. Also improve the commit message a bit.
-
-v3: Fix the spelling in the comment.
-
-Reported-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Cc: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Eugene Shatokhin <eugene.shatokhin@rosalab.ru>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: <dashing.meng@gmail.com>
+Reported-by: Niklas Schnelle <niklas@komani.de>
+Reported-by: Giorgos <ganastasiouGR@gmail.com>
+Reported-by: <art1@vhex.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/xhci-pci.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 36822b9..e676408 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -85,6 +85,14 @@ void i915_update_dri1_breadcrumb(struct drm_device *dev)
- 	drm_i915_private_t *dev_priv = dev->dev_private;
- 	struct drm_i915_master_private *master_priv;
- 
-+	/*
-+	 * The dri breadcrumb update races against the drm master disappearing.
-+	 * Instead of trying to fix this (this is by far not the only ums issue)
-+	 * just don't do the update in kms mode.
-+	 */
-+	if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		return;
-+
- 	if (dev->primary->master) {
- 		master_priv = dev->primary->master->driver_priv;
- 		if (master_priv->sarea_priv)
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 085d018..a8c59c1 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -125,7 +125,12 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		 * any other sleep) on Haswell machines with LPT and LPT-LP
+ 		 * with the new Intel BIOS
+ 		 */
+-		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++		/* Limit the quirk to only known vendors, as this triggers
++		 * yet another BIOS bug on some other machines
++		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
++		 */
++		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
++			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 -- 
 1.8.3.2
 
