@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaAMLVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:21:33 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:36911 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaAMLTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:19:23 -0500
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH 2/7] zram: delay pending free request in read path
-Date: Mon, 13 Jan 2014 20:18:57 +0900
-Message-Id: <1389611942-15544-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1389611942-15544-1-git-send-email-minchan@kernel.org>
-References: <1389611942-15544-1-git-send-email-minchan@kernel.org>
+	id S1751678AbaAMLYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:24:20 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:34949 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455AbaAMLYT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Mon, 13 Jan 2014 06:24:19 -0500
+Message-Id: <52D3DAEE0200007800112FD4@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 13 Jan 2014 11:24:14 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Olaf Hering" <olaf@aepfle.de>
+Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xen.org>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check
+ from blkfront_setup_discard
+References: <1389608052-7139-1-git-send-email-olaf@aepfle.de>
+In-Reply-To: <1389608052-7139-1-git-send-email-olaf@aepfle.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergey Senozhatsky reporetd we don't need to handle pending free
-request every I/O so that this patch removes it in read path while
-we remain it in write path.
+>>> On 13.01.14 at 11:14, Olaf Hering <olaf@aepfle.de> wrote:
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -1634,37 +1634,22 @@ blkfront_closing(struct blkfront_info *info)
+>  
+>  static void blkfront_setup_discard(struct blkfront_info *info)
+>  {
+> -	int err;
+> -	char *type;
+>  	unsigned int discard_granularity;
+>  	unsigned int discard_alignment;
+>  	unsigned int discard_secure;
+>  
+> -	type = xenbus_read(XBT_NIL, info->xbdev->otherend, "type", NULL);
+> -	if (IS_ERR(type))
+> +	if (xenbus_gather(XBT_NIL, info->xbdev->otherend,
+> +		"discard-granularity", "%u", &discard_granularity,
+> +		"discard-alignment", "%u", &discard_alignment,
+> +		"discard-secure", "%u", &discard_secure,
+> +		NULL))
+>  		return;
 
-Let's consider below example.
+You can't do this in one go - the first two and the last one may be
+set independently (and are independent in their meaning), and
+hence need to be queried independently (xenbus_gather() fails
+on the first absent value).
 
-Swap subsystem ask to zram "A" block free by swap_slot_free_notify
-but zram had been pended it without real freeing.
-Swap subsystem allocates "A" block for new data but request pended
-for a long time just handled and zram blindly free new data on
-the "A" block. :(
-
-That's why we couldn't remove handle pending free request right before
-zram-write.
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/block/zram/zram_drv.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 213dfc1..d87c7e9 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -535,7 +535,6 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- 
- 	if (rw == READ) {
- 		down_read(&zram->lock);
--		handle_pending_slot_free(zram);
- 		ret = zram_bvec_read(zram, bvec, index, offset, bio);
- 		up_read(&zram->lock);
- 	} else {
--- 
-1.8.4.3
+Jan
 
