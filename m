@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaAMO0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:26:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51225 "EHLO
+	id S1752638AbaAMOjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:39:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51550 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaAMOZ1 (ORCPT
+	with ESMTP id S1752229AbaAMO0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:27 -0500
+	Mon, 13 Jan 2014 09:26:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Roland Dreier <roland@purestorage.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 16/96] IB/qib: Convert qib_user_sdma_pin_pages() to use get_user_pages_fast()
-Date: Mon, 13 Jan 2014 14:23:39 +0000
-Message-Id: <1389623099-18783-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 78/96] tun: update file current position
+Date: Mon, 13 Jan 2014 14:24:41 +0000
+Message-Id: <1389623099-18783-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-commit 603e7729920e42b3c2f4dbfab9eef4878cb6e8fa upstream.
+commit d0b7da8afa079ffe018ab3e92879b7138977fc8f upstream.
 
-qib_user_sdma_queue_pkts() gets called with mmap_sem held for
-writing. Except for get_user_pages() deep down in
-qib_user_sdma_pin_pages() we don't seem to need mmap_sem at all.  Even
-more interestingly the function qib_user_sdma_queue_pkts() (and also
-qib_user_sdma_coalesce() called somewhat later) call copy_from_user()
-which can hit a page fault and we deadlock on trying to get mmap_sem
-when handling that fault.
-
-So just make qib_user_sdma_pin_pages() use get_user_pages_fast() and
-leave mmap_sem locking for mm.
-
-This deadlock has actually been observed in the wild when the node
-is under memory pressure.
-
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Adjust indentation and nr_pages argument in qib_user_sdma_pin_pages()]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/hw/qib/qib_user_sdma.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/net/tun.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/infiniband/hw/qib/qib_user_sdma.c b/drivers/infiniband/hw/qib/qib_user_sdma.c
-index 8244208..573b460 100644
---- a/drivers/infiniband/hw/qib/qib_user_sdma.c
-+++ b/drivers/infiniband/hw/qib/qib_user_sdma.c
-@@ -284,8 +284,7 @@ static int qib_user_sdma_pin_pages(const struct qib_devdata *dd,
- 	int j;
- 	int ret;
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index f21bcef..8e5e73b 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -903,6 +903,8 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
  
--	ret = get_user_pages(current, current->mm, addr,
--			     npages, 0, 1, pages, NULL);
-+	ret = get_user_pages_fast(addr, npages, 0, pages);
- 
- 	if (ret != npages) {
- 		int i;
-@@ -830,10 +829,7 @@ int qib_user_sdma_writev(struct qib_ctxtdata *rcd,
- 	while (dim) {
- 		const int mxp = 8;
- 
--		down_write(&current->mm->mmap_sem);
- 		ret = qib_user_sdma_queue_pkts(dd, pq, &list, iov, dim, mxp);
--		up_write(&current->mm->mmap_sem);
--
- 		if (ret <= 0)
- 			goto done_unlock;
- 		else {
+ 	ret = tun_do_read(tun, iocb, iv, len, file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len);
++	if (ret > 0)
++		iocb->ki_pos = ret;
+ out:
+ 	tun_put(tun);
+ 	return ret;
 -- 
 1.8.3.2
 
