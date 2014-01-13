@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaAMT3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:29:46 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:41852 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaAMT3o (ORCPT
+	id S1752245AbaAMTcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:32:51 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:19251 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751725AbaAMTcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:29:44 -0500
+	Mon, 13 Jan 2014 14:32:47 -0500
+Message-ID: <52D43F26.4040007@fb.com>
+Date: Mon, 13 Jan 2014 14:31:50 -0500
+From: Josef Bacik <jbacik@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1386256104-20624-1-git-send-email-betty.dall@hp.com>
-References: <1386256104-20624-1-git-send-email-betty.dall@hp.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 13 Jan 2014 12:29:23 -0700
-Message-ID: <CAErSpo6VeD=TbrtCkXPkUwMT8Edz7bdBQHAimvW1v8bMrmdR9g@mail.gmail.com>
-Subject: Re: [PATCH] PCI/ACPI: Use PCIe segment in the ACPI HEST AER error sources
-To: Betty Dall <betty.dall@hp.com>
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>, Chris Mason <clm@fb.com>
+CC: <linux-kernel@vger.kernel.org>, <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] rwsem: add rwsem_is_contended
+References: <1389633531-1921-1-git-send-email-jbacik@fb.com> <20140113190221.GA9667@gmail.com>
+In-Reply-To: <20140113190221.GA9667@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-01-13_03:2014-01-13,2014-01-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=6.64183245069339e-08 kscore.compositescore=0
+ circleOfTrustscore=71.2056966559817 compositescore=0.9989857498195
+ urlsuspect_oldscore=0.9989857498195 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.9989857498195 spamscore=0
+ recipient_to_sender_domain_totalscore=7 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
+ definitions=main-1401130128
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 5, 2013 at 8:08 AM, Betty Dall <betty.dall@hp.com> wrote:
-> In the discussion for this set of patches: https://lkml.org/lkml/2013/6/6/517,
-> Bjorn Helgaas pointed out that the ACPI HEST AER error sources do not have the
-> PCIe segment number associated with the bus. I worked with the ACPI spec and
-> got this change to definition of the "Bus" field into the recently released
-> ACPI Spec 5.0a section 18.3.2.3-5:
+On 01/13/2014 02:02 PM, Ingo Molnar wrote:
+> * Josef Bacik <jbacik@fb.com> wrote:
 >
-> "Identifies the PCI Bus and Segment of the device. The Bus is
-> encoded in bits 0-7. For systems that expose multiple PCI
-> segment groups, the segment number is encoded in bits 8-23
-> and bits 24-31 must be zero. For systems that do not expose
-> multiple PCI segment groups, bits 8-31 must be zero. If the
-> GLOBAL flag is specified, this field is ignored."
+>> From: Josef Bacik <jbacik@fusionio.com>
+>>
+>> Btrfs needs a simple way to know if it needs to let go of it's read lock on a
+>> rwsem.  Introduce rwsem_is_contended to check to see if there are any waiters on
+>> this rwsem currently.  This is just a hueristic, it is meant to be light and not
+>> 100% accurate and called by somebody already holding on to the rwsem in either
+>> read or write.  Thanks,
+>>
+>> Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+>> ---
+>>   include/linux/rwsem.h | 11 +++++++++++
+>>   1 file changed, 11 insertions(+)
+>>
+>> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+>> index 0616ffe..03f3b05 100644
+>> --- a/include/linux/rwsem.h
+>> +++ b/include/linux/rwsem.h
+>> @@ -75,6 +75,17 @@ do {								\
+>>   } while (0)
+>>   
+>>   /*
+>> + * This is the same regardless of which rwsem implementation that is being used.
+>> + * It is just a heuristic meant to be called by somebody alreadying holding the
+>> + * rwsem to see if somebody from an incompatible type is wanting access to the
+>> + * lock.
+>> + */
+>> +static inline int rwsem_is_contended(struct rw_semaphore *sem)
+>> +{
+>> +	return !list_empty(&sem->wait_list);
+>> +}
+>> +
+>> +/*
+>>    * lock for reading
+>>    */
+>>   extern void down_read(struct rw_semaphore *sem);
+> Looks good to me. To make it easier to merge 2/2 feel free to add this
+> to the BTRFS tree, with my Acked-by:
 >
-> This patch makes use of the new definition in the only place in the kernel
-> that uses the acpi_hest_aer_common's bus field.
->
-> Signed-off-by: Betty Dall <betty.dall@hp.com>
+>    Acked-by: Ingo Molnar <mingo@kernel.org>
+Great thanks Ingo,
 
-I cherry picked 36f3615152c1 ("ACPICA: Add helper macros to extract
-bus/segment numbers from HEST table.") and applied the aerdrv_acpi.c
-change to pci/aer for v3.14, thanks!
-
-Bjorn
-
-> ---
->
->  drivers/pci/pcie/aer/aerdrv_acpi.c |    8 ++++----
->  include/acpi/actbl1.h              |   11 ++++++++++-
->  2 files changed, 14 insertions(+), 5 deletions(-)
->
->
-> diff --git a/drivers/pci/pcie/aer/aerdrv_acpi.c b/drivers/pci/pcie/aer/aerdrv_acpi.c
-> index cf611ab..93f852b 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_acpi.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_acpi.c
-> @@ -23,10 +23,10 @@
->  static inline int hest_match_pci(struct acpi_hest_aer_common *p,
->                                  struct pci_dev *pci)
->  {
-> -       return  (0           == pci_domain_nr(pci->bus) &&
-> -                p->bus      == pci->bus->number &&
-> -                p->device   == PCI_SLOT(pci->devfn) &&
-> -                p->function == PCI_FUNC(pci->devfn));
-> +       return   ACPI_HEST_SEGMENT(p->bus) == pci_domain_nr(pci->bus) &&
-> +                ACPI_HEST_BUS(p->bus)     == pci->bus->number &&
-> +                p->device                 == PCI_SLOT(pci->devfn) &&
-> +                p->function               == PCI_FUNC(pci->devfn);
->  }
->
->  static inline bool hest_match_type(struct acpi_hest_header *hest_hdr,
-> diff --git a/include/acpi/actbl1.h b/include/acpi/actbl1.h
-> index 556c83ee..0c7428b 100644
-> --- a/include/acpi/actbl1.h
-> +++ b/include/acpi/actbl1.h
-> @@ -457,7 +457,7 @@ struct acpi_hest_aer_common {
->         u8 enabled;
->         u32 records_to_preallocate;
->         u32 max_sections_per_record;
-> -       u32 bus;
-> +       u32 bus;                /* bus: bits 0-7; segment: bits 8-23 */
->         u16 device;
->         u16 function;
->         u16 device_control;
-> @@ -473,6 +473,15 @@ struct acpi_hest_aer_common {
->  #define ACPI_HEST_FIRMWARE_FIRST        (1)
->  #define ACPI_HEST_GLOBAL                (1<<1)
->
-> +/*
-> + * The segment/bus of the PCIe device is encoded in the bus field
-> + * of the acpi_hest_aer_common structure as follows:
-> + *      23:8 = segment
-> + *      7:0 = bus
-> + */
-> +#define ACPI_HEST_SEGMENT(bus)         (((bus) >> 8) & 0xFFFF)
-> +#define ACPI_HEST_BUS(bus)             ((bus) & 0xFF)
-> +
->  /* Hardware Error Notification */
->
->  struct acpi_hest_notify {
+Josef
