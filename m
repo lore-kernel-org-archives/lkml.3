@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaAMVmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 16:42:54 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:33612 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaAMVmu (ORCPT
+	id S1752370AbaAMVoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 16:44:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:31464 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaAMVow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 16:42:50 -0500
-Date: Mon, 13 Jan 2014 22:42:49 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: netdev@vger.kernel.org
-Cc: dborkman@redhat.com, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        darkjames-ws@darkjames.pl
-Subject: [PATCH RFC] reciprocal_divide: correction/update of the algorithm
-Message-ID: <20140113214249.GK6586@order.stressinduktion.org>
-Mail-Followup-To: netdev@vger.kernel.org, dborkman@redhat.com,
-	eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-	darkjames-ws@darkjames.pl
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 13 Jan 2014 16:44:52 -0500
+Date: Tue, 14 Jan 2014 00:44:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mark Einon <mark@einon.net>
+Cc: Pol Eyschen <poleyschen@gmail.com>, devel@driverdev.osuosl.org,
+        jack@suse.cz, Pol Eyschen <poleyschen@hotmail.com>,
+        sachin.kamat@linaro.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, ufimtseva@gmail.com
+Subject: Re: [PATCH] Staging: ced1401: fix coding style in ced_ioc.c
+Message-ID: <20140113214429.GH7444@mwanda>
+References: <1389642100-3601-1-git-send-email-poleyschen@gmail.com>
+ <20140113213552.GA5368@einon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140113213552.GA5368@einon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a RFC and part of a series Daniel Borkmann and me want to
-do when introducing prandom_u32_range{,_ro} and prandom_u32_max{,_ro}
-helpers later this week.
+On Mon, Jan 13, 2014 at 09:35:53PM +0000, Mark Einon wrote:
+> On Mon, Jan 13, 2014 at 08:41:40PM +0100, Pol Eyschen wrote:
+> > From: Pol Eyschen <poleyschen@hotmail.com>
+> > 
+> > All comments fixed to match the kernel coding style.
+> > 
+> > Signed-off-by: Pol Eyschen <poleyschen@gmail.com>
+> > ---
+> 
+> This patch doesn't apply to my staging-next branch. Are you making your
+> changes to the staging-next branch of
+> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git?
+> 
+> >  drivers/staging/ced1401/ced_ioc.c |  382 ++++++++++++++++++++++++-------------
+> >  1 file changed, 249 insertions(+), 133 deletions(-)
+> > 
+> > diff --git a/drivers/staging/ced1401/ced_ioc.c b/drivers/staging/ced1401/ced_ioc.c
+> > index 62efd74..e5172cb 100644
+> > --- a/drivers/staging/ced1401/ced_ioc.c
+> > +++ b/drivers/staging/ced1401/ced_ioc.c
+> > @@ -41,7 +41,8 @@ static void FlushOutBuff(DEVICE_EXTENSION *pdx)
+> >  {
+> >  	dev_dbg(&pdx->interface->dev, "%s currentState=%d", __func__,
+> >  		pdx->sCurrentState);
+> > -	if (pdx->sCurrentState == U14ERR_TIME)	/* Do nothing if hardware in trouble */
+> > +	if (pdx->sCurrentState == U14ERR_TIME)
+> > +		/* Do nothing if hardware in trouble */
+> >  		return;
+> 
+> Putting a comment after a single line 'if' and before the statement is
+> not the norm and can be confusing. Please don't do it.
+> 
 
-At first Jakub Zawadzki noticed that some divisions by reciprocal_divide
-were not correct:
-http://www.wireshark.org/~darkjames/reciprocal-buggy.c
+The guideline is that multi-line indents should get {} braces for
+readability even though they aren't needed for syntax.
 
-He could also show this with BPF:
-http://www.wireshark.org/~darkjames/set-and-dump-filter-k-bug.c
+	if (pdx->sCurrentState == U14ERR_TIME) {
+		/* Do nothing if hardware in trouble */
+		return;
+	}
 
-Also: reciprocal_value and reciprocal_divide always return 0 for
-divisions by 1.  This is a bit worrisome as those functions also get
-used in mm/slab.c and lib/flex_array.c. Bonding already seems to check
-for the 1-divisor case and handles that correctly. We don't know about
-other problems, yet.
-
-I propose an correction/update of the algorithm
-based on the paper "T. Granlund and P. L. Montgomery:
-Division by Invariant Integers Using Multiplication"
-<http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.1.2556>
-
-The assembler implementation from Agner Fog, found here
-<http://www.agner.org/optimize/asmlib.zip>, helped a lot while
-implementing.
-
-I would like to have feedback if people see problems with this patch or
-have concerns about performance. I did some testing on x86-64 and found
-no problems so far but did no performance evaluation, yet.
-
-The current code does break the call-sides of reciprocal_divide. The necessary
-changes will be part of the full series, then.
-
-Thanks!
----
- include/linux/reciprocal_div.h | 12 +++++++++---
- lib/reciprocal_div.c           | 22 ++++++++++++++++++----
- 2 files changed, 27 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/reciprocal_div.h b/include/linux/reciprocal_div.h
-index f9c90b3..6f17a87 100644
---- a/include/linux/reciprocal_div.h
-+++ b/include/linux/reciprocal_div.h
-@@ -22,11 +22,17 @@
-  * Should not be called before each reciprocal_divide(),
-  * or else the performance is slower than a normal divide.
-  */
--extern u32 reciprocal_value(u32 B);
- 
-+struct reciprocal_value {
-+	u32 m;
-+	u8 sh1, sh2;
-+};
- 
--static inline u32 reciprocal_divide(u32 A, u32 R)
-+struct reciprocal_value reciprocal_value(u32 d);
-+
-+static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
- {
--	return (u32)(((u64)A * R) >> 32);
-+	u32 t = (u32)(((u64)a * R.m) >> 32);
-+	return (t + ((a - t) >> R.sh1)) >> R.sh2;
- }
- #endif
-diff --git a/lib/reciprocal_div.c b/lib/reciprocal_div.c
-index 75510e9..b741b30 100644
---- a/lib/reciprocal_div.c
-+++ b/lib/reciprocal_div.c
-@@ -1,11 +1,25 @@
-+#include <linux/kernel.h>
- #include <asm/div64.h>
- #include <linux/reciprocal_div.h>
- #include <linux/export.h>
- 
--u32 reciprocal_value(u32 k)
-+/* For a description of the algorithmus please look at
-+ * linux/reciprocal_div.h
-+ */
-+
-+struct reciprocal_value reciprocal_value(u32 d)
- {
--	u64 val = (1LL << 32) + (k - 1);
--	do_div(val, k);
--	return (u32)val;
-+	struct reciprocal_value R;
-+	u64 m;
-+	int l;
-+
-+	l = fls(d - 1);
-+	m = ((1ULL << 32) * ((1ULL << l) - d));
-+	do_div(m, d);
-+	++m;
-+	R.m = (u32)m;
-+	R.sh1 = min(l, 1);
-+	R.sh2 = max(l-1, 0);
-+	return R;
- }
- EXPORT_SYMBOL(reciprocal_value);
--- 
-1.8.4.2
+regards,
+dan carpenter
 
