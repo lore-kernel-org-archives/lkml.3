@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaAMOhs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:37:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51594 "EHLO
+	id S1753203AbaAMOiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:38:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51588 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297AbaAMO1E (ORCPT
+	with ESMTP id S1752286AbaAMO1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:27:04 -0500
+	Mon, 13 Jan 2014 09:27:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 86/96] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
-Date: Mon, 13 Jan 2014 14:24:49 +0000
-Message-Id: <1389623099-18783-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 84/96] netvsc: don't flush peers notifying work during setting mtu
+Date: Mon, 13 Jan 2014 14:24:47 +0000
+Message-Id: <1389623099-18783-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,92 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit b1aac815c0891fe4a55a6b0b715910142227700f upstream.
+commit 50dc875f2e6e2e04aed3b3033eb0ac99192d6d02 upstream.
 
-Jakub reported while working with nlmon netlink sniffer that parts of
-the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
-That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
+There's a possible deadlock if we flush the peers notifying work during setting
+mtu:
 
-In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
-memory through this. At least, in udp_dump_one(), we allocate a skb in ...
+[   22.991149] ======================================================
+[   22.991173] [ INFO: possible circular locking dependency detected ]
+[   22.991198] 3.10.0-54.0.1.el7.x86_64.debug #1 Not tainted
+[   22.991219] -------------------------------------------------------
+[   22.991243] ip/974 is trying to acquire lock:
+[   22.991261]  ((&(&net_device_ctx->dwork)->work)){+.+.+.}, at: [<ffffffff8108af95>] flush_work+0x5/0x2e0
+[   22.991307]
+but task is already holding lock:
+[   22.991330]  (rtnl_mutex){+.+.+.}, at: [<ffffffff81539deb>] rtnetlink_rcv+0x1b/0x40
+[   22.991367]
+which lock already depends on the new lock.
 
-  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
+[   22.991398]
+the existing dependency chain (in reverse order) is:
+[   22.991426]
+-> #1 (rtnl_mutex){+.+.+.}:
+[   22.991449]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
+[   22.991477]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
+[   22.991501]        [<ffffffff81673659>] mutex_lock_nested+0x89/0x4f0
+[   22.991529]        [<ffffffff815392b7>] rtnl_lock+0x17/0x20
+[   22.991552]        [<ffffffff815230b2>] netdev_notify_peers+0x12/0x30
+[   22.991579]        [<ffffffffa0340212>] netvsc_send_garp+0x22/0x30 [hv_netvsc]
+[   22.991610]        [<ffffffff8108d251>] process_one_work+0x211/0x6e0
+[   22.991637]        [<ffffffff8108d83b>] worker_thread+0x11b/0x3a0
+[   22.991663]        [<ffffffff81095e5d>] kthread+0xed/0x100
+[   22.991686]        [<ffffffff81681c6c>] ret_from_fork+0x7c/0xb0
+[   22.991715]
+-> #0 ((&(&net_device_ctx->dwork)->work)){+.+.+.}:
+[   22.991715]        [<ffffffff810de817>] check_prevs_add+0x967/0x970
+[   22.991715]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
+[   22.991715]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
+[   22.991715]        [<ffffffff8108afde>] flush_work+0x4e/0x2e0
+[   22.991715]        [<ffffffff8108e1b5>] __cancel_work_timer+0x95/0x130
+[   22.991715]        [<ffffffff8108e303>] cancel_delayed_work_sync+0x13/0x20
+[   22.991715]        [<ffffffffa03404e4>] netvsc_change_mtu+0x84/0x200 [hv_netvsc]
+[   22.991715]        [<ffffffff815233d4>] dev_set_mtu+0x34/0x80
+[   22.991715]        [<ffffffff8153bc2a>] do_setlink+0x23a/0xa00
+[   22.991715]        [<ffffffff8153d054>] rtnl_newlink+0x394/0x5e0
+[   22.991715]        [<ffffffff81539eac>] rtnetlink_rcv_msg+0x9c/0x260
+[   22.991715]        [<ffffffff8155cdd9>] netlink_rcv_skb+0xa9/0xc0
+[   22.991715]        [<ffffffff81539dfa>] rtnetlink_rcv+0x2a/0x40
+[   22.991715]        [<ffffffff8155c41d>] netlink_unicast+0xdd/0x190
+[   22.991715]        [<ffffffff8155c807>] netlink_sendmsg+0x337/0x750
+[   22.991715]        [<ffffffff8150d219>] sock_sendmsg+0x99/0xd0
+[   22.991715]        [<ffffffff8150d63e>] ___sys_sendmsg+0x39e/0x3b0
+[   22.991715]        [<ffffffff8150eba2>] __sys_sendmsg+0x42/0x80
+[   22.991715]        [<ffffffff8150ebf2>] SyS_sendmsg+0x12/0x20
+[   22.991715]        [<ffffffff81681d19>] system_call_fastpath+0x16/0x1b
 
-... and then pass that to inet_sk_diag_fill() that puts the whole struct
-inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
-r->id.idiag_dst[0] and leave the rest untouched:
+This is because we hold the rtnl_lock() before ndo_change_mtu() and try to flush
+the work in netvsc_change_mtu(), in the mean time, netdev_notify_peers() may be
+called from worker and also trying to hold the rtnl_lock. This will lead the
+flush won't succeed forever. Solve this by not canceling and flushing the work,
+this is safe because the transmission done by NETDEV_NOTIFY_PEERS was
+synchronized with the netif_tx_disable() called by netvsc_change_mtu().
 
-  r->id.idiag_src[0] = inet->inet_rcv_saddr;
-  r->id.idiag_dst[0] = inet->inet_daddr;
-
-struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
-fully filled out in IPv6 case, but for IPv4 not.
-
-So just zero them out by using plain memset (for this little amount of
-bytes it's probably not worth the extra check for idiag_family == AF_INET).
-
-Similarly, fix also other places where we fill that out.
-
-Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Reported-by: Yaju Cao <yacao@redhat.com>
+Tested-by: Yaju Cao <yacao@redhat.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/inet_diag.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/net/hyperv/netvsc_drv.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index 232560a..e530c31 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -110,6 +110,10 @@ int inet_sk_diag_fill(struct sock *sk, struct inet_connection_sock *icsk,
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 8f8ed33..219a04b 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -325,7 +325,6 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
+ 		return -EINVAL;
  
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = inet->inet_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
- 	r->id.idiag_dst[0] = inet->inet_daddr;
- 
-@@ -227,12 +231,19 @@ static int inet_twsk_diag_fill(struct inet_timewait_sock *tw,
- 
- 	r->idiag_family	      = tw->tw_family;
- 	r->idiag_retrans      = 0;
-+
- 	r->id.idiag_if	      = tw->tw_bound_dev_if;
- 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
-+
- 	r->id.idiag_sport     = tw->tw_sport;
- 	r->id.idiag_dport     = tw->tw_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
- 	r->id.idiag_dst[0]    = tw->tw_daddr;
-+
- 	r->idiag_state	      = tw->tw_substate;
- 	r->idiag_timer	      = 3;
- 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
-@@ -714,8 +725,13 @@ static int inet_diag_fill_req(struct sk_buff *skb, struct sock *sk,
- 
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = ireq->rmt_port;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = ireq->loc_addr;
- 	r->id.idiag_dst[0] = ireq->rmt_addr;
-+
- 	r->idiag_expires = jiffies_to_msecs(tmo);
- 	r->idiag_rqueue = 0;
- 	r->idiag_wqueue = 0;
+ 	nvdev->start_remove = true;
+-	cancel_delayed_work_sync(&ndevctx->dwork);
+ 	cancel_work_sync(&ndevctx->work);
+ 	netif_tx_disable(ndev);
+ 	rndis_filter_device_remove(hdev);
 -- 
 1.8.3.2
 
