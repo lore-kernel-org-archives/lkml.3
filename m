@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaAMOko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:40:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51536 "EHLO
+	id S1753321AbaAMOkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:40:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51538 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaAMO0u (ORCPT
+	with ESMTP id S1752207AbaAMO0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 09:26:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 76/96] macvtap: Do not double-count received packets
-Date: Mon, 13 Jan 2014 14:24:39 +0000
-Message-Id: <1389623099-18783-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 72/96] sched: Fix hrtimer_cancel()/rq->lock deadlock
+Date: Mon, 13 Jan 2014 14:24:35 +0000
+Message-Id: <1389623099-18783-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 006da7b07bc4d3a7ffabad17cf639eec6849c9dc upstream.
+commit 927b54fccbf04207ec92f669dce6806848cbec7d upstream.
 
-Currently macvlan will count received packets after calling each
-vlans receive handler.   Macvtap attempts to count the packet
-yet again when the user reads the packet from the tap socket.
-This code doesn't do this consistently either.  Remove the
-counting from macvtap and let only macvlan count received
-packets.
+__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
+waiting for the hrtimer to finish. However, if sched_cfs_period_timer
+runs for another loop iteration, the hrtimer can attempt to take
+rq->lock, resulting in deadlock.
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: used devam's backport to 3.4 ]
+Fix this by ensuring that cfs_b->timer_active is cleared only if the
+_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
+__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
+that to succeed or timer_active == 1.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/macvtap.c | 7 -------
- 1 file changed, 7 deletions(-)
+ kernel/sched/fair.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 8b7c4f2..81fbe78a 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -798,7 +798,6 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 				const struct sk_buff *skb,
- 				const struct iovec *iv, int len)
- {
--	struct macvlan_dev *vlan;
- 	int ret;
- 	int vnet_hdr_len = 0;
- 	int vlan_offset = 0;
-@@ -852,12 +851,6 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 	copied += len;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index df0d630..a7450fd 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1771,6 +1771,13 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
+ 	if (idle)
+ 		goto out_unlock;
  
- done:
--	rcu_read_lock_bh();
--	vlan = rcu_dereference_bh(q->vlan);
--	if (vlan)
--		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
--	rcu_read_unlock_bh();
++	/*
++	 * if we have relooped after returning idle once, we need to update our
++	 * status as actually running, so that other cpus doing
++	 * __start_cfs_bandwidth will stop trying to cancel us.
++	 */
++	cfs_b->timer_active = 1;
++
+ 	__refill_cfs_bandwidth_runtime(cfs_b);
+ 
+ 	if (!throttled) {
+@@ -2043,11 +2050,11 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+ 	 * (timer_active==0 becomes visible before the hrtimer call-back
+ 	 * terminates).  In either case we ensure that it's re-programmed
+ 	 */
+-	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
++	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
++	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
++		/* bounce the lock to allow do_sched_cfs_period_timer to run */
+ 		raw_spin_unlock(&cfs_b->lock);
+-		/* ensure cfs_b->lock is available while we wait */
+-		hrtimer_cancel(&cfs_b->period_timer);
 -
- 	return ret ? ret : copied;
- }
- 
++		cpu_relax();
+ 		raw_spin_lock(&cfs_b->lock);
+ 		/* if someone else restarted the timer then we're done */
+ 		if (cfs_b->timer_active)
 -- 
 1.8.3.2
 
