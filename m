@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228AbaAMBQG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 20:16:06 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55719 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaAMBQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 20:16:04 -0500
-Message-ID: <1389575749.4672.118.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Mon, 13 Jan 2014 12:15:49 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751288AbaAMBQf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 20:16:35 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54901 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaAMBQc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 20:16:32 -0500
+X-AuditID: 9c93017e-b7ba2ae000003516-32-52d33e6e16b9
+Date: Mon, 13 Jan 2014 10:17:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/9] fs: cachefiles: use add_to_page_cache_lru()
+Message-ID: <20140113011709.GM1992@bbox>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-2-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389377443-11755-2-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Fri, Jan 10, 2014 at 01:10:35PM -0500, Johannes Weiner wrote:
+> This code used to have its own lru cache pagevec up until a0b8cab3
+> ("mm: remove lru parameter from __pagevec_lru_add and remove parts of
+> pagevec API").  Now it's just add_to_page_cache() followed by
+> lru_cache_add(), might as well use add_to_page_cache_lru() directly.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-Here's one regression fix for 3.13 that I would appreciate if you could still
-pull in. It was an "interesting" one to debug, basically it's an old bug that
-got somewhat "exposed" by new code breaking the boot on PA Semi boards (yes,
-it does appear that some people are still using these !).
-
-Cheers,
-Ben.
-
-The following changes since commit f991db1cf1bdca43675b5d2df0af991719727029:
-
-  Merge remote-tracking branch 'agust/merge' into merge (2013-12-30 14:48:27 +1100)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-for you to fetch changes up to 10348f5976830e5d8f74e8abb04a9a057a5e8478:
-
-  powerpc: Check return value of instance-to-package OF call (2014-01-13 09:49:17 +1100)
-
-----------------------------------------------------------------
-Benjamin Herrenschmidt (1):
-      powerpc: Check return value of instance-to-package OF call
-
- arch/powerpc/kernel/prom_init.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
-
-
+-- 
+Kind regards,
+Minchan Kim
