@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaAMOnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:43:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51491 "EHLO
+	id S1752131AbaAMO0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:26:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51201 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaAMO0j (ORCPT
+	with ESMTP id S1751658AbaAMOZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:39 -0500
+	Mon, 13 Jan 2014 09:25:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Len Brown <len.brown@intel.com>, Vinson Lee <vlee@twopensource.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 69/96] ftrace: Check module functions being traced on reload
-Date: Mon, 13 Jan 2014 14:24:32 +0000
-Message-Id: <1389623099-18783-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 12/96] intel_idle: enable IVB Xeon support
+Date: Mon, 13 Jan 2014 14:23:35 +0000
+Message-Id: <1389623099-18783-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,242 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Len Brown <len.brown@intel.com>
 
-commit 8c4f3c3fa9681dc549cd35419b259496082fef8b upstream.
+commit 23795e580cad5d6b73d47d51b9074ce3e58bf334 upstream.
 
-There's been a nasty bug that would show up and not give much info.
-The bug displayed the following warning:
+IVB Xeon currently shares the same parameters IVB client.
 
- WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
- Pid: 20903, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
- Call Trace:
-  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
-  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
-  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
-  [<ffffffff811401cc>] ? kfree+0x2c/0x110
-  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
-  [<ffffffff81149f1e>] __fput+0xae/0x220
-  [<ffffffff8114a09e>] ____fput+0xe/0x10
-  [<ffffffff8105fa22>] task_work_run+0x72/0x90
-  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
-  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
-  [<ffffffff815c0f88>] int_signal+0x12/0x17
- ---[ end trace 793179526ee09b2c ]---
-
-It was finally narrowed down to unloading a module that was being traced.
-
-It was actually more than that. When functions are being traced, there's
-a table of all functions that have a ref count of the number of active
-tracers attached to that function. When a function trace callback is
-registered to a function, the function's record ref count is incremented.
-When it is unregistered, the function's record ref count is decremented.
-If an inconsistency is detected (ref count goes below zero) the above
-warning is shown and the function tracing is permanently disabled until
-reboot.
-
-The ftrace callback ops holds a hash of functions that it filters on
-(and/or filters off). If the hash is empty, the default means to filter
-all functions (for the filter_hash) or to disable no functions (for the
-notrace_hash).
-
-When a module is unloaded, it frees the function records that represent
-the module functions. These records exist on their own pages, that is
-function records for one module will not exist on the same page as
-function records for other modules or even the core kernel.
-
-Now when a module unloads, the records that represents its functions are
-freed. When the module is loaded again, the records are recreated with
-a default ref count of zero (unless there's a callback that traces all
-functions, then they will also be traced, and the ref count will be
-incremented).
-
-The problem is that if an ftrace callback hash includes functions of the
-module being unloaded, those hash entries will not be removed. If the
-module is reloaded in the same location, the hash entries still point
-to the functions of the module but the module's ref counts do not reflect
-that.
-
-With the help of Steve and Joern, we found a reproducer:
-
- Using uinput module and uinput_release function.
-
- cd /sys/kernel/debug/tracing
- modprobe uinput
- echo uinput_release > set_ftrace_filter
- echo function > current_tracer
- rmmod uinput
- modprobe uinput
- # check /proc/modules to see if loaded in same addr, otherwise try again
- echo nop > current_tracer
-
- [BOOM]
-
-The above loads the uinput module, which creates a table of functions that
-can be traced within the module.
-
-We add uinput_release to the filter_hash to trace just that function.
-
-Enable function tracincg, which increments the ref count of the record
-associated to uinput_release.
-
-Remove uinput, which frees the records including the one that represents
-uinput_release.
-
-Load the uinput module again (and make sure it's at the same address).
-This recreates the function records all with a ref count of zero,
-including uinput_release.
-
-Disable function tracing, which will decrement the ref count for uinput_release
-which is now zero because of the module removal and reload, and we have
-a mismatch (below zero ref count).
-
-The solution is to check all currently tracing ftrace callbacks to see if any
-are tracing any of the module's functions when a module is loaded (it already does
-that with callbacks that trace all functions). If a callback happens to have
-a module function being traced, it increments that records ref count and starts
-tracing that function.
-
-There may be a strange side effect with this, where tracing module functions
-on unload and then reloading a new module may have that new module's functions
-being traced. This may be something that confuses the user, but it's not
-a big deal. Another approach is to disable all callback hashes on module unload,
-but this leaves some ftrace callbacks that may not be registered, but can
-still have hashes tracing the module's function where ftrace doesn't know about
-it. That situation can cause the same bug. This solution solves that case too.
-Another benefit of this solution, is it is possible to trace a module's
-function on unload and load.
-
-Link: http://lkml.kernel.org/r/20130705142629.GA325@redhat.com
-
-Reported-by: Jörn Engel <joern@logfs.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Steve Hodgson <steve@purestorage.com>
-Tested-by: Steve Hodgson <steve@purestorage.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Vinson Lee <vlee@twopensource.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 71 ++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 62 insertions(+), 9 deletions(-)
+ drivers/idle/intel_idle.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 7b7455a..524243e 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2031,12 +2031,57 @@ static cycle_t		ftrace_update_time;
- static unsigned long	ftrace_update_cnt;
- unsigned long		ftrace_update_tot_cnt;
- 
--static int ops_traces_mod(struct ftrace_ops *ops)
-+static inline int ops_traces_mod(struct ftrace_ops *ops)
- {
--	struct ftrace_hash *hash;
-+	/*
-+	 * Filter_hash being empty will default to trace module.
-+	 * But notrace hash requires a test of individual module functions.
-+	 */
-+	return ftrace_hash_empty(ops->filter_hash) &&
-+		ftrace_hash_empty(ops->notrace_hash);
-+}
-+
-+/*
-+ * Check if the current ops references the record.
-+ *
-+ * If the ops traces all functions, then it was already accounted for.
-+ * If the ops does not trace the current record function, skip it.
-+ * If the ops ignores the function via notrace filter, skip it.
-+ */
-+static inline bool
-+ops_references_rec(struct ftrace_ops *ops, struct dyn_ftrace *rec)
-+{
-+	/* If ops isn't enabled, ignore it */
-+	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
-+		return 0;
- 
--	hash = ops->filter_hash;
--	return ftrace_hash_empty(hash);
-+	/* If ops traces all mods, we already accounted for it */
-+	if (ops_traces_mod(ops))
-+		return 0;
-+
-+	/* The function must be in the filter */
-+	if (!ftrace_hash_empty(ops->filter_hash) &&
-+	    !ftrace_lookup_ip(ops->filter_hash, rec->ip))
-+		return 0;
-+
-+	/* If in notrace hash, we ignore it too */
-+	if (ftrace_lookup_ip(ops->notrace_hash, rec->ip))
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static int referenced_filters(struct dyn_ftrace *rec)
-+{
-+	struct ftrace_ops *ops;
-+	int cnt = 0;
-+
-+	for (ops = ftrace_ops_list; ops != &ftrace_list_end; ops = ops->next) {
-+		if (ops_references_rec(ops, rec))
-+		    cnt++;
-+	}
-+
-+	return cnt;
- }
- 
- static int ftrace_update_code(struct module *mod)
-@@ -2045,6 +2090,7 @@ static int ftrace_update_code(struct module *mod)
- 	struct dyn_ftrace *p;
- 	cycle_t start, stop;
- 	unsigned long ref = 0;
-+	bool test = false;
- 	int i;
- 
- 	/*
-@@ -2058,9 +2104,12 @@ static int ftrace_update_code(struct module *mod)
- 
- 		for (ops = ftrace_ops_list;
- 		     ops != &ftrace_list_end; ops = ops->next) {
--			if (ops->flags & FTRACE_OPS_FL_ENABLED &&
--			    ops_traces_mod(ops))
--				ref++;
-+			if (ops->flags & FTRACE_OPS_FL_ENABLED) {
-+				if (ops_traces_mod(ops))
-+					ref++;
-+				else
-+					test = true;
-+			}
- 		}
- 	}
- 
-@@ -2070,12 +2119,16 @@ static int ftrace_update_code(struct module *mod)
- 	for (pg = ftrace_new_pgs; pg; pg = pg->next) {
- 
- 		for (i = 0; i < pg->index; i++) {
-+			int cnt = ref;
-+
- 			/* If something went wrong, bail without enabling anything */
- 			if (unlikely(ftrace_disabled))
- 				return -1;
- 
- 			p = &pg->records[i];
--			p->flags = ref;
-+			if (test)
-+				cnt += referenced_filters(p);
-+			p->flags = cnt;
- 
- 			/*
- 			 * Do the initial record conversion from mcount jump
-@@ -2095,7 +2148,7 @@ static int ftrace_update_code(struct module *mod)
- 			 * conversion puts the module to the correct state, thus
- 			 * passing the ftrace_make_call check.
- 			 */
--			if (ftrace_start_up && ref) {
-+			if (ftrace_start_up && cnt) {
- 				int failed = __ftrace_replace_code(p, 1);
- 				if (failed)
- 					ftrace_bug(failed, p->ip);
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 377ec9a..674e352 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -399,6 +399,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
+ 	ICPU(0x2a, idle_cpu_snb),
+ 	ICPU(0x2d, idle_cpu_snb),
+ 	ICPU(0x3a, idle_cpu_ivb),
++	ICPU(0x3e, idle_cpu_ivb),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
 -- 
 1.8.3.2
 
