@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaAMJWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:22:04 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:48714 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaAMJVv (ORCPT
+	id S1751422AbaAMJWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:22:50 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:48704 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaAMJWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:21:51 -0500
-Message-ID: <52D3B02B.8070408@koalo.de>
-Date: Mon, 13 Jan 2014 10:21:47 +0100
-From: Florian Meier <florian.meier@koalo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 13 Jan 2014 04:22:46 -0500
 MIME-Version: 1.0
-To: Daniel Matuschek <daniel@matuschek.net>, alsa-devel@alsa-project.org
-CC: Dimitris.Papastamos@wolfsonmicro.com, lgirdwood@gmail.com,
-        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        info@crazy-audio.com
-Subject: Re: [PATCH] ASoC: wm8804: Allow control of master clock divider in
- PLL generation
-References: <alpine.DEB.2.02.1401122206520.7929@parallels-Parallels-Virtual-Platform>
-In-Reply-To: <alpine.DEB.2.02.1401122206520.7929@parallels-Parallels-Virtual-Platform>
+In-Reply-To: <CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
+References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
+	<1387814889-16670-4-git-send-email-lpapp@kde.org>
+	<CACRpkdbAPYs=48RXr6r5kqkYj2V9GitRMT2BRKkn4_gT77wUEg@mail.gmail.com>
+	<CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
+Date: Mon, 13 Jan 2014 09:22:45 +0000
+X-Google-Sender-Auth: -d1TRTelLgvoFrfChpJmPLvbxCw
+Message-ID: <CAOMwXhNyntnu7h_VOLWq3rh1EprNCnm8yByza6Bz-J9XQmA-sA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] gpio: MAX6650/6651 support
+From: Laszlo Papp <lpapp@kde.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2014 10:11 PM, Daniel Matuschek wrote:
-> Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
-> 
-> After some discussions of the patch last week, here is a new version.
-> Simply reducing the post_table did not work, as for some frequencies
-> both settings (MCLKDIV=0 and MCLKDIV=1) are needed (e.g. 96 and 192kHz)
-> 
-> 
->  WM8804 can run with PLL frequencies of 256xfs and 128xfs for
->  most sample rates. At 192kHz only 128xfs is supported. The
->  existing driver selects 128xfs automatically for some lower
->  samples rates. By using an additional mclk_div divider, is
->  is now possible to control the behaviour. This allows using
->  256xfs PLL frequency on all sample rates up to 96kHz. It
->  should allow lower jitter and better signal quality. The
->  behavior has to be controlled by the sound card driver,
->  because some sample frequency share the same setting. e.g.
->  192kHz and 96kHz use 24.576MHz master clock. The only
->  difference is the MCLK divider.
-> 
-> ---
->  sound/soc/codecs/wm8804.c |   17 ++++++++++++++---
->  sound/soc/codecs/wm8804.h |    4 ++++
->  2 files changed, 18 insertions(+), 3 deletions(-)
+>>> +#define PIN_NUMBER 5
+>>
+>> As I can see this is really a GPIO+pin control driver it shall be
+>> moved to drivers/pinctrl.
+>
+> Hmm, but then I am not sure why the gpio-max*.c are similar in the
+> drivers/gpio area. Could you please elaborate? They are somewhat
+> similar to my understanding, but perhaps there is some fundamental
+> difference I am not aware of?
 
-You have disarranged the parts, again. It should be
+I was giving a second thought to this. Would it be acceptable to add
+the gpio driver now, and once the need arises, add the pinctrl thin
+layer on top of it? My concern is that I would not use anything else
+than the gpio functionality of these pins. It would be a needless
+additional work (i.e. investment) for my project and employer.
 
-WM8804 can run with PLL frequencies of 256xfs and 128xfs for
-most sample rates. At 192kHz only 128xfs is supported. The
-existing driver selects 128xfs automatically for some lower
-samples rates. By using an additional mclk_div divider, is
-is now possible to control the behaviour. This allows using
-256xfs PLL frequency on all sample rates up to 96kHz. It
-should allow lower jitter and better signal quality. The
-behavior has to be controlled by the sound card driver,
-because some sample frequency share the same setting. e.g.
-192kHz and 96kHz use 24.576MHz master clock. The only
-difference is the MCLK divider.
+Perhaps, the layer on top of that can be added later without any
+drawback if anyone ever finds the need to have more functionality
+supported by these pins?
 
-Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
-
----
-
-After some discussions of the patch last week, here is a new version.
-Simply reducing the post_table did not work, as for some frequencies
-both settings (MCLKDIV=0 and MCLKDIV=1) are needed (e.g. 96 and 192kHz)
-
- sound/soc/codecs/wm8804.c |   17 ++++++++++++++---
- sound/soc/codecs/wm8804.h |    4 ++++
- 2 files changed, 18 insertions(+), 3 deletions(-)
+Shall look forward to hearing your opinion.
