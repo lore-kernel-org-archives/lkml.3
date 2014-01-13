@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaAMSxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:53:01 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45463 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751893AbaAMSw7 (ORCPT
+	id S1751976AbaAMS4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:56:53 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37128 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666AbaAMS4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:52:59 -0500
-Message-ID: <1389639177.12062.21.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 09/14] target/configfs: Expose protection device
- attributes
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
-Date: Mon, 13 Jan 2014 10:52:57 -0800
-In-Reply-To: <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	 <1389212157-14540-10-git-send-email-nab@daterainc.com>
-	 <yq161prr1p8.fsf@sermon.lab.mkp.net>
-	 <1389637859.5567.431.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 13:56:50 -0500
+Date: Mon, 13 Jan 2014 18:57:15 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linux-efi@vger.kernel.org,
+        linux@arm.linux.org.uk, patches@linaro.org, roy.franz@linaro.org,
+        matt.fleming@intel.com, msalter@redhat.com
+Subject: Re: [PATCH v4 5/5] init: efi: arm: enable (U)EFI runtime services on
+ arm
+Message-ID: <20140113185714.GE30907@bivouac.eciton.net>
+References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
+ <1389445524-30623-6-git-send-email-leif.lindholm@linaro.org>
+ <201401131929.07236.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201401131929.07236.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 10:30 -0800, Nicholas A. Bellinger wrote:
-> Hey MKP,
+On Mon, Jan 13, 2014 at 07:29:06PM +0100, Arnd Bergmann wrote:
+> On Saturday 11 January 2014, Leif Lindholm wrote:
+> > diff --git a/init/main.c b/init/main.c
+> > index febc511..1331829 100644
+> > --- a/init/main.c
+> > +++ b/init/main.c
+> > @@ -905,6 +905,10 @@ static noinline void __init kernel_init_freeable(void)
+> >         smp_prepare_cpus(setup_max_cpus);
+> >  
+> >         do_pre_smp_initcalls();
+> > +
+> > +       if (IS_ENABLED(CONFIG_ARM) && efi_enabled(EFI_BOOT))
+> > +               efi_enter_virtual_mode();
 > 
-> On Fri, 2014-01-10 at 16:01 -0500, Martin K. Petersen wrote:
-> > >>>>> "nab" == Nicholas A Bellinger <nab@daterainc.com> writes:
-> > 
-> > nab> This patch adds support for exposing DIF protection device
-> > nab> attributes via configfs.  This includes:
-> > 
-> > nab>    pi_prot_type: Protection Type (0, 1, 3 currently support)
-> > nab>    pi_prot_version: Protection Version (DIF v1 currently supported)
-> > 
-> > What's DIF v2?
-> > 
+> What is the dependency on CONFIG_ARM here? Wouldn't most other
+> architectures need the same?
+
+Most 64-bit architectures could get away from it.
+x86 does it where its particular init environment forces it to.
+
+For arm, the strict ordering requirement is for efi_enter_virtual_mode
+to be called after init_static_idmap.
+
+If ordering between early_initcalls was possible in a sane way, I could
+do that instead, but I don't think a patch that swapped order of kernel/
+and mm/ in arch/arm/Makefile would be accepted :)
+
+> I'd rather not see this turn into
+> a long list of CONFIG_$(ARCH) checks if other architectures
+> enable it in the same place.
 > 
-> This would be the proposed 16-byte protection scheme for SBC4.
+> I also wonder why the three architectures implementing it all
+> call this from wildly different places during init/main.c, namely
+> (very early) setup_arch() on ia64,
 
-What proposed 16 byte scheme?  The only DIF proposals I know for SBC-4
-are 13-185R0 and 12-369R0 and that's a couple of new algorithms and
-types because we cannot change the 8 byte PI.
+Likewise arm64.
 
-James
+> (relatively early) start_kernel
+> on x86 and (relatively late) kernel_init_freeable on arm.
 
+As I said - the pure 64-bit archs have less of an issue, since they
+can have their kernel somewhere that won't clash with the 1:1 mapping
+of RAM required by UEFI SetVirtualAddressMap.
 
+> In general, I'd be happy with adding this as late in the startup
+> code as possible, but it may be better to use the same place as
+> x86 in order to avoid surprises with unexpected dependencies.
+
+I _really_ don't want to call SetVirtualAddressMap after smp_init.
+
+> One such dependency that may cause problems is the fact that
+> we (try to) call efi_late_init() before efi_enter_virtual_mode()
+> now.
+
+Well, efi_late_init() is an inline {} on everything !x86.
+
+/
+    Leif
