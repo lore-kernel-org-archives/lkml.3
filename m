@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaAMOvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:51:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51364 "EHLO
+	id S1753444AbaAMOvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:51:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51353 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaAMO0F (ORCPT
+	with ESMTP id S1751882AbaAMO0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:05 -0500
+	Mon, 13 Jan 2014 09:26:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: JongHo Kim <furmuwon@gmail.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 43/96] rtlwifi: pci: Fix oops on driver unload
-Date: Mon, 13 Jan 2014 14:24:06 +0000
-Message-Id: <1389623099-18783-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 42/96] ALSA: Add SNDRV_PCM_STATE_PAUSED case in wait_for_avail function
+Date: Mon, 13 Jan 2014 14:24:05 +0000
+Message-Id: <1389623099-18783-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: JongHo Kim <furmuwon@gmail.com>
 
-commit 9278db6279e28d4d433bc8a848e10b4ece8793ed upstream.
+commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
 
-On Fedora systems, unloading rtl8192ce causes an oops. This patch fixes the
-problem reported at https://bugzilla.redhat.com/show_bug.cgi?id=852761.
+When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
+state from the wait_for_avail function, the sleep process will be woken by
+timeout(10 seconds). Even if the sleep process wake up by timeout, by this
+patch, the process will continue with sleep and wait for the other state.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: JongHo Kim <furmuwon@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/pci.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/core/pcm_lib.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-index 2062ea1..4c4226f 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -679,6 +679,8 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
- 	};
- 	int index = rtlpci->rx_ring[rx_queue_idx].idx;
- 
-+	if (rtlpci->driver_is_goingto_unload)
-+		return;
- 	/*RX NORMAL PKT */
- 	while (count--) {
- 		/*rx descriptor */
-@@ -1555,6 +1557,7 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
- 	 */
- 	set_hal_stop(rtlhal);
- 
-+	rtlpci->driver_is_goingto_unload = true;
- 	rtlpriv->cfg->ops->disable_interrupt(hw);
- 	cancel_work_sync(&rtlpriv->works.lps_leave_work);
- 
-@@ -1572,7 +1575,6 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
- 	ppsc->rfchange_inprogress = true;
- 	spin_unlock_irqrestore(&rtlpriv->locks.rf_ps_lock, flags);
- 
--	rtlpci->driver_is_goingto_unload = true;
- 	rtlpriv->cfg->ops->hw_disable(hw);
- 	/* some things are not needed if firmware not available */
- 	if (!rtlpriv->max_fw_size)
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 8f312fa..d8b6c81 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1860,6 +1860,8 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
+ 		case SNDRV_PCM_STATE_DISCONNECTED:
+ 			err = -EBADFD;
+ 			goto _endloop;
++		case SNDRV_PCM_STATE_PAUSED:
++			continue;
+ 		}
+ 		if (!tout) {
+ 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
 -- 
 1.8.3.2
 
