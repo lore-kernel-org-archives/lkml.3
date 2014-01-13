@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaAMNQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 08:16:29 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:51677 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaAMNQ1 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Mon, 13 Jan 2014 08:16:27 -0500
-Message-Id: <52D3F535020000780011311B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 13 Jan 2014 13:16:21 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ian Campbell" <Ian.Campbell@citrix.com>
-Cc: "Olaf Hering" <olaf@aepfle.de>, <david.vrabel@citrix.com>,
-        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check
- from blkfront_setup_discard
-References: <1389608052-7139-1-git-send-email-olaf@aepfle.de>
- <52D3DAEE0200007800112FD4@nat28.tlf.novell.com>
- <20140113120131.GA15623@aepfle.de>
- <52D3EB5F02000078001130B5@nat28.tlf.novell.com>
- <1389618054.13654.57.camel@kazak.uk.xensource.com>
-In-Reply-To: <1389618054.13654.57.camel@kazak.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751621AbaAMNSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 08:18:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342AbaAMNSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 08:18:02 -0500
+Date: Mon, 13 Jan 2014 21:17:37 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 4/4] efi: Make efi virtual runtime map passing more robust
+Message-ID: <20140113131737.GB1900@darkstar.nay.redhat.com>
+References: <1389473370-1940-1-git-send-email-bp@alien8.de>
+ <1389473370-1940-5-git-send-email-bp@alien8.de>
+ <20140113054038.GB11237@dhcp-16-126.nay.redhat.com>
+ <20140113102734.GB5388@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140113102734.GB5388@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 13.01.14 at 14:00, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> On Mon, 2014-01-13 at 12:34 +0000, Jan Beulich wrote:
->> >>> On 13.01.14 at 13:01, Olaf Hering <olaf@aepfle.de> wrote:
->> > On Mon, Jan 13, Jan Beulich wrote:
->> > 
->> >> You can't do this in one go - the first two and the last one may be
->> >> set independently (and are independent in their meaning), and
->> >> hence need to be queried independently (xenbus_gather() fails
->> >> on the first absent value).
->> > 
->> > Yes, thats the purpose. Since the properties are required its an all or
->> > nothing thing. If they are truly optional then blkif.h should be updated
->> > to say that.
->> 
->> They _are_ optional.
+On Mon, Jan 13, 2014 at 11:27:34AM +0100, Borislav Petkov wrote:
+> On Mon, Jan 13, 2014 at 01:40:39PM +0800, Dave Young wrote:
+> > Adding a safeguard check for desc_size is better though currently it's
+> > impossible for the desc_size > PAGE_SIZE?
 > 
-> But is it true that either they are all present or they are all absent?
+> Huh, what?
+> 
+> sizeof(efi_memory_desc_t) is only 40 bytes AFAICT.
 
-No, it's not. discard-secure is independent of the other two (but
-those other two are tied together).
+I know this is nearly impossible, but is there possible for some corrupted
+desc_size value or firmware bug? who knows...
 
-Jan
-
+Thanks
+Dave
