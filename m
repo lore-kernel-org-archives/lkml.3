@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaAMQDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:03:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53335 "EHLO
+	id S1754222AbaAMQED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:04:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53365 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaAMQD1 (ORCPT
+	with ESMTP id S1754062AbaAMQDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:27 -0500
+	Mon, 13 Jan 2014 11:03:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rik van Riel <riel@redhat.com>, PaX Team <pageexec@freemail.hu>,
-        Kees Cook <keescook@chromium.org>,
-        Michel Lespinasse <walken@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/208] mm: fix use-after-free in sys_remap_file_pages
-Date: Mon, 13 Jan 2014 15:58:59 +0000
-Message-Id: <1389628849-1614-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 115/208] ceph: fix null pointer dereference
+Date: Mon, 13 Jan 2014 15:59:16 +0000
+Message-Id: <1389628849-1614-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -32,63 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
 
-commit 4eb919825e6c3c7fb3630d5621f6d11e98a18b3a upstream.
+commit c338c07c51e3106711fad5eb599e375eadb6855d upstream.
 
-remap_file_pages calls mmap_region, which may merge the VMA with other
-existing VMAs, and free "vma".  This can lead to a use-after-free bug.
-Avoid the bug by remembering vm_flags before calling mmap_region, and
-not trying to dereference vma later.
+When register_session() is given an out-of-range argument for mds,
+ceph_mdsmap_get_addr() will return a null pointer, which would be given to
+ceph_con_open() & be dereferenced, causing a kernel oops. This fixes bug #4685
+in the Ceph bug tracker <http://tracker.ceph.com/issues/4685>.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/fremap.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/ceph/mds_client.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/fremap.c b/mm/fremap.c
-index 5bff081..bbc4d66 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -208,9 +208,10 @@ get_write_lock:
- 		if (mapping_cap_account_dirty(mapping)) {
- 			unsigned long addr;
- 			struct file *file = get_file(vma->vm_file);
-+			/* mmap_region may free vma; grab the info now */
-+			vm_flags = vma->vm_flags;
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 17b97ff..96d03db 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -414,6 +414,9 @@ static struct ceph_mds_session *register_session(struct ceph_mds_client *mdsc,
+ {
+ 	struct ceph_mds_session *s;
  
--			addr = mmap_region(file, start, size,
--					vma->vm_flags, pgoff);
-+			addr = mmap_region(file, start, size, vm_flags, pgoff);
- 			fput(file);
- 			if (IS_ERR_VALUE(addr)) {
- 				err = addr;
-@@ -218,7 +219,7 @@ get_write_lock:
- 				BUG_ON(addr != start);
- 				err = 0;
- 			}
--			goto out;
-+			goto out_freed;
- 		}
- 		mutex_lock(&mapping->i_mmap_mutex);
- 		flush_dcache_mmap_lock(mapping);
-@@ -253,6 +254,7 @@ get_write_lock:
- out:
- 	if (vma)
- 		vm_flags = vma->vm_flags;
-+out_freed:
- 	if (likely(!has_write_lock))
- 		up_read(&mm->mmap_sem);
- 	else
++	if (mds >= mdsc->mdsmap->m_max_mds)
++		return ERR_PTR(-EINVAL);
++
+ 	s = kzalloc(sizeof(*s), GFP_NOFS);
+ 	if (!s)
+ 		return ERR_PTR(-ENOMEM);
 -- 
 1.8.3.2
 
