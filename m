@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaAMOt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:49:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51378 "EHLO
+	id S1753196AbaAMOuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:50:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51367 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaAMO0I (ORCPT
+	with ESMTP id S1751918AbaAMO0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:08 -0500
+	Mon, 13 Jan 2014 09:26:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 45/96] cpupower: Fix segfault due to incorrect getopt_long arugments
-Date: Mon, 13 Jan 2014 14:24:08 +0000
-Message-Id: <1389623099-18783-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 44/96] ath9k: Fix interrupt handling for the AR9002 family
+Date: Mon, 13 Jan 2014 14:24:07 +0000
+Message-Id: <1389623099-18783-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -30,45 +29,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
+commit 73f0b56a1ff64e7fb6c3a62088804bab93bcedc2 upstream.
 
-If a user calls 'cpupower set --perf-bias 15', the process will end with
-a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
-call.  This is because the getopt_long structure currently has all of
-the options as having an optional_argument when they really have a
-required argument.  We change the structure to use required_argument to
-match the short options and it resolves the issue.
+This patch adds a driver workaround for a HW issue.
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
+A race condition in the HW results in missing interrupts,
+which can be avoided by a read/write with the ISR register.
+All chips in the AR9002 series are affected by this bug - AR9003
+and above do not have this problem.
 
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/power/cpupower/utils/cpupower-set.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9002_mac.c | 52 ++++++++++++++++++++++++-----
+ 1 file changed, 43 insertions(+), 9 deletions(-)
 
-diff --git a/tools/power/cpupower/utils/cpupower-set.c b/tools/power/cpupower/utils/cpupower-set.c
-index dc4de37..bcf1d2f 100644
---- a/tools/power/cpupower/utils/cpupower-set.c
-+++ b/tools/power/cpupower/utils/cpupower-set.c
-@@ -18,9 +18,9 @@
- #include "helpers/bitmask.h"
+diff --git a/drivers/net/wireless/ath/ath9k/ar9002_mac.c b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
+index 8d78253..a366d6b 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9002_mac.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
+@@ -76,9 +76,16 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
+ 				mask2 |= ATH9K_INT_CST;
+ 			if (isr2 & AR_ISR_S2_TSFOOR)
+ 				mask2 |= ATH9K_INT_TSFOOR;
++
++			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++				REG_WRITE(ah, AR_ISR_S2, isr2);
++				isr &= ~AR_ISR_BCNMISC;
++			}
+ 		}
  
- static struct option set_opts[] = {
--	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
--	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
--	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
-+	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
-+	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
-+	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
- 	{ },
- };
+-		isr = REG_READ(ah, AR_ISR_RAC);
++		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)
++			isr = REG_READ(ah, AR_ISR_RAC);
++
+ 		if (isr == 0xffffffff) {
+ 			*masked = 0;
+ 			return false;
+@@ -97,11 +104,23 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
  
+ 			*masked |= ATH9K_INT_TX;
+ 
+-			s0_s = REG_READ(ah, AR_ISR_S0_S);
++			if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
++				s0_s = REG_READ(ah, AR_ISR_S0_S);
++				s1_s = REG_READ(ah, AR_ISR_S1_S);
++			} else {
++				s0_s = REG_READ(ah, AR_ISR_S0);
++				REG_WRITE(ah, AR_ISR_S0, s0_s);
++				s1_s = REG_READ(ah, AR_ISR_S1);
++				REG_WRITE(ah, AR_ISR_S1, s1_s);
++
++				isr &= ~(AR_ISR_TXOK |
++					 AR_ISR_TXDESC |
++					 AR_ISR_TXERR |
++					 AR_ISR_TXEOL);
++			}
++
+ 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXOK);
+ 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXDESC);
+-
+-			s1_s = REG_READ(ah, AR_ISR_S1_S);
+ 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXERR);
+ 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXEOL);
+ 		}
+@@ -114,13 +133,15 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
+ 		*masked |= mask2;
+ 	}
+ 
+-	if (AR_SREV_9100(ah))
+-		return true;
+-
+-	if (isr & AR_ISR_GENTMR) {
++	if (!AR_SREV_9100(ah) && (isr & AR_ISR_GENTMR)) {
+ 		u32 s5_s;
+ 
+-		s5_s = REG_READ(ah, AR_ISR_S5_S);
++		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
++			s5_s = REG_READ(ah, AR_ISR_S5_S);
++		} else {
++			s5_s = REG_READ(ah, AR_ISR_S5);
++		}
++
+ 		ah->intr_gen_timer_trigger =
+ 				MS(s5_s, AR_ISR_S5_GENTIMER_TRIG);
+ 
+@@ -133,8 +154,21 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
+ 		if ((s5_s & AR_ISR_S5_TIM_TIMER) &&
+ 		    !(pCap->hw_caps & ATH9K_HW_CAP_AUTOSLEEP))
+ 			*masked |= ATH9K_INT_TIM_TIMER;
++
++		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++			REG_WRITE(ah, AR_ISR_S5, s5_s);
++			isr &= ~AR_ISR_GENTMR;
++		}
+ 	}
+ 
++	if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
++		REG_WRITE(ah, AR_ISR, isr);
++		REG_READ(ah, AR_ISR);
++	}
++
++	if (AR_SREV_9100(ah))
++		return true;
++
+ 	if (sync_cause) {
+ 		ath9k_debug_sync_cause(common, sync_cause);
+ 		fatal_int =
 -- 
 1.8.3.2
 
