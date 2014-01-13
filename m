@@ -1,107 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaAMPxZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:53:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19651 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590AbaAMPxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:53:23 -0500
-Date: Mon, 13 Jan 2014 16:48:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>, Eric Dumazet <edumazet@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] fs: factor out common code in fget_light() and
-	fget_raw_light()
-Message-ID: <20140113154840.GC6496@redhat.com>
-References: <20140107181258.GA29288@redhat.com> <20140108132852.GF10038@linux.vnet.ibm.com> <20140108151918.GA5156@redhat.com> <20140109011650.GI10038@linux.vnet.ibm.com> <20140110153459.GA31491@redhat.com> <20140111063438.GY10038@linux.vnet.ibm.com> <20140111181908.GA7358@redhat.com> <20140111222737.GE10038@linux.vnet.ibm.com> <20140113154748.GA6496@redhat.com>
+	id S1752225AbaAMPxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:53:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60620 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaAMPxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 10:53:37 -0500
+Date: Mon, 13 Jan 2014 07:52:40 -0800
+From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
+Message-ID: <tip-a52b89ebb6d4499be38780db8d176c5d3a6fbc17@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, efault@gmx.de,
+        peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
+        tglx@linutronix.de, scott.norton@hp.com, davidlohr@hp.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, dvhart@linux.intel.com,
+        paulmck@linux.vnet.ibm.com, tom.vaden@hp.com, jeffm@suse.com,
+        aswin@hp.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, efault@gmx.de, jason.low2@hp.com,
+        Waiman.Long@hp.com, tglx@linutronix.de, davidlohr@hp.com,
+        scott.norton@hp.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com, tom.vaden@hp.com,
+        jeffm@suse.com, aswin@hp.com
+In-Reply-To: <1389569486-25487-3-git-send-email-davidlohr@hp.com>
+References: <1389569486-25487-3-git-send-email-davidlohr@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] futexes:
+  Increase hash table size for better performance
+Git-Commit-ID: a52b89ebb6d4499be38780db8d176c5d3a6fbc17
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140113154748.GA6496@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:52:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apart from FMODE_PATH check fget_light() and fget_raw_light() are
-identical, shift the code into the new helper, __fget_light(fd, mask).
-Saves 208 bytes.
+Commit-ID:  a52b89ebb6d4499be38780db8d176c5d3a6fbc17
+Gitweb:     http://git.kernel.org/tip/a52b89ebb6d4499be38780db8d176c5d3a6fbc17
+Author:     Davidlohr Bueso <davidlohr@hp.com>
+AuthorDate: Sun, 12 Jan 2014 15:31:23 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 13 Jan 2014 11:45:18 +0100
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+futexes: Increase hash table size for better performance
+
+Currently, the futex global hash table suffers from its fixed,
+smallish (for today's standards) size of 256 entries, as well as
+its lack of NUMA awareness. Large systems, using many futexes,
+can be prone to high amounts of collisions; where these futexes
+hash to the same bucket and lead to extra contention on the same
+hb->lock. Furthermore, cacheline bouncing is a reality when we
+have multiple hb->locks residing on the same cacheline and
+different futexes hash to adjacent buckets.
+
+This patch keeps the current static size of 16 entries for small
+systems, or otherwise, 256 * ncpus (or larger as we need to
+round the number to a power of 2). Note that this number of CPUs
+accounts for all CPUs that can ever be available in the system,
+taking into consideration things like hotpluging. While we do
+impose extra overhead at bootup by making the hash table larger,
+this is a one time thing, and does not shadow the benefits of
+this patch.
+
+Furthermore, as suggested by tglx, by cache aligning the hash
+buckets we can avoid access across cacheline boundaries and also
+avoid massive cache line bouncing if multiple cpus are hammering
+away at different hash buckets which happen to reside in the
+same cache line.
+
+Also, similar to other core kernel components (pid, dcache,
+tcp), by using alloc_large_system_hash() we benefit from its
+NUMA awareness and thus the table is distributed among the nodes
+instead of in a single one.
+
+For a custom microbenchmark that pounds on the uaddr hashing --
+making the wait path fail at futex_wait_setup() returning
+-EWOULDBLOCK for large amounts of futexes, we can see the
+following benefits on a 80-core, 8-socket 1Tb server:
+
+ +---------+--------------------+------------------------+-----------------------+-------------------------------+
+ | threads | baseline (ops/sec) | aligned-only (ops/sec) | large table (ops/sec) | large table+aligned (ops/sec) |
+ +---------+--------------------+------------------------+-----------------------+-------------------------------+
+ |     512 |              32426 | 50531  (+55.8%)        | 255274  (+687.2%)     | 292553  (+802.2%)             |
+ |     256 |              65360 | 99588  (+52.3%)        | 443563  (+578.6%)     | 508088  (+677.3%)             |
+ |     128 |             125635 | 200075 (+59.2%)        | 742613  (+491.1%)     | 835452  (+564.9%)             |
+ |      80 |             193559 | 323425 (+67.1%)        | 1028147 (+431.1%)     | 1130304 (+483.9%)             |
+ |      64 |             247667 | 443740 (+79.1%)        | 997300  (+302.6%)     | 1145494 (+362.5%)             |
+ |      32 |             628412 | 721401 (+14.7%)        | 965996  (+53.7%)      | 1122115 (+78.5%)              |
+ +---------+--------------------+------------------------+-----------------------+-------------------------------+
+
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Waiman Long <Waiman.Long@hp.com>
+Reviewed-and-tested-by: Jason Low <jason.low2@hp.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Scott Norton <scott.norton@hp.com>
+Cc: Tom Vaden <tom.vaden@hp.com>
+Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+Link: http://lkml.kernel.org/r/1389569486-25487-3-git-send-email-davidlohr@hp.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/file.c |   33 +++++++++------------------------
- 1 files changed, 9 insertions(+), 24 deletions(-)
+ kernel/futex.c | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 4ed58a3..50c1208 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -683,21 +683,21 @@ EXPORT_SYMBOL(fget_raw);
-  * The fput_needed flag returned by fget_light should be passed to the
-  * corresponding fput_light.
-  */
--struct file *fget_light(unsigned int fd, int *fput_needed)
-+struct file *__fget_light(unsigned int fd, fmode_t mask, int *fput_needed)
- {
--	struct file *file;
- 	struct files_struct *files = current->files;
-+	struct file *file;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 085f5fa..577481d 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -63,6 +63,7 @@
+ #include <linux/sched/rt.h>
+ #include <linux/hugetlb.h>
+ #include <linux/freezer.h>
++#include <linux/bootmem.h>
  
- 	*fput_needed = 0;
- 	if (atomic_read(&files->count) == 1) {
- 		file = __fcheck_files(files, fd);
--		if (file && (file->f_mode & FMODE_PATH))
-+		if (file && (file->f_mode & mask))
- 			file = NULL;
- 	} else {
- 		rcu_read_lock();
- 		file = fcheck_files(files, fd);
- 		if (file) {
--			if (!(file->f_mode & FMODE_PATH) &&
-+			if (!(file->f_mode & mask) &&
- 			    atomic_long_inc_not_zero(&file->f_count))
- 				*fput_needed = 1;
- 			else
-@@ -709,30 +709,15 @@ struct file *fget_light(unsigned int fd, int *fput_needed)
+ #include <asm/futex.h>
  
- 	return file;
- }
-+struct file *fget_light(unsigned int fd, int *fput_needed)
-+{
-+	return __fget_light(fd, FMODE_PATH, fput_needed);
-+}
- EXPORT_SYMBOL(fget_light);
+@@ -70,8 +71,6 @@
  
- struct file *fget_raw_light(unsigned int fd, int *fput_needed)
- {
--	struct file *file;
--	struct files_struct *files = current->files;
+ int __read_mostly futex_cmpxchg_enabled;
+ 
+-#define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
 -
--	*fput_needed = 0;
--	if (atomic_read(&files->count) == 1) {
--		file = __fcheck_files(files, fd);
--	} else {
--		rcu_read_lock();
--		file = fcheck_files(files, fd);
--		if (file) {
--			if (atomic_long_inc_not_zero(&file->f_count))
--				*fput_needed = 1;
--			else
--				/* Didn't get the reference, someone's freed */
--				file = NULL;
--		}
--		rcu_read_unlock();
--	}
--
--	return file;
-+	return __fget_light(fd, 0, fput_needed);
+ /*
+  * Futex flags used to encode options to functions and preserve them across
+  * restarts.
+@@ -149,9 +148,11 @@ static const struct futex_q futex_q_init = {
+ struct futex_hash_bucket {
+ 	spinlock_t lock;
+ 	struct plist_head chain;
+-};
++} ____cacheline_aligned_in_smp;
+ 
+-static struct futex_hash_bucket futex_queues[1<<FUTEX_HASHBITS];
++static unsigned long __read_mostly futex_hashsize;
++
++static struct futex_hash_bucket *futex_queues;
+ 
+ /*
+  * We hash on the keys returned from get_futex_key (see below).
+@@ -161,7 +162,7 @@ static struct futex_hash_bucket *hash_futex(union futex_key *key)
+ 	u32 hash = jhash2((u32*)&key->both.word,
+ 			  (sizeof(key->both.word)+sizeof(key->both.ptr))/4,
+ 			  key->both.offset);
+-	return &futex_queues[hash & ((1 << FUTEX_HASHBITS)-1)];
++	return &futex_queues[hash & (futex_hashsize - 1)];
  }
  
- void set_close_on_exec(unsigned int fd, int flag)
--- 
-1.5.5.1
-
-
+ /*
+@@ -2719,7 +2720,18 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ static int __init futex_init(void)
+ {
+ 	u32 curval;
+-	int i;
++	unsigned long i;
++
++#if CONFIG_BASE_SMALL
++	futex_hashsize = 16;
++#else
++	futex_hashsize = roundup_pow_of_two(256 * num_possible_cpus());
++#endif
++
++	futex_queues = alloc_large_system_hash("futex", sizeof(*futex_queues),
++					       futex_hashsize, 0,
++					       futex_hashsize < 256 ? HASH_SMALL : 0,
++					       NULL, NULL, futex_hashsize, futex_hashsize);
+ 
+ 	/*
+ 	 * This will fail and we want it. Some arch implementations do
+@@ -2734,7 +2746,7 @@ static int __init futex_init(void)
+ 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+ 		futex_cmpxchg_enabled = 1;
+ 
+-	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
++	for (i = 0; i < futex_hashsize; i++) {
+ 		plist_head_init(&futex_queues[i].chain);
+ 		spin_lock_init(&futex_queues[i].lock);
+ 	}
