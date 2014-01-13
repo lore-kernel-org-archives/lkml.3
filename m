@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaAMLNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:13:55 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:56292 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaAMLNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:13:52 -0500
-Message-ID: <52D3CA6E.1010803@koalo.de>
-Date: Mon, 13 Jan 2014 12:13:50 +0100
-From: Florian Meier <florian.meier@koalo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>
-Subject: [PATCH 2/2] BCM2835: Add I2S driver to device tree
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751769AbaAMLOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:14:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58219 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395AbaAMLOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 06:14:19 -0500
+From: Takashi Iwai <tiwai@suse.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Len Brown <lenb@kernel.org>, Oliver Neukum <oneukum@suse.de>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] ACPI: Blacklist Win8 OSI for some HP laptop 2013 models
+Date: Mon, 13 Jan 2014 12:14:18 +0100
+Message-Id: <1389611658-19424-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the definitions for the BCM2835 I2S driver
-to the device tree. Some GPIO settings are needed for
-the correct pin functions.
+The BIOS on recent HP laptops behaves differently with Win8 OSI,
+e.g. no backlight control and no rfkill are available.  List them in
+the blacklist as a workaround.
 
-Signed-off-by: Florian Meier <florian.meier@koalo.de>
+This patch tries to reduce the added items by matching "G1" suffix,
+e.g. machines are named like "HP ProBook 430 G1".
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=856294
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 ---
- arch/arm/boot/dts/bcm2835-rpi-b.dts | 12 +++++++++++-
- arch/arm/boot/dts/bcm2835.dtsi      | 10 ++++++++++
- 2 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/bcm2835-rpi-b.dts
-b/arch/arm/boot/dts/bcm2835-rpi-b.dts
-index 2a3b1c1..e83ed2f 100644
---- a/arch/arm/boot/dts/bcm2835-rpi-b.dts
-+++ b/arch/arm/boot/dts/bcm2835-rpi-b.dts
-@@ -23,7 +23,7 @@
+Rafael, could you check this?
+If the problem were only about the backlight, we could fix differenly,
+but BIOS on these machines seems to switching more other functions
+like rfkill.
 
- &gpio {
- 	pinctrl-names = "default";
--	pinctrl-0 = <&gpioout &alt0 &alt3>;
-+	pinctrl-0 = <&gpioout &alt0 &alt2 &alt3>;
+thanks,
 
- 	gpioout: gpioout {
- 		brcm,pins = <6>;
-@@ -39,6 +39,16 @@
- 		brcm,pins = <48 49 50 51 52 53>;
- 		brcm,function = <7>; /* alt3 */
- 	};
-+
-+	/* I2S interface */
-+	alt2: alt2 {
-+		brcm,pins = <28 29 30 31>;
-+		brcm,function = <6>; /* alt2 */
-+	};
-+};
-+
-+&bcm2835_i2s {
-+	status = "okay";
- };
+Takashi
 
- &i2c0 {
-diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
-index 1da6b36..ca2259c 100644
---- a/arch/arm/boot/dts/bcm2835.dtsi
-+++ b/arch/arm/boot/dts/bcm2835.dtsi
-@@ -134,6 +134,16 @@
- 			#dma-cells = <1>;
- 			brcm,dma-channel-mask = <0x7f35>;
- 		};
-+
-+		bcm2835_i2s: i2s@7e203000 {
-+			compatible = "brcm,bcm2835-i2s";
-+			reg = <0x7e203000 0x20>,
-+			      <0x7e101098 0x02>;
-+
-+			dmas = <&dma 2>,
-+			       <&dma 3>;
-+			dma-names = "tx", "rx";
-+		};
- 	};
+ drivers/acpi/blacklist.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
 
- 	clocks {
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index 078c4f7fe2dd..40c91f5052ef 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -323,6 +323,56 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 		     DMI_MATCH(DMI_PRODUCT_VERSION, "2349D15"),
+ 		},
+ 	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ProBook 2013 models",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook "),
++		     DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP EliteBook 2013 models",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook "),
++		     DMI_MATCH(DMI_PRODUCT_NAME, " G1"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ZBook 14",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 14"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ZBook 15",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 15"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP ZBook 17",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP ZBook 17"),
++		},
++	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "HP EliteBook 8780w",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8780w"),
++		},
++	},
+ 
+ 	/*
+ 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
 -- 
-1.8.3.2
+1.8.5
+
