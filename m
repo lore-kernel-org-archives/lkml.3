@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaAMSuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:50:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51269 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaAMSt6 (ORCPT
+	id S1752227AbaAMSuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:50:21 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:36222 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751992AbaAMSuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:49:58 -0500
-Date: Mon, 13 Jan 2014 10:50:34 -0800
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Manoj Chourasia <mchourasia@nvidia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH] usb: hub: Avoid tight loop holding hdev lock
-Message-ID: <20140113185034.GB11751@kroah.com>
-References: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDFCA6A2E@BGMAIL02.nvidia.com>
+	Mon, 13 Jan 2014 13:50:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F1F6C959961EA744BBD5B8EEF8B8FEA16DDFCA6A2E@BGMAIL02.nvidia.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140113123126.20574.74329.stgit@patser>
+References: <20140113122818.20574.34710.stgit@patser>
+	<20140113123126.20574.74329.stgit@patser>
+Date: Mon, 13 Jan 2014 10:50:09 -0800
+Message-ID: <CAMbhsRTBSzAsBke0H4cwJMUe4449KbD6cvyLuNV4ijx0L+czFw@mail.gmail.com>
+Subject: Re: [PATCH 1/7] sched: allow try_to_wake_up to be used internally
+ outside of core.c
+From: Colin Cross <ccross@google.com>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        robdclark@gmail.com,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        daniel@ffwll.ch, Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 31, 2013 at 02:26:41PM +0530, Manoj Chourasia wrote:
-> Hi All,
-> 
-> I was facing an issue bad usb device which was affecting other system. Kernel was trying to enumerate the device but it was failing continuously. Unfortunately that device was on mounted onboard in the platform so I cannot remove it.
-> The continuous re-enumeration of the device causing other application malfunctioning which were using libusb. I found that usb_find_devices() call was stuck in usb_open for very long time. It was stuck in getting device lock which was taken in hub_event thread.
-> Solution was to add msleep in the loop to prevent is spinning tightly. 
-> 
-> ---------------------------------------------------------------------------
-> usb: hub: Avoid tight loop holding hdev lock
-> 
->    Other system call(like usb_open) to root port device
->     starved in getting device lock when the while loop
->     in hub_event loops tightly because of misbehaving device.
-> 
->     Adding a small msleep provides chance to system calls to
->     schedule.
-> 
->     The issue was returning -EPROTO and re-enumerating with
->     continuous hub_events. That was makes the while loop in
->     hub_event to spin tightly.
-> 
->     usb_find_devices call from libusb tries to open all devices
->     including root hub. The call to usb_open stuck for very
->     long time(sometimes forever) because the priority of
->     kernel thread is higher than that system call in this case.
-> 
->     Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>  
+On Mon, Jan 13, 2014 at 4:31 AM, Maarten Lankhorst
+<maarten.lankhorst@canonical.com> wrote:
+> The kernel fence implementation doesn't use event queues, but needs
+> to perform the same wake up. The symbol is not exported, since the
+> fence implementation is not built as a module.
+>
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> ---
+>  include/linux/wait.h |    1 +
+>  kernel/sched/core.c  |    2 +-
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/wait.h b/include/linux/wait.h
+> index eaa00b10abaa..c54e3ef50134 100644
+> --- a/include/linux/wait.h
+> +++ b/include/linux/wait.h
+> @@ -12,6 +12,7 @@
+>  typedef struct __wait_queue wait_queue_t;
+>  typedef int (*wait_queue_func_t)(wait_queue_t *wait, unsigned mode, int flags, void *key);
+>  int default_wake_function(wait_queue_t *wait, unsigned mode, int flags, void *key);
+> +int try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags);
+>
+>  struct __wait_queue {
+>         unsigned int            flags;
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index a88f4a485c5e..f41d317042dd 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1578,7 +1578,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
+>   * Return: %true if @p was woken up, %false if it was already running.
+>   * or @state didn't match @p's state.
+>   */
+> -static int
+> +int
+>  try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+>  {
+>         unsigned long flags;
+>
 
-Please don't make me hand-edit patches in order to be able to apply
-them.  I don't scale at all, so if you want this applied, please resend
-it.
-
-Also, this isn't how you submit patches to the stable kernel tree,
-please read Documentation/stable_kernel_rules.txt for how to do that.
-
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index c5c3667..b968fd5 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -4899,6 +4899,9 @@ static void hub_events(void)
->                 usb_unlock_device(hdev);
->                 kref_put(&hub->kref, hub_release);
-> 
-> +               /* preventing tight loop holding hdev lock */
-> +               msleep(20);
-
-This feels like a horrible hack for some seriously broken hardware.  Now
-I know we work around broken hardware all the time, is this really the
-only way the system can recover?
-
-thanks,
-
-greg k-h
+wake_up_state is already available in linux/sched.h, can you use that?
