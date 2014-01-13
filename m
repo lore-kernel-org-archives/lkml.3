@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833AbaAMQCy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:02:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53126 "EHLO
+	id S1755616AbaAMQoA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:44:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53212 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaAMQCb (ORCPT
+	with ESMTP id S1753530AbaAMQCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:31 -0500
+	Mon, 13 Jan 2014 11:02:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/208] staging: comedi: drivers: fix return value of comedi_load_firmware()
-Date: Mon, 13 Jan 2014 15:58:30 +0000
-Message-Id: <1389628849-1614-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/208] drm/radeon: 0x9649 is SUMO2 not SUMO
+Date: Mon, 13 Jan 2014 15:58:46 +0000
+Message-Id: <1389628849-1614-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H Hartley Sweeten <hsweeten@visionengravers.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit c6236c0ce39c809c336ca929f68cf8ad02cf94e0 upstream.
+commit d00adcc8ae9e22eca9d8af5f66c59ad9a74c90ec upstream.
 
-Some of the callback functions that upload the firmware in the comedi
-drivers return a positive value indicating the number of bytes sent
-to the device. Detect this condition and just return '0' to indicate
-a successful upload.
+Fixes rendering corruption due to incorrect
+gfx configuration.
 
-Reported-by: Bernd Porr <mail@berndporr.me.uk>
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Acked-by: Ian Abbott <abbotti@mev.co.uk>
-Acked-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=63599
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/drivers.c | 2 +-
+ include/drm/drm_pciids.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-index b3b5125..0ea7c93 100644
---- a/drivers/staging/comedi/drivers.c
-+++ b/drivers/staging/comedi/drivers.c
-@@ -365,7 +365,7 @@ int comedi_load_firmware(struct comedi_device *dev,
- 		release_firmware(fw);
- 	}
- 
--	return ret;
-+	return ret < 0 ? ret : 0;
- }
- EXPORT_SYMBOL_GPL(comedi_load_firmware);
- 
+diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
+index 961013a..50ea823 100644
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -588,7 +588,7 @@
+ 	{0x1002, 0x9645, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x9647, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x9648, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+-	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
++	{0x1002, 0x9649, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO2|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP},\
+ 	{0x1002, 0x964a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x964b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x964c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_SUMO|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
 -- 
 1.8.3.2
 
