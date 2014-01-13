@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaAMDxP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:53:15 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:59958 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaAMDxM (ORCPT
+	id S1751273AbaAMEEb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 23:04:31 -0500
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:21040
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751192AbaAMEE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:53:12 -0500
-Date: Sun, 12 Jan 2014 19:52:40 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Jens Axboe <axboe@kernel.dk>
-cc: Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: next bio iters break discard?
-Message-ID: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sun, 12 Jan 2014 23:04:29 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 14
+X-BigFish: VS14(z3335sz853kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <grant.likely@linaro.org>, <robh+dt@kernel.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] of: Fix __of_device_is_available check
+Date: Mon, 13 Jan 2014 11:07:28 +0800
+Message-ID: <1389582448-7489-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I try to exercise heavy swapping with discard on mmotm 2014-01-09,
-I soon hit a NULL pointer dereference in __blk_recalc_rq_segments():
+>From IEEE 1275, there defined a standard 'status' property indicating the
+operational status of one device. The 'status' property has four possible
+values: 'okay/ok', 'disabled', 'fail' and 'fail-xxx'.
 
-__blk_recalc_rq_segments
-blk_recount_segments
-ll_back_merge_fn
-bio_attempt_back_merge
-blk_queue_bio
-generic_make_request
-submit_bio
-blkdev_issue_discard
-swap_do_scheduled_discard
-scan_swap_map_try_ssd_cluster
-scan_swap_map
-get_swap_page
-add_to_swap
-shrink_page_list
-etc. etc.
+If it is absent, that means the status of the device is unknown or okay.
 
-The crash is on the NULL struct page pointer in page_to_pfn(bv.bv_page)
-on line 35 of block/blk-merge.c.
+The __of_device_is_available checks the state of the 'status' property of
+a device. If the property is absent or set to 'okay/ok', it returns 1.
+Otherwise it returns 0.
 
-The code around there is not very different from 3.13-rc8 (which doesn't
-crash), and I didn't notice REQ_DISCARD or bio_has_data() checks removed.
+While in __of_device_is_available:
+ >	status = of_get_property(device, "status", &statlen);
+ >	if (status == NULL)
+ >		return 1;
+The status value returned from 'of_get_property()' will be NULL in two cases:
+Firstly: the 'device' value (device node) is NULL.
+Secondly: the 'status' property is actaully not exist.
 
-I think it worked before because the old bio_for_each_segment()
-iterator was a straightforward "i < bio->bi_vcnt" loop which would
-do nothing when bi_vcnt is 0; but the new iterators are relying
-(perhaps) on bio->bi_iter.bi_size which is non-0 despite no data?
+If the device node is NULL, the __of_device_is_available will return true,
+that will mean the absent state of the 'status' property.
 
-I expect it would crash in the same way on other recent nexts and
-mmotms, I've not tried.
+So this add the device node check before checking the 'status' property's
+state, and if the device node is not exist, 0 will be returned.
 
-Hugh
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/of/base.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index f807d0e..ba195fb 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -415,6 +415,9 @@ static int __of_device_is_available(const struct device_node *device)
+ 	const char *status;
+ 	int statlen;
+ 
++	if (!device)
++		return 0;
++
+ 	status = __of_get_property(device, "status", &statlen);
+ 	if (status == NULL)
+ 		return 1;
+-- 
+1.8.4
+
+
