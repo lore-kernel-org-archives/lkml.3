@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaAMQBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:01:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52888 "EHLO
+	id S1756549AbaAMRGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:06:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52923 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaAMQB0 (ORCPT
+	with ESMTP id S1753327AbaAMQBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:26 -0500
+	Mon, 13 Jan 2014 11:01:34 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Liu Ping Fan <pingfank@linux.vnet.ibm.com>, Alexander Graf <agraf@suse.de>,
+Cc: Junho Ryu <jayr@google.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 022/208] powerpc: kvm: fix rare but potential deadlock scene
-Date: Mon, 13 Jan 2014 15:57:43 +0000
-Message-Id: <1389628849-1614-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 028/208] ext4: fix use-after-free in ext4_mb_new_blocks
+Date: Mon, 13 Jan 2014 15:57:49 +0000
+Message-Id: <1389628849-1614-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: pingfan liu <qemulist@gmail.com>
+From: Junho Ryu <jayr@google.com>
 
-commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
+commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
 
-Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
-realmode, so it can trigger the deadlock.
+ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
+While ext4_mb_use_preallocated checks pa->pa_deleted first and then
+increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
+before holding pa->pa_lock and then sets pa->pa_deleted.
 
-Suppose the following scene:
+* Free sequence
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
 
-Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
-vcpus.
+* Use sequence
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_release_context:	access pa
 
-If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
-out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
-caught in realmode for a long time.
+* Use-after-free sequence
+[initial status]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (1):	iterate over preallocation
+ext4_mb_use_preallocated (2):	lock pa->pa_lock
+ext4_mb_use_preallocated (3):		check pa->pa_deleted
+ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
+[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
+ext4_mb_use_preallocated (4):		increase pa->pa_count
+[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
+ext4_mb_use_preallocated (5):	unlock pa->pa_lock
+ext4_mb_put_pa (2):		lock pa->pa_lock
+ext4_mb_put_pa (3):			check pa->pa_deleted
+ext4_mb_put_pa (4):			set pa->pa_deleted=1
+[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
+ext4_mb_put_pa (5):		unlock pa->pa_lock
+ext4_mb_put_pa (6):		remove pa from a list
+ext4_mb_pa_callback:		free pa
+ext4_mb_release_context:	access pa
 
-What makes things even worse if the following happens,
-  On cpuM, bitlockX is hold, on cpuN, Y is hold.
-  vcpu_B_2 try to lock Y on cpuM in realmode
-  vcpu_A_2 try to lock X on cpuN in realmode
+AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
+Bug report: http://goo.gl/rG1On3
 
-Oops! deadlock happens
-
-Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-Reviewed-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: Junho Ryu <jayr@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kvm/book3s_64_mmu_hv.c | 6 +++++-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c | 4 ++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ fs/ext4/mballoc.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index 710d313..4b29ca8 100644
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -473,11 +473,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate(struct kvm_vcpu *vcpu, gva_t eaddr,
- 		slb_v = vcpu->kvm->arch.vrma_slb_v;
- 	}
- 
-+	preempt_disable();
- 	/* Find the HPTE in the hash table */
- 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
- 					 HPTE_V_VALID | HPTE_V_ABSENT);
--	if (index < 0)
-+	if (index < 0) {
-+		preempt_enable();
- 		return -ENOENT;
-+	}
- 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
- 	v = hptep[0] & ~HPTE_V_HVLOCK;
- 	gr = kvm->arch.revmap[index].guest_rpte;
-@@ -485,6 +488,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate(struct kvm_vcpu *vcpu, gva_t eaddr,
- 	/* Unlock the HPTE */
- 	asm volatile("lwsync" : : : "memory");
- 	hptep[0] = v;
-+	preempt_enable();
- 
- 	gpte->eaddr = eaddr;
- 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
-diff --git a/arch/powerpc/kvm/book3s_hv_rm_mmu.c b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-index fc25689..305b555 100644
---- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-+++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-@@ -722,6 +722,10 @@ static int slb_base_page_shift[4] = {
- 	20,	/* 1M, unsupported */
- };
- 
-+/* When called from virtmode, this func should be protected by
-+ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
-+ * can trigger deadlock issue.
-+ */
- long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
- 			      unsigned long valid)
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 4bbbf13b..f243825 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3424,6 +3424,9 @@ static void ext4_mb_pa_callback(struct rcu_head *head)
  {
+ 	struct ext4_prealloc_space *pa;
+ 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
++
++	BUG_ON(atomic_read(&pa->pa_count));
++	BUG_ON(pa->pa_deleted == 0);
+ 	kmem_cache_free(ext4_pspace_cachep, pa);
+ }
+ 
+@@ -3437,11 +3440,13 @@ static void ext4_mb_put_pa(struct ext4_allocation_context *ac,
+ 	ext4_group_t grp;
+ 	ext4_fsblk_t grp_blk;
+ 
+-	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
+-		return;
+-
+ 	/* in this short window concurrent discard can set pa_deleted */
+ 	spin_lock(&pa->pa_lock);
++	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
++		spin_unlock(&pa->pa_lock);
++		return;
++	}
++
+ 	if (pa->pa_deleted == 1) {
+ 		spin_unlock(&pa->pa_lock);
+ 		return;
 -- 
 1.8.3.2
 
