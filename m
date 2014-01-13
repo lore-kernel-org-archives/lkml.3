@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380AbaAMQ4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:56:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52037 "EHLO mx1.redhat.com"
+	id S1756357AbaAMQ4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:56:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613AbaAMQ4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:56:03 -0500
+	id S1752141AbaAMQzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:55:50 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
@@ -17,132 +17,149 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
         kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/11] smaps: redefine callback functions for page table walker
-Date: Mon, 13 Jan 2014 11:54:03 -0500
-Message-Id: <1389632051-25159-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 07/11] memcg: redefine callback functions for page table walker
+Date: Mon, 13 Jan 2014 11:54:07 -0500
+Message-Id: <1389632051-25159-8-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-smaps_pte_range() connected to pmd_entry() does both of pmd loop and pte loop.
-So this patch moves pte part into smaps_pte() on pte_entry() as expected by
-the name.
+Move code around pte loop in mem_cgroup_count_precharge_pte_range() into
+mem_cgroup_count_precharge_pte() connected to pte_entry().
+
+We don't change the callback mem_cgroup_move_charge_pte_range() for now,
+because we can't do the same replacement easily due to 'goto retry'.
 
 ChangeLog v2:
 - rebase onto mmots
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/proc/task_mmu.c | 47 +++++++++++++++++------------------------------
- 1 file changed, 17 insertions(+), 30 deletions(-)
+ mm/memcontrol.c | 71 ++++++++++++++++++++++-----------------------------------
+ 1 file changed, 27 insertions(+), 44 deletions(-)
 
-diff --git mmotm-2014-01-09-16-23.orig/fs/proc/task_mmu.c mmotm-2014-01-09-16-23/fs/proc/task_mmu.c
-index 42b5cf5d0326..da4bcedf9656 100644
---- mmotm-2014-01-09-16-23.orig/fs/proc/task_mmu.c
-+++ mmotm-2014-01-09-16-23/fs/proc/task_mmu.c
-@@ -431,7 +431,6 @@ const struct file_operations proc_tid_maps_operations = {
- 
- #ifdef CONFIG_PROC_PAGE_MONITOR
- struct mem_size_stats {
--	struct vm_area_struct *vma;
- 	unsigned long resident;
- 	unsigned long shared_clean;
- 	unsigned long shared_dirty;
-@@ -445,15 +444,16 @@ struct mem_size_stats {
- 	u64 pss;
- };
- 
--
--static void smaps_pte_entry(pte_t ptent, unsigned long addr,
--		unsigned long ptent_size, struct mm_walk *walk)
-+static int smaps_pte(pte_t *pte, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
- {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	pgoff_t pgoff = linear_page_index(vma, addr);
- 	struct page *page = NULL;
- 	int mapcount;
-+	pte_t ptent = *pte;
-+	unsigned long ptent_size = end - addr;
- 
- 	if (pte_present(ptent)) {
- 		page = vm_normal_page(vma, addr, ptent);
-@@ -470,7 +470,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 	}
- 
- 	if (!page)
--		return;
-+		return 0;
- 
- 	if (PageAnon(page))
- 		mss->anonymous += ptent_size;
-@@ -496,35 +496,22 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 			mss->private_clean += ptent_size;
- 		mss->pss += (ptent_size << PSS_SHIFT);
- 	}
-+	return 0;
+diff --git mmotm-2014-01-09-16-23.orig/mm/memcontrol.c mmotm-2014-01-09-16-23/mm/memcontrol.c
+index 1f9d14e2f8de..b01c06d3077d 100644
+--- mmotm-2014-01-09-16-23.orig/mm/memcontrol.c
++++ mmotm-2014-01-09-16-23/mm/memcontrol.c
+@@ -6603,30 +6603,29 @@ static inline enum mc_target_type get_mctgt_type_thp(struct vm_area_struct *vma,
  }
+ #endif
  
--static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
--			   struct mm_walk *walk)
-+static int smaps_pmd(pmd_t *pmd, unsigned long addr, unsigned long end,
-+			struct mm_walk *walk)
+-static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
++static int mem_cgroup_count_precharge_pte(pte_t *pte,
+ 					unsigned long addr, unsigned long end,
+ 					struct mm_walk *walk)
  {
- 	struct mem_size_stats *mss = walk->private;
--	struct vm_area_struct *vma = mss->vma;
+-	struct vm_area_struct *vma = walk->private;
 -	pte_t *pte;
++	if (get_mctgt_type(walk->vma, addr, *pte, NULL))
++		mc.precharge++;	/* increment precharge temporarily */
++	return 0;
++}
++
++static int mem_cgroup_count_precharge_pmd(pmd_t *pmd,
++					unsigned long addr, unsigned long end,
++					struct mm_walk *walk)
++{
++	struct vm_area_struct *vma = walk->vma;
  	spinlock_t *ptl;
  
--	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
--		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
-+	if (pmd_trans_huge_lock(pmd, walk->vma, &ptl) == 1) {
-+		smaps_pte((pte_t *)pmd, addr, addr + HPAGE_PMD_SIZE, walk);
+ 	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		if (get_mctgt_type_thp(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+ 			mc.precharge += HPAGE_PMD_NR;
  		spin_unlock(ptl);
- 		mss->anonymous_thp += HPAGE_PMD_SIZE;
 -		return 0;
-+		/* don't call smaps_pte() */
++		/* don't call mem_cgroup_count_precharge_pte() */
 +		walk->skip = 1;
  	}
 -
 -	if (pmd_trans_unstable(pmd))
 -		return 0;
--	/*
--	 * The mmap_sem held all the way back in m_start() is what
--	 * keeps khugepaged out of here and from collapsing things
--	 * in here.
--	 */
 -	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
 -	for (; addr != end; pte++, addr += PAGE_SIZE)
--		smaps_pte_entry(*pte, addr, PAGE_SIZE, walk);
+-		if (get_mctgt_type(vma, addr, *pte, NULL))
+-			mc.precharge++;	/* increment precharge temporarily */
 -	pte_unmap_unlock(pte - 1, ptl);
 -	cond_resched();
+-
  	return 0;
  }
  
-@@ -589,16 +576,16 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	struct vm_area_struct *vma = v;
- 	struct mem_size_stats mss;
- 	struct mm_walk smaps_walk = {
--		.pmd_entry = smaps_pte_range,
-+		.pmd_entry = smaps_pmd,
-+		.pte_entry = smaps_pte,
- 		.mm = vma->vm_mm,
-+		.vma = vma,
- 		.private = &mss,
- 	};
+@@ -6635,18 +6634,14 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
+ 	unsigned long precharge;
+ 	struct vm_area_struct *vma;
  
- 	memset(&mss, 0, sizeof mss);
--	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
--	if (vma->vm_mm && !is_vm_hugetlb_page(vma))
--		walk_page_range(vma->vm_start, vma->vm_end, &smaps_walk);
-+	walk_page_vma(vma, &smaps_walk);
++	struct mm_walk mem_cgroup_count_precharge_walk = {
++		.pmd_entry = mem_cgroup_count_precharge_pmd,
++		.pte_entry = mem_cgroup_count_precharge_pte,
++		.mm = mm,
++	};
+ 	down_read(&mm->mmap_sem);
+-	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-		struct mm_walk mem_cgroup_count_precharge_walk = {
+-			.pmd_entry = mem_cgroup_count_precharge_pte_range,
+-			.mm = mm,
+-			.private = vma,
+-		};
+-		if (is_vm_hugetlb_page(vma))
+-			continue;
+-		walk_page_range(vma->vm_start, vma->vm_end,
+-					&mem_cgroup_count_precharge_walk);
+-	}
++	for (vma = mm->mmap; vma; vma = vma->vm_next)
++		walk_page_vma(vma, &mem_cgroup_count_precharge_walk);
+ 	up_read(&mm->mmap_sem);
  
- 	show_map_vma(m, vma, is_pid);
+ 	precharge = mc.precharge;
+@@ -6785,7 +6780,7 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 				struct mm_walk *walk)
+ {
+ 	int ret = 0;
+-	struct vm_area_struct *vma = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
+ 	enum mc_target_type target_type;
+@@ -6886,6 +6881,10 @@ put:			/* get_mctgt_type() gets the page */
+ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ {
+ 	struct vm_area_struct *vma;
++	struct mm_walk mem_cgroup_move_charge_walk = {
++		.pmd_entry = mem_cgroup_move_charge_pte_range,
++		.mm = mm,
++	};
+ 
+ 	lru_add_drain_all();
+ retry:
+@@ -6901,24 +6900,8 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ 		cond_resched();
+ 		goto retry;
+ 	}
+-	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-		int ret;
+-		struct mm_walk mem_cgroup_move_charge_walk = {
+-			.pmd_entry = mem_cgroup_move_charge_pte_range,
+-			.mm = mm,
+-			.private = vma,
+-		};
+-		if (is_vm_hugetlb_page(vma))
+-			continue;
+-		ret = walk_page_range(vma->vm_start, vma->vm_end,
+-						&mem_cgroup_move_charge_walk);
+-		if (ret)
+-			/*
+-			 * means we have consumed all precharges and failed in
+-			 * doing additional charge. Just abandon here.
+-			 */
+-			break;
+-	}
++	for (vma = mm->mmap; vma; vma = vma->vm_next)
++		walk_page_vma(vma, &mem_cgroup_move_charge_walk);
+ 	up_read(&mm->mmap_sem);
+ }
  
 -- 
 1.8.4.2
