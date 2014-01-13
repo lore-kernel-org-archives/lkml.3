@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaAMVKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 16:10:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52502 "EHLO
+	id S1752350AbaAMVLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 16:11:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52511 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaAMVKS (ORCPT
+	with ESMTP id S1751068AbaAMVL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 16:10:18 -0500
-Date: Mon, 13 Jan 2014 13:10:55 -0800
+	Mon, 13 Jan 2014 16:11:27 -0500
+Date: Mon, 13 Jan 2014 13:12:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Borg <cyborg101010@gmail.com>
-Cc: dan.carpenter@oracle.com, abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] AlarmDev: Changing is_wakeup() to be a function to pass
- checkpatch
-Message-ID: <20140113211055.GB17131@kroah.com>
-References: <1389643836-6170-1-git-send-email-cyborg101010@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Len Brown <len.brown@intel.com>, athorlton@sgi.com, riel@redhat.com,
+        chegu_vinod@hp.com, "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: Idle power fix regresses ebizzy performance (was 3.12-stable
+ backport of NUMA balancing patches)
+Message-ID: <20140113211204.GC17131@kroah.com>
+References: <1389103248-17617-1-git-send-email-mgorman@suse.de>
+ <20140107141715.GA32491@kroah.com>
+ <20140107185440.GA7844@kroah.com>
+ <20140107203012.GA27046@suse.de>
+ <20140108104340.GC27046@suse.de>
+ <20140108134858.GF27046@suse.de>
+ <20140113192406.GL27046@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389643836-6170-1-git-send-email-cyborg101010@gmail.com>
+In-Reply-To: <20140113192406.GL27046@suse.de>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 08:10:36PM +0000, Joe Borg wrote:
-> Signed-off-by Joe Borg <cyborg101010@gmail.com>
-> ---
->  drivers/staging/android/alarm-dev.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
+On Mon, Jan 13, 2014 at 07:24:06PM +0000, Mel Gorman wrote:
+> On Wed, Jan 08, 2014 at 01:48:58PM +0000, Mel Gorman wrote:
+> > Adding LKML to the list as this -stable snifftest has identified an
+> > upstream regression.
+> > 
 > 
-> diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-> index 647694f..87f2a02 100644
-> --- a/drivers/staging/android/alarm-dev.c
-> +++ b/drivers/staging/android/alarm-dev.c
-> @@ -66,13 +66,15 @@ static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
->   *
->   * Return: 1 if this is a wakeup alarm, otherwise 0
->   */
-> -static int is_wakeup(enum android_alarm_type type)
-> +static int is_wakeup(enum andriod_alarm_type type)
+> This is a false alarm.
 
-Always build test your patches, this one wasn't.
-
->  {
-> -	return (type == ANDROID_ALARM_RTC_WAKEUP ||
-> -		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP);
-> +	if (type == ANDROID_ALARM_RTC_WAKEUP ||
-> +	    type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP)
-> +		return 1;
-> +	else
-> +		return 0;
-
-Why are you making this change?  There is no logic change here at all.
-
->  }
->  
-> -
-
-Why remove this line?
-
-Again, you are going to need changelog comments for any patch, please
-redo them properly if you wish us to accept your patches.
-
-thanks,
+Thanks for tracking this down and letting us know.
 
 greg k-h
