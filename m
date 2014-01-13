@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaAMUyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:54:46 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40410 "EHLO
+	id S1753430AbaAMUym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:54:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40401 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912AbaAMUsJ (ORCPT
+	with ESMTP id S1751938AbaAMUsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 15:48:09 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 35/38] perf diff: Color the Ratio column
-Date: Mon, 13 Jan 2014 17:47:36 -0300
-Message-Id: <1389646059-24881-36-git-send-email-acme@infradead.org>
+Subject: [PATCH 25/38] tools include: Move perf's linux/compiler.h to a generic place
+Date: Mon, 13 Jan 2014 17:47:26 -0300
+Message-Id: <1389646059-24881-26-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -24,115 +26,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-In
+So that it can be shared with others like libtraceevent.
 
-  $ perf diff -c ratio
-
-color the Ratio column using value_color_snprintf(), a new function that
-operates exactly like percent_color_snprintf().
-
-At first glance, it looks like percent_color_snprintf() can be turned
-into a non-variadic function simplifying things; however, 53805ec (perf
-tools: Remove cast of non-variadic function to variadic, 2013-10-31)
-explains why it needs to be a variadic function.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1388388861-7931-4-git-send-email-artagnon@gmail.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1389276059-8829-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 20 ++++++++++++++++++++
- tools/perf/util/color.c   | 10 +++++++---
- tools/perf/util/color.h   |  1 +
- 3 files changed, 28 insertions(+), 3 deletions(-)
+ tools/include/linux/compiler.h           | 30 ++++++++++++++++++++++++++++++
+ tools/perf/Makefile.perf                 |  2 +-
+ tools/perf/config/Makefile               |  1 +
+ tools/perf/util/include/linux/compiler.h | 30 ------------------------------
+ 4 files changed, 32 insertions(+), 31 deletions(-)
+ create mode 100644 tools/include/linux/compiler.h
+ delete mode 100644 tools/perf/util/include/linux/compiler.h
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 6c3f220115ac..73d8bffdd484 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -795,6 +795,17 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
- 		return percent_color_snprintf(hpp->buf, hpp->size,
- 					pfmt, diff);
-+	case COMPUTE_RATIO:
-+		if (he->dummy)
-+			goto dummy_print;
-+		if (pair->diff.computed)
-+			diff = pair->diff.period_ratio;
-+		else
-+			diff = compute_ratio(he, pair);
+diff --git a/tools/include/linux/compiler.h b/tools/include/linux/compiler.h
+new file mode 100644
+index 000000000000..0135ccf2a00c
+--- /dev/null
++++ b/tools/include/linux/compiler.h
+@@ -0,0 +1,30 @@
++#ifndef _TOOLS_LINUX_COMPILER_H_
++#define _TOOLS_LINUX_COMPILER_H_
 +
-+		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
-+		return value_color_snprintf(hpp->buf, hpp->size,
-+					pfmt, diff);
- 	default:
- 		BUG_ON(1);
- 	}
-@@ -809,6 +820,12 @@ static int hpp__color_delta(struct perf_hpp_fmt *fmt,
- 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_DELTA);
- }
- 
-+static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
-+			struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
-+}
++#ifndef __always_inline
++# define __always_inline	inline __attribute__((always_inline))
++#endif
 +
- static void
- hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
- {
-@@ -987,6 +1004,9 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	case PERF_HPP_DIFF__DELTA:
- 		fmt->color = hpp__color_delta;
- 		break;
-+	case PERF_HPP_DIFF__RATIO:
-+		fmt->color = hpp__color_ratio;
-+		break;
- 	default:
- 		break;
- 	}
-diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-index 8cda46c43e74..87b8672eb413 100644
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -319,15 +319,19 @@ int percent_color_fprintf(FILE *fp, const char *fmt, double percent)
- 	return r;
- }
- 
-+int value_color_snprintf(char *bf, size_t size, const char *fmt, double value)
-+{
-+	const char *color = get_percent_color(value);
-+	return color_snprintf(bf, size, color, fmt, value);
-+}
++#define __user
 +
- int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...)
- {
- 	va_list args;
- 	double percent;
--	const char *color;
++#ifndef __attribute_const__
++# define __attribute_const__
++#endif
++
++#ifndef __maybe_unused
++# define __maybe_unused		__attribute__((unused))
++#endif
++
++#ifndef __packed
++# define __packed		__attribute__((__packed__))
++#endif
++
++#ifndef __force
++# define __force
++#endif
++
++#ifndef __weak
++# define __weak			__attribute__((weak))
++#endif
++
++#endif /* _TOOLS_LINUX_COMPILER_H */
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 3638b0bd20dc..6be06767da7b 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -211,7 +211,7 @@ LIB_H += ../../include/linux/hash.h
+ LIB_H += ../../include/linux/stringify.h
+ LIB_H += util/include/linux/bitmap.h
+ LIB_H += util/include/linux/bitops.h
+-LIB_H += util/include/linux/compiler.h
++LIB_H += ../include/linux/compiler.h
+ LIB_H += util/include/linux/const.h
+ LIB_H += util/include/linux/ctype.h
+ LIB_H += util/include/linux/kernel.h
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 5d15b43b03c6..01dd43df0d04 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -232,6 +232,7 @@ endif
  
- 	va_start(args, fmt);
- 	percent = va_arg(args, double);
- 	va_end(args);
--	color = get_percent_color(percent);
--	return color_snprintf(bf, size, color, fmt, percent);
-+	return value_color_snprintf(bf, size, fmt, percent);
- }
-diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
-index fced3840e99c..7ff30a62a132 100644
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -39,6 +39,7 @@ int color_fprintf(FILE *fp, const char *color, const char *fmt, ...);
- int color_snprintf(char *bf, size_t size, const char *color, const char *fmt, ...);
- int color_fprintf_ln(FILE *fp, const char *color, const char *fmt, ...);
- int color_fwrite_lines(FILE *fp, const char *color, size_t count, const char *buf);
-+int value_color_snprintf(char *bf, size_t size, const char *fmt, double value);
- int percent_color_snprintf(char *bf, size_t size, const char *fmt, ...);
- int percent_color_fprintf(FILE *fp, const char *fmt, double percent);
- const char *get_percent_color(double percent);
+ CFLAGS += -I$(src-perf)/util/include
+ CFLAGS += -I$(src-perf)/arch/$(ARCH)/include
++CFLAGS += -I$(srctree)/tools/include/
+ CFLAGS += -I$(srctree)/arch/$(ARCH)/include/uapi
+ CFLAGS += -I$(srctree)/arch/$(ARCH)/include
+ CFLAGS += -I$(srctree)/include/uapi
+diff --git a/tools/perf/util/include/linux/compiler.h b/tools/perf/util/include/linux/compiler.h
+deleted file mode 100644
+index b003ad7200b2..000000000000
+--- a/tools/perf/util/include/linux/compiler.h
++++ /dev/null
+@@ -1,30 +0,0 @@
+-#ifndef _PERF_LINUX_COMPILER_H_
+-#define _PERF_LINUX_COMPILER_H_
+-
+-#ifndef __always_inline
+-# define __always_inline	inline __attribute__((always_inline))
+-#endif
+-
+-#define __user
+-
+-#ifndef __attribute_const__
+-# define __attribute_const__
+-#endif
+-
+-#ifndef __maybe_unused
+-# define __maybe_unused		__attribute__((unused))
+-#endif
+-
+-#ifndef __packed
+-# define __packed		__attribute__((__packed__))
+-#endif
+-
+-#ifndef __force
+-# define __force
+-#endif
+-
+-#ifndef __weak
+-# define __weak			__attribute__((weak))
+-#endif
+-
+-#endif
 -- 
 1.8.1.4
 
