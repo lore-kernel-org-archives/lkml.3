@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaAMIuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 03:50:23 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:39611 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaAMIuU (ORCPT
+	id S1751475AbaAMIzv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 03:55:51 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47511 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaAMIzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 03:50:20 -0500
+	Mon, 13 Jan 2014 03:55:49 -0500
+X-AuditID: 9c930179-b7c5fae000006619-70-52d3aa12b088
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>
+Subject: Re: [PATCH 25/28] perf top: Convert to hist_entry_iter
+References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
+	<1389170793-21926-26-git-send-email-namhyung@kernel.org>
+	<20140111163529.GF1131@krava.brq.redhat.com>
+Date: Mon, 13 Jan 2014 17:55:46 +0900
+In-Reply-To: <20140111163529.GF1131@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Sat, 11 Jan 2014 17:35:29 +0100")
+Message-ID: <87ob3gb6r1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <52D38787.5030505@codethink.co.uk>
-References: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk>
-	<2133074.4EFCIDJZXE@avalon>
-	<52D38787.5030505@codethink.co.uk>
-Date: Mon, 13 Jan 2014 09:50:19 +0100
-X-Google-Sender-Auth: WDtkfd7tdgqnSsxCUyrK9rwtKf4
-Message-ID: <CAMuHMdXek5YhKt9p-1LPXRuifqv6sazwzTZ+k6Ps=1-Myepirw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] power: clock_ops.c: fixup clk prepare/unprepare count
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel@lists.codethink.co.uk,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 7:28 AM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
->> I've never noticed this on Lager, probably because Lager multiplatform
->> doesn't
->> make use of clock_ops.c as drivers/sh/pm_runtime.c (which you addressed in
->> another patch that I've also replied to). I'm thus not sure we need to
->> apply
->> this as a fix and backport it to stable branches.
+On Sat, 11 Jan 2014 17:35:29 +0100, Jiri Olsa wrote:
+> On Wed, Jan 08, 2014 at 05:46:30PM +0900, Namhyung Kim wrote:
+>> Reuse hist_entry_iter__add() function to share the similar code with
+>> perf report.  Note that it needs to be called with hists.lock so tweak
+>> some internal functions not to deadlock or hold the lock too long.
+>> 
+>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>> ---
+>>  tools/perf/builtin-top.c | 75 ++++++++++++++++++++++++------------------------
+>>  1 file changed, 37 insertions(+), 38 deletions(-)
+>> 
+>> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+>> index f0f55e6030cd..cf330c66bed7 100644
+>> --- a/tools/perf/builtin-top.c
+>> +++ b/tools/perf/builtin-top.c
+>> @@ -186,9 +186,6 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+>>  	sym = he->ms.sym;
+>>  	notes = symbol__annotation(sym);
+>>  
+>> -	if (pthread_mutex_trylock(&notes->lock))
+>> -		return;
+>> -
+>>  	ip = he->ms.map->map_ip(he->ms.map, ip);
+>>  	err = hist_entry__inc_addr_samples(he, counter, ip);
+>>  
+>> @@ -201,6 +198,8 @@ static void perf_top__record_precise_ip(struct perf_top *top,
+>>  		       sym->name);
+>>  		sleep(1);
+>>  	}
+>> +
+>> +	pthread_mutex_lock(&notes->lock);
+>>  }
 >
->
-> Yes, it seems that a lot of the lager drivers assume that this support
-> is there, and the work seems to have been sponsored by Renesas.
+> locking on function exit.. does not look right ;-)
 
-I can confirm that applying both this and "[PATCH] ARM: shmobile: compile
-drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI" makes
+Yes, it looks weird.. but it's because of the change in locking.  After
+I changed perf top to use the hist_entry_iter, it needed to protect
+the whole hist_entry_iter__add() by hists->lock so the
+perf_top__record_precise_ip() should be called with the lock acquired.
 
-    rcar_thermal e61f0000.thermal: thermal sensor was broken
+I might remove the lock in the function completely, but it seemed not
+good since it goes to sleep with the lock then.  So I added the
+(reverse) unlock/lock dance to avoid it.
 
-go away on Koelsch.
+So yes, I think I need to add a comment to explain this. :)
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Namhyung
