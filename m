@@ -1,111 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaAMDvp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 22:51:45 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36291 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaAMDvm (ORCPT
+	id S1751345AbaAMDxP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 22:53:15 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59958 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaAMDxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 22:51:42 -0500
+	Sun, 12 Jan 2014 22:53:12 -0500
+Date: Sun, 12 Jan 2014 19:52:40 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jens Axboe <axboe@kernel.dk>
+cc: Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: next bio iters break discard?
+Message-ID: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140112192744.9bca5c6d.akpm@linux-foundation.org>
-References: <000001cf0cfd$6d251640$476f42c0$%yang@samsung.com>
-	<20140110171108.32b2be171cd5e54bf22fb2a4@linux-foundation.org>
-	<CAL1ERfPnaROPiRAeWHpvwGezHsqN4R8j=QSyS48xs25ax14AhA@mail.gmail.com>
-	<20140112192744.9bca5c6d.akpm@linux-foundation.org>
-Date: Mon, 13 Jan 2014 11:51:42 +0800
-Message-ID: <CAL1ERfOx7NF-GLuCnK4KXYpunKxQnVmSDA6FkPKXH3CxauzQcQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/swap: fix race on swap_info reuse between swapoff and swapon
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Shaohua Li <shli@fusionio.com>,
-        Bob Liu <bob.liu@oracle.com>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 11:27 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 13 Jan 2014 11:08:58 +0800 Weijie Yang <weijie.yang.kh@gmail.com> wrote:
->
->> >> --- a/mm/swapfile.c
->> >> +++ b/mm/swapfile.c
->> >> @@ -1922,7 +1922,6 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->> >>       p->swap_map = NULL;
->> >>       cluster_info = p->cluster_info;
->> >>       p->cluster_info = NULL;
->> >> -     p->flags = 0;
->> >>       frontswap_map = frontswap_map_get(p);
->> >>       spin_unlock(&p->lock);
->> >>       spin_unlock(&swap_lock);
->> >> @@ -1948,6 +1947,16 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
->> >>               mutex_unlock(&inode->i_mutex);
->> >>       }
->> >>       filp_close(swap_file, NULL);
->> >> +
->> >> +     /*
->> >> +     * clear SWP_USED flag after all resources freed
->> >> +     * so that swapon can reuse this swap_info in alloc_swap_info() safely
->> >> +     * it is ok to not hold p->lock after we cleared its SWP_WRITEOK
->> >> +     */
->> >> +     spin_lock(&swap_lock);
->> >> +     p->flags = 0;
->> >> +     spin_unlock(&swap_lock);
->> >> +
->> >>       err = 0;
->> >>       atomic_inc(&proc_poll_event);
->> >>       wake_up_interruptible(&proc_poll_wait);
->> >
->> > I didn't look too closely, but this patch might also address the race
->> > which Krzysztof addressed with
->> > http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch.
->> > Can we please check that out?
->> >
->> > I do prefer fixing all these swapon-vs-swapoff races with some large,
->> > simple, wide-scope exclusion scheme.  Perhaps SWP_USED is that scheme.
->> >
->> > An alternative would be to add another mutex and just make sys_swapon()
->> > and sys_swapoff() 100% exclusive.  But that is plastering yet another
->> > lock over this mess to hide the horrors which lurk within :(
->> >
->>
->> Hi, Andrew. Thanks for your suggestion.
->>
->> I checked Krzysztof's patch, it use the global swapon_mutex to protect
->> race condition among
->> swapon, swapoff and swap_start(). It is a kind of correct method, but
->> a heavy method.
->
-> But do you agree that your
-> http://ozlabs.org/~akpm/mmots/broken-out/mm-swap-fix-race-on-swap_info-reuse-between-swapoff-and-swapon.patch
-> makes Krzysztof's
-> http://ozlabs.org/~akpm/mmots/broken-out/swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
-> obsolete?
+When I try to exercise heavy swapping with discard on mmotm 2014-01-09,
+I soon hit a NULL pointer dereference in __blk_recalc_rq_segments():
 
-Yes, I agree.
+__blk_recalc_rq_segments
+blk_recount_segments
+ll_back_merge_fn
+bio_attempt_back_merge
+blk_queue_bio
+generic_make_request
+submit_bio
+blkdev_issue_discard
+swap_do_scheduled_discard
+scan_swap_map_try_ssd_cluster
+scan_swap_map
+get_swap_page
+add_to_swap
+shrink_page_list
+etc. etc.
 
-> I've been sitting on Krzysztof's
-> swap-fix-setting-page_size-blocksize-during-swapoff-swapon-race.patch
-> for several months - Hugh had issues with it so I put it on hold and
-> nothing further happened.
->
->> I will try to resend a patchset to make lock usage in swapfile.c clear
->> and fine grit
->
-> OK, thanks.  In the meanwhile I'm planning on dropping Krzysztof's
-> patch and merging your patch into 3.14-rc1, which is why I'd like
-> confirmation that your patch addresses the issues which Krzysztof
-> identified?
->
+The crash is on the NULL struct page pointer in page_to_pfn(bv.bv_page)
+on line 35 of block/blk-merge.c.
 
-I think so, Krzysztof and I both try to fix the same issue(reuse
-swap_info while its
-previous resources are not cleared completely). The different is
-Krzysztof's patch
-uses a global swapon_mutex and its commit log only focuses on set_blocksize(),
-while my patch try to maintain the fine grit lock usage.
+The code around there is not very different from 3.13-rc8 (which doesn't
+crash), and I didn't notice REQ_DISCARD or bio_has_data() checks removed.
+
+I think it worked before because the old bio_for_each_segment()
+iterator was a straightforward "i < bio->bi_vcnt" loop which would
+do nothing when bi_vcnt is 0; but the new iterators are relying
+(perhaps) on bio->bi_iter.bi_size which is non-0 despite no data?
+
+I expect it would crash in the same way on other recent nexts and
+mmotms, I've not tried.
+
+Hugh
