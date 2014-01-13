@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaAMOfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:35:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51631 "EHLO
+	id S1753145AbaAMOgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:36:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51629 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353AbaAMO1O (ORCPT
+	with ESMTP id S1752345AbaAMO1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:27:14 -0500
+	Mon, 13 Jan 2014 09:27:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Curt Brune <curt@cumulusnetworks.com>,
-        Scott Feldman <sfeldma@cumulusnetworks.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 93/96] bridge: use spin_lock_bh() in br_multicast_set_hash_max
-Date: Mon, 13 Jan 2014 14:24:56 +0000
-Message-Id: <1389623099-18783-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 92/96] net: llc: fix use after free in llc_ui_recvmsg
+Date: Mon, 13 Jan 2014 14:24:55 +0000
+Message-Id: <1389623099-18783-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -29,66 +30,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Curt Brune <curt@cumulusnetworks.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit fe0d692bbc645786bce1a98439e548ae619269f5 upstream.
+commit 4d231b76eef6c4a6bd9c96769e191517765942cb upstream.
 
-br_multicast_set_hash_max() is called from process context in
-net/bridge/br_sysfs_br.c by the sysfs store_hash_max() function.
+While commit 30a584d944fb fixes datagram interface in LLC, a use
+after free bug has been introduced for SOCK_STREAM sockets that do
+not make use of MSG_PEEK.
 
-br_multicast_set_hash_max() calls spin_lock(&br->multicast_lock),
-which can deadlock the CPU if a softirq that also tries to take the
-same lock interrupts br_multicast_set_hash_max() while the lock is
-held .  This can happen quite easily when any of the bridge multicast
-timers expire, which try to take the same lock.
+The flow is as follow ...
 
-The fix here is to use spin_lock_bh(), preventing other softirqs from
-executing on this CPU.
+  if (!(flags & MSG_PEEK)) {
+    ...
+    sk_eat_skb(sk, skb, false);
+    ...
+  }
+  ...
+  if (used + offset < skb->len)
+    continue;
 
-Steps to reproduce:
+... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
+original length and work on skb_len to check partial reads.
 
-1. Create a bridge with several interfaces (I used 4).
-2. Set the "multicast query interval" to a low number, like 2.
-3. Enable the bridge as a multicast querier.
-4. Repeatedly set the bridge hash_max parameter via sysfs.
-
-  # brctl addbr br0
-  # brctl addif br0 eth1 eth2 eth3 eth4
-  # brctl setmcqi br0 2
-  # brctl setmcquerier br0 1
-
-  # while true ; do echo 4096 > /sys/class/net/br0/bridge/hash_max; done
-
-Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
-Signed-off-by: Scott Feldman <sfeldma@cumulusnetworks.com>
+Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bridge/br_multicast.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/llc/af_llc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index e881f7f..f15a12f 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1787,7 +1787,7 @@ int br_multicast_set_hash_max(struct net_bridge *br, unsigned long val)
- 	u32 old;
- 	struct net_bridge_mdb_htable *mdb;
+diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
+index a13c3e2..1895833 100644
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	unsigned long cpu_flags;
+ 	size_t copied = 0;
+ 	u32 peek_seq = 0;
+-	u32 *seq;
++	u32 *seq, skb_len;
+ 	unsigned long used;
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+@@ -812,6 +812,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		}
+ 		continue;
+ 	found_ok_skb:
++		skb_len = skb->len;
+ 		/* Ok so how much can we use? */
+ 		used = skb->len - offset;
+ 		if (len < used)
+@@ -844,7 +845,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		}
  
--	spin_lock(&br->multicast_lock);
-+	spin_lock_bh(&br->multicast_lock);
- 	if (!netif_running(br->dev))
- 		goto unlock;
+ 		/* Partial read */
+-		if (used + offset < skb->len)
++		if (used + offset < skb_len)
+ 			continue;
+ 	} while (len > 0);
  
-@@ -1819,7 +1819,7 @@ rollback:
- 	}
- 
- unlock:
--	spin_unlock(&br->multicast_lock);
-+	spin_unlock_bh(&br->multicast_lock);
- 
- 	return err;
- }
 -- 
 1.8.3.2
 
