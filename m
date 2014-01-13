@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaAMGPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 01:15:44 -0500
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:7243
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751220AbaAMGPl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 01:15:41 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: fsl-sai: Add device tree nodes and its availiable
- check
-Thread-Topic: [PATCH] ASoC: fsl-sai: Add device tree nodes and its
- availiable check
-Thread-Index: AQHPDbBgYX3a01s9p0am5sF4U50z3pp9zVkAgAQlirA=
-Date: Mon, 13 Jan 2014 06:15:24 +0000
-Message-ID: <8ea36054cbe745cf9ce5c5d4a786f9ff@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1389319550-12238-1-git-send-email-Li.Xiubo@freescale.com>
- <20140110110900.GC29039@sirena.org.uk>
-In-Reply-To: <20140110110900.GC29039@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 00909363D5
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(164054003)(51704005)(199002)(189002)(83072002)(85852003)(56816005)(51856001)(87266001)(87936001)(76796001)(93136001)(2656002)(33646001)(74502001)(74366001)(31966008)(80022001)(54316002)(47446002)(65816001)(74662001)(76482001)(63696002)(66066001)(74706001)(90146001)(74316001)(54356001)(46102001)(74876001)(83322001)(53806001)(69226001)(56776001)(4396001)(81816001)(79102001)(59766001)(92566001)(76786001)(76576001)(49866001)(80976001)(81686001)(77982001)(47976001)(47736001)(81342001)(50986001)(85306002)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1751355AbaAMGRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 01:17:39 -0500
+Received: from ozlabs.org ([203.10.76.45]:50541 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750792AbaAMGRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 01:17:37 -0500
+Date: Mon, 13 Jan 2014 17:17:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20140113171721.18c5040e97965d3bcb19d515@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__13_Jan_2014_17_17_21_+1100_=PgCJ83Os0zK/tjN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__13_Jan_2014_17_17_21_+1100_=PgCJ83Os0zK/tjN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > +	if (!np || !of_device_is_available(np))
-> > +		return -ENODEV;
-> > +
-> 
-> I would expect the of_device_is_available() check to be done by the
-> driver core rather than by individual drivers - every single driver
-> should have that check.  Is this not happening?  The check for np is OK
-> though.
+Hi Andrew,
 
-Yes, I hasn't found the core driver does that for now...
+Today's linux-next merge of the akpm tree got a conflict in
+kernel/softirq.c between commit c795eb55e740 ("sched/preempt, locking:
+Rework local_bh_{dis,en}able()") from the tip tree and commit  ("softirq:
+use const char * const for softirq_to_name, whitespace neatening") from
+the akpm tree.
 
-And IMO this is needed since the SAI driver is only base dts. And maybe
-the device is not presently operational, but it might become operational
-in the future (for example, something is not plugged in, or switched off).
-Or A serious error was detected in the device, and it is unlikely to become
-operational without repair...
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-And for now for the individual drivers, before calling the of_device_is_available
-the '!np' check is need, because:
-While in __of_device_is_available:
- >	status = of_get_property(device, "status", &statlen);
- >	if (status == NULL)
- >		return 1;
-The status value returned from 'of_get_property()' will be NULL in two cases:
-Firstly: the 'device' value (device node) is NULL.
-Secondly: the 'status' property is actaully not exist.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-If the device node is NULL, the __of_device_is_available will return true too,
-that will mean the absent state of the 'status' property.
+diff --cc kernel/softirq.c
+index e60c41d0087a,527520152ad2..000000000000
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@@ -138,10 -149,9 +138,9 @@@ void _local_bh_enable(void
+  	WARN_ON_ONCE(in_irq());
+  	__local_bh_enable(SOFTIRQ_DISABLE_OFFSET);
+  }
+-=20
+  EXPORT_SYMBOL(_local_bh_enable);
+ =20
+ -static inline void _local_bh_enable_ip(unsigned long ip)
+ +void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
+  {
+  	WARN_ON_ONCE(in_irq() || irqs_disabled());
+  #ifdef CONFIG_TRACE_IRQFLAGS
+@@@ -155,8 -165,8 +154,8 @@@
+  	/*
+  	 * Keep preemption disabled until we are done with
+  	 * softirq processing:
+-  	 */
++ 	 */
+ -	preempt_count_sub(SOFTIRQ_DISABLE_OFFSET - 1);
+ +	preempt_count_sub(cnt - 1);
+ =20
+  	if (unlikely(!in_interrupt() && local_softirq_pending())) {
+  		/*
 
+--Signature=_Mon__13_Jan_2014_17_17_21_+1100_=PgCJ83Os0zK/tjN
+Content-Type: application/pgp-signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
---
-Best Regards,
-Xiubo
+iQIcBAEBCAAGBQJS04T1AAoJEMDTa8Ir7ZwVMFoP/20xaqZnxbIIP3MCpHcPc3vC
+ztuDF4/t8SqaPXBpX7O4EwqyoNP5jH2QzvsPW44X7FYE7w2ydHnbt3xX0qHJSreF
+a3j7lRSG7SDF0ApiYhQo16XFjIZM+7TQkHLPlC3nHZATNl1scYUDS+/Mqnh+gxo3
+k/L5cRDX/Ucf6mrTqxaybrLi9Qn1jo4r6Qd2wOyUhwjTFnBmV5P0Od0OoOFjbVt7
+R4qV9jypBqvQ6gtwGZ1NqXbD1L3K2I9omttP0ggQ904BOr7LmbXHOt5gdc3YVdiq
+Rw940LEOxZAMVFRsYgY5ckUpdUeMp1VRhtLqZHm7upyYOBjNmAikb52sn0KOWxVd
+h4qjx6Q/6dW76bTaoWyuOjDvc0Yn2FN9GrgVrUXQigcuunFXU0ftySzAugDcGWUT
+dyMBqFAiCo2z/dix+m4zpyDZLRD61a0MAeDBDWrRz9L+n/A5CV/GQCzHqCpE6pEm
+9VdPNEhV5h1VJwzBR73/y9OgreA0Yp4vofhfceItYaqaFsAhumKqHrUo2oY5F/8u
+MAfGJvKeIpCkw38BubaejICJWLIJ1kt2yTuhDGDLCSPBdauYBUyKENwSt5DqbFOy
+N2eK0Iqwjri7zz5JcUzLs/MbFYDmE1Zi+jr7fTy7hsnC8U/PNH9gDusD5WuwsROw
+7vU8WkHr5rqZnYCJcfts
+=FIHl
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__13_Jan_2014_17_17_21_+1100_=PgCJ83Os0zK/tjN--
