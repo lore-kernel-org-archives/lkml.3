@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaAMR7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:59:20 -0500
-Received: from void.printf.net ([89.145.121.20]:60310 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286AbaAMR7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:59:18 -0500
-From: Chris Ball <chris@printf.net>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3] mmc: atmel-mci: add vmmc-supply support
-References: <1382006808-22728-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<CAPDyKFoiWOE47DWrUHNWVPyihL=uCidpd52TV1vgUbq1aMNvbw@mail.gmail.com>
-	<52B09FF0.4070200@free-electrons.com>
-	<20131218081645.GA4268@ldesroches-Latitude-E6320>
-	<52D425CF.9050507@free-electrons.com>
-Date: Mon, 13 Jan 2014 17:59:16 +0000
-In-Reply-To: <52D425CF.9050507@free-electrons.com> (Alexandre Belloni's
-	message of "Mon, 13 Jan 2014 18:43:43 +0100")
-Message-ID: <867ga3daq3.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753090AbaAMSDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:03:04 -0500
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:48062 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499AbaAMSDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 13:03:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+X-Originating-IP: [2620:0:1000:1b02:4c75:e659:d4b7:8090]
+In-Reply-To: <20140113010025.GA14431@amd.pavel.ucw.cz>
+References: <20140113010025.GA14431@amd.pavel.ucw.cz>
+Date: Mon, 13 Jan 2014 10:02:58 -0800
+Message-ID: <CAOesGMjG37FprRX7U-+S3nFCuv=RVAOUv7wb8K-Tcqr26ETevw@mail.gmail.com>
+Subject: Re: [patch] fix omap compile with randconfig
+From: Olof Johansson <olof@lixom.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jan 12, 2014 at 5:00 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>
+> This fixes:
+>
+> arch/arm/mach-omap2/built-in.o: In function `omap_reserve':
+> /data/l/linux-n900/arch/arm/mach-omap2/common.c:36: undefined
+>   reference to `omap_fb_reserve_memblock'
+>
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>
+> diff --git a/arch/arm/mach-omap2/common.c b/arch/arm/mach-omap2/common.c
+> index 9beecde..857907f 100644
+> --- a/arch/arm/mach-omap2/common.c
+> +++ b/arch/arm/mach-omap2/common.c
+> @@ -33,5 +33,7 @@ void __init omap_reserve(void)
+>         omap_dsp_reserve_sdram_memblock();
+>         omap_secure_ram_reserve_memblock();
+>         omap_barrier_reserve_memblock();
+> +#ifdef CONFIG_OMAP2_VRFB
+>         omap_fb_reserve_memblock();
+> +#endif
+>  }
 
-On Mon, Jan 13 2014, Alexandre Belloni wrote:
-> I still don't see that on mmc.git, Any issue with that patch ? I would
-> prefer not missing the 3.14 merge window.
+What is this patch against? omap_fb_reserve_memblock() doesn't exist
+in v3.13-rc8, nor in -next.
 
-Sorry about that -- just pushed to mmc-next for 3.14 with ACKs from
-Ulf and Ludovic.  Thanks,
+Adding an ifdef here is likely the wrong thing anyway, there should be
+a stub provided for !CONFIG_OMAP2_VRFB in the header file instead.
 
-- Chris.
--- 
-Chris Ball   <chris@printf.net>   <http://printf.net/>
+
+-Olof
