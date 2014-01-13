@@ -1,45 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaAMJ07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:26:59 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:53438 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283AbaAMJ04 convert rfc822-to-8bit (ORCPT
+	id S1751500AbaAMJ2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:28:32 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:64348 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaAMJ23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:26:56 -0500
-Date: Mon, 13 Jan 2014 10:26:24 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: dri-devel@lists.freedesktop.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 23/28] drm/i2c: tda998x: add the active aspect in
- HDMI AVI frame
-Message-ID: <20140113102624.04d270ce@armhf>
-In-Reply-To: <20140111185114.GK15937@n2100.arm.linux.org.uk>
-References: <20140109120639.5f76c620@armhf>
- <20140111185114.GK15937@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Mon, 13 Jan 2014 04:28:29 -0500
 MIME-Version: 1.0
+In-Reply-To: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk>
+References: <1389367095-7760-1-git-send-email-ben.dooks@codethink.co.uk>
+Date: Mon, 13 Jan 2014 10:28:29 +0100
+X-Google-Sender-Auth: 2fMsDyUfpQH0AyOObhvmfr9ZAbI
+Message-ID: <CAMuHMdU+SfjNJC_b_7ovT9Uf5p5MwB0iULjorzthcLJxYJ-00g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: shmobile: compile drivers/sh for CONFIG_ARCH_SHMOBILE_MULTI
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: linux-kernel@lists.codethink.co.uk,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Linus SH list <linux-sh@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 11 Jan 2014 18:51:14 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On Fri, Jan 10, 2014 at 4:18 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> --- a/drivers/sh/Makefile
+> +++ b/drivers/sh/Makefile
+> @@ -3,7 +3,10 @@
+>  #
+>  obj-y  := intc/
+>
+> +ifeq ($(CONFIG_COMMON_CLK),n)
+>  obj-$(CONFIG_HAVE_CLK)         += clk/
+> +endif
+> +
 
-> On Thu, Jan 09, 2014 at 12:06:39PM +0100, Jean-Francois Moine wrote:
-> > This patch adds the active aspect as 'picture' in the HDMI AVI frame
-> > and also some comments about this frame.
-> 
-> Yes, this should've been set.  It's probably a stable tree candidate,
-> but first it needs testing.
+This part breaks my Koelsch legacy (non-reference) build:
 
-I get correct 4:3 (1280x960) and 5:4 (1280x1024) images on my 16:9 TV
-screen with this aspect value. 16:10 (1680x1050) images are stretched.
+arch/arm/kernel/built-in.o: In function `twd_local_timer_common_register':
+io.c:(.init.text+0x1804): undefined reference to `clk_enable'
+io.c:(.init.text+0x1828): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `sci_port_disable':
+clkdev.c:(.text+0x2ae30): undefined reference to `clk_disable'
+clkdev.c:(.text+0x2ae38): undefined reference to `clk_disable'
+drivers/built-in.o: In function `sci_port_enable':
+clkdev.c:(.text+0x2ae74): undefined reference to `clk_enable'
+clkdev.c:(.text+0x2ae7c): undefined reference to `clk_get_rate'
+clkdev.c:(.text+0x2ae88): undefined reference to `clk_enable'
+drivers/built-in.o: In function `sci_notifier':
+clkdev.c:(.text+0x2c85c): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `__pm_clk_remove':
+clkdev.c:(.text+0x40844): undefined reference to `clk_disable'
+drivers/built-in.o: In function `pm_clk_suspend':
+clkdev.c:(.text+0x40c6c): undefined reference to `clk_disable'
+drivers/built-in.o: In function `pm_clk_resume':
+clkdev.c:(.text+0x40ce0): undefined reference to `clk_enable'
+drivers/built-in.o: In function `qspi_set_config_register':
+clkdev.c:(.text+0x515a4): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `rspi_set_config_register':
+clkdev.c:(.text+0x516dc): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `rspi_remove':
+clkdev.c:(.text+0x518ac): undefined reference to `clk_disable'
+drivers/built-in.o: In function `rspi_probe':
+clkdev.c:(.text+0x51a20): undefined reference to `clk_enable'
+clkdev.c:(.text+0x51d60): undefined reference to `clk_disable'
+drivers/built-in.o: In function `hspi_transfer_one_message':
+clkdev.c:(.text+0x5312c): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `sh_msiof_spi_txrx':
+clkdev.c:(.text+0x53d90): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `sh_msiof_spi_chipselect':
+clkdev.c:(.text+0x54200): undefined reference to `clk_enable'
+clkdev.c:(.text+0x542b8): undefined reference to `clk_disable'
+drivers/built-in.o: In function `sh_cmt_start':
+clkdev.c:(.text+0x6f900): undefined reference to `clk_enable'
+clkdev.c:(.text+0x6f93c): undefined reference to `clk_get_rate'
+clkdev.c:(.text+0x6f95c): undefined reference to `clk_get_rate'
+clkdev.c:(.text+0x6fa08): undefined reference to `clk_disable'
+drivers/built-in.o: In function `sh_cmt_stop':
+clkdev.c:(.text+0x6fc14): undefined reference to `clk_disable'
+drivers/built-in.o: In function `__sh_tmu_disable':
+clkdev.c:(.text+0x70590): undefined reference to `clk_disable'
+drivers/built-in.o: In function `__sh_tmu_enable':
+clkdev.c:(.text+0x70980): undefined reference to `clk_enable'
+clkdev.c:(.text+0x709f0): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `em_sti_start':
+clkdev.c:(.text+0x70f44): undefined reference to `clk_enable'
+clkdev.c:(.text+0x70f68): undefined reference to `clk_get_rate'
+drivers/built-in.o: In function `em_sti_stop':
+clkdev.c:(.text+0x710d0): undefined reference to `clk_disable'
+arch/arm/mach-shmobile/built-in.o: In function `shmobile_clk_init':
+platsmp-apmu.c:(.init.text+0x7ac): undefined reference to
+`recalculate_root_clocks'
+platsmp-apmu.c:(.init.text+0x7b0): undefined reference to
+`clk_enable_init_clocks'
+arch/arm/mach-shmobile/built-in.o: In function `r8a7791_clock_init':
+platsmp-apmu.c:(.init.text+0x8fc): undefined reference to `clk_register'
+platsmp-apmu.c:(.init.text+0x920): undefined reference to `sh_clk_mstp_register'
+arch/arm/mach-shmobile/built-in.o:(.data+0x16f0): undefined reference
+to `followparent_recalc'
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Both of my Koelsch legacy and reference configs have CONFIG_HAVE_CLK=y,
+but only the reference once has CONFIG_COMMON_CLK=y.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
