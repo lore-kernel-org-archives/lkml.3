@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaAMNfP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 08:35:15 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:56196 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaAMNe6 convert rfc822-to-8bit (ORCPT
+	id S1751539AbaAMNfw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 08:35:52 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:54712 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaAMNfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 08:34:58 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
-Subject: Re: [PATCH] nfs: don't update isize when NFS_INO_LAYOUTCOMMITTING in nfs_update_inode
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-In-Reply-To: <1389599759-2711-1-git-send-email-shaobingqing@bwstor.com.cn>
-Date: Mon, 13 Jan 2014 08:34:54 -0500
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C689DB34-AC0A-49CF-94DC-74ACB1CB177F@primarydata.com>
-References: <n> <1389599759-2711-1-git-send-email-shaobingqing@bwstor.com.cn>
-To: shaobingqing <shaobingqing@bwstor.com.cn>
-X-Mailer: Apple Mail (2.1827)
+	Mon, 13 Jan 2014 08:35:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <m3wqic205t.fsf@redhat.com>
+References: <m3wqic205t.fsf@redhat.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 13 Jan 2014 14:35:27 +0100
+Message-ID: <CAK1hOcNUgMne1Nh_GmU=+MygKu0uVV20jOLXX5ScWzDNafBqQA@mail.gmail.com>
+Subject: Re: [RFC/PATCH] Implement new PTRACE_EVENT_SYSCALL_{ENTER,EXIT}
+To: Sergio Durigan Junior <sergiodj@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 6, 2014 at 11:52 PM, Sergio Durigan Junior
+<sergiodj@redhat.com> wrote:
+> The other nice thing that I have implemented is the ability to obtain
+> the syscall number related to the event by using PTRACE_GET_EVENTMSG.
+> This way, we don't need to inspect registers anymore when we want to
+> know which syscall is responsible for this or that event.
 
-On Jan 13, 2014, at 2:55, shaobingqing <shaobingqing@bwstor.com.cn> wrote:
+OTOH, by fetching registers using just one ptrace call you
+get a lot more data.
+So, this isn't *that* useful -- the debuggers already know how to fetch
+and interpret regs - but it is also a cheap change. Why not?
 
-> When a file is in NFS_INO_LAYOUTCOMMITING status, its isize perhaps has not been 
-> transferred to the metadate server. So the isize getting from the metadata server
-> perhaps is out of date and cannot be used to update the isize of the client.
-> 
-> Signed-off-by: shaobingqing <shaobingqing@bwstor.com.cn>
-> ---
-> fs/nfs/inode.c |    3 ++-
-> 1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> index ebeb94c..caf50a1 100644
-> --- a/fs/nfs/inode.c
-> +++ b/fs/nfs/inode.c
-> @@ -1402,7 +1402,8 @@ static int nfs_update_inode(struct inode *inode, struct nfs_fattr *fattr)
-> 		if (new_isize != cur_isize) {
-> 			/* Do we perhaps have any outstanding writes, or has
-> 			 * the file grown beyond our last write? */
-> -			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) ||
-> +			if ((nfsi->npages == 0 && !test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags) &&
-> +			     !test_bit(NFS_INO_LAYOUTCOMMITTING, &nfsi->flags)) ||
-> 			     new_isize > cur_isize) {
-> 				i_size_write(inode, new_isize);
-> 				invalid |= NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA;
 
-Ugh. Is there any reason why we can’t just keep NFS_INO_LAYOUTCOMMIT set until the layout commit operation is finished instead of multiplying the tests for it in generic NFS code paths such as nfs_update_inode?
+> -static inline int ptrace_report_syscall(struct pt_regs *regs)
+> +static inline int ptrace_report_syscall(struct pt_regs *regs, int entry,
+> +       unsigned int sysno)
 
---
-Trond Myklebust
-Linux NFS client maintainer
 
+This function looks ripe for de-inlining.
+
+
+>  /* Wait extended result codes for the above trace options.  */
+> -#define PTRACE_EVENT_FORK      1
+> -#define PTRACE_EVENT_VFORK     2
+> -#define PTRACE_EVENT_CLONE     3
+> -#define PTRACE_EVENT_EXEC      4
+> -#define PTRACE_EVENT_VFORK_DONE        5
+> -#define PTRACE_EVENT_EXIT      6
+> -#define PTRACE_EVENT_SECCOMP   7
+> +#define PTRACE_EVENT_FORK              1
+> +#define PTRACE_EVENT_VFORK             2
+> +#define PTRACE_EVENT_CLONE             3
+> +#define PTRACE_EVENT_EXEC              4
+> +#define PTRACE_EVENT_VFORK_DONE                5
+> +#define PTRACE_EVENT_EXIT              6
+> +#define PTRACE_EVENT_SECCOMP           7
+> +#define PTRACE_EVENT_SYSCALL_ENTER     8
+> +#define PTRACE_EVENT_SYSCALL_EXIT      9
+> +
+>  /* Extended result codes which enabled by means other than options.  */
+>  #define PTRACE_EVENT_STOP      128
+>
+> @@ -87,11 +90,13 @@ struct ptrace_peeksiginfo_args {
+>  #define PTRACE_O_TRACEVFORKDONE        (1 << PTRACE_EVENT_VFORK_DONE)
+>  #define PTRACE_O_TRACEEXIT     (1 << PTRACE_EVENT_EXIT)
+>  #define PTRACE_O_TRACESECCOMP  (1 << PTRACE_EVENT_SECCOMP)
+> +#define PTRACE_O_SYSCALL_ENTER (1 << PTRACE_EVENT_SYSCALL_ENTER)
+> +#define PTRACE_O_SYSCALL_EXIT  (1 << PTRACE_EVENT_SYSCALL_EXIT)
+>
+>  /* eventless options */
+>  #define PTRACE_O_EXITKILL      (1 << 20)
+>
+> -#define PTRACE_O_MASK          (0x000000ff | PTRACE_O_EXITKILL)
+> +#define PTRACE_O_MASK          (0x00000fff | PTRACE_O_EXITKILL)
+
+
+You added just two bits, why did you extend the mask by four bits?
+IOW: shouldn't it be 0x00003ff instead?
