@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaAMP5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:57:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60969 "EHLO
+	id S1753166AbaAMP7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:59:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:32784 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaAMP5i (ORCPT
+	with ESMTP id S1752941AbaAMP6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:57:38 -0500
-Date: Mon, 13 Jan 2014 07:57:06 -0800
+	Mon, 13 Jan 2014 10:58:14 -0500
+Date: Mon, 13 Jan 2014 07:57:45 -0800
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-piu203ses5y1g36bnyw2n16x@git.kernel.org>
+Message-ID: <tip-36e5kohiasnr106d077mgubp@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         peterz@infradead.org, tglx@linutronix.de
@@ -17,9 +17,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/clock, x86: Use mul_u64_u32_shr()
-  for native_sched_clock()
-Git-Commit-ID: 5dd12c2152743747ca9f50ef80281e54cc416dc0
+Subject: [tip:sched/core] sched/clock: Remove local_irq_disable()
+  from the clocks
+Git-Commit-ID: ef08f0fff87630d4f67ceb09514d8b444df833f8
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,122 +28,132 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:57:12 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:57:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5dd12c2152743747ca9f50ef80281e54cc416dc0
-Gitweb:     http://git.kernel.org/tip/5dd12c2152743747ca9f50ef80281e54cc416dc0
+Commit-ID:  ef08f0fff87630d4f67ceb09514d8b444df833f8
+Gitweb:     http://git.kernel.org/tip/ef08f0fff87630d4f67ceb09514d8b444df833f8
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 29 Nov 2013 18:04:39 +0100
+AuthorDate: Thu, 28 Nov 2013 19:31:23 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 13 Jan 2014 13:47:38 +0100
+CommitDate: Mon, 13 Jan 2014 15:13:11 +0100
 
-sched/clock, x86: Use mul_u64_u32_shr() for native_sched_clock()
+sched/clock: Remove local_irq_disable() from the clocks
 
-Use mul_u64_u32_shr() so that x86_64 can use a single 64x64->128 mul.
+Now that x86 no longer requires IRQs disabled for sched_clock() and
+ia64 never had this requirement (it doesn't seem to do cpufreq at
+all), we can remove the requirement of disabling IRQs.
 
-Before:
+                        MAINLINE   PRE        POST
 
-0000000000000560 <native_sched_clock>:
- 560:   44 8b 1d 00 00 00 00    mov    0x0(%rip),%r11d        # 567 <native_sched_clock+0x7>
- 567:   55                      push   %rbp
- 568:   48 89 e5                mov    %rsp,%rbp
- 56b:   45 85 db                test   %r11d,%r11d
- 56e:   75 4f                   jne    5bf <native_sched_clock+0x5f>
- 570:   0f 31                   rdtsc
- 572:   89 c0                   mov    %eax,%eax
- 574:   48 c1 e2 20             shl    $0x20,%rdx
- 578:   48 c7 c1 00 00 00 00    mov    $0x0,%rcx
- 57f:   48 09 c2                or     %rax,%rdx
- 582:   48 c7 c7 00 00 00 00    mov    $0x0,%rdi
- 589:   65 8b 04 25 00 00 00    mov    %gs:0x0,%eax
- 590:   00
- 591:   48 98                   cltq
- 593:   48 8b 34 c5 00 00 00    mov    0x0(,%rax,8),%rsi
- 59a:   00
- 59b:   48 89 d0                mov    %rdx,%rax
- 59e:   81 e2 ff 03 00 00       and    $0x3ff,%edx
- 5a4:   48 c1 e8 0a             shr    $0xa,%rax
- 5a8:   48 0f af 14 0e          imul   (%rsi,%rcx,1),%rdx
- 5ad:   48 0f af 04 0e          imul   (%rsi,%rcx,1),%rax
- 5b2:   5d                      pop    %rbp
- 5b3:   48 03 04 3e             add    (%rsi,%rdi,1),%rax
- 5b7:   48 c1 ea 0a             shr    $0xa,%rdx
- 5bb:   48 01 d0                add    %rdx,%rax
- 5be:   c3                      retq
-
-After:
-
-0000000000000550 <native_sched_clock>:
- 550:   8b 3d 00 00 00 00       mov    0x0(%rip),%edi        # 556 <native_sched_clock+0x6>
- 556:   55                      push   %rbp
- 557:   48 89 e5                mov    %rsp,%rbp
- 55a:   48 83 e4 f0             and    $0xfffffffffffffff0,%rsp
- 55e:   85 ff                   test   %edi,%edi
- 560:   75 2c                   jne    58e <native_sched_clock+0x3e>
- 562:   0f 31                   rdtsc
- 564:   89 c0                   mov    %eax,%eax
- 566:   48 c1 e2 20             shl    $0x20,%rdx
- 56a:   48 09 c2                or     %rax,%rdx
- 56d:   65 48 8b 04 25 00 00    mov    %gs:0x0,%rax
- 574:   00 00
- 576:   89 c0                   mov    %eax,%eax
- 578:   48 f7 e2                mul    %rdx
- 57b:   65 48 8b 0c 25 00 00    mov    %gs:0x0,%rcx
- 582:   00 00
- 584:   c9                      leaveq
- 585:   48 0f ac d0 0a          shrd   $0xa,%rdx,%rax
- 58a:   48 01 c8                add    %rcx,%rax
- 58d:   c3                      retq
-
-                        MAINLINE   POST
-
-    sched_clock_stable: 1	   1
-    (cold) sched_clock: 329841     331312
-    (cold) local_clock: 301773     310296
-    (warm) sched_clock: 38375      38247
-    (warm) local_clock: 100371     102713
-    (warm) rdtsc:       27340      27289
-    sched_clock_stable: 0          0
-    (cold) sched_clock: 382634     372706
-    (cold) local_clock: 396890     399275
-    (warm) sched_clock: 38194      38124
-    (warm) local_clock: 143452     148698
-    (warm) rdtsc:       27345      27365
+    sched_clock_stable: 1          1          1
+    (cold) sched_clock: 329841     257223     221876
+    (cold) local_clock: 301773     309889     234692
+    (warm) sched_clock: 38375      25280      25602
+    (warm) local_clock: 100371     85268      33265
+    (warm) rdtsc:       27340      24247      24214
+    sched_clock_stable: 0          0          0
+    (cold) sched_clock: 382634     301224     235941
+    (cold) local_clock: 396890     399870     297017
+    (warm) sched_clock: 38194      25630      25233
+    (warm) local_clock: 143452     129629     71234
+    (warm) rdtsc:       27345      24307      24245
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-piu203ses5y1g36bnyw2n16x@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-36e5kohiasnr106d077mgubp@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/timer.h | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ kernel/sched/clock.c | 34 ++++++----------------------------
+ 1 file changed, 6 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-index 34baa0e..10a78c0 100644
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -4,6 +4,7 @@
- #include <linux/pm.h>
- #include <linux/percpu.h>
- #include <linux/interrupt.h>
-+#include <linux/math64.h>
+diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
+index c3ae144..5937154 100644
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -26,9 +26,10 @@
+  * at 0 on boot (but people really shouldn't rely on that).
+  *
+  * cpu_clock(i)       -- can be used from any context, including NMI.
+- * sched_clock_cpu(i) -- must be used with local IRQs disabled (implied by NMI)
+  * local_clock()      -- is cpu_clock() on the current cpu.
+  *
++ * sched_clock_cpu(i)
++ *
+  * How:
+  *
+  * The implementation either uses sched_clock() when
+@@ -50,15 +51,6 @@
+  * Furthermore, explicit sleep and wakeup hooks allow us to account for time
+  * that is otherwise invisible (TSC gets stopped).
+  *
+- *
+- * Notes:
+- *
+- * The !IRQ-safetly of sched_clock() and sched_clock_cpu() comes from things
+- * like cpufreq interrupts that can change the base clock (TSC) multiplier
+- * and cause funny jumps in time -- although the filtering provided by
+- * sched_clock_cpu() should mitigate serious artifacts we cannot rely on it
+- * in general since for !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK we fully rely on
+- * sched_clock().
+  */
+ #include <linux/spinlock.h>
+ #include <linux/hardirq.h>
+@@ -242,20 +234,20 @@ u64 sched_clock_cpu(int cpu)
+ 	struct sched_clock_data *scd;
+ 	u64 clock;
  
- #define TICK_SIZE (tick_nsec / 1000)
+-	WARN_ON_ONCE(!irqs_disabled());
+-
+ 	if (sched_clock_stable)
+ 		return sched_clock();
  
-@@ -57,10 +58,8 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
+ 	if (unlikely(!sched_clock_running))
+ 		return 0ull;
  
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
++	preempt_disable();
+ 	scd = cpu_sdc(cpu);
+ 
+ 	if (cpu != smp_processor_id())
+ 		clock = sched_clock_remote(scd);
+ 	else
+ 		clock = sched_clock_local(scd);
++	preempt_enable();
+ 
+ 	return clock;
+ }
+@@ -316,14 +308,7 @@ EXPORT_SYMBOL_GPL(sched_clock_idle_wakeup_event);
+  */
+ u64 cpu_clock(int cpu)
  {
--	int cpu = smp_processor_id();
--	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
--			(1UL << CYC2NS_SCALE_FACTOR));
-+	unsigned long long ns = this_cpu_read(cyc2ns_offset);
-+	ns += mul_u64_u32_shr(cyc, this_cpu_read(cyc2ns), CYC2NS_SCALE_FACTOR);
- 	return ns;
+-	u64 clock;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-	clock = sched_clock_cpu(cpu);
+-	local_irq_restore(flags);
+-
+-	return clock;
++	return sched_clock_cpu(cpu);
  }
  
+ /*
+@@ -335,14 +320,7 @@ u64 cpu_clock(int cpu)
+  */
+ u64 local_clock(void)
+ {
+-	u64 clock;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-	clock = sched_clock_cpu(smp_processor_id());
+-	local_irq_restore(flags);
+-
+-	return clock;
++	return sched_clock_cpu(raw_smp_processor_id());
+ }
+ 
+ #else /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
