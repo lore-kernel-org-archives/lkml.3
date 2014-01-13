@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaAMBJf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 12 Jan 2014 20:09:35 -0500
-Received: from gate.crashing.org ([63.228.1.57]:37227 "EHLO gate.crashing.org"
+	id S1751228AbaAMBQG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 12 Jan 2014 20:16:06 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55719 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019AbaAMBJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 12 Jan 2014 20:09:33 -0500
-Message-ID: <1389575361.4672.115.camel@pasglop>
-Subject: Re: powerpc32 broken by ef1313deafb7
+	id S1750899AbaAMBQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 12 Jan 2014 20:16:04 -0500
+Message-ID: <1389575749.4672.118.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>
-Date: Mon, 13 Jan 2014 12:09:21 +1100
-In-Reply-To: <1389572866.1176.19@driftwood>
-References: <1389572866.1176.19@driftwood>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Mon, 13 Jan 2014 12:15:49 +1100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
@@ -22,49 +21,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-01-12 at 18:27 -0600, Rob Landley wrote:
-> Using the attached config, toolchain from  
-> http://landley.net/aboriginal/bin/cross-compiler-powerpc.tar.bz2 but  
-> presumably any 32 bit powerpc one should work, building ala make  
-> ARCH=powerpc CROSS_COMPILE=powerpc-
-> 
->    CC      arch/powerpc/lib/xor_vmx.o
-> In file included from include/linux/thread_info.h:10,
->                   from include/linux/preempt.h:9,
->                   from arch/powerpc/lib/xor_vmx.c:22:
-> include/linux/types.h:29: error: both 'unsigned' and '_Bool' in  
-> declaration specifiers
-> cc1: warnings being treated as errors
-> include/linux/types.h:29: warning: useless type name in empty  
-> declaration
-> In file included from include/linux/kernel.h:11,
->                   from include/asm-generic/bug.h:13,
->                   from  
-> /home/landley/linux/linux/arch/powerpc/include/asm/bug.h:127,
->                   from include/linux/bug.h:4,
->                   from include/linux/thread_info.h:11,
->                   from include/linux/preempt.h:9,
->                   from arch/powerpc/lib/xor_vmx.c:22:
-> 
-> And then pages more errors. The commit before that one didn't do that.
+Hi Linus !
 
-Your attached config has ...
-
-CONFIG_X86_64=y
-CONFIG_X86=y
-CONFIG_INSTRUCTION_DECODER=y
-CONFIG_OUTPUT_FORMAT="elf64-x86-64"
-CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
-
-So it's probably not what you wanted :-)
-
-I'm not sure what the problem you see is because I've definitely run all
-of these versions through my usual set of test configs without any
-trouble, including a bunch of 32-bit ones.
+Here's one regression fix for 3.13 that I would appreciate if you could still
+pull in. It was an "interesting" one to debug, basically it's an old bug that
+got somewhat "exposed" by new code breaking the boot on PA Semi boards (yes,
+it does appear that some people are still using these !).
 
 Cheers,
 Ben.
 
-> Rob
+The following changes since commit f991db1cf1bdca43675b5d2df0af991719727029:
+
+  Merge remote-tracking branch 'agust/merge' into merge (2013-12-30 14:48:27 +1100)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to 10348f5976830e5d8f74e8abb04a9a057a5e8478:
+
+  powerpc: Check return value of instance-to-package OF call (2014-01-13 09:49:17 +1100)
+
+----------------------------------------------------------------
+Benjamin Herrenschmidt (1):
+      powerpc: Check return value of instance-to-package OF call
+
+ arch/powerpc/kernel/prom_init.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
 
