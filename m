@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989AbaAMQDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:03:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53224 "EHLO
+	id S1755082AbaAMQin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:38:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53314 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843AbaAMQC4 (ORCPT
+	with ESMTP id S1753990AbaAMQDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:56 -0500
+	Mon, 13 Jan 2014 11:03:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Paul Moore <pmoore@redhat.com>,
+Cc: Li Wang <liwang@ubuntukylin.com>, Sage Weil <sage@inktank.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 088/208] selinux: selinux_setprocattr()->ptrace_parent() needs rcu_read_lock()
-Date: Mon, 13 Jan 2014 15:58:49 +0000
-Message-Id: <1389628849-1614-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 105/208] ceph: Avoid data inconsistency due to d-cache aliasing in readpage()
+Date: Mon, 13 Jan 2014 15:59:06 +0000
+Message-Id: <1389628849-1614-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,45 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Li Wang <liwang@ubuntukylin.com>
 
-commit c0c1439541f5305b57a83d599af32b74182933fe upstream.
+commit 56f91aad69444d650237295f68c195b74d888d95 upstream.
 
-selinux_setprocattr() does ptrace_parent(p) under task_lock(p),
-but task_struct->alloc_lock doesn't pin ->parent or ->ptrace,
-this looks confusing and triggers the "suspicious RCU usage"
-warning because ptrace_parent() does rcu_dereference_check().
+If the length of data to be read in readpage() is exactly
+PAGE_CACHE_SIZE, the original code does not flush d-cache
+for data consistency after finishing reading. This patches fixes
+this.
 
-And in theory this is wrong, spin_lock()->preempt_disable()
-doesn't necessarily imply rcu_read_lock() we need to access
-the ->parent.
-
-Reported-by: Evan McNabb <emcnabb@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- security/selinux/hooks.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ceph/addr.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 122b956..56f7621 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -5558,11 +5558,11 @@ static int selinux_setprocattr(struct task_struct *p,
- 		/* Check for ptracing, and update the task SID if ok.
- 		   Otherwise, leave SID unchanged and fail. */
- 		ptsid = 0;
--		task_lock(p);
-+		rcu_read_lock();
- 		tracer = ptrace_parent(p);
- 		if (tracer)
- 			ptsid = task_sid(tracer);
--		task_unlock(p);
-+		rcu_read_unlock();
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 5318a3b..0d2e0f1 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -214,9 +214,13 @@ static int readpage_nounlock(struct file *filp, struct page *page)
+ 	if (err < 0) {
+ 		SetPageError(page);
+ 		goto out;
+-	} else if (err < PAGE_CACHE_SIZE) {
++	} else {
++		if (err < PAGE_CACHE_SIZE) {
+ 		/* zero fill remainder of page */
+-		zero_user_segment(page, err, PAGE_CACHE_SIZE);
++			zero_user_segment(page, err, PAGE_CACHE_SIZE);
++		} else {
++			flush_dcache_page(page);
++		}
+ 	}
+ 	SetPageUptodate(page);
  
- 		if (tracer) {
- 			error = avc_has_perm(ptsid, sid, SECCLASS_PROCESS,
 -- 
 1.8.3.2
 
