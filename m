@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768AbaAMQo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:44:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53200 "EHLO
+	id S1753790AbaAMQCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:02:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53077 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795AbaAMQCt (ORCPT
+	with ESMTP id S1753630AbaAMQCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:49 -0500
+	Mon, 13 Jan 2014 11:02:19 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <len.brown@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        kbuild test robot <fengguang.wu@intel.com>,
+Cc: JongHo Kim <furmuwon@gmail.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 081/208] libata, freezer: avoid block device removal while system is frozen
-Date: Mon, 13 Jan 2014 15:58:42 +0000
-Message-Id: <1389628849-1614-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 061/208] ALSA: Add SNDRV_PCM_STATE_PAUSED case in wait_for_avail function
+Date: Mon, 13 Jan 2014 15:58:22 +0000
+Message-Id: <1389628849-1614-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,115 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: JongHo Kim <furmuwon@gmail.com>
 
-commit 85fbd722ad0f5d64d1ad15888cd1eb2188bfb557 upstream.
+commit ed697e1aaf7237b1a62af39f64463b05c262808d upstream.
 
-Freezable kthreads and workqueues are fundamentally problematic in
-that they effectively introduce a big kernel lock widely used in the
-kernel and have already been the culprit of several deadlock
-scenarios.  This is the latest occurrence.
+When the process is sleeping at the SNDRV_PCM_STATE_PAUSED
+state from the wait_for_avail function, the sleep process will be woken by
+timeout(10 seconds). Even if the sleep process wake up by timeout, by this
+patch, the process will continue with sleep and wait for the other state.
 
-During resume, libata rescans all the ports and revalidates all
-pre-existing devices.  If it determines that a device has gone
-missing, the device is removed from the system which involves
-invalidating block device and flushing bdi while holding driver core
-layer locks.  Unfortunately, this can race with the rest of device
-resume.  Because freezable kthreads and workqueues are thawed after
-device resume is complete and block device removal depends on
-freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
-progress, this can lead to deadlock - block device removal can't
-proceed because kthreads are frozen and kthreads can't be thawed
-because device resume is blocked behind block device removal.
-
-839a8e8660b6 ("writeback: replace custom worker pool implementation
-with unbound workqueue") made this particular deadlock scenario more
-visible but the underlying problem has always been there - the
-original forker task and jbd2 are freezable too.  In fact, this is
-highly likely just one of many possible deadlock scenarios given that
-freezer behaves as a big kernel lock and we don't have any debug
-mechanism around it.
-
-I believe the right thing to do is getting rid of freezable kthreads
-and workqueues.  This is something fundamentally broken.  For now,
-implement a funny workaround in libata - just avoid doing block device
-hot[un]plug while the system is frozen.  Kernel engineering at its
-finest.  :(
-
-v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
-    as a module.
-
-v3: Comment updated and polling interval changed to 10ms as suggested
-    by Rafael.
-
-v4: Add #ifdef CONFIG_FREEZER around the hack as pm_freezing is not
-    defined when FREEZER is not configured thus breaking build.
-    Reported by kbuild test robot.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
-Reviewed-by: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
-Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: JongHo Kim <furmuwon@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-scsi.c | 21 +++++++++++++++++++++
- kernel/freezer.c          |  6 ++++++
- 2 files changed, 27 insertions(+)
+ sound/core/pcm_lib.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 94d72f3c..df64fca 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3863,6 +3863,27 @@ void ata_scsi_hotplug(struct work_struct *work)
- 		return;
- 	}
- 
-+	/*
-+	 * XXX - UGLY HACK
-+	 *
-+	 * The block layer suspend/resume path is fundamentally broken due
-+	 * to freezable kthreads and workqueue and may deadlock if a block
-+	 * device gets removed while resume is in progress.  I don't know
-+	 * what the solution is short of removing freezable kthreads and
-+	 * workqueues altogether.
-+	 *
-+	 * The following is an ugly hack to avoid kicking off device
-+	 * removal while freezer is active.  This is a joke but does avoid
-+	 * this particular deadlock scenario.
-+	 *
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
-+	 * http://marc.info/?l=linux-kernel&m=138695698516487
-+	 */
-+#ifdef CONFIG_FREEZER
-+	while (pm_freezing)
-+		msleep(10);
-+#endif
-+
- 	DPRINTK("ENTER\n");
- 	mutex_lock(&ap->scsi_scan_mutex);
- 
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index b462fa1..aa6a8aa 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
- bool pm_freezing;
- bool pm_nosig_freezing;
- 
-+/*
-+ * Temporary export for the deadlock workaround in ata_scsi_hotplug().
-+ * Remove once the hack becomes unnecessary.
-+ */
-+EXPORT_SYMBOL_GPL(pm_freezing);
-+
- /* protects freezing and frozen transitions */
- static DEFINE_SPINLOCK(freezer_lock);
- 
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 82bb029..db7f5d9 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1937,6 +1937,8 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
+ 		case SNDRV_PCM_STATE_DISCONNECTED:
+ 			err = -EBADFD;
+ 			goto _endloop;
++		case SNDRV_PCM_STATE_PAUSED:
++			continue;
+ 		}
+ 		if (!tout) {
+ 			snd_printd("%s write error (DMA or IRQ trouble?)\n",
 -- 
 1.8.3.2
 
