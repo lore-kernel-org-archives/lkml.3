@@ -1,112 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaAMQRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:17:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53683 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaAMQEy (ORCPT
+	id S1755433AbaAMQRo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:17:44 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35572 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502AbaAMQRh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:54 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 171/208] virtio: delete napi structures from netdev before releasing memory
-Date: Mon, 13 Jan 2014 16:00:12 +0000
-Message-Id: <1389628849-1614-172-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 13 Jan 2014 11:17:37 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.1 \(1827\))
+Subject: Re: [PATCH] xprtrdma: silence frame size warning
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <CDD9CEF2-F91A-4ABA-8DA7-53AF8A749194@primarydata.com>
+Date: Mon, 13 Jan 2014 11:17:19 -0500
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Miller David S." <davem@davemloft.net>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        netdev@vger.kernel.org, LKML Kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D3560A1A-59B3-4480-8627-9114A4B9895C@oracle.com>
+References: <1389627955.20467.9.camel@x41> <CDD9CEF2-F91A-4ABA-8DA7-53AF8A749194@primarydata.com>
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+X-Mailer: Apple Mail (2.1827)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+Hi-
 
-------------------
+On Jan 13, 2014, at 10:59 AM, Trond Myklebust <trond.myklebust@primarydata.com> wrote:
 
-From: Andrey Vagin <avagin@openvz.org>
+> 
+> On Jan 13, 2014, at 10:45, Paul Bolle <pebolle@tiscali.nl> wrote:
+> 
+>> Building verbs.o on 32 bits x86, with CONFIG_FRAME_WARN set to 1024, its
+>> default value, triggers this GCC warning:
+>>   net/sunrpc/xprtrdma/verbs.c: In function ‘rpcrdma_register_default_external’:
+>>   net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+>> 
+>> Silence this warning by allocating "ipb" dynamically.
+>> 
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> 0) Compile tested only (on 32 bits x86). I don't have access to
+>> Infiniband hardware.
+>> 
+>> 1) Please note that this is not a new warning. The oldest build log I
+>> have still available on this machine is for a v3.8 rc, and it already
+>> showed this warning. 
+>> 
+>> 2) I do hope my choice for the GFP_KERNEL flag is correct here.
+>> 
+>> net/sunrpc/xprtrdma/verbs.c | 6 +++++-
+>> 1 file changed, 5 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+>> index 93726560..939ccc8 100644
+>> --- a/net/sunrpc/xprtrdma/verbs.c
+>> +++ b/net/sunrpc/xprtrdma/verbs.c
+>> @@ -1736,11 +1736,14 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+>> 	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
+>> 				  IB_ACCESS_REMOTE_READ);
+>> 	struct rpcrdma_mr_seg *seg1 = seg;
+>> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
+>> +	struct ib_phys_buf *ipb;
+>> 	int len, i, rc = 0;
+>> 
+>> 	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
+>> 		*nsegs = RPCRDMA_MAX_DATA_SEGS;
+>> +	ipb = kmalloc(sizeof(*ipb) * *nsegs, GFP_KERNEL);
+>> +	if (ipb == NULL)
+>> +		return -ENOMEM;
+>> 	for (len = 0, i = 0; i < *nsegs;) {
+>> 		rpcrdma_map_one(ia, seg, writing);
+>> 		ipb[i].addr = seg->mr_dma;
+>> @@ -1770,6 +1773,7 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+>> 		seg1->mr_len = len;
+>> 	}
+>> 	*nsegs = i;
+>> +	kfree(ipb);
+>> 	return rc;
+>> }
+> 
+> Hi Paul,
+> 
+> Unfortunately, the above could be called from a file write back context, so we cannot use GFP_KERNEL allocations. In fact, I suspect we should only use GFP_ATOMIC, and then have the rpc_task delay and retry if the allocation fails.
+> 
+> The problem is that it looks to me as if xprt_rdma_send_request will currently fail, if we return an error from rpcrdma_register_default_external.
+> 
+> Chuck, will you be able to look into the above issue as part of your RDMA work?
 
-commit d4fb84eefe5164f6a6ea51d0a9e26280c661a0dd upstream.
+I’m building a queue of NFS/RDMA work on bugzilla.kernel.org.  Let’s create a defect report there to document this, and it will get prioritized with the rest.  Paul, can you do that to start us off?  Product “File system”, Component “NFS”.
 
-free_netdev calls netif_napi_del too, but it's too late, because napi
-structures are placed on vi->rq. netif_napi_add() is called from
-virtnet_alloc_queues.
+I can’t say that a warning on 32-bit x86 is going to be an especially high priority.  However, the underlying issue of allocating arrays of data segments on the stack is something that needs extended attention, and is already in plan.
 
-general protection fault: 0000 [#1] SMP
-Dumping ftrace buffer:
-   (ftrace buffer empty)
-Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
-CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
-RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
-RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
-RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
-RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
-RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
-R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
-FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
-Stack:
- ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
- ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
- ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
-Call Trace:
- [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
- [<ffffffff8156499b>] free_netdev+0x8b/0x110
- [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
- [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
- [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
- [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
- [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
- [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
- [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
- [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
- [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
- [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
- [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
-Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
-RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
- RSP <ffff8800379e1dd0>
----[ end trace d5931cd3f87c9763 ]---
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
 
-Fixes: 986a4f4d452d (virtio_net: multiqueue support)
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/virtio_net.c | 5 +++++
- 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 64cf702..5055eb7 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1285,6 +1285,11 @@ static void virtnet_config_changed(struct virtio_device *vdev)
- 
- static void virtnet_free_queues(struct virtnet_info *vi)
- {
-+	int i;
-+
-+	for (i = 0; i < vi->max_queue_pairs; i++)
-+		netif_napi_del(&vi->rq[i].napi);
-+
- 	kfree(vi->rq);
- 	kfree(vi->sq);
- }
--- 
-1.8.3.2
 
