@@ -1,198 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaAMJnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:43:42 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:51283 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbaAMJnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:43:40 -0500
+	id S1751414AbaAMJnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:43:52 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55387 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355AbaAMJns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 04:43:48 -0500
+Message-ID: <52D3B544.6070808@ti.com>
+Date: Mon, 13 Jan 2014 11:43:32 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-4-git-send-email-lpapp@kde.org>
-	<CACRpkdbAPYs=48RXr6r5kqkYj2V9GitRMT2BRKkn4_gT77wUEg@mail.gmail.com>
-	<CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
-Date: Mon, 13 Jan 2014 10:43:39 +0100
-Message-ID: <CACRpkdbih0xQWqnuouhuiRCzYmou++76ex5zC1nh=iBQWJ9otA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] gpio: MAX6650/6651 support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laszlo Papp <lpapp@kde.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+CC: <plagnioj@jcrosoft.com>, <pali.rohar@gmail.com>, <pavel@ucw.cz>,
+        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Ivaylo Dimitrov <freemangordon@abv.bg>,
+        Archit Taneja <archit@ti.com>
+Subject: Re: [PATCH] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
+References: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+In-Reply-To: <1389444125-5000-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="di3IfJUimkR1swHcb3b2PUMLoDw06ux9U"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 3:59 PM, Laszlo Papp <lpapp@kde.org> wrote:
-> On Tue, Jan 7, 2014 at 2:33 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+--di3IfJUimkR1swHcb3b2PUMLoDw06ux9U
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
->> As I can see this is really a GPIO+pin control driver it shall be
->> moved to drivers/pinctrl.
->
-> Hmm, but then I am not sure why the gpio-max*.c are similar in the
-> drivers/gpio area. Could you please elaborate? They are somewhat
-> similar to my understanding, but perhaps there is some fundamental
-> difference I am not aware of?
+Hi,
 
-The other drivers were merged before the pin control subsystem
-existed. If they had been submitted today, the comments would
-be the same as for your driver.
+On 2014-01-11 14:42, Ivaylo Dimitrov wrote:
+> From: Ivaylo Dimitrov <freemangordon@abv.bg>
+>=20
+> commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
+> synclost errors in OMAP3 introduces limits check to prevent SYNCLOST er=
+rors
+> on OMAP3. However, it misses the logic found in Nokia kernels that is
+> needed to correctly calculate whether 3 tap or 5 tap rescaler to be use=
+d as
+> well as the logic to fallback to 3 taps if 5 taps clock results in too
+> tight horizontal timings. Without that patch "horizontal timing too tig=
+ht"
+> errors are seen when a video with resolution above 640x350 is tried to =
+be
+> played. The patch is a forward-ported logic found in Nokia N900 and N9/=
+50
+> kernels.
+>=20
+> Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
 
->> Do you *really* have to split up this handling into two files with
->> criss-cross calls like this?
->
-> I personally think it is a bit excessive, so I agree with you. I
-> wished to stay somewhat consistent to the following drivers:
->
-> * gpio-max730x.c
-> * gpio-max7300.c
-> * gpio-max7301.c
->
-> Are you OK with that then if I do not follow the consistency?
+I had a quick test with this. Without the patch, on beagle-xm, my scaler
+test immediately gives "horizontal timing too tight". With the patch, no
+errors and the scaling seems to work. So looks good. I'll look at the
+patch a bit more, but I think this is 3.14 material.
 
-Yes. It should be moved to pinctrl anyway.
+ Tomi
 
-What about rewriting and fixing up all drivers.
 
->> Anyway if you absolutely have to do
->> this don't use "__" prefixes, those are for the preprocessor.
->> Just max665x_probe() is fine.
->
-> This is because of the same reason as above: consistency. I can drop
-> it if you wish?
 
-Yes please.
+--di3IfJUimkR1swHcb3b2PUMLoDw06ux9U
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
->> Why does it have to be subsys_initcall? Please try to avoid
->> this.
->
-> It is for consistency just as before. :-) Could you please elaborate
-> why it is better to be avoided, or at least point me to some
-> documentation?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-We want to move all drivers to module_init() (device_initcall level)
-as shoveling initcalls around is creating an uncontrolled and
-unmaintained mess.
+iQIcBAEBAgAGBQJS07VEAAoJEPo9qoy8lh71CTMP/0fF8a8+EtwvrdmFNhAg/0OU
+e5iZSsohg0MWwGj2Ncve5UO3wdSbNhY1SLvEiEh0YRkBuoQE9uCf4cF4B01eoCot
+KG+7N78cdqgeuuC/9eDeklxwZPKZMeMGxjE/CB57GsI+JDdskjEFvwgKlC+En7D1
+PpY/UQvH9q4/wEFrK4iI+eHYkgE1gqR/UvEY0ulKOPjk2FunZycmA6A0G+qS/dKZ
+cPG88TgtLKV4SJ9z9upDjwAhA+a+8ycydLd6XmrfecvpOz16qmGfL6ANoRAZapgS
+jhQEGLErHFuk7TEqdjUE4XuzyIA6QD/VH9fE6Ag33l3SJ+F7253PsQwnsz3k9tj7
+KrSIwNpKnGNY6JG8e6DDleGQS2lDbqEqyiIBsLcNIP71sXPVRQXEwx5z7zq6KcEX
+TmOmYWSRoT2HOwD/KMV0woA9NKK9/Vv0005hv9d6yhuhrQxPCO0hgLioKUiZPXnD
+TTHwXM23djhMo8K0bM0Ej8F4zpwnYiX2sSB3mt1qAQvV8kEQNJW6Cd5sLcYEcD/L
+cqZ+s4N8PQPnAdARrWdkM0Z4Y++jTxJ2yrrujsERDCsSsyLK5T3arM+18MXy5dw9
+e2opDdeJwdtvdsHRQB0thxT45CvY+qVsoeXeVpl7Qw2lyKgql/Lo0PGWVVtKXo4l
+7K8uqdmt8wQbuLhur/Im
+=6nsW
+-----END PGP SIGNATURE-----
 
-To fix this, we're using deferred probe.
-
-See commit d1c3414c2a9d10ef7f0f7665f5d2947cd088c093
-"drivercore: Add driver probe deferral mechanism"
-
->> And *why* should I have a fan controller in the GPIO subsystem?
->> I don't quite get this.
->
-> The MAX6651 chip is multifunctional, but it is ultimate a fan
-> controller IC as per Kconfig guided text. If you prefer, I can rename
-> the term here to refer to the GPIO subfunctionality, or you had
-> something else in mind?
-
-Aha OK I can live with this, sorry for missing the Kconfig
-fragment.
-
->> Since this is really pin configuration the driver should support more
->> stuff in the long run, and then it should be in drivers/pinctrl.
->
-> Could you please elaborate what more stuff you have in mind for this?
-
-Implement pin config portions of pin control. See
-Documentation/pinctrl.txt
-
-(You answer this yourself later.)
-
->>> +    switch (offset) {
->>> +    case 0:
->>> +        level = max665x_get_level(gpio, offset, config & PIN0_CONFIG_MASK);
->>> +        break;
->>> +    case 1:
->>> +        level = max665x_get_level(gpio, offset, (config & PIN1_CONFIG_MASK) >> 2);
->>> +        break;
->>> +    case 2:
->>> +        level = max665x_get_level(gpio, offset, (config & PIN2_CONFIG_MASK) >> 4);
->>> +        break;
->>> +    case 3:
->>> +        level = max665x_get_level(gpio, offset, (config & PIN3_CONFIG_MASK) >> 5);
->>> +        break;
->>> +    case 4:
->>> +        level = max665x_get_level(gpio, offset, (config & PIN3_CONFIG_MASK) >> 6);
->>> +        break;
->>
->> This looks like it could be made a lot simpler using a table.
->
-> How exactly would you like to have it?
-
-struct max_config {
-    u32 mask;
-    u8 shift;
-};
-
-struct max_config max_configs = {
-    {
-        .mask = PIN0_CONFIG_MASK,
-        .shift = 0,
-    },
-    {
-        .mask = PIN1_CONFIG_MASK,
-        .shift = 2,
-    },
-....
-
-struct max_config *cfg = max_configs[offset];
-
-level = max665x_get_level(gpio, offset, (config & cfg->mask) >> cfg->shift);
-
-You get the idea.
-
->> No way. No custom interfaces for setting pullups, use generic pin config.
->
-> What do you mean here? Could you please elaborate a bit more? The pull
-> up trait depends on the given hardware. It must be coming from
-> platform data, e.g. we can supply the right variant from our custom
-> board file.
-
-I mean use pin config from pin control for setting this.
-Documentation/pinctrl.txt
-
-Regarding your comment on platform data, see the section named
-"Board/machine configuration".
-
->> Why can't you always use dynamic assignments of GPIO numbers?
->
-> Because this information is board related.
-
-OK so this board is not using any dynamic number assignment
-system such as ACPI or device tree? Which board is it?
-
->> When implementing the pinctrl interface, you may want to use
->> gpiochip_add_pin_range() to cross-reference between GPIOs
->> and pinctrl.
->
-> Well, Guenter wanted to go through the gpio system... Perhaps, it was
-> not made clear that pinctrl would be better. I just followed the GPIO
-> generic guideline. :)
-
-GPIO is not sufficient since it needs both GPIO and pin
-control interfaces. You need both/and not either/or.
-
-Look at other driver in drivers/pinctrl and you will get the hang
-of this.
-
->>> +++ b/include/linux/mfd/max6651-private.h
->> (...)
->>> +struct max665x_gpio {
->>> +    u8     input_pullup_active;
->>
->> No way.
->
-> Why so? How would you make it customizable by board files otherwise?
-
-I mean use pin config from pin control for setting this.
-Documentation/pinctrl.txt
-
-Regarding your comment on platform data, see the section named
-"Board/machine configuration".
-
-Yours,
-Linus Walleij
+--di3IfJUimkR1swHcb3b2PUMLoDw06ux9U--
