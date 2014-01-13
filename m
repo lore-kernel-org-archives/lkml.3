@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaAMQG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:06:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53868 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754699AbaAMQFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:45 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Magnus Damm <damm@opensource.se>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 208/208] clocksource: em_sti: Set cpu_possible_mask to fix SMP broadcast
-Date: Mon, 13 Jan 2014 16:00:49 +0000
-Message-Id: <1389628849-1614-209-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1753130AbaAMQHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:07:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752631AbaAMQHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:07:17 -0500
+Date: Mon, 13 Jan 2014 17:07:05 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: check && lockdep_no_validate (Was: lockdep: Introduce
+	wait-type checks)
+Message-ID: <20140113160705.GA7616@redhat.com>
+References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net> <20140109175448.GA17673@redhat.com> <20140112205814.GP7572@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140112205814.GP7572@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
+On 01/12, Peter Zijlstra wrote:
+>
+> On Thu, Jan 09, 2014 at 06:54:48PM +0100, Oleg Nesterov wrote:
+> >
+> > --- a/kernel/locking/lockdep.c
+> > +++ b/kernel/locking/lockdep.c
+> > @@ -1939,7 +1939,8 @@ check_prevs_add(struct task_struct *curr, struct held_lock *next)
+> >  		 * Only non-recursive-read entries get new dependencies
+> >  		 * added:
+> >  		 */
+> > -		if (hlock->read != 2) {
+> > +		if (hlock->read != 2 &&
+> > +		    hlock->instance->key != &__lockdep_no_validate__) {
+> >  			if (!check_prev_add(curr, hlock, next,
+> >  						distance, trylock_loop))
+> >  				return 0;
+> >
+>
+> Hmm, you are quite right indeed;
 
-------------------
+Thanks!
 
-From: Magnus Damm <damm@opensource.se>
+> although I would write it like:
+>
+>   if (hlock->read != 2 && hlock->check == 2)
+>
+> because the __lockdep_no_validate__ thing forces the ->check value to 1.
 
-commit 2199a5574b6d94b9ca26c6345356f45ec60fef8b upstream.
+Agreed, hlock->check == 2 looks better. But this connects to another
+patch I sent which removes hlock->check...
 
-Update the STI driver by setting cpu_possible_mask to make EMEV2
-SMP work as expected together with the ARM broadcast timer.
+OK, I'll wait for review on that patch, then resend this one with
+->check or __lockdep_no_validate__ depending on the result.
 
-This breakage was introduced by:
-
-f7db706 ARM: 7674/1: smp: Avoid dummy clockevent being preferred over real hardware clock-event
-
-Without this fix SMP operation is broken on EMEV2 since no
-broadcast timer interrupts trigger on the secondary CPU cores.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Tested-by: Simon Horman <horms+renesas@verge.net.au>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/clocksource/em_sti.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clocksource/em_sti.c b/drivers/clocksource/em_sti.c
-index 4329a29..3141849 100644
---- a/drivers/clocksource/em_sti.c
-+++ b/drivers/clocksource/em_sti.c
-@@ -301,7 +301,7 @@ static void em_sti_register_clockevent(struct em_sti_priv *p)
- 	ced->name = dev_name(&p->pdev->dev);
- 	ced->features = CLOCK_EVT_FEAT_ONESHOT;
- 	ced->rating = 200;
--	ced->cpumask = cpumask_of(0);
-+	ced->cpumask = cpu_possible_mask;
- 	ced->set_next_event = em_sti_clock_event_next;
- 	ced->set_mode = em_sti_clock_event_mode;
- 
--- 
-1.8.3.2
+Oleg.
 
