@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaAMR3C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:29:02 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:34942 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaAMR25 (ORCPT
+	id S1753624AbaAMR3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:29:23 -0500
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:14814 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaAMR3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:28:57 -0500
-Date: Mon, 13 Jan 2014 18:28:33 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
- of __lock_acquire()
-Message-ID: <20140113172833.GT31570@twins.programming.kicks-ass.net>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net>
- <20140109163120.GA8038@redhat.com>
- <20140109170823.GF7572@laptop.programming.kicks-ass.net>
- <20140112094041.GB31809@gmail.com>
- <20140112174532.GA12147@redhat.com>
- <20140112174554.GB12147@redhat.com>
- <20140113170609.GA9873@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113170609.GA9873@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 13 Jan 2014 12:29:20 -0500
+Message-ID: <1389634128.2750.1.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 5/5] futex: Silence uninitialized warnings
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, dvhart@linux.intel.com, peterz@infradead.org,
+        tglx@linutronix.de, paulmck@linux.vnet.ibm.com, efault@gmx.de,
+        jeffm@suse.com, torvalds@linux-foundation.org, jason.low2@hp.com,
+        Waiman.Long@hp.com, tom.vaden@hp.com, scott.norton@hp.com,
+        aswin@hp.com
+Date: Mon, 13 Jan 2014 09:28:48 -0800
+In-Reply-To: <20140113101628.GA8270@gmail.com>
+References: <1389569486-25487-1-git-send-email-davidlohr@hp.com>
+	 <1389569486-25487-6-git-send-email-davidlohr@hp.com>
+	 <20140113101628.GA8270@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 06:06:09PM +0100, Oleg Nesterov wrote:
-> On 01/12, Oleg Nesterov wrote:
-> >
-> > The "int check" argument of lock_acquire() and held_lock->check
-> > are misleading and unneeded. This is only used as a boolean, 2
-> > denotes "true", everything else is "false". And this boolean is
-> > always equal to prove_locking.
-> >
-> > The only exception is __lockdep_no_validate__ which should make
-> > this condition "false" in validate_chain().
+On Mon, 2014-01-13 at 11:16 +0100, Ingo Molnar wrote:
+> * Davidlohr Bueso <davidlohr@hp.com> wrote:
 > 
-> And I missed mark_irqflags(),
+> > From: Davidlohr Bueso <davidlohr@hp.com>
+> > 
+> > Callers of cmpxchg_futex_value_locked() can trigger the following:
+> > 
+> > kernel/futex.c: In function ‘futex_lock_pi_atomic’:
+> > kernel/futex.c:725: warning: ‘curval’ may be used uninitialized in this function
+> > 
+> > This was initially addressed by commit 7cfdaf38, but others still remain. Silence
+> > these messages once and for all as the variables really aren't uninitialized.
+> > 
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Acked-by: Darren Hart <dvhart@linux.intel.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Mike Galbraith <efault@gmx.de>
+> > Cc: Jeff Mahoney <jeffm@suse.com>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: Scott Norton <scott.norton@hp.com>
+> > Cc: Tom Vaden <tom.vaden@hp.com>
+> > Cc: Aswin Chandramouleeswaran <aswin@hp.com>
+> > Cc: Waiman Long <Waiman.Long@hp.com>
+> > Cc: Jason Low <jason.low2@hp.com>
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > ---
+> >  kernel/futex.c | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index be6399a..8d40953 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -838,7 +838,7 @@ static int futex_lock_pi_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
+> >  				struct task_struct *task, int set_waiters)
+> >  {
+> >  	int lock_taken, ret, force_take = 0;
+> > -	u32 uval, newval, curval, vpid = task_pid_vnr(task);
+> > +	u32 uval, newval, uninitialized_var(curval), vpid = task_pid_vnr(task);
+> >  
+> >  retry:
+> >  	ret = lock_taken = 0;
+> > @@ -2227,7 +2227,7 @@ static int futex_unlock_pi(u32 __user *uaddr, unsigned int flags)
+> >  	struct futex_hash_bucket *hb;
+> >  	struct futex_q *this, *next;
+> >  	union futex_key key = FUTEX_KEY_INIT;
+> > -	u32 uval, vpid = task_pid_vnr(current);
+> > +	u32 uninitialized_var(uval), vpid = task_pid_vnr(current);
+> >  	int ret;
+> >  
+> >  retry:
+> > @@ -2843,7 +2843,7 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+> >  
+> >  static int __init futex_init(void)
+> >  {
+> > -	u32 curval;
+> > +	u32 uninitialized_var(curval);
+> >  	unsigned long i;
+> >  
+> >  #if CONFIG_BASE_SMALL
 > 
-> > @@ -3136,7 +3130,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
-> >  	hlock->holdtime_stamp = lockstat_clock();
-> >  #endif
-> >
-> > -	if (check == 2 && !mark_irqflags(curr, hlock))
-> > +	if (prove_locking && !mark_irqflags(curr, hlock))
-> >  		return 0;
+> I'm skipping this patch though.
 > 
-> This change is not right, at least it is not equivalent.
+> I consider the use of uninitialized_var() dangerous and broken: if for 
+> whatever reason a future change to the code makes the warning trigger 
+> and makes it _true_, then we won't notice it because it's hidden 
+> unconditionally ...
+
+Sure, so we should then get rid of the already existing ones from
+7cfdaf38.
+
 > 
-> And I just realized that rcu_lock_acquire() does lock_acquire(check => 1).
-> Probably we can mark rcu_lock_map's as __lockdep_no_validate__.
+> The following alternative measures can be used to make spurious 
+> old-compiler warnings go away:
+> 
+>  - Consider upgrading your compiler.
+> 
+>  - If for whatever reason you can't upgrade your compiler then
+>    restructure the code so that the flow of logic is more apparent 
+>    even to older GCC versions. (Chances are that the flow will be more 
+>    readable to humans too, so it's a win-win!)
+> 
+>  - If you think the flow is exactly perfect and (older) GCC which you
+>    cannot upgrade is still being silly, then initialize the variable
+>    to zero. On a new compiler this won't mean a thing because GCC will 
+>    notice the superfluous initialization and will optimize it out -
+>    and it's a lot safer than just shutting the warning up forever.
 
-Can't, RCU needs its own classes. Otherwise it cannot tell which version
-of the RCU read lock its holding at just that moment.
+Ok, we could go wit this last path then.
 
-> Anything else I missed?
-
-Nothing springs to mind, but then, I totally missed the RCU thing too.
-
-At the very least we can reduce check to a single bit.
