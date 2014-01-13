@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443AbaAWAnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:43:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38419 "EHLO
+	id S1756106AbaAWAoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:44:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38512 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756338AbaAWAnq convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756159AbaAWAoJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:43:46 -0500
+	Wed, 22 Jan 2014 19:44:09 -0500
 User-Agent: K-9 Mail for Android
-In-Reply-To: <52D3FD67.2060708@oracle.com>
-References: <1389371301-29532-1-git-send-email-olaf@aepfle.de> <52D036FC.6000308@oracle.com> <20140110213746.GA933@aepfle.de> <52D073F0.5020400@oracle.com> <20140113093032.GA13919@aepfle.de> <52D3FD67.2060708@oracle.com>
+In-Reply-To: <52D3FF0E02000078001131A5@nat28.tlf.novell.com>
+References: <1389608052-7139-1-git-send-email-olaf@aepfle.de> <52D3DAEE0200007800112FD4@nat28.tlf.novell.com> <20140113120131.GA15623@aepfle.de> <52D3EB5F02000078001130B5@nat28.tlf.novell.com> <1389618054.13654.57.camel@kazak.uk.xensource.com> <52D3F535020000780011311B@nat28.tlf.novell.com> <52D3EE14.3080609@citrix.com> <52D3FF0E02000078001131A5@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
  charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Subject: Re: [PATCH] xen-blkfront: remove type check from blkfront_setup_discard
+Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check from blkfront_setup_discard
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 13 Jan 2014 11:24:36 -0500
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, Olaf Hering <olaf@aepfle.de>
-CC: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
-        david.vrabel@citrix.com
-Message-ID: <1a76cddb-cb54-4483-9ab2-a750ef0d9962@email.android.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Date: Mon, 13 Jan 2014 10:57:54 -0500
+To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>
+CC: boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org,
+        Olaf Hering <olaf@aepfle.de>, Ian Campbell <Ian.Campbell@citrix.com>,
+        xen-devel@lists.xen.org
+Message-ID: <9498309b-dd60-413f-9ab7-8e6ec6c9bcfa@email.android.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
->On 01/13/2014 04:30 AM, Olaf Hering wrote:
->> On Fri, Jan 10, Boris Ostrovsky wrote:
->>
->>> I don't know discard code works but it seems to me that if you pass,
->for
->>> example,  zero as discard_granularity (which may happen if
->xenbus_gather()
->>> fails) then blkdev_issue_discard() in the backend will set
->granularity to 1
->>> and continue with discard. This may not be what the the guest admin
->>> requested. And he won't know about this since no error message is
->printed
->>> anywhere.
->> If I understand the code using granularity/alignment correctly, both
->are
->> optional properties. So if the granularity is just 1 it means byte
->> ranges, which is fine if the backend uses FALLOC_FL_PUNCH_HOLE. Also
->> both properties are not admin controlled, for phy the blkbk drivers
->just
->> passes on what it gets from the underlying hardware.
->>
->>> Similarly, if xenbug_gather("discard-secure") fails, I think the
->code will
->>> assume that secure discard has not been requested. I don't know what
->>> security implications this will have but it sounds bad to me.
->> There are no security implications, if the backend does not advertise
->it
->> then its not present.
+Jan Beulich <JBeulich@suse.com> wrote:
+>>>> On 13.01.14 at 14:45, David Vrabel <david.vrabel@citrix.com> wrote:
+>> On 13/01/14 13:16, Jan Beulich wrote:
+>>>>>> On 13.01.14 at 14:00, Ian Campbell <Ian.Campbell@citrix.com>
+>wrote:
+>>>> On Mon, 2014-01-13 at 12:34 +0000, Jan Beulich wrote:
+>>>>>>>> On 13.01.14 at 13:01, Olaf Hering <olaf@aepfle.de> wrote:
+>>>>>> On Mon, Jan 13, Jan Beulich wrote:
+>>>>>>
+>>>>>>> You can't do this in one go - the first two and the last one may
+>be
+>>>>>>> set independently (and are independent in their meaning), and
+>>>>>>> hence need to be queried independently (xenbus_gather() fails
+>>>>>>> on the first absent value).
+>>>>>>
+>>>>>> Yes, thats the purpose. Since the properties are required its an
+>all or
+>>>>>> nothing thing. If they are truly optional then blkif.h should be
+>updated
+>>>>>> to say that.
+>>>>>
+>>>>> They _are_ optional.
+>>>>
+>>>> But is it true that either they are all present or they are all
+>absent?
+>>> 
+>>> No, it's not. discard-secure is independent of the other two (but
+>>> those other two are tied together).
+>> 
+>> Can we have a patch to blkif.h that clarifies this?
+>> 
+>> e.g.,
+>> 
+>> feature-discard
+>> 
+>>    ...
+>> 
+>>    discard-granularity and discard-offset must also be present if
+>>    feature-discard is enabled
 >
->Right. But my questions was what if the backend does advertise it and 
->wants the frontent to use it but xenbus_gather() in the frontend fails.
+>It would be "may" here too afaict. But I'll defer to Konrad, who
+>has done more work in this area...
 >
->Do we want to silently continue without discard-secure? Is this safe?
+>Jan
 >
+>>    discard-secure may also be present if feature-discard is enabled.
+>> 
+>> David
+>
+>
+>
+>
+>_______________________________________________
+>Xen-devel mailing list
+>Xen-devel@lists.xen.org
+>http://lists.xen.org/xen-devel
 
-Yes
->
->-boris
->
->>
->> After poking around some more it seems that blkif.h is the spec, it
->does
->> not say anything that the three properties are optional. Also the
->> backend drivers in sles11sp2 and mainline create all three properties
->> unconditionally. So I think a better change is to expect all three
->> properties in the frontend. I will send another version of the patch.
->>
->>
->> Olaf
-
+It is all 'may'. If there is just 'feature-discard' without any other options that is OK.
 
