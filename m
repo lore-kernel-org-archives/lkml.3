@@ -1,117 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923AbaAMQeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:34:07 -0500
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:57113 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078AbaAMQeA (ORCPT
+	id S1754948AbaAMQeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:34:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53393 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaAMQDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:34:00 -0500
-From: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-To: tomi.valkeinen@ti.com
-Cc: archit@ti.com, plagnioj@jcrosoft.com, pali.rohar@gmail.com, pavel@ucw.cz,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ivaylo Dimitrov <freemangordon@abv.bg>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Subject: [PATCH v2] OMAPDSS: DISPC: Fix 34xx overlay scaling calculation
-Date: Mon, 13 Jan 2014 18:33:02 +0200
-Message-Id: <1389630782-1764-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-X-Mailer: git-send-email 1.8.4.msysgit.0
-In-Reply-To: <52D3C3EB.6000104@ti.com>
-References: <52D3C3EB.6000104@ti.com>
+	Mon, 13 Jan 2014 11:03:42 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jianpeng Ma <majianpeng@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 121/208] ceph: fix bugs about handling short-read for sync read mode.
+Date: Mon, 13 Jan 2014 15:59:22 +0000
+Message-Id: <1389628849-1614-122-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ivaylo Dimitrov <freemangordon@abv.bg>
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-commit 7faa92339bbb1e6b9a80983b206642517327eb75 OMAPDSS: DISPC: Handle
-synclost errors in OMAP3 introduces limits check to prevent SYNCLOST errors
-on OMAP3. However, it misses the logic found in Nokia kernels that is
-needed to correctly calculate whether 3 tap or 5 tap rescaler to be used as
-well as the logic to fallback to 3 taps if 5 taps clock results in too
-tight horizontal timings. Without that patch "horizontal timing too tight"
-errors are seen when a video with resolution above 640x350 is tried to be
-played. The patch is a forward-ported logic found in Nokia N900 and N9/50
-kernels.
+------------------
 
-Signed-off-by: Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
+From: majianpeng <majianpeng@gmail.com>
+
+commit 02ae66d8b229708fd94b764f6c17ead1c7741fcf upstream.
+
+cephfs . show_layout
+>layyout.data_pool:     0
+>layout.object_size:   4194304
+>layout.stripe_unit:   4194304
+>layout.stripe_count:  1
+
+TestA:
+>dd if=/dev/urandom of=test bs=1M count=2 oflag=direct
+>dd if=/dev/urandom of=test bs=1M count=2 seek=4  oflag=direct
+>dd if=test of=/dev/null bs=6M count=1 iflag=direct
+The messages from func striped_read are:
+ceph:           file.c:350  : striped_read 0~6291456 (read 0) got 2097152 HITSTRIPE SHORT
+ceph:           file.c:350  : striped_read 2097152~4194304 (read 2097152) got 0 HITSTRIPE SHORT
+ceph:           file.c:381  : zero tail 4194304
+ceph:           file.c:390  : striped_read returns 6291456
+The hole of file is from 2M--4M.But actualy it zero the last 4M include
+the last 2M area which isn't a hole.
+Using this patch, the messages are:
+ceph:           file.c:350  : striped_read 0~6291456 (read 0) got 2097152 HITSTRIPE SHORT
+ceph:           file.c:358  :  zero gap 2097152 to 4194304
+ceph:           file.c:350  : striped_read 4194304~2097152 (read 4194304) got 2097152
+ceph:           file.c:384  : striped_read returns 6291456
+
+TestB:
+>echo majianpeng > test
+>dd if=test of=/dev/null bs=2M count=1 iflag=direct
+The messages are:
+ceph:           file.c:350  : striped_read 0~6291456 (read 0) got 11 HITSTRIPE SHORT
+ceph:           file.c:350  : striped_read 11~6291445 (read 11) got 0 HITSTRIPE SHORT
+ceph:           file.c:390  : striped_read returns 11
+For this case,it did once more striped_read.It's no meaningless.
+Using this patch, the message are:
+ceph:           file.c:350  : striped_read 0~6291456 (read 0) got 11 HITSTRIPE SHORT
+ceph:           file.c:384  : striped_read returns 11
+
+Big thanks to Yan Zheng for the patch.
+
+Reviewed-by: Yan, Zheng <zheng.z.yan@intel.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/video/omap2/dss/dispc.c |   31 ++++++++++++++++++++++---------
- 1 files changed, 22 insertions(+), 9 deletions(-)
+ fs/ceph/file.c | 39 ++++++++++++++++-----------------------
+ 1 file changed, 16 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/video/omap2/dss/dispc.c b/drivers/video/omap2/dss/dispc.c
-index 67e413e..66e0849 100644
---- a/drivers/video/omap2/dss/dispc.c
-+++ b/drivers/video/omap2/dss/dispc.c
-@@ -1999,7 +1999,8 @@ static void calc_tiler_rotation_offset(u16 screen_width, u16 width,
-  */
- static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
- 		const struct omap_video_timings *t, u16 pos_x,
--		u16 width, u16 height, u16 out_width, u16 out_height)
-+		u16 width, u16 height, u16 out_width, u16 out_height,
-+		bool five_taps)
- {
- 	const int ds = DIV_ROUND_UP(height, out_height);
- 	unsigned long nonactive;
-@@ -2019,6 +2020,10 @@ static int check_horiz_timing_omap3(unsigned long pclk, unsigned long lclk,
- 	if (blank <= limits[i])
- 		return -EINVAL;
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 93e53c8..5f3b4ee 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -349,44 +349,37 @@ more:
+ 	dout("striped_read %llu~%llu (read %u) got %d%s%s\n", pos, left, read,
+ 	     ret, hit_stripe ? " HITSTRIPE" : "", was_short ? " SHORT" : "");
  
-+	/* FIXME add checks for 3-tap filter once the limitations are known */
-+	if (!five_taps)
-+		return 0;
-+
- 	/*
- 	 * Pixel data should be prepared before visible display point starts.
- 	 * So, atleast DS-2 lines must have already been fetched by DISPC
-@@ -2194,22 +2199,30 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
- 	do {
- 		in_height = DIV_ROUND_UP(height, *decim_y);
- 		in_width = DIV_ROUND_UP(width, *decim_x);
--		*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
--			in_width, in_height, out_width, out_height, color_mode);
+-	if (ret > 0) {
+-		int didpages = (page_align + ret) >> PAGE_CACHE_SHIFT;
 -
--		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
--				pos_x, in_width, in_height, out_width,
--				out_height);
-+		*five_taps = in_height > out_height;
- 
- 		if (in_width > maxsinglelinewidth)
- 			if (in_height > out_height &&
- 						in_height < out_height * 2)
- 				*five_taps = false;
--		if (!*five_taps)
-+again:
-+		if (*five_taps)
-+			*core_clk = calc_core_clk_five_taps(pclk, mgr_timings,
-+						in_width, in_height, out_width,
-+						out_height, color_mode);
-+		else
- 			*core_clk = dispc.feat->calc_core_clk(pclk, in_width,
- 					in_height, out_width, out_height,
- 					mem_to_mem);
- 
-+		error = check_horiz_timing_omap3(pclk, lclk, mgr_timings,
-+				pos_x, in_width, in_height, out_width,
-+				out_height, *five_taps);
-+		if (error && *five_taps) {
-+			*five_taps = false;
-+			goto again;
-+		}
+-		if (read < pos - off) {
+-			dout(" zero gap %llu to %llu\n", off + read, pos);
+-			ceph_zero_page_vector_range(page_align + read,
+-						    pos - off - read, pages);
++	if (ret >= 0) {
++		int didpages;
++		if (was_short && (pos + ret < inode->i_size)) {
++			u64 tmp = min(this_len - ret,
++					inode->i_size - pos - ret);
++			dout(" zero gap %llu to %llu\n",
++				pos + ret, pos + ret + tmp);
++			ceph_zero_page_vector_range(page_align + read + ret,
++							tmp, pages);
++			ret += tmp;
+ 		}
 +
- 		error = (error || in_width > maxsinglelinewidth * 2 ||
- 			(in_width > maxsinglelinewidth && *five_taps) ||
- 			!*core_clk || *core_clk > dispc_core_clk_rate());
-@@ -2226,7 +2239,7 @@ static int dispc_ovl_calc_scaling_34xx(unsigned long pclk, unsigned long lclk,
- 	} while (*decim_x <= *x_predecim && *decim_y <= *y_predecim && error);
++		didpages = (page_align + ret) >> PAGE_CACHE_SHIFT;
+ 		pos += ret;
+ 		read = pos - off;
+ 		left -= ret;
+ 		page_pos += didpages;
+ 		pages_left -= didpages;
  
- 	if (check_horiz_timing_omap3(pclk, lclk, mgr_timings, pos_x, width,
--				height, out_width, out_height)){
-+				height, out_width, out_height, *five_taps)) {
- 			DSSERR("horizontal timing too tight\n");
- 			return -EINVAL;
+-		/* hit stripe? */
+-		if (left && hit_stripe)
++		/* hit stripe and need continue*/
++		if (left && hit_stripe && pos < inode->i_size)
+ 			goto more;
  	}
+ 
+-	if (was_short) {
++	if (ret >= 0) {
++		ret = read;
+ 		/* did we bounce off eof? */
+ 		if (pos + left > inode->i_size)
+ 			*checkeof = 1;
+-
+-		/* zero trailing bytes (inside i_size) */
+-		if (left > 0 && pos < inode->i_size) {
+-			if (pos + left > inode->i_size)
+-				left = inode->i_size - pos;
+-
+-			dout("zero tail %llu\n", left);
+-			ceph_zero_page_vector_range(page_align + read, left,
+-						    pages);
+-			read += left;
+-		}
+ 	}
+ 
+-	if (ret >= 0)
+-		ret = read;
+ 	dout("striped_read returns %d\n", ret);
+ 	return ret;
+ }
 -- 
-1.5.6.1
+1.8.3.2
 
