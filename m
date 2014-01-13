@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915AbaAMUvH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:51:07 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40456 "EHLO
+	id S1752979AbaAMUvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 15:51:15 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40454 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaAMUsL (ORCPT
+	with ESMTP id S1752201AbaAMUsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 15:48:11 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 23/38] perf report: Move histogram entries collapsing to separate function
-Date: Mon, 13 Jan 2014 17:47:24 -0300
-Message-Id: <1389646059-24881-24-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 10/38] perf tools: Move arch setup into seprate Makefile
+Date: Mon, 13 Jan 2014 17:47:11 -0300
+Message-Id: <1389646059-24881-11-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
 References: <1389646059-24881-1-git-send-email-acme@infradead.org>
@@ -29,122 +28,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Further uncluttering the main 'report' function by group related code in
-separate function.
+I need to use arch related setup in the tests/make, so moving arch setup
+into Makefile.arch.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-b594zsbwke8khir13kudwqmj@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1388759553-12974-1-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 73 ++++++++++++++++++++++++++++-----------------
- 1 file changed, 45 insertions(+), 28 deletions(-)
+ tools/perf/config/Makefile      | 52 ++++++++++++++---------------------------
+ tools/perf/config/Makefile.arch | 22 +++++++++++++++++
+ 2 files changed, 40 insertions(+), 34 deletions(-)
+ create mode 100644 tools/perf/config/Makefile.arch
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 03941ad8fc46..cff9465847f2 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -486,13 +486,55 @@ static int report__browse_hists(struct report *rep)
- 	return ret;
- }
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 14faeeb0d752..f2bc659d20af 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -1,28 +1,26 @@
+-uname_M := $(shell uname -m 2>/dev/null || echo not)
  
-+static u64 report__collapse_hists(struct report *rep)
-+{
-+	struct ui_progress prog;
-+	struct perf_evsel *pos;
-+	u64 nr_samples = 0;
-+	/*
-+ 	 * Count number of histogram entries to use when showing progress,
-+ 	 * reusing nr_samples variable.
-+ 	 */
-+	list_for_each_entry(pos, &rep->session->evlist->entries, node)
-+		nr_samples += pos->hists.nr_entries;
-+
-+	ui_progress__init(&prog, nr_samples, "Merging related events...");
-+	/*
-+	 * Count total number of samples, will be used to check if this
-+ 	 * session had any.
-+ 	 */
-+	nr_samples = 0;
-+
-+	list_for_each_entry(pos, &rep->session->evlist->entries, node) {
-+		struct hists *hists = &pos->hists;
-+
-+		if (pos->idx == 0)
-+			hists->symbol_filter_str = rep->symbol_filter_str;
-+
-+		hists__collapse_resort(hists, &prog);
-+		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
-+
-+		/* Non-group events are considered as leader */
-+		if (symbol_conf.event_group &&
-+		    !perf_evsel__is_group_leader(pos)) {
-+			struct hists *leader_hists = &pos->leader->hists;
-+
-+			hists__match(leader_hists, hists);
-+			hists__link(leader_hists, hists);
-+		}
-+	}
-+
-+	ui_progress__finish();
-+
-+	return nr_samples;
-+}
-+
- static int __cmd_report(struct report *rep)
- {
--	int ret = -EINVAL;
-+	int ret;
- 	u64 nr_samples;
- 	struct perf_session *session = rep->session;
- 	struct perf_evsel *pos;
--	struct ui_progress prog;
- 	struct perf_data_file *file = session->file;
+-ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+-                                  -e s/arm.*/arm/ -e s/sa110/arm/ \
+-                                  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+-                                  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-                                  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+-NO_PERF_REGS := 1
+-CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
++ifeq ($(src-perf),)
++src-perf := $(srctree)/tools/perf
++endif
  
- 	signal(SIGINT, sig_handler);
-@@ -530,32 +572,7 @@ static int __cmd_report(struct report *rep)
- 		}
- 	}
+-# Additional ARCH settings for x86
+-ifeq ($(ARCH),i386)
+-  override ARCH := x86
+-  NO_PERF_REGS := 0
+-  LIBUNWIND_LIBS = -lunwind -lunwind-x86
++ifeq ($(obj-perf),)
++obj-perf := $(OUTPUT)
+ endif
  
--	nr_samples = 0;
--	list_for_each_entry(pos, &session->evlist->entries, node)
--		nr_samples += pos->hists.nr_entries;
--
--	ui_progress__init(&prog, nr_samples, "Merging related events...");
--
--	nr_samples = 0;
--	list_for_each_entry(pos, &session->evlist->entries, node) {
--		struct hists *hists = &pos->hists;
--
--		if (pos->idx == 0)
--			hists->symbol_filter_str = rep->symbol_filter_str;
--
--		hists__collapse_resort(hists, &prog);
--		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
--
--		/* Non-group events are considered as leader */
--		if (symbol_conf.event_group &&
--		    !perf_evsel__is_group_leader(pos)) {
--			struct hists *leader_hists = &pos->leader->hists;
--
--			hists__match(leader_hists, hists);
--			hists__link(leader_hists, hists);
--		}
--	}
--	ui_progress__finish();
-+	nr_samples = report__collapse_hists(rep);
+-ifeq ($(ARCH),x86_64)
+-  override ARCH := x86
+-  IS_X86_64 := 0
+-  ifeq (, $(findstring m32,$(CFLAGS)))
+-    IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+-  endif
++ifneq ($(obj-perf),)
++obj-perf := $(abspath $(obj-perf))/
++endif
++
++LIB_INCLUDE := $(srctree)/tools/lib/
++CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
++
++include $(src-perf)/config/Makefile.arch
++
++NO_PERF_REGS := 1
++
++# Additional ARCH settings for x86
++ifeq ($(ARCH),x86)
+   ifeq (${IS_X86_64}, 1)
+-    RAW_ARCH := x86_64
+     CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
+     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+@@ -64,20 +62,6 @@ ifeq ($(NO_PERF_REGS),0)
+   CFLAGS += -DHAVE_PERF_REGS_SUPPORT
+ endif
  
- 	if (session_done())
- 		return 0;
+-ifeq ($(src-perf),)
+-src-perf := $(srctree)/tools/perf
+-endif
+-
+-ifeq ($(obj-perf),)
+-obj-perf := $(OUTPUT)
+-endif
+-
+-ifneq ($(obj-perf),)
+-obj-perf := $(abspath $(obj-perf))/
+-endif
+-
+-LIB_INCLUDE := $(srctree)/tools/lib/
+-
+ # include ARCH specific config
+ -include $(src-perf)/arch/$(ARCH)/Makefile
+ 
+diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
+new file mode 100644
+index 000000000000..fef8ae922800
+--- /dev/null
++++ b/tools/perf/config/Makefile.arch
+@@ -0,0 +1,22 @@
++
++uname_M := $(shell uname -m 2>/dev/null || echo not)
++
++ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++                                  -e s/arm.*/arm/ -e s/sa110/arm/ \
++                                  -e s/s390x/s390/ -e s/parisc64/parisc/ \
++                                  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
++                                  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
++
++# Additional ARCH settings for x86
++ifeq ($(ARCH),i386)
++  override ARCH := x86
++endif
++
++ifeq ($(ARCH),x86_64)
++  override ARCH := x86
++  IS_X86_64 := 0
++  ifeq (, $(findstring m32,$(CFLAGS)))
++    IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
++    RAW_ARCH := x86_64
++  endif
++endif
 -- 
 1.8.1.4
 
