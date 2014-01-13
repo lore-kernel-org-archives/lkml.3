@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaAMRtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:49:46 -0500
-Received: from void.printf.net ([89.145.121.20]:35041 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228AbaAMRtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:49:41 -0500
-From: Chris Ball <chris@printf.net>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Dong Aisheng <dongas86@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        <linux-next@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dong Aisheng <b29396@freescale.com>
-Subject: Re: linux-next: build failure after merge of the mmc tree
-References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
-	<20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
-	<CAA+hA=Shwn1P25+xB+VogD+9n7gdvCmJ-EG6khgf3a2gjGwTJQ@mail.gmail.com>
-	<20131217031600.GG6691@S2101-09.ap.freescale.net>
-Date: Mon, 13 Jan 2014 17:49:35 +0000
-In-Reply-To: <20131217031600.GG6691@S2101-09.ap.freescale.net> (Shawn Guo's
-	message of "Tue, 17 Dec 2013 11:16:01 +0800")
-Message-ID: <86iotndb68.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753422AbaAMRvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:51:31 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:39274 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785AbaAMRv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 12:51:28 -0500
+Date: Mon, 13 Jan 2014 18:51:16 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH] [RFC] timekeeping: Rework frequency adjustments to work
+ better w/ nohz
+Message-ID: <20140113175114.GA4271@netboy>
+References: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389067023-13541-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 06, 2014 at 07:57:03PM -0800, John Stultz wrote:
+> 
+> I still think this is probably 3.15 or later material, but I'd be
+> very interested in feedback, thoughts, and testing.
 
-On Tue, Dec 17 2013, Shawn Guo wrote:
-> Please drop fc4fafac9656 ("ARM: dts: sabresd: add usdhc4 support") from
-> your tree.  It should go via my tree (with a rebase).  Sorry, I did not
-> notice it early.
+Over the weekend I did a short test of this new approach. I compiled
+two kernels, one plain v3.12.7 and one with the proposed fix. The
+test was run on three different kernel variants, the current nohz
+kernel, the same with nohz=off, and the same but with John's patch.
 
-Sorry for missing this thread, everyone -- I've dropped this patch
-from mmc-next now.
+I used a simple test script (see below). Using a PCIe express card as
+a PHC, the Intel Corporation 82574L, I simply let the this clock run
+free (not sync'ed to gps or anything), and then synchronized the Linux
+system clock to the PHC using the phc2sys program with a sample rate
+of once every 32 seconds. Each of the tests ran for at least three
+hours on a system without any other load.
 
-- Chris.
--- 
-Chris Ball   <chris@printf.net>   <http://printf.net/>
+- Linux 3.12.7-nohz-plain-20140106                nohz-plain.log
+- Linux 3.12.7-nohz-plain-20140106 NOHZ=OFF       periodic-plain.log
+- Linux 3.12.7-nohz-fix-20140106-00001-gd753140   nohz-fix.log
+
+The performance in the log files as reflected in the clock offset is
+summarized in this table. The values are in nanoseconds.
+
+ |         | periodic-plain |      nohz-fix |    nohz-plain |
+ |---------+----------------+---------------+---------------|
+ | minimum |  -1.599000e+03 | -1.051000e+03 | -5.373700e+04 |
+ | maximum |  +1.311000e+03 | +1.048000e+03 | +6.389500e+04 |
+ | mean    |  +9.880240e-02 | -7.747305e+01 | +1.597904e+01 |
+ | stddev  |  +4.610021e+02 | +3.960978e+02 | +1.491263e+04 |
+
+I also made two graphs.
+
+   http://linuxptp.sourceforge.net/nohz-fix/current_nohz.png
+   http://linuxptp.sourceforge.net/nohz-fix/periodic_vs_fix.png
+
+(The log files and scripts are also in that directory.)
+
+So in this test, it looks like the new approach performed at least as
+well as using regular, periodic ticks.
+
+Thanks,
+Richard
+
+---
+# nohz-fix-testing.sh
+#
+# set the ptp clock time from the system time
+#
+./testptp -s; ./testptp -g; date
+#
+# wait a bit to let the clocks drift
+#
+sleep 10
+#
+# start the servo
+#
+./phc2sys -s eth4 -m -q -l7 -O0 -P0 -I0 -R.03125
