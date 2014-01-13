@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751310AbaAMQdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:33:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53401 "EHLO
+	id S1754708AbaAMQdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:33:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53397 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108AbaAMQDp (ORCPT
+	with ESMTP id S1752120AbaAMQDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:45 -0500
+	Mon, 13 Jan 2014 11:03:44 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Durgin <josh.durgin@inktank.com>,
+Cc: Jianpeng Ma <majianpeng@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 123/208] rbd: fix buffer size for writes to images with snapshots
-Date: Mon, 13 Jan 2014 15:59:24 +0000
-Message-Id: <1389628849-1614-124-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/208] ceph: allow sync_read/write return partial successed size of read/write.
+Date: Mon, 13 Jan 2014 15:59:23 +0000
+Message-Id: <1389628849-1614-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,58 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 03507db631c94a48e316c7f638ffb2991544d617 upstream.
+commit ee7289bfadda5f4ef60884547ebc9989c8fb314a upstream.
 
-rbd_osd_req_create() needs to know the snapshot context size to create
-a buffer large enough to send it with the message front. It gets this
-from the img_request, which was not set for the obj_request yet. This
-resulted in trying to write past the end of the front payload, hitting
-this BUG:
+For sync_read/write, it may do multi stripe operations.If one of those
+met erro, we return the former successed size rather than a error value.
+There is a exception for write-operation met -EOLDSNAPC.If this occur,we
+retry the whole write again.
 
-libceph: BUG_ON(p > msg->front.iov_base + msg->front.iov_len);
-
-Fix this by associating the obj_request with its img_request
-immediately after it's created, before the osd request is created.
-
-Fixes: http://tracker.ceph.com/issues/5760
-Suggested-by: Alex Elder <alex.elder@linaro.org>
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Alex Elder <alex.elder@linaro.org>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/rbd.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ fs/ceph/file.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index 45aa20a..0ab2829 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -2203,6 +2203,11 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
- 		rbd_segment_name_free(object_name);
- 		if (!obj_request)
- 			goto out_unwind;
-+		/*
-+		 * set obj_request->img_request before creating the
-+		 * osd_request so that it gets the right snapc
-+		 */
-+		rbd_img_obj_request_add(img_request, obj_request);
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 5f3b4ee..47f2cde 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -373,7 +373,7 @@ more:
+ 			goto more;
+ 	}
  
- 		if (type == OBJ_REQUEST_BIO) {
- 			unsigned int clone_size;
-@@ -2244,11 +2249,6 @@ static int rbd_img_request_fill(struct rbd_img_request *img_request,
- 					obj_request->pages, length,
- 					offset & ~PAGE_MASK, false, false);
- 
--		/*
--		 * set obj_request->img_request before formatting
--		 * the osd_request so that it gets the right snapc
--		 */
--		rbd_img_obj_request_add(img_request, obj_request);
- 		if (write_request)
- 			rbd_osd_req_format_write(obj_request);
- 		else
+-	if (ret >= 0) {
++	if (read > 0) {
+ 		ret = read;
+ 		/* did we bounce off eof? */
+ 		if (pos + left > inode->i_size)
+@@ -611,6 +611,8 @@ out:
+ 		if (check_caps)
+ 			ceph_check_caps(ceph_inode(inode), CHECK_CAPS_AUTHONLY,
+ 					NULL);
++	} else if (ret != -EOLDSNAPC && written > 0) {
++		ret = written;
+ 	}
+ 	return ret;
+ }
 -- 
 1.8.3.2
 
