@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaAMQDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:03:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53197 "EHLO
+	id S1754008AbaAMQDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:03:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53237 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630AbaAMQCs (ORCPT
+	with ESMTP id S1752175AbaAMQDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:48 -0500
+	Mon, 13 Jan 2014 11:03:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/208] drm/radeon: fix asic gfx values for scrapper asics
-Date: Mon, 13 Jan 2014 15:58:43 +0000
-Message-Id: <1389628849-1614-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 089/208] auxvec.h: account for AT_HWCAP2 in AT_VECTOR_SIZE_BASE
+Date: Mon, 13 Jan 2014 15:58:50 +0000
+Message-Id: <1389628849-1614-90-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,76 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-commit e2f6c88fb903e123edfd1106b0b8310d5117f774 upstream.
+commit f60900f2609e893c7f8d0bccc7ada4947dac4cd5 upstream.
 
-Fixes gfx corruption on certain TN/RL parts.
+Commit 2171364d1a92 ("powerpc: Add HWCAP2 aux entry") introduced a new
+AT_ auxv entry type AT_HWCAP2 but failed to update AT_VECTOR_SIZE_BASE
+accordingly.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=60389
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Fixes: 2171364d1a92 (powerpc: Add HWCAP2 aux entry)
+Acked-by: Michael Neuling <michael@neuling.org>
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/ni.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ include/linux/auxvec.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index 263d14b..b2a76f5 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -896,6 +896,10 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9903) ||
- 			   (rdev->pdev->device == 0x9904) ||
- 			   (rdev->pdev->device == 0x990A) ||
-@@ -906,6 +910,10 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9919) ||
- 			   (rdev->pdev->device == 0x9990) ||
- 			   (rdev->pdev->device == 0x9991) ||
-@@ -916,9 +924,17 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x99A0)) {
- 			rdev->config.cayman.max_simds_per_se = 3;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		} else {
- 			rdev->config.cayman.max_simds_per_se = 2;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		}
- 		rdev->config.cayman.max_texture_channel_caches = 2;
- 		rdev->config.cayman.max_gprs = 256;
-@@ -926,10 +942,6 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 		rdev->config.cayman.max_gs_threads = 32;
- 		rdev->config.cayman.max_stack_entries = 512;
- 		rdev->config.cayman.sx_num_of_sets = 8;
--		rdev->config.cayman.sx_max_export_size = 256;
--		rdev->config.cayman.sx_max_export_pos_size = 64;
--		rdev->config.cayman.sx_max_export_smx_size = 192;
--		rdev->config.cayman.max_hw_contexts = 8;
- 		rdev->config.cayman.sq_num_cf_insts = 2;
+diff --git a/include/linux/auxvec.h b/include/linux/auxvec.h
+index 669fef5..3e0fbe4 100644
+--- a/include/linux/auxvec.h
++++ b/include/linux/auxvec.h
+@@ -3,6 +3,6 @@
  
- 		rdev->config.cayman.sc_prim_fifo_size = 0x40;
+ #include <uapi/linux/auxvec.h>
+ 
+-#define AT_VECTOR_SIZE_BASE 19 /* NEW_AUX_ENT entries in auxiliary table */
++#define AT_VECTOR_SIZE_BASE 20 /* NEW_AUX_ENT entries in auxiliary table */
+   /* number of "#define AT_.*" above, minus {AT_NULL, AT_IGNORE, AT_NOTELF} */
+ #endif /* _LINUX_AUXVEC_H */
 -- 
 1.8.3.2
 
