@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836AbaAMQ7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:59:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53025 "EHLO
+	id S1754515AbaAMQ7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:59:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53021 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513AbaAMQCD (ORCPT
+	with ESMTP id S1753509AbaAMQCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:02:03 -0500
+	Mon, 13 Jan 2014 11:02:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 049/208] ALSA: hda - Add Dell headset detection quirk for three laptop models
-Date: Mon, 13 Jan 2014 15:58:10 +0000
-Message-Id: <1389628849-1614-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 048/208] gpio: msm: Fix irq mask/unmask by writing bits instead of numbers
+Date: Mon, 13 Jan 2014 15:58:09 +0000
+Message-Id: <1389628849-1614-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -28,45 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit c29cb5eb8157a0049c882672a7f941261f23ea34 upstream.
+commit 4cc629b7a20945ce35628179180329b6bc9e552b upstream.
 
-On the Dell machines with codec whose Subsystem Id is 0x10280610,
-0x10280629 or 0x1028063e, no external microphone can be detected when
-plugging a 3-ring headset. If we add "model=dell-headset-multi" for
-the snd-hda-intel.ko, the problem will disappear.
+We should be writing bits here but instead we're writing the
+numbers that correspond to the bits we want to write. Fix it by
+wrapping the numbers in the BIT() macro. This fixes gpios acting
+as interrupts.
 
-The codecs on these machines belong to alc_269 family.
-
-BugLink: https://bugs.launchpad.net/bugs/1260303
-Cc: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpio/gpio-msm-v2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 93d30c0..e0bafd8 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3774,10 +3774,13 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1028, 0x0606, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0608, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0609, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0610, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0613, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0614, "Dell Inspiron 3135", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_MONO_SPEAKERS),
-+	SND_PCI_QUIRK(0x1028, 0x0629, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS),
-+	SND_PCI_QUIRK(0x1028, 0x063e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
+diff --git a/drivers/gpio/gpio-msm-v2.c b/drivers/gpio/gpio-msm-v2.c
+index 6516499..45fa38e 100644
+--- a/drivers/gpio/gpio-msm-v2.c
++++ b/drivers/gpio/gpio-msm-v2.c
+@@ -252,7 +252,7 @@ static void msm_gpio_irq_mask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
+-	clear_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	clear_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	__clear_bit(gpio, msm_gpio.enabled_irqs);
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
+@@ -264,7 +264,7 @@ static void msm_gpio_irq_unmask(struct irq_data *d)
+ 
+ 	spin_lock_irqsave(&tlmm_lock, irq_flags);
+ 	__set_bit(gpio, msm_gpio.enabled_irqs);
+-	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
++	set_gpio_bits(BIT(INTR_RAW_STATUS_EN) | BIT(INTR_ENABLE), GPIO_INTR_CFG(gpio));
+ 	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
+ 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+ }
 -- 
 1.8.3.2
 
