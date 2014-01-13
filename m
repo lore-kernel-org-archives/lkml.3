@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaAMOiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:38:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51588 "EHLO
+	id S1753000AbaAMOiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:38:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51589 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286AbaAMO1D (ORCPT
+	with ESMTP id S1752288AbaAMO1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 09:27:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Jason Wang <jasowang@redhat.com>,
+Cc: Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 84/96] netvsc: don't flush peers notifying work during setting mtu
-Date: Mon, 13 Jan 2014 14:24:47 +0000
-Message-Id: <1389623099-18783-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 85/96] net: unix: allow bind to fail on mutex lock
+Date: Mon, 13 Jan 2014 14:24:48 +0000
+Message-Id: <1389623099-18783-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -30,93 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 50dc875f2e6e2e04aed3b3033eb0ac99192d6d02 upstream.
+commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 upstream.
 
-There's a possible deadlock if we flush the peers notifying work during setting
-mtu:
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-[   22.991149] ======================================================
-[   22.991173] [ INFO: possible circular locking dependency detected ]
-[   22.991198] 3.10.0-54.0.1.el7.x86_64.debug #1 Not tainted
-[   22.991219] -------------------------------------------------------
-[   22.991243] ip/974 is trying to acquire lock:
-[   22.991261]  ((&(&net_device_ctx->dwork)->work)){+.+.+.}, at: [<ffffffff8108af95>] flush_work+0x5/0x2e0
-[   22.991307]
-but task is already holding lock:
-[   22.991330]  (rtnl_mutex){+.+.+.}, at: [<ffffffff81539deb>] rtnetlink_rcv+0x1b/0x40
-[   22.991367]
-which lock already depends on the new lock.
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
 
-[   22.991398]
-the existing dependency chain (in reverse order) is:
-[   22.991426]
--> #1 (rtnl_mutex){+.+.+.}:
-[   22.991449]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
-[   22.991477]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
-[   22.991501]        [<ffffffff81673659>] mutex_lock_nested+0x89/0x4f0
-[   22.991529]        [<ffffffff815392b7>] rtnl_lock+0x17/0x20
-[   22.991552]        [<ffffffff815230b2>] netdev_notify_peers+0x12/0x30
-[   22.991579]        [<ffffffffa0340212>] netvsc_send_garp+0x22/0x30 [hv_netvsc]
-[   22.991610]        [<ffffffff8108d251>] process_one_work+0x211/0x6e0
-[   22.991637]        [<ffffffff8108d83b>] worker_thread+0x11b/0x3a0
-[   22.991663]        [<ffffffff81095e5d>] kthread+0xed/0x100
-[   22.991686]        [<ffffffff81681c6c>] ret_from_fork+0x7c/0xb0
-[   22.991715]
--> #0 ((&(&net_device_ctx->dwork)->work)){+.+.+.}:
-[   22.991715]        [<ffffffff810de817>] check_prevs_add+0x967/0x970
-[   22.991715]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
-[   22.991715]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
-[   22.991715]        [<ffffffff8108afde>] flush_work+0x4e/0x2e0
-[   22.991715]        [<ffffffff8108e1b5>] __cancel_work_timer+0x95/0x130
-[   22.991715]        [<ffffffff8108e303>] cancel_delayed_work_sync+0x13/0x20
-[   22.991715]        [<ffffffffa03404e4>] netvsc_change_mtu+0x84/0x200 [hv_netvsc]
-[   22.991715]        [<ffffffff815233d4>] dev_set_mtu+0x34/0x80
-[   22.991715]        [<ffffffff8153bc2a>] do_setlink+0x23a/0xa00
-[   22.991715]        [<ffffffff8153d054>] rtnl_newlink+0x394/0x5e0
-[   22.991715]        [<ffffffff81539eac>] rtnetlink_rcv_msg+0x9c/0x260
-[   22.991715]        [<ffffffff8155cdd9>] netlink_rcv_skb+0xa9/0xc0
-[   22.991715]        [<ffffffff81539dfa>] rtnetlink_rcv+0x2a/0x40
-[   22.991715]        [<ffffffff8155c41d>] netlink_unicast+0xdd/0x190
-[   22.991715]        [<ffffffff8155c807>] netlink_sendmsg+0x337/0x750
-[   22.991715]        [<ffffffff8150d219>] sock_sendmsg+0x99/0xd0
-[   22.991715]        [<ffffffff8150d63e>] ___sys_sendmsg+0x39e/0x3b0
-[   22.991715]        [<ffffffff8150eba2>] __sys_sendmsg+0x42/0x80
-[   22.991715]        [<ffffffff8150ebf2>] SyS_sendmsg+0x12/0x20
-[   22.991715]        [<ffffffff81681d19>] system_call_fastpath+0x16/0x1b
-
-This is because we hold the rtnl_lock() before ndo_change_mtu() and try to flush
-the work in netvsc_change_mtu(), in the mean time, netdev_notify_peers() may be
-called from worker and also trying to hold the rtnl_lock. This will lead the
-flush won't succeed forever. Solve this by not canceling and flushing the work,
-this is safe because the transmission done by NETDEV_NOTIFY_PEERS was
-synchronized with the netif_tx_disable() called by netvsc_change_mtu().
-
-Reported-by: Yaju Cao <yacao@redhat.com>
-Tested-by: Yaju Cao <yacao@redhat.com>
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/hyperv/netvsc_drv.c | 1 -
- 1 file changed, 1 deletion(-)
+ net/unix/af_unix.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 8f8ed33..219a04b 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -325,7 +325,6 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 		return -EINVAL;
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 692d780..5959b80 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -713,7 +713,9 @@ static int unix_autobind(struct socket *sock)
+ 	int err;
+ 	unsigned int retries = 0;
  
- 	nvdev->start_remove = true;
--	cancel_delayed_work_sync(&ndevctx->dwork);
- 	cancel_work_sync(&ndevctx->work);
- 	netif_tx_disable(ndev);
- 	rndis_filter_device_remove(hdev);
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
+ 
+ 	err = 0;
+ 	if (u->addr)
+@@ -846,7 +848,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		goto out;
+ 	addr_len = err;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
 -- 
 1.8.3.2
 
