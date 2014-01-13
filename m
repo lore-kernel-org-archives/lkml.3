@@ -1,70 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbaAMQy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:54:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15827 "EHLO mx1.redhat.com"
+	id S1756297AbaAMQzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:55:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756229AbaAMQyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:54:55 -0500
-Date: Mon, 13 Jan 2014 11:54:41 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Gaurav Jain <gjain@fb.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Message-ID: <20140113165441.GB25953@redhat.com>
-References: <1389501134-13116-1-git-send-email-gjain@fb.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389501134-13116-1-git-send-email-gjain@fb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756244AbaAMQzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:55:03 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 04/11] clear_refs: redefine callback functions for page table walker
+Date: Mon, 13 Jan 2014 11:54:04 -0500
+Message-Id: <1389632051-25159-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1389632051-25159-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 11, 2014 at 08:32:14PM -0800, Gaurav Jain wrote:
-> Anon records usually do not have the 'execname' entry. However if they are on
-> the heap, the execname shows up as '[heap]'. The fix considers any executable
-> entries in the map that do not have a name or are on the heap as anon records
-> and sets the name to '//anon'.
-> 
-> This fixes JIT profiling for records on the heap.
+Currently clear_refs_pte_range() is connected to pmd_entry() to split thps
+if found. But now this work can be done in core page table walker code.
+So we have no reason to keep this callback on pmd_entry(). This patch moves
+pte handling code on pte_entry() callback.
 
-I guess I don't understand the need for this fix.  It seems breaking out
-//anon vs. [heap] would be useful.  Your patch is saying otherwise.  Can
-give a description of the problem you are trying to solve?
+clear_refs_write() has some prechecks about if we really walk over a given
+vma. It's fine to let them done by test_walk() callback, so let's define it.
 
-Also style issue below..
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c | 82 ++++++++++++++++++++++--------------------------------
+ 1 file changed, 33 insertions(+), 49 deletions(-)
 
-> 
-> Signed-off-by: Gaurav Jain <gjain@fb.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Arun Sharma <asharma@fb.com>
-> ---
->  tools/perf/util/event.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> index bb788c1..ae9c55b 100644
-> --- a/tools/perf/util/event.c
-> +++ b/tools/perf/util/event.c
-> @@ -224,10 +224,9 @@ static int perf_event__synthesize_mmap_events(struct perf_tool *tool,
->  				continue;
->  
->  			event->header.misc |= PERF_RECORD_MISC_MMAP_DATA;
-> -		}
-> -
-> -		if (!strcmp(execname, ""))
-> +		} if (!strcmp(execname, "") || !strcmp(execname, "[heap]")) {
+diff --git mmotm-2014-01-09-16-23.orig/fs/proc/task_mmu.c mmotm-2014-01-09-16-23/fs/proc/task_mmu.c
+index da4bcedf9656..2d343d909f0b 100644
+--- mmotm-2014-01-09-16-23.orig/fs/proc/task_mmu.c
++++ mmotm-2014-01-09-16-23/fs/proc/task_mmu.c
+@@ -706,7 +706,6 @@ enum clear_refs_types {
+ };
+ 
+ struct clear_refs_private {
+-	struct vm_area_struct *vma;
+ 	enum clear_refs_types type;
+ };
+ 
+@@ -738,41 +737,43 @@ static inline void clear_soft_dirty(struct vm_area_struct *vma,
+ #endif
+ }
+ 
+-static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
++static int clear_refs_pte(pte_t *pte, unsigned long addr,
+ 				unsigned long end, struct mm_walk *walk)
+ {
+ 	struct clear_refs_private *cp = walk->private;
+-	struct vm_area_struct *vma = cp->vma;
+-	pte_t *pte, ptent;
+-	spinlock_t *ptl;
++	struct vm_area_struct *vma = walk->vma;
+ 	struct page *page;
+ 
+-	split_huge_page_pmd(vma, addr, pmd);
+-	if (pmd_trans_unstable(pmd))
++	if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
++		clear_soft_dirty(vma, addr, pte);
+ 		return 0;
++	}
++	if (!pte_present(*pte))
++		return 0;
++	page = vm_normal_page(vma, addr, *pte);
++	if (!page)
++		return 0;
++	/* Clear accessed and referenced bits. */
++	ptep_test_and_clear_young(vma, addr, pte);
++	ClearPageReferenced(page);
++	return 0;
++}
+ 
+-	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	for (; addr != end; pte++, addr += PAGE_SIZE) {
+-		ptent = *pte;
+-
+-		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
+-			clear_soft_dirty(vma, addr, pte);
+-			continue;
+-		}
+-
+-		if (!pte_present(ptent))
+-			continue;
+-
+-		page = vm_normal_page(vma, addr, ptent);
+-		if (!page)
+-			continue;
++static int clear_refs_test_walk(unsigned long start, unsigned long end,
++				struct mm_walk *walk)
++{
++	struct clear_refs_private *cp = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 
+-		/* Clear accessed and referenced bits. */
+-		ptep_test_and_clear_young(vma, addr, pte);
+-		ClearPageReferenced(page);
+-	}
+-	pte_unmap_unlock(pte - 1, ptl);
+-	cond_resched();
++	/*
++	 * Writing 1 to /proc/pid/clear_refs affects all pages.
++	 * Writing 2 to /proc/pid/clear_refs only affects anonymous pages.
++	 * Writing 3 to /proc/pid/clear_refs only affects file mapped pages.
++	 */
++	if (cp->type == CLEAR_REFS_ANON && vma->vm_file)
++		walk->skip = 1;
++	if (cp->type == CLEAR_REFS_MAPPED && !vma->vm_file)
++		walk->skip = 1;
+ 	return 0;
+ }
+ 
+@@ -814,33 +815,16 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 			.type = type,
+ 		};
+ 		struct mm_walk clear_refs_walk = {
+-			.pmd_entry = clear_refs_pte_range,
++			.pte_entry = clear_refs_pte,
++			.test_walk = clear_refs_test_walk,
+ 			.mm = mm,
+ 			.private = &cp,
+ 		};
+ 		down_read(&mm->mmap_sem);
+ 		if (type == CLEAR_REFS_SOFT_DIRTY)
+ 			mmu_notifier_invalidate_range_start(mm, 0, -1);
+-		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			cp.vma = vma;
+-			if (is_vm_hugetlb_page(vma))
+-				continue;
+-			/*
+-			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+-			 *
+-			 * Writing 2 to /proc/pid/clear_refs only affects
+-			 * Anonymous pages.
+-			 *
+-			 * Writing 3 to /proc/pid/clear_refs only affects file
+-			 * mapped pages.
+-			 */
+-			if (type == CLEAR_REFS_ANON && vma->vm_file)
+-				continue;
+-			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+-				continue;
+-			walk_page_range(vma->vm_start, vma->vm_end,
+-					&clear_refs_walk);
+-		}
++		for (vma = mm->mmap; vma; vma = vma->vm_next)
++			walk_page_vma(vma, &clear_refs_walk);
+ 		if (type == CLEAR_REFS_SOFT_DIRTY)
+ 			mmu_notifier_invalidate_range_end(mm, 0, -1);
+ 		flush_tlb_mm(mm);
+-- 
+1.8.4.2
 
-The '} if' part should seperate the 'if' on to its own line (unless you
-meant an 'else' in there).
-
-Cheers,
-Don
