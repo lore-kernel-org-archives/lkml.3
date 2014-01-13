@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaAMRKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:10:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52858 "EHLO
+	id S1753273AbaAMQBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:01:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52816 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbaAMQBR (ORCPT
+	with ESMTP id S1753227AbaAMQBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:17 -0500
+	Mon, 13 Jan 2014 11:01:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianguo Wu <wujianguo@huawei.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mgorman@suse.de>, qiuxishi <qiuxishi@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Frederik Himpe <fhimpe@telenet.be>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 014/208] mm/hugetlb: check for pte NULL pointer in __page_check_address()
-Date: Mon, 13 Jan 2014 15:57:35 +0000
-Message-Id: <1389628849-1614-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 008/208] [media] cxd2820r_core: fix sparse warnings
+Date: Mon, 13 Jan 2014 15:57:29 +0000
+Message-Id: <1389628849-1614-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -32,43 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 98398c32f6687ee1e1f3ae084effb4b75adb0747 upstream.
+commit 0db3fa2741ad8371c21b3a6785416a4afc0cc1d4 upstream.
 
-In __page_check_address(), if address's pud is not present,
-huge_pte_offset() will return NULL, we should check the return value.
+drivers/media/dvb-frontends/cxd2820r_core.c:34:32: error: cannot size expression
+drivers/media/dvb-frontends/cxd2820r_core.c:68:32: error: cannot size expression
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: qiuxishi <qiuxishi@huawei.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Antti Palosaari <crope@iki.fi>
+Reviewed-by: Antti Palosaari <crope@iki.fi>
+Reviewed-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Frederik Himpe <fhimpe@telenet.be>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/rmap.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/media/dvb-frontends/cxd2820r_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index b2e29ac..75f4c82 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -600,7 +600,11 @@ pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
- 	spinlock_t *ptl;
- 
- 	if (unlikely(PageHuge(page))) {
-+		/* when pud is not present, pte will be NULL */
- 		pte = huge_pte_offset(mm, address);
-+		if (!pte)
-+			return NULL;
-+
- 		ptl = &mm->page_table_lock;
- 		goto check;
- 	}
+diff --git a/drivers/media/dvb-frontends/cxd2820r_core.c b/drivers/media/dvb-frontends/cxd2820r_core.c
+index 51447a0..03930d5 100644
+--- a/drivers/media/dvb-frontends/cxd2820r_core.c
++++ b/drivers/media/dvb-frontends/cxd2820r_core.c
+@@ -34,7 +34,7 @@ static int cxd2820r_wr_regs_i2c(struct cxd2820r_priv *priv, u8 i2c, u8 reg,
+ 		{
+ 			.addr = i2c,
+ 			.flags = 0,
+-			.len = sizeof(buf),
++			.len = len + 1,
+ 			.buf = buf,
+ 		}
+ 	};
+@@ -75,7 +75,7 @@ static int cxd2820r_rd_regs_i2c(struct cxd2820r_priv *priv, u8 i2c, u8 reg,
+ 		}, {
+ 			.addr = i2c,
+ 			.flags = I2C_M_RD,
+-			.len = sizeof(buf),
++			.len = len,
+ 			.buf = buf,
+ 		}
+ 	};
 -- 
 1.8.3.2
 
