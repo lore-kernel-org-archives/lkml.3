@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaAMQBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:01:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52976 "EHLO
+	id S1753205AbaAMQBw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:01:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52961 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158AbaAMQBs (ORCPT
+	with ESMTP id S1753452AbaAMQBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:01:48 -0500
+	Mon, 13 Jan 2014 11:01:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/208] scripts/link-vmlinux.sh: only filter kernel symbols for arm
-Date: Mon, 13 Jan 2014 15:57:59 +0000
-Message-Id: <1389628849-1614-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 036/208] usb: cdc-wdm: manage_power should always set needs_remote_wakeup
+Date: Mon, 13 Jan 2014 15:57:57 +0000
+Message-Id: <1389628849-1614-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 7122c3e9154b5d9a7422f68f02d8acf050fad2b0 upstream.
+commit 4144bc861ed7934d56f16d2acd808d44af0fcc90 upstream.
 
-Actually CONFIG_PAGE_OFFSET isn't same with PAGE_OFFSET, so
-it isn't easy to figue out PAGE_OFFSET defined in header
-file from scripts.
-
-Because CONFIG_PAGE_OFFSET may not be defined in some ARCHs(
-64bit ARCH), or defined as bogus value in !MMU case, so
-this patch only applys the filter on ARM when CONFIG_PAGE_OFFSET
-is defined as the original problem is only on ARM.
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Fixes: f6537f2f0eba4eba3354e48dbe3047db6d8b6254
-Singed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Reported-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- scripts/link-vmlinux.sh | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-wdm.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 32b10f5..2dcb377 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -82,7 +82,9 @@ kallsyms()
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
+diff --git a/drivers/usb/class/cdc-wdm.c b/drivers/usb/class/cdc-wdm.c
+index d3318a0..6463ca3 100644
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -820,13 +820,11 @@ static int wdm_manage_power(struct usb_interface *intf, int on)
+ {
+ 	/* need autopm_get/put here to ensure the usbcore sees the new value */
+ 	int rv = usb_autopm_get_interface(intf);
+-	if (rv < 0)
+-		goto err;
  
--	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
-+	if [ -n "${CONFIG_ARM}" ] && [ -n "${CONFIG_PAGE_OFFSET}" ]; then
-+		kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
-+	fi
+ 	intf->needs_remote_wakeup = on;
+-	usb_autopm_put_interface(intf);
+-err:
+-	return rv;
++	if (!rv)
++		usb_autopm_put_interface(intf);
++	return 0;
+ }
  
- 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
- 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+ static int wdm_probe(struct usb_interface *intf, const struct usb_device_id *id)
 -- 
 1.8.3.2
 
