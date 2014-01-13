@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaAMS3X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 13:29:23 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54102 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289AbaAMS3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 13:29:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 5/5] init: efi: arm: enable (U)EFI runtime services on arm
-Date: Mon, 13 Jan 2014 19:29:06 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, linux-efi@vger.kernel.org,
-        linux@arm.linux.org.uk, patches@linaro.org, roy.franz@linaro.org,
-        matt.fleming@intel.com, msalter@redhat.com
-References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org> <1389445524-30623-6-git-send-email-leif.lindholm@linaro.org>
-In-Reply-To: <1389445524-30623-6-git-send-email-leif.lindholm@linaro.org>
+	id S1752177AbaAMSdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 13:33:15 -0500
+Received: from void.printf.net ([89.145.121.20]:55201 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623AbaAMSdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 13:33:13 -0500
+From: Chris Ball <chris@printf.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-gpio\@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 2/4] mmc: sdhci-acpi: convert to use GPIO descriptor API
+References: <1389177657-29266-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1389177657-29266-3-git-send-email-mika.westerberg@linux.intel.com>
+	<CACRpkdYhynQ4ooHcZyc-nrgVK9gbvtsYR6ZVv1u0sfBVEaK93A@mail.gmail.com>
+Date: Mon, 13 Jan 2014 18:32:56 +0000
+In-Reply-To: <CACRpkdYhynQ4ooHcZyc-nrgVK9gbvtsYR6ZVv1u0sfBVEaK93A@mail.gmail.com>
+	(Linus Walleij's message of "Wed, 8 Jan 2014 12:54:13 +0100")
+Message-ID: <86ppnvbulj.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401131929.07236.arnd@arndb.de>
-X-Provags-ID: V02:K0:K+7PG9c7H2HKFMZFlH/vjCzUkfrXep3Jvr/xcIYsI8S
- 65BBrgKLqOJn4Jl9F/T0+x4O3+gtdr/HL8DgC8OrQKjEX7qtV8
- yev+jnlvQ26AfXIycFWq28FMqnfAXgnohtw5H2vstvafMvPkjC
- Jk7K0sVcjPkTNVEEWYHraGOIOYedJJU6jecx2OGW6Gy/DJr+Tf
- oDGlo9tUvFNXeigR1+owZcm0F6KZjRRuyBuLaMgF2xkmMY2iEq
- i8dOu+fPibxFckiH71FqOiLM1ZZI6+HVkrZNbS4O2AA/vvzpGH
- wxBNjr2UDPE5qgUhwNeFY3KVg/Il4ujVNMl1tleHEGlIfvPxRg
- cWtEnYPmbnBhgkhseNCo=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 11 January 2014, Leif Lindholm wrote:
-> diff --git a/init/main.c b/init/main.c
-> index febc511..1331829 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -905,6 +905,10 @@ static noinline void __init kernel_init_freeable(void)
->         smp_prepare_cpus(setup_max_cpus);
->  
->         do_pre_smp_initcalls();
-> +
-> +       if (IS_ENABLED(CONFIG_ARM) && efi_enabled(EFI_BOOT))
-> +               efi_enter_virtual_mode();
+Hi Linus,
 
-What is the dependency on CONFIG_ARM here? Wouldn't most other
-architectures need the same? I'd rather not see this turn into
-a long list of CONFIG_$(ARCH) checks if other architectures
-enable it in the same place.
+On Wed, Jan 08 2014, Linus Walleij wrote:
+> On Wed, Jan 8, 2014 at 11:40 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+>
+>> The new descriptor based GPIO interface is now the recommended and safer
+>> way of using GPIOs from device drivers. Convert the ACPI SDHCI driver to
+>> use that interface.
+>>
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+>> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+>
+> I've tentatively applied this to the GPIO tree now, as it was acked by
+> Adrian who is a long time MMC subsystem contributor and we need
+> it to proceed with the rest of the refactorings.
+>
+> Chris, beat me up if you're unhappy with this.
+>
+> (If it explodes in linux-next I'll just back it all out.)
 
-I also wonder why the three architectures implementing it all
-call this from wildly different places during init/main.c, namely
-(very early) setup_arch() on ia64, (relatively early) start_kernel
-on x86 and (relatively late) kernel_init_freeable on arm.
+That's fine.  Feel free to add:
 
-In general, I'd be happy with adding this as late in the startup
-code as possible, but it may be better to use the same place as
-x86 in order to avoid surprises with unexpected dependencies.
-One such dependency that may cause problems is the fact that
-we (try to) call efi_late_init() before efi_enter_virtual_mode()
-now.
+Acked-by: Chris Ball <chris@printf.net>
 
-	Arnd
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <chris@printf.net>   <http://printf.net/>
