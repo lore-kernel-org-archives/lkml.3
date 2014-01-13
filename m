@@ -1,33 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaAMPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 10:53:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60649 "EHLO
+	id S1752385AbaAMPyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 10:54:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60652 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaAMPxt (ORCPT
+	with ESMTP id S1752305AbaAMPxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 10:53:49 -0500
-Date: Mon, 13 Jan 2014 07:52:59 -0800
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-b0c29f79ecea0b6fbcefc999e70f2843ae8306db@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, efault@gmx.de,
-        peterz@infradead.org, jason.low2@hp.com, Waiman.Long@hp.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, scott.norton@hp.com,
-        davidlohr@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com, tom.vaden@hp.com,
-        jeffm@suse.com, aswin@hp.com
-Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, efault@gmx.de, jason.low2@hp.com,
-        Waiman.Long@hp.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        davidlohr@hp.com, scott.norton@hp.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, dvhart@linux.intel.com, paulmck@linux.vnet.ibm.com,
-        tom.vaden@hp.com, jeffm@suse.com, aswin@hp.com
-In-Reply-To: <1389569486-25487-5-git-send-email-davidlohr@hp.com>
-References: <1389569486-25487-5-git-send-email-davidlohr@hp.com>
+	Mon, 13 Jan 2014 10:53:53 -0500
+Date: Mon, 13 Jan 2014 07:53:09 -0800
+From: tip-bot for Dario Faggioli <tipbot@zytor.com>
+Message-ID: <tip-d50dde5a10f305253cbc3855307f608f8a3c5f73@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, raistlin@linux.it, tglx@linutronix.de,
+        juri.lelli@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, raistlin@linux.it,
+        juri.lelli@gmail.com
+In-Reply-To: <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
+References: <1383831828-15501-3-git-send-email-juri.lelli@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] futexes: Avoid taking the hb->lock if there'
- s nothing to wake up
-Git-Commit-ID: b0c29f79ecea0b6fbcefc999e70f2843ae8306db
+Subject: [tip:sched/core] sched:
+  Add new scheduler syscalls to support an extended scheduling parameters ABI
+Git-Commit-ID: d50dde5a10f305253cbc3855307f608f8a3c5f73
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,260 +30,653 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:53:06 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Mon, 13 Jan 2014 07:53:17 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b0c29f79ecea0b6fbcefc999e70f2843ae8306db
-Gitweb:     http://git.kernel.org/tip/b0c29f79ecea0b6fbcefc999e70f2843ae8306db
-Author:     Davidlohr Bueso <davidlohr@hp.com>
-AuthorDate: Sun, 12 Jan 2014 15:31:25 -0800
+Commit-ID:  d50dde5a10f305253cbc3855307f608f8a3c5f73
+Gitweb:     http://git.kernel.org/tip/d50dde5a10f305253cbc3855307f608f8a3c5f73
+Author:     Dario Faggioli <raistlin@linux.it>
+AuthorDate: Thu, 7 Nov 2013 14:43:36 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 13 Jan 2014 11:45:21 +0100
+CommitDate: Mon, 13 Jan 2014 13:41:04 +0100
 
-futexes: Avoid taking the hb->lock if there's nothing to wake up
+sched: Add new scheduler syscalls to support an extended scheduling parameters ABI
 
-In futex_wake() there is clearly no point in taking the hb->lock
-if we know beforehand that there are no tasks to be woken. While
-the hash bucket's plist head is a cheap way of knowing this, we
-cannot rely 100% on it as there is a racy window between the
-futex_wait call and when the task is actually added to the
-plist. To this end, we couple it with the spinlock check as
-tasks trying to enter the critical region are most likely
-potential waiters that will be added to the plist, thus
-preventing tasks sleeping forever if wakers don't acknowledge
-all possible waiters.
+Add the syscalls needed for supporting scheduling algorithms
+with extended scheduling parameters (e.g., SCHED_DEADLINE).
 
-Furthermore, the futex ordering guarantees are preserved,
-ensuring that waiters either observe the changed user space
-value before blocking or is woken by a concurrent waker. For
-wakers, this is done by relying on the barriers in
-get_futex_key_refs() -- for archs that do not have implicit mb
-in atomic_inc(), we explicitly add them through a new
-futex_get_mm function. For waiters we rely on the fact that
-spin_lock calls already update the head counter, so spinners
-are visible even if the lock hasn't been acquired yet.
+In general, it makes possible to specify a periodic/sporadic task,
+that executes for a given amount of runtime at each instance, and is
+scheduled according to the urgency of their own timing constraints,
+i.e.:
 
-For more details please refer to the updated comments in the
-code and related discussion:
+ - a (maximum/typical) instance execution time,
+ - a minimum interval between consecutive instances,
+ - a time constraint by which each instance must be completed.
 
-  https://lkml.org/lkml/2013/11/26/556
+Thus, both the data structure that holds the scheduling parameters of
+the tasks and the system calls dealing with it must be extended.
+Unfortunately, modifying the existing struct sched_param would break
+the ABI and result in potentially serious compatibility issues with
+legacy binaries.
 
-Special thanks to tglx for careful review and feedback.
+For these reasons, this patch:
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Cc: Scott Norton <scott.norton@hp.com>
-Cc: Tom Vaden <tom.vaden@hp.com>
-Cc: Aswin Chandramouleeswaran <aswin@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1389569486-25487-5-git-send-email-davidlohr@hp.com
+ - defines the new struct sched_attr, containing all the fields
+   that are necessary for specifying a task in the computational
+   model described above;
+
+ - defines and implements the new scheduling related syscalls that
+   manipulate it, i.e., sched_setattr() and sched_getattr().
+
+Syscalls are introduced for x86 (32 and 64 bits) and ARM only, as a
+proof of concept and for developing and testing purposes. Making them
+available on other architectures is straightforward.
+
+Since no "user" for these new parameters is introduced in this patch,
+the implementation of the new system calls is just identical to their
+already existing counterpart. Future patches that implement scheduling
+policies able to exploit the new data structure must also take care of
+modifying the sched_*attr() calls accordingly with their own purposes.
+
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
+[ Rewrote to use sched_attr. ]
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+[ Removed sched_setscheduler2() for now. ]
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1383831828-15501-3-git-send-email-juri.lelli@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/futex.c | 117 +++++++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 92 insertions(+), 25 deletions(-)
+ arch/arm/include/asm/unistd.h      |   2 +-
+ arch/arm/include/uapi/asm/unistd.h |   2 +
+ arch/arm/kernel/calls.S            |   2 +
+ arch/x86/syscalls/syscall_32.tbl   |   2 +
+ arch/x86/syscalls/syscall_64.tbl   |   2 +
+ include/linux/sched.h              |  62 +++++++++
+ include/linux/syscalls.h           |   6 +
+ kernel/sched/core.c                | 263 ++++++++++++++++++++++++++++++++++---
+ kernel/sched/sched.h               |   9 +-
+ 9 files changed, 326 insertions(+), 24 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index fcc6850..30971b5 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -75,17 +75,20 @@
-  * The waiter reads the futex value in user space and calls
-  * futex_wait(). This function computes the hash bucket and acquires
-  * the hash bucket lock. After that it reads the futex user space value
-- * again and verifies that the data has not changed. If it has not
-- * changed it enqueues itself into the hash bucket, releases the hash
-- * bucket lock and schedules.
-+ * again and verifies that the data has not changed. If it has not changed
-+ * it enqueues itself into the hash bucket, releases the hash bucket lock
-+ * and schedules.
-  *
-  * The waker side modifies the user space value of the futex and calls
-- * futex_wake(). This functions computes the hash bucket and acquires
-- * the hash bucket lock. Then it looks for waiters on that futex in the
-- * hash bucket and wakes them.
-+ * futex_wake(). This function computes the hash bucket and acquires the
-+ * hash bucket lock. Then it looks for waiters on that futex in the hash
-+ * bucket and wakes them.
-  *
-- * Note that the spin_lock serializes waiters and wakers, so that the
-- * following scenario is avoided:
-+ * In futex wake up scenarios where no tasks are blocked on a futex, taking
-+ * the hb spinlock can be avoided and simply return. In order for this
-+ * optimization to work, ordering guarantees must exist so that the waiter
-+ * being added to the list is acknowledged when the list is concurrently being
-+ * checked by the waker, avoiding scenarios like the following:
-  *
-  * CPU 0                               CPU 1
-  * val = *futex;
-@@ -106,24 +109,52 @@
-  * This would cause the waiter on CPU 0 to wait forever because it
-  * missed the transition of the user space value from val to newval
-  * and the waker did not find the waiter in the hash bucket queue.
-- * The spinlock serializes that:
-  *
-- * CPU 0                               CPU 1
-+ * The correct serialization ensures that a waiter either observes
-+ * the changed user space value before blocking or is woken by a
-+ * concurrent waker:
-+ *
-+ * CPU 0                                 CPU 1
-  * val = *futex;
-  * sys_futex(WAIT, futex, val);
-  *   futex_wait(futex, val);
-- *   lock(hash_bucket(futex));
-- *   uval = *futex;
-- *                                     *futex = newval;
-- *                                     sys_futex(WAKE, futex);
-- *                                       futex_wake(futex);
-- *                                       lock(hash_bucket(futex));
-+ *
-+ *   waiters++;
-+ *   mb(); (A) <-- paired with -.
-+ *                              |
-+ *   lock(hash_bucket(futex));  |
-+ *                              |
-+ *   uval = *futex;             |
-+ *                              |        *futex = newval;
-+ *                              |        sys_futex(WAKE, futex);
-+ *                              |          futex_wake(futex);
-+ *                              |
-+ *                              `------->  mb(); (B)
-  *   if (uval == val)
-- *      queue();
-+ *     queue();
-  *     unlock(hash_bucket(futex));
-- *     schedule();                       if (!queue_empty())
-- *                                         wake_waiters(futex);
-- *                                       unlock(hash_bucket(futex));
-+ *     schedule();                         if (waiters)
-+ *                                           lock(hash_bucket(futex));
-+ *                                           wake_waiters(futex);
-+ *                                           unlock(hash_bucket(futex));
-+ *
-+ * Where (A) orders the waiters increment and the futex value read -- this
-+ * is guaranteed by the head counter in the hb spinlock; and where (B)
-+ * orders the write to futex and the waiters read -- this is done by the
-+ * barriers in get_futex_key_refs(), through either ihold or atomic_inc,
-+ * depending on the futex type.
-+ *
-+ * This yields the following case (where X:=waiters, Y:=futex):
-+ *
-+ *	X = Y = 0
-+ *
-+ *	w[X]=1		w[Y]=1
-+ *	MB		MB
-+ *	r[Y]=y		r[X]=x
-+ *
-+ * Which guarantees that x==0 && y==0 is impossible; which translates back into
-+ * the guarantee that we cannot both miss the futex variable change and the
-+ * enqueue.
-  */
+diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
+index 141baa3..acabef1 100644
+--- a/arch/arm/include/asm/unistd.h
++++ b/arch/arm/include/asm/unistd.h
+@@ -15,7 +15,7 @@
  
- int __read_mostly futex_cmpxchg_enabled;
-@@ -211,6 +242,36 @@ static unsigned long __read_mostly futex_hashsize;
+ #include <uapi/asm/unistd.h>
  
- static struct futex_hash_bucket *futex_queues;
+-#define __NR_syscalls  (380)
++#define __NR_syscalls  (384)
+ #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
  
-+static inline void futex_get_mm(union futex_key *key)
-+{
-+	atomic_inc(&key->private.mm->mm_count);
-+	/*
-+	 * Ensure futex_get_mm() implies a full barrier such that
-+	 * get_futex_key() implies a full barrier. This is relied upon
-+	 * as full barrier (B), see the ordering comment above.
-+	 */
-+	smp_mb__after_atomic_inc();
-+}
-+
-+static inline bool hb_waiters_pending(struct futex_hash_bucket *hb)
-+{
-+#ifdef CONFIG_SMP
-+	/*
-+	 * Tasks trying to enter the critical region are most likely
-+	 * potential waiters that will be added to the plist. Ensure
-+	 * that wakers won't miss to-be-slept tasks in the window between
-+	 * the wait call and the actual plist_add.
-+	 */
-+	if (spin_is_locked(&hb->lock))
-+		return true;
-+	smp_rmb(); /* Make sure we check the lock state first */
-+
-+	return !plist_head_empty(&hb->chain);
-+#else
-+	return true;
-+#endif
-+}
-+
+ #define __ARCH_WANT_STAT64
+diff --git a/arch/arm/include/uapi/asm/unistd.h b/arch/arm/include/uapi/asm/unistd.h
+index af33b44..fb5584d 100644
+--- a/arch/arm/include/uapi/asm/unistd.h
++++ b/arch/arm/include/uapi/asm/unistd.h
+@@ -406,6 +406,8 @@
+ #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
+ #define __NR_kcmp			(__NR_SYSCALL_BASE+378)
+ #define __NR_finit_module		(__NR_SYSCALL_BASE+379)
++#define __NR_sched_setattr		(__NR_SYSCALL_BASE+380)
++#define __NR_sched_getattr		(__NR_SYSCALL_BASE+381)
+ 
  /*
-  * We hash on the keys returned from get_futex_key (see below).
-  */
-@@ -245,10 +306,10 @@ static void get_futex_key_refs(union futex_key *key)
+  * This may need to be greater than __NR_last_syscall+1 in order to
+diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
+index c6ca7e3..166e945 100644
+--- a/arch/arm/kernel/calls.S
++++ b/arch/arm/kernel/calls.S
+@@ -389,6 +389,8 @@
+ 		CALL(sys_process_vm_writev)
+ 		CALL(sys_kcmp)
+ 		CALL(sys_finit_module)
++/* 380 */	CALL(sys_sched_setattr)
++		CALL(sys_sched_getattr)
+ #ifndef syscalls_counted
+ .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+ #define syscalls_counted
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index aabfb83..96bc506 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -357,3 +357,5 @@
+ 348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_writev
+ 349	i386	kcmp			sys_kcmp
+ 350	i386	finit_module		sys_finit_module
++351	i386	sched_setattr		sys_sched_setattr
++352	i386	sched_getattr		sys_sched_getattr
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 38ae65d..a12bddc 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -320,6 +320,8 @@
+ 311	64	process_vm_writev	sys_process_vm_writev
+ 312	common	kcmp			sys_kcmp
+ 313	common	finit_module		sys_finit_module
++314	common	sched_setattr		sys_sched_setattr
++315	common	sched_getattr		sys_sched_getattr
  
- 	switch (key->both.offset & (FUT_OFF_INODE|FUT_OFF_MMSHARED)) {
- 	case FUT_OFF_INODE:
--		ihold(key->shared.inode);
-+		ihold(key->shared.inode); /* implies MB (B) */
- 		break;
- 	case FUT_OFF_MMSHARED:
--		atomic_inc(&key->private.mm->mm_count);
-+		futex_get_mm(key); /* implies MB (B) */
- 		break;
- 	}
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3a1e985..86025b6 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -56,6 +56,66 @@ struct sched_param {
+ 
+ #include <asm/processor.h>
+ 
++#define SCHED_ATTR_SIZE_VER0	48	/* sizeof first published struct */
++
++/*
++ * Extended scheduling parameters data structure.
++ *
++ * This is needed because the original struct sched_param can not be
++ * altered without introducing ABI issues with legacy applications
++ * (e.g., in sched_getparam()).
++ *
++ * However, the possibility of specifying more than just a priority for
++ * the tasks may be useful for a wide variety of application fields, e.g.,
++ * multimedia, streaming, automation and control, and many others.
++ *
++ * This variant (sched_attr) is meant at describing a so-called
++ * sporadic time-constrained task. In such model a task is specified by:
++ *  - the activation period or minimum instance inter-arrival time;
++ *  - the maximum (or average, depending on the actual scheduling
++ *    discipline) computation time of all instances, a.k.a. runtime;
++ *  - the deadline (relative to the actual activation time) of each
++ *    instance.
++ * Very briefly, a periodic (sporadic) task asks for the execution of
++ * some specific computation --which is typically called an instance--
++ * (at most) every period. Moreover, each instance typically lasts no more
++ * than the runtime and must be completed by time instant t equal to
++ * the instance activation time + the deadline.
++ *
++ * This is reflected by the actual fields of the sched_attr structure:
++ *
++ *  @size		size of the structure, for fwd/bwd compat.
++ *
++ *  @sched_policy	task's scheduling policy
++ *  @sched_flags	for customizing the scheduler behaviour
++ *  @sched_nice		task's nice value      (SCHED_NORMAL/BATCH)
++ *  @sched_priority	task's static priority (SCHED_FIFO/RR)
++ *  @sched_deadline	representative of the task's deadline
++ *  @sched_runtime	representative of the task's runtime
++ *  @sched_period	representative of the task's period
++ *
++ * Given this task model, there are a multiplicity of scheduling algorithms
++ * and policies, that can be used to ensure all the tasks will make their
++ * timing constraints.
++ */
++struct sched_attr {
++	u32 size;
++
++	u32 sched_policy;
++	u64 sched_flags;
++
++	/* SCHED_NORMAL, SCHED_BATCH */
++	s32 sched_nice;
++
++	/* SCHED_FIFO, SCHED_RR */
++	u32 sched_priority;
++
++	/* SCHED_DEADLINE */
++	u64 sched_runtime;
++	u64 sched_deadline;
++	u64 sched_period;
++};
++
+ struct exec_domain;
+ struct futex_pi_state;
+ struct robust_list_head;
+@@ -1958,6 +2018,8 @@ extern int sched_setscheduler(struct task_struct *, int,
+ 			      const struct sched_param *);
+ extern int sched_setscheduler_nocheck(struct task_struct *, int,
+ 				      const struct sched_param *);
++extern int sched_setattr(struct task_struct *,
++			 const struct sched_attr *);
+ extern struct task_struct *idle_task(int cpu);
+ /**
+  * is_idle_task - is the specified task an idle task?
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 94273bb..40ed9e9 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -38,6 +38,7 @@ struct rlimit;
+ struct rlimit64;
+ struct rusage;
+ struct sched_param;
++struct sched_attr;
+ struct sel_arg_struct;
+ struct semaphore;
+ struct sembuf;
+@@ -279,9 +280,14 @@ asmlinkage long sys_sched_setscheduler(pid_t pid, int policy,
+ 					struct sched_param __user *param);
+ asmlinkage long sys_sched_setparam(pid_t pid,
+ 					struct sched_param __user *param);
++asmlinkage long sys_sched_setattr(pid_t pid,
++					struct sched_attr __user *attr);
+ asmlinkage long sys_sched_getscheduler(pid_t pid);
+ asmlinkage long sys_sched_getparam(pid_t pid,
+ 					struct sched_param __user *param);
++asmlinkage long sys_sched_getattr(pid_t pid,
++					struct sched_attr __user *attr,
++					unsigned int size);
+ asmlinkage long sys_sched_setaffinity(pid_t pid, unsigned int len,
+ 					unsigned long __user *user_mask_ptr);
+ asmlinkage long sys_sched_getaffinity(pid_t pid, unsigned int len,
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b21a63e..8174f88 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2817,6 +2817,7 @@ out_unlock:
+ 	__task_rq_unlock(rq);
  }
-@@ -322,7 +383,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
- 	if (!fshared) {
- 		key->private.mm = mm;
- 		key->private.address = address;
--		get_futex_key_refs(key);
-+		get_futex_key_refs(key);  /* implies MB (B) */
+ #endif
++
+ void set_user_nice(struct task_struct *p, long nice)
+ {
+ 	int old_prio, delta, on_rq;
+@@ -2991,22 +2992,29 @@ static struct task_struct *find_process_by_pid(pid_t pid)
+ 	return pid ? find_task_by_vpid(pid) : current;
+ }
+ 
+-/* Actually do priority change: must hold rq lock. */
+-static void
+-__setscheduler(struct rq *rq, struct task_struct *p, int policy, int prio)
++/* Actually do priority change: must hold pi & rq lock. */
++static void __setscheduler(struct rq *rq, struct task_struct *p,
++			   const struct sched_attr *attr)
+ {
++	int policy = attr->sched_policy;
++
+ 	p->policy = policy;
+-	p->rt_priority = prio;
++
++	if (rt_policy(policy))
++		p->rt_priority = attr->sched_priority;
++	else
++		p->static_prio = NICE_TO_PRIO(attr->sched_nice);
++
+ 	p->normal_prio = normal_prio(p);
+-	/* we are holding p->pi_lock already */
+ 	p->prio = rt_mutex_getprio(p);
++
+ 	if (rt_prio(p->prio))
+ 		p->sched_class = &rt_sched_class;
+ 	else
+ 		p->sched_class = &fair_sched_class;
++
+ 	set_load_weight(p);
+ }
+-
+ /*
+  * check the target process has a UID that matches the current process's
+  */
+@@ -3023,10 +3031,12 @@ static bool check_same_owner(struct task_struct *p)
+ 	return match;
+ }
+ 
+-static int __sched_setscheduler(struct task_struct *p, int policy,
+-				const struct sched_param *param, bool user)
++static int __sched_setscheduler(struct task_struct *p,
++				const struct sched_attr *attr,
++				bool user)
+ {
+ 	int retval, oldprio, oldpolicy = -1, on_rq, running;
++	int policy = attr->sched_policy;
+ 	unsigned long flags;
+ 	const struct sched_class *prev_class;
+ 	struct rq *rq;
+@@ -3054,17 +3064,22 @@ recheck:
+ 	 * 1..MAX_USER_RT_PRIO-1, valid priority for SCHED_NORMAL,
+ 	 * SCHED_BATCH and SCHED_IDLE is 0.
+ 	 */
+-	if (param->sched_priority < 0 ||
+-	    (p->mm && param->sched_priority > MAX_USER_RT_PRIO-1) ||
+-	    (!p->mm && param->sched_priority > MAX_RT_PRIO-1))
++	if (attr->sched_priority < 0 ||
++	    (p->mm && attr->sched_priority > MAX_USER_RT_PRIO-1) ||
++	    (!p->mm && attr->sched_priority > MAX_RT_PRIO-1))
+ 		return -EINVAL;
+-	if (rt_policy(policy) != (param->sched_priority != 0))
++	if (rt_policy(policy) != (attr->sched_priority != 0))
+ 		return -EINVAL;
+ 
+ 	/*
+ 	 * Allow unprivileged RT tasks to decrease priority:
+ 	 */
+ 	if (user && !capable(CAP_SYS_NICE)) {
++		if (fair_policy(policy)) {
++			if (!can_nice(p, attr->sched_nice))
++				return -EPERM;
++		}
++
+ 		if (rt_policy(policy)) {
+ 			unsigned long rlim_rtprio =
+ 					task_rlimit(p, RLIMIT_RTPRIO);
+@@ -3074,8 +3089,8 @@ recheck:
+ 				return -EPERM;
+ 
+ 			/* can't increase priority */
+-			if (param->sched_priority > p->rt_priority &&
+-			    param->sched_priority > rlim_rtprio)
++			if (attr->sched_priority > p->rt_priority &&
++			    attr->sched_priority > rlim_rtprio)
+ 				return -EPERM;
+ 		}
+ 
+@@ -3123,11 +3138,16 @@ recheck:
+ 	/*
+ 	 * If not changing anything there's no need to proceed further:
+ 	 */
+-	if (unlikely(policy == p->policy && (!rt_policy(policy) ||
+-			param->sched_priority == p->rt_priority))) {
++	if (unlikely(policy == p->policy)) {
++		if (fair_policy(policy) && attr->sched_nice != TASK_NICE(p))
++			goto change;
++		if (rt_policy(policy) && attr->sched_priority != p->rt_priority)
++			goto change;
++
+ 		task_rq_unlock(rq, p, &flags);
  		return 0;
  	}
++change:
  
-@@ -429,7 +490,7 @@ again:
- 		key->shared.pgoff = basepage_index(page);
- 	}
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	if (user) {
+@@ -3161,7 +3181,7 @@ recheck:
  
--	get_futex_key_refs(key);
-+	get_futex_key_refs(key); /* implies MB (B) */
+ 	oldprio = p->prio;
+ 	prev_class = p->sched_class;
+-	__setscheduler(rq, p, policy, param->sched_priority);
++	__setscheduler(rq, p, attr);
  
- out:
- 	unlock_page(page_head);
-@@ -1052,6 +1113,11 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- 		goto out;
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+@@ -3189,10 +3209,20 @@ recheck:
+ int sched_setscheduler(struct task_struct *p, int policy,
+ 		       const struct sched_param *param)
+ {
+-	return __sched_setscheduler(p, policy, param, true);
++	struct sched_attr attr = {
++		.sched_policy   = policy,
++		.sched_priority = param->sched_priority
++	};
++	return __sched_setscheduler(p, &attr, true);
+ }
+ EXPORT_SYMBOL_GPL(sched_setscheduler);
  
- 	hb = hash_futex(&key);
++int sched_setattr(struct task_struct *p, const struct sched_attr *attr)
++{
++	return __sched_setscheduler(p, attr, true);
++}
++EXPORT_SYMBOL_GPL(sched_setattr);
 +
-+	/* Make sure we really have tasks to wakeup */
-+	if (!hb_waiters_pending(hb))
-+		goto out_put_key;
-+
- 	spin_lock(&hb->lock);
- 
- 	plist_for_each_entry_safe(this, next, &hb->chain, list) {
-@@ -1072,6 +1138,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
- 	}
- 
- 	spin_unlock(&hb->lock);
-+out_put_key:
- 	put_futex_key(&key);
- out:
- 	return ret;
-@@ -1535,7 +1602,7 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
- 	hb = hash_futex(&q->key);
- 	q->lock_ptr = &hb->lock;
- 
--	spin_lock(&hb->lock);
-+	spin_lock(&hb->lock); /* implies MB (A) */
- 	return hb;
+ /**
+  * sched_setscheduler_nocheck - change the scheduling policy and/or RT priority of a thread from kernelspace.
+  * @p: the task in question.
+@@ -3209,7 +3239,11 @@ EXPORT_SYMBOL_GPL(sched_setscheduler);
+ int sched_setscheduler_nocheck(struct task_struct *p, int policy,
+ 			       const struct sched_param *param)
+ {
+-	return __sched_setscheduler(p, policy, param, false);
++	struct sched_attr attr = {
++		.sched_policy   = policy,
++		.sched_priority = param->sched_priority
++	};
++	return __sched_setscheduler(p, &attr, false);
  }
  
+ static int
+@@ -3234,6 +3268,79 @@ do_sched_setscheduler(pid_t pid, int policy, struct sched_param __user *param)
+ 	return retval;
+ }
+ 
++/*
++ * Mimics kernel/events/core.c perf_copy_attr().
++ */
++static int sched_copy_attr(struct sched_attr __user *uattr,
++			   struct sched_attr *attr)
++{
++	u32 size;
++	int ret;
++
++	if (!access_ok(VERIFY_WRITE, uattr, SCHED_ATTR_SIZE_VER0))
++		return -EFAULT;
++
++	/*
++	 * zero the full structure, so that a short copy will be nice.
++	 */
++	memset(attr, 0, sizeof(*attr));
++
++	ret = get_user(size, &uattr->size);
++	if (ret)
++		return ret;
++
++	if (size > PAGE_SIZE)	/* silly large */
++		goto err_size;
++
++	if (!size)		/* abi compat */
++		size = SCHED_ATTR_SIZE_VER0;
++
++	if (size < SCHED_ATTR_SIZE_VER0)
++		goto err_size;
++
++	/*
++	 * If we're handed a bigger struct than we know of,
++	 * ensure all the unknown bits are 0 - i.e. new
++	 * user-space does not rely on any kernel feature
++	 * extensions we dont know about yet.
++	 */
++	if (size > sizeof(*attr)) {
++		unsigned char __user *addr;
++		unsigned char __user *end;
++		unsigned char val;
++
++		addr = (void __user *)uattr + sizeof(*attr);
++		end  = (void __user *)uattr + size;
++
++		for (; addr < end; addr++) {
++			ret = get_user(val, addr);
++			if (ret)
++				return ret;
++			if (val)
++				goto err_size;
++		}
++		size = sizeof(*attr);
++	}
++
++	ret = copy_from_user(attr, uattr, size);
++	if (ret)
++		return -EFAULT;
++
++	/*
++	 * XXX: do we want to be lenient like existing syscalls; or do we want
++	 * to be strict and return an error on out-of-bounds values?
++	 */
++	attr->sched_nice = clamp(attr->sched_nice, -20, 19);
++
++out:
++	return ret;
++
++err_size:
++	put_user(sizeof(*attr), &uattr->size);
++	ret = -E2BIG;
++	goto out;
++}
++
+ /**
+  * sys_sched_setscheduler - set/change the scheduler policy and RT priority
+  * @pid: the pid in question.
+@@ -3265,6 +3372,33 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
+ }
+ 
+ /**
++ * sys_sched_setattr - same as above, but with extended sched_attr
++ * @pid: the pid in question.
++ * @attr: structure containing the extended parameters.
++ */
++SYSCALL_DEFINE2(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr)
++{
++	struct sched_attr attr;
++	struct task_struct *p;
++	int retval;
++
++	if (!uattr || pid < 0)
++		return -EINVAL;
++
++	if (sched_copy_attr(uattr, &attr))
++		return -EFAULT;
++
++	rcu_read_lock();
++	retval = -ESRCH;
++	p = find_process_by_pid(pid);
++	if (p != NULL)
++		retval = sched_setattr(p, &attr);
++	rcu_read_unlock();
++
++	return retval;
++}
++
++/**
+  * sys_sched_getscheduler - get the policy (scheduling class) of a thread
+  * @pid: the pid in question.
+  *
+@@ -3334,6 +3468,92 @@ out_unlock:
+ 	return retval;
+ }
+ 
++static int sched_read_attr(struct sched_attr __user *uattr,
++			   struct sched_attr *attr,
++			   unsigned int usize)
++{
++	int ret;
++
++	if (!access_ok(VERIFY_WRITE, uattr, usize))
++		return -EFAULT;
++
++	/*
++	 * If we're handed a smaller struct than we know of,
++	 * ensure all the unknown bits are 0 - i.e. old
++	 * user-space does not get uncomplete information.
++	 */
++	if (usize < sizeof(*attr)) {
++		unsigned char *addr;
++		unsigned char *end;
++
++		addr = (void *)attr + usize;
++		end  = (void *)attr + sizeof(*attr);
++
++		for (; addr < end; addr++) {
++			if (*addr)
++				goto err_size;
++		}
++
++		attr->size = usize;
++	}
++
++	ret = copy_to_user(uattr, attr, usize);
++	if (ret)
++		return -EFAULT;
++
++out:
++	return ret;
++
++err_size:
++	ret = -E2BIG;
++	goto out;
++}
++
++/**
++ * sys_sched_getattr - same as above, but with extended "sched_param"
++ * @pid: the pid in question.
++ * @attr: structure containing the extended parameters.
++ * @size: sizeof(attr) for fwd/bwd comp.
++ */
++SYSCALL_DEFINE3(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
++		unsigned int, size)
++{
++	struct sched_attr attr = {
++		.size = sizeof(struct sched_attr),
++	};
++	struct task_struct *p;
++	int retval;
++
++	if (!uattr || pid < 0 || size > PAGE_SIZE ||
++	    size < SCHED_ATTR_SIZE_VER0)
++		return -EINVAL;
++
++	rcu_read_lock();
++	p = find_process_by_pid(pid);
++	retval = -ESRCH;
++	if (!p)
++		goto out_unlock;
++
++	retval = security_task_getscheduler(p);
++	if (retval)
++		goto out_unlock;
++
++	attr.sched_policy = p->policy;
++	if (task_has_rt_policy(p))
++		attr.sched_priority = p->rt_priority;
++	else
++		attr.sched_nice = TASK_NICE(p);
++
++	rcu_read_unlock();
++
++	retval = sched_read_attr(uattr, &attr, size);
++	return retval;
++
++out_unlock:
++	rcu_read_unlock();
++	return retval;
++}
++
+ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
+ {
+ 	cpumask_var_t cpus_allowed, new_mask;
+@@ -6400,13 +6620,16 @@ EXPORT_SYMBOL(__might_sleep);
+ static void normalize_task(struct rq *rq, struct task_struct *p)
+ {
+ 	const struct sched_class *prev_class = p->sched_class;
++	struct sched_attr attr = {
++		.sched_policy = SCHED_NORMAL,
++	};
+ 	int old_prio = p->prio;
+ 	int on_rq;
+ 
+ 	on_rq = p->on_rq;
+ 	if (on_rq)
+ 		dequeue_task(rq, p, 0);
+-	__setscheduler(rq, p, SCHED_NORMAL, 0);
++	__setscheduler(rq, p, &attr);
+ 	if (on_rq) {
+ 		enqueue_task(rq, p, 0);
+ 		resched_task(rq->curr);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index b3b4a49..df023db 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -81,11 +81,14 @@ extern void update_cpu_load_active(struct rq *this_rq);
+  */
+ #define RUNTIME_INF	((u64)~0ULL)
+ 
++static inline int fair_policy(int policy)
++{
++	return policy == SCHED_NORMAL || policy == SCHED_BATCH;
++}
++
+ static inline int rt_policy(int policy)
+ {
+-	if (policy == SCHED_FIFO || policy == SCHED_RR)
+-		return 1;
+-	return 0;
++	return policy == SCHED_FIFO || policy == SCHED_RR;
+ }
+ 
+ static inline int task_has_rt_policy(struct task_struct *p)
