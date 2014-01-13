@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427AbaAMU5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 15:57:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40405 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaAMUsI (ORCPT
+	id S1752162AbaAMVCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 16:02:23 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:52248 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751236AbaAMVCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 15:48:08 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/38] perf tests: Fixup leak on error path in parse events test
-Date: Mon, 13 Jan 2014 17:47:09 -0300
-Message-Id: <1389646059-24881-9-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
-References: <1389646059-24881-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 13 Jan 2014 16:02:20 -0500
+Date: Mon, 13 Jan 2014 22:02:11 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Christian Daudt <bcm@fixthebug.org>,
+        Linaro Patches <patches@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Linux Watchdog List <linux-watchdog@vger.kernel.org>,
+        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 0/2] watchdog: bcm281xx: Watchdog Driver
+Message-ID: <20140113210211.GB23454@spo001.leaseweb.com>
+References: <1385160964-18578-1-git-send-email-markus.mayer@linaro.org> <20131228204039.GA19982@spo001.leaseweb.com> <CAPdLdqkNtvPwETc+TK9xRSh-ru6q4VvUk7zfYEbjPb1TOESMaA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPdLdqkNtvPwETc+TK9xRSh-ru6q4VvUk7zfYEbjPb1TOESMaA@mail.gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Markus,
 
-We need to call the evlist destructor when failing to parse events.
+> Now I have a question (or rather a comment) of my own. I noticed that
+> you "squashed" my two original patches into a single patch before
+> breaking out the debugfs related code. The side-effect of this was
+> that two lines of my bcm_defconfig change (CONFIG_WATCHDOG=y and
+> CONFIG_BCM_KONA_WDT=y) were included in the patch you took into
+> linux-watchdog-next.
+> 
+> If I understand correctly (and this is why I had broken out the
+> bcm_defconfig change into a separate patch), a defconfig change would
+> normally go through the platform maintainer's tree, in this case
+> Christian, whereas the actual driver would go upstream through your
+> tree.
+> 
+> I don't think it makes too much of a difference with regards to this
+> driver where the defconfig change goes. In fact, taking it all through
+> one tree might even be slightly easier and reduce the chance of
+> conflicts, but I still think Christian needs to at least be aware of
+> this change going through the watchdog tree. He owns bcm_defconfig,
+> after all.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ilslu69s7v7bpvdgqtrlp8f5@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/parse-events.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+If it is an existing driver then it makes sense to go through the platform
+maintainer's tree. If it is a new driver then I prefer to keep it as one
+patch. Suppose the defconfig stuff get's in via the platform tree and I
+don't sent the watchdog driver; would be an annoying situation in my opinion...
+So that's why I prefer it as a single patch.
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index e4ce8aed29d3..41dee5e67f63 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1385,10 +1385,10 @@ static int test_event(struct evlist_test *e)
- 	if (ret) {
- 		pr_debug("failed to parse event '%s', err %d\n",
- 			 e->name, ret);
--		return ret;
-+	} else {
-+		ret = e->check(evlist);
- 	}
--
--	ret = e->check(evlist);
-+	
- 	perf_evlist__delete(evlist);
- 
- 	return ret;
--- 
-1.8.1.4
+Kind regards,
+Wim.
 
