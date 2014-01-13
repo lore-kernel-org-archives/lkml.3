@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaAMO1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51260 "EHLO
+	id S1752233AbaAMOf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:35:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51645 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaAMOZg (ORCPT
+	with ESMTP id S1751473AbaAMO1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:36 -0500
+	Mon, 13 Jan 2014 09:27:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Liu Ping Fan <pingfank@linux.vnet.ibm.com>, Alexander Graf <agraf@suse.de>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 23/96] powerpc: kvm: fix rare but potential deadlock scene
-Date: Mon, 13 Jan 2014 14:23:46 +0000
-Message-Id: <1389623099-18783-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 96/96] SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
+Date: Mon, 13 Jan 2014 14:24:59 +0000
+Message-Id: <1389623099-18783-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,81 +28,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: pingfan liu <qemulist@gmail.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
+commit 3dc91d4338d698ce77832985f9cb183d8eeaf6be upstream.
 
-Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
-realmode, so it can trigger the deadlock.
+While running stress tests on adding and deleting ftrace instances I hit
+this bug:
 
-Suppose the following scene:
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+  IP: selinux_inode_permission+0x85/0x160
+  PGD 63681067 PUD 7ddbe067 PMD 0
+  Oops: 0000 [#1] PREEMPT
+  CPU: 0 PID: 5634 Comm: ftrace-test-mki Not tainted 3.13.0-rc4-test-00033-gd2a6dde-dirty #20
+  Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+  task: ffff880078375800 ti: ffff88007ddb0000 task.ti: ffff88007ddb0000
+  RIP: 0010:[<ffffffff812d8bc5>]  [<ffffffff812d8bc5>] selinux_inode_permission+0x85/0x160
+  RSP: 0018:ffff88007ddb1c48  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000800000 RCX: ffff88006dd43840
+  RDX: 0000000000000001 RSI: 0000000000000081 RDI: ffff88006ee46000
+  RBP: ffff88007ddb1c88 R08: 0000000000000000 R09: ffff88007ddb1c54
+  R10: 6e6576652f6f6f66 R11: 0000000000000003 R12: 0000000000000000
+  R13: 0000000000000081 R14: ffff88006ee46000 R15: 0000000000000000
+  FS:  00007f217b5b6700(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
+  CR2: 0000000000000020 CR3: 000000006a0fe000 CR4: 00000000000007f0
+  Call Trace:
+    security_inode_permission+0x1c/0x30
+    __inode_permission+0x41/0xa0
+    inode_permission+0x18/0x50
+    link_path_walk+0x66/0x920
+    path_openat+0xa6/0x6c0
+    do_filp_open+0x43/0xa0
+    do_sys_open+0x146/0x240
+    SyS_open+0x1e/0x20
+    system_call_fastpath+0x16/0x1b
+  Code: 84 a1 00 00 00 81 e3 00 20 00 00 89 d8 83 c8 02 40 f6 c6 04 0f 45 d8 40 f6 c6 08 74 71 80 cf 02 49 8b 46 38 4c 8d 4d cc 45 31 c0 <0f> b7 50 20 8b 70 1c 48 8b 41 70 89 d9 8b 78 04 e8 36 cf ff ff
+  RIP  selinux_inode_permission+0x85/0x160
+  CR2: 0000000000000020
 
-Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
-vcpus.
+Investigating, I found that the inode->i_security was NULL, and the
+dereference of it caused the oops.
 
-If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
-out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
-caught in realmode for a long time.
+in selinux_inode_permission():
 
-What makes things even worse if the following happens,
-  On cpuM, bitlockX is hold, on cpuN, Y is hold.
-  vcpu_B_2 try to lock Y on cpuM in realmode
-  vcpu_A_2 try to lock X on cpuN in realmode
+	isec = inode->i_security;
 
-Oops! deadlock happens
+	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
 
-Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-Reviewed-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Note, the crash came from stressing the deletion and reading of debugfs
+files.  I was not able to recreate this via normal files.  But I'm not
+sure they are safe.  It may just be that the race window is much harder
+to hit.
+
+What seems to have happened (and what I have traced), is the file is
+being opened at the same time the file or directory is being deleted.
+As the dentry and inode locks are not held during the path walk, nor is
+the inodes ref counts being incremented, there is nothing saving these
+structures from being discarded except for an rcu_read_lock().
+
+The rcu_read_lock() protects against freeing of the inode, but it does
+not protect freeing of the inode_security_struct.  Now if the freeing of
+the i_security happens with a call_rcu(), and the i_security field of
+the inode is not changed (it gets freed as the inode gets freed) then
+there will be no issue here.  (Linus Torvalds suggested not setting the
+field to NULL such that we do not need to check if it is NULL in the
+permission check).
+
+Note, this is a hack, but it fixes the problem at hand.  A real fix is
+to restructure the destroy_inode() to call all the destructor handlers
+from the RCU callback.  But that is a major job to do, and requires a
+lot of work.  For now, we just band-aid this bug with this fix (it
+works), and work on a more maintainable solution in the future.
+
+Link: http://lkml.kernel.org/r/20140109101932.0508dec7@gandalf.local.home
+Link: http://lkml.kernel.org/r/20140109182756.17abaaa8@gandalf.local.home
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kvm/book3s_64_mmu_hv.c | 6 +++++-
- arch/powerpc/kvm/book3s_hv_rm_mmu.c | 4 ++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ security/selinux/hooks.c          | 20 ++++++++++++++++++--
+ security/selinux/include/objsec.h |  5 ++++-
+ 2 files changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-index 80a5775..a8df79d 100644
---- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
-@@ -387,11 +387,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate(struct kvm_vcpu *vcpu, gva_t eaddr,
- 		slb_v = vcpu->kvm->arch.vrma_slb_v;
- 	}
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index edc54e5..0189046 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -218,6 +218,14 @@ static int inode_alloc_security(struct inode *inode)
+ 	return 0;
+ }
  
-+	preempt_disable();
- 	/* Find the HPTE in the hash table */
- 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
- 					 HPTE_V_VALID | HPTE_V_ABSENT);
--	if (index < 0)
-+	if (index < 0) {
-+		preempt_enable();
- 		return -ENOENT;
-+	}
- 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
- 	v = hptep[0] & ~HPTE_V_HVLOCK;
- 	gr = kvm->arch.revmap[index].guest_rpte;
-@@ -399,6 +402,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate(struct kvm_vcpu *vcpu, gva_t eaddr,
- 	/* Unlock the HPTE */
- 	asm volatile("lwsync" : : : "memory");
- 	hptep[0] = v;
-+	preempt_enable();
- 
- 	gpte->eaddr = eaddr;
- 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
-diff --git a/arch/powerpc/kvm/book3s_hv_rm_mmu.c b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-index cec4dad..eacf164 100644
---- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-+++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
-@@ -649,6 +649,10 @@ static int slb_base_page_shift[4] = {
- 	20,	/* 1M, unsupported */
- };
- 
-+/* When called from virtmode, this func should be protected by
-+ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
-+ * can trigger deadlock issue.
-+ */
- long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
- 			      unsigned long valid)
++static void inode_free_rcu(struct rcu_head *head)
++{
++	struct inode_security_struct *isec;
++
++	isec = container_of(head, struct inode_security_struct, rcu);
++	kmem_cache_free(sel_inode_cache, isec);
++}
++
+ static void inode_free_security(struct inode *inode)
  {
+ 	struct inode_security_struct *isec = inode->i_security;
+@@ -228,8 +236,16 @@ static void inode_free_security(struct inode *inode)
+ 		list_del_init(&isec->list);
+ 	spin_unlock(&sbsec->isec_lock);
+ 
+-	inode->i_security = NULL;
+-	kmem_cache_free(sel_inode_cache, isec);
++	/*
++	 * The inode may still be referenced in a path walk and
++	 * a call to selinux_inode_permission() can be made
++	 * after inode_free_security() is called. Ideally, the VFS
++	 * wouldn't do this, but fixing that is a much harder
++	 * job. For now, simply free the i_security via RCU, and
++	 * leave the current inode->i_security pointer intact.
++	 * The inode will be freed after the RCU grace period too.
++	 */
++	call_rcu(&isec->rcu, inode_free_rcu);
+ }
+ 
+ static int file_alloc_security(struct file *file)
+diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
+index 26c7eee..7b1830b 100644
+--- a/security/selinux/include/objsec.h
++++ b/security/selinux/include/objsec.h
+@@ -38,7 +38,10 @@ struct task_security_struct {
+ 
+ struct inode_security_struct {
+ 	struct inode *inode;	/* back pointer to inode object */
+-	struct list_head list;	/* list of inode_security_struct */
++	union {
++		struct list_head list;	/* list of inode_security_struct */
++		struct rcu_head rcu;	/* for freeing the inode_security_struct */
++	};
+ 	u32 task_sid;		/* SID of creating task */
+ 	u32 sid;		/* SID of this object */
+ 	u16 sclass;		/* security class of this object */
 -- 
 1.8.3.2
 
