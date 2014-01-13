@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaAMOmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:42:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51522 "EHLO
+	id S1752158AbaAMO0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:26:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51209 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672AbaAMO0r (ORCPT
+	with ESMTP id S1751668AbaAMOZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:47 -0500
+	Mon, 13 Jan 2014 09:25:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
-        Chris J Arges <chris.j.arges@canonical.com>,
+Cc: Greg Edwards <gedwards@ddn.com>, Gleb Natapov <gleb@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 71/96] sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
-Date: Mon, 13 Jan 2014 14:24:34 +0000
-Message-Id: <1389623099-18783-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 15/96] KVM: IOMMU: hva align mapping page size
+Date: Mon, 13 Jan 2014 14:23:38 +0000
+Message-Id: <1389623099-18783-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -29,59 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Segall <bsegall@google.com>
+From: Greg Edwards <gedwards@ddn.com>
 
-commit db06e78cc13d70f10877e0557becc88ab3ad2be8 upstream.
+commit 27ef63c7e97d1e5dddd85051c03f8d44cc887f34 upstream.
 
-hrtimer_expires_remaining does not take internal hrtimer locks and thus
-must be guarded against concurrent __hrtimer_start_range_ns (but
-returning HRTIMER_RESTART is safe). Use cfs_b->lock to make it safe.
+When determining the page size we could use to map with the IOMMU, the
+page size should also be aligned with the hva, not just the gfn.  The
+gfn may not reflect the real alignment within the hugetlbfs file.
 
-Signed-off-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181617.22647.73829.stgit@sword-of-the-dawn.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+Most of the time, this works fine.  However, if the hugetlbfs file is
+backed by non-contiguous huge pages, a multi-huge page memslot starts at
+an unaligned offset within the hugetlbfs file, and the gfn is aligned
+with respect to the huge page size, kvm_host_page_size() will return the
+huge page size and we will use that to map with the IOMMU.
+
+When we later unpin that same memslot, the IOMMU returns the unmap size
+as the huge page size, and we happily unpin that many pfns in
+monotonically increasing order, not realizing we are spanning
+non-contiguous huge pages and partially unpin the wrong huge page.
+
+Ensure the IOMMU mapping page size is aligned with the hva corresponding
+to the gfn, which does reflect the alignment within the hugetlbfs file.
+
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Greg Edwards <gedwards@ddn.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+[ luis: backported to 3.5:
+  - replaced __gfn_to_hva_memslot by gfn_to_hva_memslot ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/fair.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ virt/kvm/iommu.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e40a083..df0d630 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1831,7 +1831,13 @@ static const u64 min_bandwidth_expiration = 2 * NSEC_PER_MSEC;
- /* how long we wait to gather additional slack before distributing */
- static const u64 cfs_bandwidth_slack_period = 5 * NSEC_PER_MSEC;
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index e9fff98..53d34f6 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -101,6 +101,10 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+ 		while ((gfn << PAGE_SHIFT) & (page_size - 1))
+ 			page_size >>= 1;
  
--/* are we near the end of the current quota period? */
-+/*
-+ * Are we near the end of the current quota period?
-+ *
-+ * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
-+ * hrtimer base being cleared by __hrtimer_start_range_ns. In the case of
-+ * migrate_hrtimers, base is never cleared, so we are fine.
-+ */
- static int runtime_refresh_within(struct cfs_bandwidth *cfs_b, u64 min_expire)
- {
- 	struct hrtimer *refresh_timer = &cfs_b->period_timer;
-@@ -1907,10 +1913,12 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
- 	u64 expires;
- 
- 	/* confirm we're still not at a refresh boundary */
--	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration))
-+	raw_spin_lock(&cfs_b->lock);
-+	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration)) {
-+		raw_spin_unlock(&cfs_b->lock);
- 		return;
-+	}
- 
--	raw_spin_lock(&cfs_b->lock);
- 	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
- 		runtime = cfs_b->runtime;
- 		cfs_b->runtime = 0;
++		/* Make sure hva is aligned to the page size we want to map */
++		while (gfn_to_hva_memslot(slot, gfn) & (page_size - 1))
++			page_size >>= 1;
++
+ 		/*
+ 		 * Pin all pages we are about to map in memory. This is
+ 		 * important because we unmap and unpin in 4kb steps later.
 -- 
 1.8.3.2
 
