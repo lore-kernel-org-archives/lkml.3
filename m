@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245AbaAMQEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:04:06 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53375 "EHLO
+	id S1755902AbaAMQ1j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:27:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53479 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbaAMQDh (ORCPT
+	with ESMTP id S1754254AbaAMQEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:03:37 -0500
+	Mon, 13 Jan 2014 11:04:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>,
+Cc: Jiang Liu <jiang.liu@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Brown <broonie@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 117/208] ceph: Add check returned value on func ceph_calc_ceph_pg.
-Date: Mon, 13 Jan 2014 15:59:18 +0000
-Message-Id: <1389628849-1614-118-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 131/208] arm64: fix possible invalid FPSIMD initialization state
+Date: Mon, 13 Jan 2014 15:59:32 +0000
+Message-Id: <1389628849-1614-132-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-commit 2fbcbff1d6b9243ef71c64a8ab993bc3c7bb7af1 upstream.
+commit 6db83cea1c975b9a102e17def7d2795814e1ae2b upstream.
 
-Func ceph_calc_ceph_pg maybe failed.So add check for returned value.
+If context switching happens during executing fpsimd_flush_thread(),
+stale value in FPSIMD registers will be saved into current thread's
+fpsimd_state by fpsimd_thread_switch(). That may cause invalid
+initialization state for the new process, so disable preemption
+when executing fpsimd_flush_thread().
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ceph/ioctl.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm64/kernel/fpsimd.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/ceph/ioctl.c b/fs/ceph/ioctl.c
-index a5ce62e..669622f 100644
---- a/fs/ceph/ioctl.c
-+++ b/fs/ceph/ioctl.c
-@@ -211,8 +211,12 @@ static long ceph_ioctl_get_dataloc(struct file *file, void __user *arg)
- 	snprintf(dl.object_name, sizeof(dl.object_name), "%llx.%08llx",
- 		 ceph_ino(inode), dl.object_no);
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+index e8b8357..2fa308e 100644
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -79,8 +79,10 @@ void fpsimd_thread_switch(struct task_struct *next)
  
--	ceph_calc_ceph_pg(&pgid, dl.object_name, osdc->osdmap,
--		ceph_file_layout_pg_pool(ci->i_layout));
-+	r = ceph_calc_ceph_pg(&pgid, dl.object_name, osdc->osdmap,
-+				ceph_file_layout_pg_pool(ci->i_layout));
-+	if (r < 0) {
-+		up_read(&osdc->map_sem);
-+		return r;
-+	}
+ void fpsimd_flush_thread(void)
+ {
++	preempt_disable();
+ 	memset(&current->thread.fpsimd_state, 0, sizeof(struct fpsimd_state));
+ 	fpsimd_load_state(&current->thread.fpsimd_state);
++	preempt_enable();
+ }
  
- 	dl.osd = ceph_calc_pg_primary(osdc->osdmap, pgid);
- 	if (dl.osd >= 0) {
+ /*
 -- 
 1.8.3.2
 
