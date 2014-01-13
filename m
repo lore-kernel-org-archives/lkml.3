@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaAMRNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:13:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52780 "EHLO
+	id S1755471AbaAMRNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:13:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196AbaAMQA6 (ORCPT
+	with ESMTP id S1752336AbaAMQA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:00:58 -0500
+	Mon, 13 Jan 2014 11:00:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>,
+Cc: Christian Engelmayer <christian.engelmayer@frequentis.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 002/208] ARM: OMAP2+: hwmod: Fix SOFTRESET logic
-Date: Mon, 13 Jan 2014 15:57:23 +0000
-Message-Id: <1389628849-1614-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 003/208] Input: usbtouchscreen - separate report and transmit buffer size handling
+Date: Mon, 13 Jan 2014 15:57:24 +0000
+Message-Id: <1389628849-1614-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,110 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Christian Engelmayer <christian.engelmayer@frequentis.com>
 
-commit 313a76ee11cda6700548afe68499ef174a240688 upstream.
+commit 4ef38351d770cc421f4a0c7a849fd13207fc5741 upstream.
 
-In _ocp_softreset(), after _set_softreset() + write_sysconfig(),
-the hwmod's sysc_cache will always contain SOFTRESET bit set
-so all further writes to sysconfig using this cache will initiate
-a repeated SOFTRESET e.g. enable_sysc(). This is true for OMAP3 like
-platforms that have RESET_DONE status in the SYSSTATUS register and
-so the the SOFTRESET bit in SYSCONFIG is not automatically cleared.
-It is not a problem for OMAP4 like platforms that indicate RESET
-completion by clearing the SOFTRESET bit in the SYSCONFIG register.
+This patch supports the separate handling of the USB transfer buffer length
+and the length of the buffer used for multi packet support. For devices
+supporting multiple report or diagnostic packets, the USB transfer size is now
+limited to the USB endpoints wMaxPacketSize - otherwise it defaults to the
+configured report packet size as before.
 
-This repeated SOFTRESET is undesired and was the root cause of
-USB host issues on OMAP3 platforms when hwmod was allowed to do the
-SOFTRESET for the USB Host module.
+This fixes an issue where event reporting can be delayed for an arbitrary
+time for multi packet devices. For instance the report size for eGalax devices
+is defined to the 16 byte maximum diagnostic packet size as opposed to the 5
+byte report packet size. In case the driver requests 16 byte from the USB
+interrupt endpoint, the USB host controller driver needs to split up the
+request into 2 accesses according to the endpoints wMaxPacketSize of 8 byte.
+When the first transfer is answered by the eGalax device with not less than
+the full 8 byte requested, the host controller has got no way of knowing
+whether the touch controller has got additional data queued and will issue
+the second transfer. If per example a liftoff event finishes at such a
+wMaxPacketSize boundary, the data will not be available to the usbtouch driver
+until a further event is triggered and transfered to the host. From user
+perspective the BTN_TOUCH release event in this case is stuck until the next
+touch down event.
 
-To fix this we clear the SOFTRESET bit and update the sysconfig
-register + sysc_cache using write_sysconfig().
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Tomi Valkeinen <tomi.valkeinen@ti.com> # Panda, BeagleXM
-[paul@pwsan.com: renamed _clr_softreset() to _clear_softreset()]
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Christian Engelmayer <christian.engelmayer@frequentis.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/omap_hwmod.c | 43 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
+ drivers/input/touchscreen/usbtouchscreen.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index 7f4db12..b3a8106 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -399,7 +399,7 @@ static int _set_clockactivity(struct omap_hwmod *oh, u8 clockact, u32 *v)
+diff --git a/drivers/input/touchscreen/usbtouchscreen.c b/drivers/input/touchscreen/usbtouchscreen.c
+index ae4b6b9..5f87bed 100644
+--- a/drivers/input/touchscreen/usbtouchscreen.c
++++ b/drivers/input/touchscreen/usbtouchscreen.c
+@@ -106,6 +106,7 @@ struct usbtouch_device_info {
+ struct usbtouch_usb {
+ 	unsigned char *data;
+ 	dma_addr_t data_dma;
++	int data_size;
+ 	unsigned char *buffer;
+ 	int buf_len;
+ 	struct urb *irq;
+@@ -1521,7 +1522,7 @@ static int usbtouch_reset_resume(struct usb_interface *intf)
+ static void usbtouch_free_buffers(struct usb_device *udev,
+ 				  struct usbtouch_usb *usbtouch)
+ {
+-	usb_free_coherent(udev, usbtouch->type->rept_size,
++	usb_free_coherent(udev, usbtouch->data_size,
+ 			  usbtouch->data, usbtouch->data_dma);
+ 	kfree(usbtouch->buffer);
  }
+@@ -1566,7 +1567,20 @@ static int usbtouch_probe(struct usb_interface *intf,
+ 	if (!type->process_pkt)
+ 		type->process_pkt = usbtouch_process_pkt;
  
- /**
-- * _set_softreset: set OCP_SYSCONFIG.CLOCKACTIVITY bits in @v
-+ * _set_softreset: set OCP_SYSCONFIG.SOFTRESET bit in @v
-  * @oh: struct omap_hwmod *
-  * @v: pointer to register contents to modify
-  *
-@@ -427,6 +427,36 @@ static int _set_softreset(struct omap_hwmod *oh, u32 *v)
- }
- 
- /**
-+ * _clear_softreset: clear OCP_SYSCONFIG.SOFTRESET bit in @v
-+ * @oh: struct omap_hwmod *
-+ * @v: pointer to register contents to modify
-+ *
-+ * Clear the SOFTRESET bit in @v for hwmod @oh.  Returns -EINVAL upon
-+ * error or 0 upon success.
-+ */
-+static int _clear_softreset(struct omap_hwmod *oh, u32 *v)
-+{
-+	u32 softrst_mask;
-+
-+	if (!oh->class->sysc ||
-+	    !(oh->class->sysc->sysc_flags & SYSC_HAS_SOFTRESET))
-+		return -EINVAL;
-+
-+	if (!oh->class->sysc->sysc_fields) {
-+		WARN(1,
-+		     "omap_hwmod: %s: sysc_fields absent for sysconfig class\n",
-+		     oh->name);
-+		return -EINVAL;
+-	usbtouch->data = usb_alloc_coherent(udev, type->rept_size,
++	usbtouch->data_size = type->rept_size;
++	if (type->get_pkt_len) {
++		/*
++		 * When dealing with variable-length packets we should
++		 * not request more than wMaxPacketSize bytes at once
++		 * as we do not know if there is more data coming or
++		 * we filled exactly wMaxPacketSize bytes and there is
++		 * nothing else.
++		 */
++		usbtouch->data_size = min(usbtouch->data_size,
++					  usb_endpoint_maxp(endpoint));
 +	}
 +
-+	softrst_mask = (0x1 << oh->class->sysc->sysc_fields->srst_shift);
-+
-+	*v &= ~softrst_mask;
-+
-+	return 0;
-+}
-+
-+/**
-  * _wait_softreset_complete - wait for an OCP softreset to complete
-  * @oh: struct omap_hwmod * to wait on
-  *
-@@ -1909,6 +1939,12 @@ static int _ocp_softreset(struct omap_hwmod *oh)
- 	ret = _set_softreset(oh, &v);
- 	if (ret)
- 		goto dis_opt_clks;
-+
-+	_write_sysconfig(v, oh);
-+	ret = _clear_softreset(oh, &v);
-+	if (ret)
-+		goto dis_opt_clks;
-+
- 	_write_sysconfig(v, oh);
++	usbtouch->data = usb_alloc_coherent(udev, usbtouch->data_size,
+ 					    GFP_KERNEL, &usbtouch->data_dma);
+ 	if (!usbtouch->data)
+ 		goto out_free;
+@@ -1626,12 +1640,12 @@ static int usbtouch_probe(struct usb_interface *intf,
+ 	if (usb_endpoint_type(endpoint) == USB_ENDPOINT_XFER_INT)
+ 		usb_fill_int_urb(usbtouch->irq, udev,
+ 			 usb_rcvintpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch, endpoint->bInterval);
+ 	else
+ 		usb_fill_bulk_urb(usbtouch->irq, udev,
+ 			 usb_rcvbulkpipe(udev, endpoint->bEndpointAddress),
+-			 usbtouch->data, type->rept_size,
++			 usbtouch->data, usbtouch->data_size,
+ 			 usbtouch_irq, usbtouch);
  
- 	if (oh->class->sysc->srst_udelay)
-@@ -3148,6 +3184,11 @@ int omap_hwmod_softreset(struct omap_hwmod *oh)
- 		goto error;
- 	_write_sysconfig(v, oh);
- 
-+	ret = _clear_softreset(oh, &v);
-+	if (ret)
-+		goto error;
-+	_write_sysconfig(v, oh);
-+
- error:
- 	return ret;
- }
+ 	usbtouch->irq->dev = udev;
 -- 
 1.8.3.2
 
