@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaAMM33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 07:29:29 -0500
-Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:40168
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751357AbaAMM31 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 07:29:27 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIc89bh1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh87h2a8h839h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 13 Jan 2014 20:30:35 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <kernel@pengutronix.de>, <devicetree@vger.kernel.org>,
+	id S1751510AbaAMMeb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 07:34:31 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:40440 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259AbaAMMe2 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Mon, 13 Jan 2014 07:34:28 -0500
+Message-Id: <52D3EB5F02000078001130B5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Mon, 13 Jan 2014 12:34:23 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Olaf Hering" <olaf@aepfle.de>
+Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xen.org>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dts: imx53: add support for Ka-Ro TX53 modules
-Message-ID: <20140113123033.GU23525@S2101-09.ap.freescale.net>
-References: <1389609158-11179-1-git-send-email-LW@KARO-electronics.de>
- <1389609158-11179-3-git-send-email-LW@KARO-electronics.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <1389609158-11179-3-git-send-email-LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check
+ from blkfront_setup_discard
+References: <1389608052-7139-1-git-send-email-olaf@aepfle.de>
+ <52D3DAEE0200007800112FD4@nat28.tlf.novell.com>
+ <20140113120131.GA15623@aepfle.de>
+In-Reply-To: <20140113120131.GA15623@aepfle.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 11:32:38AM +0100, Lothar Waﬂmann wrote:
-> This patch adds support for the Ka-Ro electronics GmbH TX53 modules.
-> There are two distinct module types. One with an LVDS display
-> interface and SATA support, the other with a parallel LCD
-> interface and no SATA interface.
+>>> On 13.01.14 at 13:01, Olaf Hering <olaf@aepfle.de> wrote:
+> On Mon, Jan 13, Jan Beulich wrote:
 > 
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+>> You can't do this in one go - the first two and the last one may be
+>> set independently (and are independent in their meaning), and
+>> hence need to be queried independently (xenbus_gather() fails
+>> on the first absent value).
+> 
+> Yes, thats the purpose. Since the properties are required its an all or
+> nothing thing. If they are truly optional then blkif.h should be updated
+> to say that.
 
-The patch looks good to me.  Ping me when pwm driver changes gets
-accepted.
+They _are_ optional.
 
-Shawn
+Jan
 
