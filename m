@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927AbaAMQ1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:27:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53471 "EHLO
+	id S1755886AbaAMQ1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:27:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53481 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263AbaAMQEG (ORCPT
+	with ESMTP id S1754255AbaAMQEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:06 -0500
+	Mon, 13 Jan 2014 11:04:07 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Catalin Marinas <catalin.marinas@arm.com>, Mark Brown <broonie@kernel.org>,
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        Glauber Costa <glommer@openvz.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 135/208] arm64: Use Normal NonCacheable memory for writecombine
-Date: Mon, 13 Jan 2014 15:59:36 +0000
-Message-Id: <1389628849-1614-136-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 137/208] memcg: fix memcg_size() calculation
+Date: Mon, 13 Jan 2014 15:59:38 +0000
+Message-Id: <1389628849-1614-138-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +33,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-commit 4f00130b70e5eee813cc7bc298e0f3fdf79673cc upstream.
+commit 695c60830764945cf61a2cc623eb1392d137223e upstream.
 
-This provides better performance compared to Device GRE and also allows
-unaligned accesses. Such memory is intended to be used with standard RAM
-(e.g. framebuffers) and not I/O.
+The mem_cgroup structure contains nr_node_ids pointers to
+mem_cgroup_per_node objects, not the objects themselves.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@openvz.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/include/asm/pgtable.h | 2 +-
+ mm/memcontrol.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index 0b27b65..bb969e9 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -255,7 +255,7 @@ static inline int has_transparent_hugepage(void)
- #define pgprot_noncached(prot) \
- 	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
- #define pgprot_writecombine(prot) \
--	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_GRE))
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
- #define pgprot_dmacoherent(prot) \
- 	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
- #define __HAVE_PHYS_MEM_ACCESS_PROT
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index aa44621..97f2550 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -349,7 +349,7 @@ struct mem_cgroup {
+ static size_t memcg_size(void)
+ {
+ 	return sizeof(struct mem_cgroup) +
+-		nr_node_ids * sizeof(struct mem_cgroup_per_node);
++		nr_node_ids * sizeof(struct mem_cgroup_per_node *);
+ }
+ 
+ /* internal only representation about the status of kmem accounting. */
 -- 
 1.8.3.2
 
