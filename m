@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaAMKoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 05:44:14 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58138 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaAMKoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 05:44:11 -0500
-Message-ID: <52D3C36E.9020107@ti.com>
-Date: Mon, 13 Jan 2014 12:43:58 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-CC: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v5] video: add OpenCores VGA/LCD framebuffer driver
-References: <1389384793-4710-1-git-send-email-stefan.kristiansson@saunalahti.fi> <52D3A1FC.4090706@ti.com> <20140113102006.GA30877@chokladfabriken.org>
-In-Reply-To: <20140113102006.GA30877@chokladfabriken.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb"
+	id S1751719AbaAMKoz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 05:44:55 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:38655 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaAMKox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 05:44:53 -0500
+X-AuditID: cbfec7f5-b7fc96d000004885-24-52d3c3a264ae
+From: Alexey Perevalov <a.perevalov@samsung.com>
+To: linux-kernel@vger.kernel.org, john.stultz@linaro.org
+Cc: Alexey Perevalov <a.perevalov@samsung.com>, anton@enomsg.org,
+        kyungmin.park@samsung.com, akpm@linux-foundation.org,
+        cw00.choi@samsung.com
+Subject: [PATCH v2 0/3] Deferrable timers support for timerfd API
+Date: Mon, 13 Jan 2014 14:43:52 +0400
+Message-id: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJJMWRmVeSWpSXmKPExsVy+t/xa7qLDl8OMtg7RdZi7t3zLBZz1q9h
+	szi4VdPi+pfnrBZnfutanG16w25xedccNgd2jwn9nxg97lzbw+ZxYsZvFo++LasYPT5vkgtg
+	jeKySUnNySxLLdK3S+DKeL/hL0tBD2fF0f/ODYyz2LsYOTkkBEwkelYdZYWwxSQu3FvP1sXI
+	xSEksJRRYmLPLShnBpPEncv7mLoYOTjYBAwk9t2zBWkQEbCQuPPqPytIDbNAP6NE95znbCAJ
+	YQFHiY07NzKC1LMIqEr03zIACfMKuEvs6+xhBwlLCChIzJlkM4GRewEjwypG0dTS5ILipPRc
+	I73ixNzi0rx0veT83E2MkOD4uoNx6TGrQ4wCHIxKPLw7hC4HCbEmlhVX5h5ilOBgVhLh5dwJ
+	FOJNSaysSi3Kjy8qzUktPsTIxMEp1cDIGpNV+r5oXf+7vIb44pVnfpW4ChboOtxevajCMJPf
+	evb9H5k/VJepKd6ariVqVTctoK5wbZH/wVNdoa7zZ7usuj1LztusoC/aVany8mKd+Ec2vK8e
+	tT1tEX+/XWqREuM6OT/XXz8sXykIvNrBrZ5Y2SAdfCbGWDRiXsnpEJGg6Vy3NggqsiuxFGck
+	GmoxFxUnAgC2LiH27AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello dear community.
 
-On 2014-01-13 12:20, Stefan Kristiansson wrote:
-
-> The VGA/LCD in the subject comes from the name of the core,
-> the core itself presents a "vga-type" interface, but it can basically
-> be hooked up to any type of display (with a bit of glue-logic in some c=
-ases).
->=20
-> That said - the reason why I went for the mode_options solution in the
-> first place, is that when I initially wrote this driver
-> (>2 years ago, time flies...) the display-timing device-tree bindings w=
-eren't
-> invented yet, so it seemed like the most viable option without coming u=
-p
-> with custom device-tree bindings.
->=20
-> It's completely possible that this design choice should be revised now,=
-
-> and I wouldn't mind converting this driver to make use of the display-t=
-iming
-> dt properties if you think that's a good idea?
-
-I don't have a strong opinion on this. It looks to me that even if the
-current driver is merged, it would be easy to add device tree
-display-timing later, and still keep full backward compatibility.
-
-Then again, you already have DT support in the driver, and if it's clear
-that the DT based videomode selection is better, then I'd just go
-straight to that one without intermediate steps.
-
- Tomi
+This is reworked patch set of original Anton's Vorontsov
+proposal regarding unified deferrable timers in the user space.
+http://lwn.net/Articles/514707/
 
 
+I decided to resubmit it due we found it usefull for us too.
 
---Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+timerfd was modified since Anton's commit, Alarm support was added.
+This isn't only rebase. Anton's previous version used deferrable timer
+in couple with hrtimer. This version uses only deferrable timer. It
+mean the behaviour of overrun number is different.
+e.g. if you don't poll one second timer for a 10 seconds - you'll get
+10 overruns with hrtimer, but for deferrable timer it could be another value.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Anton Vorontsov (3):
+  kernel/time: Add new helpers to convert ktime to/from jiffies
+  timerfd: Factor out timer-type unspecific timerfd_expire()
+  timerfd: Add support for deferrable timers
 
-iQIcBAEBAgAGBQJS08NuAAoJEPo9qoy8lh71EEoP/jlCe+90pKMnPjsid76D5zrA
-iwBOOxn3PpqOZymH66CHMQxBCL7Qfu2IsPGiAb03A29bvfLtJWJGmpvN1Dz6FdAh
-4y+cMpGgRI3pHNV3+okqAzgzhZw9zrCkmtSl9fH7oaYKDW4tqzmC641QgLZ8RQoQ
-B3O615hVZw8iAodEjmWJQYM2lVjN7lbl+OKLnZtC2HP/aLZ4i8LSiaLnygUUPYP/
-mRlKg7ljjXjkHzBlsbem3SEs/CJgw9RFX3xtwc9l8DEMhEuenWGbzTAIH57a8yyq
-626FLSkuxJK6kIIYSZXnWYOS15CSMwGlYzoOe5Td+fddUkStWIrh3/GXgGYSnbHm
-40hQIqLYFcFYF3VUIo9Mza+3B6Ip1baIo870thOOJkgQ9YJBSwKKXKtb02LOi5M2
-1oyqaJmbhk21ZmlvWNNTZ6Z4i9/UNPqRiInJ6y8OhbsrHjGTShBo6O2lLhsUFtZV
-vcDSmSeIxF5cNlTibJqnIw5+JEP7FkUB7c12/nODSQCgqjqL7igsRmXz3vq2wOsr
-ZvZaOVAZpKkeF+U3cpW3MEPwnsaTurV+CpxHIKdCMUam0t3i1tqpgtkqlbXtGmzh
-o+m9Xr/upQ0zq/jPtJh+7gOCA0YGIzlZjI/Hc8Do2MgE/8lDN9F8XTS7P4u1aaXS
-9apZPIFF19aC8GrSn7K2
-=XVjb
------END PGP SIGNATURE-----
+ fs/timerfd.c            |  127 +++++++++++++++++++++++++++++++++++------------
+ include/linux/jiffies.h |    4 +-
+ include/linux/ktime.h   |    3 +-
+ include/linux/timerfd.h |    4 +-
+ kernel/time.c           |   23 +++++++++
+ 5 files changed, 126 insertions(+), 35 deletions(-)
 
---Wsgi5nm9x1gNP24MS1CohjIkjMEIr3JWb--
+-- 
+1.7.9.5
+
