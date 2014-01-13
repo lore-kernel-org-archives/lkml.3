@@ -1,60 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaAMNkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 08:40:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029AbaAMNku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 08:40:50 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joro@8bytes.org>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] x86, irq Fix kbuild warning in smp_irq_move_cleanup_interrupt()
-Date: Mon, 13 Jan 2014 08:40:20 -0500
-Message-Id: <1389620420-7110-1-git-send-email-prarit@redhat.com>
+	id S1751640AbaAMNmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 08:42:24 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:64203 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbaAMNmW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 08:42:22 -0500
+Message-ID: <1389620539.3720.157.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: build_skb() and data corruption
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+CC: netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <alexander.h.duyck@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Florian Fainelli <florian@openwrt.org>
+Date: Mon, 13 Jan 2014 13:42:19 +0000
+In-Reply-To: <CACmBeS35RAEQ+t2vtYtFTKNT-VdQw20hURjTi193Jk8HG7UECA@mail.gmail.com>
+References: <CACmBeS35RAEQ+t2vtYtFTKNT-VdQw20hURjTi193Jk8HG7UECA@mail.gmail.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20424.000
+X-TM-AS-Result: No--24.177700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kbuild, 0day kernel build service, outputs the warning:
+On Mon, 2014-01-13 at 12:47 +0100, Jonas Jensen wrote:
+> Please help,
+> 
+> I think I see memory corruption with a driver recently added to linux-next.
+> 
+> The following error occur downloading a large file with wget (or
+> ncftp): "read error: Bad address"
+> wget exits and leaves the file unfinished.
+> 
+> The error goes away when build_skb() is patched out, in this case by
+> allocating pages directly in RX loop.
 
-arch/x86/kernel/apic/io_apic.c:2211 smp_irq_move_cleanup_interrupt() warn:
-always true condition '(irq <= -1) => (0-u32max <= (-1))'
+The problem is you're assuming build_skb() does rather more than it
+does.
 
-because irq is defined as an unsigned int instead of an int.  Fix this
-trivial error by redefining irq as a signed int.  The remaining consumers of the
-int are okay.
+> I currently have two branches with code placed under ifdef USE_BUILD_SKB:
+> https://bitbucket.org/Kasreyn/linux-next/src/faa7c408a655fdfd7c383f79259031da5a05d61e/drivers/net/ethernet/moxa/moxart_ether.c#cl-472
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
----
- arch/x86/kernel/apic/io_apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Quoting from there:
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e63a5bd..c4db751 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2202,7 +2202,7 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 
- 	me = smp_processor_id();
- 	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
--		unsigned int irq;
-+		int irq;
- 		unsigned int irr;
- 		struct irq_desc *desc;
- 		struct irq_cfg *cfg;
+> #define USE_BUILD_SKB
+> #ifdef USE_BUILD_SKB
+> 
+> 
+> 	skb = build_skb(page_address(priv->rx_pages[priv->rx_head]), priv->rx_buf_size);
+> 
+> 
+> 	if (unlikely(!skb)) {
+> 		net_info_ratelimited("RX build_skb failed\n");
+
+Don't log; increment the rx_dropped counter.
+
+> 		moxart_rx_drop_packet(ndev, desc0);
+> 		return true;
+> 	}
+>
+> 
+> 	if (likely(skb))
+
+Redundant condition.
+
+> 		get_page(priv->rx_pages[priv->rx_head]);
+> 
+> 
+> 	skb_put(skb, len);
+> 
+> 
+> #else
+> 
+> 
+> 	dma_unmap_page(&ndev->dev, priv->rx_buf_phys[priv->rx_head], RX_BUF_SIZE, DMA_FROM_DEVICE);
+
+dma_unmap_page() is always needed, so move this above the #ifdef
+USE_BUILD_SKB.
+
+> 
+> 	skb = netdev_alloc_skb_ip_align(ndev, 128);
+
+Missing check for NULL.
+
+> 	skb_fill_page_desc(skb, 0, priv->rx_pages[priv->rx_head], 0, len);
+> 	skb->len += len;
+> 	skb->data_len += len;
+> 
+> 
+> 	if (len > 128) {
+> 		skb->truesize += PAGE_SIZE;
+> 		__pskb_pull_tail(skb, ETH_HLEN);
+> 	} else {
+> 		__pskb_pull_tail(skb, len);
+> 	}
+> 
+> 
+> 	p = priv->rx_pages[priv->rx_head];
+
+Missing check for NULL.
+
+> 	moxart_alloc_rx_page(ndev, priv->rx_head);
+
+New buffer is always required, so move this under the #endif... well,
+except that if moxart_alloc_rx_page() fails then things go horribly
+wrong as you have.
+
+Best practice is to try allocating the next buffer before passing up the
+current one; if that fails then you recycle the current buffer and
+increment rx_dropped.
+
+> 
+> 
+> #endif
+[end quoted code]
+
+> If build_skb() is the cause, is there something the driver can do about it?
+> 
+> A quick search on "build_skb memory corruption" reveals the following
+> commit, "igb: Revert support for build_skb in igb"
+> f9d40f6a9921cc7d9385f64362314054e22152bd:
+[...]
+
+The problem I identified in igb occurs only when splitting a page into
+multiple buffers (or when recycling DMA-mapped pages).  build_skb() is
+fine to use whenever each RX buffer is a single page (except that that's
+memory-inefficient) that's unmapped on completion.
+
+Ben.
+
 -- 
-1.7.9.3
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
