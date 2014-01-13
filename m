@@ -1,357 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbaAMTZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 14:25:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2008 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752724AbaAMTXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 14:23:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,654,1384329600"; 
-   d="scan'208";a="438183703"
-Subject: [PATCH 01/12] x86 Kconfig: create extended platforms menu
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 13 Jan 2014 11:22:46 -0800
-References: <20140113192245.3F682C7F@viggo.jf.intel.com>
-In-Reply-To: <20140113192245.3F682C7F@viggo.jf.intel.com>
-Message-Id: <20140113192246.2637BC0B@viggo.jf.intel.com>
+	id S1753146AbaAMTZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 14:25:46 -0500
+Received: from exprod5og118.obsmtp.com ([64.18.0.160]:33418 "HELO
+	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753115AbaAMTZl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 14:25:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <201401131619.35030.arnd@arndb.de>
+References: <1389135041-16062-1-git-send-email-fkan@apm.com>
+	<6073715.cGydpIHKD1@wuerfel>
+	<CAL85gmA5Ob+kp-+5seO-wcB8tx4jyiOeFMyCsZWFBLdX09nZDg@mail.gmail.com>
+	<201401131619.35030.arnd@arndb.de>
+Date: Mon, 13 Jan 2014 11:25:39 -0800
+Message-ID: <CAL85gmCTsxng3jCaAcCjePE6Pxu7Jg98TDUqQrDFzsfW2GQwEg@mail.gmail.com>
+Subject: Re: [PATCH V2 1/6] Documentation: add dts binding for X-Gene reboot
+ dts node.
+From: Feng Kan <fkan@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> That is not what I was asking about.
+>
+> The problem with your binding is that it doesn't seem to describe
+> the hardware structure at all, but rather try to invent devices
+> because of how it's convenient for how you write the Linux drivers.
+>
+> This is never a good idea and it will become a problem once you
+> try to port a different operating system, or when the structure
+> of the Linux drivers changes. Remember that in Linux we can freely
+> reorganize our code as requirements change, but the bindings have
+> to remain stable to allow running new kernels with an older device
+> tree that may be shipped with the firmware.
+>
+> (Side note: if you end up doing an ACPI driver for this after all,
+> the problem is even worse because it's basically impossible to update
+> the ACPI tables in field, while with DT you can at least override
+> them in the firmware if something goes really wrong.)
+>
+> On most SoCs I've seen, the system reset registers are part of
+> some on-chip device, most likely one of
+> - A SoC-specific system control register set containing various
+>   global registers that may be of interest to other parts of the
+>   kernel.
+FKAN: our system block in your reference would be the system clock unit (SCU).
+It handles number of things (JTAG, clock control, power control not
+touched by OS).
+The register that is relevant to the system reset is this lone
+register. I reduce the
+range of the dts aperture due to this fact.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
 
-This takes the relatively obscure (NUMA-Q anyone?) platforms
-(both 32 and 64-bit) and sticks them in their own menu.
-Virtually nobody needs to set these, and those that do know how
-to find them the hard way.
-
-The new menu is also moved to the end of the x86 options.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- linux.git-davehans/arch/x86/Kconfig |  293 +++++++++++++++++-------------------
- 1 file changed, 141 insertions(+), 152 deletions(-)
-
-diff -puN arch/x86/Kconfig~x86-extended-platforms arch/x86/Kconfig
---- linux.git/arch/x86/Kconfig~x86-extended-platforms	2014-01-13 11:11:34.511160641 -0800
-+++ linux.git-davehans/arch/x86/Kconfig	2014-01-13 11:11:34.514160776 -0800
-@@ -331,122 +331,6 @@ config GOLDFISH
-        def_bool y
-        depends on X86_GOLDFISH
- 
--if X86_32
--config X86_EXTENDED_PLATFORM
--	bool "Support for extended (non-PC) x86 platforms"
--	default y
--	---help---
--	  If you disable this option then the kernel will only support
--	  standard PC platforms. (which covers the vast majority of
--	  systems out there.)
--
--	  If you enable this option then you'll be able to select support
--	  for the following (non-PC) 32 bit x86 platforms:
--		Goldfish (Android emulator)
--		AMD Elan
--		NUMAQ (IBM/Sequent)
--		RDC R-321x SoC
--		SGI 320/540 (Visual Workstation)
--		STA2X11-based (e.g. Northville)
--		Summit/EXA (IBM x440)
--		Unisys ES7000 IA32 series
--		Moorestown MID devices
--
--	  If you have one of these systems, or if you want to build a
--	  generic distribution kernel, say Y here - otherwise say N.
--endif
--
--if X86_64
--config X86_EXTENDED_PLATFORM
--	bool "Support for extended (non-PC) x86 platforms"
--	default y
--	---help---
--	  If you disable this option then the kernel will only support
--	  standard PC platforms. (which covers the vast majority of
--	  systems out there.)
--
--	  If you enable this option then you'll be able to select support
--	  for the following (non-PC) 64 bit x86 platforms:
--		Numascale NumaChip
--		ScaleMP vSMP
--		SGI Ultraviolet
--
--	  If you have one of these systems, or if you want to build a
--	  generic distribution kernel, say Y here - otherwise say N.
--endif
--# This is an alphabetically sorted list of 64 bit extended platforms
--# Please maintain the alphabetic order if and when there are additions
--config X86_NUMACHIP
--	bool "Numascale NumaChip"
--	depends on X86_64
--	depends on X86_EXTENDED_PLATFORM
--	depends on NUMA
--	depends on SMP
--	depends on X86_X2APIC
--	depends on PCI_MMCONFIG
--	---help---
--	  Adds support for Numascale NumaChip large-SMP systems. Needed to
--	  enable more than ~168 cores.
--	  If you don't have one of these, you should say N here.
--
--config X86_VSMP
--	bool "ScaleMP vSMP"
--	select HYPERVISOR_GUEST
--	select PARAVIRT
--	depends on X86_64 && PCI
--	depends on X86_EXTENDED_PLATFORM
--	depends on SMP
--	---help---
--	  Support for ScaleMP vSMP systems.  Say 'Y' here if this kernel is
--	  supposed to run on these EM64T-based machines.  Only choose this option
--	  if you have one of these machines.
--
--config X86_UV
--	bool "SGI Ultraviolet"
--	depends on X86_64
--	depends on X86_EXTENDED_PLATFORM
--	depends on NUMA
--	depends on X86_X2APIC
--	---help---
--	  This option is needed in order to support SGI Ultraviolet systems.
--	  If you don't have one of these, you should say N here.
--
--# Following is an alphabetically sorted list of 32 bit extended platforms
--# Please maintain the alphabetic order if and when there are additions
--
--config X86_GOLDFISH
--       bool "Goldfish (Virtual Platform)"
--       depends on X86_32
--       depends on X86_EXTENDED_PLATFORM
--       ---help---
--	 Enable support for the Goldfish virtual platform used primarily
--	 for Android development. Unless you are building for the Android
--	 Goldfish emulator say N here.
--
--config X86_INTEL_CE
--	bool "CE4100 TV platform"
--	depends on PCI
--	depends on PCI_GODIRECT
--	depends on X86_32
--	depends on X86_EXTENDED_PLATFORM
--	select X86_REBOOTFIXUPS
--	select OF
--	select OF_EARLY_FLATTREE
--	select IRQ_DOMAIN
--	---help---
--	  Select for the Intel CE media processor (CE4100) SOC.
--	  This option compiles in support for the CE4100 SOC for settop
--	  boxes and media devices.
--
--config X86_WANT_INTEL_MID
--	bool "Intel MID platform support"
--	depends on X86_32
--	depends on X86_EXTENDED_PLATFORM
--	---help---
--	  Select to build a kernel capable of supporting Intel MID platform
--	  systems which do not have the PCI legacy interfaces (Moorestown,
--	  Medfield). If you are building for a PC class system say N here.
--
- if X86_WANT_INTEL_MID
- 
- config X86_INTEL_MID
-@@ -486,42 +370,6 @@ config X86_INTEL_LPSS
- 	  things like clock tree (common clock framework) and pincontrol
- 	  which are needed by the LPSS peripheral drivers.
- 
--config X86_RDC321X
--	bool "RDC R-321x SoC"
--	depends on X86_32
--	depends on X86_EXTENDED_PLATFORM
--	select M486
--	select X86_REBOOTFIXUPS
--	---help---
--	  This option is needed for RDC R-321x system-on-chip, also known
--	  as R-8610-(G).
--	  If you don't have one of these chips, you should say N here.
--
--config X86_32_NON_STANDARD
--	bool "Support non-standard 32-bit SMP architectures"
--	depends on X86_32 && SMP
--	depends on X86_EXTENDED_PLATFORM
--	---help---
--	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000,
--	  STA2X11, default subarchitectures.  It is intended for a generic
--	  binary kernel. If you select them all, kernel will probe it
--	  one by one and will fallback to default.
--
--# Alphabetically sorted list of Non standard 32 bit platforms
--
--config X86_NUMAQ
--	bool "NUMAQ (IBM/Sequent)"
--	depends on X86_32_NON_STANDARD
--	depends on PCI
--	select NUMA
--	select X86_MPPARSE
--	---help---
--	  This option is used for getting Linux to run on a NUMAQ (IBM/Sequent)
--	  NUMA multiquad box. This changes the way that processors are
--	  bootstrapped, and uses Clustered Logical APIC addressing mode instead
--	  of Flat Logical.  You will need a new lynxer.elf file to flash your
--	  firmware with - send email to <Martin.Bligh@us.ibm.com>.
--
- config X86_SUPPORTS_MEMORY_FAILURE
- 	def_bool y
- 	# MCE code calls memory_failure():
-@@ -1872,6 +1720,147 @@ config CMDLINE_OVERRIDE
- 	  This is used to work around broken boot loaders.  This should
- 	  be set to 'N' under normal conditions.
- 
-+menuconfig X86_EXTENDED_PLATFORM
-+	bool "Support for extended (non-PC) x86 platforms"
-+	default y
-+	---help---
-+	  If you disable this option then the kernel will only support
-+	  standard PC platforms. (which covers the vast majority of
-+	  systems out there.)
-+
-+	  If you enable this option then you'll be able to select support
-+	  for the following (non-PC) 64 bit x86 platforms:
-+		Numascale NumaChip
-+		ScaleMP vSMP
-+		SGI Ultraviolet
-+
-+	  and these (non-PC) 32 bit x86 platforms:
-+		Goldfish (Android emulator)
-+		AMD Elan
-+		NUMAQ (IBM/Sequent)
-+		RDC R-321x SoC
-+		SGI 320/540 (Visual Workstation)
-+		STA2X11-based (e.g. Northville)
-+		Summit/EXA (IBM x440)
-+		Unisys ES7000 IA32 series
-+		Moorestown MID devices
-+
-+	  If you have one of these systems, or if you want to build a
-+	  generic distribution kernel, say Y here - otherwise say N.
-+
-+if X86_EXTENDED_PLATFORM
-+
-+# This is an alphabetically sorted list of 64 bit extended platforms
-+# Please maintain the alphabetic order if and when there are additions
-+config X86_NUMACHIP
-+	bool "Numascale NumaChip"
-+	depends on X86_64
-+	depends on X86_EXTENDED_PLATFORM
-+	depends on NUMA
-+	depends on SMP
-+	depends on X86_X2APIC
-+	depends on PCI_MMCONFIG
-+	---help---
-+	  Adds support for Numascale NumaChip large-SMP systems. Needed to
-+	  enable more than ~168 cores.
-+	  If you don't have one of these, you should say N here.
-+
-+config X86_VSMP
-+	bool "ScaleMP vSMP"
-+	select HYPERVISOR_GUEST
-+	select PARAVIRT
-+	depends on X86_64 && PCI
-+	depends on X86_EXTENDED_PLATFORM
-+	depends on SMP
-+	---help---
-+	  Support for ScaleMP vSMP systems.  Say 'Y' here if this kernel is
-+	  supposed to run on these EM64T-based machines.  Only choose this option
-+	  if you have one of these machines.
-+
-+config X86_UV
-+	bool "SGI Ultraviolet"
-+	depends on X86_64
-+	depends on X86_EXTENDED_PLATFORM
-+	depends on NUMA
-+	depends on X86_X2APIC
-+	---help---
-+	  This option is needed in order to support SGI Ultraviolet systems.
-+	  If you don't have one of these, you should say N here.
-+
-+# Following is an alphabetically sorted list of 32 bit extended platforms
-+# Please maintain the alphabetic order if and when there are additions
-+
-+config X86_GOLDFISH
-+       bool "Goldfish (Virtual Platform)"
-+       depends on X86_32
-+       depends on X86_EXTENDED_PLATFORM
-+       ---help---
-+	 Enable support for the Goldfish virtual platform used primarily
-+	 for Android development. Unless you are building for the Android
-+	 Goldfish emulator say N here.
-+
-+config X86_INTEL_CE
-+	bool "CE4100 TV platform"
-+	depends on PCI
-+	depends on PCI_GODIRECT
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	select X86_REBOOTFIXUPS
-+	select OF
-+	select OF_EARLY_FLATTREE
-+	select IRQ_DOMAIN
-+	---help---
-+	  Select for the Intel CE media processor (CE4100) SOC.
-+	  This option compiles in support for the CE4100 SOC for settop
-+	  boxes and media devices.
-+
-+config X86_WANT_INTEL_MID
-+	bool "Intel MID platform support"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	---help---
-+	  Select to build a kernel capable of supporting Intel MID platform
-+	  systems which do not have the PCI legacy interfaces (Moorestown,
-+	  Medfield). If you are building for a PC class system say N here.
-+
-+config X86_RDC321X
-+	bool "RDC R-321x SoC"
-+	depends on X86_32
-+	depends on X86_EXTENDED_PLATFORM
-+	select M486
-+	select X86_REBOOTFIXUPS
-+	---help---
-+	  This option is needed for RDC R-321x system-on-chip, also known
-+	  as R-8610-(G).
-+	  If you don't have one of these chips, you should say N here.
-+
-+config X86_32_NON_STANDARD
-+	bool "Support non-standard 32-bit SMP architectures"
-+	depends on X86_32 && SMP
-+	depends on X86_EXTENDED_PLATFORM
-+	---help---
-+	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000,
-+	  STA2X11, default subarchitectures.  It is intended for a generic
-+	  binary kernel. If you select them all, kernel will probe it
-+	  one by one and will fallback to default.
-+
-+# Alphabetically sorted list of Non standard 32 bit platforms
-+
-+config X86_NUMAQ
-+	bool "NUMAQ (IBM/Sequent)"
-+	depends on X86_32_NON_STANDARD
-+	depends on PCI
-+	select NUMA
-+	select X86_MPPARSE
-+	---help---
-+	  This option is used for getting Linux to run on a NUMAQ (IBM/Sequent)
-+	  NUMA multiquad box. This changes the way that processors are
-+	  bootstrapped, and uses Clustered Logical APIC addressing mode instead
-+	  of Flat Logical.  You will need a new lynxer.elf file to flash your
-+	  firmware with - send email to <Martin.Bligh@us.ibm.com>.
-+
-+endif # X86_EXTENDED_PLATFORM
-+
- endmenu
- 
- config ARCH_ENABLE_MEMORY_HOTPLUG
-_
+> - A watchdog timer device that will reset the system after a crash,
+>   or when explicit requested by the OS
+> - A dedicated reset controller that has registers for individually
+>   resetting a number of subsystems of the SoC, or all at once in
+>   case of system reboot.
+> - an interface to an external or integrated power management IC
+>   that controls voltages and/or clock frequencies provided to
+>   the SoC and other parts of the system.
+>
+> In each of those cases, we already have a subsystem that is supposed
+> to handle the entire register set and provide a system reset method
+> as one of the things it does. Given that your register is at offset
+> 0x14 from the start of a larger MMIO range, I strongly suspect
+> that the same is true here.
+FKAN: I could remove this dts node and create another dts node that
+describe the range of registers on the SCU and use that node in this driver.
+I am not sure which subsystem I can use to handle this case, I do see a reset
+subsystem in the kernel but more used for ip resets. Please kindly let
+me know. Thanks for the great feedback.
+>
+>         Arnd
