@@ -1,134 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295AbaAMF5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 00:57:42 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:54676 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaAMF5k (ORCPT
+	id S1751349AbaAMF7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 00:59:51 -0500
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:10114
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751219AbaAMF7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 00:57:40 -0500
-Message-ID: <52D3804A.8060700@linaro.org>
-Date: Mon, 13 Jan 2014 13:57:30 +0800
-From: Alex Shi <alex.shi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 13 Jan 2014 00:59:49 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(z579ehz98dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de097hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 13 Jan 2014 14:01:04 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: John Tobias <john.tobias.ph@gmail.com>
+CC: <rjw@rjwysocki.net>, Viresh Kumar <viresh.kumar@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<kernel@pengutronix.de>" <kernel@pengutronix.de>,
+        "<linux@arm.linux.org.uk>" <linux@arm.linux.org.uk>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: imx: add select on ARCH_MXC for cpufreq
+ support
+Message-ID: <20140113060102.GO23525@S2101-09.ap.freescale.net>
+References: <1389321592-33220-1-git-send-email-john.tobias.ph@gmail.com>
+ <20140113032043.GF23525@S2101-09.ap.freescale.net>
+ <CACUGKYMx_o6TLsvMxK3Gb+cmOUCX3Toj+6MeJmo=ahfyc=vXCA@mail.gmail.com>
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        lkp@linux.intel.com
-Subject: Re: [sched] 73628fba4: +69% context switches
-References: <20140111101956.GA11150@localhost>
-In-Reply-To: <20140111101956.GA11150@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CACUGKYMx_o6TLsvMxK3Gb+cmOUCX3Toj+6MeJmo=ahfyc=vXCA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2014 06:19 PM, Fengguang Wu wrote:
-> Alex,
-> 
-> FYI, we find much increased interrupts and context switches introduced
-> by commit 73628fba4 ("sched: unify imbalance bias for target group")
-> in your noload branch:
+On Sun, Jan 12, 2014 at 08:54:18PM -0800, John Tobias wrote:
+> I tested leaving the HAVE_IMX_ANATOP under SOC_IMX6Q and SOC_IMX6SL.
+> The iMX6Q cpufreq driver won't show up in menu config / gconfig and
+> that's the reason why I added it.
 
-Many thanks for the generous and quick testing! :)
+I tested the following changes against my for-next branch, and I can see
+iMX6Q cpufreq driver in menuconfig.  Note, the
+drivers/cpufreq/Kconfig.arm change is on cpufreq tree, so I have to make
+the change locally for the testing.
 
-few questions for the results and give a testing patch for try. it also push on github. 
+Shawn
 
-What's about the aim7 shell_rtns_1 and shared throughput?
-> 
-> 7bea8c18805a5f1  73628fba451ae72221b155696  
-> ---------------  -------------------------  
->      14979 ~ 4%   +1304.8%     210434 ~ 1%  lkp-ne04/micro/aim7/shell_rtns_1
->       2748 ~ 5%    +977.4%      29607 ~ 0%  nhm-white/micro/aim7/shared
->      17727        +1254.1%     240041       TOTAL interrupts.RES
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 1e70150..7071468 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -1,5 +1,7 @@
+ config ARCH_MXC
+        bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 ||
+ARCH_MULTI_V6_V7
++       select ARCH_HAS_CPUFREQ
++       select ARCH_HAS_OPP
+        select ARCH_REQUIRE_GPIOLIB
+        select ARM_CPU_SUSPEND if PM
+        select ARM_PATCH_PHYS_VIRT
+@@ -12,6 +14,7 @@ config ARCH_MXC
+        select MIGHT_HAVE_CACHE_L2X0 if ARCH_MULTI_V6_V7
+        select MULTI_IRQ_HANDLER
+        select PINCTRL
++       select PM_OPP if PM
+        select SOC_BUS
+        select SPARSE_IRQ
+        select USE_OF
+@@ -787,8 +790,6 @@ config      SOC_IMX53
 
-RES interrupt increased about 200,000, but vmstat's interrupt increased a little. guess the vmstat data is per seconds, right? If so, it is better give how long time the vmstat running.
+ config SOC_IMX6Q
+        bool "i.MX6 Quad/DualLite support"
+-       select ARCH_HAS_CPUFREQ
+-       select ARCH_HAS_OPP
+        select ARM_ERRATA_754322
+        select ARM_ERRATA_764369 if SMP
+        select ARM_ERRATA_775420
+@@ -808,7 +809,6 @@ config SOC_IMX6Q
+        select PL310_ERRATA_588369 if CACHE_PL310
+        select PL310_ERRATA_727915 if CACHE_PL310
+        select PL310_ERRATA_769419 if CACHE_PL310
+-       select PM_OPP if PM
 
-The same problem on the time.involuntary_context_switches and vmstat cs.
+        help
+          This enables support for Freescale i.MX6 Quad processor.
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index ce52ed9..21e069e 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -80,7 +80,7 @@ config ARM_HIGHBANK_CPUFREQ
 
-According to involuntary CS definition in time, RES interrupt will cause involuntary CS. but here 29607 RES of aim7/shared cause 233218 time inv CS, does sth I missed or the data is incorrect?
+ config ARM_IMX6Q_CPUFREQ
+        tristate "Freescale i.MX6Q cpufreq support"
+-       depends on SOC_IMX6Q
++       depends on ARCH_MXC
+        depends on REGULATOR_ANATOP
+        help
+          This adds cpufreq driver support for Freescale i.MX6Q SOC.
 
-> 
-> 7bea8c18805a5f1  73628fba451ae72221b155696  
-> ---------------  -------------------------  
->       3617 ~ 0%     +69.2%       6118 ~ 0%  lkp-ne04/micro/aim7/shell_rtns_1
->       3617          +69.2%       6118       TOTAL vmstat.system.in
-> 
-> 7bea8c18805a5f1  73628fba451ae72221b155696  
-> ---------------  -------------------------  
->     132746 ~ 0%     +69.0%     224346 ~ 1%  lkp-ne04/micro/aim7/shell_rtns_1
->     220038 ~ 0%      +6.0%     233218 ~ 0%  nhm-white/micro/aim7/shared
->     352785          +29.7%     457564       TOTAL time.involuntary_context_switches
-> 
-> 7bea8c18805a5f1  73628fba451ae72221b155696  
-> ---------------  -------------------------  
->    1424581 ~ 0%      +8.6%    1546786 ~ 0%  lkp-ne04/micro/aim7/shell_rtns_1
->    1424581           +8.6%    1546786       TOTAL time.voluntary_context_switches
-> 
-> 7bea8c18805a5f1  73628fba451ae72221b155696  
-> ---------------  -------------------------  
->      20982 ~ 0%     +12.5%      23599 ~ 0%  lkp-ne04/micro/aim7/shell_rtns_1
->       6005 ~ 0%      +4.2%       6256 ~ 0%  nhm-white/micro/aim7/shared
->      26988          +10.6%      29856       TOTAL vmstat.system.cs
-> 
->                                   vmstat.system.cs
-> 
 
-commit c5a8778a132cfa882609fbccb4ee6542eac9866d
-Author: Alex Shi <alex.shi@linaro.org>
-Date:   Mon Jan 13 13:54:30 2014 +0800
-
-    more bias towards local cpu group
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2b216ad..046ca2c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4008,7 +4008,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
-        struct task_group *tg;
-        unsigned long weight;
-        int balanced;
--       int bias = 100 + (sd->imbalance_pct -100) / 2;
- 
-        /*
-         * If we wake multiple tasks be careful to not bounce
-@@ -4020,7 +4019,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
-        this_cpu  = smp_processor_id();
-        prev_cpu  = task_cpu(p);
-        load      = source_load(prev_cpu);
--       this_load = target_load(this_cpu, bias);
-+       this_load = target_load(this_cpu, sd->imbalance_pct);
- 
-        /*
-         * If sync wakeup then subtract the (maximum possible)
-@@ -4055,7 +4054,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
-                this_eff_load *= this_load +
-                        effective_load(tg, this_cpu, weight, weight);
- 
--               prev_eff_load = bias;
-+               prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
-                prev_eff_load *= power_of(this_cpu);
-                prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight);
- 
-@@ -4100,7 +4099,6 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
- {
-        struct sched_group *idlest = NULL, *group = sd->groups;
-        unsigned long min_load = ULONG_MAX, this_load = 0;
--       int imbalance = 100 + (sd->imbalance_pct-100)/2;
- 
-        do {
-                unsigned long load, avg_load;
-@@ -4123,7 +4121,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
-                        if (local_group)
-                                load = source_load(i);
-                        else
--                               load = target_load(i, imbalance);
-+                               load = target_load(i, sd->imbalance_pct);
- 
-                        avg_load += load;
-                }
-
--- 
-Thanks
-    Alex
