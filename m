@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaAMO1c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:27:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51278 "EHLO
+	id S1752464AbaAMO13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:27:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51282 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809AbaAMOZl (ORCPT
+	with ESMTP id S1751810AbaAMOZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 09:25:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junho Ryu <jayr@google.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 25/96] ext4: fix use-after-free in ext4_mb_new_blocks
-Date: Mon, 13 Jan 2014 14:23:48 +0000
-Message-Id: <1389623099-18783-26-git-send-email-luis.henriques@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 27/96] ext2: Fix oops in ext2_get_block() called from ext2_quota_write()
+Date: Mon, 13 Jan 2014 14:23:50 +0000
+Message-Id: <1389623099-18783-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,92 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junho Ryu <jayr@google.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
+commit df4e7ac0bb70abc97fbfd9ef09671fc084b3f9db upstream.
 
-ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
-While ext4_mb_use_preallocated checks pa->pa_deleted first and then
-increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
-before holding pa->pa_lock and then sets pa->pa_deleted.
+ext2_quota_write() doesn't properly setup bh it passes to
+ext2_get_block() and thus we hit assertion BUG_ON(maxblocks == 0) in
+ext2_get_blocks() (or we could actually ask for mapping arbitrary number
+of blocks depending on whatever value was on stack).
 
-* Free sequence
-ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
-ext4_mb_put_pa (2):		lock pa->pa_lock
-ext4_mb_put_pa (3):			check pa->pa_deleted
-ext4_mb_put_pa (4):			set pa->pa_deleted=1
-ext4_mb_put_pa (5):		unlock pa->pa_lock
-ext4_mb_put_pa (6):		remove pa from a list
-ext4_mb_pa_callback:		free pa
+Fix ext2_quota_write() to properly fill in number of blocks to map.
 
-* Use sequence
-ext4_mb_use_preallocated (1):	iterate over preallocation
-ext4_mb_use_preallocated (2):	lock pa->pa_lock
-ext4_mb_use_preallocated (3):		check pa->pa_deleted
-ext4_mb_use_preallocated (4):		increase pa->pa_count
-ext4_mb_use_preallocated (5):	unlock pa->pa_lock
-ext4_mb_release_context:	access pa
-
-* Use-after-free sequence
-[initial status]		<pa->pa_deleted = 0, pa_count = 1>
-ext4_mb_use_preallocated (1):	iterate over preallocation
-ext4_mb_use_preallocated (2):	lock pa->pa_lock
-ext4_mb_use_preallocated (3):		check pa->pa_deleted
-ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
-[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
-ext4_mb_use_preallocated (4):		increase pa->pa_count
-[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
-ext4_mb_use_preallocated (5):	unlock pa->pa_lock
-ext4_mb_put_pa (2):		lock pa->pa_lock
-ext4_mb_put_pa (3):			check pa->pa_deleted
-ext4_mb_put_pa (4):			set pa->pa_deleted=1
-[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
-ext4_mb_put_pa (5):		unlock pa->pa_lock
-ext4_mb_put_pa (6):		remove pa from a list
-ext4_mb_pa_callback:		free pa
-ext4_mb_release_context:	access pa
-
-AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
-Bug report: http://goo.gl/rG1On3
-
-Signed-off-by: Junho Ryu <jayr@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/mballoc.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ fs/ext2/super.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index aaece99..82489f4 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3323,6 +3323,9 @@ static void ext4_mb_pa_callback(struct rcu_head *head)
- {
- 	struct ext4_prealloc_space *pa;
- 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
-+
-+	BUG_ON(atomic_read(&pa->pa_count));
-+	BUG_ON(pa->pa_deleted == 0);
- 	kmem_cache_free(ext4_pspace_cachep, pa);
- }
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index b3621cb..74f4688 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1449,6 +1449,7 @@ static ssize_t ext2_quota_write(struct super_block *sb, int type,
+ 				sb->s_blocksize - offset : towrite;
  
-@@ -3336,11 +3339,13 @@ static void ext4_mb_put_pa(struct ext4_allocation_context *ac,
- 	ext4_group_t grp;
- 	ext4_fsblk_t grp_blk;
- 
--	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
--		return;
--
- 	/* in this short window concurrent discard can set pa_deleted */
- 	spin_lock(&pa->pa_lock);
-+	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
-+		spin_unlock(&pa->pa_lock);
-+		return;
-+	}
-+
- 	if (pa->pa_deleted == 1) {
- 		spin_unlock(&pa->pa_lock);
- 		return;
+ 		tmp_bh.b_state = 0;
++		tmp_bh.b_size = sb->s_blocksize;
+ 		err = ext2_get_block(inode, blk, &tmp_bh, 1);
+ 		if (err < 0)
+ 			goto out;
 -- 
 1.8.3.2
 
