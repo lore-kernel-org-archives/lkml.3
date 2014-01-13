@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaAMOvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:51:03 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47599 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753270AbaAMOu7 (ORCPT
+	id S1751896AbaAMO0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:26:03 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51159 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbaAMOZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:50:59 -0500
-Message-ID: <52D3FD67.2060708@oracle.com>
-Date: Mon, 13 Jan 2014 09:51:19 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Olaf Hering <olaf@aepfle.de>
-CC: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com
-Subject: Re: [PATCH] xen-blkfront: remove type check from blkfront_setup_discard
-References: <1389371301-29532-1-git-send-email-olaf@aepfle.de> <52D036FC.6000308@oracle.com> <20140110213746.GA933@aepfle.de> <52D073F0.5020400@oracle.com> <20140113093032.GA13919@aepfle.de>
-In-Reply-To: <20140113093032.GA13919@aepfle.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 13 Jan 2014 09:25:12 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alan Cox <alan@linux.intel.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.5 04/96] sc1200_wdt: Fix oops
+Date: Mon, 13 Jan 2014 14:23:27 +0000
+Message-Id: <1389623099-18783-5-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
+References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 04:30 AM, Olaf Hering wrote:
-> On Fri, Jan 10, Boris Ostrovsky wrote:
->
->> I don't know discard code works but it seems to me that if you pass, for
->> example,  zero as discard_granularity (which may happen if xenbus_gather()
->> fails) then blkdev_issue_discard() in the backend will set granularity to 1
->> and continue with discard. This may not be what the the guest admin
->> requested. And he won't know about this since no error message is printed
->> anywhere.
-> If I understand the code using granularity/alignment correctly, both are
-> optional properties. So if the granularity is just 1 it means byte
-> ranges, which is fine if the backend uses FALLOC_FL_PUNCH_HOLE. Also
-> both properties are not admin controlled, for phy the blkbk drivers just
-> passes on what it gets from the underlying hardware.
->
->> Similarly, if xenbug_gather("discard-secure") fails, I think the code will
->> assume that secure discard has not been requested. I don't know what
->> security implications this will have but it sounds bad to me.
-> There are no security implications, if the backend does not advertise it
-> then its not present.
+3.5.7.29 -stable review patch.  If anyone has any objections, please let me know.
 
-Right. But my questions was what if the backend does advertise it and 
-wants the frontent to use it but xenbus_gather() in the frontend fails. 
-Do we want to silently continue without discard-secure? Is this safe?
+------------------
 
+From: Alan <gnomes@lxorguk.ukuu.org.uk>
 
--boris
+commit dace8bbfccfd9e4fcccfffcfbd82881fda3e756f upstream.
 
->
-> After poking around some more it seems that blkif.h is the spec, it does
-> not say anything that the three properties are optional. Also the
-> backend drivers in sles11sp2 and mainline create all three properties
-> unconditionally. So I think a better change is to expect all three
-> properties in the frontend. I will send another version of the patch.
->
->
-> Olaf
+If loaded with isapnp = 0 the driver explodes. This is catching
+people out now and then. What should happen in the working case is
+a complete mystery and the code appears terminally confused, but we
+can at least make the error path work properly.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Partially-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=53991
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/watchdog/sc1200wdt.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/watchdog/sc1200wdt.c b/drivers/watchdog/sc1200wdt.c
+index 3fb83b0..ab6d3f5 100644
+--- a/drivers/watchdog/sc1200wdt.c
++++ b/drivers/watchdog/sc1200wdt.c
+@@ -409,8 +409,9 @@ static int __init sc1200wdt_init(void)
+ #if defined CONFIG_PNP
+ 	/* now that the user has specified an IO port and we haven't detected
+ 	 * any devices, disable pnp support */
++	if (isapnp)
++		pnp_unregister_driver(&scl200wdt_pnp_driver);
+ 	isapnp = 0;
+-	pnp_unregister_driver(&scl200wdt_pnp_driver);
+ #endif
+ 
+ 	if (!request_region(io, io_len, SC1200_MODULE_NAME)) {
+-- 
+1.8.3.2
 
