@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaAMOrx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:47:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51412 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaAMO0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:26:16 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 52/96] drm/radeon: fix asic gfx values for scrapper asics
-Date: Mon, 13 Jan 2014 14:24:15 +0000
-Message-Id: <1389623099-18783-53-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S1752970AbaAMOsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:48:16 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34800 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935AbaAMOsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 09:48:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,653,1384329600"; 
+   d="scan'208";a="464320477"
+Message-ID: <52D3FCAA.7070004@linux.intel.com>
+Date: Mon, 13 Jan 2014 06:48:10 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dave Young <dyoung@redhat.com>, Borislav Petkov <bp@alien8.de>
+CC: Linux EFI <linux-efi@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an arbitrary
+ pagetable
+References: <1389473370-1940-1-git-send-email-bp@alien8.de> <1389473370-1940-2-git-send-email-bp@alien8.de> <20140113053240.GA11237@dhcp-16-126.nay.redhat.com> <20140113101822.GA5388@pd.tnic> <20140113122320.GA1900@darkstar.nay.redhat.com>
+In-Reply-To: <20140113122320.GA1900@darkstar.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.29 -stable review patch.  If anyone has any objections, please let me know.
+On 1/13/2014 4:23 AM, Dave Young wrote:
+>>
+>>> How about do not limit to only if (pgd) case, instead do something
+>>> like below: set dump_to_dmesg as a module parameter
+>>
+>> X86_PTDUMP is not a module.
+>
+> Hmm, I just see the module macros in the code, since it's a bool Kconfig
+> I think the dump_pagetables.c need a cleanup,
+> remove the #include <linux/module.h> and below lines:
+> MODULE_LICENSE("GPL");
+> MODULE_AUTHOR("Arjan van de Ven <arjan@linux.intel.com>");
+> MODULE_DESCRIPTION("Kernel debugging helper that dumps pagetables");
 
-------------------
-
-From: Alex Deucher <alexander.deucher@amd.com>
-
-commit e2f6c88fb903e123edfd1106b0b8310d5117f774 upstream.
-
-Fixes gfx corruption on certain TN/RL parts.
-
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=60389
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/ni.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index fcd7335..768baf7 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -475,6 +475,10 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 		    (rdev->pdev->device == 0x999C)) {
- 			rdev->config.cayman.max_simds_per_se = 6;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9903) ||
- 			   (rdev->pdev->device == 0x9904) ||
- 			   (rdev->pdev->device == 0x990A) ||
-@@ -485,6 +489,10 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x999D)) {
- 			rdev->config.cayman.max_simds_per_se = 4;
- 			rdev->config.cayman.max_backends_per_se = 2;
-+			rdev->config.cayman.max_hw_contexts = 8;
-+			rdev->config.cayman.sx_max_export_size = 256;
-+			rdev->config.cayman.sx_max_export_pos_size = 64;
-+			rdev->config.cayman.sx_max_export_smx_size = 192;
- 		} else if ((rdev->pdev->device == 0x9919) ||
- 			   (rdev->pdev->device == 0x9990) ||
- 			   (rdev->pdev->device == 0x9991) ||
-@@ -495,9 +503,17 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 			   (rdev->pdev->device == 0x99A0)) {
- 			rdev->config.cayman.max_simds_per_se = 3;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		} else {
- 			rdev->config.cayman.max_simds_per_se = 2;
- 			rdev->config.cayman.max_backends_per_se = 1;
-+			rdev->config.cayman.max_hw_contexts = 4;
-+			rdev->config.cayman.sx_max_export_size = 128;
-+			rdev->config.cayman.sx_max_export_pos_size = 32;
-+			rdev->config.cayman.sx_max_export_smx_size = 96;
- 		}
- 		rdev->config.cayman.max_texture_channel_caches = 2;
- 		rdev->config.cayman.max_gprs = 256;
-@@ -505,10 +521,6 @@ static void cayman_gpu_init(struct radeon_device *rdev)
- 		rdev->config.cayman.max_gs_threads = 32;
- 		rdev->config.cayman.max_stack_entries = 512;
- 		rdev->config.cayman.sx_num_of_sets = 8;
--		rdev->config.cayman.sx_max_export_size = 256;
--		rdev->config.cayman.sx_max_export_pos_size = 64;
--		rdev->config.cayman.sx_max_export_smx_size = 192;
--		rdev->config.cayman.max_hw_contexts = 8;
- 		rdev->config.cayman.sq_num_cf_insts = 2;
- 
- 		rdev->config.cayman.sc_prim_fifo_size = 0x40;
--- 
-1.8.3.2
+personally I consider it good form to always have this kind of information in .c files,
+regardless of the KConfig side of thing...
 
