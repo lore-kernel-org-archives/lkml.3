@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaAMQuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:50:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53111 "EHLO
+	id S1756091AbaAMQuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:50:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53115 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaAMQC1 (ORCPT
+	with ESMTP id S1753685AbaAMQC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:02:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 066/208] cpupower: Fix segfault due to incorrect getopt_long arugments
-Date: Mon, 13 Jan 2014 15:58:27 +0000
-Message-Id: <1389628849-1614-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 067/208] iio:imu:adis16400 fix pressure channel scan type
+Date: Mon, 13 Jan 2014 15:58:28 +0000
+Message-Id: <1389628849-1614-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -30,45 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Jonathan Cameron <jic23@kernel.org>
 
-commit f447ef4a56dee4b68a91460bcdfe06b5011085f2 upstream.
+commit 3425c0f7ac61f2fcfb7f2728e9b7ba7e27aec429 upstream.
 
-If a user calls 'cpupower set --perf-bias 15', the process will end with
-a SIGSEGV in libc because cpupower-set passes a NULL optarg to the atoi
-call.  This is because the getopt_long structure currently has all of
-the options as having an optional_argument when they really have a
-required argument.  We change the structure to use required_argument to
-match the short options and it resolves the issue.
+A single channel in this driver was using the IIO_ST macro.
+This does not provide a parameter for setting the endianness of
+the channel.  Thus this channel will have been reported as whatever
+is the native endianness of the cpu rather than big endian. This
+means it would be incorrect on little endian platforms.
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=1000439
-
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/power/cpupower/utils/cpupower-set.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/iio/imu/adis16400_core.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/tools/power/cpupower/utils/cpupower-set.c b/tools/power/cpupower/utils/cpupower-set.c
-index dc4de37..bcf1d2f 100644
---- a/tools/power/cpupower/utils/cpupower-set.c
-+++ b/tools/power/cpupower/utils/cpupower-set.c
-@@ -18,9 +18,9 @@
- #include "helpers/bitmask.h"
- 
- static struct option set_opts[] = {
--	{ .name = "perf-bias",	.has_arg = optional_argument,	.flag = NULL,	.val = 'b'},
--	{ .name = "sched-mc",	.has_arg = optional_argument,	.flag = NULL,	.val = 'm'},
--	{ .name = "sched-smt",	.has_arg = optional_argument,	.flag = NULL,	.val = 's'},
-+	{ .name = "perf-bias",	.has_arg = required_argument,	.flag = NULL,	.val = 'b'},
-+	{ .name = "sched-mc",	.has_arg = required_argument,	.flag = NULL,	.val = 'm'},
-+	{ .name = "sched-smt",	.has_arg = required_argument,	.flag = NULL,	.val = 's'},
- 	{ },
- };
- 
+diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
+index f60591f..e58c529 100644
+--- a/drivers/iio/imu/adis16400_core.c
++++ b/drivers/iio/imu/adis16400_core.c
+@@ -651,7 +651,12 @@ static const struct iio_chan_spec adis16448_channels[] = {
+ 		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
+ 		.address = ADIS16448_BARO_OUT,
+ 		.scan_index = ADIS16400_SCAN_BARO,
+-		.scan_type = IIO_ST('s', 16, 16, 0),
++		.scan_type = {
++			.sign = 's',
++			.realbits = 16,
++			.storagebits = 16,
++			.endianness = IIO_BE,
++		},
+ 	},
+ 	ADIS16400_TEMP_CHAN(ADIS16448_TEMP_OUT, 12),
+ 	IIO_CHAN_SOFT_TIMESTAMP(11)
 -- 
 1.8.3.2
 
