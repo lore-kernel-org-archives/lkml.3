@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaAMO2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 09:28:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:51343 "EHLO
+	id S1752644AbaAMO2B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 09:28:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51321 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaAMOZ7 (ORCPT
+	with ESMTP id S1751836AbaAMOZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 09:25:59 -0500
+	Mon, 13 Jan 2014 09:25:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Robin H. Johnson" <robbat2@gentoo.org>, Tejun Heo <tj@kernel.org>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.5 39/96] libata: disable a disk via libata.force params
-Date: Mon, 13 Jan 2014 14:24:02 +0000
-Message-Id: <1389623099-18783-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.5 35/96] ALSA: hda - Add enable_msi=0 workaround for four HP machines
+Date: Mon, 13 Jan 2014 14:23:58 +0000
+Message-Id: <1389623099-18783-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
 References: <1389623099-18783-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Robin H. Johnson" <robbat2@gentoo.org>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit b8bd6dc36186fe99afa7b73e9e2d9a98ad5c4865 upstream.
+commit 693e0cb052c607e2d41edf9e9f1fa99ff8c266c1 upstream.
 
-A user on StackExchange had a failing SSD that's soldered directly
-onto the motherboard of his system. The BIOS does not give any option
-to disable it at all, so he can't just hide it from the OS via the
-BIOS.
+While enabling these machines, we found we would sometimes lose an
+interrupt if we change hardware volume during playback, and that
+disabling msi fixed this issue. (Losing the interrupt caused underruns
+and crackling audio, as the one second timeout is usually bigger than
+the period size.)
 
-The old IDE layer had hdX=noprobe override for situations like this,
-but that was never ported to the libata layer.
+The machines were all machines from HP, running AMD Hudson controller,
+and Realtek ALC282 codec.
 
-This patch implements a disable flag for libata.force.
-
-Example use:
-
- libata.force=2.0:disable
-
-[v2 of the patch, removed the nodisable flag per Tejun Heo]
-
-Signed-off-by: Robin H. Johnson <robbat2@gentoo.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://unix.stackexchange.com/questions/102648/how-to-tell-linux-kernel-3-0-to-completely-ignore-a-failing-disk
-Link: http://askubuntu.com/questions/352836/how-can-i-tell-linux-kernel-to-completely-ignore-a-disk-as-if-it-was-not-even-co
-Link: http://superuser.com/questions/599333/how-to-disable-kernel-probing-for-drive
+BugLink: https://bugs.launchpad.net/bugs/1260225
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/kernel-parameters.txt | 3 +++
- drivers/ata/libata-core.c           | 1 +
- 2 files changed, 4 insertions(+)
+ sound/pci/hda/hda_intel.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index b5576c6..546de15 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1364,6 +1364,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 
- 			* dump_id: dump IDENTIFY data.
- 
-+
-+			* disable: Disable this device.
-+
- 			If there are multiple matching configurations changing
- 			the same attribute, the last one is used.
- 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 92f2d3d..f1e3b76 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6402,6 +6402,7 @@ static int __init ata_parse_force_one(char **cur,
- 		{ "nohrst",	.lflags		= ATA_LFLAG_NO_HRST },
- 		{ "nosrst",	.lflags		= ATA_LFLAG_NO_SRST },
- 		{ "norst",	.lflags		= ATA_LFLAG_NO_HRST | ATA_LFLAG_NO_SRST },
-+		{ "disable",	.horkage_on	= ATA_HORKAGE_DISABLE },
- 	};
- 	char *start = *cur, *p = *cur;
- 	char *id, *val, *endp;
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index c4b29d4..d13662f 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2809,6 +2809,10 @@ static void __devinit check_probe_mask(struct azx *chip, int dev)
+  * white/black-list for enable_msi
+  */
+ static struct snd_pci_quirk msi_black_list[] __devinitdata = {
++	SND_PCI_QUIRK(0x103c, 0x2191, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x2192, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x21f7, "HP", 0), /* AMD Hudson */
++	SND_PCI_QUIRK(0x103c, 0x21fa, "HP", 0), /* AMD Hudson */
+ 	SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
+ 	SND_PCI_QUIRK(0x1043, 0x822d, "ASUS", 0), /* Athlon64 X2 + nvidia MCP55 */
 -- 
 1.8.3.2
 
