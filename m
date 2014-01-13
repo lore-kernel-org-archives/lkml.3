@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854AbaAMNbK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 08:31:10 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:36705 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaAMNbJ (ORCPT
+	id S1751672AbaAMNco (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 08:32:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55026 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaAMNcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 08:31:09 -0500
-Message-ID: <52D3EA9B.6020404@cogentembedded.com>
-Date: Mon, 13 Jan 2014 17:31:07 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 13 Jan 2014 08:32:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Prabhakar Kushwaha <prabhakar@freescale.com>
+Subject: Re: [PATCH] Driver/IFC: Move Freescale IFC driver to a common driver
+Date: Mon, 13 Jan 2014 14:32:36 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        scottwood@freescale.com
+References: <1389590671-20289-1-git-send-email-prabhakar@freescale.com>
+In-Reply-To: <1389590671-20289-1-git-send-email-prabhakar@freescale.com>
 MIME-Version: 1.0
-To: Alexandre Oliva <oliva@gnu.org>, Ralf Baechle <ralf@linux-mips.org>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [3.13-rc regression] Unbreak Loongson2 and r4k-generic flush
- icache range
-References: <ord2jwnmwd.fsf@livre.home>
-In-Reply-To: <ord2jwnmwd.fsf@livre.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201401131432.36880.arnd@arndb.de>
+X-Provags-ID: V02:K0:MNYSxQQpuAjrWgvzFkR8QDowH+adsashIgfeNUf6Dpc
+ VMJxmiyNBvDwytyQ2p8FOW46xFhDNIuTC/W4pHECA4AaeIglsG
+ ZK7g0Lc5UECzvkftY+42CWv3sa+K5rTprOk3guT/iX7ENn/+k7
+ Busu6GeTJ+ks03IMNCukM4XMX6SRoj5b++lILA/dIwP8zJA3xd
+ 9WwA46AlRWJS2bPcKaGhRgQWZBMS5cI+5dqfdFtR5piaIn8InE
+ IhSTnL1MGOMQ0NDLJ9YpdogjolfjghCtsn9oRxvpTZ5HN8hIvf
+ +9CeCAClwuLnovy8xkqwQhfdwlM7JvYkUkD38h1QRWBZQ1B+zD
+ yC0fdeSHyl7KpxghxFaY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Monday 13 January 2014, Prabhakar Kushwaha wrote:
+> Freescale IFC controller has been used for mpc8xxx. It will be used
+> for ARM-based SoC as well. This patch moves the driver to driver/misc
+> and fix the header file includes.
+> 
+> Signed-off-by: Prabhakar Kushwaha <prabhakar@freescale.com>
 
-On 13-01-2014 15:26, Alexandre Oliva wrote:
+No objections to the driver, but drivers/misc doesn't seem like the
+right place. Why not drivers/mfd or drivers/memory?
 
-> Commit 14bd8c08, that replaced Loongson2-specific ifdefs with cpu tests,
+You should also find a new place for the binding file, which is
+currently in Documentation/devicetree/bindings/powerpc/fsl/ifc.txt.
 
-    Please also specify that commit's summary line in parens.
-
-> inverted the CPU test in local_r4k_flush_icache_range.  Loongson2 won't
-> boot up using the generic icache flush code.  Presumably other CPUs
-> might face other problems when presented with Loongson2-specific icache
-> flush code too.  This patch enabled my Yeeloong to boot up successfully
-> a 3.13-rc kernel for the first time, after a long git bisect session.
-
-> Signed-off-by: Alexandre Oliva <lxoliva@fsfla.org>
-
-    Fix for this issue has been posted long ago:
-
-http://marc.info/?l=linux-mips&m=138575576803890
-
-WBR, Sergei
-
+	Arnd
