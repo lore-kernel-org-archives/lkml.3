@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbaAWAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jan 2014 19:39:09 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:61846 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143AbaAWAjF convert rfc822-to-8bit (ORCPT
+	id S1756443AbaAWAnt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jan 2014 19:43:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38419 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756338AbaAWAnq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jan 2014 19:39:05 -0500
-Date: Wed, 22 Jan 2014 19:38:39 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <linux-alpha@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-ia64@vger.kernel.org>, <linux-m68k@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-s390@vger.kernel.org>, <sparclinux@vger.kernel.org>,
-        <x86@kernel.org>, <netdev@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <rusty@rustcorp.com.au>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>
-Subject: Re: [PATCH RFC 00/73] tree-wide: clean up some no longer required
- #include <linux/init.h>
-Message-ID: <20140123003838.GA10182@windriver.com>
-References: <1390339396-3479-1-git-send-email-paul.gortmaker@windriver.com>
- <20140122180023.dd90d34cba38d9f9ac516349@canb.auug.org.au>
+	Wed, 22 Jan 2014 19:43:46 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <52D3FD67.2060708@oracle.com>
+References: <1389371301-29532-1-git-send-email-olaf@aepfle.de> <52D036FC.6000308@oracle.com> <20140110213746.GA933@aepfle.de> <52D073F0.5020400@oracle.com> <20140113093032.GA13919@aepfle.de> <52D3FD67.2060708@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20140122180023.dd90d34cba38d9f9ac516349@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH] xen-blkfront: remove type check from blkfront_setup_discard
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 13 Jan 2014 11:24:36 -0500
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, Olaf Hering <olaf@aepfle.de>
+CC: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org,
+        david.vrabel@citrix.com
+Message-ID: <1a76cddb-cb54-4483-9ab2-a750ef0d9962@email.android.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH RFC 00/73] tree-wide: clean up some no longer required #include <linux/init.h>] On 22/01/2014 (Wed 18:00) Stephen Rothwell wrote:
+Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
+>On 01/13/2014 04:30 AM, Olaf Hering wrote:
+>> On Fri, Jan 10, Boris Ostrovsky wrote:
+>>
+>>> I don't know discard code works but it seems to me that if you pass,
+>for
+>>> example,  zero as discard_granularity (which may happen if
+>xenbus_gather()
+>>> fails) then blkdev_issue_discard() in the backend will set
+>granularity to 1
+>>> and continue with discard. This may not be what the the guest admin
+>>> requested. And he won't know about this since no error message is
+>printed
+>>> anywhere.
+>> If I understand the code using granularity/alignment correctly, both
+>are
+>> optional properties. So if the granularity is just 1 it means byte
+>> ranges, which is fine if the backend uses FALLOC_FL_PUNCH_HOLE. Also
+>> both properties are not admin controlled, for phy the blkbk drivers
+>just
+>> passes on what it gets from the underlying hardware.
+>>
+>>> Similarly, if xenbug_gather("discard-secure") fails, I think the
+>code will
+>>> assume that secure discard has not been requested. I don't know what
+>>> security implications this will have but it sounds bad to me.
+>> There are no security implications, if the backend does not advertise
+>it
+>> then its not present.
+>
+>Right. But my questions was what if the backend does advertise it and 
+>wants the frontent to use it but xenbus_gather() in the frontend fails.
+>
+>Do we want to silently continue without discard-secure? Is this safe?
+>
 
-> Hi Paul,
-> 
-> On Tue, 21 Jan 2014 16:22:03 -0500 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >
-> > Where: This work exists as a queue of patches that I apply to
-> > linux-next; since the changes are fixing some things that currently
-> > can only be found there.  The patch series can be found at:
-> > 
-> >    http://git.kernel.org/cgit/linux/kernel/git/paulg/init.git
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/paulg/init.git
-> > 
-> > I've avoided annoying Stephen with another queue of patches for
-> > linux-next while the development content was in flux, but now that
-> > the merge window has opened, and new additions are fewer, perhaps he
-> > wouldn't mind tacking it on the end...  Stephen?
-> 
-> OK, I have added this to the end of linux-next today - we will see how we
-> go.  It is called "init".
+Yes
+>
+>-boris
+>
+>>
+>> After poking around some more it seems that blkif.h is the spec, it
+>does
+>> not say anything that the three properties are optional. Also the
+>> backend drivers in sles11sp2 and mainline create all three properties
+>> unconditionally. So I think a better change is to expect all three
+>> properties in the frontend. I will send another version of the patch.
+>>
+>>
+>> Olaf
 
-Thanks, it was a great help as it uncovered a few issues in fringe arch
-that I didn't have toolchains for, and I've fixed all of those up.
-
-I've noticed that powerpc has been un-buildable for a while now; I have
-used this hack patch locally so I could run the ppc defconfigs to check
-that I didn't break anything.  Maybe useful for linux-next in the
-interim?  It is a hack patch -- Not-Signed-off-by: Paul Gortmaker.  :)
-
-Paul.
---
-
-diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
-index d27960c89a71..d0f070a2b395 100644
---- a/arch/powerpc/include/asm/pgtable-ppc64.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc64.h
-@@ -560,9 +560,9 @@ extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 			    pmd_t *pmdp);
- 
- #define pmd_move_must_withdraw pmd_move_must_withdraw
--typedef struct spinlock spinlock_t;
--static inline int pmd_move_must_withdraw(spinlock_t *new_pmd_ptl,
--					 spinlock_t *old_pmd_ptl)
-+struct spinlock;
-+static inline int pmd_move_must_withdraw(struct spinlock *new_pmd_ptl,
-+					 struct spinlock *old_pmd_ptl)
- {
- 	/*
- 	 * Archs like ppc64 use pgtable to store per pmd
 
