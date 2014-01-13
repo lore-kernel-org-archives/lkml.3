@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaAMJbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 04:31:03 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:55693 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283AbaAMJbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 04:31:00 -0500
-Message-ID: <1389605449.1585.9.camel@localhost.localdomain>
-Subject: Re: [PATCH 02/13] ppc/cell: use get_unused_fd_flags(0) instead of
- get_unused_fd()
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org
-Date: Mon, 13 Jan 2014 10:30:49 +0100
-In-Reply-To: <1389567961.4672.111.camel@pasglop>
-References: <cover.1372777600.git.ydroneaud@opteya.com>
-	 <72f6f9ae898a664033f6b958bc7976b994544963.1372777600.git.ydroneaud@opteya.com>
-	 <1389567961.4672.111.camel@pasglop>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751416AbaAMJfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 04:35:21 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60318 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaAMJfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 04:35:18 -0500
+Message-ID: <52D3B0DE.3@linux.vnet.ibm.com>
+Date: Mon, 13 Jan 2014 17:24:46 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] splice: fix unexpected size truncation
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011309-7014-0000-0000-0000042D1DC9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+@splice_desc.total_len is 32 bit(unsigned int) which is used to store the
+size passed from userspace which is 64 bit(size_t) so that the size is
+unexpectedly truncated
 
-Le lundi 13 janvier 2014 à 10:06 +1100, Benjamin Herrenschmidt a écrit :
-> On Tue, 2013-07-02 at 18:39 +0200, Yann Droneaud wrote:
-> > Macro get_unused_fd() is used to allocate a file descriptor with
-> > default flags. Those default flags (0) can be "unsafe":
-> > O_CLOEXEC must be used by default to not leak file descriptor
-> > across exec().
-> > 
-> > Instead of macro get_unused_fd(), functions anon_inode_getfd()
-> > or get_unused_fd_flags() should be used with flags given by userspace.
-> > If not possible, flags should be set to O_CLOEXEC to provide userspace
-> > with a default safe behavor.
-> > 
-> > In a further patch, get_unused_fd() will be removed so that
-> > new code start using anon_inode_getfd() or get_unused_fd_flags()
-> > with correct flags.
-> > 
-> > This patch replaces calls to get_unused_fd() with equivalent call to
-> > get_unused_fd_flags(0) to preserve current behavor for existing code.
-> > 
-> > The hard coded flag value (0) should be reviewed on a per-subsystem basis,
-> > and, if possible, set to O_CLOEXEC.
-> > 
-> > Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-> 
-> Should I merge this (v5 on patchwork) or let Al do it ?
-> 
+That causes vmsplice can not work if the size passed from userspace is >= 4G,
+for example, we noticed in vmsplice, splice-reader does not do anything and
+splice-writer is waiting for available buffer forever if the size is 4G
 
-Please merge it directly: patches from the previous patchsets were
-picked individually by each subsystem maintainer after proper review
-regarding setting close on exec flag by default.
+Fix it by extending @splice_desc.total_len to 64 bits as well
 
-> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> 
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ include/linux/splice.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks a lot.
-
-> > ---
-> >  arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
-> > index f390042..88df441 100644
-> > --- a/arch/powerpc/platforms/cell/spufs/inode.c
-> > +++ b/arch/powerpc/platforms/cell/spufs/inode.c
-> > @@ -301,7 +301,7 @@ static int spufs_context_open(struct path *path)
-> >  	int ret;
-> >  	struct file *filp;
-> >  
-> > -	ret = get_unused_fd();
-> > +	ret = get_unused_fd_flags(0);
-> >  	if (ret < 0)
-> >  		return ret;
-> >  
-> > @@ -518,7 +518,7 @@ static int spufs_gang_open(struct path *path)
-> >  	int ret;
-> >  	struct file *filp;
-> >  
-> > -	ret = get_unused_fd();
-> > +	ret = get_unused_fd_flags(0);
-> >  	if (ret < 0)
-> >  		return ret;
-> >  
-> 
-> 
-
-Note:
-latest patch (from v5 patchset) is at
-http://lkml.kernel.org/r/fe27abcfab5563d36a3e5e58ff36e5500c39be6a.1388952061.git.ydroneaud@opteya.com
-v5 patchset is at
-http://lkml.kernel.org/r/cover.1388952061.git.ydroneaud@opteya.com
-
-Regards.
-
+diff --git a/include/linux/splice.h b/include/linux/splice.h
+index 74575cb..1e85396 100644
+--- a/include/linux/splice.h
++++ b/include/linux/splice.h
+@@ -24,7 +24,8 @@
+  * Passed to the actors
+  */
+ struct splice_desc {
+-	unsigned int len, total_len;	/* current and remaining length */
++	size_t total_len;		/* remaining length */
++	unsigned int len;		/* current length */
+ 	unsigned int flags;		/* splice flags */
+ 	/*
+ 	 * actor() private data
 -- 
-Yann Droneaud
-OPTEYA
-
+1.8.1.4
 
