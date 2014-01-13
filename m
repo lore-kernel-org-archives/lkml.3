@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaAMQPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:15:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53731 "EHLO
+	id S1755273AbaAMQPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:15:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53736 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270AbaAMQFH (ORCPT
+	with ESMTP id S1752305AbaAMQFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:05:07 -0500
+	Mon, 13 Jan 2014 11:05:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wenliang Fan <fanwlexca@gmail.com>,
+Cc: Pravin B Shelar <pshelar@nicira.com>,
+        =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 182/208] drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
-Date: Mon, 13 Jan 2014 16:00:23 +0000
-Message-Id: <1389628849-1614-183-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 180/208] ip_gre: fix msg_name parsing for recvfrom/recvmsg
+Date: Mon, 13 Jan 2014 16:00:21 +0000
+Message-Id: <1389628849-1614-181-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wenliang Fan <fanwlexca@gmail.com>
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
 
-commit e9db5c21d3646a6454fcd04938dd215ac3ab620a upstream.
+commit 0e3da5bb8da45890b1dc413404e0f978ab71173e upstream.
 
-The local variable 'bi' comes from userspace. If userspace passed a
-large number to 'bi.data.calibrate', there would be an integer overflow
-in the following line:
-	s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
+ipgre_header_parse() needs to parse the tunnel's ip header and it
+uses mac_header to locate the iphdr. This got broken when gre tunneling
+was refactored as mac_header is no longer updated to point to iphdr.
+Introduce skb_pop_mac_header() helper to do the mac_header assignment
+and use it in ipgre_rcv() to fix msg_name parsing.
 
-Signed-off-by: Wenliang Fan <fanwlexca@gmail.com>
+Bug introduced in commit c54419321455 (GRE: Refactor GRE tunneling code.)
+
+Cc: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/hamradio/hdlcdrv.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/ip_gre.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/hamradio/hdlcdrv.c b/drivers/net/hamradio/hdlcdrv.c
-index 3169252..5d78c1d 100644
---- a/drivers/net/hamradio/hdlcdrv.c
-+++ b/drivers/net/hamradio/hdlcdrv.c
-@@ -571,6 +571,8 @@ static int hdlcdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case HDLCDRVCTL_CALIBRATE:
- 		if(!capable(CAP_SYS_RAWIO))
- 			return -EPERM;
-+		if (bi.data.calibrate > INT_MAX / s->par.bitrate)
-+			return -EINVAL;
- 		s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
- 		return 0;
+diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+index 8d6939e..2977400 100644
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -217,6 +217,7 @@ static int ipgre_rcv(struct sk_buff *skb, const struct tnl_ptk_info *tpi)
+ 				  iph->saddr, iph->daddr, tpi->key);
  
+ 	if (tunnel) {
++		skb_pop_mac_header(skb);
+ 		ip_tunnel_rcv(tunnel, skb, tpi, log_ecn_error);
+ 		return PACKET_RCVD;
+ 	}
 -- 
 1.8.3.2
 
