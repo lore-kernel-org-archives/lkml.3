@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557AbaAMQWF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:22:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784AbaAMQV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:21:59 -0500
-Date: Mon, 13 Jan 2014 17:20:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/1] lockdep: Kill held_lock->check and "int check" arg
-	of __lock_acquire()
-Message-ID: <20140113162040.GB7616@redhat.com>
-References: <20140109111516.GE7572@laptop.programming.kicks-ass.net> <20140109163120.GA8038@redhat.com> <20140109170823.GF7572@laptop.programming.kicks-ass.net> <20140112094041.GB31809@gmail.com> <20140112174532.GA12147@redhat.com> <20140112174554.GB12147@redhat.com> <20140113002811.GA24735@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113002811.GA24735@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755563AbaAMQWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:22:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53581 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754370AbaAMQEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 11:04:30 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 155/208] mm: numa: defer TLB flush for THP migration as long as possible
+Date: Mon, 13 Jan 2014 15:59:56 +0000
+Message-Id: <1389628849-1614-156-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12, Dave Jones wrote:
->
-> On Sun, Jan 12, 2014 at 06:45:54PM +0100, Oleg Nesterov wrote:
->
->  > diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
->  > index 92b1bfc..13bd13d 100644
->  > --- a/include/linux/lockdep.h
->  > +++ b/include/linux/lockdep.h
->  > @@ -252,7 +252,6 @@ struct held_lock {
->  >  	unsigned int trylock:1;						/* 16 bits */
->  >
->  >  	unsigned int read:2;        /* see lock_acquire() comment */
->  > -	unsigned int check:2;       /* see lock_acquire() comment */
->  >  	unsigned int hardirqs_off:1;
->  >  	unsigned int references:11;					/* 32 bits */
->
-> The 'bits' comments seem to be crap, even before your patch.
+3.11.10.3 -stable review patch.  If anyone has any objections, please let me know.
 
-Hmm, I didn't even notice them.
+------------------
 
-I think the comments were correct, note that the previous field is uint:13.
+From: Mel Gorman <mgorman@suse.de>
 
-But after (with) this patch the width of "references" should be updated.
+commit b0943d61b8fa420180f92f64ef67662b4f6cc493 upstream.
 
-Thanks,
+THP migration can fail for a variety of reasons.  Avoid flushing the TLB
+to deal with THP migration races until the copy is ready to start.
 
-Oleg.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ mm/huge_memory.c | 7 -------
+ mm/migrate.c     | 3 +++
+ 2 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 37a8cd8..31950d6 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1372,13 +1372,6 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ 
+ 	/*
+-	 * The page_table_lock above provides a memory barrier
+-	 * with change_protection_range.
+-	 */
+-	if (mm_tlb_flush_pending(mm))
+-		flush_tlb_range(vma, haddr, haddr + HPAGE_PMD_SIZE);
+-
+-	/*
+ 	 * Migrate the THP to the requested node, returns with page unlocked
+ 	 * and pmd_numa cleared.
+ 	 */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index c033a04..5130147 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1702,6 +1702,9 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 		goto out_fail;
+ 	}
+ 
++	if (mm_tlb_flush_pending(mm))
++		flush_tlb_range(vma, mmun_start, mmun_end);
++
+ 	/* Prepare a page as a migration target */
+ 	__set_page_locked(new_page);
+ 	SetPageSwapBacked(new_page);
+-- 
+1.8.3.2
 
