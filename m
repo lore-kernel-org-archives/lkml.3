@@ -1,315 +1,667 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaAMH3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 02:29:09 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48412 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaAMH27 (ORCPT
+	id S1751354AbaAMHjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 02:39:18 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46481 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213AbaAMHjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 02:28:59 -0500
-Message-ID: <52D3958B.1060902@huawei.com>
-Date: Mon, 13 Jan 2014 15:28:11 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 13 Jan 2014 02:39:14 -0500
+X-AuditID: 9c93017d-b7b41ae000004b3e-f2-52d3981b0ba2
+Date: Mon, 13 Jan 2014 16:39:47 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Bob Liu <bob.liu@oracle.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+Message-ID: <20140113073947.GR1992@bbox>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: stable <stable@vger.kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [STABLE] find missing bug fixes in a stable kernel
-Content-Type: multipart/mixed;
-	boundary="------------020105030405000405000807"
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------020105030405000405000807
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+On Fri, Jan 10, 2014 at 01:10:43PM -0500, Johannes Weiner wrote:
+> Previously, page cache radix tree nodes were freed after reclaim
+> emptied out their page pointers.  But now reclaim stores shadow
+> entries in their place, which are only reclaimed when the inodes
+> themselves are reclaimed.  This is problematic for bigger files that
+> are still in use after they have a significant amount of their cache
+> reclaimed, without any of those pages actually refaulting.  The shadow
+> entries will just sit there and waste memory.  In the worst case, the
+> shadow entries will accumulate until the machine runs out of memory.
+> 
+> To get this under control, the VM will track radix tree nodes
+> exclusively containing shadow entries on a per-NUMA node list.
+> Per-NUMA rather than global because we expect the radix tree nodes
+> themselves to be allocated node-locally and we want to reduce
+> cross-node references of otherwise independent cache workloads.  A
+> simple shrinker will then reclaim these nodes on memory pressure.
+> 
+> A few things need to be stored in the radix tree node to implement the
+> shadow node LRU and allow tree deletions coming from the list:
+> 
+> 1. There is no index available that would describe the reverse path
+>    from the node up to the tree root, which is needed to perform a
+>    deletion.  To solve this, encode in each node its offset inside the
+>    parent.  This can be stored in the unused upper bits of the same
+>    member that stores the node's height at no extra space cost.
+> 
+> 2. The number of shadow entries needs to be counted in addition to the
+>    regular entries, to quickly detect when the node is ready to go to
+>    the shadow node LRU list.  The current entry count is an unsigned
+>    int but the maximum number of entries is 64, so a shadow counter
+>    can easily be stored in the unused upper bits.
+> 
+> 3. Tree modification needs tree lock and tree root, which are located
+>    in the address space, so store an address_space backpointer in the
+>    node.  The parent pointer of the node is in a union with the 2-word
+>    rcu_head, so the backpointer comes at no extra cost as well.
+> 
+> 4. The node needs to be linked to an LRU list, which requires a list
+>    head inside the node.  This does increase the size of the node, but
+>    it does not change the number of objects that fit into a slab page.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  include/linux/list_lru.h   |   2 +
+>  include/linux/mmzone.h     |   1 +
+>  include/linux/radix-tree.h |  32 +++++++++---
+>  include/linux/swap.h       |   1 +
+>  lib/radix-tree.c           |  36 ++++++++------
+>  mm/filemap.c               |  77 +++++++++++++++++++++++------
+>  mm/list_lru.c              |   8 +++
+>  mm/truncate.c              |  20 +++++++-
+>  mm/vmstat.c                |   1 +
+>  mm/workingset.c            | 121 +++++++++++++++++++++++++++++++++++++++++++++
+>  10 files changed, 259 insertions(+), 40 deletions(-)
+> 
+> diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+> index 3ce541753c88..b02fc233eadd 100644
+> --- a/include/linux/list_lru.h
+> +++ b/include/linux/list_lru.h
+> @@ -13,6 +13,8 @@
+>  /* list_lru_walk_cb has to always return one of those */
+>  enum lru_status {
+>  	LRU_REMOVED,		/* item removed from list */
+> +	LRU_REMOVED_RETRY,	/* item removed, but lock has been
+> +				   dropped and reacquired */
+>  	LRU_ROTATE,		/* item referenced, give another pass */
+>  	LRU_SKIP,		/* item cannot be locked, skip */
+>  	LRU_RETRY,		/* item not freeable. May drop the lock
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 118ba9f51e86..8cac5a7ef7a7 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -144,6 +144,7 @@ enum zone_stat_item {
+>  #endif
+>  	WORKINGSET_REFAULT,
+>  	WORKINGSET_ACTIVATE,
+> +	WORKINGSET_NODERECLAIM,
+>  	NR_ANON_TRANSPARENT_HUGEPAGES,
+>  	NR_FREE_CMA_PAGES,
+>  	NR_VM_ZONE_STAT_ITEMS };
+> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+> index 13636c40bc42..33170dbd9db4 100644
+> --- a/include/linux/radix-tree.h
+> +++ b/include/linux/radix-tree.h
+> @@ -72,21 +72,37 @@ static inline int radix_tree_is_indirect_ptr(void *ptr)
+>  #define RADIX_TREE_TAG_LONGS	\
+>  	((RADIX_TREE_MAP_SIZE + BITS_PER_LONG - 1) / BITS_PER_LONG)
+>  
+> +#define RADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
+> +#define RADIX_TREE_MAX_PATH (DIV_ROUND_UP(RADIX_TREE_INDEX_BITS, \
+> +					  RADIX_TREE_MAP_SHIFT))
+> +
+> +/* Height component in node->path */
+> +#define RADIX_TREE_HEIGHT_SHIFT	(RADIX_TREE_MAX_PATH + 1)
+> +#define RADIX_TREE_HEIGHT_MASK	((1UL << RADIX_TREE_HEIGHT_SHIFT) - 1)
+> +
+> +/* Internally used bits of node->count */
+> +#define RADIX_TREE_COUNT_SHIFT	(RADIX_TREE_MAP_SHIFT + 1)
+> +#define RADIX_TREE_COUNT_MASK	((1UL << RADIX_TREE_COUNT_SHIFT) - 1)
+> +
+>  struct radix_tree_node {
+> -	unsigned int	height;		/* Height from the bottom */
+> +	unsigned int	path;	/* Offset in parent & height from the bottom */
+>  	unsigned int	count;
+>  	union {
+> -		struct radix_tree_node *parent;	/* Used when ascending tree */
+> -		struct rcu_head	rcu_head;	/* Used when freeing node */
+> +		struct {
+> +			/* Used when ascending tree */
+> +			struct radix_tree_node *parent;
+> +			/* For tree user */
+> +			void *private_data;
+> +		};
+> +		/* Used when freeing node */
+> +		struct rcu_head	rcu_head;
+>  	};
+> +	/* For tree user */
+> +	struct list_head private_list;
+>  	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
+>  	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
+>  };
+>  
+> -#define RADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
+> -#define RADIX_TREE_MAX_PATH (DIV_ROUND_UP(RADIX_TREE_INDEX_BITS, \
+> -					  RADIX_TREE_MAP_SHIFT))
+> -
+>  /* root tags are stored in gfp_mask, shifted by __GFP_BITS_SHIFT */
+>  struct radix_tree_root {
+>  	unsigned int		height;
+> @@ -251,7 +267,7 @@ void *__radix_tree_lookup(struct radix_tree_root *root, unsigned long index,
+>  			  struct radix_tree_node **nodep, void ***slotp);
+>  void *radix_tree_lookup(struct radix_tree_root *, unsigned long);
+>  void **radix_tree_lookup_slot(struct radix_tree_root *, unsigned long);
+> -bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
+> +bool __radix_tree_delete_node(struct radix_tree_root *root,
+>  			      struct radix_tree_node *node);
+>  void *radix_tree_delete_item(struct radix_tree_root *, unsigned long, void *);
+>  void *radix_tree_delete(struct radix_tree_root *, unsigned long);
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index b83cf61403ed..102e37bc82d5 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -264,6 +264,7 @@ struct swap_list_t {
+>  void *workingset_eviction(struct address_space *mapping, struct page *page);
+>  bool workingset_refault(void *shadow);
+>  void workingset_activation(struct page *page);
+> +extern struct list_lru workingset_shadow_nodes;
+>  
+>  /* linux/mm/page_alloc.c */
+>  extern unsigned long totalram_pages;
+> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+> index e601c56a43d0..0a0895371447 100644
+> --- a/lib/radix-tree.c
+> +++ b/lib/radix-tree.c
+> @@ -342,7 +342,8 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+>  
+>  		/* Increase the height.  */
+>  		newheight = root->height+1;
+> -		node->height = newheight;
+> +		BUG_ON(newheight & ~RADIX_TREE_HEIGHT_MASK);
+> +		node->path = newheight;
 
-We have several long-term and extended stable kernels, and it's possible
-that a bug fix is in some stable versions but is missing in some other
-versions, so I've written a script to find out those fixes.
+Nitpick:
+It would be better to add some accessor for path and offset for
+readability and future enhance?
 
-Take 3.4.xx and 3.2.xx for example. If a bug fix was merged into upstream
-kernel after 3.4, and then it was backported to 3.2.xx, then it probably
-needs to be backported to 3.4.xx.
+>  		node->count = 1;
+>  		node->parent = NULL;
+>  		slot = root->rnode;
+> @@ -400,11 +401,12 @@ int __radix_tree_create(struct radix_tree_root *root, unsigned long index,
+>  			/* Have to add a child node.  */
+>  			if (!(slot = radix_tree_node_alloc(root)))
+>  				return -ENOMEM;
+> -			slot->height = height;
+> +			slot->path = height;
+>  			slot->parent = node;
+>  			if (node) {
+>  				rcu_assign_pointer(node->slots[offset], slot);
+>  				node->count++;
+> +				slot->path |= offset << RADIX_TREE_HEIGHT_SHIFT;
+>  			} else
+>  				rcu_assign_pointer(root->rnode, ptr_to_indirect(slot));
+>  		}
+> @@ -496,7 +498,7 @@ void *__radix_tree_lookup(struct radix_tree_root *root, unsigned long index,
+>  	}
+>  	node = indirect_to_ptr(node);
+>  
+> -	height = node->height;
+> +	height = node->path & RADIX_TREE_HEIGHT_MASK;
+>  	if (index > radix_tree_maxindex(height))
+>  		return NULL;
+>  
+> @@ -702,7 +704,7 @@ int radix_tree_tag_get(struct radix_tree_root *root,
+>  		return (index == 0);
+>  	node = indirect_to_ptr(node);
+>  
+> -	height = node->height;
+> +	height = node->path & RADIX_TREE_HEIGHT_MASK;
+>  	if (index > radix_tree_maxindex(height))
+>  		return 0;
+>  
+> @@ -739,7 +741,7 @@ void **radix_tree_next_chunk(struct radix_tree_root *root,
+>  {
+>  	unsigned shift, tag = flags & RADIX_TREE_ITER_TAG_MASK;
+>  	struct radix_tree_node *rnode, *node;
+> -	unsigned long index, offset;
+> +	unsigned long index, offset, height;
+>  
+>  	if ((flags & RADIX_TREE_ITER_TAGGED) && !root_tag_get(root, tag))
+>  		return NULL;
+> @@ -770,7 +772,8 @@ void **radix_tree_next_chunk(struct radix_tree_root *root,
+>  		return NULL;
+>  
+>  restart:
+> -	shift = (rnode->height - 1) * RADIX_TREE_MAP_SHIFT;
+> +	height = rnode->path & RADIX_TREE_HEIGHT_MASK;
+> +	shift = (height - 1) * RADIX_TREE_MAP_SHIFT;
+>  	offset = index >> shift;
+>  
+>  	/* Index outside of the tree */
+> @@ -1140,7 +1143,7 @@ static unsigned long __locate(struct radix_tree_node *slot, void *item,
+>  	unsigned int shift, height;
+>  	unsigned long i;
+>  
+> -	height = slot->height;
+> +	height = slot->path & RADIX_TREE_HEIGHT_MASK;
+>  	shift = (height-1) * RADIX_TREE_MAP_SHIFT;
+>  
+>  	for ( ; height > 1; height--) {
+> @@ -1203,7 +1206,8 @@ unsigned long radix_tree_locate_item(struct radix_tree_root *root, void *item)
+>  		}
+>  
+>  		node = indirect_to_ptr(node);
+> -		max_index = radix_tree_maxindex(node->height);
+> +		max_index = radix_tree_maxindex(node->path &
+> +						RADIX_TREE_HEIGHT_MASK);
+>  		if (cur_index > max_index)
+>  			break;
+>  
+> @@ -1297,7 +1301,7 @@ static inline void radix_tree_shrink(struct radix_tree_root *root)
+>   *
+>   *	Returns %true if @node was freed, %false otherwise.
+>   */
+> -bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
+> +bool __radix_tree_delete_node(struct radix_tree_root *root,
+>  			      struct radix_tree_node *node)
+>  {
+>  	bool deleted = false;
+> @@ -1316,9 +1320,10 @@ bool __radix_tree_delete_node(struct radix_tree_root *root, unsigned long index,
+>  
+>  		parent = node->parent;
+>  		if (parent) {
+> -			index >>= RADIX_TREE_MAP_SHIFT;
+> +			unsigned int offset;
+>  
+> -			parent->slots[index & RADIX_TREE_MAP_MASK] = NULL;
+> +			offset = node->path >> RADIX_TREE_HEIGHT_SHIFT;
+> +			parent->slots[offset] = NULL;
+>  			parent->count--;
+>  		} else {
+>  			root_tag_clear_all(root);
+> @@ -1382,7 +1387,7 @@ void *radix_tree_delete_item(struct radix_tree_root *root,
+>  	node->slots[offset] = NULL;
+>  	node->count--;
+>  
+> -	__radix_tree_delete_node(root, index, node);
+> +	__radix_tree_delete_node(root, node);
+>  
+>  	return entry;
+>  }
+> @@ -1415,9 +1420,12 @@ int radix_tree_tagged(struct radix_tree_root *root, unsigned int tag)
+>  EXPORT_SYMBOL(radix_tree_tagged);
+>  
+>  static void
+> -radix_tree_node_ctor(void *node)
+> +radix_tree_node_ctor(void *arg)
+>  {
+> -	memset(node, 0, sizeof(struct radix_tree_node));
+> +	struct radix_tree_node *node = arg;
+> +
+> +	memset(node, 0, sizeof(*node));
+> +	INIT_LIST_HEAD(&node->private_list);
+>  }
+>  
+>  static __init unsigned long __maxindex(unsigned int height)
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 65a374c0df4f..b93e223b59a9 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -110,11 +110,17 @@
+>  static void page_cache_tree_delete(struct address_space *mapping,
+>  				   struct page *page, void *shadow)
+>  {
+> -	if (shadow) {
+> -		void **slot;
+> +	struct radix_tree_node *node;
+> +	unsigned long index;
+> +	unsigned int offset;
+> +	unsigned int tag;
+> +	void **slot;
+>  
+> -		slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
+> -		radix_tree_replace_slot(slot, shadow);
+> +	VM_BUG_ON(!PageLocked(page));
+> +
+> +	__radix_tree_lookup(&mapping->page_tree, page->index, &node, &slot);
+> +
+> +	if (shadow) {
+>  		mapping->nrshadows++;
+>  		/*
+>  		 * Make sure the nrshadows update is committed before
+> @@ -123,9 +129,39 @@ static void page_cache_tree_delete(struct address_space *mapping,
+>  		 * same time and miss a shadow entry.
+>  		 */
+>  		smp_wmb();
+> -	} else
+> -		radix_tree_delete(&mapping->page_tree, page->index);
+> +	}
+>  	mapping->nrpages--;
+> +
+> +	if (!node) {
+> +		/* Clear direct pointer tags in root node */
+> +		mapping->page_tree.gfp_mask &= __GFP_BITS_MASK;
+> +		radix_tree_replace_slot(slot, shadow);
+> +		return;
+> +	}
+> +
+> +	/* Clear tree tags for the removed page */
+> +	index = page->index;
+> +	offset = index & RADIX_TREE_MAP_MASK;
+> +	for (tag = 0; tag < RADIX_TREE_MAX_TAGS; tag++) {
+> +		if (test_bit(offset, node->tags[tag]))
+> +			radix_tree_tag_clear(&mapping->page_tree, index, tag);
+> +	}
+> +
+> +	/* Delete page, swap shadow entry */
+> +	radix_tree_replace_slot(slot, shadow);
+> +	node->count--;
+> +	if (shadow)
+> +		node->count += 1U << RADIX_TREE_COUNT_SHIFT;
 
-The result is, there're ~430 bug fixes in 3.2.xx that probably need to be
-backported to 3.4.xx. Given there're about 4500 commits in 3.2.xx, that
-is ~10%, which is quite a big number for stable kernels.
+Nitpick2:
+It should be a function of workingset.c rather than exposing
+RADIX_TREE_COUNT_SHIFT?
 
-We (our team in Huawei) are going to go through the whole list to filter
-out fixes that're applicable for 3.4.xx.
+IMO, It would be better to provide some accessor functions here, too.
 
-I've attached the lists for 3.4 and 3.10.
+I didn't review locking part yet and will review it tomorrow with
+fresh brain. :)
 
-If a commit ID appears more than once in changelogs, it's possible that's
-because the commit was reverted later, so I tagged this kind of commits
-in the lists.
+> +	else
+> +		if (__radix_tree_delete_node(&mapping->page_tree, node))
+> +			return;
+> +
+> +	/* Only shadow entries in there, keep track of this node */
+> +	if (!(node->count & RADIX_TREE_COUNT_MASK) &&
+> +	    list_empty(&node->private_list)) {
+> +		node->private_data = mapping;
+> +		list_lru_add(&workingset_shadow_nodes, &node->private_list);
+> +	}
+>  }
+>  
+>  /*
+> @@ -471,27 +507,36 @@ EXPORT_SYMBOL_GPL(replace_page_cache_page);
+>  static int page_cache_tree_insert(struct address_space *mapping,
+>  				  struct page *page, void **shadowp)
+>  {
+> +	struct radix_tree_node *node;
+>  	void **slot;
+>  	int error;
+>  
+> -	slot = radix_tree_lookup_slot(&mapping->page_tree, page->index);
+> -	if (slot) {
+> +	error = __radix_tree_create(&mapping->page_tree, page->index,
+> +				    &node, &slot);
+> +	if (error)
+> +		return error;
+> +	if (*slot) {
+>  		void *p;
+>  
+>  		p = radix_tree_deref_slot_protected(slot, &mapping->tree_lock);
+>  		if (!radix_tree_exceptional_entry(p))
+>  			return -EEXIST;
+> -		radix_tree_replace_slot(slot, page);
+> -		mapping->nrshadows--;
+> -		mapping->nrpages++;
+>  		if (shadowp)
+>  			*shadowp = p;
+> -		return 0;
+> +		mapping->nrshadows--;
+> +		if (node)
+> +			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
+>  	}
+> -	error = radix_tree_insert(&mapping->page_tree, page->index, page);
+> -	if (!error)
+> -		mapping->nrpages++;
+> -	return error;
+> +	radix_tree_replace_slot(slot, page);
+> +	mapping->nrpages++;
+> +	if (node) {
+> +		node->count++;
+> +		/* Installed page, can't be shadow-only anymore */
+> +		if (!list_empty(&node->private_list))
+> +			list_lru_del(&workingset_shadow_nodes,
+> +				     &node->private_list);
+> +	}
+> +	return 0;
+>  }
+>  
+>  static int __add_to_page_cache_locked(struct page *page,
+> diff --git a/mm/list_lru.c b/mm/list_lru.c
+> index 72f9decb0104..47a9faf4070b 100644
+> --- a/mm/list_lru.c
+> +++ b/mm/list_lru.c
+> @@ -88,10 +88,18 @@ restart:
+>  		ret = isolate(item, &nlru->lock, cb_arg);
+>  		switch (ret) {
+>  		case LRU_REMOVED:
+> +		case LRU_REMOVED_RETRY:
+>  			if (--nlru->nr_items == 0)
+>  				node_clear(nid, lru->active_nodes);
+>  			WARN_ON_ONCE(nlru->nr_items < 0);
+>  			isolated++;
+> +			/*
+> +			 * If the lru lock has been dropped, our list
+> +			 * traversal is now invalid and so we have to
+> +			 * restart from scratch.
+> +			 */
+> +			if (ret == LRU_REMOVED_RETRY)
+> +				goto restart;
+>  			break;
+>  		case LRU_ROTATE:
+>  			list_move_tail(item, &nlru->list);
+> diff --git a/mm/truncate.c b/mm/truncate.c
+> index 97606fa4c458..5c2615d7f4da 100644
+> --- a/mm/truncate.c
+> +++ b/mm/truncate.c
+> @@ -25,6 +25,9 @@
+>  static void clear_exceptional_entry(struct address_space *mapping,
+>  				    pgoff_t index, void *entry)
+>  {
+> +	struct radix_tree_node *node;
+> +	void **slot;
+> +
+>  	/* Handled by shmem itself */
+>  	if (shmem_mapping(mapping))
+>  		return;
+> @@ -35,8 +38,21 @@ static void clear_exceptional_entry(struct address_space *mapping,
+>  	 * without the tree itself locked.  These unlocked entries
+>  	 * need verification under the tree lock.
+>  	 */
+> -	if (radix_tree_delete_item(&mapping->page_tree, index, entry) == entry)
+> -		mapping->nrshadows--;
+> +	if (!__radix_tree_lookup(&mapping->page_tree, index, &node, &slot))
+> +		goto unlock;
+> +	if (*slot != entry)
+> +		goto unlock;
+> +	radix_tree_replace_slot(slot, NULL);
+> +	mapping->nrshadows--;
+> +	if (!node)
+> +		goto unlock;
+> +	node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
+> +	/* No more shadow entries, stop tracking the node */
+> +	if (!(node->count >> RADIX_TREE_COUNT_SHIFT) &&
+> +	    !list_empty(&node->private_list))
+> +		list_lru_del(&workingset_shadow_nodes, &node->private_list);
+> +	__radix_tree_delete_node(&mapping->page_tree, node);
+> +unlock:
+>  	spin_unlock_irq(&mapping->tree_lock);
+>  }
+>  
+> diff --git a/mm/vmstat.c b/mm/vmstat.c
+> index 3ac830d1b533..baa3ba586685 100644
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -772,6 +772,7 @@ const char * const vmstat_text[] = {
+>  #endif
+>  	"workingset_refault",
+>  	"workingset_activate",
+> +	"workingset_nodereclaim",
+>  	"nr_anon_transparent_hugepages",
+>  	"nr_free_cma",
+>  	"nr_dirty_threshold",
+> diff --git a/mm/workingset.c b/mm/workingset.c
+> index 8a6c7cff4923..7bb1a432c137 100644
+> --- a/mm/workingset.c
+> +++ b/mm/workingset.c
+> @@ -251,3 +251,124 @@ void workingset_activation(struct page *page)
+>  {
+>  	atomic_long_inc(&page_zone(page)->inactive_age);
+>  }
+> +
+> +/*
+> + * Page cache radix tree nodes containing only shadow entries can grow
+> + * excessively on certain workloads.  That's why they are tracked on
+> + * per-(NUMA)node lists and pushed back by a shrinker, but with a
+> + * slightly higher threshold than regular shrinkers so we don't
+> + * discard the entries too eagerly - after all, during light memory
+> + * pressure is exactly when we need them.
+> + */
+> +
+> +struct list_lru workingset_shadow_nodes;
+> +
+> +static unsigned long count_shadow_nodes(struct shrinker *shrinker,
+> +					struct shrink_control *sc)
+> +{
+> +	return list_lru_count_node(&workingset_shadow_nodes, sc->nid);
+> +}
+> +
+> +static enum lru_status shadow_lru_isolate(struct list_head *item,
+> +					  spinlock_t *lru_lock,
+> +					  void *arg)
+> +{
+> +	unsigned long *nr_reclaimed = arg;
+> +	struct address_space *mapping;
+> +	struct radix_tree_node *node;
+> +	unsigned int i;
+> +	int ret;
+> +
+> +	/*
+> +	 * Page cache insertions and deletions synchroneously maintain
+> +	 * the shadow node LRU under the mapping->tree_lock and the
+> +	 * lru_lock.  Because the page cache tree is emptied before
+> +	 * the inode can be destroyed, holding the lru_lock pins any
+> +	 * address_space that has radix tree nodes on the LRU.
+> +	 *
+> +	 * We can then safely transition to the mapping->tree_lock to
+> +	 * pin only the address_space of the particular node we want
+> +	 * to reclaim, take the node off-LRU, and drop the lru_lock.
+> +	 */
+> +
+> +	node = container_of(item, struct radix_tree_node, private_list);
+> +	mapping = node->private_data;
+> +
+> +	/* Coming from the list, invert the lock order */
+> +	if (!spin_trylock_irq(&mapping->tree_lock)) {
+> +		spin_unlock(lru_lock);
+> +		ret = LRU_RETRY;
+> +		goto out;
+> +	}
+> +
+> +	list_del_init(item);
+> +	spin_unlock(lru_lock);
+> +
+> +	/*
+> +	 * The nodes should only contain one or more shadow entries,
+> +	 * no pages, so we expect to be able to remove them all and
+> +	 * delete and free the empty node afterwards.
+> +	 */
+> +
+> +	BUG_ON(!node->count);
+> +	BUG_ON(node->count & RADIX_TREE_COUNT_MASK);
+> +
+> +	for (i = 0; i < RADIX_TREE_MAP_SIZE; i++) {
+> +		if (node->slots[i]) {
+> +			BUG_ON(!radix_tree_exceptional_entry(node->slots[i]));
+> +			node->slots[i] = NULL;
+> +			BUG_ON(node->count < (1U << RADIX_TREE_COUNT_SHIFT));
+> +			node->count -= 1U << RADIX_TREE_COUNT_SHIFT;
+> +			BUG_ON(!mapping->nrshadows);
+> +			mapping->nrshadows--;
+> +		}
+> +	}
+> +	BUG_ON(node->count);
+> +	inc_zone_state(page_zone(virt_to_page(node)), WORKINGSET_NODERECLAIM);
+> +	if (!__radix_tree_delete_node(&mapping->page_tree, node))
+> +		BUG();
+> +	(*nr_reclaimed)++;
+> +
+> +	spin_unlock_irq(&mapping->tree_lock);
+> +	ret = LRU_REMOVED_RETRY;
+> +out:
+> +	cond_resched();
+> +	spin_lock(lru_lock);
+> +	return ret;
+> +}
+> +
+> +static unsigned long scan_shadow_nodes(struct shrinker *shrinker,
+> +				       struct shrink_control *sc)
+> +{
+> +	unsigned long nr_reclaimed = 0;
+> +
+> +	list_lru_walk_node(&workingset_shadow_nodes, sc->nid,
+> +			   shadow_lru_isolate, &nr_reclaimed, &sc->nr_to_scan);
+> +
+> +	return nr_reclaimed;
+> +}
+> +
+> +static struct shrinker workingset_shadow_shrinker = {
+> +	.count_objects = count_shadow_nodes,
+> +	.scan_objects = scan_shadow_nodes,
+> +	.seeks = DEFAULT_SEEKS * 4,
+> +	.flags = SHRINKER_NUMA_AWARE,
+> +};
+> +
+> +static int __init workingset_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = list_lru_init(&workingset_shadow_nodes);
+> +	if (ret)
+> +		goto err;
+> +	ret = register_shrinker(&workingset_shadow_shrinker);
+> +	if (ret)
+> +		goto err_list_lru;
+> +	return 0;
+> +err_list_lru:
+> +	list_lru_destroy(&workingset_shadow_nodes);
+> +err:
+> +	return ret;
+> +}
+> +module_init(workingset_init);
+> -- 
+> 1.8.4.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
---------------020105030405000405000807
-Content-Type: text/plain; charset="gb18030"; name="commits_3_4.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="commits_3_4.txt"
-
-W3Vwc3RyZWFtIGNvbW1pdF0gICAgW3N0YWJsZSBjb21taXRdICAgIFtvY2N1cnJlbmNlc10K
-OGM0ZjNjM2ZhOTY4IDg3NGQzOTU0YTM1YyAyIDEKODgyMWY1ZGMxODdiIDBiNTY4MDY5NzY0
-YgpiOTYzYTIyZTZkMWEgMjQ1ZDRiNDQ4MGMyCjM4MDZiNDViYTQ2NSBjZjNmNWEzZGJmNzgK
-ZmY4OGI0NzI0ZmRlIDMyNWFhNWYyYzU4Mgo1MDNjZjk1YzA2MWEgNGZlNjQ0YzQyY2I1CjIz
-MGM4M2FmZGQ5YyA4YmQ5ODFhYTRiNjAKOGIzYjAwNWQ2NzU3IDYxMmU5NzE4ZmE3OQo4NzA0
-MjExZjY1YTIgNzVhNGNmYWZjNzM3CjQzNjU5MjIyZTdhMCBjYjgwZGViZTk1MTUKODlmNGQ0
-NWIyNzUyIDQ3YzU1ZWIwYTk4ZAo5ZGRhMjc2OWFmNGYgOGNjZjI1ZDdjNjI5CmJhNGM0ZDBh
-OTAyMSBiNzUzNjQ0OGZmZTQKMmZlYTZjZDMwM2MwIDZmNDg0NzE4NjE3NQoxYjY3MjIyNGQx
-MjggZTA2YzMzODc0MjUzCjQ2YTUxYzgwMjE2YyBkY2NmYjY4YzI2MzAKOGU3ZWU2ZjVkZmI1
-IDU2ZjFmNGJiNTc3MAoyNDM1ZGNiOThjZmUgNmI3Y2ZlNWE3NTdhCjg0YjA3Mzg2OGI5ZCAz
-NmQwNGE1NWYzNGEKNGE4MmZkN2M0ZTc4IGE2ODdhNThmZDBmYQozNjVkYTRhZGViYjEgYmNh
-MDY2MjBjOTQxCmIxZDkzMzU2NDI3YiBiYWY0OGI3Zjk2ZjUKNjQwOGVhYzI2NjU5IGFkMzA4
-MzIxZjlmOQo0ZTliNDVhMTkyNDEgZjI0MTRlZTY2YTI5CmFkNTA2NmQ0YzJiMSBmYTAxMjA2
-OTEyZTUKMGM1ZDYzZjBhYjY3IDhlMTAyOGNiMTkwYwo2MDNlNzcyOTkyMGUgNDM0NzAwYTI5
-ZDFlCjUyMmU2NjQ2NDQ2NyBkOGMzMjQ1Yzk3NDkKNzc4ZDIyNmExNDYyIDJhNGM4NWU3N2I0
-Ygo4ZjQyZDc2OTg3NTEgOTcxMmQ3NGFlODE4CjU5YzhlNjYzNzhmYiBkODE5ODBmNDRiYmMK
-ZjI2MmYwZjVjYWQwIDg5OGM4ZTZmNDM4NgoyN2VmNjNjN2U5N2QgZGE0ZWRhMTQ3OTVlCjlm
-OTYxYTVmNmVmYyAxNzMxOGZiMzk0MzAKOTU0YTczZDVkMzA3IDc1YjIzOTc5ZjQyZQpmNzRi
-NzVlN2Y5MjAgNGE2YzZiYjJiZTljCjdiNmJjMDdhYjU1NCBkODNjZWFkYmNlZjMKZTkyYWVl
-MzMwODM3IDQwYzhiNGVlNjU4YgpkY2MwMWMwODY0ODIgN2U2MzM3YjY5NDk2CmI1ZTJmMzM5
-ODY1ZiA4NDA4MzRiNTc4ODAKNTg5MzJlOTZlNDM4IDU4NzRmZDFkMjNlZApiYzViZDM3Y2U0
-OGMgMmFmZTFhMTAyY2QzCjNlZGM4Mzc2YzA2MSA2NDBjNGFkNmQ3NTkKM2YwMTE2YzMyMzhh
-IDhiN2EyNWQ4ZWI3OAozZjNmOGQyZjQ4YWMgYzEyNTU4NzE2MDA3CjYxODc1ZjMwZGFmNiBl
-ZTY5OGQ2N2E0YWYKNjM4Mjk4ZGM2NmVhIDIxZjU4ODc1ZGRhNwo0NTVmNTg5MjUyNDcgMzU4
-NWE3NTVjZWMzCmYyMTdjOTgwY2E5OCBkYzc3OTk3ZGU2YjMKMjVmMmJkN2Y1YWRkIDgzZTky
-YzUxM2JlNAowOGE1ZGQzODQyZjIgYTZmMjBhYTZkMmQxCjIwZWNmOWZkM2JlYiAyNGQwMDlj
-NWE1OGIKNjMyOWI4ZDkxN2FkIGY5ZWMxZTlhZmJmZQpiZjM3OGQzNDFlNDggZDA4YjBhNTU5
-NGRkCjc1YzdjYWY1YTA1MiA0OThhNzI3YjMzZWUKNTY3NjAwNWFjZjI2IDhmMGNlMTA4ZjVl
-MQpkMTIxMWFmMzA0OWYgMjhjZmNjODUxZDVjCjhmMjFiZDAwOTAwNSAwYjJkMTBmOGYyZTYK
-N2Y0MmVjMzk0MTU2IGNjZWJjYzc0YzgxZAo4NTYwMWY4Y2Y2N2MgNzk4NzYxOTQ5ZWU4CmI2
-MmNkOTZkZTMxNiA0N2JkOWFjOTEyZmUKZjg3NWZkYmYzNDRiIGM5ZTM0ZmExZDI4ZgoxOWI4
-NWNmYjE5MGUgNGYzMWFiODBhMmJmCmZjMDkxOWM2OGNiMiA3MzQ0OWZlNzNmYTMKMzhhMTcy
-YmVmOGM5IGYxZjFlMjcxYTIzNgowYTM2NThjY2NkZjUgNTBhMGZmOTY4OTFmCjg1NWY1ZjFk
-ODgyYSBiOGY2NTEzNjUyMjQKY2M2YjU0YWE1NGJmIDMyZWVkODNjMDdjYwpjYWM2YTVhZTAx
-MTggZmJlZWNkYTI1NmJhCmVmZWI5ZTYwZDQ4ZiBiNWY5ZTM1MzM1ODQKMmU5MjNhMDUyN2Fj
-IDllYjliZmEwMzBkOAoyODA4NDdiNTMyNDMgNTU5YTJlMzZmMDQ3CjA2YTdjM2MyNzgxNCA5
-NDE3ODE1MTU3NTUKMThlMzkxODYyY2NlIGM2OGQ1OWNiMGJkNgo5ZDg5MjQyOTdjZDkgYmM5
-NjI2OWY3MjIyCjY5ODIwZTAxYWE3NSA2MGQzYmZiMTZkYzYKNzNkOWY3ZWVmM2Q5IGJlNDdk
-ZmFkOGUzOQoyMTJhODcxYTM5MzQgMzg0YTI3NDUzYzc0CmRmMGNmZDY5OTAzNCBjM2ZmYjM0
-MTI4YTMKMmIyOWE5ZmRjYjkyIDEzMzgwZDQ2MjI1Ngo0MWFhY2MxZWVhNjQgYWM4OTA1Y2Y2
-YmUzCmIyMmNlMjc4NWQ5NyBmYmJkNjUxMWFiMGQKZjVmNmNiYjYxNjEwIGMzNDliZjA3ZDZj
-MApkNzRjNmQ1MTRmZTMgZWZkOTllZjNhOTdiCjQ3MDRmZTRmMDNhNSA1ZTcyZmRiOGQ4MjcK
-ZmY4YTQzYzEwZjE0IDhhYjk1OWEyM2ZhZQplODc3ZGQyZjI1ODEgYzM3MmNlM2MzMWJmCmQ0
-ODJiOWQ1NTg2MCA3MzUxNDNlMjQ4MDcKNGMyYWVlMDAzMmI3IDgxYjA0Mzc4MmU3OAo1ZWNl
-MjYzZjFkOTMgZWE4ZTIyNDAxNTQ3CjZmYWIzZmViZjZkOSBkMDMxNjBkNTJkYTgKNzU3YzRm
-NjI2MGZlIGViNGEyMmJhNDNkOQpkZGI2YjVhOTY0MzcgNGY0NDBhN2FiYjdjCjkxODZhMWZk
-OWVkMSAxNGQ3NDcwMDNjYjcKZDhhMDgzY2M3NDY2IDYzODAwMjVhZmY3OQphY2ZkZDRiMWY3
-NTkgMmM4ZWZiNzJlYjE5CjFkNWI1NjllZjg1ZCBiMzk1ZTQ2NjFiZmEKMWViZDBiMjFhYjE0
-IDM5YTUzZWM5NjliNQo1Yjc3YTFmM2Q3YjcgYmExMjUxZTg3ZmM0Cjg0ZWIyYWUxODA3ZCBm
-YjJlNDYzMWE3ZTIKMTc4YzA1OWU3NjQwIGZmOTg3MzZjYmJiZQowZmMxMTBmNGU0ZjUgNjRi
-YjY1YzJjYzliCmExOTIzZjFkNDcyMyA1ZTYxY2VkMDVlYzgKNzA3YWVlNDAxZDI0IGM5NzFl
-YWU3ZDFjYQowNDM5ZjMxYzM1ZDEgNzBiZWE3ZjJjMDM4CmJkNWZlNzM4ZTM4OCAwYWFmNGM0
-MmEzMTMKNjFhYzUxMzAxZTZjIGQ1NDZlYWRlY2MxOQo1ZGFlNWZkMjQwNzEgMmNhM2JjMmJh
-MTQzCjVmOGEyZTY4YjY3OSAzYzU3NGIwNjY1ZDUKNGIxOGYwOGJlMDFhIDFmOGFkZGUwNmU4
-NgplNGRhZjFmZmJlNmMgNmZhM2VmYzI0YmRiCjk2ZjE1ZjI5MDM4ZSA2YWY4NjRjY2ZlNmQK
-Zjc5MjlmMzRmYTBlIGI4YWVhNDFhZDY0YQpkNTIzOTJiMWE4MDQgOGRkNjE3N2RjNmI1Cjdh
-ZTQ4YjU2ZjhkOSBhMzU1NjFmZTNhZjIKODZmMGI1Yjg2ZDE0IDRiY2ZlNjhlN2U0ZAo2MWJl
-MmI5YTE4ZWMgOGFjN2UzZjNhYzQwCjQ2ZjZjMWFhZjc5MCAyNzJmMjU0YjI3MTkKNWJlMWVm
-YjRjMmVkIGU5M2E3ZjAwYTNkYgo5NTM4YWE0NmMyNDIgYTRkMGU3YzEzMmE5CjViOWFiM2Y3
-MzI0YSAyODUxOGVkNjYyNDIKY2M3MjgyYjhkNWFiIDUzZmNmZmM0MjNmNAo2MDQ3ODI5NWQ2
-ODcgYzBhMDVhMTRhNGU3CjAxNmZjYWI4ZmY0NiA5NWQ5MDllODY3MTAKOGUzZjg3NTU1NDVj
-IDkzNzFjYWRiYmNjNwo4ZDkyNTY5MDZhOTcgNzljNGQwMzZlMDhjCmMzNzhmNzBhZGJjMSBi
-NWY4ZTk4NzdmZWUKODI0NmFjYTcwNThmIDFhYTMzMTk5YzU5NgoxNDYxMWU1MWE1N2QgMjIz
-NWRmOGI4MmY2CjdlNmQ3MmMxNWZmNCA4MDlmZWIxNzM1ZTUKNjI0MWYyMmNhMTJhIGU0NDk4
-YWQxZWY5YwpiMGRmOTZhMDA2OGQgOTNjZmNiOGM5OThlCjNmNmZhM2Q0ODllMSBhMWIwNTA1
-ZWYzZGIKMWNmYzdkZjNkZTEwIGQyMzI4OGE1YTlmYgo0MTRhYmJkMmNkNGMgMmFmOTUxZGFl
-ZjY4CjM1ODQ4ZjY4YjA3ZCBlNGFmMzc2ZDA0YjAKYmRkZWU5NmI1ZDBkIDI4MDA5ZDM5MThh
-YQo2OTZkZjc4NTA5ZDEgZGY4YzFlMmJhMWYyCjc3ZDg0ODM3Mjg3NSA5OTkwYTg4MmVjM2MK
-MzBkNWI3MDlkYTIzIDA0MWFhY2Q4NjhjZAo2OTMwMjZlZjJlNzUgNTFmMmEwYTgwM2NkCjU4
-NjNlMTBiNDQxZSBlMWMzZTM3ZDJjMWQKMTJhN2FkM2I4MTBlIDYyNGQxNzA1ZmExZAozOWE5
-YjhhYzkzMzMgMjljMzAzYjg5YTFiCjU3YWIwNDg1MzJjMCA5ZTQ0MzkwNDkwNmMgMiAyCjYw
-MzBlYTliMzU5NyBmZDE2MmE3NmYxNjAKYjk5NmFjOTBmNTk1IDRlOTE2OWJlZTZiYwpkYmRh
-OTJkMTZmODYgZmY3NjZiOGQyNmM3CjY5OGI4MjIzNjMxNCAyMTU0NDg4NGQ3ZDUKYjhjYjYy
-ZjgyMTAzIGIzNWIxNmQyYmU2MQpmOGI4NDA0MzM3ZGUgMTM0YzNmYWE5MDljCmQxNjAzOTkw
-ZWE2MiBlYTNkMTVhYzg2Y2IKYmY1OTM5MDdmNzIzIGU0ZjM3ZGUwOTRkOApkZjQ2NWFiZmUw
-NmYgMDg2NDdkMGY5OWRiCjJkOGY0NDQ3YjU4YiAwZjk2MTNiZmMyNWEKNWU0MjExZjFjNDc1
-IDllNWFkYjM2MzJiYQpmMDAwY2ZkZGU1ZGUgNGQ4MzliMTRkMjA5CmNiM2IzMTUyYjJmNSA5
-MDY0N2I1ODBlYzIgMiAxCmRhOTRhODI5MzA1ZiA1YjljYTZiNjhjZmEKOTJiZGQzZjVlYmEy
-IDE3ZGI5ZjRmODg1OAo4YTJmMTMyYTAxYzIgN2Q1NzhhZjA0ZGRhCjRlZjM2NmM1ODNkNiAz
-NjQ2NmFjNmMzNmMKNzcxZDA5YjNjNGM0IGM1OGMyZDI1OTdlMAo1YmY4ZmFlMzNkMTQgNWI5
-Y2U4YmUzMjIzCjllY2QxYTc1ZDk3NyAyMzAwNWVlOGJhZDkKMzc2NDE0OTQ1ZDE1IGExZGI0
-ZDc3NGIxZAo1OWNjYjRlYmJjMzUgOWIzNzJmYjc0NzQwCmFjNjljMjZlN2FjYyA4M2E1YzI1
-YzI3YWEKMDMzOTNmZDVjYzJiIDI3NmQ2MzJlMzRmYwoyODEwZTViOWE3NzMgYmNjYzEwOGQ2
-NzI0CjllYWVlOGJlZWViMyA0ZWE2OTQ5YjlmNmUKOWJjMjk3ZWEwNjIyIGM4MThkNGI4ZjQx
-ZAowOTFmMGVhMzAwNzQgNjM4MDMwZmU0YjU0IDIgMQphODc3ODM2OTliMjMgZDk0MDNmNGJk
-MmRlCmM4MTU3OTc2NjNiNyA3MWVhYzlkMTQ0YmUKOGM1OGJmM2VlYzNiIDJhMDY4NDAwZmNl
-Zgo3NzkxYzg0MjNmMWYgYjEyYmNkN2IzZmUwCjM2NjgwMTFkNGFkNSBjNWJhMzBhNzNlYmMK
-YTZlNGQ1YTAzZTllIDY0OWFlYjQ2YzhmZgpmZDliODZkMzdhNjAgYWM5M2JjNmE4YWI4CjIw
-MWMzNzNlOGU0OCAwNzdjOWY2NTFlMmQKMTBiM2EzMmQyOTJjIGMxYmZiYTA4YjkxNAoxY2Nj
-ODE5ZGE2ZmQgMTYxOWY0NDE5NjNlIDIgMgpjOGY2ZDgzNTFiYTggMjExNGIwZWUzODQwCmEz
-YzNjYWM1ZDMxOCBmN2I3MmI3MWZlMDAKNTA2MDI2YzNlYzI3IGEyN2UwNWIwY2YzMgo2NDA3
-ZDc1YWZkMDggMGNiYjZmM2RlZjBjCjQ0ZjNiNTAzYzE2NCBmNWRkNjI4MDVmMTAKNTAyNjI0
-YmRhZDNkIDQ3MjVmMTcxNTQyOQpmMTZmZGM5ZDJkYzEgZGM5YzY1YTViZGY0CmUxMmEyZDUz
-YWU0NSA1M2U1ODdhYTVjYTggMSAyCmM0ODE0MjAyNDhjNiA0MjIxYzMwNGEwNWUKMDI1OWQ5
-ZWIzMGQwIDE3YWUyNWYwNWU2OAo3MWQ5YTJiOTVmYzkgYWUwNGM2ZDIyYTk1CmRjYjg1Mjkw
-NTc3MiA2YjY4YmZmODk0MTAKNjNiNzdiZjQ4OTg4IGNmMDkxMjZmOTY1MiAyIDEKZGM2NTJm
-OTBlMDg4IDE5YzQyY2U5ODY5ZgoyNWZmMTE5NWY4YTAgMGJkYjZhZTVhNjQ0CjY2ZmYwZmU5
-ZTdiZCBhYmZjZGQ3ZWYzNjQKODg4YjY1YjRiYzVlIDIwYzRlYzBmNDFkOQowY2Q5Y2I3NmFl
-MjYgNGI4ZmVmYWVlN2E5CjE1MzlkNGY4MmFkNSA0MGRlODA0NzY1NGQKZDc2YTNhNzcxMTNk
-IDE2NGVkNDM4M2NhNgpiMDIyMDMyZTE5NWYgN2U2YzI0N2YzMGM2CjQxMTY3ODI4OGQ2MSA5
-YmEyNDAyNDZmZGIKNTFjOTQ0OTFjODJjIGIyZmQwN2YxYTdkMgo1NTU5ZWNhZGFkNWEgODVi
-ZWE0OGQ0MmE3CjAxZTNhOGZlYjQwZSA1NWRiYzE1NGNmYzEKMWZmZmY2MDMyMDg3IGNkN2Rj
-ZjM0MTJiYwo1Zjg1ZjE3NmMyZjEgYmQyZjIxZWJhYjkzCmZjOThhYjg3M2FhMyAzNjY4Yjlj
-MTc3NjUKNDNhNjZiNGM0MTdhIGE4ZDY0NjUyOTU0NwpkYmNlYTc2MTVkOGQgZDFiYWFiYzgw
-MDZmCjQwNTA5Y2E5ODJjMCA2NjRlMTIyMWU3ODIKOGVkZmRhYjM3MTU3IDVkYjJjYjE2OGI4
-OQphMTQ0MzBkYjY4NmIgODIxNTljZGM4NDFlCmU2NzBjNmFmMTI1MSA5MjhhYjI4NTRjMDgK
-Y2YxZDI0NDQzNjc3IDRmOGFkYmZmMDZhYgo3YjI0NTk2OTA1ODQgMjRkMzY5ZDhhZDJhCjMz
-MzU3NjI1NWQ0YyAwYzM4NGM2ZTkyZTAKNzFjY2I5YjAxOTgxIDMxYjk5MDVmNjJlZAozNTYw
-NTBkOGIxZTUgMmQ1YTI2N2UzNjc4CmZhMWUxMWQ1MjMxYyBkMTRlZWFmZmE3N2IKNTAxODg2
-MDMyMWRjIDkyM2FiMzZiMTRjYgplYmEwZTNjM2EwYmEgYTc5NmNlNDgyN2ZjCmU1YjMzZGM5
-ZDE2MCBkYTA3ZjQ1OTY1MTAKN2U1MWNkZTI3NmNhIDkwNWRlNDJkODY1Mwo1NmQwOGZlZjIz
-NjkgMWJmMjY0MmY0Y2IyCmYwMWZjMWE4MmMyZSA4ZWJmZTI4MTgxYjAKOWJhNWM4MGIxYWVh
-IDRlZWRmZDQ3NThjZAoxNjViMWI4YmJjMTcgOTZjMmM4NTBmNzA4CmEwNzNkYmZmMzU5ZiA5
-Y2EyMDQ0ZjkwNDEKNTcwNjM3ZGM4ZWViIDFmMjc2ZDk4OGY4ZQo2MjBhZTkwZWQ4Y2EgNjA2
-ZWVhNjc2NzkwCjk0YTMyZDEwZjQ3YiAyOTM2NjUwMzVhNzAKM2Y2M2MzNDBhNzJmIGRlZjM4
-OWI5MTEyNApmNGQ2ZjdkY2U3MWEgNjI0ZTgwOGZjYjFmCjI1ODJkNTI5YzQ0ZCBlYWQ3NTlm
-MTU0MTMKM2E2MWVkYTgxZWJjIDI2NDc1ODQ4MjM4NAoyYzI2MmIyYTUyMzUgNWUzNWU5MDYz
-YjEwCmVlZDMwN2UyOTBiOSAzMmQ5MzhjZGE2ZDAKYjZlNTE2MDBmNGU5IDBmMjYwZmQ1YzVi
-NwoxMzJjODAzZjdiNzAgZTUyY2EyNjA2MGJiCmE5M2JjMGM2ZTA3ZSBhZGRkYjQwOTZkN2IK
-Y2EwYmEyNmZiYmQyIGY5YzBlZmEyZTg3ZgplYzA5NzFiYTUzNzIgYTFlMTZlODE4NGQ0CmVk
-OWRjOGNlN2ExYyBjM2RjNjJjYzNhMzIKZjA0NmY4OWE5OWNjIDVhOGM2OGI0ODhmOAo4MDkw
-MjgyMjY1OGEgYWUwMmYxNmZkODdjCjI0MjYxZmMyM2RiOSA1M2JkMjFiODE3NzMKMDhkZmY3
-YjdkNjI5IDFiZGIyNGY1YWI1MgpkM2I5ZDdhOTA1MWQgMGViOTcwNjVkNGE5CmEyNGE2MDc4
-NzU0ZiA1MmNiZjMyYWI0MjAKMmQ0ZmE5NDBmOTk2IDViZDdjNTljOTM0MAowZmU1MWFhNWVl
-ZTUgNTQxZjg2MmVjNTI0CmQxMzQwMmE0YTk0NCA3YjJmNGFlNDMwOTEKZTA2YzkzY2FjYjgy
-IDNhZWQzMjU1NGU4YQo2OGQ5Mjk4NjJlMjkgN2ZlZWNmM2YyYjU4CjgxZmE0ZTU4MWQ5MiAz
-YjA0OGZjMTk2MTMKZDgwYTM2MWQ3NzlhIDMxNmQwYmI3MGY2NiAyIDEKNjQzMjVhM2JlMDhk
-IDY4OTkwMWNlOWNlZAoxNTE3NDNmZDhkZmIgZmVhNTQxNzU3OWZhCjk5ZDI0OTAyMWFiZCA3
-NjYxMGQ2ZGZiZTQKYTQ2NDkxODQxOWY5IDMyMDdlMDA3NmFmMgo4YTk2NGY0NGUwMWEgODE3
-NDUyMzNkOGRmCjIzY2IyMTA5MmViOSBlMDE3OWMzMWUwODEKODM4ZjQyNzk1NWRjIGRlY2E1
-ZGU4NzY4NAplNzBhYjk3Nzk5MTkgN2M0YmYwOGQzZmEyCjk4YzM1MGNkYTJjMSA1NWEwNThk
-NGE4OWMKY2ZkNzU3MDEwNjkxIDZmMDZjOGQxMzg5MAplMzg3ZWY1YzQ3ZGQgZmRmNjBhMWNj
-ZTNlCjgwZGEyZTBkZjVhZiBmOTRjNjEwN2I0OWEKMzg5Y2Q3ODQ5NjllIGQzNDkzMTE0ZWNj
-YwoyMjA1NmUyYjQ2MjQgNTY1NDZjOGMyYTA4CjRjNGJjMjVkMGZhNiA4ZTUzZDI5NGE3N2IK
-M2EyZDYzZjg3OTg5IDQxODlhYTRjZWViYgozMjZjZjBmMGYzMDggYTJhOWFmNmNmZmViCmZk
-ZmExNzVkMGE5YyA1OWJlYmY2YzA2MGIKMDg1YjdhNDVjNjNkIDNjNWFkZDljMzAyYQpmYTVj
-ZTVmOTRjMGYgZWUwYTI1YWIxYzMxCmQ5NTNlMGU4MzdlNiA3NzMyN2E3MWY5ODQKMDNhN2Zm
-ZTRlNTQyIDI0NjI1NjQwZmUyNwo1MTNiMDMyYzk4YjQgNzA2M2E5OTUwZDEwCmRiMzk4NWU1
-Y2E4ZiA4ZjhkYzYzZDFjNDkKMzM5OWNmYjVkZjk1IDczNjZiNTJjNDRiNAo5NTdmNGFjYTVm
-YTAgNTgxZTU4OTE2YzkwCjhhZmQ1MDBjYjUyYSAyZmYzYWUzOTMyYjkKZWRhYzg5NDM4OWY5
-IGJjMzJlZjBhNmQ2YQo3ZTVhNTEwNGM2YWYgNDEyNDc1NjFkYzIxCjA5MWUyNmRmYzE1NiAz
-ZTQxMTUzNGVhM2IKODYwZDIxZTJjNTg1IDk5ZDkzMGMwZmZlNQo2YTA0MGNlNzI1OTggMDY2
-ZjI4OTgzNWYwIDIgMgo1NWVlNjRiMzBhMzggNWE4MjE0NWNiOTc4CjMxN2VmY2U5OTE2MiA3
-NTRhZWQxYjk4ZDEKMzIwY2RlMTlhNGU4IGVmNTkzNmE5YjY5Nwo5NWNmMDBmYTVkNWUgNjY3
-OTU4NzM4MjQ0Cjg0OGU4ZjVmMGFkMyA2ZDBkM2YzYWNhOGYKOThmZDQ4NTc5NWRiIGZkNjE1
-MDZiZDIzZgpmZDdiOTI3MDEyMGMgMzEzMTdlOTZjMzZhCjM2ZjMxOGJiMTI0YiA4ZDY3NTk4
-NWI3M2QKZTdlMDM0ZTE4YTBhIDZlYzM3ZjY2NzI4MiAyIDEKMmJkM2JjNGU4NDcyIDYxODY5
-ZGI2MGQ1Ngo4YTdkN2NiZjdiNWYgYzBlMmNlOGI2OTBmCmFiM2NkODY3MGUwYiA5MWM5MGRi
-MWFhOTIKYzQ4OWVlMjkwYmRiIDc4ZTNhZTJkNTdjMAo5ZGRmMWFlYjIxMzQgZDAyNzc3OGEx
-Y2Y4CjFkYTgwY2ZhODcyNyA4NDc0YjFhYjg5ZTQKNDUxOGY2MTFiYTIxIGYzODI1Y2M5Njc5
-YSAyIDEKZjA1YmIwYzdiNjI0IDM5MzE0MzYxNWQ5ZiAyIDIKMWM4YzM4YzU4OGVhIGEyZDJk
-Y2Q5ZTFhYQoyNDE3MWRkOTIwOTYgOTU5ZjA0OWRmYjYyCjQyYzM2NGFjZTUyYSAwOGE0M2Mx
-ODMxNDMKNmY4YzJlNzkzMzY3IDI0ZDY0ZmY3OTNkOAoyMjkxZGZmMDJlNWYgMzZhMjgyOGUw
-NDQ2CmQzMjg2MTQ0YzkyZSAxYTE0YzI1YTBiNTIKZWJlYmQ0OWE4ZWFiIDY1MjFkNjczNDk0
-MyAyIDEKNmYxNmY0OTk4Zjk4IDNiYmEzYTY4Y2M5ZQpmNjUyZTdkMjkxNmYgMGQzNmMwNmFm
-ZThhCmJjMDA5ZWNhOGQ1MyAzZTRiYTJiZjcyOWIKODFkMGE2YWU3YmVmIGU4ZDk4OTdmZjA2
-NAo3ZWQ0MTY1ZTJkMDEgNWI3ZDg5OGExOTA0CjE4YTlkZjQyZDUzZiBiNjBkYzk3NTFhMzYK
-YmMzYjc3NTZiNWZmIDMxOTgwZjhmYTllNQo5M2JlODc4OGU2NDggODdhZTg5ODRiZDljCmY0
-OTUzZmU2YzRhZSA2M2RkZGI0OTM2ZmEKYWI5ZDZlNGZmZTE5IGMzMWY0ODRjOTAzYQo1YjYz
-MmZlODVlYzggMjNiYzc4MWYxMTAzCmVkYTg1ZDZhZDQ5MCA1NWZhODhiYmEzMzcKY2FmYTU5
-YjkwMTFhIDhiMDAzOTI0ZGVjNgphNzk2YTFkZDVkYTkgN2M2YzdiM2YzNGQxCjMxZWZlZTYw
-ZjQ4OSBmNmY4MmNiYTJjY2IKMGZkZTkwMWYxZGRkIDI5YWJmZTRkZGM3NApmZTBjOTYxMGJi
-NjggZmExZGQ4MWNlZmZlCjQ3OTY5Njg0MDIzOSA4NTA3MjJkZGFkOWQKYmNkZWUwNGVhN2Fl
-IDQ5OWY5OGFiNWEwYgo3YzM0MTU4MjMxYjIgZWZkNjYyMWM3NDhlCjhkMjM4MDI3Yjg3ZSA0
-ZWZiYmI2Y2UwZDEKNjE2OWI2NzM2MThiIDdmNzc4YzFiMDYzYgpiZDI1ZjA3ODNkYzMgNjEy
-NTIyNzhlZTI4CjYzYTA3N2UyNzY0OCBkNTljNGE3MGQzMDcKMjVhMTcyNjU1ZjgzIGE0NjE2
-ZDExMGIwZAo4ZjU3MThhNmQ5YTIgMWM5NmZiMGM3ZWJkCmEwMmRjNzRiMzE3ZCBhMGQzZTAx
-ZGFkZDYKZTdkODQxY2EwM2I3IDI4YzQ1NjZkMzBiOCAyIDIKNDBmZjJjM2IzZGEzIDE1MDZj
-YjIwMTkxYwo1NGY3YmU1YjgzMTIgNTFlOGVhYzFkNTEzCmQwYzJjZTE2YmVjMCA0NDlhMmVi
-YTY5MzAKMDg0OTQwZDViMTAxIGJkMzhhZGQ4MTIwYwo0YzkyODdjNjAwOWIgNTZiZDI3Yzcw
-ZTUxCjFlZTNmZjYxMTBjMSA5Y2EzOWM2ZGE3OGMKMGMxYWJiZDFhYTA0IGVhMzIxZWE2OWU1
-Ngo0ZjI5ZWYwNTA4NDggZmM1ODg0ZDI2NWU3CmU2NmZjMWZiYTI0OCBiZjc4ZDcxMjgwZjEK
-MjY1NmE5YWJjZjFlIGI5Njc4MTg4YjhmNQoxYzVjMTJjNjY2ZmQgOWVmOTI4YjAxMDRhCjE2
-ODAyNjAyMjZhOCAyNDdhMGIzMzBlZjMKYjljZGM4OGRmOGU2IDMwZDM5NWIxMjRjNSAyIDEK
-ZjAyNjNkMmQyMjJlIDhiYzUyOGNlY2U2Ygo1ZWRlZTYxZWRlYWEgYmQ4MzIwOTk2YjE1Cjg3
-Y2FjOGY4NzlhNSA1MTFjNzNiY2Y4ZTcKMTEwMmRjYWI4NDkzIGEzOTNhY2U1OGU0Nwo0MWU1
-OGExZjJiOTAgN2ZjODI5MDQ0Yzc4CjU1OTI5MDZmOGIwMSAxNjc2ZmZmMmEzNjAKZmNjMTRh
-YzFhODY5IDljZThlYTMzZjExYwo2MGNlZmVkNDg1YTAgMzlkMThkYzRiOGIwIDIgMgo4OTNk
-MjkwZjFkNzQgMzJlYjQ0ZTI5MGQxCjg3ZjRkN2MxZDM2ZiBkZWI0ODU2ZmM0MzUKMjg0M2I2
-NzNkMDM0IDRlMGJhMGRhZWQxNQpkMGRkZmJkM2QxMzQgOGEzYTNmNGE1MDdkCjIwMWU3MmFj
-YjJkMyBjNWVlNTg2ODhiYWEgMiAyCmQ2MGU3ZWMxOGMzZiA1YjQ0NzhmNWRhYmIKNjk1ZGRl
-YjQ1NzU4IGU0MjNjYjVmNmM3MwplNDEyZTk1YTI2OGYgOWE4ZGM4MzQxMzJmCjk0MzA3Mzhk
-ODAyMiA5Yjk0NWFmODZkMzYKODRlMjhhMzA3ZTM3IDhiNjI3NDg3ZjBjYQplNGRiMDk1MmU1
-NDIgNzczNzIzODY0OGI1CmIzYzVkY2U4MTU4NCBkMmYxMWI5ZTg3MTgKYjMyZjRjN2VkODVj
-IDE0YjU1N2MxOWRiZQo4MjRlZmQzNzQxNTkgMGM1M2NhZGZkY2Q5CmFkZjAwYjI2ZDE4ZSBj
-OTQ4YTUzNWIzOWEgMiAxCmVlNjY0MDFiYjk0YiAzYTVhOGMzZjQwMDkKMTkzODE5Y2YyZTZl
-IDA0ZWQwMmNjN2Q0MwozMjllNTY3ODBlNTEgMGFmYzRkM2IzYjEzCmI0MzM4ZTFlZmMzMyA5
-M2VkMmIxMzdiOTcKMTBjNmMzODNlNDM1IGJhM2ZkM2Q2Y2Y0YQpjMDFhZjRmZWMyYzggNmU5
-YjM4NTFiNTJmCmJjMjFmZGUyZDU0OSA3NDhlN2YyYWY5MzYKMjA5NmFlNmNhNjQ3IGRiNTBl
-MzIzZDljNwo2YzRhZTVjMmU3YmYgNjVjNWU0MTFmNzgzCjZlZGE1NDFkMTIxMSBlOWZiNGM4
-ZWMzOTYKNGZlOWY4ZTIwM2ZkIDE2M2FlYzM4ZGY0OSAyIDEKYmNiNGE3NWJkZTM4IDMwODRm
-YzJmMmU4Ywo0YzdiNDE3ZWNiNzUgMzMxM2FhOTAxNWM3CjJmMWY0ZDliNjAzOSAyY2QyMWU4
-MjYyOTEKODBiNDgxMjQwN2M2IDRlMTlkZTNiZTE0YwpkZWIwOWRkYWZmMTQgYjM5YmZiNGNj
-MDlhCjhhNTVhZGU3NjU1MSBiNDU3ZjQ2NzYxZGIKZDhkYzM0OTRmNzdhIDAxZDM1ZDEyZTlh
-NwpiZDQ5OTQwYTM1ZWMgMGExOTNiMTQ4ZDZkCjk4NWY2MWY3ZWU2NCA4NjU0NjM2ZWY3NDIg
-MiAxCmYzOWMxYmZiNWEwMyA3YjhiOTI1YWYxM2EgMiAxCjdiZTA2NzBmN2I5MSBkYTc1YzQx
-ZWQzY2YKZTYzOTFhMTgyODY1IDc2NzI4MzJhNGViZQplMmYyODg2YTgyNGYgMDYzMzU4NTZk
-MjJlCmZjMTA4ZDI0ZDNhNiAzYTBhZThlMThjMTgKZDgyMWE0YzRkMTFhIDc4ZTk2YzE0NjEy
-NAo2ZjMzODE0YmQ0ZDkgMzA3OTM3YzY3NDNkIDIgMQphNDZkMjYxOWQ3MTggYTNhYWVlOWYx
-MDcwCmMxYzUyODQ4Y2VmNSAzZmQ0ZThmMGVjZDkKNGZjNzlkYjE3OGYwIDIyZDQ0MzZkZGQ4
-NQo5NDU0M2E4ZDRmYjMgY2ZjNDFmZTUxMTg5CjU4NTY5YWVlNWExYSBmNzUzMmY3MzEwNWQK
-NDgzMDAxYzc2NWFmIDk1OTY0Nzg0NTY1YQowMmUyYjEyNDk0MzYgODg5NjNmZDZjNjZiCmI3
-OWQ4NjZjOGI3MCBlNTAwMGIzMzQ2MGUgMiAxCmY2NWNhMWRjNmE4YyA3ODhjOGRlMzgzZTMK
-M2RkNDc2NWZjZTA0IGM1MmY2Y2M1ZDNlNApjYTU3ZGY3OWQ0ZjYgMzkyN2RmN2U1MDM1Cjk1
-NWMxY2Q3NDAxNSAyN2M0YjY4YmI1ZTkKMzcxNWM1MzA5ZjZkIDFiNzcyYTE0N2ExOAoyYzk1
-YTMyOTA5MTkgZTU1MTg1NzE4M2I1CmMwMzk0NTA2ZTY5YiAyMDI4YTQ5M2I4ZmYKMzgwZTk5
-ZmM0NGQ3IDFiNWI0OGI4OTc0ZAo1YWFhMGI3YTJlZDUgYzgxMmZlNjM2YjZlCmI5MzljMmFj
-ZjFkYyA4MGFhOTk4ZTgyNjAKNTc1MmNkYjgwNWZmIGQ2ZjM0OTI1MTQ0Ygo1YmFlZmQ2ZDg0
-MTYgN2I5YTIzMTI5Mzk5CjE5Njk1MWU5MTI2MiBkNmEyYTA0MDBlMzYKZjU1YTZmYWEzODQz
-IDNjOTEwZTdlNDY4MQpmMmViZDQyMmY3MWMgMGYzY2JjMzVkMjA5CjlmODQ2YTE2ZDIxMyBi
-ZTJjMDU0OTNhYmMKYTRkZmYzMDQzYzIzIDI0OTJjZDExOGRjNSAyIDEK
---------------020105030405000405000807
-Content-Type: text/plain; charset="gb18030"; name="commits_3_10.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="commits_3_10.txt"
-
-W3Vwc3RyZWFtIGNvbW1pdF0gICAgWzMuOF0gICAgWzMuNV0gICAgWzMuMl0KODEzZThlM2Q2
-YWFhIGFkNzhiZjI2ZGNkNiA3MjU5NGE5NjU0YzUKYjI2OGRhZmZkY2I5IDQzMWFhYjNlZTBk
-YSBjY2YzZTkwYjhjNDcKZmRlYWRiNDNmZGYxIGVlMjk2NmIwODkwZAo5MTJlNjYzMTI3YzUg
-ODMyZjg0ODZlODA4CjFhM2U1MTczZjVlNyA2OTlmMjRhZDMyMzQKODRiMDczODY4YjlkIGZm
-M2UzNGY2ZjBiOSAzYTc5NGYwMDhjZDIgMzZkMDRhNTVmMzRhCjM2NWRhNGFkZWJiMSAzOGE5
-NDQ5ZGIxYTQgNzM0MDJmYzRlZmNmIGJjYTA2NjIwYzk0MQpiZDgwYzhiYTk5NWMgODgwNTZj
-YzdhMTE5IDhhZTg3YTI3OTE0NQpmYWUwMDlkMTVhNDQgOWUwNmY3NWJjN2U5CjM1MjJiZjdi
-ZmEyNCBiYjlmNTNmYWVlMjMgZDM0YjViZGYxZGJlCjY0MDhlYWMyNjY1OSBiNTJjZjRlZDk4
-YmIgZTQxZDhmMWU0MTk5IGFkMzA4MzIxZjlmOQoyOWY0YzA5MDA3OWYgMzJhNzI4YjA0M2Mz
-IGRiMzkwYjM5MzJmMAplYTAyOWMyOGRlYWQgZjYxODEzNTllODA1CmYxMjNkNzRhYmY5MSAy
-MmZmMjMwNGMwMzcKZDA3YmE4NDIyZjFlIGYzYWUxMzNkZjEwOCAyYzRkY2ViYjEyZjYKOTli
-NjY5N2E1MGMyIDlhNmExNDFjYWU2Zgo2NWQ3ZGQyZjM0NzkgZjlmMWNlZTg4YmY5CjUyMmU2
-NjQ2NDQ2NyBjNzBkZGFhNjEzMjYgICAgICAgICAgICAgIGQ4YzMyNDVjOTc0OQoxNzQwNTQ1
-M2Y0YWQgMDQ5ODkzOTIyNzllCjc3OGQyMjZhMTQ2MiA3Y2EzMmY0NGU4NzAgNTFlMjc0NmJj
-ZGVhIDJhNGM4NWU3N2I0YgowYTVhNTQ5OWFkODggMGI1YWZlYjk4MWJiCjMzNDk5YTE1YzJm
-NyA5ZDZkOThkZTYxNTQKZjc0Yjc1ZTdmOTIwIDI3NzQ5MTFhM2JmOSAwYmNmMGIxNjE2MzYg
-NGE2YzZiYjJiZTljCjdiNmJjMDdhYjU1NCA0MzEyNDczMTEwZjkgNDE2YWJlNWNjNDk0IGQ4
-M2NlYWRiY2VmMwphZjczNjIzZjVmMTAgNjI1YzNlY2M2NTkwCmRjYzAxYzA4NjQ4MiA3YTRm
-MjcxNGQzNjYgYzhiZDNhYzQ2OTU5IDdlNjMzN2I2OTQ5NgpjNTM0MGJkMTQzMzYgODVhNWU2
-NGZhNWFkCmRjZjZkMjk0ODMwZCAyNDQ5ODUzMGQxYTAKMjc5ZjQzOGUzNmMwIDdmYTc4N2M5
-NWRhYygyIDEpCjk1YmQwOWViMjc1MCA2MjI4YzRlZGY5MDkKNjM4Mjk4ZGM2NmVhIGMxNGNj
-OTliYjBiMiA3NDI2YmIwYTZmYTAgMjFmNTg4NzVkZGE3CjQ1NWY1ODkyNTI0NyA2NzJkM2Rk
-YWE0MTQgYjMyYmJlYWMzMmJhIDM1ODVhNzU1Y2VjMwoyZjZjOTQ3OTYzMzcgMWZhZWMxMzNi
-NDdjCjYxODc1ZjMwZGFmNiBiNDM0OTc4NmRhMTkgNmI0MTI4N2JhNGRmIGVlNjk4ZDY3YTRh
-ZgpmM2ZjNDg4NGViZTYgMDE4ZTMxZDJiZDE3CmYyZjVmNzcxYzVmYyBmNmMwODczOTYzYTkK
-Y2MxNzM5NjFhNjgwIDBiZTAxZmMxOTVmZAozMDBjZjliOTNmNzQgZmRjNTFmNGJmNTQ0IGM3
-MGQ4NmIwNTM2ZQpkOGNhY2QzYTI1OWIgMzUxMDllY2Q0ODkxCmNhYzZhNWFlMDExOCAzNDJj
-NzFlZjIyMTcgNjVkYjQ2MTc0ZjkxIGZiZWVjZGEyNTZiYQoyN2M1MDVjYTg0ZTEgM2EwOTUz
-YWY1MjVlIGQwZjdlZmVkNWVmNwo1OWU5OTg1NjExMDMgNGViZDg4NzEzNTgyCjkwZTc3NWI3
-MWFjNCA1NWM5NDNlMGEwOWEKMmJhODVlN2FmNGM2IDg0MjhhZTMxNjI4ZQo2M2I2NmU1YmE1
-NGIgZDI4MGZkM2NhZTUyCmQ0ODJiOWQ1NTg2MCA4YjBiYjEyMzhjNmMgZTg0NmU4OGNmY2Ji
-IDczNTE0M2UyNDgwNwozZjU3NzU3M2NkNTQgNzM2ZTM4YTEzMDExIDYwNWQ3ODE1ZGUwYQo5
-NjEyNDZiNGVkOGQgZTViYjY4M2IwYzI0IDY1MGU2MTM1NWI4MSBkMjg4MjhhYWUwYjEKMTBh
-MGI2MTc2YjlmIDZlODM4MzYzNTE5ZAo4NDIzNWRlMzk0ZDkgICAgICAgICAgICAgIDRlMGM3
-YzQyMmU1OSgyIDIpCmYyMTdjOTgwY2E5OCAgICAgICAgICAgICAgMmVhZGMxZjNmZGFiIGRj
-Nzc5OTdkZTZiMwo2ZDBiYjgxODA0MWEgICAgICAgICAgICAgIDQ2MjE2NDdjNzJhMQozMzk2
-YjA5NmM1NGEgICAgICAgICAgICAgIGUwZDg3NzE4YjE4YwplNTkwM2QzOTlhN2IgICAgICAg
-ICAgICAgIDViZmFmNzYyYjYwYgpkOWY5NjYzNTdiMTQgICAgICAgICAgICAgIGM4YmE5YzMw
-MjViNQoxYjY3MjIyNGQxMjggICAgICAgICAgICAgICAgICAgICAgICAgICBlMDZjMzM4NzQy
-NTMKNDZhNTFjODAyMTZjICAgICAgICAgICAgICAgICAgICAgICAgICAgZGNjZmI2OGMyNjMw
-CjI0MzVkY2I5OGNmZSAgICAgICAgICAgICAgICAgICAgICAgICAgIDZiN2NmZTVhNzU3YQo2
-MDNlNzcyOTkyMGUgICAgICAgICAgICAgICAgICAgICAgICAgICA0MzQ3MDBhMjlkMWUK
---------------020105030405000405000807--
+-- 
+Kind regards,
+Minchan Kim
