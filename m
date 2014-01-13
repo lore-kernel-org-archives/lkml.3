@@ -1,79 +1,559 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaAMLhu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 06:37:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39271 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481AbaAMLhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 06:37:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,652,1384329600"; 
-   d="scan'208";a="457858220"
-Date: Mon, 13 Jan 2014 19:37:41 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] writeback data corruption fix
-Message-ID: <20140113113741.GA23623@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751619AbaAMLh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 06:37:57 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:54033 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaAMLht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 06:37:49 -0500
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, qiuxishi@huawei.com, dhowells@redhat.com,
+        daeseok.youn@gmail.com, liuj97@gmail.com, yinghai@kernel.org,
+        phacht@linux.vnet.ibm.com, zhangyanfei@cn.fujitsu.com,
+        santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
+        tangchen@cn.fujitsu.com, schwidefsky@de.ibm.com
+Subject: [PATCH 2/2] mm/memblock: Add support for excluded memory areas
+Date: Mon, 13 Jan 2014 12:37:14 +0100
+Message-Id: <1389613034-35196-3-git-send-email-phacht@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1389613034-35196-1-git-send-email-phacht@linux.vnet.ibm.com>
+References: <1389613034-35196-1-git-send-email-phacht@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011311-5024-0000-0000-00000861E2F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Add a new memory state "nomap" to memblock. This can be used to truncate
+the usable memory in the system without forgetting about what is really
+installed.
 
-Please pull a writeback fix, it has been in linux-next for one month.
+Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+---
+ include/linux/memblock.h |  50 ++++++--
+ mm/memblock.c            | 307 +++++++++++++++++++++++++++++++++--------------
+ mm/nobootmem.c           |   9 ++
+ 3 files changed, 267 insertions(+), 99 deletions(-)
 
-The following changes since commit 374b105797c3d4f29c685f3be535c35f5689b30e:
-
-  Linux 3.13-rc3 (2013-12-06 09:34:04 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git tags/writeback-fixes
-
-for you to fetch changes up to f9b0e058cbd04ada76b13afffa7e1df830543c24:
-
-  writeback: Fix data corruption on NFS (2013-12-14 04:21:26 +0800)
-
-----------------------------------------------------------------
-fix data corruption on NFS writeback
-
-----------------------------------------------------------------
-Jan Kara (1):
-      writeback: Fix data corruption on NFS
-
- fs/fs-writeback.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 1f4a10e..e0259a1 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -516,13 +516,16 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 1ef6636..2333d3f 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -18,6 +18,7 @@
+ #include <linux/mm.h>
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
++#define INIT_MEMBLOCK_NOMAP_REGIONS 4
+ 
+ /* Definition of memblock flags. */
+ #define MEMBLOCK_HOTPLUG	0x1	/* hotpluggable region */
+@@ -43,6 +44,9 @@ struct memblock {
+ 	phys_addr_t current_limit;
+ 	struct memblock_type memory;
+ 	struct memblock_type reserved;
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++	struct memblock_type nomap;
++#endif
+ };
+ 
+ extern struct memblock memblock;
+@@ -68,6 +72,10 @@ int memblock_add(phys_addr_t base, phys_addr_t size);
+ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++int memblock_nomap(phys_addr_t base, phys_addr_t size);
++int memblock_remap(phys_addr_t base, phys_addr_t size);
++#endif
+ void memblock_trim_memory(phys_addr_t align);
+ int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
+ int memblock_clear_hotplug(phys_addr_t base, phys_addr_t size);
+@@ -113,8 +121,9 @@ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+ 	     i >= 0; __next_mem_pfn_range(&i, nid, p_start, p_end, p_nid))
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+-void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
+-			   phys_addr_t *out_end, int *out_nid);
++void __next_mem_range(u64 *idx, int nid, struct memblock_type *type_a,
++		      struct memblock_type *type_b, phys_addr_t *out_start,
++		      phys_addr_t *out_end, int *out_nid);
+ 
+ /**
+  * for_each_free_mem_range - iterate through free memblock areas
+@@ -129,12 +138,31 @@ void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
+  */
+ #define for_each_free_mem_range(i, nid, p_start, p_end, p_nid)		\
+ 	for (i = 0,							\
+-	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid);	\
++		     __next_mem_range(&i, nid, &memblock.memory,	\
++				      &memblock.reserved, p_start,	\
++				      p_end, p_nid);			\
++	     i != (u64)ULLONG_MAX;					\
++	     __next_mem_range(&i, nid, &memblock.memory,		\
++			       &memblock.reserved,			\
++			       p_start, p_end, p_nid))
++
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++#define for_each_mapped_mem_range(i, nid, p_start, p_end, p_nid)	\
++	for (i = 0,							\
++		     __next_mem_range(&i, nid, &memblock.memory,	\
++				      &memblock.nomap, p_start,		\
++				      p_end, p_nid);			\
+ 	     i != (u64)ULLONG_MAX;					\
+-	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid))
++	     __next_mem_range(&i, nid, &memblock.memory,		\
++			       &memblock.nomap,				\
++			       p_start, p_end, p_nid))
++#endif
+ 
+-void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+-			       phys_addr_t *out_end, int *out_nid);
++void __next_mem_range_rev(u64 *idx, int nid,
++			  struct memblock_type *type_a,
++			  struct memblock_type *type_b,
++			  phys_addr_t *out_start,
++			  phys_addr_t *out_end, int *out_nid);
+ 
+ /**
+  * for_each_free_mem_range_reverse - rev-iterate through free memblock areas
+@@ -149,9 +177,15 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+  */
+ #define for_each_free_mem_range_reverse(i, nid, p_start, p_end, p_nid)	\
+ 	for (i = (u64)ULLONG_MAX,					\
+-	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid);	\
++		     __next_mem_range_rev(&i, nid,			\
++					  &memblock.memory,		\
++					  &memblock.reserved,		\
++					  p_start, p_end, p_nid);	\
+ 	     i != (u64)ULLONG_MAX;					\
+-	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
++	     __next_mem_range_rev(&i, nid,				\
++				  &memblock.memory,			\
++				  &memblock.reserved,			\
++				  p_start, p_end, p_nid))
+ 
+ static inline void memblock_set_region_flags(struct memblock_region *r,
+ 					     unsigned long flags)
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 9c0aeef..dba3252 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -28,6 +28,11 @@
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++static struct memblock_region
++memblock_nomap_init_regions[INIT_MEMBLOCK_NOMAP_REGIONS] __initdata_memblock;
++#endif
++
+ struct memblock memblock __initdata_memblock = {
+ 	.memory.regions		= memblock_memory_init_regions,
+ 	.memory.cnt		= 1,	/* empty dummy entry */
+@@ -37,6 +42,11 @@ struct memblock memblock __initdata_memblock = {
+ 	.reserved.cnt		= 1,	/* empty dummy entry */
+ 	.reserved.max		= INIT_MEMBLOCK_REGIONS,
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++	.nomap.regions       = memblock_nomap_init_regions,
++	.nomap.cnt           = 1,	/* empty dummy entry */
++	.nomap.max           = INIT_MEMBLOCK_NOMAP_REGIONS,
++#endif
+ 	.bottom_up		= false,
+ 	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+ };
+@@ -292,7 +302,21 @@ phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
+ 			  memblock.memory.max);
+ }
+ 
+-#endif
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++phys_addr_t __init_memblock get_allocated_memblock_nomap_regions_info(
++					phys_addr_t *addr)
++{
++	if (memblock.memory.regions == memblock_memory_init_regions)
++		return 0;
++
++	*addr = __pa(memblock.memory.regions);
++
++	return PAGE_ALIGN(sizeof(struct memblock_region) *
++			  memblock.memory.max);
++}
++
++#endif /* CONFIG_ARCH_MEMBLOCK_NOMAP */
++#endif /* CONFIG_ARCH_DISCARD_MEMBLOCK */
+ 
+ /**
+  * memblock_double_array - double the size of the memblock regions array
+@@ -757,18 +781,76 @@ int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++/*
++ * memblock_nomap() - mark a memory range as completely unusable
++ *
++ * This can be used to exclude memory regions from every further treatment
++ * in the running system. Ranges which are added to the nomap list will
++ * also be marked as reserved. So they won't either be allocated by memblock
++ * nor freed to the page allocator.
++ *
++ * The usable (i.e. not in nomap list) memory can be iterated
++ * via for_each_mapped_mem_range().
++ *
++ * memblock_start_of_DRAM() and memblock_end_of_DRAM() still refer to the
++ * whole system memory.
++ */
++int __init_memblock memblock_nomap(phys_addr_t base, phys_addr_t size)
++{
++	int ret;
++	memblock_dbg("memblock_nomap: [%#016llx-%#016llx] %pF\n",
++		     (unsigned long long)base,
++		     (unsigned long long)base + size,
++		     (void *)_RET_IP_);
++
++	ret = memblock_add_region(&memblock.reserved, base, size, MAX_NUMNODES);
++	if (ret)
++		return ret;
++
++	return memblock_add_region(&memblock.nomap, base, size, MAX_NUMNODES);
++}
++
++/*
++ * memblock_remap() - remove a memory range from the nomap list
++ *
++ * This is the inverse function to memblock_nomap().
++ */
++int __init_memblock memblock_remap(phys_addr_t base, phys_addr_t size)
++{
++	int ret;
++	memblock_dbg("memblock_remap: [%#016llx-%#016llx] %pF\n",
++		     (unsigned long long)base,
++		     (unsigned long long)base + size,
++		     (void *)_RET_IP_);
++
++	ret = __memblock_remove(&memblock.reserved, base, size);
++	if (ret)
++		return ret;
++
++	return __memblock_remove(&memblock.nomap, base, size);
++}
++
++#endif
++
+ /**
+- * __next_free_mem_range - next function for for_each_free_mem_range()
++ * __next_mem_range - generic next function for for_each_*_range()
++ *
++ * Finds the next range from type_a which is not marked as unsuitable
++ * in type_b.
++ *
+  * @idx: pointer to u64 loop variable
+- * @nid: node selector, %NUMA_NO_NODE for all nodes
++ * @nid: node selector, %MAX_NUMNODES for all nodes
++ * @type_a: pointer to memblock_type from where the range is taken
++ * @type_b: pointer to memblock_type which excludes memory from being taken
+  * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
+  * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
+  * @out_nid: ptr to int for nid of the range, can be %NULL
+  *
+- * Find the first free area from *@idx which matches @nid, fill the out
++ * Find the first present area from *@idx which matches @nid, fill the out
+  * parameters, and update *@idx for the next iteration.  The lower 32bit of
+- * *@idx contains index into memory region and the upper 32bit indexes the
+- * areas before each reserved region.  For example, if reserved regions
++ * *@idx contains index into type_a region and the upper 32bit indexes the
++ * areas before each type_b region.  For example, if type_a regions
+  * look like the following,
+  *
+  *	0:[0-16), 1:[32-48), 2:[128-130)
+@@ -780,135 +862,178 @@ int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
+  * As both region arrays are sorted, the function advances the two indices
+  * in lockstep and returns each intersection.
+  */
+-void __init_memblock __next_free_mem_range(u64 *idx, int nid,
+-					   phys_addr_t *out_start,
+-					   phys_addr_t *out_end, int *out_nid)
++void __init_memblock __next_mem_range(u64 *idx, int nid,
++				      struct memblock_type *type_a,
++				      struct memblock_type *type_b,
++				      phys_addr_t *out_start,
++				      phys_addr_t *out_end, int *out_nid)
+ {
+-	struct memblock_type *mem = &memblock.memory;
+-	struct memblock_type *rsv = &memblock.reserved;
+-	int mi = *idx & 0xffffffff;
+-	int ri = *idx >> 32;
++	int idx_a = *idx & 0xffffffff;
++	int idx_b = *idx >> 32;
+ 
+ 	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
+ 		nid = NUMA_NO_NODE;
+ 
+-	for ( ; mi < mem->cnt; mi++) {
+-		struct memblock_region *m = &mem->regions[mi];
++	for (; idx_a < type_a->cnt; idx_a++) {
++		struct memblock_region *m = &type_a->regions[idx_a];
+ 		phys_addr_t m_start = m->base;
+ 		phys_addr_t m_end = m->base + m->size;
++		int         m_nid = memblock_get_region_node(m);
+ 
+ 		/* only memory regions are associated with nodes, check it */
+-		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
++		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
+ 			continue;
+ 
+-		/* scan areas before each reservation for intersection */
+-		for ( ; ri < rsv->cnt + 1; ri++) {
+-			struct memblock_region *r = &rsv->regions[ri];
+-			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
+-			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
+-
+-			/* if ri advanced past mi, break out to advance mi */
+-			if (r_start >= m_end)
+-				break;
+-			/* if the two regions intersect, we're done */
+-			if (m_start < r_end) {
+-				if (out_start)
+-					*out_start = max(m_start, r_start);
+-				if (out_end)
+-					*out_end = min(m_end, r_end);
+-				if (out_nid)
+-					*out_nid = memblock_get_region_node(m);
++		/* With type_b NULL we only iterate through type_a */
++		if (type_b == NULL) {
++			if (out_start)
++				*out_start = m_start;
++			if (out_end)
++				*out_end = m_end;
++			if (out_nid)
++				*out_nid = m_nid;
++			idx_a++;
++			*idx = (u32)idx_a;
++			return;
++		} else {
++			/* scan areas before each reservation */
++			for (; idx_b < type_b->cnt + 1; idx_b++) {
++				struct memblock_region *r;
++				phys_addr_t r_start;
++				phys_addr_t r_end;
++
++				r = &type_b->regions[idx_b];
++				r_start = idx_b ? r[-1].base + r[-1].size : 0;
++				r_end = idx_b < type_b->cnt ?
++					r->base : ULLONG_MAX;
++
+ 				/*
+-				 * The region which ends first is advanced
+-				 * for the next iteration.
++				 *if idx_b advanced past idx_a,
++				 * break out to advance idx_a
+ 				 */
+-				if (m_end <= r_end)
+-					mi++;
+-				else
+-					ri++;
+-				*idx = (u32)mi | (u64)ri << 32;
+-				return;
++				if (r_start >= m_end)
++					break;
++				/* if the two regions intersect, we're done */
++				if (m_start < r_end) {
++					if (out_start)
++						*out_start =
++							max(m_start, r_start);
++					if (out_end)
++						*out_end = min(m_end, r_end);
++					if (out_nid)
++						*out_nid = m_nid;
++
++					/*
++					 * The region which ends first is
++					 * advanced for the next iteration.
++					 */
++					if (m_end <= r_end)
++						idx_a++;
++					else
++						idx_b++;
++					*idx = (u32)idx_a | (u64)idx_b << 32;
++					return;
++				}
+ 			}
+ 		}
  	}
- 	WARN_ON(inode->i_state & I_SYNC);
- 	/*
--	 * Skip inode if it is clean. We don't want to mess with writeback
--	 * lists in this function since flusher thread may be doing for example
--	 * sync in parallel and if we move the inode, it could get skipped. So
--	 * here we make sure inode is on some writeback list and leave it there
--	 * unless we have completely cleaned the inode.
-+	 * Skip inode if it is clean and we have no outstanding writeback in
-+	 * WB_SYNC_ALL mode. We don't want to mess with writeback lists in this
-+	 * function since flusher thread may be doing for example sync in
-+	 * parallel and if we move the inode, it could get skipped. So here we
-+	 * make sure inode is on some writeback list and leave it there unless
-+	 * we have completely cleaned the inode.
- 	 */
--	if (!(inode->i_state & I_DIRTY))
-+	if (!(inode->i_state & I_DIRTY) &&
-+	    (wbc->sync_mode != WB_SYNC_ALL ||
-+	     !mapping_tagged(inode->i_mapping, PAGECACHE_TAG_WRITEBACK)))
- 		goto out;
- 	inode->i_state |= I_SYNC;
- 	spin_unlock(&inode->i_lock);
+-
+ 	/* signal end of iteration */
+ 	*idx = ULLONG_MAX;
+ }
+ 
+ /**
+- * __next_free_mem_range_rev - next function for for_each_free_mem_range_reverse()
++ * __next_mem_range_rev - generic next function for for_each_*_range_rev()
++ *
++ * Finds the next range from type_a which is not marked as unsuitable
++ * in type_b.
++ *
+  * @idx: pointer to u64 loop variable
+- * @nid: nid: node selector, %NUMA_NO_NODE for all nodes
++ * @nid: nid: node selector, %MAX_NUMNODES for all nodes
++ * @type_a: pointer to memblock_type from where the range is taken
++ * @type_b: pointer to memblock_type which excludes memory from being taken
+  * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
+  * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
+  * @out_nid: ptr to int for nid of the range, can be %NULL
+  *
+- * Reverse of __next_free_mem_range().
+- *
+- * Linux kernel cannot migrate pages used by itself. Memory hotplug users won't
+- * be able to hot-remove hotpluggable memory used by the kernel. So this
+- * function skip hotpluggable regions if needed when allocating memory for the
+- * kernel.
++ * Reverse of __next_mem_range().
+  */
+-void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
+-					   phys_addr_t *out_start,
+-					   phys_addr_t *out_end, int *out_nid)
++void __init_memblock __next_mem_range_rev(u64 *idx, int nid,
++					  struct memblock_type *type_a,
++					  struct memblock_type *type_b,
++					  phys_addr_t *out_start,
++					  phys_addr_t *out_end, int *out_nid)
+ {
+-	struct memblock_type *mem = &memblock.memory;
+-	struct memblock_type *rsv = &memblock.reserved;
+-	int mi = *idx & 0xffffffff;
+-	int ri = *idx >> 32;
++	int idx_a = *idx & 0xffffffff;
++	int idx_b = *idx >> 32;
+ 
+ 	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
+ 		nid = NUMA_NO_NODE;
+ 
+ 	if (*idx == (u64)ULLONG_MAX) {
+-		mi = mem->cnt - 1;
+-		ri = rsv->cnt;
++		idx_a = type_a->cnt - 1;
++		idx_b = type_b->cnt;
+ 	}
+ 
+-	for ( ; mi >= 0; mi--) {
+-		struct memblock_region *m = &mem->regions[mi];
++	for (; idx_a >= 0; idx_a--) {
++		struct memblock_region *m = &type_a->regions[idx_a];
+ 		phys_addr_t m_start = m->base;
+ 		phys_addr_t m_end = m->base + m->size;
+ 
+ 		/* only memory regions are associated with nodes, check it */
+-		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
++		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
+ 			continue;
+ 
+-		/* skip hotpluggable memory regions if needed */
+-		if (movable_node_is_enabled() && memblock_is_hotpluggable(m))
+-			continue;
+-
+-		/* scan areas before each reservation for intersection */
+-		for ( ; ri >= 0; ri--) {
+-			struct memblock_region *r = &rsv->regions[ri];
+-			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
+-			phys_addr_t r_end = ri < rsv->cnt ? r->base : ULLONG_MAX;
+-
+-			/* if ri advanced past mi, break out to advance mi */
+-			if (r_end <= m_start)
+-				break;
+-			/* if the two regions intersect, we're done */
+-			if (m_end > r_start) {
+-				if (out_start)
+-					*out_start = max(m_start, r_start);
+-				if (out_end)
+-					*out_end = min(m_end, r_end);
+-				if (out_nid)
+-					*out_nid = memblock_get_region_node(m);
+-
+-				if (m_start >= r_start)
+-					mi--;
+-				else
+-					ri--;
+-				*idx = (u32)mi | (u64)ri << 32;
+-				return;
++		/* With type_b NULL we only iterate through type_a */
++		if (type_b == NULL) {
++			if (out_start)
++				*out_start = m_start;
++			if (out_end)
++				*out_end = m_end;
++			if (out_nid)
++				*out_nid = memblock_get_region_node(m);
++			idx_a--;
++			*idx = (u32)idx_a;
++			return;
++		} else {
++			/* scan areas before each reservation */
++			for (; idx_b >= 0; idx_b--) {
++				struct memblock_region *r;
++				phys_addr_t r_start;
++				phys_addr_t r_end;
++				int m_nid = memblock_get_region_node(m);
++
++				r = &type_b->regions[idx_b];
++				r_start = idx_b ? r[-1].base + r[-1].size : 0;
++				r_end = idx_b < type_b->cnt ?
++					r->base : ULLONG_MAX;
++				/*
++				 * if idx_b advanced past idx_a,
++				 * break out to advance idx_a
++				 */
++				if (r_end <= m_start)
++					break;
++				/* if the two regions intersect, we're done */
++				if (m_end > r_start) {
++					if (out_start)
++						*out_start =
++							max(m_start, r_start);
++					if (out_end)
++						*out_end =
++							min(m_end, r_end);
++					if (out_nid)
++						*out_nid = m_nid;
++
++					if (m_start >= r_start)
++						idx_a--;
++					else
++						idx_b--;
++					*idx = (u32)idx_a | (u64)idx_b << 32;
++					return;
++				}
+ 			}
+ 		}
+ 	}
+-
++	/* signal end of iteration */
+ 	*idx = ULLONG_MAX;
+ }
+ 
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index e2906a5..c57d5e3 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -133,6 +133,15 @@ static unsigned long __init free_low_memory_core_early(void)
+ 	size = get_allocated_memblock_memory_regions_info(&start);
+ 	if (size)
+ 		count += __free_memory_core(start, start + size);
++
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++
++	/* Free memblock.nomap array if it was allocated */
++	size = get_allocated_memblock_memory_regions_info(&start);
++	if (size)
++		count += __free_memory_core(start, start + size);
++
++#endif
+ #endif
+ 
+ 	return count;
+-- 
+1.8.4.5
+
