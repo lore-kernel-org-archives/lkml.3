@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597AbaAMRJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:09:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52875 "EHLO
+	id S1755639AbaAMRJN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:09:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52877 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308AbaAMQBX (ORCPT
+	with ESMTP id S1753311AbaAMQBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 11:01:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, Sage Weil <sage@inktank.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 018/208] x86/apic: Disable I/O APIC before shutdown of the local APIC
-Date: Mon, 13 Jan 2014 15:57:39 +0000
-Message-Id: <1389628849-1614-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 020/208] ceph: cleanup aborted requests when re-sending requests.
+Date: Mon, 13 Jan 2014 15:57:41 +0000
+Message-Id: <1389628849-1614-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
@@ -27,69 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-commit 522e66464467543c0d88d023336eec4df03ad40b upstream.
+commit eb1b8af33c2e42a9a57fc0a7588f4a7b255d2e79 upstream.
 
-In reboot and crash path, when we shut down the local APIC, the I/O APIC is
-still active. This may cause issues because external interrupts
-can still come in and disturb the local APIC during shutdown process.
+Aborted requests usually get cleared when the reply is received.
+If MDS crashes, no reply will be received. So we need to cleanup
+aborted requests when re-sending requests.
 
-To quiet external interrupts, disable I/O APIC before shutdown local APIC.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1382578212-4677-1-git-send-email-fenghua.yu@intel.com
-[ I suppose the 'issue' is a hang during shutdown. It's a fine change nevertheless. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Greg Farnum <greg@inktank.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/crash.c  | 2 +-
- arch/x86/kernel/reboot.c | 8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ fs/ceph/mds_client.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 74467fe..0b9d44d 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -127,10 +127,10 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
- 	cpu_emergency_vmxoff();
- 	cpu_emergency_svm_disable();
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 187bf21..c9c69cd 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1841,8 +1841,11 @@ static int __do_request(struct ceph_mds_client *mdsc,
+ 	int mds = -1;
+ 	int err = -EAGAIN;
  
--	lapic_shutdown();
- #if defined(CONFIG_X86_IO_APIC)
- 	disable_IO_APIC();
- #endif
-+	lapic_shutdown();
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 5f4ad27..ca1787b 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -542,6 +542,10 @@ static void native_machine_emergency_restart(void)
- void native_machine_shutdown(void)
- {
- 	/* Stop the cpus and apics */
-+#ifdef CONFIG_X86_IO_APIC
-+	disable_IO_APIC();
-+#endif
-+
- #ifdef CONFIG_SMP
- 	/*
- 	 * Stop all of the others. Also disable the local irq to
-@@ -554,10 +558,6 @@ void native_machine_shutdown(void)
+-	if (req->r_err || req->r_got_result)
++	if (req->r_err || req->r_got_result) {
++		if (req->r_aborted)
++			__unregister_request(mdsc, req);
+ 		goto out;
++	}
  
- 	lapic_shutdown();
- 
--#ifdef CONFIG_X86_IO_APIC
--	disable_IO_APIC();
--#endif
--
- #ifdef CONFIG_HPET_TIMER
- 	hpet_disable();
- #endif
+ 	if (req->r_timeout &&
+ 	    time_after_eq(jiffies, req->r_started + req->r_timeout)) {
 -- 
 1.8.3.2
 
