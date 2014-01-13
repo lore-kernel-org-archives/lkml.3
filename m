@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaAMQ3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 11:29:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53464 "EHLO
+	id S1755945AbaAMQ3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 11:29:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53460 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234AbaAMQEF (ORCPT
+	with ESMTP id S1754216AbaAMQED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 11:04:05 -0500
+	Mon, 13 Jan 2014 11:04:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 138/208] s390/3270: fix allocation of tty3270_screen structure
-Date: Mon, 13 Jan 2014 15:59:39 +0000
-Message-Id: <1389628849-1614-139-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 136/208] ext4: fix FITRIM in no journal mode
+Date: Mon, 13 Jan 2014 15:59:37 +0000
+Message-Id: <1389628849-1614-137-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
 References: <1389628849-1614-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 36d9f4d3b68c7035ead3850dc85f310a579ed0eb upstream.
+commit 8f9ff189205a6817aee5a1f996f876541f86e07c upstream.
 
-The tty3270_alloc_screen function is called from tty3270_install with
-swapped arguments, the number of columns instead of rows and vice versa.
-The number of rows is typically smaller than the number of columns which
-makes the screen array too big but the individual cell arrays for the
-lines too small. Creating lines longer than the number of rows will
-clobber the memory after the end of the cell array.
-The fix is simple, call tty3270_alloc_screen with the correct argument
-order.
+When using FITRIM ioctl on a file system without journal it will
+only trim the block group once, no matter how many times you invoke
+FITRIM ioctl and how many block you release from the block group.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+It is because we only clear EXT4_GROUP_INFO_WAS_TRIMMED_BIT in journal
+callback. Fix this by clearing the bit in no journal mode as well.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Jorge Fábregas <jorge.fabregas@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/s390/char/tty3270.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/mballoc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/s390/char/tty3270.c b/drivers/s390/char/tty3270.c
-index cee69da..4dd71ca 100644
---- a/drivers/s390/char/tty3270.c
-+++ b/drivers/s390/char/tty3270.c
-@@ -942,7 +942,7 @@ static int tty3270_install(struct tty_driver *driver, struct tty_struct *tty)
- 		return rc;
- 	}
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index cb1ffce..5f54d05 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4776,8 +4776,8 @@ do_more:
+ 					 " group:%d block:%d count:%lu failed"
+ 					 " with %d", block_group, bit, count,
+ 					 err);
+-		}
+-
++		} else
++			EXT4_MB_GRP_CLEAR_TRIMMED(e4b.bd_info);
  
--	tp->screen = tty3270_alloc_screen(tp->view.cols, tp->view.rows);
-+	tp->screen = tty3270_alloc_screen(tp->view.rows, tp->view.cols);
- 	if (IS_ERR(tp->screen)) {
- 		rc = PTR_ERR(tp->screen);
- 		raw3270_put_view(&tp->view);
+ 		ext4_lock_group(sb, block_group);
+ 		mb_clear_bits(bitmap_bh->b_data, bit, count_clusters);
 -- 
 1.8.3.2
 
