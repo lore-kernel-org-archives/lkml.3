@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaAMRr1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 12:47:27 -0500
-Received: from smtprelay0074.hostedemail.com ([216.40.44.74]:45498 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752290AbaAMRrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 12:47:25 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:2914:3138:3139:3140:3141:3142:3167:3352:3622:3865:3866:3868:3870:3872:3874:4250:4321:5007:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13071:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cream56_2337f80452d00
-X-Filterd-Recvd-Size: 1801
-Message-ID: <1389635241.24849.22.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] efi: Fix krealloc defect
-From: Joe Perches <joe@perches.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 13 Jan 2014 09:47:21 -0800
-In-Reply-To: <20140113140334.GB3256@console-pimps.org>
-References: <cover.1388793978.git.joe@perches.com>
-	 <9a8eb1c9478049318e834d5223053a5fb7484bff.1388793978.git.joe@perches.com>
-	 <20140113140334.GB3256@console-pimps.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754161AbaAMRtq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 12:49:46 -0500
+Received: from void.printf.net ([89.145.121.20]:35041 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752228AbaAMRtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 12:49:41 -0500
+From: Chris Ball <chris@printf.net>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Dong Aisheng <dongas86@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        <linux-next@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dong Aisheng <b29396@freescale.com>
+Subject: Re: linux-next: build failure after merge of the mmc tree
+References: <20131213125716.f432c59bf8782a489400a5a7@canb.auug.org.au>
+	<20131217132838.cc16a4dbac2f4d3218bbed1d@canb.auug.org.au>
+	<CAA+hA=Shwn1P25+xB+VogD+9n7gdvCmJ-EG6khgf3a2gjGwTJQ@mail.gmail.com>
+	<20131217031600.GG6691@S2101-09.ap.freescale.net>
+Date: Mon, 13 Jan 2014 17:49:35 +0000
+In-Reply-To: <20131217031600.GG6691@S2101-09.ap.freescale.net> (Shawn Guo's
+	message of "Tue, 17 Dec 2013 11:16:01 +0800")
+Message-ID: <86iotndb68.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 14:03 +0000, Matt Fleming wrote:
-> On Fri, 03 Jan, at 04:08:47PM, Joe Perches wrote:
-> > krealloc should use a temporary pointer for allocations
-> > and check the temporary pointer returned against NULL too.
-> > 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > cc: Matthew Garrett <matthew.garrett@nebula.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c | 12 +++++++++---
-> >  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> Thanks Joe, but I've already got the following commit queued up from
-> Borislav that addresses this,
+Hi,
 
-Hi Matt.  That's great.
+On Tue, Dec 17 2013, Shawn Guo wrote:
+> Please drop fc4fafac9656 ("ARM: dts: sabresd: add usdhc4 support") from
+> your tree.  It should go via my tree (with a rebase).  Sorry, I did not
+> notice it early.
 
-If it's queued up in some tree of yours, should that
-tree be included in Stephen Rothwell's -next?
+Sorry for missing this thread, everyone -- I've dropped this patch
+from mmc-next now.
 
-cheers, Joe
-
+- Chris.
+-- 
+Chris Ball   <chris@printf.net>   <http://printf.net/>
