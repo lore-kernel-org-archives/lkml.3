@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaANPmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:42:32 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:35512 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaANPm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:42:29 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH RFC 04/10] base: power: Add generic OF-based power domain look-up
-References: <1389469372-17199-1-git-send-email-tomasz.figa@gmail.com>
-	<1389469372-17199-5-git-send-email-tomasz.figa@gmail.com>
-Date: Tue, 14 Jan 2014 07:42:26 -0800
-In-Reply-To: <1389469372-17199-5-git-send-email-tomasz.figa@gmail.com> (Tomasz
-	Figa's message of "Sat, 11 Jan 2014 20:42:46 +0100")
-Message-ID: <87r48a8t99.fsf@linaro.org>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.1 (gnu/linux)
+	id S1751824AbaANPpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:45:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57377 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375AbaANPpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 10:45:02 -0500
+Date: Tue, 14 Jan 2014 15:44:57 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
+Message-ID: <20140114154457.GD4963@suse.de>
+References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
+ <20140110202310.GB1421@node.dhcp.inet.fi>
+ <20140110220155.GD3066@sgi.com>
+ <20140110221010.GP31570@twins.programming.kicks-ass.net>
+ <20140110223909.GA8666@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140110223909.GA8666@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz Figa <tomasz.figa@gmail.com> writes:
+On Fri, Jan 10, 2014 at 04:39:09PM -0600, Alex Thorlton wrote:
+> On Fri, Jan 10, 2014 at 11:10:10PM +0100, Peter Zijlstra wrote:
+> > We already have the information to determine if a page is shared across
+> > nodes, Mel even had some prototype code to do splits under those
+> > conditions.
+> 
+> I'm aware that we can determine if pages are shared across nodes, but I
+> thought that Mel's code to split pages under these conditions had some
+> performance issues.  I know I've seen the code that Mel wrote to do
+> this, but I can't seem to dig it up right now.  Could you point me to
+> it?
+> 
 
-> This patch introduces generic code to perform power domain look-up using
-> device tree and automatically bind devices to their power domains.
-> Generic device tree binding is introduced to specify power domains of
-> devices in their device tree nodes.
->
-> Backwards compatibility with legacy Samsung-specific power domain
-> bindings is provided, but for now the new code is not compiled when
-> CONFIG_ARCH_EXYNOS is selected to avoid collision with legacy code. This
-> will change as soon as Exynos power domain code gets converted to use
-> the generic framework in further patch.
->
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+It was a lot of revisions ago! The git branches no longer exist but the
+diff from the monolithic patches is below. The baseline was v3.10 and
+this will no longer apply but you'll see the two places where I added a
+split_huge_page and prevented khugepaged collapsing them again. At the
+time, the performance with it applied was much worse but it was a 10
+minute patch as a distraction. There was a range of basic problems that
+had to be tackled before there was any point looking at splitting THP due
+to locality. I did not pursue it further and have not revisited it since.
 
-I haven't read through this in detail yet, but wanted to make sure that
-the DT representation can handle nested power domains.  At least
-SH-mobile has a hierarchy of power domains and the genpd code can handle
-that, so wanted to make sure that the DT representation can handle it as
-well.
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index c8b25a8..2b80abe 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1317,6 +1317,23 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	last_nidpid = page_nidpid_last(page);
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1) {
++		int last_pid = nidpid_to_pid(last_nidpid);
++
++		/*
++		 * If the fault failed to pass the two-stage filter but is on
++		 * a remote node then it could be due to false sharing of the
++		 * THP page. Remote accesses are more expensive than base
++		 * page TLB accesses so split the huge page and return to
++		 * retry the fault.
++		 */
++		if (!nidpid_nid_unset(last_nidpid) &&
++		    src_nid != page_to_nid(page) &&
++		    last_pid != (current->pid & LAST__PID_MASK)) {
++			spin_unlock(&mm->page_table_lock);
++			split_huge_page(page);
++			put_page(page);
++			return 0;
++		}
+ 		put_page(page);
+ 		goto clear_pmdnuma;
+ 	}
+@@ -2398,6 +2415,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+ 	unsigned long _address;
+ 	spinlock_t *ptl;
+ 	int node = NUMA_NO_NODE;
++	int hint_node = NUMA_NO_NODE;
+ 
+ 	VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+ 
+@@ -2427,8 +2445,20 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+ 		 * be more sophisticated and look at more pages,
+ 		 * but isn't for now.
+ 		 */
+-		if (node == NUMA_NO_NODE)
++		if (node == NUMA_NO_NODE) {
++			int nidpid = page_nidpid_last(page);
+ 			node = page_to_nid(page);
++			hint_node = nidpid_to_nid(nidpid);
++		}
++
++		/*
++		 * If the range is receiving hinting faults from CPUs on
++		 * different nodes then prioritise locality over TLB
++		 * misses
++		 */
++		if (nidpid_to_nid(page_nidpid_last(page)) != hint_node)
++			goto out_unmap;
++
+ 		VM_BUG_ON(PageCompound(page));
+ 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+ 			goto out_unmap;
 
-Thanks,
-
-Kevin
+-- 
+Mel Gorman
+SUSE Labs
