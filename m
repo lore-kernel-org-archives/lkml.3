@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaANTTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:19:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55599 "EHLO mail.zytor.com"
+	id S1752010AbaANTTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:19:49 -0500
+Received: from mga03.intel.com ([143.182.124.21]:47815 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751567AbaANTTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:19:34 -0500
-Message-ID: <52D58DA1.2070400@zytor.com>
-Date: Tue, 14 Jan 2014 11:18:57 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1751567AbaANTTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:19:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,658,1384329600"; 
+   d="scan'208";a="458741464"
+Message-ID: <52D58DC6.3090802@linux.intel.com>
+Date: Tue, 14 Jan 2014 11:19:34 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        Aravind.Gopalakrishnan@amd.com, tglx@linutronix.de, bp@suse.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/microcode] x86, microcode: Move to a proper location
-References: <tip-bad5fa631fca5466401cd4a48e30cc1f1cb6101e@git.kernel.org> <52D56174.9010608@zytor.com> <20140114185802.GB29871@pd.tnic>
-In-Reply-To: <20140114185802.GB29871@pd.tnic>
-X-Enigmail-Version: 1.6
+To: Kees Cook <keescook@chromium.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [x86, kaslr] BUG: kernel boot hang
+References: <20140114133125.GB26942@localhost>	<52D55F92.8040108@linux.intel.com> <CAGXu5j+eWG8h_+K9pn42u9tXWrjc6tWthNGURhd8yfM2ODeMyw@mail.gmail.com>
+In-Reply-To: <CAGXu5j+eWG8h_+K9pn42u9tXWrjc6tWthNGURhd8yfM2ODeMyw@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 10:58 AM, Borislav Petkov wrote:
-> On Tue, Jan 14, 2014 at 08:10:28AM -0800, H. Peter Anvin wrote:
->> Quite frankly I would be much happier if we didn't stash so much under
->> arch/x86/kernel/cpu ... quite frankly it feels like almost *anything*
->> could go under there. The microcode code, for example, could go under
->> its own subtree.
+On 01/14/2014 10:32 AM, Kees Cook wrote:
 > 
-> Yeah, about the microcode, shouldn't it be under kernel/cpu/? My train
-> of thought is: because it is cpu-related functionality, it logically
-> belongs there.
+> Not that this would change the code here, but I notice tip:x86/kaslr
+> isn't fully up to date. It's still missing the two most recent
+> commits:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=kaslr-c-v8
+> 
+> "x86, kaslr: clarify RANDOMIZE_BASE_MAX_OFFSET"
+> "x86, kaslr: remove unused including <linux/version.h>"
+> 
 
-arch/x86/cpu/microcode seems clean.  I'm wondering if what is mostly
-currently in arch/x86/kernel/cpu should be mostly in something like
-arch/x86/cpu/init.
+Fixed.  The patches were tagged [PATCH -next] and so I overlooked them.
 
 	-hpa
-
 
 
