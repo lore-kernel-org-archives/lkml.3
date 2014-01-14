@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaANK1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:27:41 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:63322 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaANK1h (ORCPT
+	id S1751490AbaANK2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:28:05 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56669 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbaANK2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:27:37 -0500
+	Tue, 14 Jan 2014 05:28:02 -0500
+Date: Tue, 14 Jan 2014 11:27:53 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        markgross@thegnar.org, vincent.guittot@linaro.org,
+        catalin.marinas@arm.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [3/11] issue 3: No understanding of potential cpu capacity
+Message-ID: <20140114102753.GT7572@laptop.programming.kicks-ass.net>
+References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
+ <1389111587-5923-4-git-send-email-morten.rasmussen@arm.com>
+ <3700155.hLuCBAXQoy@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <52CD25FE.8010701@overkiz.com>
-References: <1387463671-1164-1-git-send-email-b.brezillon@overkiz.com>
-	<1387463671-1164-2-git-send-email-b.brezillon@overkiz.com>
-	<CACRpkdb=atfrW+Wqbi17a1KhstS7XHkutuXsM24gL2VPEri_cw@mail.gmail.com>
-	<52CD25FE.8010701@overkiz.com>
-Date: Tue, 14 Jan 2014 11:27:36 +0100
-Message-ID: <CACRpkdaEOyj-WcmR9e366O+qjLRZufo9732KUUB_OCXbER-YEQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] gpio: add GPIO hogging mechanism
-From: Linus Walleij <linus.walleij@linaro.org>
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Rob Landley <rob@landley.net>, Alexandre Courbot <gnurou@gmail.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Ben Gamari <bgamari.foss@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3700155.hLuCBAXQoy@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 8, 2014 at 11:18 AM, boris brezillon
-<b.brezillon@overkiz.com> wrote:
+On Mon, Jan 13, 2014 at 10:07:12PM +0100, Rafael J. Wysocki wrote:
+> > Currently, the CFS scheduler has no knowledge about frequency scaling.
+> > Frequency scaling governors generally try to match the frequency to
+> > the load, which means that the idle time has no absolute meaning. The
+> > potential spare cpu capacity may be much higher than indicated by the
+> > idle time if the cpu is running at a low P-state.
+> > 
+> > The energy trade-off may justify putting another task on a loaded cpu
+> > even if it causes a change to a higher P-state to handle the extra load.
+> > Related issues are frequency (and cpu micro architecture) invariant task
+> > load and power topology information, which are both needed to enable the
+> > scheduler for energy-aware task placement. This is covered in more
+> > detail in issue 5.
+> > 
+> > The potential cpu capacity cannot be assumed to be constant as thermal
+> > management may restrict the usage of high performance P-states
+> > dynamically.
+> 
+> That's correct.  Moreover, all of the above seems to assume that we can get
+> exact power numbers for all of the involved C-states and P-states.  What if
+> we can't?
 
-> Anyway, do you want me to rework the gpio hog as described below ?
+On average more or less correct should be fine; in which case the
+result will on average still be better.
 
-If you feel you have time, drive and a proper usecase for testing it,
-sure. I just want it to be driven my someone who *really* needs
-that feature.
-
-Yours,
-Linus Walleij
+Obviously the more reliable the input to the model the better the
+results, but as long as the input numbers are more or less in the right
+ballpark the model should still more or less do the right thing.
