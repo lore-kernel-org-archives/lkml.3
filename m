@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaANPZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:25:27 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:56044 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaANPZY (ORCPT
+	id S1751894AbaANPZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:25:40 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:1099 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaANPZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:25:24 -0500
+	Tue, 14 Jan 2014 10:25:25 -0500
+Message-ID: <52D556DC.7030501@hp.com>
+Date: Tue, 14 Jan 2014 10:25:16 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <201401141426.16497.arnd@arndb.de>
-References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org>
-	<201401140752.33257.arnd@arndb.de>
-	<20140114114419.GH30907@bivouac.eciton.net>
-	<201401141426.16497.arnd@arndb.de>
-Date: Tue, 14 Jan 2014 15:25:23 +0000
-Message-ID: <CAF7UmSwGgQ9u505s3fhd5MmGLHHy1A=rJLZBshycKr+rTniH1A@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] arm: Add [U]EFI runtime services support
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Patch Tracking <patches@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Roy Franz <roy.franz@linaro.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        Mark Salter <msalter@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Daniel J Blueman <daniel@numascale.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, rth@twiddle.net,
+        ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+References: <52D353C8.4000000@numascale.com> <52D4172E.6030706@hp.com> <52D4A0C7.5070601@numascale.com> <20140114110307.GW7572@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140114110307.GW7572@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2014 13:26, Arnd Bergmann <arnd@arndb.de> wrote:
->> > > Are you suggesting that I should #ifndef ARM in common code, or that I
->> > > should neglect to document what the common code will do with data it is
->> > > given by UEFI?
->> >
->> > It would probably be good to document the fact that it won't work,
->> > possibly even having a BUG_ON statement in the code for this case.
->>
->> Why?
->>
->> You'll only touch that pointer if you enable CONFIG_ACPI, and if you
->> do you probably want that address. Sounds a bit hostile to throw a BUG
->> in the face of someone who's (for example) just succeeded to get Linux
->> running on a Windows RT device.
->
-> But we know that it can't work unless a lot of other things get changed
-> in the kernel.
+On 01/14/2014 06:03 AM, Peter Zijlstra wrote:
+> On Tue, Jan 14, 2014 at 10:28:23AM +0800, Daniel J Blueman wrote:
+>>> Peter,
+>>>
+>>> I found out that the build failure was caused by the fact that the
+>>> __native_word() macro (used internally by compiletime_assert_atomic())
+>>> allows only a size of 4 or 8 for x86-64. The data type that I used is a
+>>> byte. Is there a reason why byte and short are not considered native?
+>> It seems likely it was implemented like that since there was no existing
+>> need; long can be relied on as the largest native type, so this should
+>> suffice and works here:
+> There's Alphas that cannot actually atomically adres a byte; I do not
+> konw if Linux cares about them, but if it does, we cannot in fact rely
+> on this in generic primitives like this.
 
-We know using ACPI cannot work without updates to the kernel.
-That doesn't mean we need to throw a BUG just because the
-firmware tells us a table exists.
+Thank for the explanation.
 
->> Although no other architectures supported by UEFI support big-endian,
->> so to be honest, I don't want to have to be the first one to validate
->> that in order to get the basic support into the kernel.
->
-> I think there was a project to run UEFI on PowerPC on some stage, though
-> I can't find any code now.
+Can we allow architectural override of __native_word() macro? Like
 
-That does sound familiar, but there is nothing in the specification.
+#ifdef __arch_native_word
+#define __native_word(t)    __arch_native_word(t)
+#else
+#define __native_word(t)    (sizeof(t) == sizeof(int) || sizeof(t) == 
+sizeof(long))
+#endif
 
-/
-    Leif
+In this way, we can allow x86 to support byte-based atomic type while 
+restricting the generic macro to int and long only. I will also modify 
+the code to use cmpxchg() when byte is not an atomic type.
+
+-Longman
+
+
