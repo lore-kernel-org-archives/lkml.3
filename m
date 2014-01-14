@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaANSnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:43:10 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:49906 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485AbaANSnH (ORCPT
+	id S1751752AbaANSpz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:45:55 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46924 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaANSpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:43:07 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Feng Kan <fkan@apm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH V2 1/6] Documentation: add dts binding for X-Gene reboot dts node.
-Date: Tue, 14 Jan 2014 19:42:37 +0100
-Message-ID: <12661649.81PZ6nxnIe@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <CAL85gmD+34VKSHsGXWTbQ2w3razo_cKukfe=dSQJi+x-Zfvtpw@mail.gmail.com>
-References: <1389135041-16062-1-git-send-email-fkan@apm.com> <201401140706.13406.arnd@arndb.de> <CAL85gmD+34VKSHsGXWTbQ2w3razo_cKukfe=dSQJi+x-Zfvtpw@mail.gmail.com>
+	Tue, 14 Jan 2014 13:45:54 -0500
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Wei Ni <wni@nvidia.com>, Eduardo Valentin <eduardo.valentin@ti.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] thermal: fix default governor assignment
+Date: Tue, 14 Jan 2014 14:45:37 -0400
+Message-ID: <1389725137-16147-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:KC42ho7/Q1UxaWXigOEabVNhdlZkjem5Sez3YW4ukAa
- BDPomCUSeclpCGfPq5+lQXsQuswR+dlMdfR4rerjPIZIeo7Xap
- 0Lz3TUlgvCblFgqYejPKZdDLguRnymigfTQ4ItIfGFHLCb0wKU
- 3z3DqxA8kZosQ+yso2nocw2DRzXmCLVjws/45AHRMcGxdIFjXI
- 7EvDdkAWg7wA/S3TP0mt3BR2FYogmlocjrorcXxOrewJ50aO6C
- Bwo/15hVDVbcuYLBBwQnzILpZqy6WqRB+1a8cqimM82QSsFFQr
- k3LceIqrGwB3JVfIjW7DoQNPdY1rULYuE9l+1CVS9+jZlFQ921
- fXjSoXPlXnS4J2iKeoAQ=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 January 2014 10:35:33 Feng Kan wrote:
-> On Mon, Jan 13, 2014 at 10:06 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Tuesday 14 January 2014, Feng Kan wrote:
-> >>
-> >> >
-> >> > Is this related to the standard ARM SCU that manages multiprocessor
-> >> > systems, or a different unit that uses the same name?
-> >>
-> >> FKAN: You mean the snoop control unit in ARM. This is different from
-> >> that, the main function of this unit is clk control.
-> >
-> > Hmm, if it's *mainly* used for clocks, you may actually just want to
-> > have a driver in drivers/clk for it that also performs a few of the
-> > other things on the side.
-> >
-> 
-> FKAN: there among other thing, reset controls, fuse id's and deep sleep
-> resume registers... I like your idea of using syscon, we can have a node
-> for SCU and then the specific driver to parse out the needed chunk to use.
+When registering a thermal zone, passing an invalid
+.governor_name via struct thermal_zone_params may
+create a thermal zone without a governor, when it
+is supposed to be the default governor.
 
-Yes, sounds good.
+This patch fixes this issue by assigning the
+default governor, whenever the zone has a governor
+set to NULL.
 
-	Arnd
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Reported-by: Wei Ni <wni@nvidia.com>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/thermal/thermal_core.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index a621e90..967d980 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -89,7 +89,7 @@ int thermal_register_governor(struct thermal_governor *governor)
+ 	list_for_each_entry(pos, &thermal_tz_list, node) {
+ 		if (pos->governor)
+ 			continue;
+-		if (pos->tzp)
++		if (pos->tzp && pos->tzp->governor_name)
+ 			name = pos->tzp->governor_name;
+ 		else
+ 			name = DEFAULT_THERMAL_GOVERNOR;
+@@ -1527,9 +1527,10 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	/* Update 'this' zone's governor information */
+ 	mutex_lock(&thermal_governor_lock);
+ 
+-	if (tz->tzp)
++	if (tz->tzp && tz->tzp->governor_name)
+ 		tz->governor = __find_governor(tz->tzp->governor_name);
+-	else
++
++	if (!tz->governor)
+ 		tz->governor = __find_governor(DEFAULT_THERMAL_GOVERNOR);
+ 
+ 	mutex_unlock(&thermal_governor_lock);
+-- 
+1.8.2.1.342.gfa7285d
+
