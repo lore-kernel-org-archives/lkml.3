@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaANHIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:08:54 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:32785 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaANHIw (ORCPT
+	id S1752429AbaANHKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:10:10 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:63890 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaANHKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:08:52 -0500
+	Tue, 14 Jan 2014 02:10:04 -0500
 MIME-Version: 1.0
-X-Originating-IP: [212.255.40.71]
-In-Reply-To: <52D4A780.7050907@wwwdotorg.org>
-References: <52D3CA6E.1010803@koalo.de>
-	<52D3CB18.8040608@koalo.de>
-	<52D4A780.7050907@wwwdotorg.org>
-Date: Tue, 14 Jan 2014 08:08:51 +0100
-Message-ID: <CABDT8WyCQK0o43wjrBbGWSAXS8gpE-sCR-g+1CC8OJMRsFyiGQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] BCM2835: Add I2S driver to device tree
-From: Florian Meier <florian.meier@koalo.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-rpi-kernel <linux-rpi-kernel@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <52D4CE4C.1030809@oracle.com>
+References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
+	<20140113233505.GS1992@bbox>
+	<52D4909B.7070107@oracle.com>
+	<20140114045022.GZ1992@bbox>
+	<20140114050528.GA1992@bbox>
+	<52D4CE4C.1030809@oracle.com>
+Date: Tue, 14 Jan 2014 15:10:03 +0800
+Message-ID: <CAFLCcBqk-X=32T5vY0432A_dq05TNzmYgt_vBxFmfT_Tcd39cA@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
+From: Cai Liu <liucai.lfn@gmail.com>
+To: Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>
+Cc: Cai Liu <cai.liu@samsung.com>, sjenning@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.01.2014 03:57, Stephen Warren wrote:
-> On 01/13/2014 04:16 AM, Florian Meier wrote:
->> This adds the definitions for the BCM2835 I2S driver
->> to the device tree. Some GPIO settings are needed for
->> the correct pin functions.
+2014/1/14 Bob Liu <bob.liu@oracle.com>:
 >
-> Patch 1/1 and the .dtsi portion of patch 2/2 look fine; I can apply
-> those after 3.14's merge window closes.
+> On 01/14/2014 01:05 PM, Minchan Kim wrote:
+>> On Tue, Jan 14, 2014 at 01:50:22PM +0900, Minchan Kim wrote:
+>>> Hello Bob,
+>>>
+>>> On Tue, Jan 14, 2014 at 09:19:23AM +0800, Bob Liu wrote:
+>>>>
+>>>> On 01/14/2014 07:35 AM, Minchan Kim wrote:
+>>>>> Hello,
+>>>>>
+>>>>> On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
+>>>>>> zswap can support multiple swapfiles. So we need to check
+>>>>>> all zbud pool pages in zswap.
+>>>>>
+>>>>> True but this patch is rather costly that we should iterate
+>>>>> zswap_tree[MAX_SWAPFILES] to check it. SIGH.
+>>>>>
+>>>>> How about defining zswap_tress as linked list instead of static
+>>>>> array? Then, we could reduce unnecessary iteration too much.
+>>>>>
+>>>>
+>>>> But if use linked list, it might not easy to access the tree like this:
+>>>> struct zswap_tree *tree = zswap_trees[type];
+>>>
+>>> struct zswap_tree {
+>>>     ..
+>>>     ..
+>>>     struct list_head list;
+>>> }
+>>>
+>>> zswap_frontswap_init()
+>>> {
+>>>     ..
+>>>     ..
+>>>     zswap_trees[type] = tree;
+>>>     list_add(&tree->list, &zswap_list);
+>>> }
+>>>
+>>> get_zswap_pool_pages(void)
+>>> {
+>>>     struct zswap_tree *cur;
+>>>     list_for_each_entry(cur, &zswap_list, list) {
+>>>         pool_pages += zbud_get_pool_size(cur->pool);
+>>>     }
+>>>     return pool_pages;
+>>> }
 >
-> However, I don't think I can apply the change to bcm2835-rpi-b.dts in
-> this patch; those pins are used for the board ID strapping on rev 1
-> boards,
+> Okay, I see your point. Yes, it's much better.
+> Cai, Please make an new patch.
+>
 
-Yes, but I thought the board ID is never utilized. However, I have not
-tested that.
+Thanks for your review.
+I will re-send a patch.
 
-> and even on rev 2 boards, they're simply routed to a generic
-> header, rather than being dedicated for I2S usage. That part of the
-> patch would be better kept locally in your own kernel tree. Perhaps if
-> DT overlays ever take off, we can publish it as part of an I2S-specific
-> overlay.
+Also, as weijie metioned in anonther mail. Should we add "all pool
+pages" count in zbud
+file. Then we can keep zswap module unchanged. I think this is
+reasonable, as in
+zswap we only just need to know total pages, not individual pool pages.
 
-You are right. That might be a problem. Someone might want to use the
-pins for another functionality. I personally think the I2S
-functionality will be the most used functionality for those pins, but
-I accept it when you say that they better should be set as second I2C
-channel and generic GPIO pins (as it is by default).
+Thanks
 
-However, for an end user it doesn't seem to be a convenient solution
-to have a kernel tree for each possible combination of pin
-assignments.
-The "old way" would be to set the pin functionality while loading the
-i2s driver, but I assume that is not the right way to go, right?
+> Thanks,
+> -Bob
+>
+>>>
+>>>
+>>>>
+>>>> BTW: I'm still prefer to use dynamic pool size, instead of use
+>>>> zswap_is_full(). AFAIR, Seth has a plan to replace the rbtree with radix
+>>>> which will be more flexible to support this feature and page migration
+>>>> as well.
+>>>>
+>>>>> Other question:
+>>>>> Why do we need to update zswap_pool_pages too frequently?
+>>>>> As I read the code, I think it's okay to update it only when user
+>>>>> want to see it by debugfs and zswap_is_full is called.
+>>>>> So could we optimize it out?
+>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Cai Liu <cai.liu@samsung.com>
+>>>>
+>>>> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+>>>
+>>> Hmm, I really suprised you are okay in this code piece where we have
+>>> unnecessary cost most of case(ie, most system has a swap device) in
+>>> *mm* part.
+>>>
+>>> Anyway, I don't want to merge this patchset.
+>>> If Andrew merge it and anybody doesn't do right work, I will send a patch.
+>>> Cai, Could you redo a patch?
+>>> I don't want to intercept your credit.
+>>>
+>>> Even, we could optimize to reduce the the number of call as I said in
+>>> previous reply.
+>>
+>> You did it already. Please write it out in description.
+>>
