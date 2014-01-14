@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaANXoo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:44:44 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34761 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918AbaANXol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:44:41 -0500
-Message-ID: <52D5CBC9.5020201@ti.com>
-Date: Tue, 14 Jan 2014 18:44:09 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752254AbaANXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:44:56 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:39452 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaANXos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 18:44:48 -0500
+Date: Tue, 14 Jan 2014 15:44:43 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Richard Henderson <rth@twiddle.net>
+Cc: Matt Turner <mattst88@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140114234443.GY10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <52D353C8.4000000@numascale.com>
+ <52D4172E.6030706@hp.com>
+ <52D4A0C7.5070601@numascale.com>
+ <20140114110307.GW7572@laptop.programming.kicks-ass.net>
+ <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com>
+ <52D57B60.9020209@twiddle.net>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Patch Tracking <patches@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
-References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org> <52D404DE.2020806@ti.com> <CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com> <52D55CE5.1060902@ti.com> <CAA3XUr2cnF_rxMYvZfjBx22Sa8YE45o_qUU8GNoerQwhWqxhNQ@mail.gmail.com> <CAGo_u6oKpRFnPAWaqr9NTNAJB+m56jiDgBUgvsiZpaQ-3SF2kw@mail.gmail.com> <CAA3XUr1_cNuPmMU6Fs6c7Si2So0VFGcLyGJe+tS_R47BVKRXnw@mail.gmail.com> <CAGo_u6p7ErrKOMy4Ljg3nehVpd=DOg3XDn6gZ1nrFE_OuOjsWg@mail.gmail.com> <52D5A60C.7080800@ti.com> <CAGo_u6oGDK5s0SeE6Z7UFM6eYdgoy-E+Tj67+pBWP-wQ3r9=QA@mail.gmail.com>
-In-Reply-To: <CAGo_u6oGDK5s0SeE6Z7UFM6eYdgoy-E+Tj67+pBWP-wQ3r9=QA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D57B60.9020209@twiddle.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011423-0928-0000-0000-000005A2E581
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 January 2014 04:13 PM, Nishanth Menon wrote:
-> On Tue, Jan 14, 2014 at 3:03 PM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
->>
->>> ok.. some sort of Linaro thing about which I have no background about
->>> - but dont really care in this context.
->>>
->> Nothing related Linaro. Its just that platforms are supporting ARM BE
->> mode and Linaro folks had working patches for Panda. So I suggested
->> to get them on the lists.
+On Tue, Jan 14, 2014 at 10:01:04AM -0800, Richard Henderson wrote:
+> On 01/14/2014 09:08 AM, Matt Turner wrote:
+> > On Tue, Jan 14, 2014 at 3:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >> On Tue, Jan 14, 2014 at 10:28:23AM +0800, Daniel J Blueman wrote:
+> >>>> Peter,
+> >>>>
+> >>>> I found out that the build failure was caused by the fact that the
+> >>>> __native_word() macro (used internally by compiletime_assert_atomic())
+> >>>> allows only a size of 4 or 8 for x86-64. The data type that I used is a
+> >>>> byte. Is there a reason why byte and short are not considered native?
+> >>>
+> >>> It seems likely it was implemented like that since there was no existing
+> >>> need; long can be relied on as the largest native type, so this should
+> >>> suffice and works here:
+> >>
+> >> There's Alphas that cannot actually atomically adres a byte; I do not
+> >> konw if Linux cares about them, but if it does, we cannot in fact rely
+> >> on this in generic primitives like this.
+> > 
+> > That's right, and thanks for the heads-up. Alpha can only address 4
+> > and 8 bytes atomically. (LDL_L, LDQ_L, STL_C, STQ_C).
+> > 
+> > The Byte-Word extension in EV56 doesn't add new atomics, so in fact no
+> > Alphas can address < 4 bytes atomically.
 > 
-> I tend to think -> is this with OFF mode and CPUidle completely
-> working? All context save and restore works with this? on HS and GP
-> devices with BE mode builds? works on SDP4430,60 variations,
-> considered reuse with AM43xx which could use parts of that logic?
-> 
-> I mean to indicate that terms like "works on panda" tends always to be relative.
->
-Fair enough.
- 
-> It is nice to see it as a proof of concept, but I'd hate to see some
-> dead code lying around in kernel and folks blindly following suit and
-> introducing macros for new assembly for a feature that in practice
-> just one group of folks care about and creates additional burden for
-> rest of folks trying to keep that functionality going as we jump from
-> one "device tree" style churn to another "framework"? Not to mean that
-> good features should be kept away.. but personally, I could not find
-> convincing arguments in this case..
-> 
-I haven't looked at patch myself but as you pointed out if it adds
-dead code and makes the code un-readable then probably that something
-we shouldn't merge.
+> Emulated with aligned 4 byte atomics, and masking.  The same is true for arm,
+> ppc, mips which, depending on cpu, also lack < 4 byte atomics.
 
-Regards,
-Santosh
+Which means that Alpha should be able to similarly emulate 1-byte and
+2-byte atomics, correct?
+
+							Thanx, Paul
+
