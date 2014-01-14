@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaANPhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:37:35 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:46069 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbaANPhb (ORCPT
+	id S1751810AbaANPhj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:37:39 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:42827 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaANPhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:37:31 -0500
+	Tue, 14 Jan 2014 10:37:35 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/3] perf tools: Spare double comparison of callchain first entry
-Date: Tue, 14 Jan 2014 16:37:15 +0100
-Message-Id: <1389713836-13375-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/3] perf tools: Do proper comm override error handling
+Date: Tue, 14 Jan 2014 16:37:14 +0100
+Message-Id: <1389713836-13375-2-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
 References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
@@ -26,22 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a new callchain child branch matches an existing one in the rbtree,
-the comparison of its first entry is performed twice:
+The comm overriding API ignores memory allocation failures by silently
+keeping the previous and out of date comm.
 
-1) From append_chain_children() on branch lookup
+As a result, the user may get buggy events without ever being notified
+about the problem and its source.
 
-2) If 1) reports a match, append_chain() then compares all entries of
-the new branch against the matching node in the rbtree, and this
-comparison includes the first entry of the new branch again.
-
-Lets shortcut this by performing the whole comparison only from
-append_chain() which then returns the result of the comparison between
-the first entry of the new branch and the iterating node in the rbtree.
-If the first entry matches, the lookup on the current level of siblings
-stops and propagates to the children of the matching nodes.
-
-This results in less comparisons performed by the CPU.
+Lets start to fix this by propagating the error from the API. Not all
+callers may be doing proper error handling on comm set yet but this
+is the first step toward it.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -52,75 +45,76 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/callchain.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ tools/perf/util/comm.c   | 19 ++++++++++---------
+ tools/perf/util/comm.h   |  2 +-
+ tools/perf/util/thread.c |  5 ++++-
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index e3970e3..e5ed16d 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -15,6 +15,8 @@
- #include <errno.h>
- #include <math.h>
+diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
+index 67d1e40..f9e7776 100644
+--- a/tools/perf/util/comm.c
++++ b/tools/perf/util/comm.c
+@@ -94,19 +94,20 @@ struct comm *comm__new(const char *str, u64 timestamp)
+ 	return comm;
+ }
  
-+#include "asm/bug.h"
+-void comm__override(struct comm *comm, const char *str, u64 timestamp)
++int comm__override(struct comm *comm, const char *str, u64 timestamp)
+ {
+-	struct comm_str *old = comm->comm_str;
++	struct comm_str *new, *old = comm->comm_str;
+ 
+-	comm->comm_str = comm_str__findnew(str, &comm_str_root);
+-	if (!comm->comm_str) {
+-		comm->comm_str = old;
+-		return;
+-	}
++	new = comm_str__findnew(str, &comm_str_root);
++	if (!new)
++		return -ENOMEM;
+ 
+-	comm->start = timestamp;
+-	comm_str__get(comm->comm_str);
++	comm_str__get(new);
+ 	comm_str__put(old);
++	comm->comm_str = new;
++	comm->start = timestamp;
 +
- #include "hist.h"
- #include "util.h"
- #include "callchain.h"
-@@ -356,19 +358,14 @@ append_chain_children(struct callchain_node *root,
- 	/* lookup in childrens */
- 	while (*p) {
- 		s64 ret;
--		struct callchain_list *cnode;
++	return 0;
+ }
  
- 		parent = *p;
- 		rnode = rb_entry(parent, struct callchain_node, rb_node_in);
--		cnode = list_first_entry(&rnode->val, struct callchain_list,
--					 list);
+ void comm__free(struct comm *comm)
+diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
+index 7a86e56..fac5bd5 100644
+--- a/tools/perf/util/comm.h
++++ b/tools/perf/util/comm.h
+@@ -16,6 +16,6 @@ struct comm {
+ void comm__free(struct comm *comm);
+ struct comm *comm__new(const char *str, u64 timestamp);
+ const char *comm__str(const struct comm *comm);
+-void comm__override(struct comm *comm, const char *str, u64 timestamp);
++int comm__override(struct comm *comm, const char *str, u64 timestamp);
  
--		/* just check first entry */
--		ret = match_chain(node, cnode);
--		if (ret == 0) {
--			append_chain(rnode, cursor, period);
-+		/* If at least first entry matches, rely to children */
-+		ret = append_chain(rnode, cursor, period);
-+		if (ret == 0)
- 			goto inc_children_hit;
--		}
+ #endif  /* __PERF_COMM_H */
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index e394861..0358882 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -66,10 +66,13 @@ struct comm *thread__comm(const struct thread *thread)
+ int thread__set_comm(struct thread *thread, const char *str, u64 timestamp)
+ {
+ 	struct comm *new, *curr = thread__comm(thread);
++	int err;
  
- 		if (ret < 0)
- 			p = &parent->rb_left;
-@@ -394,6 +391,7 @@ append_chain(struct callchain_node *root,
- 	u64 start = cursor->pos;
- 	bool found = false;
- 	u64 matches;
-+	int cmp = 0;
- 
- 	/*
- 	 * Lookup in the current node
-@@ -408,7 +406,8 @@ append_chain(struct callchain_node *root,
- 		if (!node)
- 			break;
- 
--		if (match_chain(node, cnode) != 0)
-+		cmp = match_chain(node, cnode);
-+		if (cmp)
- 			break;
- 
- 		found = true;
-@@ -418,9 +417,10 @@ append_chain(struct callchain_node *root,
- 
- 	/* matches not, relay no the parent */
- 	if (!found) {
-+		WARN_ONCE(!cmp, "Chain comparison error\n");
- 		cursor->curr = curr_snap;
- 		cursor->pos = start;
--		return -1;
-+		return cmp;
- 	}
- 
- 	matches = cursor->pos - start;
+ 	/* Override latest entry if it had no specific time coverage */
+ 	if (!curr->start) {
+-		comm__override(curr, str, timestamp);
++		err = comm__override(curr, str, timestamp);
++		if (err)
++			return err;
+ 	} else {
+ 		new = comm__new(str, timestamp);
+ 		if (!new)
 -- 
 1.8.3.1
 
