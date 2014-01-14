@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaANMDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 07:03:01 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:51890 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaANMDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 07:03:00 -0500
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: m.chehab@samsung.com, gregkh@linuxfoundation.org,
-        monamagarwal123@gmail.com, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] Staging: media: Fix line length exceeding 80 characters in as102_fe.c
-Date: Tue, 14 Jan 2014 17:32:42 +0530
-Message-Id: <1389700962-7666-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751860AbaANMDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 07:03:48 -0500
+Received: from nbd.name ([46.4.11.11]:53859 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367AbaANMDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 07:03:46 -0500
+Message-ID: <52D52796.3030509@phrozen.org>
+Date: Tue, 14 Jan 2014 13:03:34 +0100
+From: John Crispin <john@phrozen.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: Re: [PATCH 1/7] arch/mips/lantiq/xway: don't check resource with
+ devm_ioremap_resource
+References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wolfgang,
 
-This patch fixes the following checkpatch.pl issues in
-as102/as102_fe.c
-WARNING: line over 80 characters 
+should we take 1/7 and 6/7 via the mips tree ?
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
----
- drivers/staging/media/as102/as102_fe.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+    John
 
-diff --git a/drivers/staging/media/as102/as102_fe.c b/drivers/staging/media/as102/as102_fe.c
-index dc367d1..bd5cd92 100644
---- a/drivers/staging/media/as102/as102_fe.c
-+++ b/drivers/staging/media/as102/as102_fe.c
-@@ -263,7 +263,8 @@ static int as102_fe_ts_bus_ctrl(struct dvb_frontend *fe, int acquire)
 
- 	if (acquire) {
- 		if (elna_enable)
--			as10x_cmd_set_context(&dev->bus_adap, CONTEXT_LNA, dev->elna_cfg);
-+			as10x_cmd_set_context(&dev->bus_adap,
-+					      CONTEXT_LNA, dev->elna_cfg);
-
- 		ret = as10x_cmd_turn_on(&dev->bus_adap);
- 	} else {
--- 
-1.7.9.5
+On 14/01/2014 12:58, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Acked-by: John Crispin <blogic@openwrt.org>
+> ---
+>
+> Should go via subsystem tree
+>
+>  arch/mips/lantiq/xway/dma.c | 4 ----
+>  1 file changed, 4 deletions(-)
+>
+> diff --git a/arch/mips/lantiq/xway/dma.c b/arch/mips/lantiq/xway/dma.c
+> index 08f7ebd..78a91fa 100644
+> --- a/arch/mips/lantiq/xway/dma.c
+> +++ b/arch/mips/lantiq/xway/dma.c
+> @@ -220,10 +220,6 @@ ltq_dma_init(struct platform_device *pdev)
+>  	int i;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (!res)
+> -		panic("Failed to get dma resource");
+> -
+> -	/* remap dma register range */
+>  	ltq_dma_membase = devm_ioremap_resource(&pdev->dev, res);
+>  	if (IS_ERR(ltq_dma_membase))
+>  		panic("Failed to remap dma resource");
 
