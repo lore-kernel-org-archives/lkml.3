@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432AbaANByc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:54:32 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:42541 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaANBya (ORCPT
+	id S1751916AbaANCEx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:04:53 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:42333 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbaANCEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 20:54:30 -0500
-Date: Mon, 13 Jan 2014 17:54:04 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mm/memcg: iteration skip memcgs not yet fully
- initialized
-In-Reply-To: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
-Message-ID: <alpine.LSU.2.11.1401131752360.2229@eggly.anvils>
-References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Mon, 13 Jan 2014 21:04:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 14 Jan 2014 10:04:49 +0800
+Message-ID: <CAPgLHd9hJ4Fy7NpfT1vWt7aem_ey+YA==7f=u2MpazBKJDjSvQ@mail.gmail.com>
+Subject: [PATCH -next] ion: Fix sparse non static symbol warnings
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is surprising that the mem_cgroup iterator can return memcgs which
-have not yet been fully initialized.  By accident (or trial and error?)
-this appears not to present an actual problem; but it may be better to
-prevent such surprises, by skipping memcgs not yet online.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Fixes the following sparse warnings:
+
+drivers/staging/android/ion/ion_dummy_driver.c:26:19: warning:
+ symbol 'idev' was not declared. Should it be static?
+drivers/staging/android/ion/ion_dummy_driver.c:27:17: warning:
+ symbol 'heaps' was not declared. Should it be static?
+drivers/staging/android/ion/ion_dummy_driver.c:29:6: warning:
+ symbol 'carveout_ptr' was not declared. Should it be static?
+drivers/staging/android/ion/ion_dummy_driver.c:30:6: warning:
+ symbol 'chunk_ptr' was not declared. Should it be static?
+drivers/staging/android/ion/ion_dummy_driver.c:32:26: warning:
+ symbol 'dummy_heaps' was not declared. Should it be static?
+drivers/staging/android/ion/ion_dummy_driver.c:59:26: warning:
+ symbol 'dummy_ion_pdata' was not declared. Should it be static?
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
-Decide for yourself whether to take this or not.  I spent quite a while
-digging into a mysterious "trying to register non-static key" issue from
-lockdep, which originated from the iterator returning a vmalloc'ed memcg
-a moment before the res_counter_init()s had done their spin_lock_init()s.
-But the backtrace was an odd one of our own mis-devising, not a charge or
-reclaim or stats trace, so probably it's never been a problem for vanilla.
+ drivers/staging/android/ion/ion_dummy_driver.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
- mm/memcontrol.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
+index 55b2002..b89004a 100644
+--- a/drivers/staging/android/ion/ion_dummy_driver.c
++++ b/drivers/staging/android/ion/ion_dummy_driver.c
+@@ -23,13 +23,13 @@
+ #include "ion.h"
+ #include "ion_priv.h"
+ 
+-struct ion_device *idev;
+-struct ion_heap **heaps;
++static struct ion_device *idev;
++static struct ion_heap **heaps;
+ 
+-void *carveout_ptr;
+-void *chunk_ptr;
++static void *carveout_ptr;
++static void *chunk_ptr;
+ 
+-struct ion_platform_heap dummy_heaps[] = {
++static struct ion_platform_heap dummy_heaps[] = {
+ 		{
+ 			.id	= ION_HEAP_TYPE_SYSTEM,
+ 			.type	= ION_HEAP_TYPE_SYSTEM,
+@@ -56,7 +56,7 @@ struct ion_platform_heap dummy_heaps[] = {
+ 		},
+ };
+ 
+-struct ion_platform_data dummy_ion_pdata = {
++static struct ion_platform_data dummy_ion_pdata = {
+ 	.nr = 4,
+ 	.heaps = dummy_heaps,
+ };
 
---- mmotm/mm/memcontrol.c	2014-01-10 18:25:02.236448954 -0800
-+++ linux/mm/memcontrol.c	2014-01-12 22:21:10.700570471 -0800
-@@ -1119,10 +1119,8 @@ skip_node:
- 	 * protected by css_get and the tree walk is rcu safe.
- 	 */
- 	if (next_css) {
--		struct mem_cgroup *mem = mem_cgroup_from_css(next_css);
--
--		if (css_tryget(&mem->css))
--			return mem;
-+		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
-+			return mem_cgroup_from_css(next_css);
- 		else {
- 			prev_css = next_css;
- 			goto skip_node;
