@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaANIZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 03:25:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880AbaANIZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 03:25:34 -0500
-Message-ID: <52D4F471.7020600@redhat.com>
-Date: Tue, 14 Jan 2014 09:25:21 +0100
-From: =?windows-1252?Q?Jan_Kalu=9Ea?= <jkaluza@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>, davem@davemloft.net
-CC: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        eparis@redhat.com, rgb@redhat.com, tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v4 0/3] Send audit/procinfo/cgroup data in socket-level
- control message
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com> <1389600109-30739-1-git-send-email-jkaluza@redhat.com> <52D44206.2000906@schaufler-ca.com>
-In-Reply-To: <52D44206.2000906@schaufler-ca.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751554AbaANI0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 03:26:36 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:52380 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751412AbaANI0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 03:26:34 -0500
+Date: Tue, 14 Jan 2014 09:26:32 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Dave Young <dyoung@redhat.com>
+Cc: dzickus@redhat.com, bhe@redhat.com, vgoyal@redhat.com,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] watchdog: add a parameter for stop wdt before register
+Message-ID: <20140114082632.GA28648@spo001.leaseweb.com>
+References: <20140114082323.GA4485@dhcp-16-126.nay.redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114082323.GA4485@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 08:44 PM, Casey Schaufler wrote:
-> On 1/13/2014 12:01 AM, Jan Kaluza wrote:
->> Hi,
->>
->> this patchset against net-next (applies also to linux-next) adds 3 new types
->> of "Socket"-level control message (SCM_AUDIT, SCM_PROCINFO and SCM_CGROUP).
->
-> How about the group list, while you're at it?
+Hi Dave,
 
-That would be of course possible, but I would rather start with these 
-three patches at the beginning before adding more features, because I'm 
-not sure if there is consensus on accepting them. But I have no problem 
-with introducing group list later.
+> In kdump kernel watchdog could interrupt vmcore capturing because we
+> have no way to disable/stop it while crashing happens.
+> 
+> Add a module parameter stop_before_register so watchdog can be stopped
+> before register in driver loading path. Thus we can try to load the
+> watchdog driver as early as possible in kdump kernel to ensure vmcore
+> capturing.
+> 
+> Don Zickus mentioned that there's the case that bios start the watchdog
+> and it is expected that the kernel keep the watchdog alive. To address
+> this case I added the module parameter which is false by default so
+> it will stop the watchdog only when user provice kernel cmdline
+> "watchdog.stop_before_register=1".  
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  drivers/watchdog/watchdog_core.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> --- linux.orig/drivers/watchdog/watchdog_core.c
+> +++ linux/drivers/watchdog/watchdog_core.c
+> @@ -42,6 +42,7 @@
+>  
+>  static DEFINE_IDA(watchdog_ida);
+>  static struct class *watchdog_class;
+> +static bool stop_before_register;
+>  
+>  static void watchdog_check_min_max_timeout(struct watchdog_device *wdd)
+>  {
+> @@ -119,6 +120,9 @@ int watchdog_register_device(struct watc
+>  	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
+>  		return -EINVAL;
+>  
+> +	if (stop_before_register)
+> +		wdd->ops->stop(wdd);
+> +
+>  	watchdog_check_min_max_timeout(wdd);
+>  
+>  	/*
+> @@ -220,6 +224,8 @@ static void __exit watchdog_exit(void)
+>  subsys_initcall(watchdog_init);
+>  module_exit(watchdog_exit);
+>  
+> +module_param(stop_before_register, bool, 0644);
+> +
+>  MODULE_AUTHOR("Alan Cox <alan@lxorguk.ukuu.org.uk>");
+>  MODULE_AUTHOR("Wim Van Sebroeck <wim@iguana.be>");
+>  MODULE_DESCRIPTION("WatchDog Timer Driver Core");
 
->>
->> Server-like processes in many cases need credentials and other
->> metadata of the peer, to decide if the calling process is allowed to
->> request a specific action, or the server just wants to log away this
->> type of information for auditing tasks.
->>
->> The current practice to retrieve such process metadata is to look that
->> information up in procfs with the $PID received over SCM_CREDENTIALS.
->> This is sufficient for long-running tasks, but introduces a race which
->> cannot be worked around for short-living processes; the calling
->> process and all the information in /proc/$PID/ is gone before the
->> receiver of the socket message can look it up.
->>
->> Changes introduced in this patchset can also increase performance
->> of such server-like processes, because current way of opening and
->> parsing /proc/$PID/* files is much more expensive than receiving these
->> metadata using SCM.
->>
->> Changes in v4:
->> - Rebased to work with the latest net-next tree
->>
->> Changes in v3:
->> - Better description of patches (Thanks to Kay Sievers)
->>
->> Changes in v2:
->> - use PATH_MAX instead of PAGE_SIZE in SCM_CGROUP patch
->> - describe each patch individually
->>
->> Jan Kaluza (3):
->>    Send loginuid and sessionid in SCM_AUDIT
->>    Send comm and cmdline in SCM_PROCINFO
->>    Send cgroup_path in SCM_CGROUP
->>
->>   include/linux/socket.h |  9 ++++++
->>   include/net/af_unix.h  | 10 ++++++
->>   include/net/scm.h      | 67 ++++++++++++++++++++++++++++++++++++++--
->>   net/core/scm.c         | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>   net/unix/af_unix.c     | 70 ++++++++++++++++++++++++++++++++++++++++++
->>   5 files changed, 237 insertions(+), 2 deletions(-)
->>
->
+Hmm, need to look closer to this, but my first thought is:
+what about devices that cannot be stopped once started...
+They should be able to override this module_parameter...
+
+Kind regards,
+Wim.
 
