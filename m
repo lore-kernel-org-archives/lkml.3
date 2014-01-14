@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353AbaANIWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 03:22:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906AbaANIWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 03:22:54 -0500
-Date: Tue, 14 Jan 2014 16:23:23 +0800
-From: Dave Young <dyoung@redhat.com>
-To: wim@iguana.be
-Cc: dzickus@redhat.com, bhe@redhat.com, vgoyal@redhat.com,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] watchdog: add a parameter for stop wdt before register
-Message-ID: <20140114082323.GA4485@dhcp-16-126.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751451AbaANIYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 03:24:34 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:65339 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaANIYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 03:24:32 -0500
+Message-ID: <1389687856.5951.14.camel@marge.simpson.net>
+Subject: Re: Idle power fix regresses ebizzy performance (was 3.12-stable
+ backport of NUMA balancing patches)
+From: Mike Galbraith <bitbucket@online.de>
+To: Len Brown <lenb@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>, Len Brown <len.brown@intel.com>,
+        athorlton@sgi.com, Rik van Riel <riel@redhat.com>, chegu_vinod@hp.com,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Date: Tue, 14 Jan 2014 09:24:16 +0100
+In-Reply-To: <1389686473.5951.11.camel@marge.simpson.net>
+References: <1389103248-17617-1-git-send-email-mgorman@suse.de>
+	 <20140107141715.GA32491@kroah.com> <20140107185440.GA7844@kroah.com>
+	 <20140107203012.GA27046@suse.de> <20140108104340.GC27046@suse.de>
+	 <20140108134858.GF27046@suse.de> <20140113192406.GL27046@suse.de>
+	 <CAJvTdKniGkxxzvPvEDSU9BgtubR-5Fn3YsepjSNAwn5XkL3nVA@mail.gmail.com>
+	 <1389686473.5951.11.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:bdnlWhG7y5o9Hz1XmDPuTuEnvTu97Ox6qe6cIeh2lVo
+ 3lTeKhbKYYIo3JTH+L/D0/lTqoPjLUqpwIwpu88XUGp7fTZnba
+ 9zoxAP16UOzI2vsMP43Myit6HGr909/EF2xfvckj3pcrriZG7i
+ xeaOopCQu5Ordpf6c8u+2szqn7M81xKaNbXeZGWAsjcZnDLJAO
+ ussH/zevxpFx8gW1PS2RiUAVvjfahVG5OW5AzxOe6rYGRXkIXn
+ 4lWVdJ1SlNzp5Jx5zOPhdRpMQJziWRLfAzchuCvRbizlTnkSgS
+ udR1EwNQvwtW4xoVBnu32oaCj7rouEdkwTU783RjNRYvRX7o0V
+ RV4NVEuAvKIMr3s9fHJTX6blhQOLRZfx/VWBu7OlGIb2p5eyNo
+ YbW+cY0wSYDnw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kdump kernel watchdog could interrupt vmcore capturing because we
-have no way to disable/stop it while crashing happens.
+On Tue, 2014-01-14 at 09:01 +0100, Mike Galbraith wrote: 
+> On Tue, 2014-01-14 at 02:31 -0500, Len Brown wrote: 
+> > > This is a false alarm.
+> > 
+> > Thanks for the follow-up, Mel.
+> > 
+> > Agreed, it makes no sense for ebizzy measure 'throughput', when a
+> > library debug bottleneck
+> > prevents it from scaling past 3% CPU utilization.
+> > 
+> > Still, the broken configuration did find a difference due to the
+> > addition of CLFLUSH on this box.
+> > It makes me wonder if we will find issues on workloads that may depend
+> > on the latency
+> > of idle entry/exit, or perhaps sensitivity to the state of the cache
+> > line containing thread_info->flags.
+> > 
+> > If somebody runs into such a workload, please try changing this 1 line
+> > of intel_idle.c to limit
+> > the CLFLUSH to C-states deeper than C1E, and let me know what you see.
+> > 
+> > - if (this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+> > + if ((eax > 1) && this_cpu_has(X86_FEATURE_CLFLUSH_MONITOR))
+> >           clflush((void *)&current_thread_info()->flags);
+> 
+> Hm, seems any high frequency switcher scheduling cross-core (pipe-test,
+> or maybe a tbench pair) should show the cost to an affected box.
 
-Add a module parameter stop_before_register so watchdog can be stopped
-before register in driver loading path. Thus we can try to load the
-watchdog driver as early as possible in kdump kernel to ensure vmcore
-capturing.
+Oh yeah.. :) unless of course it's a Q6600 (poke poke).
 
-Don Zickus mentioned that there's the case that bios start the watchdog
-and it is expected that the kernel keep the watchdog alive. To address
-this case I added the module parameter which is false by default so
-it will stop the watchdog only when user provice kernel cmdline
-"watchdog.stop_before_register=1".  
-
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- drivers/watchdog/watchdog_core.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
---- linux.orig/drivers/watchdog/watchdog_core.c
-+++ linux/drivers/watchdog/watchdog_core.c
-@@ -42,6 +42,7 @@
- 
- static DEFINE_IDA(watchdog_ida);
- static struct class *watchdog_class;
-+static bool stop_before_register;
- 
- static void watchdog_check_min_max_timeout(struct watchdog_device *wdd)
- {
-@@ -119,6 +120,9 @@ int watchdog_register_device(struct watc
- 	if (wdd->ops->start == NULL || wdd->ops->stop == NULL)
- 		return -EINVAL;
- 
-+	if (stop_before_register)
-+		wdd->ops->stop(wdd);
-+
- 	watchdog_check_min_max_timeout(wdd);
- 
- 	/*
-@@ -220,6 +224,8 @@ static void __exit watchdog_exit(void)
- subsys_initcall(watchdog_init);
- module_exit(watchdog_exit);
- 
-+module_param(stop_before_register, bool, 0644);
-+
- MODULE_AUTHOR("Alan Cox <alan@lxorguk.ukuu.org.uk>");
- MODULE_AUTHOR("Wim Van Sebroeck <wim@iguana.be>");
- MODULE_DESCRIPTION("WatchDog Timer Driver Core");
