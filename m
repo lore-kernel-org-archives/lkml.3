@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaANA0Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:26:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53833 "EHLO
+	id S1755945AbaANBN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:13:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53863 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaANA0T (ORCPT
+	with ESMTP id S1752617AbaANA00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:19 -0500
+	Mon, 13 Jan 2014 19:26:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 05/27] tun: update file current position
-Date: Mon, 13 Jan 2014 16:26:19 -0800
-Message-Id: <20140114002623.517394255@linuxfoundation.org>
+        halfdog <me@halfdog.net>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.4 23/27] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
+Date: Mon, 13 Jan 2014 16:26:37 -0800
+Message-Id: <20140114002624.037399545@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -29,27 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit d0b7da8afa079ffe018ab3e92879b7138977fc8f ]
+commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Before we do an EMMS in the AMD FXSAVE information leak workaround we
+need to clear any pending exceptions, otherwise we trap with a
+floating-point exception inside this code.
+
+Reported-by: halfdog <me@halfdog.net>
+Tested-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/tun.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -903,6 +903,8 @@ static ssize_t tun_chr_aio_read(struct k
+---
+ arch/x86/include/asm/fpu-internal.h |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -266,12 +266,13 @@ static inline int restore_fpu_checking(s
+ 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. "m" is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"		/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (tsk->thread.fpu.has_fpu));
++	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
++		asm volatile(
++			"fnclex\n\t"
++			"emms\n\t"
++			"fildl %P[addr]"	/* set F?P to defined value */
++			: : [addr] "m" (tsk->thread.fpu.has_fpu));
++	}
  
- 	ret = tun_do_read(tun, iocb, iv, len, file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len);
-+	if (ret > 0)
-+		iocb->ki_pos = ret;
- out:
- 	tun_put(tun);
- 	return ret;
+ 	return fpu_restore_checking(&tsk->thread.fpu);
+ }
 
 
