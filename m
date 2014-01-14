@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaANPUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:20:42 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:53780 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaANPUg (ORCPT
+	id S1751800AbaANPXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:23:15 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:2721 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaANPXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:20:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <52D55479.9010802@zytor.com>
-References: <20140114155331.88d170d3c991b9465c23a537@canb.auug.org.au>
-	<20140114125153.GY7572@laptop.programming.kicks-ass.net>
-	<52D55479.9010802@zytor.com>
-Date: Tue, 14 Jan 2014 16:20:36 +0100
-X-Google-Sender-Auth: PsCGbc1t0TJtT_5bl-B4Qbjwh2Q
-Message-ID: <CAMuHMdUt2jCVLHr9mbV8JVnY4+vv5vEKNfk1=FoSnZ+nx6qhNw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the akpm-current tree with the tip tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+	Tue, 14 Jan 2014 10:23:13 -0500
+Message-ID: <1389712628.1792.277.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] x86, acpi memory hotplug, add parameter to disable
+ memory hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr@hp.com>
-Content-Type: text/plain; charset=UTF-8
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Young <dyoung@redhat.com>, linux-acpi@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 14 Jan 2014 08:17:08 -0700
+In-Reply-To: <52D4A469.9090100@jp.fujitsu.com>
+References: <1389650161-13292-1-git-send-email-prarit@redhat.com>
+	  <CAHGf_=pX303E6VAhL+gApSQ1OsEQHqTuCN8ZSdD3E54YAcFQKA@mail.gmail.com>
+	  <52D47999.5080905@redhat.com> <52D48EC4.5070400@jp.fujitsu.com>
+	 <1389663689.1792.268.camel@misato.fc.hp.com>
+	 <52D4A469.9090100@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 4:15 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 01/14/2014 04:51 AM, Peter Zijlstra wrote:
->> On Tue, Jan 14, 2014 at 03:53:31PM +1100, Stephen Rothwell wrote:
->>> Hi Andrew,
->>>
->>> Today's linux-next merge of the akpm-current tree got a conflict in
->>> kernel/futex.c between commit a52b89ebb6d4 ("futexes: Increase hash table
->>> size for better performance") from the tip tree and commit 61beee6c76e5
->>> ("futex: switch to USER_DS for futex test") from the akpm-current tree.
->>>
->>> @@@ -2869,10 -2748,13 +2871,13 @@@
->>>       * implementation, the non-functional ones will return
->>>       * -ENOSYS.
->>>       */
->>> +    fs = get_fs();
->>> +    set_fs(USER_DS);
->>>      if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
->>>              futex_cmpxchg_enabled = 1;
->>> +    set_fs(fs);
->>>
->>
->> This seems terribly broken, the *futex_value*() ops should not need
->> that; they are supposed to access userspace without any of that.
->
-> I am *guessing* that m68k is has get_fs() == KERNEL_DS at the point that
-> futex_init() is called.  This would seem a bit of a peculiarity to m68k,
-> and as such it would seem like it would be better for it to belong in
-> the m68k-specific code, but since futex_init() is init code and only
-> called once anyway it shouldn't cause any harm...
+On Tue, 2014-01-14 at 11:43 +0900, Yasuaki Ishimatsu wrote:
+> (2014/01/14 10:41), Toshi Kani wrote:
+> > On Tue, 2014-01-14 at 10:11 +0900, Yasuaki Ishimatsu wrote:
+> >   :
+> >>>> I think we need a knob manually enable mem-hotplug when specify memmap. But
+> >>>> it is another story.
+> >>>>
+> >>>> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> >>>
+> >>> As mentioned, self-NAK.  I have seen a system that I needed to specify
+> >>> memmap=exactmap & had hotplug memory.  I will only keep the acpi_no_memhotplug
+> >>> option in the next version of the patch.
+> >>
+> >>
+> >> Your following first patch is simply and makes sense.
+> >>
+> >> http://marc.info/?l=linux-acpi&m=138922019607796&w=2
+> >>
+> >
+> > In this option, it also requires changing kexec-tools to specify the new
+> > option for kdump.  It won't be simpler.
+> 
+> Hmm.
+> I use memm= boot option and hotplug memory for memory hot-remove.
+> At least, the patch cannot be accepted.
 
-Yes it does. So when getting the exception on 68030, we notice it's a kernel
-space access error, not a user space access error, and crash.
+Do you mean mem=nG option?  I am curious to know how memory hot-remove
+works in this case.  Don't acpi_memhotplug add all the memory ranges at
+boot, and defeat the mem=nG option?
 
-Gr{oetje,eeting}s,
+Thanks,
+-Toshi
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
