@@ -1,109 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaANRfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 12:35:42 -0500
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:49318 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaANRfk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 12:35:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <52D55CE5.1060902@ti.com>
-References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org>
-	<52D404DE.2020806@ti.com>
-	<CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com>
-	<52D55CE5.1060902@ti.com>
-Date: Tue, 14 Jan 2014 09:35:38 -0800
-Message-ID: <CAA3XUr2cnF_rxMYvZfjBx22Sa8YE45o_qUU8GNoerQwhWqxhNQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
-From: Victor Kamensky <victor.kamensky@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Tero Kristo <t-kristo@ti.com>, Patch Tracking <patches@linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751991AbaANRg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 12:36:27 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:10125 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462AbaANRgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 12:36:25 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: netfilter-devel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netfilter@vger.kernel.org, coreteam@netfilter.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vvs@openvz.org,
+        Florian Westphal <fw@strlen.de>, Andrey Vagin <avagin@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Vasiliy Averin <vvs@parallels.com>
+Subject: [PATCH] [RFC] netfilter: nf_conntrack: don't relase a conntrack with non-zero refcnt
+Date: Tue, 14 Jan 2014 21:35:48 +0400
+Message-Id: <1389720948-7883-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishanth,
+----
+Eric and Florian, could you look at this patch. When you say,
+that it looks good, I will ask the user to validate it.
+I can't reorder these actions, because it's reproduced on a real host
+with real users. Thanks.
+----
 
-On 14 January 2014 07:51, Nishanth Menon <nm@ti.com> wrote:
-> On 01/14/2014 05:14 AM, Taras Kondratiuk wrote:
->> On 13 January 2014 17:23, Nishanth Menon <nm@ti.com> wrote:
->>> On 01/13/2014 09:03 AM, Taras Kondratiuk wrote:
->>>> From: Victor Kamensky <victor.kamensky@linaro.org>
->>>>
->>>> Assembler functions defined in sleep44xx.S need to byteswap values
->>>> after read / before write from h/w register if code compiled in big
->>>> endian mode. Simple change to do 'rev x, x' before str instruction
->>>> and after ldr instruction that deals with h/w registers.
->>>>
->>>> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
->>>> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->>>> ---
->>>> This is a part of RFC series [1].
->>>> Based on v3.13-rc8.
->>>>
->>>> [1] http://www.spinics.net/lists/linux-omap/msg99927.html
->>>>
->>>>  arch/arm/mach-omap2/sleep44xx.S |   17 +++++++++++++++++
->>>>  1 file changed, 17 insertions(+)
->>>>
->>>
->>> OMAP4 is LE, and if there is a gcc flag for the same, is'nt it cleaner
->>> to deal with it in Makefile rather than trying to make an assembly
->>> meant only for LE by force building it for BE?
->>
->> Hi Nishanth
->> I'm not sure I got your point.
->> Do you propose to build this file as LE while the rest of kernel is BE?
->>
-> I dont see why I should deal with the BE macro for every code change
-> we have in omap4,am335x assembly. The hardware is LE and wont change
-> just coz you are building it for BE. So I dont get the rationale for
-> changing the assembly here - yes, if the assembly can be maintained as
-> LE only mode and the build handling be adequately handled in Makefile
-> (similar to SMC handling), that would be the best.
+nf_conntrack_free can't be called for a conntract with non-zero ref-counter,
+because it can race with nf_conntrack_find_get().
 
-ARM core is capable of running in LE or BE modes. Yes, OMAP
-memory mapped periphery gives data in LE form. When core runs
-in BE mode after reading h/w register it will byteswap it, also before
-writing h/w register it byteswap it. In such way BE kernel can work
-with LE periphery.
+A conntrack slab is created with SLAB_DESTROY_BY_RCU. Non-zero
+ref-conunter says that this conntrack is used now. So when we release a
+conntrack with non-zero counter, we break this assumption.
 
-When it comes to C code that works with LE periphery, if correct
-access functions are used like readl_relaxed and writel_relaxed
-(vs __raw_readl and __raw_writel), the functions will take care of
-the swaps. In case of asm files there is no other way than to insert
-those byteswaps manually and conditionally - they will be enabled only
-if kernel compiled in BE mode. The reason why it could be done only
-manually is that load/store opcodes behavior changes when core
-runs in BE mode (E bit set) in these case ldr/str treat memory as
-big endian. So when LE periphery register is read/stored additional
-byteswaps that compensate for it should be inserted.
+CPU1                                    CPU2
+____nf_conntrack_find()
+                                        nf_ct_put()
+                                         destroy_conntrack()
+                                        ...
+                                        init_conntrack
+                                         __nf_conntrack_alloc (set use = 1)
+atomic_inc_not_zero(&ct->use) (use = 2)
+                                         if (!l4proto->new(ct, skb, dataoff, timeouts))
+                                          nf_conntrack_free(ct); (use = 2 !!!)
+                                        ...
+                                        __nf_conntrack_alloc (set use = 1)
+ if (!nf_ct_key_equal(h, tuple, zone))
+  nf_ct_put(ct); (use = 0)
+   destroy_conntrack()
+                                        /* continue to work with CT */
 
-When BE kernel is built Makefile does take of compiling code in BE
-mode. I.e all proper flags like -mbig-endian and -Wl,--be8 will be set.
+After applying the path "[PATCH] netfilter: nf_conntrack: fix RCU race
+in nf_conntrack_find_get (v3)" another bug was triggered in
+destroy_conntrack():
+<4>[67096.759334] ------------[ cut here ]------------
+<2>[67096.759353] kernel BUG at net/netfilter/nf_conntrack_core.c:211!
+...
+<4>[67096.759837] Pid: 498649, comm: atdd veid: 666 Tainted: G         C ---------------    2.6.32-042stab084.18 #1 042stab084_18 /DQ45CB
+<4>[67096.759932] RIP: 0010:[<ffffffffa03d99ac>]  [<ffffffffa03d99ac>] destroy_conntrack+0x15c/0x190 [nf_conntrack]
+<4>[67096.760255] Call Trace:
+<4>[67096.760255]  [<ffffffff814844a7>] nf_conntrack_destroy+0x17/0x30
+<4>[67096.760255]  [<ffffffffa03d9bb5>] nf_conntrack_find_get+0x85/0x130 [nf_conntrack]
+<4>[67096.760255]  [<ffffffffa03d9fb2>] nf_conntrack_in+0x352/0xb60 [nf_conntrack]
+<4>[67096.760255]  [<ffffffffa048c771>] ipv4_conntrack_local+0x51/0x60 [nf_conntrack_ipv4]
+<4>[67096.760255]  [<ffffffff81484419>] nf_iterate+0x69/0xb0
+<4>[67096.760255]  [<ffffffff814b5b00>] ? dst_output+0x0/0x20
+<4>[67096.760255]  [<ffffffff814845d4>] nf_hook_slow+0x74/0x110
+<4>[67096.760255]  [<ffffffff814b5b00>] ? dst_output+0x0/0x20
+<4>[67096.760255]  [<ffffffff814b66d5>] raw_sendmsg+0x775/0x910
+<4>[67096.760255]  [<ffffffff8104c5a8>] ? flush_tlb_others_ipi+0x128/0x130
+<4>[67096.760255]  [<ffffffff8100bc4e>] ? apic_timer_interrupt+0xe/0x20
+<4>[67096.760255]  [<ffffffff8100bc4e>] ? apic_timer_interrupt+0xe/0x20
+<4>[67096.760255]  [<ffffffff814c136a>] inet_sendmsg+0x4a/0xb0
+<4>[67096.760255]  [<ffffffff81444e93>] ? sock_sendmsg+0x13/0x140
+<4>[67096.760255]  [<ffffffff81444f97>] sock_sendmsg+0x117/0x140
+<4>[67096.760255]  [<ffffffff8102e299>] ? native_smp_send_reschedule+0x49/0x60
+<4>[67096.760255]  [<ffffffff81519beb>] ? _spin_unlock_bh+0x1b/0x20
+<4>[67096.760255]  [<ffffffff8109d930>] ? autoremove_wake_function+0x0/0x40
+<4>[67096.760255]  [<ffffffff814960f0>] ? do_ip_setsockopt+0x90/0xd80
+<4>[67096.760255]  [<ffffffff8100bc4e>] ? apic_timer_interrupt+0xe/0x20
+<4>[67096.760255]  [<ffffffff8100bc4e>] ? apic_timer_interrupt+0xe/0x20
+<4>[67096.760255]  [<ffffffff814457c9>] sys_sendto+0x139/0x190
+<4>[67096.760255]  [<ffffffff810efa77>] ? audit_syscall_entry+0x1d7/0x200
+<4>[67096.760255]  [<ffffffff810ef7c5>] ? __audit_syscall_exit+0x265/0x290
+<4>[67096.760255]  [<ffffffff81474daf>] compat_sys_socketcall+0x13f/0x210
+<4>[67096.760255]  [<ffffffff8104dea3>] ia32_sysret+0x0/0x5
 
-> is the idea of BE build meant to deal with having a single BE kernel
-> build work for all platforms (including LE ones)?
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Florian Westphal <fw@strlen.de>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Vasiliy Averin <vvs@parallels.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ include/net/netfilter/nf_conntrack.h |  1 -
+ net/netfilter/nf_conntrack_core.c    | 18 +++++++++++-------
+ net/netfilter/nf_conntrack_netlink.c |  2 +-
+ net/netfilter/nf_synproxy_core.c     |  4 ++--
+ net/netfilter/xt_CT.c                |  2 +-
+ 5 files changed, 15 insertions(+), 12 deletions(-)
 
-Sort of. The idea here to run BE image on OMAP4 chip, with
-kernel that would deals with LE periphery correctly, but ARM
-core run in BE with special kernel that compiled for BE case (i.e
-CONFIG_CPU_BIG_ENDIAN is set).
+diff --git a/include/net/netfilter/nf_conntrack.h b/include/net/netfilter/nf_conntrack.h
+index 01ea6ee..d338316 100644
+--- a/include/net/netfilter/nf_conntrack.h
++++ b/include/net/netfilter/nf_conntrack.h
+@@ -243,7 +243,6 @@ void nf_ct_untracked_status_or(unsigned long bits);
+ void nf_ct_iterate_cleanup(struct net *net,
+ 			   int (*iter)(struct nf_conn *i, void *data),
+ 			   void *data, u32 portid, int report);
+-void nf_conntrack_free(struct nf_conn *ct);
+ struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
+ 				   const struct nf_conntrack_tuple *orig,
+ 				   const struct nf_conntrack_tuple *repl,
+diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+index b56e53b..c38cc74 100644
+--- a/net/netfilter/nf_conntrack_core.c
++++ b/net/netfilter/nf_conntrack_core.c
+@@ -198,6 +198,8 @@ clean_from_lists(struct nf_conn *ct)
+ 	nf_ct_remove_expectations(ct);
+ }
+ 
++static void nf_conntrack_free(struct nf_conn *ct);
++
+ static void
+ destroy_conntrack(struct nf_conntrack *nfct)
+ {
+@@ -226,9 +228,8 @@ destroy_conntrack(struct nf_conntrack *nfct)
+ 	 * too. */
+ 	nf_ct_remove_expectations(ct);
+ 
+-	/* We overload first tuple to link into unconfirmed or dying list.*/
+-	BUG_ON(hlist_nulls_unhashed(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode));
+-	hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
++	if (!hlist_nulls_unhashed(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode))
++		hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+ 
+ 	NF_CT_STAT_INC(net, delete);
+ 	spin_unlock_bh(&nf_conntrack_lock);
+@@ -772,18 +773,21 @@ struct nf_conn *nf_conntrack_alloc(struct net *net, u16 zone,
+ }
+ EXPORT_SYMBOL_GPL(nf_conntrack_alloc);
+ 
+-void nf_conntrack_free(struct nf_conn *ct)
++static void nf_conntrack_free(struct nf_conn *ct)
+ {
+ 	struct net *net = nf_ct_net(ct);
+ 
++	/* A freed object has refcnt == 0, thats
++	 * the golden rule for SLAB_DESTROY_BY_RCU
++	 */
++	NF_CT_ASSERT(atomic_read(&ct->ct_general.use) == 0);
++
+ 	nf_ct_ext_destroy(ct);
+ 	nf_ct_ext_free(ct);
+ 	kmem_cache_free(net->ct.nf_conntrack_cachep, ct);
+ 	smp_mb__before_atomic_dec();
+ 	atomic_dec(&net->ct.count);
+ }
+-EXPORT_SYMBOL_GPL(nf_conntrack_free);
+-
+ 
+ /* Allocate a new conntrack: we return -ENOMEM if classification
+    failed due to stress.  Otherwise it really is unclassifiable. */
+@@ -835,7 +839,7 @@ init_conntrack(struct net *net, struct nf_conn *tmpl,
+ 	}
+ 
+ 	if (!l4proto->new(ct, skb, dataoff, timeouts)) {
+-		nf_conntrack_free(ct);
++		nf_ct_put(ct);
+ 		pr_debug("init conntrack: can't track with proto module\n");
+ 		return NULL;
+ 	}
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index 3e91ad3..fadd0f3 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -1732,7 +1732,7 @@ ctnetlink_create_conntrack(struct net *net, u16 zone,
+ err2:
+ 	rcu_read_unlock();
+ err1:
+-	nf_conntrack_free(ct);
++	nf_ct_put(ct);
+ 	return ERR_PTR(err);
+ }
+ 
+diff --git a/net/netfilter/nf_synproxy_core.c b/net/netfilter/nf_synproxy_core.c
+index 9858e3e..d12234c 100644
+--- a/net/netfilter/nf_synproxy_core.c
++++ b/net/netfilter/nf_synproxy_core.c
+@@ -381,7 +381,7 @@ static int __net_init synproxy_net_init(struct net *net)
+ err3:
+ 	free_percpu(snet->stats);
+ err2:
+-	nf_conntrack_free(ct);
++	nf_ct_put(ct);
+ err1:
+ 	return err;
+ }
+@@ -390,7 +390,7 @@ static void __net_exit synproxy_net_exit(struct net *net)
+ {
+ 	struct synproxy_net *snet = synproxy_pernet(net);
+ 
+-	nf_conntrack_free(snet->tmpl);
++	nf_ct_put(snet->tmpl);
+ 	synproxy_proc_exit(net);
+ 	free_percpu(snet->stats);
+ }
+diff --git a/net/netfilter/xt_CT.c b/net/netfilter/xt_CT.c
+index da35ac0..da4edfe 100644
+--- a/net/netfilter/xt_CT.c
++++ b/net/netfilter/xt_CT.c
+@@ -237,7 +237,7 @@ out:
+ 	return 0;
+ 
+ err3:
+-	nf_conntrack_free(ct);
++	nf_ct_put(ct);
+ err2:
+ 	nf_ct_l3proto_module_put(par->family);
+ err1:
+-- 
+1.8.4.2
 
-Thanks,
-Victor
-
-> --
-> Regards,
-> Nishanth Menon
