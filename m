@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaANTBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:01:50 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:1852 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaANTBp (ORCPT
+	id S1751566AbaANTGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:06:45 -0500
+Received: from smtprelay0227.hostedemail.com ([216.40.44.227]:50647 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751462AbaANTGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:01:45 -0500
-X-IronPort-AV: E=Sophos;i="4.95,658,1384329600"; 
-   d="scan'208";a="9309508"
-Message-ID: <52D5896B.6000209@broadcom.com>
-Date: Tue, 14 Jan 2014 11:00:59 -0800
-From: Sherman Yin <syin@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 2/4] pinctrl: Add pinctrl binding for Broadcom Capri
- SoCs
-References: <1386787041-6035-1-git-send-email-syin@broadcom.com>	<1387592016-13740-1-git-send-email-syin@broadcom.com>	<1387592016-13740-3-git-send-email-syin@broadcom.com>	<CACRpkdaAq15wKD900SqN1sQFLBATiuA3vNoua+KJGHU+gdCgqg@mail.gmail.com>	<52CC6782.4060309@broadcom.com> <CACRpkdYyz+zrzt0y135Wcq-yUMhiHOb1ov15+SsnVOcZvad96g@mail.gmail.com>
-In-Reply-To: <CACRpkdYyz+zrzt0y135Wcq-yUMhiHOb1ov15+SsnVOcZvad96g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 14 Jan 2014 14:06:41 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12555:12679:12740:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: glove28_39ff9fd954a3c
+X-Filterd-Recvd-Size: 2849
+Message-ID: <1389726397.24849.47.camel@joe-AO722>
+Subject: Re: [PATCH 3/3] i2c: i2c-core: fix coding style issues in i2c-core.c
+From: Joe Perches <joe@perches.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 14 Jan 2014 11:06:37 -0800
+In-Reply-To: <20140114183845.GD10340@katana>
+References: <525C0CDB.6020305@gmail.com> <20140114183845.GD10340@katana>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-01-14 02:16 AM, Linus Walleij wrote:
-> On Tue, Jan 7, 2014 at 9:45 PM, Sherman Yin <syin@broadcom.com> wrote:
->> On 14-01-07 09:15 AM, Linus Walleij wrote:
->
->> Is that what you wanted to see in pinctrl-bindings.txt, or is there
->> something else you want to see added to that txt file?  I didn't want to add
->> the description of slew-rate arguments there because this is capri-specific.
->> I'm not quite sure what else to add.
-> (...)
->> That doc already says bias-pull-up is specified in Ohm, and the specific
->> values are chip-specific, so I don't think they should be mentioned there.
->
-> You're right, forget about this. I didn't realize the pinctrl bindings doc
-> was that good...
->
->>>> +Optional Properties (for HDMI pins):
->>>> +
->>>> +- function:                    String. Specifies the pin mux selection.
->>>> Values
->>>> +                               must be one of: "alt1", "alt2", "alt3",
->>>> "alt4"
->>>> +- slew-rate:                   Integer. Controls slew rate.
->>>> +                                       0: Standard(100kbps)&
->>>> Fast(400kbps) mode
->>>> +                                       1: Highspeed (3.4Mbps) mode
->>>
->>> Hmmmm slew rate is not specifiec in "bps" but rather in
->>> something like volts per second. But maybe it's best to keep
->>> this value driver-specific.
->>
->> Right, I think the slew-rates values are capri specific.
->
-> OK
->
+On Tue, 2014-01-14 at 19:38 +0100, Wolfram Sang wrote:
+> > --- a/drivers/i2c/i2c-core.c
+> > +++ b/drivers/i2c/i2c-core.c
+> > @@ -1737,9 +1737,9 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+> >  		for (ret = 0; ret < num; ret++) {
+> >  			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, len=%d%s\n",
+> >  				ret,
+> > -				((msgs[ret].flags & I2C_M_RD) ? 'R' : 'W'),
+> > +				msgs[ret].flags & I2C_M_RD ? 'R' : 'W',
+> >  				msgs[ret].addr, msgs[ret].len,
+> > -				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
+> > +				msgs[ret].flags & I2C_M_RECV_LEN ? "+" : "");
+> 
+> Don't spend time changing too much here like the paranthesis. It will
+> probably be removed soon in favour of the tracing approach.
 
-Great!  Is there anything else you would like to see changed before this 
-patchset can be accepted?
+That'd be good.  There are a lot of function tracing style
+dev_dbg uses in i2c-core that can be removed.
 
-Thanks,
-Sherman
+Just an fyi not to Raghavendra:
+
+This sort of loop could have been further modified removing
+the unnecessary #if DEBUG/#endif too
+
+Also, reusing ret for a loop index is efficient, but a bit odd.
+
+Maybe something like:
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index d74c0b3..5ca078e 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1758,14 +1758,13 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+ 	 */
+ 
+ 	if (adap->algo->master_xfer) {
+-#ifdef DEBUG
+-		for (ret = 0; ret < num; ret++) {
+-			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, "
+-				"len=%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
+-				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
+-				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
+-		}
+-#endif
++		int i;
++
++		for (i = 0; i < num; i++)
++			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, len=%d%s\n",
++				ret, msgs[i].flags & I2C_M_RD ? 'R' : 'W',
++				msgs[i].addr, msgs[i].len,
++				msgs[i].flags & I2C_M_RECV_LEN ? "+" : "");
+ 
+ 		if (in_atomic() || irqs_disabled()) {
+ 			ret = i2c_trylock_adapter(adap);
+
 
