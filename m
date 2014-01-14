@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaANA6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:58:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54118 "EHLO
+	id S1755440AbaANA6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:58:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54121 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbaANA1e (ORCPT
+	with ESMTP id S1752721AbaANA1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:34 -0500
+	Mon, 13 Jan 2014 19:27:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Li RongQing <roy.qing.li@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 26/62] ipv6: always set the new created dsts from in ip6_rt_copy
-Date: Mon, 13 Jan 2014 16:26:51 -0800
-Message-Id: <20140114002711.209002032@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 53/62] ACPI / Battery: Add a _BIX quirk for NEC LZ750/LS
+Date: Mon, 13 Jan 2014 16:27:18 -0800
+Message-Id: <20140114002711.972165301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,40 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-[ Upstream commit 24f5b855e17df7e355eacd6c4a12cc4d6a6c9ff0 ]
+commit a90b40385735af0d3031f98e97b439e8944a31b3 upstream.
 
-ip6_rt_copy only sets dst.from if ort has flag RTF_ADDRCONF and RTF_DEFAULT.
-but the prefix routes which did get installed by hand locally can have an
-expiration, and no any flag combination which can ensure a potential from
-does never expire, so we should always set the new created dst's from.
+The AML method _BIX of NEC LZ750/LS returns a broken package which
+skips the first member "Revision" (ACPI 5.0, Table 10-234).
 
-This also fixes the new created dst is always expired since the ort, which
-is created by RA, maybe has RTF_EXPIRES and RTF_ADDRCONF, but no RTF_DEFAULT.
+Add a quirk for this machine to skip member "Revision" during parsing
+the package returned by _BIX.
 
-Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=67351
+Reported-and-tested-by: Francisco Castro <fcr@adinet.com.uy>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1838,9 +1838,7 @@ static struct rt6_info *ip6_rt_copy(stru
- 		else
- 			rt->rt6i_gateway = *dest;
- 		rt->rt6i_flags = ort->rt6i_flags;
--		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
--		    (RTF_DEFAULT | RTF_ADDRCONF))
--			rt6_set_from(rt, ort);
-+		rt6_set_from(rt, ort);
- 		rt->rt6i_metric = 0;
+---
+ drivers/acpi/battery.c |   21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -68,6 +68,7 @@ MODULE_AUTHOR("Alexey Starikovskiy <asta
+ MODULE_DESCRIPTION("ACPI Battery Driver");
+ MODULE_LICENSE("GPL");
  
- #ifdef CONFIG_IPV6_SUBTREES
++static int battery_bix_broken_package;
+ static unsigned int cache_time = 1000;
+ module_param(cache_time, uint, 0644);
+ MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
+@@ -443,7 +444,12 @@ static int acpi_battery_get_info(struct
+ 		ACPI_EXCEPTION((AE_INFO, status, "Evaluating %s", name));
+ 		return -ENODEV;
+ 	}
+-	if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
++
++	if (battery_bix_broken_package)
++		result = extract_package(battery, buffer.pointer,
++				extended_info_offsets + 1,
++				ARRAY_SIZE(extended_info_offsets) - 1);
++	else if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
+ 		result = extract_package(battery, buffer.pointer,
+ 				extended_info_offsets,
+ 				ARRAY_SIZE(extended_info_offsets));
+@@ -1064,6 +1070,17 @@ static int battery_notify(struct notifie
+ 	return 0;
+ }
+ 
++static struct dmi_system_id bat_dmi_table[] = {
++	{
++		.ident = "NEC LZ750/LS",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "NEC"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "PC-LZ750LS"),
++		},
++	},
++	{},
++};
++
+ static int acpi_battery_add(struct acpi_device *device)
+ {
+ 	int result = 0;
+@@ -1174,6 +1191,8 @@ static void __init acpi_battery_init_asy
+ 	if (!acpi_battery_dir)
+ 		return;
+ #endif
++	if (dmi_check_system(bat_dmi_table))
++		battery_bix_broken_package = 1;
+ 	if (acpi_bus_register_driver(&acpi_battery_driver) < 0) {
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 		acpi_unlock_battery_dir(acpi_battery_dir);
 
 
