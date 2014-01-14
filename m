@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaANAlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:41:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54400 "EHLO
+	id S1753876AbaANA2h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:28:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882AbaANA2i (ORCPT
+	with ESMTP id S1753762AbaANA2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:38 -0500
+	Mon, 13 Jan 2014 19:28:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
+        Daniel Golle <daniel.golle@gmail.com>,
+        Stefan Tomanek <stefan.tomanek@wertarbyte.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 45/77] sfc: RX buffer allocation takes prefix size into account in IP header alignment
-Date: Mon, 13 Jan 2014 16:28:06 -0800
-Message-Id: <20140114002753.784796714@linuxfoundation.org>
+Subject: [PATCH 3.12 15/77] inet: fix NULL pointer Oops in fib(6)_rule_suppress
+Date: Mon, 13 Jan 2014 16:27:36 -0800
+Message-Id: <20140114002752.931740206@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,85 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+From: Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 
-[ Upstream commit 2ec030144f648a6dd208f95f55ece212f1b72771 ]
+[ Upstream commit 673498b8ed4c4d4b7221c5309d891c5eac2b7528 ]
 
-rx_prefix_size is 4-bytes aligned on Falcon/Siena (16 bytes), but it is equal
-to 14 on EF10. So, it should be taken into account if arch requires IP header
-to be 4-bytes aligned (via NET_IP_ALIGN).
+This changes ensures that the routing entry investigated by the suppress
+function actually does point to a device struct before following that pointer,
+fixing a possible kernel oops situation when verifying the interface group
+associated with a routing table entry.
 
-Fixes: 8127d661e77f ('sfc: Add support for Solarflare SFC9100 family')
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+According to Daniel Golle, this Oops can be triggered by a user process trying
+to establish an outgoing IPv6 connection while having no real IPv6 connectivity
+set up (only autoassigned link-local addresses).
+
+Fixes: 6ef94cfafba15 ("fib_rules: add route suppression based on ifgroup")
+
+Reported-by: Daniel Golle <daniel.golle@gmail.com>
+Tested-by: Daniel Golle <daniel.golle@gmail.com>
+Signed-off-by: Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/efx.c        |    4 +++-
- drivers/net/ethernet/sfc/net_driver.h |    3 +++
- drivers/net/ethernet/sfc/rx.c         |    6 +++---
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ net/ipv4/fib_rules.c  |    5 ++++-
+ net/ipv6/fib6_rules.c |    6 +++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -585,7 +585,7 @@ static void efx_start_datapath(struct ef
- 			   EFX_MAX_FRAME_LEN(efx->net_dev->mtu) +
- 			   efx->type->rx_buffer_padding);
- 	rx_buf_len = (sizeof(struct efx_rx_page_state) +
--		      NET_IP_ALIGN + efx->rx_dma_len);
-+		      efx->rx_ip_align + efx->rx_dma_len);
- 	if (rx_buf_len <= PAGE_SIZE) {
- 		efx->rx_scatter = efx->type->always_rx_scatter;
- 		efx->rx_buffer_order = 0;
-@@ -2554,6 +2554,8 @@ static int efx_init_struct(struct efx_ni
- 
- 	efx->net_dev = net_dev;
- 	efx->rx_prefix_size = efx->type->rx_prefix_size;
-+	efx->rx_ip_align =
-+		NET_IP_ALIGN ? (efx->rx_prefix_size + NET_IP_ALIGN) % 4 : 0;
- 	efx->rx_packet_hash_offset =
- 		efx->type->rx_hash_offset - efx->type->rx_prefix_size;
- 	spin_lock_init(&efx->stats_lock);
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -673,6 +673,8 @@ struct vfdi_status;
-  * @n_channels: Number of channels in use
-  * @n_rx_channels: Number of channels used for RX (= number of RX queues)
-  * @n_tx_channels: Number of channels used for TX
-+ * @rx_ip_align: RX DMA address offset to have IP header aligned in
-+ *	in accordance with NET_IP_ALIGN
-  * @rx_dma_len: Current maximum RX DMA length
-  * @rx_buffer_order: Order (log2) of number of pages for each RX buffer
-  * @rx_buffer_truesize: Amortised allocation size of an RX buffer,
-@@ -806,6 +808,7 @@ struct efx_nic {
- 	unsigned rss_spread;
- 	unsigned tx_channel_offset;
- 	unsigned n_tx_channels;
-+	unsigned int rx_ip_align;
- 	unsigned int rx_dma_len;
- 	unsigned int rx_buffer_order;
- 	unsigned int rx_buffer_truesize;
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -93,7 +93,7 @@ static inline void efx_sync_rx_buffer(st
- 
- void efx_rx_config_page_split(struct efx_nic *efx)
+--- a/net/ipv4/fib_rules.c
++++ b/net/ipv4/fib_rules.c
+@@ -104,7 +104,10 @@ errout:
+ static bool fib4_rule_suppress(struct fib_rule *rule, struct fib_lookup_arg *arg)
  {
--	efx->rx_page_buf_step = ALIGN(efx->rx_dma_len + NET_IP_ALIGN,
-+	efx->rx_page_buf_step = ALIGN(efx->rx_dma_len + efx->rx_ip_align,
- 				      EFX_RX_BUF_ALIGNMENT);
- 	efx->rx_bufs_per_page = efx->rx_buffer_order ? 1 :
- 		((PAGE_SIZE - sizeof(struct efx_rx_page_state)) /
-@@ -188,9 +188,9 @@ static int efx_init_rx_buffers(struct ef
- 		do {
- 			index = rx_queue->added_count & rx_queue->ptr_mask;
- 			rx_buf = efx_rx_buffer(rx_queue, index);
--			rx_buf->dma_addr = dma_addr + NET_IP_ALIGN;
-+			rx_buf->dma_addr = dma_addr + efx->rx_ip_align;
- 			rx_buf->page = page;
--			rx_buf->page_offset = page_offset + NET_IP_ALIGN;
-+			rx_buf->page_offset = page_offset + efx->rx_ip_align;
- 			rx_buf->len = efx->rx_dma_len;
- 			rx_buf->flags = 0;
- 			++rx_queue->added_count;
+ 	struct fib_result *result = (struct fib_result *) arg->result;
+-	struct net_device *dev = result->fi->fib_dev;
++	struct net_device *dev = NULL;
++
++	if (result->fi)
++		dev = result->fi->fib_dev;
+ 
+ 	/* do not accept result if the route does
+ 	 * not meet the required prefix length
+--- a/net/ipv6/fib6_rules.c
++++ b/net/ipv6/fib6_rules.c
+@@ -122,7 +122,11 @@ out:
+ static bool fib6_rule_suppress(struct fib_rule *rule, struct fib_lookup_arg *arg)
+ {
+ 	struct rt6_info *rt = (struct rt6_info *) arg->result;
+-	struct net_device *dev = rt->rt6i_idev->dev;
++	struct net_device *dev = NULL;
++
++	if (rt->rt6i_idev)
++		dev = rt->rt6i_idev->dev;
++
+ 	/* do not accept result if the route does
+ 	 * not meet the required prefix length
+ 	 */
 
 
