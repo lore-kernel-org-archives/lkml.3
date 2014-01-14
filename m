@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370AbaANAyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:54:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54185 "EHLO
+	id S1754772AbaANAzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:55:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516AbaANA1v (ORCPT
+	with ESMTP id S1753509AbaANA1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:51 -0500
+	Mon, 13 Jan 2014 19:27:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        halfdog <me@halfdog.net>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.10 58/62] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
-Date: Mon, 13 Jan 2014 16:27:23 -0800
-Message-Id: <20140114002712.124558857@linuxfoundation.org>
+        Nix <nix@esperi.org.uk>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 56/62] SCSI: sd: Reduce buffer size for vpd request
+Date: Mon, 13 Jan 2014 16:27:21 -0800
+Message-Id: <20140114002712.055839616@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,45 +31,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
 
-commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
+commit af73623f5f10eb3832c87a169b28f7df040a875b upstream.
 
-Before we do an EMMS in the AMD FXSAVE information leak workaround we
-need to clear any pending exceptions, otherwise we trap with a
-floating-point exception inside this code.
+Somehow older areca firmware versions have issues with
+scsi_get_vpd_page() and a large buffer, the firmware
+seems to crash and the scsi error-handler will start endless
+recovery retries.
+Limiting the buf-size to 64-bytes fixes this issue with older
+firmware versions (<1.49 for my controller).
 
-Reported-by: halfdog <me@halfdog.net>
-Tested-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Fixes a regression with areca controllers and older firmware versions
+introduced by commit: 66c28f97120e8a621afd5aa7a31c4b85c547d33d
+
+Reported-by: Nix <nix@esperi.org.uk>
+Tested-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/fpu-internal.h |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/scsi/sd.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -295,12 +295,13 @@ static inline int restore_fpu_checking(s
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. "m" is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"		/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (tsk->thread.fpu.has_fpu));
-+	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %P[addr]"	/* set F?P to defined value */
-+			: : [addr] "m" (tsk->thread.fpu.has_fpu));
-+	}
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2634,13 +2634,16 @@ static void sd_read_write_same(struct sc
+ 	}
  
- 	return fpu_restore_checking(&tsk->thread.fpu);
- }
+ 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
++		/* too large values might cause issues with arcmsr */
++		int vpd_buf_len = 64;
++
+ 		sdev->no_report_opcodes = 1;
+ 
+ 		/* Disable WRITE SAME if REPORT SUPPORTED OPERATION
+ 		 * CODES is unsupported and the device has an ATA
+ 		 * Information VPD page (SAT).
+ 		 */
+-		if (!scsi_get_vpd_page(sdev, 0x89, buffer, SD_BUF_SIZE))
++		if (!scsi_get_vpd_page(sdev, 0x89, buffer, vpd_buf_len))
+ 			sdev->no_write_same = 1;
+ 	}
+ 
 
 
