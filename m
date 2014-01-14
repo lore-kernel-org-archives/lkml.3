@@ -1,169 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaANWpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:45:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253AbaANWpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:45:36 -0500
-Date: Tue, 14 Jan 2014 17:45:23 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: William Roberts <bill.c.roberts@gmail.com>
-Cc: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, sds@tycho.nsa.gov,
-        William Roberts <wroberts@tresys.com>
-Subject: Re: [RFC][PATCH 3/3] audit: Audit proc cmdline value
-Message-ID: <20140114224523.GF23577@madcap2.tricolour.ca>
-References: <1389022230-24664-1-git-send-email-wroberts@tresys.com>
- <1389022230-24664-3-git-send-email-wroberts@tresys.com>
+	id S1751921AbaANWqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:46:16 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:37786 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaANWqN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 17:46:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389022230-24664-3-git-send-email-wroberts@tresys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGo_u6oGDK5s0SeE6Z7UFM6eYdgoy-E+Tj67+pBWP-wQ3r9=QA@mail.gmail.com>
+References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org>
+	<52D404DE.2020806@ti.com>
+	<CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com>
+	<52D55CE5.1060902@ti.com>
+	<CAA3XUr2cnF_rxMYvZfjBx22Sa8YE45o_qUU8GNoerQwhWqxhNQ@mail.gmail.com>
+	<CAGo_u6oKpRFnPAWaqr9NTNAJB+m56jiDgBUgvsiZpaQ-3SF2kw@mail.gmail.com>
+	<CAA3XUr1_cNuPmMU6Fs6c7Si2So0VFGcLyGJe+tS_R47BVKRXnw@mail.gmail.com>
+	<CAGo_u6p7ErrKOMy4Ljg3nehVpd=DOg3XDn6gZ1nrFE_OuOjsWg@mail.gmail.com>
+	<52D5A60C.7080800@ti.com>
+	<CAGo_u6oGDK5s0SeE6Z7UFM6eYdgoy-E+Tj67+pBWP-wQ3r9=QA@mail.gmail.com>
+Date: Wed, 15 Jan 2014 00:46:12 +0200
+Message-ID: <CAArO44tKGZ57-YToTEK_wGtV2WaCXvOWdfqBvHPtJ4=uJCbdgw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
+From: Taras Kondratiuk <taras.kondratiuk@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Patch Tracking <patches@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/06, William Roberts wrote:
-> During an audit event, cache and print the value of the process's
-> cmdline value (proc/<pid>/cmdline). This is useful in situations
-> where processes are started via fork'd virtual machines where the
-> comm field is incorrect. Often times, setting the comm field still
-> is insufficient as the comm width is not very wide and most
-> virtual machine "package names" do not fit. Also, during execution,
-> many threads have their comm field set as well. By tying it back to
-> the global cmdline value for the process, audit records will be more
-> complete in systems with these properties. An example of where this
-> is useful and applicable is in the realm of Android. With Android,
-> their is no fork/exec for VM instances. The bare, preloaded Dalvik
-> VM listens for a fork and specialize request. When this request comes
-> in, the VM forks, and the loads the specific application (specializing).
-> This was done to take advantage of COW and to not require a load of
-> basic packages by the VM on very app spawn. When this spawn occurs,
-> the package name is set via setproctitle() and shows up in procfs.
-> Many of these package names are longer then 16 bytes, the historical
-> width of task->comm. Having the cmdline in the audit records will
-> couple the application back to the record directly. Also, on my
-> Debian development box, some audit records were more useful then
-> what was printed under comm.
+On 14 January 2014 23:13, Nishanth Menon <nm@ti.com> wrote:
+> On Tue, Jan 14, 2014 at 3:03 PM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>>
+>>> ok.. some sort of Linaro thing about which I have no background about
+>>> - but dont really care in this context.
+>>>
+>> Nothing related Linaro. Its just that platforms are supporting ARM BE
+>> mode and Linaro folks had working patches for Panda. So I suggested
+>> to get them on the lists.
+>
+> I tend to think -> is this with OFF mode and CPUidle completely
+> working? All context save and restore works with this? on HS and GP
+> devices with BE mode builds? works on SDP4430,60 variations,
+> considered reuse with AM43xx which could use parts of that logic?
+>
+> I mean to indicate that terms like "works on panda" tends always to be relative.
 
-So...  What happenned to allocating only what you need instead of the
-full 4k buffer?  Your test results showed promise with only 64 or 128
-bytes allocated.  I recall seeing some discussion about a race between
-testing for the size needed and actually filling the buffer, but was
-hoping that would be worked on rather than reverting back to the full
-4k.
+Nishanth, let's be objective here.
+CPUidle on 4460 does *not* work in mainline for at least two kernel releases
+even for LE [1]. That fix exists because that "one group of folks"
+faced the issue
+during BE testing. Looks like not much people care about CPUIdle on OMAP4.
 
-> The cached cmdline is tied to the life-cycle of the audit_context
-> structure and is built on demand.
-> 
-> Example denial prior to patch (Ubuntu):
-> CALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
-> 
-> After Patches (Ubuntu):
-> type=SYSCALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 cmdline="/usr/lib/dbus-1.0/dbus-daemon-launch-helper" key=(null)
-> 
-> Example denial prior to patch (Android):
-> type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" subj=u:r:bluetooth:s0 key=(null)
-> 
-> After Patches (Android):
-> type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" cmdline="com.android.bluetooth" subj=u:r:bluetooth:s0 key=(null)
-> 
-> Signed-off-by: William Roberts <wroberts@tresys.com>
-> ---
->  kernel/audit.h   |    1 +
->  kernel/auditsc.c |   32 ++++++++++++++++++++++++++++++++
->  2 files changed, 33 insertions(+)
-> 
-> diff --git a/kernel/audit.h b/kernel/audit.h
-> index b779642..bd6211f 100644
-> --- a/kernel/audit.h
-> +++ b/kernel/audit.h
-> @@ -202,6 +202,7 @@ struct audit_context {
->  		} execve;
->  	};
->  	int fds[2];
-> +	char *cmdline;
->  
->  #if AUDIT_DEBUG
->  	int		    put_count;
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index 90594c9..a4c2003 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -842,6 +842,12 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
->  	return context;
->  }
->  
-> +static inline void audit_cmdline_free(struct audit_context *context)
-> +{
-> +	kfree(context->cmdline);
-> +	context->cmdline = NULL;
-> +}
-> +
->  static inline void audit_free_names(struct audit_context *context)
->  {
->  	struct audit_names *n, *next;
-> @@ -955,6 +961,7 @@ static inline void audit_free_context(struct audit_context *context)
->  	audit_free_aux(context);
->  	kfree(context->filterkey);
->  	kfree(context->sockaddr);
-> +	audit_cmdline_free(context);
->  	kfree(context);
->  }
->  
-> @@ -1271,6 +1278,30 @@ static void show_special(struct audit_context *context, int *call_panic)
->  	audit_log_end(ab);
->  }
->  
-> +static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
-> +			 struct audit_context *context)
-> +{
-> +	int res;
-> +	char *buf;
-> +	char *msg = "(null)";
-> +	audit_log_format(ab, " cmdline=");
-> +
-> +	/* Not  cached */
-> +	if (!context->cmdline) {
-> +		buf = kmalloc(PATH_MAX, GFP_KERNEL);
-> +		if (!buf)
-> +			goto out;
-> +		res = get_cmdline(tsk, buf, PATH_MAX);
-> +		/* Ensure NULL terminated */
-> +		if (buf[res-1] != '\0')
-> +			buf[res-1] = '\0';
-> +		context->cmdline = buf;
-> +	}
-> +	msg = context->cmdline;
-> +out:
-> +	audit_log_untrustedstring(ab, msg);
-> +}
-> +
->  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
->  {
->  	int i, call_panic = 0;
-> @@ -1302,6 +1333,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
->  			 context->name_count);
->  
->  	audit_log_task_info(ab, tsk);
-> +	audit_log_cmdline(ab, tsk, context);
->  	audit_log_key(ab, context->filterkey);
->  	audit_log_end(ab);
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> Linux-audit mailing list
-> Linux-audit@redhat.com
-> https://www.redhat.com/mailman/listinfo/linux-audit
+> It is nice to see it as a proof of concept, but I'd hate to see some
+> dead code lying around in kernel and folks blindly following suit and
+> introducing macros for new assembly for a feature that in practice
+> just one group of folks care about and creates additional burden for
+> rest of folks trying to keep that functionality going as we jump from
+> one "device tree" style churn to another "framework"? Not to mean that
+> good features should be kept away.. but personally, I could not find
+> convincing arguments in this case..
 
-- RGB
+In general I understand your concerns from previous e-mails, but I don't
+see a point to spend time for a generic solution for a single user.
+If there will be other platforms which need similar changes, then we can
+think of some generic solution. Let's drop this patch for now.
+We can just disable CPUidle for BE tasks or keep this patch forked.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+[1] https://lkml.org/lkml/2013/10/22/401
+
+-- 
+Regards,
+Taras Kondratiuk
