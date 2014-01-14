@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbaANKLs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:11:48 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:42797 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751354AbaANKLo (ORCPT
+	id S1751458AbaANKQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:16:53 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:53969 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaANKQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:11:44 -0500
-Message-ID: <52D50C02.3040708@st.com>
-Date: Tue, 14 Jan 2014 10:05:54 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 14 Jan 2014 05:16:45 -0500
 MIME-Version: 1.0
-To: <srinivas.kandagatla@st.com>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        David Miller <davem@davemloft.net>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 0/9]net: stmmac PM related fixes.
-References: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
+In-Reply-To: <52CC6782.4060309@broadcom.com>
+References: <1386787041-6035-1-git-send-email-syin@broadcom.com>
+	<1387592016-13740-1-git-send-email-syin@broadcom.com>
+	<1387592016-13740-3-git-send-email-syin@broadcom.com>
+	<CACRpkdaAq15wKD900SqN1sQFLBATiuA3vNoua+KJGHU+gdCgqg@mail.gmail.com>
+	<52CC6782.4060309@broadcom.com>
+Date: Tue, 14 Jan 2014 11:16:45 +0100
+Message-ID: <CACRpkdYyz+zrzt0y135Wcq-yUMhiHOb1ov15+SsnVOcZvad96g@mail.gmail.com>
+Subject: Re: [PATCH v4 2/4] pinctrl: Add pinctrl binding for Broadcom Capri SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Mark Brown <broonie@kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave/Peppe,
-Do you have any plans to take this series?
+On Tue, Jan 7, 2014 at 9:45 PM, Sherman Yin <syin@broadcom.com> wrote:
+> On 14-01-07 09:15 AM, Linus Walleij wrote:
 
-Peppe already Acked these series.
+> Is that what you wanted to see in pinctrl-bindings.txt, or is there
+> something else you want to see added to that txt file?  I didn't want to add
+> the description of slew-rate arguments there because this is capri-specific.
+> I'm not quite sure what else to add.
+(...)
+> That doc already says bias-pull-up is specified in Ohm, and the specific
+> values are chip-specific, so I don't think they should be mentioned there.
 
-Please let me know if you want me to rebase these patches to a
-particular branch.
+You're right, forget about this. I didn't realize the pinctrl bindings doc
+was that good...
 
-Thanks,
-srini
+>>> +Optional Properties (for HDMI pins):
+>>> +
+>>> +- function:                    String. Specifies the pin mux selection.
+>>> Values
+>>> +                               must be one of: "alt1", "alt2", "alt3",
+>>> "alt4"
+>>> +- slew-rate:                   Integer. Controls slew rate.
+>>> +                                       0: Standard(100kbps)&
+>>> Fast(400kbps) mode
+>>> +                                       1: Highspeed (3.4Mbps) mode
+>>
+>> Hmmmm slew rate is not specifiec in "bps" but rather in
+>> something like volts per second. But maybe it's best to keep
+>> this value driver-specific.
+>
+> Right, I think the slew-rates values are capri specific.
 
-On 18/11/13 11:30, srinivas.kandagatla@st.com wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> 
-> Hi Peppe,
-> 
-> During PM_SUSPEND_FREEZE testing, I have noticed that PM support in STMMAC is
-> partly broken. I had to re-arrange the code to do PM correctly. There were lot
-> of things I did not like personally and some bits did not work in the first
-> place. I thought this is the nice opportunity to clean the mess up.
-> 
-> Here is what I did:
->  any
-> 1> Test PM suspend freeeze via pm_test
-> It did not work for following reasons.
->  - If the power to gmac is removed when it enters in low power state.
-> stmmac_resume could not cope up with such behaviour, it was expecting the ip
-> register contents to be still same as before entering low power, This
-> assumption is wrong. So I started to add some code to do Hardware
-> initialization, thats when I started to re-arrange the code. stmmac_open
-> contains both resource and memory allocations and hardware initialization. I
-> had to separate these two things in two different functions.
-> 
-> These two patches do that
->   net: stmmac: move dma allocation to new function
->   net: stmmac: move hardware setup for stmmac_open to new function
-> 
-> And rest of the other patches are fixing the loose ends, things like mdio
-> reset, which might be necessary in cases likes hibernation(I did not test).
-> 
-> In hibernation cases the driver was just unregistering with subsystems and
-> releasing resources which I did not like and its not necessary to do this as
-> part of PM. So using the same stmmac_suspend/resume made more sense for
-> hibernation cases than using stmmac_open/release.
-> Also fixed a NULL pointer dereference bug too.
-> 
-> 2> Test WOL via PM_SUSPEND_FREEZE
-> Did get an wakeup interrupt, but could not wakeup a freeze system.
-> So I had to add pm_wakeup_event to the driver.
-> net: stmmac: notify the PM core of a wakeup event. patch.
-> 
-> Also few patches like 
->   net: stmmac: make stmmac_mdio_reset non-static
->   net: stmmac: restore pinstate in pm resume.
-> helps the resume function to reset the phy and put back the pins in default
-> state.
-> 
-> Comments?
-> 
-> Thanks,
-> srini
-> 
-> Srinivas Kandagatla (9):
->   net: stmmac: support max-speed device tree property
->   net: stmmac: mdio: remove reset gpio free
->   net: stmmac: move dma allocation to new function
->   net: stmmac: move hardware setup for stmmac_open to new function
->   net: stmmac: make stmmac_mdio_reset non-static
->   net: stmmac: fix power mangement suspend-resume case
->   net: stmmac: use suspend functions for hibernation
->   net: stmmac: restore pinstate in pm resume.
->   net: stmmac: notify the PM core of a wakeup event.
-> 
->  drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    4 +-
->  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |  360 ++++++++++----------
->  drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c  |    3 +-
->  .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   51 +--
->  include/linux/stmmac.h                             |    1 +
->  5 files changed, 209 insertions(+), 210 deletions(-)
-> 
+OK
 
+Yours,
+Linus Walleij
