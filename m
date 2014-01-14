@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268AbaANBJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:09:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53958 "EHLO
+	id S1753050AbaANA0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:26:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53906 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110AbaANA04 (ORCPT
+	with ESMTP id S1752916AbaANA0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:56 -0500
+	Mon, 13 Jan 2014 19:26:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Florian Westphal <fw@strlen.de>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 13/62] packet: fix send path when running with proto == 0
-Date: Mon, 13 Jan 2014 16:26:38 -0800
-Message-Id: <20140114002710.837685142@linuxfoundation.org>
+Subject: [PATCH 3.4 17/27] net: rose: restore old recvmsg behavior
+Date: Mon, 13 Jan 2014 16:26:31 -0800
+Message-Id: <20140114002623.867006270@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
-References: <20140114002710.464561569@linuxfoundation.org>
+In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
+References: <20140114002623.356220317@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,210 +26,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit 66e56cd46b93ef407c60adcac62cf33b06119d50 ]
+[ Upstream commit f81152e35001e91997ec74a7b4e040e6ab0acccf ]
 
-Commit e40526cb20b5 introduced a cached dev pointer, that gets
-hooked into register_prot_hook(), __unregister_prot_hook() to
-update the device used for the send path.
+recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
 
-We need to fix this up, as otherwise this will not work with
-sockets created with protocol = 0, plus with sll_protocol = 0
-passed via sockaddr_ll when doing the bind.
+After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
+(net: rework recvmsg handler msg_name and msg_namelen logic), we now
+always take the else branch due to namelen being initialized to 0.
 
-So instead, assign the pointer directly. The compiler can inline
-these helper functions automagically.
+Digging in netdev-vger-cvs git repo shows that msg_namelen was
+initialized with a fixed-size since at least 1995, so the else branch
+was never taken.
 
-While at it, also assume the cached dev fast-path as likely(),
-and document this variant of socket creation as it seems it is
-not widely used (seems not even the author of TX_RING was aware
-of that in his reference example [1]). Tested with reproducer
-from e40526cb20b5.
+Compile tested only.
 
- [1] http://wiki.ipxwarzone.com/index.php5?title=Linux_packet_mmap#Example
-
-Fixes: e40526cb20b5 ("packet: fix use after free race in send path when dev is released")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Tested-by: Salam Noureddine <noureddine@aristanetworks.com>
-Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- Documentation/networking/packet_mmap.txt |   10 ++++
- net/packet/af_packet.c                   |   65 +++++++++++++++++++------------
- 2 files changed, 50 insertions(+), 25 deletions(-)
+ net/rose/af_rose.c |   16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
---- a/Documentation/networking/packet_mmap.txt
-+++ b/Documentation/networking/packet_mmap.txt
-@@ -123,6 +123,16 @@ Transmission process is similar to captu
- [shutdown]  close() --------> destruction of the transmission socket and
-                               deallocation of all associated resources.
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -1257,6 +1257,7 @@ static int rose_recvmsg(struct kiocb *io
  
-+Socket creation and destruction is also straight forward, and is done
-+the same way as in capturing described in the previous paragraph:
-+
-+ int fd = socket(PF_PACKET, mode, 0);
-+
-+The protocol can optionally be 0 in case we only want to transmit
-+via this socket, which avoids an expensive call to packet_rcv().
-+In this case, you also need to bind(2) the TX_RING with sll_protocol = 0
-+set. Otherwise, htons(ETH_P_ALL) or any other protocol, for example.
-+
- Binding the socket to your network interface is mandatory (with zero copy) to
- know the header size of frames used in the circular buffer.
+ 	if (msg->msg_name) {
+ 		struct sockaddr_rose *srose;
++		struct full_sockaddr_rose *full_srose = msg->msg_name;
  
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -237,6 +237,30 @@ struct packet_skb_cb {
- static void __fanout_unlink(struct sock *sk, struct packet_sock *po);
- static void __fanout_link(struct sock *sk, struct packet_sock *po);
- 
-+static struct net_device *packet_cached_dev_get(struct packet_sock *po)
-+{
-+	struct net_device *dev;
-+
-+	rcu_read_lock();
-+	dev = rcu_dereference(po->cached_dev);
-+	if (likely(dev))
-+		dev_hold(dev);
-+	rcu_read_unlock();
-+
-+	return dev;
-+}
-+
-+static void packet_cached_dev_assign(struct packet_sock *po,
-+				     struct net_device *dev)
-+{
-+	rcu_assign_pointer(po->cached_dev, dev);
-+}
-+
-+static void packet_cached_dev_reset(struct packet_sock *po)
-+{
-+	RCU_INIT_POINTER(po->cached_dev, NULL);
-+}
-+
- /* register_prot_hook must be invoked with the po->bind_lock held,
-  * or from a context in which asynchronous accesses to the packet
-  * socket is not possible (packet_create()).
-@@ -246,12 +270,10 @@ static void register_prot_hook(struct so
- 	struct packet_sock *po = pkt_sk(sk);
- 
- 	if (!po->running) {
--		if (po->fanout) {
-+		if (po->fanout)
- 			__fanout_link(sk, po);
+ 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
+ 		srose = msg->msg_name;
+@@ -1264,18 +1265,9 @@ static int rose_recvmsg(struct kiocb *io
+ 		srose->srose_addr   = rose->dest_addr;
+ 		srose->srose_call   = rose->dest_call;
+ 		srose->srose_ndigis = rose->dest_ndigis;
+-		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
+-			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
+-			for (n = 0 ; n < rose->dest_ndigis ; n++)
+-				full_srose->srose_digis[n] = rose->dest_digis[n];
+-			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
 -		} else {
-+		else
- 			dev_add_pack(&po->prot_hook);
--			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
+-			if (rose->dest_ndigis >= 1) {
+-				srose->srose_ndigis = 1;
+-				srose->srose_digi = rose->dest_digis[0];
+-			}
+-			msg->msg_namelen = sizeof(struct sockaddr_rose);
 -		}
++		for (n = 0 ; n < rose->dest_ndigis ; n++)
++			full_srose->srose_digis[n] = rose->dest_digis[n];
++		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
+ 	}
  
- 		sock_hold(sk);
- 		po->running = 1;
-@@ -270,12 +292,11 @@ static void __unregister_prot_hook(struc
- 	struct packet_sock *po = pkt_sk(sk);
- 
- 	po->running = 0;
--	if (po->fanout) {
-+
-+	if (po->fanout)
- 		__fanout_unlink(sk, po);
--	} else {
-+	else
- 		__dev_remove_pack(&po->prot_hook);
--		RCU_INIT_POINTER(po->cached_dev, NULL);
--	}
- 
- 	__sock_put(sk);
- 
-@@ -2048,19 +2069,6 @@ static int tpacket_fill_skb(struct packe
- 	return tp_len;
- }
- 
--static struct net_device *packet_cached_dev_get(struct packet_sock *po)
--{
--	struct net_device *dev;
--
--	rcu_read_lock();
--	dev = rcu_dereference(po->cached_dev);
--	if (dev)
--		dev_hold(dev);
--	rcu_read_unlock();
--
--	return dev;
--}
--
- static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
- {
- 	struct sk_buff *skb;
-@@ -2077,7 +2085,7 @@ static int tpacket_snd(struct packet_soc
- 
- 	mutex_lock(&po->pg_vec_lock);
- 
--	if (saddr == NULL) {
-+	if (likely(saddr == NULL)) {
- 		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
-@@ -2231,7 +2239,7 @@ static int packet_snd(struct socket *soc
- 	 *	Get and verify the address.
- 	 */
- 
--	if (saddr == NULL) {
-+	if (likely(saddr == NULL)) {
- 		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
-@@ -2440,6 +2448,8 @@ static int packet_release(struct socket
- 
- 	spin_lock(&po->bind_lock);
- 	unregister_prot_hook(sk, false);
-+	packet_cached_dev_reset(po);
-+
- 	if (po->prot_hook.dev) {
- 		dev_put(po->prot_hook.dev);
- 		po->prot_hook.dev = NULL;
-@@ -2495,14 +2505,17 @@ static int packet_do_bind(struct sock *s
- 
- 	spin_lock(&po->bind_lock);
- 	unregister_prot_hook(sk, true);
-+
- 	po->num = protocol;
- 	po->prot_hook.type = protocol;
- 	if (po->prot_hook.dev)
- 		dev_put(po->prot_hook.dev);
--	po->prot_hook.dev = dev;
- 
-+	po->prot_hook.dev = dev;
- 	po->ifindex = dev ? dev->ifindex : 0;
- 
-+	packet_cached_dev_assign(po, dev);
-+
- 	if (protocol == 0)
- 		goto out_unlock;
- 
-@@ -2615,7 +2628,8 @@ static int packet_create(struct net *net
- 	po = pkt_sk(sk);
- 	sk->sk_family = PF_PACKET;
- 	po->num = proto;
--	RCU_INIT_POINTER(po->cached_dev, NULL);
-+
-+	packet_cached_dev_reset(po);
- 
- 	sk->sk_destruct = packet_sock_destruct;
- 	sk_refcnt_debug_inc(sk);
-@@ -3369,6 +3383,7 @@ static int packet_notifier(struct notifi
- 						sk->sk_error_report(sk);
- 				}
- 				if (msg == NETDEV_UNREGISTER) {
-+					packet_cached_dev_reset(po);
- 					po->ifindex = -1;
- 					if (po->prot_hook.dev)
- 						dev_put(po->prot_hook.dev);
+ 	skb_free_datagram(sk, skb);
 
 
