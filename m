@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaANVGF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:06:05 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60973 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaANVGC (ORCPT
+	id S1752044AbaANVGZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:06:25 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54335 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaANVGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:06:02 -0500
+	Tue, 14 Jan 2014 16:06:23 -0500
+Date: Tue, 14 Jan 2014 21:06:18 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Yi Zhang <yizhang.mrvl@gmail.com>
+Cc: Yi Zhang <yizhang@marvell.com>, hongfeng@marvell.com,
+        linux-kernel@vger.kernel.org, zhouqiao@marvell.com
+Message-ID: <20140114210618.GZ15567@sirena.org.uk>
+References: <CAK=oMXebE=OKzGbaRH_baOvRyhPXnw0MZuRrcZYLpeR73=XdqA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140114192118.GA31411@redhat.com>
-References: <1389645028-17157-1-git-send-email-wad@chromium.org>
-	<1389645028-17157-2-git-send-email-wad@chromium.org>
-	<20140114192118.GA31411@redhat.com>
-Date: Tue, 14 Jan 2014 15:06:02 -0600
-Message-ID: <CABqD9hYB7d4=cpCaXZms5v8+=SJnYnkmL8biPE5Jz0YQuJ20MQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sys, seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
-From: Will Drewry <wad@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Nicolas Schichan <nschichan@freebox.fr>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, holt@sgi.com,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dZHW955j1vPFHE0Q"
+Content-Disposition: inline
+In-Reply-To: <CAK=oMXebE=OKzGbaRH_baOvRyhPXnw0MZuRrcZYLpeR73=XdqA@mail.gmail.com>
+X-Cookie: Marriage is the sole cause of divorce.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Question] Should we make the primary interrupt handler
+ configurable for regmap_add_irq_chip()?
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 1:21 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 01/13, Will Drewry wrote:
->>
->> +static pid_t seccomp_sync_threads(void)
->> +{
->> +     struct task_struct *thread, *caller;
->> +     pid_t failed = 0;
->> +     thread = caller = current;
->> +
->> +     read_lock(&tasklist_lock);
->> +     if (thread_group_empty(caller))
->> +             goto done;
->> +     while_each_thread(caller, thread) {
->> +             task_lock(thread);
->
-> perhaps we take task_lock() to serialize with another caller of
-> seccomp_sync_threads()...
 
-Sorry for the patch being unclear!  The task_lock is meant to protect
-against the assignment of a seccomp.filter pointer which was meant to
-protect against the target task calling seccomp_attach_filter while
-another task is changing its filter pointer.
+--dZHW955j1vPFHE0Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> If yes, then perhaps you can use ->siglock instead of tasklist_lock
-> and do not use task_lock(). It would be even better to rely on rcu,
-> but:
+On Sat, Jan 11, 2014 at 12:15:21PM +0800, Yi Zhang wrote:
 
-Exactly. The siglock seems like it makes more sense.
+> I met a scenario:
+> As soon as the interrupt is triggered, a wakelock is needed to be held
+> until the threaded handler finishes,
+> I think we may hold it in the primary interrupt handler, but now it's
+> NULL by default;
 
->> +                     get_seccomp_filter(caller);
->> +                     /*
->> +                      * Drop the task reference to the shared ancestor since
->> +                      * current's path will hold a reference.  (This also
->> +                      * allows a put before the assignment.)
->> +                      */
->> +                     put_seccomp_filter(thread);
->> +                     thread->seccomp.filter = caller->seccomp.filter;
->
-> As I said, I do not understand this patch yet, but this looks suspicious.
->
-> Why we can't race with this thread doing clone(CLONE_THREAD) ? We do
-> not the the new thread yet, but its ->seccomp can be already copied
-> by copy_process(), no?
+This sounds like something we should just support in the core, though to
+be honest I'd expect the interrupt core to hold a wakelock itself during
+interrupt processing.  If we're doing it in regmap then allowing the
+caller to set a wakelock to hold seems better than making them all write
+the code to take and release it.
 
-Yeah I missed that. That said, I think the worst of it would be that
-the new thread
-gets the old filter.  It should still get_seccomp_filter() its own
-reference to the filter.
-I'm not clear if it's possible to ensure that there is no pathological
-condition where
-a thread races and is created without being synchronized.  I'll see if
-the siglock helps
-here and walk the clone() code again to see what else I missed.
+--dZHW955j1vPFHE0Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-thanks!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1abGAAoJELSic+t+oim9Xy0P/iCmbzvKomK/nUB7FSX4OLC6
+CIAnNVHou/ospwi1Q189tz5G2bYtDkw4VVHeW+fqT8bOTu48YPoYTQ88B8ILWARv
+9lztCdBkEXoHujcn3+3O6Vh9eLwh2Dr/vFN8kep6YcV5f5wCknuM9aJLUsMTdGOR
+1H43mGeYOaLn/VlME8Uj++7rV9I1RDpy474rt2H1/zXSpUN00TOtE6o2kmZTQCDZ
+0vwEAHznkv+aAciKTgCKtmiQwNH+XtG1UQvkcWL45tbvXbbYIN0ZXw4BJ4KI+nV6
+wxSyxjyLyncGD0KFZgZU7HJi7ahwgjZlfgwxz08wN+aP32ued1PqP960XSPnBMsC
+3twLgEGz9hKSobID7i7Gvemo2+PUck83jlwTDy/Ma+u66fB2Bg3hBOe14nEXi20u
+G3CZyCY0gvpOfzUdh69PK2xOTQXawKtMvl7SCiOsQLCjybmVxnv+GTbx91vhlwdW
+S8XKkENxQ0pY7oNQQOT4Mvx33tQgKtRHUi+VizCXJs5prdVMnQOQD5EppwoBtpSa
+asbpHKBAGWWuxYg8qGxf90h6461080XkJ+M8vezy82xmTJMXVhpV5jujUm/DrwL0
+g8sBVT1lXmGqBAKQ4j5Urz/bhxmOf0DeudbRA7Xk0tCfwCSkuvGIQHxE72vlDLLv
+j97Nt/lZ8Js5ZuseAOOQ
+=FJhK
+-----END PGP SIGNATURE-----
+
+--dZHW955j1vPFHE0Q--
