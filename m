@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaANHpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:45:10 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaANHpF (ORCPT
+	id S1753038AbaANHpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:45:46 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:41167 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbaANHpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:45:05 -0500
-From: Richard Weinberger <richard@nod.at>
-To: mingo@redhat.com, hpa@zytor.com
-Cc: x86@kernel.org, seiji.aguchi@hds.com, rientjes@google.com,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, bp@alien8.de,
-        Richard Weinberger <richard@nod.at>
-Subject: [RESEND][PATCH] APIC: Read Error Status Register correctly
-Date: Tue, 14 Jan 2014 08:44:47 +0100
-Message-Id: <1389685487-20872-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.2
+	Tue, 14 Jan 2014 02:45:40 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s0E7j04Z007522, This message is accepted by code: ctloc85258
+From: <rogerable@realtek.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+CC: <rogerable@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
+        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
+Subject: [PATCH v2 0/3] Add modules for realtek USB card reader
+Date: Tue, 14 Jan 2014 15:47:33 +0800
+Message-ID: <1389685656-880-1-git-send-email-rogerable@realtek.com>
+X-Mailer: git-send-email 1.8.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we do a read, a dummy write and a final read to fetch the error code.
-The value from the final read is taken.
-This is not the recommended way and leads to corrupted/lost ESR values.
+From: Roger Tseng <rogerable@realtek.com>
 
-Intel(c) 64 and IA-32 Architectures Software Developer's Manual,
-Combined Volumes 1, 2ABC, 3ABC, Section 10.5.3 states:
->>Before attempt to read from the ESR, software should first write to it.
-(The value written does not affect the values read subsequently;
-only zero may be written in x2APIC mode.) This write clears
-any previously logged errors and updates the ESR with any errors
-detected since the last write to the ESR.
-This write also rearms the APIC error interrupt triggering mechanism.<<
+This patchset adds modules to support Realtek USB vendor specific class flash
+card reader: one base module in MFD subsystem and two host modules in both mmc
+and memstick subsystems. The architecture is similar to rtsx_pci.
 
-This patch removes the first read such that we are conform with the manual.
+This work is done primarily to replace the staging driver: staging/rts5139,
+which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
+revision is applied, we may need Greg's help to remove the staging one.
 
-On my (very old) Pentium MMX SMP system this patch fixes the issue that
-APIC errors a) are not always reported and b) are reported with false
-error numbers.
+v2:
+1. Fix potential buffer overflow in rtsx_usb_seq_write_register()
+2. Remove unnecessary casting and messages
+2. Revise coding style and white spaces
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/x86/kernel/apic/apic.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+Roger Tseng (3):
+  mfd: Add realtek USB card reader driver
+  mmc: Add realtek USB sdmmc host driver
+  memstick: Add realtek USB memstick host driver
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index d278736..4ec1dd6 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1968,7 +1968,7 @@ __visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
-  */
- static inline void __smp_error_interrupt(struct pt_regs *regs)
- {
--	u32 v0, v1;
-+	u32 v;
- 	u32 i = 0;
- 	static const char * const error_interrupt_reason[] = {
- 		"Send CS error",		/* APIC Error Bit 0 */
-@@ -1982,21 +1982,20 @@ static inline void __smp_error_interrupt(struct pt_regs *regs)
- 	};
- 
- 	/* First tickle the hardware, only then report what went on. -- REW */
--	v0 = apic_read(APIC_ESR);
- 	apic_write(APIC_ESR, 0);
--	v1 = apic_read(APIC_ESR);
-+	v = apic_read(APIC_ESR);
- 	ack_APIC_irq();
- 	atomic_inc(&irq_err_count);
- 
--	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
--		    smp_processor_id(), v0 , v1);
-+	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x",
-+		    smp_processor_id(), v);
- 
--	v1 = v1 & 0xff;
--	while (v1) {
--		if (v1 & 0x1)
-+	v &= 0xff;
-+	while (v) {
-+		if (v & 0x1)
- 			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
- 		i++;
--		v1 >>= 1;
-+		v >>= 1;
- 	}
- 
- 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+ drivers/memstick/host/Kconfig       |   10 +
+ drivers/memstick/host/Makefile      |    1 +
+ drivers/memstick/host/rtsx_usb_ms.c |  855 ++++++++++++++++++++
+ drivers/mfd/Kconfig                 |   10 +
+ drivers/mfd/Makefile                |    1 +
+ drivers/mfd/rtsx_usb.c              |  788 ++++++++++++++++++
+ drivers/mmc/host/Kconfig            |    7 +
+ drivers/mmc/host/Makefile           |    1 +
+ drivers/mmc/host/rtsx_usb_sdmmc.c   | 1509 +++++++++++++++++++++++++++++++++++
+ include/linux/mfd/rtsx_usb.h        |  619 ++++++++++++++
+ 10 files changed, 3801 insertions(+)
+ create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
+ create mode 100644 drivers/mfd/rtsx_usb.c
+ create mode 100644 drivers/mmc/host/rtsx_usb_sdmmc.c
+ create mode 100644 include/linux/mfd/rtsx_usb.h
+
 -- 
-1.8.4.2
+1.8.2
 
