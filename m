@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaANJP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 04:15:27 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:20939 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaANJPX (ORCPT
+	id S1751375AbaANJ0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 04:26:18 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:35696 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaANJ0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 04:15:23 -0500
-X-AuditID: cbfec7f4-b7f796d000005a13-66-52d50028d724
-Message-id: <52D50027.60207@samsung.com>
-Date: Tue, 14 Jan 2014 10:15:19 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org
-Subject: Re: [RFC] dma-mapping: Provide write-combine allocations
-References: <1389621188-3094-1-git-send-email-treding@nvidia.com>
-In-reply-to: <1389621188-3094-1-git-send-email-treding@nvidia.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xK7oaDFeDDFbtM7H4O+kYu8WXKw+Z
-	LDY9vsZqcXnXHDaLzR9esln83DWPxYHNo6W5h83j969JjB47Z91l99i8pN7j9r/HzB6fN8kF
-	sEVx2aSk5mSWpRbp2yVwZdx+s4+1YItoxa9dOQ2M5wS7GDk5JARMJJadPc0IYYtJXLi3nq2L
-	kYtDSGApo8SO/rvMEM4nRomJT3+yglTxCmhINN5awAZiswioSpx+cwUsziZgKNH1tgssLioQ
-	KrHnI8RUXgFBiR+T77GA2CICVRK3fqwHizMLZEhMf7UbzBYWcJS4vqyLHcQWArIXv9kINpNT
-	wElizcVPTBD1ZhKPWtYxQ9jyEpvXvGWewCgwC8mKWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84
-	Mbe4NC9dLzk/dxMjJMS/7GBcfMzqEKMAB6MSD+9JxitBQqyJZcWVuYcYJTiYlUR4KxcAhXhT
-	EiurUovy44tKc1KLDzEycXBKNTDGHV0298OZnsiA4uPFMYqVVuFXGfeElB6S/Zh/e8W/GZKe
-	L2XyU+RKKprOuhlkWO1z3HB26/6NBrtmhR0SYDIzt5i039tRcO5715vWbWZ3vug1Wx/XmrOv
-	2qa3zTX67Vrz4AsHD7AVCZz4s9ko6chz7nV3XtzWr7ui+rlklvizQ6tZI04FpHQrsRRnJBpq
-	MRcVJwIAhqWmW08CAAA=
+	Tue, 14 Jan 2014 04:26:15 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGHPBZpaObWyif7nzitZSQYfvLegFiH0O9S9PCWaWNNQTUqi+Q@mail.gmail.com>
+References: <CAGHPBZogJzOUTM=WooJmNd92=QCivWa9W+c9Co1NJd-sgRTB1A@mail.gmail.com>
+	<CAGHPBZpaObWyif7nzitZSQYfvLegFiH0O9S9PCWaWNNQTUqi+Q@mail.gmail.com>
+Date: Tue, 14 Jan 2014 10:26:13 +0100
+Message-ID: <CACRpkdbZcJXGAzbwJrKYYVzo+8nw9145LMsA=jsdbRjkN3f0_w@mail.gmail.com>
+Subject: Re: Confusion about Pinctrl and GPIO
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rongrong Cao <caorr1980@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Rongrong,
 
-On 2014-01-13 14:53, Thierry Reding wrote:
-> Provide an implementation for dma_{alloc,free}_writecombine() when the
-> architecture supports DMA attributes.
+> I noticed that Stephen<swarren@nvidia.com> submitted a patch for pinctrl:
+> http://www.gossamer-threads.com/lists/linux/kernel/1500890?do=post_view_threaded
 >
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->   arch/arm/include/asm/dma-mapping.h | 16 ----------------
->   include/linux/dma-mapping.h        | 16 ++++++++++++++++
->   2 files changed, 16 insertions(+), 16 deletions(-)
->
-> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> index e701a4d9aa59..96b7634a7edc 100644
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@ -242,22 +242,6 @@ extern int arm_dma_mmap(struct device *dev, struct vm_area_struct *vma,
->   			void *cpu_addr, dma_addr_t dma_addr, size_t size,
->   			struct dma_attrs *attrs);
->   
-> -static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
-> -				       dma_addr_t *dma_handle, gfp_t flag)
-> -{
-> -	DEFINE_DMA_ATTRS(attrs);
-> -	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-> -	return dma_alloc_attrs(dev, size, dma_handle, flag, &attrs);
-> -}
-> -
-> -static inline void dma_free_writecombine(struct device *dev, size_t size,
-> -				     void *cpu_addr, dma_addr_t dma_handle)
-> -{
-> -	DEFINE_DMA_ATTRS(attrs);
-> -	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-> -	return dma_free_attrs(dev, size, cpu_addr, dma_handle, &attrs);
-> -}
-> -
->   /*
->    * This can be called during early boot to increase the size of the atomic
->    * coherent DMA pool above the default value of 256KiB. It must be called
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index fd4aee29ad10..8475e02b4bd1 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -249,6 +249,22 @@ struct dma_attrs;
->   #define dma_unmap_sg_attrs(dev, sgl, nents, dir, attrs) \
->   	dma_unmap_sg(dev, sgl, nents, dir)
->   
-> +#else
-> +static inline void *dma_alloc_writecombine(struct device *dev, size_t size,
-> +					   dma_addr_t *dma_addr, gfp_t gfp)
-> +{
-> +	DEFINE_DMA_ATTRS(attrs);
-> +	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-> +	return dma_alloc_attrs(dev, size, dma_addr, gfp, &attrs);
-> +}
-> +
-> +static inline void dma_free_writecombine(struct device *dev, size_t size,
-> +					 void *cpu_addr, dma_addr_t dma_addr)
-> +{
-> +	DEFINE_DMA_ATTRS(attrs);
-> +	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
-> +	return dma_free_attrs(dev, size, cpu_addr, dma_addr, &attrs);
-> +}
->   #endif /* CONFIG_HAVE_DMA_ATTRS */
->   
->   #ifdef CONFIG_NEED_DMA_MAP_STATE
+> In this patch, Stephen said, "When an SoC muxes pins in a group, it's
+> quite possible for the group to contain e.g. 6 pins, but only 4 of
+> them actually be needed by the HW module that's mux'd to them. In this
+> case, the other 2 pins could be used as GPIOs. However, pinctrl marks
+> all the pins within the group as in-use by the selected mux function.
+> To allow the expected gpiolib interaction, separate the concepts of
+> pin ownership into two parts: One for the mux function and one for
+> GPIO usage. Finally, allow those two ownerships to exist in parallel.
 
-I would also add dma_mmap_writecombine() to the above functions.
+Yes that is how it works.
 
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+> I agree that gpiolib should be able to use the two idle pins as GPIO,
+> but after apply this patch, gpiolib can also request the 4 pins used
+> by HW module succesfully, and this will override the settings of the 4
+> pins for HW module.
 
+If your hardware cannot use the same pins for function X and
+GPIO at the same time, it is the responsibility of the individual
+driver to disallow this by returning an error code from e.g.
+.gpio_request_enable() and .enable() in struct pinmux_ops.
+
+> Assuming that the pin has been configured as SPI mode, undoubtedly we
+> can't use it as GPIO any longer. However, if we call gpio_request()
+> (gpiolib API) to requet this pin for GPIO purpose, gpio_request()
+> still can return successfully. I think this is unreasonable,
+
+It is only unreasonable that a certain driver allows this when
+it should be disallowed. Just like a display driver shall disallow
+setting update frequencies that can harm a display.
+
+> However, no drivers in drivers/pinctrl/ implements such
+> codes in pinmux_ops->gpio_request_enable().
+
+So, if you know a driver is doing something wrong, why not
+send a (tested) patch to fix the issue?
+
+> Or, pinctrl subsystem is just resposible to set the pin in GPIO mode,
+> and gpio subsystem (gpiolib) is responsible for other things like set
+> direction, get value if input, or set high/low if output.
+
+This is true but unrelated to the issue you're bringing up.
+
+A separate GPIO driver should call pinctrl_request_gpio() etc from
+the consumer interface to ensure proper muxing of the
+GPIO line from the pinctrl backend.
+
+> Let me talk again about the example described by Stephen. If actually
+> only 4 pins of the group which contains 6 pins are needed by HW
+> module, then why does the group be defined to contain 6 pins? I think
+> the group should be defined only containing 4 pins rather than 6 pins,
+> then the other 2 idle pins can be used for any other purpose.
+
+It is possible to define two groups of 4+2 pins and only activate
+the group containing the first four pins in a certain state in the
+pin table. Then there will be no conflict about the two remaining
+pins.
+
+Another option is to implement .gpio_request_enable() as
+outlined above and not deny the simultaneous usage of the
+last two pins, but deny any attempt to use the first 4 pins
+for GPIO.
+
+I think many drivers certainly have logical holes here, but
+they survive anyway because people do not subject them to
+silly configurations and impossible usecases, but indeed if
+you want to hammer down any possible mistake from a user
+you can proceed to implement proper checking logic into
+the driver(s).
+
+Yours,
+Linus Walleij
