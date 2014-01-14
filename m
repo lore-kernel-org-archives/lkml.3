@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaANAmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:42:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54381 "EHLO
+	id S1754551AbaANAm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:42:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54378 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743AbaANA2e (ORCPT
+	with ESMTP id S1753849AbaANA2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:34 -0500
+	Mon, 13 Jan 2014 19:28:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 42/77] sfc: Rate-limit log message for PTP packets without a matching timestamp event
-Date: Mon, 13 Jan 2014 16:28:03 -0800
-Message-Id: <20140114002753.700753586@linuxfoundation.org>
+Subject: [PATCH 3.12 41/77] sfc: PTP: Moderate log message on event queue overflow
+Date: Mon, 13 Jan 2014 16:28:02 -0800
+Message-Id: <20140114002753.668211975@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,35 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Laurence Evans <levans@solarflare.com>
 
-[ Upstream commit 35f9a7a380728a94d417e5824a866f969423ac83 ]
+[ Upstream commit f32116003c39f3a6815215a7512e1ea8d1e4bbc7 ]
 
-In case of a flood of PTP packets, the timestamp peripheral and MC
-firmware on the SFN[56]322F boards may not be able to provide
-timestamp events for all packets.  Don't complain too much about this.
+Limit syslog flood if a PTP packet storm occurs.
 
 Fixes: 7c236c43b838 ('sfc: Add support for IEEE-1588 PTP')
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/ptp.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/ptp.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
 --- a/drivers/net/ethernet/sfc/ptp.c
 +++ b/drivers/net/ethernet/sfc/ptp.c
-@@ -717,8 +717,9 @@ static bool efx_ptp_process_events(struc
- 			__skb_queue_tail(q, skb);
- 		} else if (time_after(jiffies, match->expiry)) {
- 			match->state = PTP_PACKET_STATE_TIMED_OUT;
--			netif_warn(efx, rx_err, efx->net_dev,
--				   "PTP packet - no timestamp seen\n");
-+			if (net_ratelimit())
-+				netif_warn(efx, rx_err, efx->net_dev,
-+					   "PTP packet - no timestamp seen\n");
- 			__skb_queue_tail(q, skb);
- 		} else {
- 			/* Replace unprocessed entry and stop */
+@@ -220,6 +220,7 @@ struct efx_ptp_timeset {
+  * @evt_list: List of MC receive events awaiting packets
+  * @evt_free_list: List of free events
+  * @evt_lock: Lock for manipulating evt_list and evt_free_list
++ * @evt_overflow: Boolean indicating that event list has overflowed
+  * @rx_evts: Instantiated events (on evt_list and evt_free_list)
+  * @workwq: Work queue for processing pending PTP operations
+  * @work: Work task
+@@ -270,6 +271,7 @@ struct efx_ptp_data {
+ 	struct list_head evt_list;
+ 	struct list_head evt_free_list;
+ 	spinlock_t evt_lock;
++	bool evt_overflow;
+ 	struct efx_ptp_event_rx rx_evts[MAX_RECEIVE_EVENTS];
+ 	struct workqueue_struct *workwq;
+ 	struct work_struct work;
+@@ -635,6 +637,11 @@ static void efx_ptp_drop_time_expired_ev
+ 			}
+ 		}
+ 	}
++	/* If the event overflow flag is set and the event list is now empty
++	 * clear the flag to re-enable the overflow warning message.
++	 */
++	if (ptp->evt_overflow && list_empty(&ptp->evt_list))
++		ptp->evt_overflow = false;
+ 	spin_unlock_bh(&ptp->evt_lock);
+ }
+ 
+@@ -676,6 +683,11 @@ static enum ptp_packet_state efx_ptp_mat
+ 			break;
+ 		}
+ 	}
++	/* If the event overflow flag is set and the event list is now empty
++	 * clear the flag to re-enable the overflow warning message.
++	 */
++	if (ptp->evt_overflow && list_empty(&ptp->evt_list))
++		ptp->evt_overflow = false;
+ 	spin_unlock_bh(&ptp->evt_lock);
+ 
+ 	return rc;
+@@ -809,6 +821,7 @@ static int efx_ptp_stop(struct efx_nic *
+ 	list_for_each_safe(cursor, next, &efx->ptp_data->evt_list) {
+ 		list_move(cursor, &efx->ptp_data->evt_free_list);
+ 	}
++	ptp->evt_overflow = false;
+ 	spin_unlock_bh(&efx->ptp_data->evt_lock);
+ 
+ 	return rc;
+@@ -901,6 +914,7 @@ static int efx_ptp_probe_channel(struct
+ 	spin_lock_init(&ptp->evt_lock);
+ 	for (pos = 0; pos < MAX_RECEIVE_EVENTS; pos++)
+ 		list_add(&ptp->rx_evts[pos].link, &ptp->evt_free_list);
++	ptp->evt_overflow = false;
+ 
+ 	ptp->phc_clock_info.owner = THIS_MODULE;
+ 	snprintf(ptp->phc_clock_info.name,
+@@ -1299,8 +1313,13 @@ static void ptp_event_rx(struct efx_nic
+ 		list_add_tail(&evt->link, &ptp->evt_list);
+ 
+ 		queue_work(ptp->workwq, &ptp->work);
+-	} else {
+-		netif_err(efx, rx_err, efx->net_dev, "No free PTP event");
++	} else if (!ptp->evt_overflow) {
++		/* Log a warning message and set the event overflow flag.
++		 * The message won't be logged again until the event queue
++		 * becomes empty.
++		 */
++		netif_err(efx, rx_err, efx->net_dev, "PTP event queue overflow\n");
++		ptp->evt_overflow = true;
+ 	}
+ 	spin_unlock_bh(&ptp->evt_lock);
+ }
 
 
