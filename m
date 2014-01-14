@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaANA2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:28:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54342 "EHLO
+	id S1754706AbaANAkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:40:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640AbaANA20 (ORCPT
+	with ESMTP id S1753893AbaANA2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:26 -0500
+	Mon, 13 Jan 2014 19:28:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michael Dalton <mwdalton@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 3.12 33/77] virtio-net: make all RX paths handle errors consistently
-Date: Mon, 13 Jan 2014 16:27:54 -0800
-Message-Id: <20140114002753.445513920@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 46/77] sfc: Refactor efx_mcdi_poll() by introducing efx_mcdi_poll_once()
+Date: Mon, 13 Jan 2014 16:28:07 -0800
+Message-Id: <20140114002753.812046359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -31,104 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Robert Stonehouse <rstonehouse@solarflare.com>
 
-receive mergeable now handles errors internally.
-Do same for big and small packet paths, otherwise
-the logic is too hard to follow.
+[ Upstream commit 5731d7b35e5b87157a9b9973cc2eff70c50aec58 ]
 
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Acked-by: Michael Dalton <mwdalton@google.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
-(cherry picked from commit f121159d72091f25afb22007c833e60a6845e912)
-Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |   56 ++++++++++++++++++++++++++++++-----------------
- 1 file changed, 36 insertions(+), 20 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -297,6 +297,34 @@ static struct sk_buff *page_to_skb(struc
- 	return skb;
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -50,6 +50,7 @@ struct efx_mcdi_async_param {
+ static void efx_mcdi_timeout_async(unsigned long context);
+ static int efx_mcdi_drv_attach(struct efx_nic *efx, bool driver_operating,
+ 			       bool *was_attached_out);
++static bool efx_mcdi_poll_once(struct efx_nic *efx);
+ 
+ static inline struct efx_mcdi_iface *efx_mcdi(struct efx_nic *efx)
+ {
+@@ -237,6 +238,21 @@ static void efx_mcdi_read_response_heade
+ 	}
  }
  
-+static struct sk_buff *receive_small(void *buf, unsigned int len)
++static bool efx_mcdi_poll_once(struct efx_nic *efx)
 +{
-+	struct sk_buff * skb = buf;
++	struct efx_mcdi_iface *mcdi = efx_mcdi(efx);
 +
-+	len -= sizeof(struct virtio_net_hdr);
-+	skb_trim(skb, len);
++	rmb();
++	if (!efx->type->mcdi_poll_response(efx))
++		return false;
 +
-+	return skb;
++	spin_lock_bh(&mcdi->iface_lock);
++	efx_mcdi_read_response_header(efx);
++	spin_unlock_bh(&mcdi->iface_lock);
++
++	return true;
 +}
 +
-+static struct sk_buff *receive_big(struct net_device *dev,
-+				   struct receive_queue *rq,
-+				   void *buf)
-+{
-+	struct page *page = buf;
-+	struct sk_buff *skb = page_to_skb(rq, page, 0);
-+
-+	if (unlikely(!skb))
-+		goto err;
-+
-+	return skb;
-+
-+err:
-+	dev->stats.rx_dropped++;
-+	give_pages(rq, page);
-+	return NULL;
-+}
-+
- static struct sk_buff *receive_mergeable(struct net_device *dev,
- 					 struct receive_queue *rq,
- 					 void *buf,
-@@ -360,7 +388,6 @@ static void receive_buf(struct receive_q
- 	struct net_device *dev = vi->dev;
- 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
- 	struct sk_buff *skb;
--	struct page *page;
- 	struct skb_vnet_hdr *hdr;
+ static int efx_mcdi_poll(struct efx_nic *efx)
+ {
+ 	struct efx_mcdi_iface *mcdi = efx_mcdi(efx);
+@@ -272,18 +288,13 @@ static int efx_mcdi_poll(struct efx_nic
  
- 	if (unlikely(len < sizeof(struct virtio_net_hdr) + ETH_HLEN)) {
-@@ -372,26 +399,15 @@ static void receive_buf(struct receive_q
- 			dev_kfree_skb(buf);
- 		return;
+ 		time = jiffies;
+ 
+-		rmb();
+-		if (efx->type->mcdi_poll_response(efx))
++		if (efx_mcdi_poll_once(efx))
+ 			break;
+ 
+ 		if (time_after(time, finish))
+ 			return -ETIMEDOUT;
  	}
-+	if (vi->mergeable_rx_bufs)
-+		skb = receive_mergeable(dev, rq, buf, len);
-+	else if (vi->big_packets)
-+		skb = receive_big(dev, rq, buf);
-+	else
-+		skb = receive_small(buf, len);
  
--	if (!vi->mergeable_rx_bufs && !vi->big_packets) {
--		skb = buf;
--		len -= sizeof(struct virtio_net_hdr);
--		skb_trim(skb, len);
--	} else {
--		page = buf;
--		if (vi->mergeable_rx_bufs) {
--			skb = receive_mergeable(dev, rq, page, len);
--			if (unlikely(!skb))
--				return;
--		} else {
--			skb = page_to_skb(rq, page, len);
--			if (unlikely(!skb)) {
--				dev->stats.rx_dropped++;
--				give_pages(rq, page);
--				return;
--			}
--		}
--	}
-+	if (unlikely(!skb))
-+		return;
- 
- 	hdr = skb_vnet_hdr(skb);
- 
+-	spin_lock_bh(&mcdi->iface_lock);
+-	efx_mcdi_read_response_header(efx);
+-	spin_unlock_bh(&mcdi->iface_lock);
+-
+ 	/* Return rc=0 like wait_event_timeout() */
+ 	return 0;
+ }
 
 
