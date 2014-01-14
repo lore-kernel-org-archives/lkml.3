@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaANPfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:35:42 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48029 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751375AbaANPfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:35:40 -0500
-Date: Tue, 14 Jan 2014 16:35:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: AMD errata 793 (CVE-2013-6885) needs a workaround in Linux?
-Message-ID: <20140114153534.GE29865@pd.tnic>
-References: <20140114114133.GA31473@khazad-dum.debian.net>
- <20140114115547.GA29887@pd.tnic>
- <52D55468.6000000@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52D55468.6000000@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751669AbaANPh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:37:29 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:7638 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaANPh0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 10:37:26 -0500
+Message-ID: <1389713482.1792.281.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] x86, acpi memory hotplug, add parameter to disable
+ memory hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Dave Young <dyoung@redhat.com>,
+        linux-acpi@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 14 Jan 2014 08:31:22 -0700
+In-Reply-To: <20140114152627.GD3096@redhat.com>
+References: <1389650161-13292-1-git-send-email-prarit@redhat.com>
+	 <CAHGf_=pX303E6VAhL+gApSQ1OsEQHqTuCN8ZSdD3E54YAcFQKA@mail.gmail.com>
+	 <52D47999.5080905@redhat.com> <52D48EC4.5070400@jp.fujitsu.com>
+	 <1389663689.1792.268.camel@misato.fc.hp.com> <52D519EB.3040709@redhat.com>
+	 <20140114152627.GD3096@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 07:14:48AM -0800, H. Peter Anvin wrote:
-> Seriously, though, if this MSR can be set at runtime without problems
-> (which covers 98% of all workarounds, but not 100%) then it seems
-> like a no-brainer to just do it as long as the offending CPUs can be
-> identified by the kernel.
+On Tue, 2014-01-14 at 10:26 -0500, Vivek Goyal wrote:
+> On Tue, Jan 14, 2014 at 06:05:15AM -0500, Prarit Bhargava wrote:
+> 
+> [..]
+> > >>> As mentioned, self-NAK.  I have seen a system that I needed to specify
+> > >>> memmap=exactmap & had hotplug memory.  I will only keep the acpi_no_memhotplug
+> > >>> option in the next version of the patch.
+> > >>
+> > >>
+> > >> Your following first patch is simply and makes sense.
+> > >>
+> > >> http://marc.info/?l=linux-acpi&m=138922019607796&w=2
+> > >>
+> > > 
+> > > In this option, it also requires changing kexec-tools to specify the new
+> > > option for kdump.  It won't be simpler.
+> > 
+> > It will be simpler for the kernel and those of us who have to debug busted e820
+> > maps ;)
+> > 
+> > Unfortunately I may not be able to give you the automatic disable.  I did
+> > contemplate adding a !is_kdump_kernel() to the ACPI memory hotplug init call,
+> > but it seems like that is unacceptable as well.
+> 
+> I think everybody agrees that there has to be a stand alone command line
+> option to disable memory hotplug.
+> 
+> Whether to tie it into memmap=exactmap and mem=X is the contentious bit.
+> So I would suggest that just post a patch to disable memory hotplut using
+> a command line and later more patches can go in if people strongly feel
+> the need to tie it into memmap=exactmap.
+> 
+> In the mean time, we will modify /etc/sysconfig/kdump to pass
+> acpi_no_memhotplug so that user does not have to worry about passing this
+> parameter and kexec-tools will not have to be modified either.
 
-Yeah, ok, let me cook it up.
+Fine by me.  Thanks for modifying /etc/sysconfig/kdump file. 
+-Toshi
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
