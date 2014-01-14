@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaANBG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:06:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54011 "EHLO
+	id S1755801AbaANBHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:07:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54007 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221AbaANA1I (ORCPT
+	with ESMTP id S1753202AbaANA1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:08 -0500
+	Mon, 13 Jan 2014 19:27:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 04/62] HID: Revert "Revert "HID: Fix logitech-dj: missing Unifying device issue""
-Date: Mon, 13 Jan 2014 16:26:29 -0800
-Message-Id: <20140114002710.591297423@linuxfoundation.org>
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: [PATCH 3.10 03/62] gpio-rcar: R-Car GPIO IRQ share interrupt
+Date: Mon, 13 Jan 2014 16:26:28 -0800
+Message-Id: <20140114002710.563580021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,176 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nestor Lopez Casado <nlopezcasad@logitech.com>
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-commit c63e0e370028d7e4033bd40165f18499872b5183 upstream.
+commit c234962b808f289237a40e4ce5fc1c8066d1c9d0 upstream.
 
-This reverts commit 8af6c08830b1ae114d1a8b548b1f8b056e068887.
+R-Car H1 or Gen2 GPIO interrupts are assigned per each GPIO domain,
+but, Gen1 E1/M1 GPIO interrupts are shared for all GPIO domain.
+gpio-rcar driver needs IRQF_SHARED flags for these.
+This patch was tested on Bock-W board
 
-This patch re-adds the workaround introduced by 596264082f10dd4
-which was reverted by 8af6c08830b1ae114.
-
-The original patch 596264 was needed to overcome a situation where
-the hid-core would drop incoming reports while probe() was being
-executed.
-
-This issue was solved by c849a6143bec520af which added
-hid_device_io_start() and hid_device_io_stop() that enable a specific
-hid driver to opt-in for input reports while its probe() is being
-executed.
-
-Commit a9dd22b730857347 modified hid-logitech-dj so as to use the
-functionality added to hid-core. Having done that, workaround 596264
-was no longer necessary and was reverted by 8af6c08.
-
-We now encounter a different problem that ends up 'again' thwarting
-the Unifying receiver enumeration. The problem is time and usb controller
-dependent. Ocasionally the reports sent to the usb receiver to start
-the paired devices enumeration fail with -EPIPE and the receiver never
-gets to enumerate the paired devices.
-
-With dcd9006b1b053c7b1c the problem was "hidden" as the call to the usb
-driver became asynchronous and none was catching the error from the
-failing URB.
-
-As the root cause for this failing SET_REPORT is not understood yet,
--possibly a race on the usb controller drivers or a problem with the
-Unifying receiver- reintroducing this workaround solves the problem.
-
-Overall what this workaround does is: If an input report from an
-unknown device is received, then a (re)enumeration is performed.
-
-related bug:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1194649
-
-Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   45 ++++++++++++++++++++++++++++++++++++++++++
- drivers/hid/hid-logitech-dj.h |    1 
- 2 files changed, 46 insertions(+)
+ drivers/gpio/gpio-rcar.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -192,6 +192,7 @@ static struct hid_ll_driver logi_dj_ll_d
- static int logi_dj_output_hidraw_report(struct hid_device *hid, u8 * buf,
- 					size_t count,
- 					unsigned char report_type);
-+static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev);
- 
- static void logi_dj_recv_destroy_djhid_device(struct dj_receiver_dev *djrcv_dev,
- 						struct dj_report *dj_report)
-@@ -232,6 +233,7 @@ static void logi_dj_recv_add_djhid_devic
- 	if (dj_report->report_params[DEVICE_PAIRED_PARAM_SPFUNCTION] &
- 	    SPFUNCTION_DEVICE_LIST_EMPTY) {
- 		dbg_hid("%s: device list is empty\n", __func__);
-+		djrcv_dev->querying_devices = false;
- 		return;
+--- a/drivers/gpio/gpio-rcar.c
++++ b/drivers/gpio/gpio-rcar.c
+@@ -333,7 +333,7 @@ static int gpio_rcar_probe(struct platfo
  	}
  
-@@ -242,6 +244,12 @@ static void logi_dj_recv_add_djhid_devic
- 		return;
- 	}
- 
-+	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
-+		/* The device is already known. No need to reallocate it. */
-+		dbg_hid("%s: device is already known\n", __func__);
-+		return;
-+	}
-+
- 	dj_hiddev = hid_allocate_device();
- 	if (IS_ERR(dj_hiddev)) {
- 		dev_err(&djrcv_hdev->dev, "%s: hid_allocate_device failed\n",
-@@ -305,6 +313,7 @@ static void delayedwork_callback(struct
- 	struct dj_report dj_report;
- 	unsigned long flags;
- 	int count;
-+	int retval;
- 
- 	dbg_hid("%s\n", __func__);
- 
-@@ -337,6 +346,25 @@ static void delayedwork_callback(struct
- 		logi_dj_recv_destroy_djhid_device(djrcv_dev, &dj_report);
- 		break;
- 	default:
-+	/* A normal report (i. e. not belonging to a pair/unpair notification)
-+	 * arriving here, means that the report arrived but we did not have a
-+	 * paired dj_device associated to the report's device_index, this
-+	 * means that the original "device paired" notification corresponding
-+	 * to this dj_device never arrived to this driver. The reason is that
-+	 * hid-core discards all packets coming from a device while probe() is
-+	 * executing. */
-+	if (!djrcv_dev->paired_dj_devices[dj_report.device_index]) {
-+		/* ok, we don't know the device, just re-ask the
-+		 * receiver for the list of connected devices. */
-+		retval = logi_dj_recv_query_paired_devices(djrcv_dev);
-+		if (!retval) {
-+			/* everything went fine, so just leave */
-+			break;
-+		}
-+		dev_err(&djrcv_dev->hdev->dev,
-+			"%s:logi_dj_recv_query_paired_devices "
-+			"error:%d\n", __func__, retval);
-+		}
- 		dbg_hid("%s: unexpected report type\n", __func__);
- 	}
- }
-@@ -367,6 +395,12 @@ static void logi_dj_recv_forward_null_re
- 	if (!djdev) {
- 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
- 			" is NULL, index %d\n", dj_report->device_index);
-+		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
-+
-+		if (schedule_work(&djrcv_dev->work) == 0) {
-+			dbg_hid("%s: did not schedule the work item, was already "
-+			"queued\n", __func__);
-+		}
- 		return;
- 	}
- 
-@@ -397,6 +431,12 @@ static void logi_dj_recv_forward_report(
- 	if (dj_device == NULL) {
- 		dbg_hid("djrcv_dev->paired_dj_devices[dj_report->device_index]"
- 			" is NULL, index %d\n", dj_report->device_index);
-+		kfifo_in(&djrcv_dev->notif_fifo, dj_report, sizeof(struct dj_report));
-+
-+		if (schedule_work(&djrcv_dev->work) == 0) {
-+			dbg_hid("%s: did not schedule the work item, was already "
-+			"queued\n", __func__);
-+		}
- 		return;
- 	}
- 
-@@ -444,6 +484,10 @@ static int logi_dj_recv_query_paired_dev
- 	struct dj_report *dj_report;
- 	int retval;
- 
-+	/* no need to protect djrcv_dev->querying_devices */
-+	if (djrcv_dev->querying_devices)
-+		return 0;
-+
- 	dj_report = kzalloc(sizeof(struct dj_report), GFP_KERNEL);
- 	if (!dj_report)
- 		return -ENOMEM;
-@@ -455,6 +499,7 @@ static int logi_dj_recv_query_paired_dev
- 	return retval;
- }
- 
-+
- static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
- 					  unsigned timeout)
- {
---- a/drivers/hid/hid-logitech-dj.h
-+++ b/drivers/hid/hid-logitech-dj.h
-@@ -101,6 +101,7 @@ struct dj_receiver_dev {
- 	struct work_struct work;
- 	struct kfifo notif_fifo;
- 	spinlock_t lock;
-+	bool querying_devices;
- };
- 
- struct dj_device {
+ 	if (devm_request_irq(&pdev->dev, irq->start,
+-			     gpio_rcar_irq_handler, 0, name, p)) {
++			     gpio_rcar_irq_handler, IRQF_SHARED, name, p)) {
+ 		dev_err(&pdev->dev, "failed to request IRQ\n");
+ 		ret = -ENOENT;
+ 		goto err1;
 
 
