@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaANA3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54436 "EHLO
+	id S1753092AbaANAfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:35:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaANA2r (ORCPT
+	with ESMTP id S1754051AbaANA3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:47 -0500
+	Mon, 13 Jan 2014 19:29:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 21/77] net: unix: allow bind to fail on mutex lock
-Date: Mon, 13 Jan 2014 16:27:42 -0800
-Message-Id: <20140114002753.100720637@linuxfoundation.org>
+        halfdog <me@halfdog.net>, Borislav Petkov <bp@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 3.12 73/77] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
+Date: Mon, 13 Jan 2014 16:28:34 -0800
+Message-Id: <20140114002754.563489428@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,47 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 ]
+commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
 
-This is similar to the set_peek_off patch where calling bind while the
-socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
-spew after a while.
+Before we do an EMMS in the AMD FXSAVE information leak workaround we
+need to clear any pending exceptions, otherwise we trap with a
+floating-point exception inside this code.
 
-This is also the last place that did a straightforward mutex_lock(), so
-there shouldn't be any more of these patches.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: halfdog <me@halfdog.net>
+Tested-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/unix/af_unix.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -718,7 +718,9 @@ static int unix_autobind(struct socket *
- 	int err;
- 	unsigned int retries = 0;
+---
+ arch/x86/include/asm/fpu-internal.h |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -293,12 +293,13 @@ static inline int restore_fpu_checking(s
+ 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+ 	   is pending.  Clear the x87 state here by setting it to fixed
+ 	   values. "m" is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"		/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (tsk->thread.fpu.has_fpu));
++	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
++		asm volatile(
++			"fnclex\n\t"
++			"emms\n\t"
++			"fildl %P[addr]"	/* set F?P to defined value */
++			: : [addr] "m" (tsk->thread.fpu.has_fpu));
++	}
  
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err)
-+		return err;
- 
- 	err = 0;
- 	if (u->addr)
-@@ -877,7 +879,9 @@ static int unix_bind(struct socket *sock
- 		goto out;
- 	addr_len = err;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err)
-+		goto out;
- 
- 	err = -EINVAL;
- 	if (u->addr)
+ 	return fpu_restore_checking(&tsk->thread.fpu);
+ }
 
 
