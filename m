@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaANSs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:48:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55178 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaANSsw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:48:52 -0500
-Date: Tue, 14 Jan 2014 10:48:40 -0800
-From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-da2b6fb990cf782b18952f534ec7323453bc4fc9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        keescook@chromium.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20131210202745.GA2961@www.outflux.net>
-References: <20131210202745.GA2961@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/kaslr] x86, kaslr: Clarify RANDOMIZE_BASE_MAX_OFFSET
-Git-Commit-ID: da2b6fb990cf782b18952f534ec7323453bc4fc9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751898AbaANStP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:49:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751847AbaANSsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:48:53 -0500
+Date: Tue, 14 Jan 2014 19:48:28 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 1/3] timers: Reduce __run_timers()
+	latency for empty list
+Message-ID: <20140114184828.GA29331@redhat.com>
+References: <20140114041449.GA13934@linux.vnet.ibm.com> <1389672919-14621-1-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 10:48:46 -0800 (PST)
+In-Reply-To: <1389672919-14621-1-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  da2b6fb990cf782b18952f534ec7323453bc4fc9
-Gitweb:     http://git.kernel.org/tip/da2b6fb990cf782b18952f534ec7323453bc4fc9
-Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Tue, 10 Dec 2013 12:27:45 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 14 Jan 2014 10:45:56 -0800
+On 01/13, Paul E. McKenney wrote:
+>
+> The __run_timers() function currently steps through the list one jiffy at
+> a time in order to update the timer wheel.  However, if the timer wheel
+> is empty, no adjustment is needed other than updating ->timer_jiffies.
 
-x86, kaslr: Clarify RANDOMIZE_BASE_MAX_OFFSET
+Yes, but ->active_timers == 0 doesn't necessarily mean "empty", it only
+counts the non-deferrable timers?
 
-The help text for RANDOMIZE_BASE_MAX_OFFSET was confusing. This has been
-clarified, and updated to be an export-only tunable.
+> In this case, which is likely to be common for NO_HZ_FULL kernels, the
+> kernel currently incurs a large latency for no good reason.  This commit
+> therefore short-circuits this case.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/timer.c | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index 6582b82fa966..21849275828f 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -337,6 +337,17 @@ void set_timer_slack(struct timer_list *timer, int slack_hz)
+>  }
+>  EXPORT_SYMBOL_GPL(set_timer_slack);
+>
+> +static bool catchup_timer_jiffies(struct tvec_base *base)
+> +{
+> +#ifdef CONFIG_NO_HZ_FULL
+> +	if (!base->active_timers) {
+> +		base->timer_jiffies = jiffies;
+> +		return 1;
+> +	}
+> +#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> +	return 0;
+> +}
+> +
+>  static void
+>  __internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+>  {
+> @@ -1146,6 +1157,10 @@ static inline void __run_timers(struct tvec_base *base)
+>  	struct timer_list *timer;
+>
+>  	spin_lock_irq(&base->lock);
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Link: http://lkml.kernel.org/r/20131210202745.GA2961@www.outflux.net
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig | 29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
+Do we really need to take base->lock before catchup_timer_jiffies() ?
+->timer_jiffies can only be changed by us, and it seems that we do
+not care if we race with base->active_timers++.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 596cd9e..5c9e19d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1747,26 +1747,33 @@ config RANDOMIZE_BASE
- 	   possible. At best, due to page table layouts, 64-bit can use
- 	   9 bits of entropy and 32-bit uses 8 bits.
- 
-+	   If unsure, say N.
-+
- config RANDOMIZE_BASE_MAX_OFFSET
--	hex "Maximum ASLR offset allowed"
-+	hex "Maximum kASLR offset allowed" if EXPERT
- 	depends on RANDOMIZE_BASE
- 	range 0x0 0x20000000 if X86_32
- 	default "0x20000000" if X86_32
- 	range 0x0 0x40000000 if X86_64
- 	default "0x40000000" if X86_64
- 	---help---
--	 Determines the maximal offset in bytes that will be applied to the
--	 kernel when Address Space Layout Randomization (ASLR) is active.
--	 Must be less than or equal to the actual physical memory on the
--	 system. This must be a multiple of CONFIG_PHYSICAL_ALIGN.
-+	  The lesser of RANDOMIZE_BASE_MAX_OFFSET and available physical
-+	  memory is used to determine the maximal offset in bytes that will
-+	  be applied to the kernel when kernel Address Space Layout
-+	  Randomization (kASLR) is active. This must be a multiple of
-+	  PHYSICAL_ALIGN.
-+
-+	  On 32-bit this is limited to 512MiB by page table layouts. The
-+	  default is 512MiB.
- 
--	 On 32-bit this is limited to 512MiB.
-+	  On 64-bit this is limited by how the kernel fixmap page table is
-+	  positioned, so this cannot be larger than 1GiB currently. Without
-+	  RANDOMIZE_BASE, there is a 512MiB to 1.5GiB split between kernel
-+	  and modules. When RANDOMIZE_BASE_MAX_OFFSET is above 512MiB, the
-+	  modules area will shrink to compensate, up to the current maximum
-+	  1GiB to 1GiB split. The default is 1GiB.
- 
--	 On 64-bit this is limited by how the kernel fixmap page table is
--	 positioned, so this cannot be larger that 1GiB currently. Normally
--	 there is a 512MiB to 1.5GiB split between kernel and modules. When
--	 this is raised above the 512MiB default, the modules area will
--	 shrink to compensate, up to the current maximum 1GiB to 1GiB split.
-+	  If unsure, leave at the default value.
- 
- # Relocation on x86 needs some additional build support
- config X86_NEED_RELOCS
+> +	if (catchup_timer_jiffies(base)) {
+> +		spin_unlock_irq(&base->lock);
+> +		return;
+
+This is what I can't understand... Doesn't this mean that, unless this
+base have a non-deferrable timer, we can never run the pending deferrable
+timers even if the system/cpu is "busy" ?
+
+Oleg.
+
