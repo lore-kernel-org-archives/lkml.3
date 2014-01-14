@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202AbaANA3V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54489 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaANA27 (ORCPT
+	id S1754384AbaANAa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:30:58 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8686 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752461AbaANAaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:59 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 69/77] intel_pstate: Add X86_FEATURE_APERFMPERF to cpu match parameters.
-Date: Mon, 13 Jan 2014 16:28:30 -0800
-Message-Id: <20140114002754.453300466@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 13 Jan 2014 19:30:46 -0500
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        James Ralston <james.d.ralston@intel.com>,
+        Bill Brown <bill.e.brown@intel.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 1/2] i2c: qup: Add device tree bindings information
+Date: Mon, 13 Jan 2014 16:30:36 -0800
+Message-ID: <1389659437-16406-2-git-send-email-bjorn.andersson@sonymobile.com>
+X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1389659437-16406-1-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1389659437-16406-1-git-send-email-bjorn.andersson@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-------------------
+The Qualcomm Universal Peripherial (QUP) wraps I2C mini-core and
+provide input and output FIFO's for it. I2C controller can operate
+as master with supported bus speeds of 100Kbps and 400Kbps.
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
-
-commit 6cbd7ee10e2842a3d1f9b60abede1c8f3d1f1130 upstream.
-
-KVM environments do not support APERF/MPERF MSRs. intel_pstate cannot
-operate without these registers.
-
-The previous validity checks in intel_pstate_msrs_not_valid() are
-insufficent in nested KVMs.
-
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1046317
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+[bjorn: reformulated part of binding description and cleaned up example]
+Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
- drivers/cpufreq/intel_pstate.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/i2c/qcom,i2c-qup.txt       | 41 ++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -518,7 +518,8 @@ static void intel_pstate_timer_func(unsi
- }
- 
- #define ICPU(model, policy) \
--	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_ANY, (unsigned long)&policy }
-+	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_APERFMPERF,\
-+			(unsigned long)&policy }
- 
- static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
- 	ICPU(0x2a, default_policy),
-
+diff --git a/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+new file mode 100644
+index 0000000..a99711b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
+@@ -0,0 +1,41 @@
++Qualcomm Universal Peripheral (QUP) I2C controller
++
++Required properties:
++ - compatible: Should be "qcom,i2c-qup".
++ - reg: Should contain QUP register address and length.
++ - interrupts: Should contain I2C interrupt.
++
++ - clocks: Should contain the core clock and the AHB clock.
++ - clock-names: Should be "core" for the core clock and "iface" for the
++                AHB clock.
++
++ - #address-cells: Should be <1> Address cells for i2c device address
++ - #size-cells: Should be <0> as i2c addresses have no size component
++
++Optional properties:
++ - clock-frequency: Should specify the desired i2c bus clock frequency in Hz,
++                    default is 100kHz if omitted.
++
++Child nodes should conform to i2c bus binding.
++
++Example:
++
++ i2c2: i2c@f9924000 {
++ 	compatible = "qcom,i2c-qup";
++ 	reg = <0xf9924000 0x1000>;
++ 	interrupts = <0 96 0>;
++
++ 	clocks = <&gcc_blsp1_qup2_i2c_apps_clk>, <&gcc_blsp1_ahb_clk>;
++ 	clock-names = "core", "iface";
++
++ 	clock-frequency = <355000>;
++
++ 	#address-cells = <1>;
++ 	#size-cells = <0>;
++
++ 	dummy@60 {
++ 		compatible = "dummy";
++ 		reg = <0x60>;
++ 	};
++ };
++
+-- 
+1.8.2.2
 
