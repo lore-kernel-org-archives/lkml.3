@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707AbaANV0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:26:17 -0500
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:44774 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaANV0K (ORCPT
+	id S1752256AbaANV0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:26:52 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:42243 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaANV0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:26:10 -0500
+	Tue, 14 Jan 2014 16:26:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <5286480B.3060801@ti.com>
-References: <1382467484-16957-1-git-send-email-grygorii.strashko@ti.com>
-	<5266CCE3.1090801@ti.com>
-	<20131114183535.GL10317@atomide.com>
-	<20131115153608.GX10317@atomide.com>
-	<52864585.6030206@linaro.org>
-	<20131115161137.GY10317@atomide.com>
-	<5286480B.3060801@ti.com>
-Date: Tue, 14 Jan 2014 13:26:09 -0800
-Message-ID: <CAGa+x863_MQ22h+U=KtK++3aG2F_X4x57Xtfe16GYXKNiaWX4A@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: OMAP4460: cpuidle: Extend PM_OMAP4_ROM_SMP_BOOT_ERRATUM_GICD
- on cpuidle
-From: Kevin Hilman <khilman@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>
+In-Reply-To: <CALCETrWRWnbiX+fpeXmn7ZKVvCpb+h99R01o8jchmx4=fgb0QA@mail.gmail.com>
+References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
+ <1389277187-18211-14-git-send-email-jlayton@redhat.com> <52CF05B5.5080700@amacapital.net>
+ <20140109194930.1692fbbe@tlielax.poochiereds.net> <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
+ <20140114192713.GA22262@fieldses.org> <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com>
+ <20140114211009.GA23999@fieldses.org> <039101cf116e$56c2de80$04489b80$@mindspring.com>
+ <CALCETrWRWnbiX+fpeXmn7ZKVvCpb+h99R01o8jchmx4=fgb0QA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 Jan 2014 13:26:26 -0800
+Message-ID: <CALCETrVRe2koQAwEiR7p10LqSi4durr9s6uo-1iv_aG-ZNGSkg@mail.gmail.com>
+Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
+To: Frank Filz <ffilzlnx@mindspring.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Hipp <drh@hwaci.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 15, 2013 at 8:12 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On Friday 15 November 2013 11:11 AM, Tony Lindgren wrote:
->> * Taras Kondratiuk <taras.kondratiuk@linaro.org> [131115 08:03]:
->>> On 11/15/2013 05:36 PM, Tony Lindgren wrote:
->>>> * Tony Lindgren <tony@atomide.com> [131114 10:36]:
->>>>> * Grygorii Strashko <grygorii.strashko@ti.com> [131022 12:09]:
->>>>>> The same workaround as ff999b8a0983ee15668394ed49e38d3568fc6859
->>>>>> "ARM: OMAP4460: Workaround for ROM bug because of CA9 r2pX GIC ..."
->>>>>> need to be applied not only when system is booting, but when MPUSS hits
->>>>>> OSWR state through CPUIdle too. Without this WA the same issue is
->>>>>> reproduced now on boards PandaES and Tablet/Blaze with SOM OMAP4460
->>>>>> when CONFIG_CPU_IDLE is enabled.
->>>>>> After MPUSS has enterred OSWR and waken up:
->>>>>> - GIC distributor became disabled forever
->>>>>> - scheduling is not performed any more
->>>>>>
->>>>>> Cc: Kevin Hilman <khilman@linaro.org>
->>>>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>>> Reported-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->>>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>>>
->>>>> Applying into omap-for-v3.13/fixes thanks.
->>>>
->>>> Hmm looks like this breaks the build with randconfigs at least
->>>> with the attached .config, so dropping for now.
->>>
->>> Hi Tony
->>> Have you forgot to attach .config?
->>
->> Oops, sorry looks like I removed it already as I rebuilt the tree
->> and started a new set of randconfig build tests.
->>
->>>> arch/arm/mach-omap2/built-in.o: In function `omap_enter_idle_coupled':
->>>> :(.text+0xb48c): undefined reference to `pm44xx_errata'
->>>
->>> I assume that .config doesn't have CONFIG_SMP enabled while
->>> pm44xx_errata is defined in omap-smp.c.
->>> I think it should be a separate patch to move pm44xx_errata somewhere
->>> else, so this patch will remain the same.
->>
->> Yes something like that probably. Sounds like that should be then
->> patches before this fix.
->>
->>> Btw, do we need omap_enter_idle_coupled() in UP?
->>
->> That should be checked, am43xx may need it.
->>
-> Nope. omap_enter_idle_coupled() is needed only for SMP
-> systems. UP don't need couple idle functionality as
-> such.
+[grr, gmail -- I didn't actually intend to send that.]
 
-So what's the status of this fix and dependencies?
+On Tue, Jan 14, 2014 at 1:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Jan 14, 2014 at 1:19 PM, Frank Filz <ffilzlnx@mindspring.com> wrote:
+>>>       process 2 requests a write lock, gets -EDEADLK, unlocks and
+>>>       requests a new read lock.  That request succeeds because there
+>>>       is no conflicting lock.  (Note the lock manager had no
+>>>       opportunity to upgrade 1's lock here thanks to the conflict with
+>>>       3's lock.)
+>>
+>> As I understand write lock priority, process 2 requesting a new read lock
+>> would block, once there is a write lock waiter, no further read locks would
+>> be granted that would conflict with that waiting write lock.
+>
+> ...which reminds me -- if anyone implements writer priority, please
+> make it optional (either w/ a writer-priority-ignoring read lock or a
+> non-priority-granting write lock).  I have an application for which
+> writer priority would be really annoying.
+>
+> Even better: Have read-lock-and-wait-for-pending-writers be an explicit new operation.
+>
+> (Writer priority a
 
-Both linux-next[1] and arm-soc/for-next[2] are failing boot tests on
-omap4460/panda-es because multi_v7_defconfig now has CPUidle enabled
-by default.
+Writer priority can introduce new deadlocks.  Suppose that a reader
+(holding a read lock) starts a subprocess that takes a new read lock
+and waits for that subprocess.  Throw an unrelated process in that
+tries to take a write lock and you have an instant deadlock.
 
-Kevin
-
-[1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-January/001891.html
-[2] http://lists.linaro.org/pipermail/kernel-build-reports/2014-January/001898.html
+--Andy
