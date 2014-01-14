@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaANQiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:38:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52598 "EHLO
+	id S1752219AbaANQjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:39:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52609 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534AbaANQiu (ORCPT
+	with ESMTP id S1751810AbaANQi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:38:50 -0500
-Date: Tue, 14 Jan 2014 08:38:09 -0800
+	Tue, 14 Jan 2014 11:38:56 -0500
+Date: Tue, 14 Jan 2014 08:38:29 -0800
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-f7c64474242701eb24f6fe96f8df0389a2b800f7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+Message-ID: <tip-9bb8e5edcf37182d0c97e98131cc3c5c03014b0e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com,
-        mingo@elte.hu
-In-Reply-To: <1388759553-12974-2-git-send-email-jolsa@redhat.com>
-References: <1388759553-12974-2-git-send-email-jolsa@redhat.com>
+        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1388595050-23005-2-git-send-email-jolsa@redhat.com>
+References: <1388595050-23005-2-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Fix installation tests path setup
-Git-Commit-ID: f7c64474242701eb24f6fe96f8df0389a2b800f7
+Subject: [tip:perf/core] tools lib traceevent:
+  Shut up plugins make message
+Git-Commit-ID: 9bb8e5edcf37182d0c97e98131cc3c5c03014b0e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,86 +34,66 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f7c64474242701eb24f6fe96f8df0389a2b800f7
-Gitweb:     http://git.kernel.org/tip/f7c64474242701eb24f6fe96f8df0389a2b800f7
+Commit-ID:  9bb8e5edcf37182d0c97e98131cc3c5c03014b0e
+Gitweb:     http://git.kernel.org/tip/9bb8e5edcf37182d0c97e98131cc3c5c03014b0e
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 3 Jan 2014 15:32:33 +0100
+AuthorDate: Wed, 1 Jan 2014 17:50:50 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 13 Jan 2014 10:06:23 -0300
 
-perf tests: Fix installation tests path setup
+tools lib traceevent: Shut up plugins make message
 
-Currently installation tests work only over x86_64, adding arch check to
-make it work over i386 as well.
+Getting rid of following build output:
 
-NOTE looks like x86 is the only arch running tests, we need some
-IS_(32/64) flag to make this generic.
+  $ make O=/tmp/build/perf -C tools/perf/ install-bin
+  ...
+  make[3]: Nothing to be done for `plugins'.
+  make[2]: Nothing to be done for `plugins'.
+  ...
 
+which triggers when traceevent library needs to be rebuilt, but we have
+plugins built already.
+
+Adding extra 'plugins' target with nop which is visible and triggers in
+both Makefile parts (for detached output directory (O=...) the
+traceevent Makefile spawns sub make for the build itself).
+
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1388759553-12974-2-git-send-email-jolsa@redhat.com
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1388595050-23005-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/make | 30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+ tools/lib/traceevent/Makefile | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-index f641c35..e341088 100644
---- a/tools/perf/tests/make
-+++ b/tools/perf/tests/make
-@@ -1,6 +1,16 @@
- PERF := .
- MK   := Makefile
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 76fe0ae..f778d48 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -329,9 +329,12 @@ clean:
  
-+include config/Makefile.arch
+ endif # skip-makefile
+ 
+-PHONY += force
++PHONY += force plugins
+ force:
+ 
++plugins:
++	@echo > /dev/null
 +
-+# FIXME looks like x86 is the only arch running tests ;-)
-+# we need some IS_(32/64) flag to make this generic
-+ifeq ($(IS_X86_64),1)
-+lib = lib64
-+else
-+lib = lib
-+endif
-+
- has = $(shell which $1 2>/dev/null)
- 
- # standard single make variable specified
-@@ -118,16 +128,16 @@ installed_files_bin := bin/perf
- installed_files_bin += etc/bash_completion.d/perf
- installed_files_bin += libexec/perf-core/perf-archive
- 
--installed_files_plugins := lib64/traceevent/plugins/plugin_cfg80211.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_scsi.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_xen.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_function.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_sched_switch.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_mac80211.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_kvm.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_kmem.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_hrtimer.so
--installed_files_plugins += lib64/traceevent/plugins/plugin_jbd2.so
-+installed_files_plugins := $(lib)/traceevent/plugins/plugin_cfg80211.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_scsi.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_xen.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_function.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_sched_switch.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_mac80211.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_kvm.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_kmem.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_hrtimer.so
-+installed_files_plugins += $(lib)/traceevent/plugins/plugin_jbd2.so
- 
- installed_files_all := $(installed_files_bin)
- installed_files_all += $(installed_files_plugins)
+ # Declare the contents of the .PHONY variable as phony.  We keep that
+ # information in a variable so we can use it in if_changed and friends.
+ .PHONY: $(PHONY)
