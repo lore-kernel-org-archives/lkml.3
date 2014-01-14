@@ -1,166 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaANWwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:52:32 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37994 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906AbaANWwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:52:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="466713159"
-Date: Tue, 14 Jan 2014 14:57:35 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: matthew.garrett@nebula.com
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ipc: simplify platform data approach
-Message-ID: <20140114225735.GC9834@psi-dev26.jf.intel.com>
-References: <1386030001-18348-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1751707AbaANWy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:54:59 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:53473 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaANWy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 17:54:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1386030001-18348-1-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D578A7.8020000@infradead.org>
+References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>
+	<52D578A7.8020000@infradead.org>
+Date: Wed, 15 Jan 2014 02:54:56 +0400
+Message-ID: <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Marcel Holtmann <marcel@holtmann.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
+        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Content-Type: multipart/mixed; boundary=001a11c1d7f4cf6a6704eff6147f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 02, 2013 at 04:20:00PM -0800, David Cohen wrote:
-> This patch removes the unnecessary enum for platform type to handle the
-> array of pdatas. We can set pdata directly to pci_device_id struct
-> instead.
+--001a11c1d7f4cf6a6704eff6147f
+Content-Type: text/plain; charset=ISO-8859-1
 
-Ping. comments here? :)
+Hello,
 
-Br, David Cohen
 
-> 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  drivers/platform/x86/intel_scu_ipc.c | 84 +++++++++++++++++-------------------
->  1 file changed, 40 insertions(+), 44 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-> index 60ea476a9130..259969d31055 100644
-> --- a/drivers/platform/x86/intel_scu_ipc.c
-> +++ b/drivers/platform/x86/intel_scu_ipc.c
-> @@ -62,13 +62,6 @@
->  #define IPC_RWBUF_SIZE    20		/* IPC Read buffer Size */
->  #define IPC_IOC	          0x100		/* IPC command register IOC bit */
->  
-> -enum {
-> -	SCU_IPC_LINCROFT,
-> -	SCU_IPC_PENWELL,
-> -	SCU_IPC_CLOVERVIEW,
-> -	SCU_IPC_TANGIER,
-> -};
-> -
->  /* intel scu ipc driver data*/
->  struct intel_scu_ipc_pdata_t {
->  	u32 ipc_base;
-> @@ -78,35 +71,29 @@ struct intel_scu_ipc_pdata_t {
->  	u8 irq_mode;
->  };
->  
-> -static struct intel_scu_ipc_pdata_t intel_scu_ipc_pdata[] = {
-> -	[SCU_IPC_LINCROFT] = {
-> -		.ipc_base = 0xff11c000,
-> -		.i2c_base = 0xff12b000,
-> -		.ipc_len = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 0,
-> -	},
-> -	[SCU_IPC_PENWELL] = {
-> -		.ipc_base = 0xff11c000,
-> -		.i2c_base = 0xff12b000,
-> -		.ipc_len = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 1,
-> -	},
-> -	[SCU_IPC_CLOVERVIEW] = {
-> -		.ipc_base = 0xff11c000,
-> -		.i2c_base = 0xff12b000,
-> -		.ipc_len = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 1,
-> -	},
-> -	[SCU_IPC_TANGIER] = {
-> -		.ipc_base = 0xff009000,
-> -		.i2c_base  = 0xff00d000,
-> -		.ipc_len  = 0x100,
-> -		.i2c_len = 0x10,
-> -		.irq_mode = 0,
-> -	},
-> +static struct intel_scu_ipc_pdata_t intel_scu_ipc_lincroft_pdata = {
-> +	.ipc_base = 0xff11c000,
-> +	.i2c_base = 0xff12b000,
-> +	.ipc_len = 0x100,
-> +	.i2c_len = 0x10,
-> +	.irq_mode = 0,
-> +};
-> +
-> +/* Penwell and Cloverview */
-> +static struct intel_scu_ipc_pdata_t intel_scu_ipc_penwell_pdata = {
-> +	.ipc_base = 0xff11c000,
-> +	.i2c_base = 0xff12b000,
-> +	.ipc_len = 0x100,
-> +	.i2c_len = 0x10,
-> +	.irq_mode = 1,
-> +};
-> +
-> +static struct intel_scu_ipc_pdata_t intel_scu_ipc_tangier_pdata = {
-> +	.ipc_base = 0xff009000,
-> +	.i2c_base  = 0xff00d000,
-> +	.ipc_len  = 0x100,
-> +	.i2c_len = 0x10,
-> +	.irq_mode = 0,
->  };
->  
->  static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id);
-> @@ -583,15 +570,14 @@ static irqreturn_t ioc(int irq, void *dev_id)
->   */
->  static int ipc_probe(struct pci_dev *dev, const struct pci_device_id *id)
->  {
-> -	int err, pid;
-> +	int err;
->  	struct intel_scu_ipc_pdata_t *pdata;
->  	resource_size_t pci_resource;
->  
->  	if (ipcdev.pdev)		/* We support only one SCU */
->  		return -EBUSY;
->  
-> -	pid = id->driver_data;
-> -	pdata = &intel_scu_ipc_pdata[pid];
-> +	pdata = (struct intel_scu_ipc_pdata_t *)id->driver_data;
->  
->  	ipcdev.pdev = pci_dev_get(dev);
->  	ipcdev.irq_mode = pdata->irq_mode;
-> @@ -650,11 +636,21 @@ static void ipc_remove(struct pci_dev *pdev)
->  }
->  
->  static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
-> -	{PCI_VDEVICE(INTEL, 0x082a), SCU_IPC_LINCROFT},
-> -	{PCI_VDEVICE(INTEL, 0x080e), SCU_IPC_PENWELL},
-> -	{PCI_VDEVICE(INTEL, 0x08ea), SCU_IPC_CLOVERVIEW},
-> -	{PCI_VDEVICE(INTEL, 0x11a0), SCU_IPC_TANGIER},
-> -	{ 0,}
-> +	{
-> +		PCI_VDEVICE(INTEL, 0x082a),
-> +		(kernel_ulong_t)&intel_scu_ipc_lincroft_pdata,
-> +	}, {
-> +		PCI_VDEVICE(INTEL, 0x080e),
-> +		(kernel_ulong_t)&intel_scu_ipc_penwell_pdata,
-> +	}, {
-> +		PCI_VDEVICE(INTEL, 0x08ea),
-> +		(kernel_ulong_t)&intel_scu_ipc_penwell_pdata,
-> +	}, {
-> +		PCI_VDEVICE(INTEL, 0x11a0),
-> +		(kernel_ulong_t)&intel_scu_ipc_tangier_pdata,
-> +	}, {
-> +		0,
-> +	}
->  };
->  MODULE_DEVICE_TABLE(pci, pci_ids);
->  
-> -- 
-> 1.8.4.2
+On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>
+> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
+> > Hi all,
+> >
+> > This tree fails (more than usual) the powerpc allyesconfig build.
+> >
+> > Changes since 20140113:
+> >
+>
+>
+> on i386:
+>
+> net/built-in.o: In function `header_create':
+> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
+> net/built-in.o: In function `bt_6lowpan_recv':
+> (.text+0x166b3c): undefined reference to `lowpan_process_data'
+
+Ah, nice Makefile hack there.
+David, Marcel, could you please consider the attached patch.
+
+
+-- 
+With best wishes
+Dmitry
+
+--001a11c1d7f4cf6a6704eff6147f
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-net-move-6lowpan-compression-code-to-separate-module.patch"
+Content-Disposition: attachment; 
+	filename="0001-net-move-6lowpan-compression-code-to-separate-module.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hqfrd7t71
+
+RnJvbSA0YzNkYjZkM2MyNDRkZWNmNDM0NjY1YzMwYzFiZjc1YWFkMWY5NGIyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEbWl0cnkgRXJlbWluLVNvbGVuaWtvdiA8ZG1pdHJ5X2VyZW1p
+bkBtZW50b3IuY29tPgpEYXRlOiBXZWQsIDE1IEphbiAyMDE0IDAyOjUwOjQwICswNDAwClN1Ympl
+Y3Q6IFtQQVRDSF0gbmV0OiBtb3ZlIDZsb3dwYW4gY29tcHJlc3Npb24gY29kZSB0byBzZXBhcmF0
+ZSBtb2R1bGUKCklFRUUgODAyLjE1LjQgYW5kIEJsdWV0b290aCBuZXR3b3JraW5nIHN0YWNrcyBz
+aGFyZSA2bG93cGFuIGNvbXByZXNzaW9uCmNvZGUuIEluc3RlYWQgb2YgaW50cm9kdWNpbmcgTWFr
+ZWZpbGUvS2NvbmZpZyBoYWNrcywgYnVpbGQgdGhpcyBjb2RlIGFzCmEgc2VwYXJhdGUgbW9kdWxl
+IHJlZmVyZW5jZWQgZnJvbSBib3RoIGllZWU4MDIxNTQgYW5kIGJsdWV0b290aCBtb2R1bGVzLgoK
+VGhpcyBmaXhlcyB0aGUgZm9sbG93aW5nIGJ1aWxkIGVycm9yIG9ic2VydmVkIGluIHNvbWUga2Vy
+bmVsCmNvbmZpZ3VyYXRpb25zOgoKbmV0L2J1aWx0LWluLm86IEluIGZ1bmN0aW9uIGBoZWFkZXJf
+Y3JlYXRlJzogNmxvd3Bhbi5jOigudGV4dCsweDE2NjE0OSk6IHVuZGVmaW5lZCByZWZlcmVuY2Ug
+dG8gYGxvd3Bhbl9oZWFkZXJfY29tcHJlc3MnCm5ldC9idWlsdC1pbi5vOiBJbiBmdW5jdGlvbiBg
+YnRfNmxvd3Bhbl9yZWN2JzogKC50ZXh0KzB4MTY2YjNjKTogdW5kZWZpbmVkIHJlZmVyZW5jZSB0
+byBgbG93cGFuX3Byb2Nlc3NfZGF0YScKClNpZ25lZC1vZmYtYnk6IERtaXRyeSBFcmVtaW4tU29s
+ZW5pa292IDxkbWl0cnlfZXJlbWluQG1lbnRvci5jb20+Ci0tLQogbmV0L01ha2VmaWxlICAgICAg
+ICAgICAgfCAyICstCiBuZXQvYmx1ZXRvb3RoL0tjb25maWcgICB8IDEgKwogbmV0L2llZWU4MDIx
+NTQvS2NvbmZpZyAgfCA3ICsrKysrKysKIG5ldC9pZWVlODAyMTU0L01ha2VmaWxlIHwgMyArKy0K
+IDQgZmlsZXMgY2hhbmdlZCwgMTEgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYg
+LS1naXQgYS9uZXQvTWFrZWZpbGUgYi9uZXQvTWFrZWZpbGUKaW5kZXggOGZhMmY5MS4uY2JiYmU2
+ZCAxMDA2NDQKLS0tIGEvbmV0L01ha2VmaWxlCisrKyBiL25ldC9NYWtlZmlsZQpAQCAtNTcsNyAr
+NTcsNyBAQCBvYmotJChDT05GSUdfQ0FJRikJCSs9IGNhaWYvCiBpZm5lcSAoJChDT05GSUdfRENC
+KSwpCiBvYmoteQkJCQkrPSBkY2IvCiBlbmRpZgotb2JqLSQoQ09ORklHX0lFRUU4MDIxNTQpCSs9
+IGllZWU4MDIxNTQvCitvYmoteQkJCQkrPSBpZWVlODAyMTU0Lwogb2JqLSQoQ09ORklHX01BQzgw
+MjE1NCkJCSs9IG1hYzgwMjE1NC8KIAogaWZlcSAoJChDT05GSUdfTkVUKSx5KQpkaWZmIC0tZ2l0
+IGEvbmV0L2JsdWV0b290aC9LY29uZmlnIGIvbmV0L2JsdWV0b290aC9LY29uZmlnCmluZGV4IGQz
+ZjNmN2IuLjk4NWI1NjAgMTAwNjQ0Ci0tLSBhL25ldC9ibHVldG9vdGgvS2NvbmZpZworKysgYi9u
+ZXQvYmx1ZXRvb3RoL0tjb25maWcKQEAgLTEyLDYgKzEyLDcgQEAgbWVudWNvbmZpZyBCVAogCXNl
+bGVjdCBDUllQVE9fQUVTCiAJc2VsZWN0IENSWVBUT19FQ0IKIAlzZWxlY3QgQ1JZUFRPX1NIQTI1
+NgorCXNlbGVjdCA2TE9XUEFOX0lQSEMKIAloZWxwCiAJICBCbHVldG9vdGggaXMgbG93LWNvc3Qs
+IGxvdy1wb3dlciwgc2hvcnQtcmFuZ2Ugd2lyZWxlc3MgdGVjaG5vbG9neS4KIAkgIEl0IHdhcyBk
+ZXNpZ25lZCBhcyBhIHJlcGxhY2VtZW50IGZvciBjYWJsZXMgYW5kIG90aGVyIHNob3J0LXJhbmdl
+CmRpZmYgLS1naXQgYS9uZXQvaWVlZTgwMjE1NC9LY29uZmlnIGIvbmV0L2llZWU4MDIxNTQvS2Nv
+bmZpZwppbmRleCBiMmUwNmRmLi45Yzk4NzlkIDEwMDY0NAotLS0gYS9uZXQvaWVlZTgwMjE1NC9L
+Y29uZmlnCisrKyBiL25ldC9pZWVlODAyMTU0L0tjb25maWcKQEAgLTEzLDUgKzEzLDEyIEBAIGNv
+bmZpZyBJRUVFODAyMTU0CiBjb25maWcgSUVFRTgwMjE1NF82TE9XUEFOCiAJdHJpc3RhdGUgIjZs
+b3dwYW4gc3VwcG9ydCBvdmVyIElFRUUgODAyLjE1LjQiCiAJZGVwZW5kcyBvbiBJRUVFODAyMTU0
+ICYmIElQVjYKKwlzZWxlY3QgNkxPV1BBTl9JUEhDCiAJLS0taGVscC0tLQogCUlQdjYgY29tcHJl
+c3Npb24gb3ZlciBJRUVFIDgwMi4xNS40LgorCitjb25maWcgNkxPV1BBTl9JUEhDCisJdHJpc3Rh
+dGUKKwktLS1oZWxwLS0tCisJICA2bG93cGFuIGNvbXByZXNzaW9uIGNvZGUgd2hpY2ggaXMgc2hh
+cmVkIGJldHdlZW4gSUVFRSA4MDIuMTUuNCBhbmQgQmx1ZXRvb3RoCisJICBzdGFja3MuCmRpZmYg
+LS1naXQgYS9uZXQvaWVlZTgwMjE1NC9NYWtlZmlsZSBiL25ldC9pZWVlODAyMTU0L01ha2VmaWxl
+CmluZGV4IDk1MWE4M2UuLmU4ZjA1ODggMTAwNjQ0Ci0tLSBhL25ldC9pZWVlODAyMTU0L01ha2Vm
+aWxlCisrKyBiL25ldC9pZWVlODAyMTU0L01ha2VmaWxlCkBAIC0xLDUgKzEsNiBAQAogb2JqLSQo
+Q09ORklHX0lFRUU4MDIxNTQpICs9IGllZWU4MDIxNTQubyBhZl84MDIxNTQubwotb2JqLSQoQ09O
+RklHX0lFRUU4MDIxNTRfNkxPV1BBTikgKz0gNmxvd3Bhbi5vIDZsb3dwYW5faXBoYy5vCitvYmot
+JChDT05GSUdfSUVFRTgwMjE1NF82TE9XUEFOKSArPSA2bG93cGFuLm8KK29iai0kKENPTkZJR182
+TE9XUEFOX0lQSEMpICs9IDZsb3dwYW5faXBoYy5vCiAKIGllZWU4MDIxNTQteSA6PSBuZXRsaW5r
+Lm8gbmwtbWFjLm8gbmwtcGh5Lm8gbmxfcG9saWN5Lm8gd3Bhbi1jbGFzcy5vCiBhZl84MDIxNTQt
+eSA6PSBhZl9pZWVlODAyMTU0Lm8gcmF3Lm8gZGdyYW0ubwotLSAKMS44LjUuMgoK
+--001a11c1d7f4cf6a6704eff6147f--
