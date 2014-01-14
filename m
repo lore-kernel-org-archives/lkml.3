@@ -1,94 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaANIvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 03:51:37 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49136 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaANIvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 03:51:36 -0500
-Message-ID: <1389689607.5567.525.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ
- exception cases
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Sagi Grimberg <sagig@dev.mellanox.co.il>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Date: Tue, 14 Jan 2014 00:53:27 -0800
-In-Reply-To: <52D4EADC.60300@dev.mellanox.co.il>
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-	 <1389212157-14540-3-git-send-email-nab@daterainc.com>
-	 <52CE7D3F.7030308@mellanox.com>
-	 <1389336816.5567.404.camel@haakon3.risingtidesystems.com>
-	 <52D4EADC.60300@dev.mellanox.co.il>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751537AbaANIwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 03:52:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750949AbaANIwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 03:52:41 -0500
+Date: Tue, 14 Jan 2014 09:54:41 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 3/7] ahci: Use new interfaces for MSI/MSI-X enablement
+Message-ID: <20140114085441.GB6873@dhcp-26-207.brq.redhat.com>
+References: <cover.1389103215.git.agordeev@redhat.com>
+ <7fe2a5563efac19c87213a48b58cae6b4d76c91d.1389103215.git.agordeev@redhat.com>
+ <20140113191220.GA6525@google.com>
+ <20140114085040.GA6873@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114085040.GA6873@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-14 at 09:44 +0200, Sagi Grimberg wrote:
-> On 1/10/2014 8:53 AM, Nicholas A. Bellinger wrote:
-> > On Thu, 2014-01-09 at 12:43 +0200, Sagi Grimberg wrote:
-> >> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
-> >>> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> >>>
-> >>> This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
-> >>> exception cases into transport_send_check_condition_and_sense().
-> >>>
-> >>> This includes:
-> >>>
-> >>>     LOGICAL BLOCK GUARD CHECK FAILED
-> >>>     LOGICAL BLOCK APPLICATION TAG CHECK FAILED
-> >>>     LOGICAL BLOCK REFERENCE TAG CHECK FAILED
-> >>>
-> >>> that used by DIF TYPE1 and TYPE3 failure cases.
-> >>>
-> >>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
-> >>> Cc: Christoph Hellwig <hch@lst.de>
-> >>> Cc: Hannes Reinecke <hare@suse.de>
-> >>> Cc: Sagi Grimberg <sagig@mellanox.com>
-> >>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
-> >>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> >>> ---
-> >>>    drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
-> >>>    include/target/target_core_base.h      |    3 +++
-> >>>    2 files changed, 33 insertions(+)
-> >>>
-> >>> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> >>> index 91953da..707ee17 100644
-> >>> --- a/drivers/target/target_core_transport.c
-> >>> +++ b/drivers/target/target_core_transport.c
-> >>> @@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
-> >>>    		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
-> >>>    		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
-> >>>    		break;
-> >>> +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
-> >>> +		/* CURRENT ERROR */
-> >>> +		buffer[0] = 0x70;
-> >>> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
-> >>> +		/* ILLEGAL REQUEST */
-> >>> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
-> >>> +		/* LOGICAL BLOCK GUARD CHECK FAILED */
-> >>> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
-> >>> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
-> >>
-> 
-> Hey Nic,
-> 
-> In my iSER patches I constructed the same sense buffer (call 
-> isert_pi_err_sense_buffer) and called isert_put_rsponse. So I should 
-> call this routine instead correct?
+On Tue, Jan 14, 2014 at 09:50:40AM +0100, Alexander Gordeev wrote:
+> What if we try to address both goals by making pci_enable_msi() a helper over
+> pci_enable_msi_range(pdev, 1, 1)?
 
-Yes, it should be OK to use this for generating CHECK_CONDITION from
-fabric protection failures in isert_completion_rdma_write() code after
-device->unreg_rdma_mem() has been called.
+Or pci_enable_msi_single() to help reading and avoid drivers conversion mess.
 
---nab
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
