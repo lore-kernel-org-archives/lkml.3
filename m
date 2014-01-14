@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaANAld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:41:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54392 "EHLO
+	id S1751682AbaANAmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:42:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874AbaANA2g (ORCPT
+	with ESMTP id S1753743AbaANA2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:36 -0500
+	Mon, 13 Jan 2014 19:28:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 43/77] sfc: Stop/re-start PTP when stopping/starting the datapath.
-Date: Mon, 13 Jan 2014 16:28:04 -0800
-Message-Id: <20140114002753.724312482@linuxfoundation.org>
+Subject: [PATCH 3.12 42/77] sfc: Rate-limit log message for PTP packets without a matching timestamp event
+Date: Mon, 13 Jan 2014 16:28:03 -0800
+Message-Id: <20140114002753.700753586@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,123 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Rames <arames@solarflare.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 2ea4dc28a5bcec408e01a8772763871638a5ec79 ]
+[ Upstream commit 35f9a7a380728a94d417e5824a866f969423ac83 ]
 
-This disables PTP when we bring the interface down to avoid getting
-unmatched RX timestamp events, and tries to re-enable it when bringing
-the interface up.
-
-[bwh: Make efx_ptp_stop() safe on Falcon. Introduce
- efx_ptp_{start,stop}_datapath() functions; we'll expand them later.]
+In case of a flood of PTP packets, the timestamp peripheral and MC
+firmware on the SFN[56]322F boards may not be able to provide
+timestamp events for all packets.  Don't complain too much about this.
 
 Fixes: 7c236c43b838 ('sfc: Add support for IEEE-1588 PTP')
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/efx.c |    4 ++++
- drivers/net/ethernet/sfc/nic.h |    2 ++
- drivers/net/ethernet/sfc/ptp.c |   30 +++++++++++++++++++++++++++---
- 3 files changed, 33 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/sfc/ptp.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -645,6 +645,8 @@ static void efx_start_datapath(struct ef
- 		WARN_ON(channel->rx_pkt_n_frags);
- 	}
- 
-+	efx_ptp_start_datapath(efx);
-+
- 	if (netif_device_present(efx->net_dev))
- 		netif_tx_wake_all_queues(efx->net_dev);
- }
-@@ -659,6 +661,8 @@ static void efx_stop_datapath(struct efx
- 	EFX_ASSERT_RESET_SERIALISED(efx);
- 	BUG_ON(efx->port_enabled);
- 
-+	efx_ptp_stop_datapath(efx);
-+
- 	/* Stop RX refill */
- 	efx_for_each_channel(channel, efx) {
- 		efx_for_each_channel_rx_queue(rx_queue, channel)
---- a/drivers/net/ethernet/sfc/nic.h
-+++ b/drivers/net/ethernet/sfc/nic.h
-@@ -528,6 +528,8 @@ extern void efx_ptp_get_ts_info(struct e
- extern bool efx_ptp_is_ptp_tx(struct efx_nic *efx, struct sk_buff *skb);
- extern int efx_ptp_tx(struct efx_nic *efx, struct sk_buff *skb);
- extern void efx_ptp_event(struct efx_nic *efx, efx_qword_t *ev);
-+void efx_ptp_start_datapath(struct efx_nic *efx);
-+void efx_ptp_stop_datapath(struct efx_nic *efx);
- 
- extern const struct efx_nic_type falcon_a1_nic_type;
- extern const struct efx_nic_type falcon_b0_nic_type;
 --- a/drivers/net/ethernet/sfc/ptp.c
 +++ b/drivers/net/ethernet/sfc/ptp.c
-@@ -801,9 +801,14 @@ fail:
- static int efx_ptp_stop(struct efx_nic *efx)
- {
- 	struct efx_ptp_data *ptp = efx->ptp_data;
--	int rc = efx_ptp_disable(efx);
- 	struct list_head *cursor;
- 	struct list_head *next;
-+	int rc;
-+
-+	if (ptp == NULL)
-+		return 0;
-+
-+	rc = efx_ptp_disable(efx);
- 
- 	if (ptp->rxfilter_installed) {
- 		efx_filter_remove_id_safe(efx, EFX_FILTER_PRI_REQUIRED,
-@@ -828,6 +833,13 @@ static int efx_ptp_stop(struct efx_nic *
- 	return rc;
- }
- 
-+static int efx_ptp_restart(struct efx_nic *efx)
-+{
-+	if (efx->ptp_data && efx->ptp_data->enabled)
-+		return efx_ptp_start(efx);
-+	return 0;
-+}
-+
- static void efx_ptp_pps_worker(struct work_struct *work)
- {
- 	struct efx_ptp_data *ptp =
-@@ -1125,7 +1137,7 @@ static int efx_ptp_change_mode(struct ef
- {
- 	if ((enable_wanted != efx->ptp_data->enabled) ||
- 	    (enable_wanted && (efx->ptp_data->mode != new_mode))) {
--		int rc;
-+		int rc = 0;
- 
- 		if (enable_wanted) {
- 			/* Change of mode requires disable */
-@@ -1142,7 +1154,8 @@ static int efx_ptp_change_mode(struct ef
- 			 * succeed.
- 			 */
- 			efx->ptp_data->mode = new_mode;
--			rc = efx_ptp_start(efx);
-+			if (netif_running(efx->net_dev))
-+				rc = efx_ptp_start(efx);
- 			if (rc == 0) {
- 				rc = efx_ptp_synchronize(efx,
- 							 PTP_SYNC_ATTEMPTS * 2);
-@@ -1515,3 +1528,14 @@ void efx_ptp_probe(struct efx_nic *efx)
- 		efx->extra_channel_type[EFX_EXTRA_CHANNEL_PTP] =
- 			&efx_ptp_channel_type;
- }
-+
-+void efx_ptp_start_datapath(struct efx_nic *efx)
-+{
-+	if (efx_ptp_restart(efx))
-+		netif_err(efx, drv, efx->net_dev, "Failed to restart PTP.\n");
-+}
-+
-+void efx_ptp_stop_datapath(struct efx_nic *efx)
-+{
-+	efx_ptp_stop(efx);
-+}
+@@ -717,8 +717,9 @@ static bool efx_ptp_process_events(struc
+ 			__skb_queue_tail(q, skb);
+ 		} else if (time_after(jiffies, match->expiry)) {
+ 			match->state = PTP_PACKET_STATE_TIMED_OUT;
+-			netif_warn(efx, rx_err, efx->net_dev,
+-				   "PTP packet - no timestamp seen\n");
++			if (net_ratelimit())
++				netif_warn(efx, rx_err, efx->net_dev,
++					   "PTP packet - no timestamp seen\n");
+ 			__skb_queue_tail(q, skb);
+ 		} else {
+ 			/* Replace unprocessed entry and stop */
 
 
