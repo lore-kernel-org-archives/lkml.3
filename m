@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490AbaANK2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:28:05 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56669 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaANK2C (ORCPT
+	id S1751539AbaANKax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:30:53 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:36409 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287AbaANKau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:28:02 -0500
-Date: Tue, 14 Jan 2014 11:27:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        markgross@thegnar.org, vincent.guittot@linaro.org,
-        catalin.marinas@arm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3/11] issue 3: No understanding of potential cpu capacity
-Message-ID: <20140114102753.GT7572@laptop.programming.kicks-ass.net>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-4-git-send-email-morten.rasmussen@arm.com>
- <3700155.hLuCBAXQoy@vostro.rjw.lan>
+	Tue, 14 Jan 2014 05:30:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3700155.hLuCBAXQoy@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1389196639.23721.16.camel@hornet>
+References: <1387815830-8794-1-git-send-email-pawel.moll@arm.com>
+	<1387815830-8794-4-git-send-email-pawel.moll@arm.com>
+	<CACRpkdb4w26vuOtR1bAhQ6k=1uQx=np4WwoabvH8pOq8HK54=w@mail.gmail.com>
+	<1389196639.23721.16.camel@hornet>
+Date: Tue, 14 Jan 2014 11:30:50 +0100
+Message-ID: <CACRpkdb4X+=Tpe_+U0ixyQTA3BbtX17wk=y=63CVkQsdLo60iA@mail.gmail.com>
+Subject: Re: [RFC 03/18] GPIO: gpio-generic: Add label to platform data
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jon Medhurst <tixy@linaro.org>, "arm@kernel.org" <arm@kernel.org>,
+        Olof Johansson <olof@lixom.net>, Alexandre Courbot <gnurou@gmail.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 10:07:12PM +0100, Rafael J. Wysocki wrote:
-> > Currently, the CFS scheduler has no knowledge about frequency scaling.
-> > Frequency scaling governors generally try to match the frequency to
-> > the load, which means that the idle time has no absolute meaning. The
-> > potential spare cpu capacity may be much higher than indicated by the
-> > idle time if the cpu is running at a low P-state.
-> > 
-> > The energy trade-off may justify putting another task on a loaded cpu
-> > even if it causes a change to a higher P-state to handle the extra load.
-> > Related issues are frequency (and cpu micro architecture) invariant task
-> > load and power topology information, which are both needed to enable the
-> > scheduler for energy-aware task placement. This is covered in more
-> > detail in issue 5.
-> > 
-> > The potential cpu capacity cannot be assumed to be constant as thermal
-> > management may restrict the usage of high performance P-states
-> > dynamically.
-> 
-> That's correct.  Moreover, all of the above seems to assume that we can get
-> exact power numbers for all of the involved C-states and P-states.  What if
-> we can't?
+On Wed, Jan 8, 2014 at 4:57 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Mon, 2013-12-23 at 17:26 +0000, Linus Walleij wrote:
 
-On average more or less correct should be fine; in which case the
-result will on average still be better.
+>> Good point. But what about also adding device tree support for
+>> naming the chips while you're at it?
+>>
+>> I imagine a generic gpiochip property in
+>> Documentation/devicetree/bindings/gpio/gpio.txt
+>
+> Well, this has been discussed almost to death already (as you may
+> remember ;-) in the thread:
+>
+> http://www.spinics.net/lists/devicetree/msg00072.html
+>
+> (only portions survived)
+>
+> Although I was in favour of the generic binding (as were you if I
+> remember correctly), the final non-conclusion was not to open the
+> "generic door". Fair enough with me, I went the defined-in-code way
+> here...
 
-Obviously the more reliable the input to the model the better the
-results, but as long as the input numbers are more or less in the right
-ballpark the model should still more or less do the right thing.
+OK I buy this. I am willing to apply this patch. Just a problem:
+
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: quoted-printable
+
+I can't apply this patch :-)
+
+Please consult your fellow upstream developers on how to get
+the mail out of the ARM offices in a form that I can apply...
+
+Yours,
+Linus Walleij
