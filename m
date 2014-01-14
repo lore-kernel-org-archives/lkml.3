@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599AbaANA2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:28:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54201 "EHLO
+	id S1754708AbaANAwb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:52:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54217 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695AbaANA1y (ORCPT
+	with ESMTP id S1753580AbaANA2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:54 -0500
+	Mon, 13 Jan 2014 19:28:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Subject: [PATCH 3.10 61/62] sched: Fix hrtimer_cancel()/rq->lock deadlock
-Date: Mon, 13 Jan 2014 16:27:26 -0800
-Message-Id: <20140114002712.207028937@linuxfoundation.org>
+        Kamala R <kamala@aristanetworks.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 01/77] IPv6: Fixed support for blackhole and prohibit routes
+Date: Mon, 13 Jan 2014 16:27:22 -0800
+Message-Id: <20140114002752.540962852@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
-References: <20140114002710.464561569@linuxfoundation.org>
+In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
+References: <20140114002752.497010554@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,67 +26,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ben Segall <bsegall@google.com>
+From: Kamala R <kamala@aristanetworks.com>
 
-commit 927b54fccbf04207ec92f669dce6806848cbec7d upstream.
+[ Upstream commit 7150aede5dd241539686e17d9592f5ebd28a2cda ]
 
-__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
-waiting for the hrtimer to finish. However, if sched_cfs_period_timer
-runs for another loop iteration, the hrtimer can attempt to take
-rq->lock, resulting in deadlock.
+The behaviour of blackhole and prohibit routes has been corrected by setting
+the input and output pointers of the dst variable appropriately. For
+blackhole routes, they are set to dst_discard and to ip6_pkt_discard and
+ip6_pkt_discard_out respectively for prohibit routes.
 
-Fix this by ensuring that cfs_b->timer_active is cleared only if the
-_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
-__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
-that to succeed or timer_active == 1.
+ipv6: ip6_pkt_prohibit(_out) should not depend on
+CONFIG_IPV6_MULTIPLE_TABLES
 
-Signed-off-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+We need ip6_pkt_prohibit(_out) available without
+CONFIG_IPV6_MULTIPLE_TABLES
+
+Signed-off-by: Kamala R <kamala@aristanetworks.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/sched/fair.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ net/ipv6/route.c |   22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2410,6 +2410,13 @@ static int do_sched_cfs_period_timer(str
- 	if (idle)
- 		goto out_unlock;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -84,6 +84,8 @@ static int		 ip6_dst_gc(struct dst_ops *
  
-+	/*
-+	 * if we have relooped after returning idle once, we need to update our
-+	 * status as actually running, so that other cpus doing
-+	 * __start_cfs_bandwidth will stop trying to cancel us.
-+	 */
-+	cfs_b->timer_active = 1;
-+
- 	__refill_cfs_bandwidth_runtime(cfs_b);
+ static int		ip6_pkt_discard(struct sk_buff *skb);
+ static int		ip6_pkt_discard_out(struct sk_buff *skb);
++static int		ip6_pkt_prohibit(struct sk_buff *skb);
++static int		ip6_pkt_prohibit_out(struct sk_buff *skb);
+ static void		ip6_link_failure(struct sk_buff *skb);
+ static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
+ 					   struct sk_buff *skb, u32 mtu);
+@@ -234,9 +236,6 @@ static const struct rt6_info ip6_null_en
  
- 	if (!throttled) {
-@@ -2682,11 +2689,11 @@ void __start_cfs_bandwidth(struct cfs_ba
- 	 * (timer_active==0 becomes visible before the hrtimer call-back
- 	 * terminates).  In either case we ensure that it's re-programmed
- 	 */
--	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
-+	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
-+	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
-+		/* bounce the lock to allow do_sched_cfs_period_timer to run */
- 		raw_spin_unlock(&cfs_b->lock);
--		/* ensure cfs_b->lock is available while we wait */
--		hrtimer_cancel(&cfs_b->period_timer);
+ #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+ 
+-static int ip6_pkt_prohibit(struct sk_buff *skb);
+-static int ip6_pkt_prohibit_out(struct sk_buff *skb);
 -
-+		cpu_relax();
- 		raw_spin_lock(&cfs_b->lock);
- 		/* if someone else restarted the timer then we're done */
- 		if (cfs_b->timer_active)
+ static const struct rt6_info ip6_prohibit_entry_template = {
+ 	.dst = {
+ 		.__refcnt	= ATOMIC_INIT(1),
+@@ -1570,21 +1569,24 @@ int ip6_route_add(struct fib6_config *cf
+ 				goto out;
+ 			}
+ 		}
+-		rt->dst.output = ip6_pkt_discard_out;
+-		rt->dst.input = ip6_pkt_discard;
+ 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
+ 		switch (cfg->fc_type) {
+ 		case RTN_BLACKHOLE:
+ 			rt->dst.error = -EINVAL;
++			rt->dst.output = dst_discard;
++			rt->dst.input = dst_discard;
+ 			break;
+ 		case RTN_PROHIBIT:
+ 			rt->dst.error = -EACCES;
++			rt->dst.output = ip6_pkt_prohibit_out;
++			rt->dst.input = ip6_pkt_prohibit;
+ 			break;
+ 		case RTN_THROW:
+-			rt->dst.error = -EAGAIN;
+-			break;
+ 		default:
+-			rt->dst.error = -ENETUNREACH;
++			rt->dst.error = (cfg->fc_type == RTN_THROW) ? -EAGAIN
++					: -ENETUNREACH;
++			rt->dst.output = ip6_pkt_discard_out;
++			rt->dst.input = ip6_pkt_discard;
+ 			break;
+ 		}
+ 		goto install_route;
+@@ -2149,8 +2151,6 @@ static int ip6_pkt_discard_out(struct sk
+ 	return ip6_pkt_drop(skb, ICMPV6_NOROUTE, IPSTATS_MIB_OUTNOROUTES);
+ }
+ 
+-#ifdef CONFIG_IPV6_MULTIPLE_TABLES
+-
+ static int ip6_pkt_prohibit(struct sk_buff *skb)
+ {
+ 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_INNOROUTES);
+@@ -2162,8 +2162,6 @@ static int ip6_pkt_prohibit_out(struct s
+ 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
+ }
+ 
+-#endif
+-
+ /*
+  *	Allocate a dst for local (unicast / anycast) address.
+  */
 
 
