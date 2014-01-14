@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaANKBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:01:50 -0500
-Received: from linux-libre.fsfla.org ([208.118.235.54]:57651 "EHLO
-	linux-libre.fsfla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaANKBq (ORCPT
+	id S1751601AbaANKF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:05:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56223 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbaANKFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:01:46 -0500
-From: Alexandre Oliva <oliva@gnu.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.13-rc regression] Unbreak Loongson2 and r4k-generic flush icache range
-Organization: Free thinker, not speaking for the GNU Project
-References: <ord2jwnmwd.fsf@livre.home> <52D3EA9B.6020404@cogentembedded.com>
-Date: Tue, 14 Jan 2014 08:01:22 -0200
-In-Reply-To: <52D3EA9B.6020404@cogentembedded.com> (Sergei Shtylyov's message
-	of "Mon, 13 Jan 2014 17:31:07 +0400")
-Message-ID: <oriotmopal.fsf@livre.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 14 Jan 2014 05:05:55 -0500
+Date: Tue, 14 Jan 2014 11:05:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Marian Marinov <mm@yuhu.biz>
+Cc: lxc-devel@lists.linuxcontainers.org, cgroups@vger.kernel.org,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, Li Zefan <lizefan@huawei.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: RFC: cgroups aware proc
+Message-ID: <20140114100541.GS7572@laptop.programming.kicks-ass.net>
+References: <52D35CD0.9070602@huawei.com>
+ <52D41316.5080508@yuhu.biz>
+ <20140113171238.GS31570@twins.programming.kicks-ass.net>
+ <52D48BA6.2080701@yuhu.biz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D48BA6.2080701@yuhu.biz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jan 13, 2014, Sergei Shtylyov <sergei.shtylyov@cogentembedded.com> wrote:
+On Tue, Jan 14, 2014 at 02:58:14AM +0200, Marian Marinov wrote:
+> On 01/13/2014 07:12 PM, Peter Zijlstra wrote:
+> >On Mon, Jan 13, 2014 at 06:23:50PM +0200, Marian Marinov wrote:
+> >>Hello Peter,
+> >>
+> >>I need help with the scheduler.
+> >>
+> >>I'm currently trying to patch the /proc/loadavg to show the load that is
+> >>only related to the processes from the current cgroup.
+> >>
+> >>I looked trough the code and I was hoping that tsk->sched_task_group->cfs_rq
+> >>struct will give me the needed information, but unfortunately for me, it did
+> >>not.
+> >>
+> >>Can you advise me, how to approach this problem?
+> >
+> >Yeah, don't :-) Really, loadavg is a stupid metric.
+> 
+> Yes... stupid, but unfortunately everyone is looking at it :(
+> 
+> >
+> >>I'm totally new to the scheduler code.
+> >
+> >Luckily you won't actually have to touch much of it. Most of the actual
+> >loadavg code lives in the first ~400 lines of kernel/sched/proc.c, read
+> >and weep. Its one of the best documented bits around.
+> 
+> I looked trough it but I don't understand how to introduce the per cgroup calculation.
+> 
+> I looked trough the headers and found the following, which is already implemented.
+> 
+>   task->sched_task_group->load_avg
+>   task->sched_task_group->cfs_rq->load_avg
+>   task->sched_task_group->cfs_rq->load.weight
+>   task->sched_task_group->cfs_rq->runnable_load_avg
+> 
+> Unfortunately there is almost no documentation for these elements of the cfs_rq and task_group structs.
+> 
+> It seams to me that part of the per task group loadavg code is already present.
 
-> Hello.
+No, those are actual load metrics and completely unrelated to loadavg.
 
->> Commit 14bd8c08, that replaced Loongson2-specific ifdefs with cpu tests,
->> inverted the CPU test in local_r4k_flush_icache_range.  Loongson2 won't
->> boot up using the generic icache flush code.  Presumably other CPUs
->> might face other problems when presented with Loongson2-specific icache
->> flush code too.  This patch enabled my Yeeloong to boot up successfully
->> a 3.13-rc kernel for the first time, after a long git bisect session.
+Loadavg requires per-cgroup-per-cpu variants of nr_running and
+nr_uninterruptible.
 
->> Signed-off-by: Alexandre Oliva <lxoliva@fsfla.org>
-
->    Fix for this issue has been posted long ago:
-
-> http://marc.info/?l=linux-mips&m=138575576803890
-
-Thanks.  As long ago as that was, I still don't see it in Torvalds's
-master branch.  Was a pull request including this patch ever send his
-way?  Such a trivial fix for such a show-stopper shouldn't find any
-difficulties making 3.13, I think.
-
--- 
-Alexandre Oliva, freedom fighter    http://FSFLA.org/~lxoliva/
-You must be the change you wish to see in the world. -- Gandhi
-Be Free! -- http://FSFLA.org/   FSF Latin America board member
-Free Software Evangelist      Red Hat Brazil Compiler Engineer
+Those are the only metrics used in kernel/sched/proc.c for loadavg.
