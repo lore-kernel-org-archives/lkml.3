@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaANLKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 06:10:16 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:34506 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751503AbaANLKM (ORCPT
+	id S1751868AbaANLKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 06:10:53 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:64015 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaANLKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:10:12 -0500
-From: <srinivas.kandagatla@st.com>
-To: <linux-media@vger.kernel.org>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        <linux-kernel@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH v1] media: st-rc: Add reset support
-Date: Tue, 14 Jan 2014 11:04:21 +0000
-Message-ID: <1389697461-21001-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
+	Tue, 14 Jan 2014 06:10:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.65.51.147]
+In-Reply-To: <20140114105147.GA14538@paralelels.com>
+References: <1389188841.26646.87.camel@edumazet-glaptop2.roam.corp.google.com>
+	<1389549033-23523-1-git-send-email-avagin@openvz.org>
+	<1389558074.31367.187.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140114105147.GA14538@paralelels.com>
+Date: Tue, 14 Jan 2014 15:10:50 +0400
+Message-ID: <CANaxB-zSkmVy+TBCa0CyReiSgubBUmyz6iUp8bxByOr7Jb9oGw@mail.gmail.com>
+Subject: Re: [PATCH] netfilter: nf_conntrack: fix RCU race in
+ nf_conntrack_find_get (v3)
+From: Andrey Wagin <avagin@gmail.com>
+To: Andrew Vagin <avagin@parallels.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Florian Westphal <fw@strlen.de>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, vvs@openvz.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> Eh, looks like this path is incomplete too:(
+>
+> I think we can't set a reference counter for objects which is allocated
+> from a SLAB_DESTROY_BY_RCU cache. Look at the following backtrace.
+>
+> cpu1                                    cpu2
+> ct = ____nf_conntrack_find()
+>                                         destroy_conntrack
+> atomic_inc_not_zero(ct)
 
-Some of the SOCs hold the IRB IP in softreset state by default.
-For this IP to work driver needs to bring it out of softreset.
-This patch adds support to reset the IP via reset framework.
-
-Without this patch the driver can not work with SoCs which holds the IP
-in softreset.
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- drivers/media/rc/st_rc.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/rc/st_rc.c b/drivers/media/rc/st_rc.c
-index 65120c2..8f0cddb 100644
---- a/drivers/media/rc/st_rc.c
-+++ b/drivers/media/rc/st_rc.c
-@@ -13,6 +13,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/reset.h>
- #include <media/rc-core.h>
- #include <linux/pinctrl/consumer.h>
- 
-@@ -28,6 +29,7 @@ struct st_rc_device {
- 	int				sample_mult;
- 	int				sample_div;
- 	bool				rxuhfmode;
-+	struct	reset_control		*rstc;
- };
- 
- /* Registers */
-@@ -161,6 +163,10 @@ static void st_rc_hardware_init(struct st_rc_device *dev)
- 	unsigned int rx_max_symbol_per = MAX_SYMB_TIME;
- 	unsigned int rx_sampling_freq_div;
- 
-+	/* Enable the IP */
-+	if (dev->rstc)
-+		reset_control_deassert(dev->rstc);
-+
- 	clk_prepare_enable(dev->sys_clock);
- 	baseclock = clk_get_rate(dev->sys_clock);
- 
-@@ -271,6 +277,11 @@ static int st_rc_probe(struct platform_device *pdev)
- 	else
- 		rc_dev->rx_base = rc_dev->base;
- 
-+
-+	rc_dev->rstc = reset_control_get(dev, NULL);
-+	if (IS_ERR(rc_dev->rstc))
-+		rc_dev->rstc = NULL;
-+
- 	rc_dev->dev = dev;
- 	platform_set_drvdata(pdev, rc_dev);
- 	st_rc_hardware_init(rc_dev);
-@@ -338,6 +349,8 @@ static int st_rc_suspend(struct device *dev)
- 		writel(0x00, rc_dev->rx_base + IRB_RX_EN);
- 		writel(0x00, rc_dev->rx_base + IRB_RX_INT_EN);
- 		clk_disable_unprepare(rc_dev->sys_clock);
-+		if (rc_dev->rstc)
-+			reset_control_assert(rc_dev->rstc);
- 	}
- 
- 	return 0;
--- 
-1.7.6.5
-
+ct->ct_general.use is zero after destroy_conntrack(). Sorry for the noise.
