@@ -1,346 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaANO7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:59:42 -0500
-Received: from eu1sys200aog124.obsmtp.com ([207.126.144.157]:50612 "EHLO
-	eu1sys200aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751576AbaANO6c (ORCPT
+	id S1751802AbaANPBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:01:31 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37270 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaANPB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:58:32 -0500
-From: <srinivas.kandagatla@st.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <srinivas.kandagatla@st.com>
-Subject: [PATCH v1 4/5] ARM:STi: STiH416: Add interrupt support for pin controller
-Date: Tue, 14 Jan 2014 14:52:27 +0000
-Message-ID: <1389711147-21130-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1389711077-20949-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1389711077-20949-1-git-send-email-srinivas.kandagatla@st.com>
+	Tue, 14 Jan 2014 10:01:28 -0500
+Message-ID: <52D55146.8010006@linaro.org>
+Date: Tue, 14 Jan 2014 16:01:26 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.65.51.147]
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents/clocksources: 3.13 fixes
+References: <52C14E45.5040403@linaro.org>
+In-Reply-To: <52C14E45.5040403@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On 12/30/2013 11:43 AM, Daniel Lezcano wrote:
+>
+> Hi Thomas and Ingo,
+>
+> here is a pull request for a single fix for 3.13. It is based on the
+> latest timers/urgent update.
+>
+>   * Soren Brinkmann fixed the cadence_ttc driver where a call to
+> clk_get_rate happens in an interrupt context. More precisely in an IPI
+> when the broadcast timer is initialized for each cpu in the cpuidle driver
 
-This patch adds interrupt support for STiH416 pin controllers.
+Hi Thomas and Ingo,
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- arch/arm/boot/dts/stih416-pinctrl.dtsi |   81 ++++++++++++++++++++++++++++++++
- 1 files changed, 81 insertions(+), 0 deletions(-)
+just a head up for this PR. It has been sent right before the PR for 
+3.14, so I wanted to me sure you did not missed it.
 
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index 74f8cfc..3adbd98 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -8,6 +8,7 @@
-  * publishhed by the Free Software Foundation.
-  */
- #include "st-pincfg.h"
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
- / {
- 
- 	aliases {
-@@ -49,41 +50,57 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih416-sbc-pinctrl";
- 			st,syscfg	= <&syscfg_sbc>;
-+			reg 		= <0xfe61f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 182 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfe610000 0x6000>;
- 
- 			PIO0: gpio@fe610000 {
- 				gpio-controller;
- 				#gpio-cells = <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO0";
- 			};
- 			PIO1: gpio@fe611000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO1";
- 			};
- 			PIO2: gpio@fe612000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO2";
- 			};
- 			PIO3: gpio@fe613000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO3";
- 			};
- 			PIO4: gpio@fe614000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO4";
- 			};
- 			PIO40: gpio@fe615000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x5000 0x100>;
- 				st,bank-name	= "PIO40";
- 				st,retime-pin-mask = <0x7f>;
-@@ -181,65 +198,89 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih416-front-pinctrl";
- 			st,syscfg	= <&syscfg_front>;
-+			reg 		= <0xfee0f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 183 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfee00000 0x10000>;
- 
- 			PIO5: gpio@fee00000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO5";
- 			};
- 			PIO6: gpio@fee01000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO6";
- 			};
- 			PIO7: gpio@fee02000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO7";
- 			};
- 			PIO8: gpio@fee03000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO8";
- 			};
- 			PIO9: gpio@fee04000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO9";
- 			};
- 			PIO10: gpio@fee05000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x5000 0x100>;
- 				st,bank-name	= "PIO10";
- 			};
- 			PIO11: gpio@fee06000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x6000 0x100>;
- 				st,bank-name	= "PIO11";
- 			};
- 			PIO12: gpio@fee07000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x7000 0x100>;
- 				st,bank-name	= "PIO12";
- 			};
- 			PIO30: gpio@fee08000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x8000 0x100>;
- 				st,bank-name	= "PIO30";
- 			};
- 			PIO31: gpio@fee09000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x9000 0x100>;
- 				st,bank-name	= "PIO31";
- 			};
-@@ -276,41 +317,57 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih416-rear-pinctrl";
- 			st,syscfg	= <&syscfg_rear>;
-+			reg 		= <0xfe82f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges 		= <0 0xfe820000 0x6000>;
- 
- 			PIO13: gpio@fe820000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO13";
- 			};
- 			PIO14: gpio@fe821000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO14";
- 			};
- 			PIO15: gpio@fe822000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO15";
- 			};
- 			PIO16: gpio@fe823000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO16";
- 			};
- 			PIO17: gpio@fe824000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO17";
- 			};
- 			PIO18: gpio@fe825000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x5000 0x100>;
- 				st,bank-name	= "PIO18";
- 				st,retime-pin-mask = <0xf>;
-@@ -384,23 +441,33 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih416-fvdp-fe-pinctrl";
- 			st,syscfg	= <&syscfg_fvdp_fe>;
-+			reg 		= <0xfd6bf080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfd6b0000 0x3000>;
- 
- 			PIO100: gpio@fd6b0000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO100";
- 			};
- 			PIO101: gpio@fd6b1000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO101";
- 			};
- 			PIO102: gpio@fd6b2000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO102";
- 			};
-@@ -411,29 +478,41 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih416-fvdp-lite-pinctrl";
- 			st,syscfg		= <&syscfg_fvdp_lite>;
-+			reg 		= <0xfd33f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges			= <0 0xfd330000 0x5000>;
- 
- 			PIO103: gpio@fd330000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO103";
- 			};
- 			PIO104: gpio@fd331000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO104";
- 			};
- 			PIO105: gpio@fd332000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO105";
- 			};
- 			PIO106: gpio@fd333000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO106";
- 			};
-@@ -441,6 +520,8 @@
- 			PIO107: gpio@fd334000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO107";
- 				st,retime-pin-mask = <0xf>;
+Thanks
+   -- Daniel
+
+>
+> Thanks
+>    -- Daniel
+>
+> The following changes since commit
+> b0031f227e47919797dc0e1c1990f3ef151ff0cc:
+>
+>    Merge tag 's2mps11-build' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator
+> (2013-12-17 12:57:36 -0800)
+>
+> are available in the git repository at:
+>
+>
+>    git://git.linaro.org/people/daniel.lezcano/linux.git
+> clockevents/3.13-fixes
+>
+> for you to fetch changes up to c1dcc927dae01dfd4904ee82ce2c00b50eab6dc3:
+>
+>    clocksource: cadence_ttc: Fix mutex taken inside interrupt context
+> (2013-12-30 11:32:24 +0100)
+>
+> ----------------------------------------------------------------
+> Soren Brinkmann (1):
+>        clocksource: cadence_ttc: Fix mutex taken inside interrupt context
+>
+>   drivers/clocksource/cadence_ttc_timer.c |   21 +++++++++++++--------
+>   1 file changed, 13 insertions(+), 8 deletions(-)
+>
+>
+
+
 -- 
-1.7.6.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
