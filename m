@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaANA1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53988 "EHLO
+	id S1755056AbaANBD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:03:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaANA1D (ORCPT
+	with ESMTP id S1752575AbaANA1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:03 -0500
+	Mon, 13 Jan 2014 19:27:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: [PATCH 3.10 02/62] clocksource: em_sti: Set cpu_possible_mask to fix SMP broadcast
-Date: Mon, 13 Jan 2014 16:26:27 -0800
-Message-Id: <20140114002710.536195812@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 34/62] net: llc: fix use after free in llc_ui_recvmsg
+Date: Mon, 13 Jan 2014 16:26:59 -0800
+Message-Id: <20140114002711.434616897@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -31,41 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Magnus Damm <damm@opensource.se>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 2199a5574b6d94b9ca26c6345356f45ec60fef8b upstream.
+[ Upstream commit 4d231b76eef6c4a6bd9c96769e191517765942cb ]
 
-Update the STI driver by setting cpu_possible_mask to make EMEV2
-SMP work as expected together with the ARM broadcast timer.
+While commit 30a584d944fb fixes datagram interface in LLC, a use
+after free bug has been introduced for SOCK_STREAM sockets that do
+not make use of MSG_PEEK.
 
-This breakage was introduced by:
+The flow is as follow ...
 
-f7db706 ARM: 7674/1: smp: Avoid dummy clockevent being preferred over real hardware clock-event
+  if (!(flags & MSG_PEEK)) {
+    ...
+    sk_eat_skb(sk, skb, false);
+    ...
+  }
+  ...
+  if (used + offset < skb->len)
+    continue;
 
-Without this fix SMP operation is broken on EMEV2 since no
-broadcast timer interrupts trigger on the secondary CPU cores.
+... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
+original length and work on skb_len to check partial reads.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Tested-by: Simon Horman <horms+renesas@verge.net.au>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/clocksource/em_sti.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/llc/af_llc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/clocksource/em_sti.c
-+++ b/drivers/clocksource/em_sti.c
-@@ -301,7 +301,7 @@ static void em_sti_register_clockevent(s
- 	ced->name = dev_name(&p->pdev->dev);
- 	ced->features = CLOCK_EVT_FEAT_ONESHOT;
- 	ced->rating = 200;
--	ced->cpumask = cpumask_of(0);
-+	ced->cpumask = cpu_possible_mask;
- 	ced->set_next_event = em_sti_clock_event_next;
- 	ced->set_mode = em_sti_clock_event_mode;
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *
+ 	unsigned long cpu_flags;
+ 	size_t copied = 0;
+ 	u32 peek_seq = 0;
+-	u32 *seq;
++	u32 *seq, skb_len;
+ 	unsigned long used;
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+@@ -812,6 +812,7 @@ static int llc_ui_recvmsg(struct kiocb *
+ 		}
+ 		continue;
+ 	found_ok_skb:
++		skb_len = skb->len;
+ 		/* Ok so how much can we use? */
+ 		used = skb->len - offset;
+ 		if (len < used)
+@@ -844,7 +845,7 @@ static int llc_ui_recvmsg(struct kiocb *
+ 		}
+ 
+ 		/* Partial read */
+-		if (used + offset < skb->len)
++		if (used + offset < skb_len)
+ 			continue;
+ 	} while (len > 0);
  
 
 
