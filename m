@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031AbaANL7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 06:59:32 -0500
-Received: from sauhun.de ([89.238.76.85]:47850 "EHLO pokefinder.org"
+	id S1752009AbaANL73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 06:59:29 -0500
+Received: from sauhun.de ([89.238.76.85]:47831 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751987AbaANL7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:59:25 -0500
+	id S1751942AbaANL7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 06:59:20 -0500
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
-Subject: [PATCH 7/7] drivers/gpio: don't check resource with devm_ioremap_resource
-Date: Tue, 14 Jan 2014 12:58:58 +0100
-Message-Id: <1389700739-3696-7-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        David Airlie <airlied@linux.ie>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
+Subject: [PATCH 3/7] drivers/gpu/host1x/drm: don't check resource with devm_ioremap_resource
+Date: Tue, 14 Jan 2014 12:58:54 +0100
+Message-Id: <1389700739-3696-3-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.8.5.1
 In-Reply-To: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
 References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
@@ -24,29 +28,28 @@ devm_ioremap_resource does sanity checks on the given resource. No need to
 duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reviewed-by: Terje Bergstrom <tbergstrom@nvidia.com>
 ---
 
 Should go via subsystem tree
 
- drivers/gpio/gpio-davinci.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/gpu/drm/tegra/hdmi.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
-index 84be701..a5e1a56 100644
---- a/drivers/gpio/gpio-davinci.c
-+++ b/drivers/gpio/gpio-davinci.c
-@@ -172,11 +172,6 @@ static int davinci_gpio_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index 0cd9bc2..1650fb3 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -1375,9 +1375,6 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
+ 		return err;
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(dev, "Invalid memory resource\n");
--		return -EBUSY;
--	}
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!regs)
+-		return -ENXIO;
 -
- 	gpio_base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(gpio_base))
- 		return PTR_ERR(gpio_base);
+ 	hdmi->regs = devm_ioremap_resource(&pdev->dev, regs);
+ 	if (IS_ERR(hdmi->regs))
+ 		return PTR_ERR(hdmi->regs);
 -- 
 1.8.5.1
 
