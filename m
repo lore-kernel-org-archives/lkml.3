@@ -1,87 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaANVbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:31:12 -0500
-Received: from nm49-vm4.bullet.mail.gq1.yahoo.com ([67.195.87.234]:33735 "EHLO
-	nm49-vm4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751805AbaANVbI (ORCPT
+	id S1752286AbaANVaq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:30:46 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47869 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaANVai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:31:08 -0500
-X-Yahoo-Newman-Id: 703086.11225.bm@smtp227.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: wY3wZXcVM1lwxPZC_spSJGmNb6rDPqRa.NJpe87pDnjn.0y
- yax5Kt6V2r1k0uBLfUML._VwLObaZXyZ_usqLnIez_AN9i7kM7GqUtBGsLVF
- Yazfkw6lGFyH98cO_T8v09lQFYmFukP3_HU3P317Th2hSaSoA9JnaHhfV_Et
- wXWMYuOHEnaQI_p42t1QK8nU0asEXhB3WWi1SUOWl_oNAlaGOKymcl.UPNuj
- jWsd6rnMeeB2x8_kALSKGw5TuTeUcIgkf3ebICEfXOapmnAl9W43wb4slSQX
- V01AneBTJ_SRTuDTq.rVsbRxxihsP9vmpKMThBYP8eeVZjpWwUkCFDH8YYaS
- SC51poucgXDiozv67_xLD9dd8jcsBryrL0WeQ6xWYTA74zBILq_LCkNKydbk
- H8SJM8aTfEgvHM8V73Q1V8e1SzjKiq963eVT7yZkzDukx6KIEGfODf9fSz5M
- _yP8ljHPH9K1VmyrI6426CqvzX4iYOc6zNERFAGHwpyEV9WX8Zsv7C8Bnjxq
- GkumlNyDECImvxQvxXl2m9pIpKZjBZnVcw5E-
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [98.138.105.21])
-        by smtp227.mail.gq1.yahoo.com with SMTP; 14 Jan 2014 21:31:07 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH v3] Staging: comedi: convert while loop to timeout in ni_mio_common.c
-Date: Tue, 14 Jan 2014 15:31:01 -0600
-Message-Id: <1389735061-24626-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+	Tue, 14 Jan 2014 16:30:38 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>
+Subject: [PATCH v5 1/4] ARM: Add Krait L2 register accessor functions
+Date: Tue, 14 Jan 2014 13:30:31 -0800
+Message-Id: <1389735034-21430-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+In-Reply-To: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
+References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch to ni_mio_common.c changes a simple while loop to a timeout,
-which is preferred.
+Krait CPUs have a handful of L2 cache controller registers that
+live behind a cp15 based indirection register. First you program
+the indirection register (l2cpselr) to point the L2 'window'
+register (l2cpdr) at what you want to read/write.  Then you
+read/write the 'window' register to do what you want. The
+l2cpselr register is not banked per-cpu so we must lock around
+accesses to it to prevent other CPUs from re-pointing l2cpdr
+underneath us.
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
+ arch/arm/common/Kconfig                   |  3 ++
+ arch/arm/common/Makefile                  |  1 +
+ arch/arm/common/krait-l2-accessors.c      | 58 +++++++++++++++++++++++++++++++
+ arch/arm/include/asm/krait-l2-accessors.h | 20 +++++++++++
+ 4 files changed, 82 insertions(+)
+ create mode 100644 arch/arm/common/krait-l2-accessors.c
+ create mode 100644 arch/arm/include/asm/krait-l2-accessors.h
 
-I removed the extra counter variable this time.  Greg, you mentioned that I could just look at the time that has expired to far, and exit and error out if that exceeds a limit.  Right now I'm just tracking how many times udelay is called, since that seems to conform more to other timeouts in this file, but did you instead want me to use some time function to keep track of actual real time that expires?
-
-Thanks,
-Chase Southwood
-
-2: Changed from simple clean-up to swapping a timeout in for a while loop.
-
-3: Removed extra counter variable, and added error checking.
-
- drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 457b884..143b8b8 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
- {
- 	const struct ni_board_struct *board = comedi_board(dev);
- 	struct ni_private *devpriv = dev->private;
-+	int timeout = 0;
+diff --git a/arch/arm/common/Kconfig b/arch/arm/common/Kconfig
+index c3a4e9ceba34..9da52dc6260b 100644
+--- a/arch/arm/common/Kconfig
++++ b/arch/arm/common/Kconfig
+@@ -9,6 +9,9 @@ config DMABOUNCE
+ 	bool
+ 	select ZONE_DMA
  
- 	if (board->reg_type == ni_reg_6143) {
- 		/*  Flush the 6143 data FIFO */
- 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
- 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
--		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
-+		/*  Wait for complete */
-+		while (timeout < 10000) {
-+			if (!(ni_readl(AIFIFO_Status_6143) & 0x10))
-+				break;
-+			udelay(1);
-+			timeout++;
-+		}
-+		if (timeout == 10000)
-+			comedi_error(dev, "FIFO flush timeout.");
- 	} else {
- 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
- 		if (board->reg_type == ni_reg_625x) {
++config KRAIT_L2_ACCESSORS
++	bool
++
+ config SHARP_LOCOMO
+ 	bool
+ 
+diff --git a/arch/arm/common/Makefile b/arch/arm/common/Makefile
+index 4bdc41622c36..2836f992ee5d 100644
+--- a/arch/arm/common/Makefile
++++ b/arch/arm/common/Makefile
+@@ -7,6 +7,7 @@ obj-y				+= firmware.o
+ obj-$(CONFIG_ICST)		+= icst.o
+ obj-$(CONFIG_SA1111)		+= sa1111.o
+ obj-$(CONFIG_DMABOUNCE)		+= dmabounce.o
++obj-$(CONFIG_KRAIT_L2_ACCESSORS) += krait-l2-accessors.o
+ obj-$(CONFIG_SHARP_LOCOMO)	+= locomo.o
+ obj-$(CONFIG_SHARP_PARAM)	+= sharpsl_param.o
+ obj-$(CONFIG_SHARP_SCOOP)	+= scoop.o
+diff --git a/arch/arm/common/krait-l2-accessors.c b/arch/arm/common/krait-l2-accessors.c
+new file mode 100644
+index 000000000000..5d514bbc88a6
+--- /dev/null
++++ b/arch/arm/common/krait-l2-accessors.c
+@@ -0,0 +1,58 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/spinlock.h>
++#include <linux/export.h>
++
++#include <asm/barrier.h>
++#include <asm/krait-l2-accessors.h>
++
++static DEFINE_RAW_SPINLOCK(krait_l2_lock);
++
++void krait_set_l2_indirect_reg(u32 addr, u32 val)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then write to the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mcr p15, 3, %0, c15, c0, 7 @ l2cpdr" : : "r" (val));
++	isb();
++
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++}
++EXPORT_SYMBOL(krait_set_l2_indirect_reg);
++
++u32 krait_get_l2_indirect_reg(u32 addr)
++{
++	u32 val;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&krait_l2_lock, flags);
++	/*
++	 * Select the L2 window by poking l2cpselr, then read from the window
++	 * via l2cpdr.
++	 */
++	asm volatile ("mcr p15, 3, %0, c15, c0, 6 @ l2cpselr" : : "r" (addr));
++	isb();
++	asm volatile ("mrc p15, 3, %0, c15, c0, 7 @ l2cpdr" : "=r" (val));
++
++	raw_spin_unlock_irqrestore(&krait_l2_lock, flags);
++
++	return val;
++}
++EXPORT_SYMBOL(krait_get_l2_indirect_reg);
+diff --git a/arch/arm/include/asm/krait-l2-accessors.h b/arch/arm/include/asm/krait-l2-accessors.h
+new file mode 100644
+index 000000000000..48fe5527bc01
+--- /dev/null
++++ b/arch/arm/include/asm/krait-l2-accessors.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __ASMARM_KRAIT_L2_ACCESSORS_H
++#define __ASMARM_KRAIT_L2_ACCESSORS_H
++
++extern void krait_set_l2_indirect_reg(u32 addr, u32 val);
++extern u32 krait_get_l2_indirect_reg(u32 addr);
++
++#endif
 -- 
-1.8.4.2
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
