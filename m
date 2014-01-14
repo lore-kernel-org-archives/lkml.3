@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640AbaANBEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:04:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60168 "EHLO mga02.intel.com"
+	id S1755722AbaANBF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:05:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:55758 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755596AbaANBEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 20:04:39 -0500
+	id S1753732AbaANBEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 20:04:33 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
-   d="scan'208";a="466147304"
+   d="scan'208";a="464607188"
 From: Andi Kleen <andi@firstfloor.org>
 To: acme@infradead.org
 Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
         fweisbec@gmail.com, adrian.hunter@intel.com,
         linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/6] perf, tools: Add --branch-history option to report v2
-Date: Mon, 13 Jan 2014 17:04:18 -0800
-Message-Id: <1389661461-18996-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/6] perf, tools: Support handling complete branch stacks as histograms v3
+Date: Mon, 13 Jan 2014 17:04:17 -0800
+Message-Id: <1389661461-18996-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
 References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
@@ -26,96 +26,408 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a --branch-history option to perf report that changes all
-the settings necessary for using the branches in callstacks.
+Currently branch stacks can be only shown as edge histograms for
+individual branches. I never found this display particularly useful.
 
-This is just a short cut to make this nicer to use, it does
-not enable any functionality by itself.
+This implements an alternative mode that creates histograms over complete
+branch traces, instead of individual branches, similar to how normal
+callgraphs are handled. This is done by putting it in
+front of the normal callgraph and then using the normal callgraph
+histogram infrastructure to unify them.
 
-v2: Change sort order. Rename option to --branch-history to
-be less confusing.
+This way in complex functions we can understand the control flow
+that lead to a particular sample, and may even see some control
+flow in the caller for short functions.
+
+Example (simplified, of course for such simple code this
+is usually not needed):
+
+tcall.c:
+
+volatile a = 10000, b = 100000, c;
+
+__attribute__((noinline)) f2()
+{
+	c = a / b;
+}
+
+__attribute__((noinline)) f1()
+{
+	f2();
+	f2();
+}
+main()
+{
+	int i;
+	for (i = 0; i < 1000000; i++)
+		f1();
+}
+
+% perf record -b -g ./tsrc/tcall
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
+% perf report --branch-history
+...
+    54.91%  tcall.c:6  [.] f2                      tcall
+            |
+            |--65.53%-- f2 tcall.c:5
+            |          |
+            |          |--70.83%-- f1 tcall.c:11
+            |          |          f1 tcall.c:10
+            |          |          main tcall.c:18
+            |          |          main tcall.c:18
+            |          |          main tcall.c:17
+            |          |          main tcall.c:17
+            |          |          f1 tcall.c:13
+            |          |          f1 tcall.c:13
+            |          |          f2 tcall.c:7
+            |          |          f2 tcall.c:5
+            |          |          f1 tcall.c:12
+            |          |          f1 tcall.c:12
+            |          |          f2 tcall.c:7
+            |          |          f2 tcall.c:5
+            |          |          f1 tcall.c:11
+            |          |
+            |           --29.17%-- f1 tcall.c:12
+            |                     f1 tcall.c:12
+            |                     f2 tcall.c:7
+            |                     f2 tcall.c:5
+            |                     f1 tcall.c:11
+            |                     f1 tcall.c:10
+            |                     main tcall.c:18
+            |                     main tcall.c:18
+            |                     main tcall.c:17
+            |                     main tcall.c:17
+            |                     f1 tcall.c:13
+            |                     f1 tcall.c:13
+            |                     f2 tcall.c:7
+            |                     f2 tcall.c:5
+            |                     f1 tcall.c:12
+
+The default output is unchanged.
+
+This is only implemented in perf report, no change to record
+or anywhere else.
+
+This adds the basic code to report:
+- add a new "branch" option to the -g option parser to enable this mode
+- when the flag is set include the LBR into the callstack in machine.c.
+The rest of the history code is unchanged and doesn't know the difference
+between LBR entry and normal call entry.
+- detect overlaps with the callchain
+- remove small loop duplicates in the LBR
+
+Current limitations:
+- The LBR flags (mispredict etc.) are not shown in the history
+and LBR entries have no special marker.
+- It would be nice if annotate marked the LBR entries somehow
+(e.g. with arrows)
+
+v2: Various fixes.
+v3: Merge further patches into this one. Fix white space.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-report.txt |  5 +++++
- tools/perf/builtin-report.c              | 27 ++++++++++++++++++++++++---
- 2 files changed, 29 insertions(+), 3 deletions(-)
+ tools/perf/builtin-report.c |  15 +++-
+ tools/perf/util/callchain.h |   1 +
+ tools/perf/util/machine.c   | 176 ++++++++++++++++++++++++++++++++++++++------
+ tools/perf/util/symbol.h    |   3 +-
+ 4 files changed, 168 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 8eab8a4..5410f35 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -223,6 +223,11 @@ OPTIONS
- 	branch stacks and it will automatically switch to the branch view mode,
- 	unless --no-branch-stack is used.
- 
-+--branch-history::
-+	Add the addresses of sampled taken branches to the callstack.
-+	This allows to examine the path the program took to each sample.
-+	The data collection must have used -b (or -j) and -g.
-+
- --objdump=<path>::
-         Path to objdump binary.
- 
 diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 19a74e1..24b48ec 100644
+index 46864dd..19a74e1 100644
 --- a/tools/perf/builtin-report.c
 +++ b/tools/perf/builtin-report.c
-@@ -715,6 +715,16 @@ parse_branch_mode(const struct option *opt __maybe_unused,
+@@ -658,7 +658,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ 		callchain_param.order = ORDER_CALLER;
+ 	else if (!strncmp(tok2, "callee", strlen("callee")))
+ 		callchain_param.order = ORDER_CALLEE;
+-	else
++	else if (tok2[0] != 0)
+ 		return -1;
+ 
+ 	/* Get the sort key */
+@@ -669,8 +669,15 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ 		callchain_param.key = CCKEY_FUNCTION;
+ 	else if (!strncmp(tok2, "address", strlen("address")))
+ 		callchain_param.key = CCKEY_ADDRESS;
+-	else
++	else if (tok2[0] != 0)
+ 		return -1;
++
++	tok2 = strtok(NULL, ",");
++	if (!tok2)
++		goto setup;
++	if (!strncmp(tok2, "branch", 6))
++		callchain_param.branch_callstack = 1;
++
+ setup:
+ 	if (callchain_register_param(&callchain_param) < 0) {
+ 		pr_err("Can't register callchain params\n");
+@@ -786,8 +793,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "regex filter to identify parent, see: '--sort parent'"),
+ 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+ 		    "Only display entries with parent-match"),
+-	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+-		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order[,branch]",
++		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address), add branches. "
+ 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 08b25af..a1a298a 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -53,6 +53,7 @@ struct callchain_param {
+ 	sort_chain_func_t	sort;
+ 	enum chain_order	order;
+ 	enum chain_key		key;
++	bool			branch_callstack;
+ };
+ 
+ struct callchain_list {
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 0130279..084c80c 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -11,6 +11,7 @@
+ #include <stdbool.h>
+ #include <symbol/kallsyms.h>
+ #include "unwind.h"
++#include "linux/hash.h"
+ 
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+ {
+@@ -1248,9 +1249,98 @@ struct branch_info *machine__resolve_bstack(struct machine *machine,
+ 	return bi;
  }
  
- static int
-+parse_branch_call_mode(const struct option *opt __maybe_unused,
-+		  const char *str __maybe_unused, int unset)
++static int add_callchain_ip(struct machine *machine,
++			    struct thread *thread,
++			    struct symbol **parent,
++			    struct addr_location *root_al,
++			    int cpumode,
++			    u64 ip)
 +{
-+	int *branch_mode = opt->value;
++	struct addr_location al;
 +
-+	*branch_mode = !unset;
-+	return 0;
++	al.filtered = false;
++	al.sym = NULL;
++	if (cpumode == -1) {
++		int i;
++
++		for (i = 0; i < (int)NCPUMODES && !al.sym; i++) {
++			/*
++			 * We cannot use the header.misc hint to determine whether a
++			 * branch stack address is user, kernel, guest, hypervisor.
++			 * Branches may straddle the kernel/user/hypervisor boundaries.
++			 * Thus, we have to try consecutively until we find a match
++			 * or else, the symbol is unknown
++			 */
++			thread__find_addr_location(thread, machine, cpumodes[i],
++					MAP__FUNCTION,
++					ip, &al);
++		}
++	} else {
++		thread__find_addr_location(thread, machine, cpumode,
++					   MAP__FUNCTION, ip, &al);
++	}
++	if (al.sym != NULL) {
++		if (sort__has_parent && !*parent &&
++		    symbol__match_regex(al.sym, &parent_regex))
++			*parent = al.sym;
++		else if (have_ignore_callees && root_al &&
++		  symbol__match_regex(al.sym, &ignore_callees_regex)) {
++			/* Treat this symbol as the root,
++			   forgetting its callees. */
++			*root_al = al;
++			callchain_cursor_reset(&callchain_cursor);
++		}
++		if (!symbol_conf.use_callchain)
++			return -EINVAL;
++	}
++
++	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
 +}
 +
-+static int
- parse_percent_limit(const struct option *opt, const char *str,
- 		    int unset __maybe_unused)
- {
-@@ -729,7 +739,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_session *session;
- 	struct stat st;
- 	bool has_br_stack = false;
--	int branch_mode = -1;
-+	int branch_mode = -1, branch_call_mode = -1;
- 	int ret = -1;
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
-@@ -838,7 +848,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
- 		    "Show event group information together"),
- 	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
--		    "use branch records for histogram filling", parse_branch_mode),
-+		    "use branch records for per branch histogram filling", parse_branch_mode),
-+	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
-+		    "add last branch records to call history",
-+		    parse_branch_call_mode),
- 	OPT_STRING(0, "objdump", &objdump_path, "path",
- 		   "objdump binary to use for disassembly and annotations"),
- 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-@@ -886,8 +899,16 @@ repeat:
- 	has_br_stack = perf_header__has_feat(&session->header,
- 					     HEADER_BRANCH_STACK);
- 
--	if (branch_mode == -1 && has_br_stack)
-+	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
- 		sort__mode = SORT_MODE__BRANCH;
-+	if (branch_call_mode != -1) {
-+		callchain_param.branch_callstack = 1;
-+		callchain_param.key = CCKEY_ADDRESS;
-+		symbol_conf.use_callchain = true;
-+		callchain_register_param(&callchain_param);
-+		if (sort_order == default_sort_order)
-+			sort_order = "srcline,symbol,dso";
++#define CHASHSZ 127
++#define CHASHBITS 7
++#define NO_ENTRY 0xff
++
++#define PERF_MAX_BRANCH_DEPTH 127
++
++/* Remove loops. */
++static int remove_loops(struct branch_entry *l, int nr)
++{
++	int i, j, off;
++	unsigned char chash[CHASHSZ];
++	memset(chash, -1, sizeof(chash));
++
++	BUG_ON(nr >= 256);
++	for (i = 0; i < nr; i++) {
++		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
++
++		/* no collision handling for now */
++		if (chash[h] == NO_ENTRY) {
++			chash[h] = i;
++		} else if (l[chash[h]].from == l[i].from) {
++			bool is_loop = true;
++			/* check if it is a real loop */
++			off = 0;
++			for (j = chash[h]; j < i && i + off < nr; j++, off++)
++				if (l[j].from != l[i + off].from) {
++					is_loop = false;
++					break;
++				}
++			if (is_loop) {
++				memmove(l + i, l + i + off,
++					(nr - (i + off))
++					* sizeof(struct branch_entry));
++				nr -= off;
++			}
++		}
 +	}
++	return nr;
++}
++
+ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					     struct thread *thread,
+ 					     struct ip_callchain *chain,
++					     struct branch_stack *branch,
+ 					     struct symbol **parent,
+ 					     struct addr_location *root_al,
+ 					     int max_stack)
+@@ -1259,17 +1349,73 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	int chain_nr = min(max_stack, (int)chain->nr);
+ 	int i;
+ 	int err;
++	int first_call = 0;
  
- 	/* sort__mode could be NORMAL if --no-branch-stack */
- 	if (sort__mode == SORT_MODE__BRANCH) {
+ 	callchain_cursor_reset(&callchain_cursor);
+ 
++	/*
++	 * Add branches to call stack for easier browsing. This gives
++	 * more context for a sample than just the callers.
++	 *
++	 * This uses individual histograms of paths compared to the
++	 * aggregated histograms the normal LBR mode uses.
++	 *
++	 * Limitations for now:
++	 * - No extra filters
++	 * - No annotations (should annotate somehow)
++	 */
++
++	if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
++		pr_warning("corrupted branch chain. skipping...\n");
++		return 0;
++	}
++
++	if (callchain_param.branch_callstack) {
++		int nr = min(max_stack, (int)branch->nr);
++		struct branch_entry be[nr];
++
++		for (i = 0; i < nr; i++) {
++			if (callchain_param.order == ORDER_CALLEE) {
++				be[i] = branch->entries[i];
++				/*
++				 * Check for overlap into the callchain.
++				 * The return address is one off compared to
++				 * the branch entry. To adjust for this
++				 * assume the calling instruction is not longer
++				 * than 8 bytes.
++				 */
++				if (be[i].from < chain->ips[first_call] &&
++				    be[i].from >= chain->ips[first_call] - 8)
++					first_call++;
++			} else
++				be[i] = branch->entries[branch->nr - i - 1];
++		}
++
++		nr = remove_loops(be, nr);
++
++		for (i = 0; i < nr; i++) {
++			err = add_callchain_ip(machine, thread, parent,
++					       root_al,
++					       -1, be[i].to);
++			if (!err)
++				err = add_callchain_ip(machine, thread,
++						       parent, root_al,
++						       -1, be[i].from);
++			if (err == -EINVAL)
++				break;
++			if (err)
++				return err;
++		}
++		chain_nr -= nr;
++	}
++
+ 	if (chain->nr > PERF_MAX_STACK_DEPTH) {
+ 		pr_warning("corrupted callchain. skipping...\n");
+ 		return 0;
+ 	}
+ 
+-	for (i = 0; i < chain_nr; i++) {
++	for (i = first_call; i < chain_nr; i++) {
+ 		u64 ip;
+-		struct addr_location al;
+ 
+ 		if (callchain_param.order == ORDER_CALLEE)
+ 			ip = chain->ips[i];
+@@ -1300,26 +1446,10 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 			continue;
+ 		}
+ 
+-		al.filtered = false;
+-		thread__find_addr_location(thread, machine, cpumode,
+-					   MAP__FUNCTION, ip, &al);
+-		if (al.sym != NULL) {
+-			if (sort__has_parent && !*parent &&
+-			    symbol__match_regex(al.sym, &parent_regex))
+-				*parent = al.sym;
+-			else if (have_ignore_callees && root_al &&
+-			  symbol__match_regex(al.sym, &ignore_callees_regex)) {
+-				/* Treat this symbol as the root,
+-				   forgetting its callees. */
+-				*root_al = al;
+-				callchain_cursor_reset(&callchain_cursor);
+-			}
+-			if (!symbol_conf.use_callchain)
+-				break;
+-		}
+ 
+-		err = callchain_cursor_append(&callchain_cursor,
+-					      ip, al.map, al.sym);
++		err = add_callchain_ip(machine, thread, parent, root_al, cpumode, ip);
++		if (err == -EINVAL)
++			break;
+ 		if (err)
+ 			return err;
+ 	}
+@@ -1345,7 +1475,9 @@ int machine__resolve_callchain(struct machine *machine,
+ 	int ret;
+ 
+ 	ret = machine__resolve_callchain_sample(machine, thread,
+-						sample->callchain, parent,
++						sample->callchain,
++						sample->branch_stack,
++						parent,
+ 						root_al, max_stack);
+ 	if (ret)
+ 		return ret;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index cbd6803..0da4b24 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -99,7 +99,8 @@ struct symbol_conf {
+ 			annotate_asm_raw,
+ 			annotate_src,
+ 			event_group,
+-			demangle;
++			demangle,
++			branch_callstack;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
 -- 
 1.8.3.1
 
