@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaANSxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:53:34 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:54075 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751472AbaANSxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:53:32 -0500
-Date: Tue, 14 Jan 2014 19:53:29 +0100
-From: Florian Westphal <fw@strlen.de>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: netfilter-devel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        netfilter@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vvs@openvz.org,
-        Florian Westphal <fw@strlen.de>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Vasiliy Averin <vvs@parallels.com>
-Subject: Re: [PATCH] [RFC] netfilter: nf_conntrack: don't relase a conntrack
- with non-zero refcnt
-Message-ID: <20140114185329.GB28205@breakpoint.cc>
-References: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
- <1389720948-7883-1-git-send-email-avagin@openvz.org>
+	id S1751783AbaANS6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:58:13 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42016 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751AbaANS6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:58:08 -0500
+Date: Tue, 14 Jan 2014 19:58:02 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Aravind.Gopalakrishnan@amd.com, tglx@linutronix.de, bp@suse.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/microcode] x86, microcode: Move to a proper location
+Message-ID: <20140114185802.GB29871@pd.tnic>
+References: <tip-bad5fa631fca5466401cd4a48e30cc1f1cb6101e@git.kernel.org>
+ <52D56174.9010608@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1389720948-7883-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <52D56174.9010608@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Vagin <avagin@openvz.org> wrote:
-> ----
-> Eric and Florian, could you look at this patch. When you say,
-> that it looks good, I will ask the user to validate it.
-> I can't reorder these actions, because it's reproduced on a real host
-> with real users. Thanks.
-> ----
-> 
-> nf_conntrack_free can't be called for a conntract with non-zero ref-counter,
-> because it can race with nf_conntrack_find_get().
+On Tue, Jan 14, 2014 at 08:10:28AM -0800, H. Peter Anvin wrote:
+> Quite frankly I would be much happier if we didn't stash so much under
+> arch/x86/kernel/cpu ... quite frankly it feels like almost *anything*
+> could go under there. The microcode code, for example, could go under
+> its own subtree.
 
-Indeed.
+Yeah, about the microcode, shouldn't it be under kernel/cpu/? My train
+of thought is: because it is cpu-related functionality, it logically
+belongs there.
 
-> A conntrack slab is created with SLAB_DESTROY_BY_RCU. Non-zero
-> ref-conunter says that this conntrack is used now. So when we release a
-> conntrack with non-zero counter, we break this assumption.
-> 
-> CPU1                                    CPU2
-> ____nf_conntrack_find()
->                                         nf_ct_put()
->                                          destroy_conntrack()
->                                         ...
->                                         init_conntrack
->                                          __nf_conntrack_alloc (set use = 1)
-> atomic_inc_not_zero(&ct->use) (use = 2)
->                                          if (!l4proto->new(ct, skb, dataoff, timeouts))
->                                           nf_conntrack_free(ct); (use = 2 !!!)
->                                         ...
+Or do we rather apply the shallow tree logic of
 
-Yes, I think this sequence is possible; we must not use nf_conntrack_free here.
+arch/x86/microcode
+arch/x86/events
+...
 
-> -	/* We overload first tuple to link into unconfirmed or dying list.*/
-> -	BUG_ON(hlist_nulls_unhashed(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode));
-> -	hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
-> +	if (!hlist_nulls_unhashed(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode))
-> +		hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+?
 
-This is the only thing that I don't like about this patch.  Currently
-all the conntracks in the system are always put on a list before they're
-supposed to be visible/handled via refcnt system (unconfirmed, hash, or
-dying list).
+I have to say, arch/x86/kernel/cpu/ is kinda long and hard to remember
+so the shallow structure should be nicer on the eyes and the brain :)
 
-I think it would be nice if we could keep it that way.
-If everything fails we could proably intoduce a 'larval' dummy list
-similar to the one used by template conntracks?
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
