@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaANA2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:28:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54228 "EHLO
+	id S1755185AbaANAty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:49:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54288 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaANA2F (ORCPT
+	with ESMTP id S1753674AbaANA2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:05 -0500
+	Mon, 13 Jan 2014 19:28:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laine Stump <laine@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Jiri Pirko <jiri@resnulli.us>, Eric Dumazet <edumazet@google.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 11/77] br: fix use of ->rx_handler_data in code executed on non-rx_handler path
-Date: Mon, 13 Jan 2014 16:27:32 -0800
-Message-Id: <20140114002752.822231261@linuxfoundation.org>
+Subject: [PATCH 3.12 23/77] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+Date: Mon, 13 Jan 2014 16:27:44 -0800
+Message-Id: <20140114002753.158228570@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,77 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 859828c0ea476b42f3a93d69d117aaba90994b6f ]
+[ Upstream commit b1aac815c0891fe4a55a6b0b715910142227700f ]
 
-br_stp_rcv() is reached by non-rx_handler path. That means there is no
-guarantee that dev is bridge port and therefore simple NULL check of
-->rx_handler_data is not enough. There is need to check if dev is really
-bridge port and since only rcu read lock is held here, do it by checking
-->rx_handler pointer.
+Jakub reported while working with nlmon netlink sniffer that parts of
+the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
+That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
 
-Note that synchronize_net() in netdev_rx_handler_unregister() ensures
-this approach as valid.
+In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
+memory through this. At least, in udp_dump_one(), we allocate a skb in ...
 
-Introduced originally by:
-commit f350a0a87374418635689471606454abc7beaa3a
-  "bridge: use rx_handler_data pointer to store net_bridge_port pointer"
+  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
 
-Fixed but not in the best way by:
-commit b5ed54e94d324f17c97852296d61a143f01b227a
-  "bridge: fix RCU races with bridge port"
+... and then pass that to inet_sk_diag_fill() that puts the whole struct
+inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
+r->id.idiag_dst[0] and leave the rest untouched:
 
-Reintroduced by:
-commit 716ec052d2280d511e10e90ad54a86f5b5d4dcc2
-  "bridge: fix NULL pointer deref of br_port_get_rcu"
+  r->id.idiag_src[0] = inet->inet_rcv_saddr;
+  r->id.idiag_dst[0] = inet->inet_daddr;
 
-Please apply to stable trees as well. Thanks.
+struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
+fully filled out in IPv6 case, but for IPv4 not.
 
-RH bugzilla reference: https://bugzilla.redhat.com/show_bug.cgi?id=1025770
+So just zero them out by using plain memset (for this little amount of
+bytes it's probably not worth the extra check for idiag_family == AF_INET).
 
-Reported-by: Laine Stump <laine@redhat.com>
-Debugged-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Similarly, fix also other places where we fill that out.
+
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_private.h  |   10 ++++++++++
- net/bridge/br_stp_bpdu.c |    2 +-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ net/ipv4/inet_diag.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -442,6 +442,16 @@ extern netdev_features_t br_features_rec
- extern int br_handle_frame_finish(struct sk_buff *skb);
- extern rx_handler_result_t br_handle_frame(struct sk_buff **pskb);
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -106,6 +106,10 @@ int inet_sk_diag_fill(struct sock *sk, s
  
-+static inline bool br_rx_handler_check_rcu(const struct net_device *dev)
-+{
-+	return rcu_dereference(dev->rx_handler) == br_handle_frame;
-+}
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = inet->inet_dport;
 +
-+static inline struct net_bridge_port *br_port_get_check_rcu(const struct net_device *dev)
-+{
-+	return br_rx_handler_check_rcu(dev) ? br_port_get_rcu(dev) : NULL;
-+}
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
 +
- /* br_ioctl.c */
- extern int br_dev_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
- extern int br_ioctl_deviceless_stub(struct net *net, unsigned int cmd, void __user *arg);
---- a/net/bridge/br_stp_bpdu.c
-+++ b/net/bridge/br_stp_bpdu.c
-@@ -153,7 +153,7 @@ void br_stp_rcv(const struct stp_proto *
- 	if (buf[0] != 0 || buf[1] != 0 || buf[2] != 0)
- 		goto err;
+ 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
+ 	r->id.idiag_dst[0] = inet->inet_daddr;
  
--	p = br_port_get_rcu(dev);
-+	p = br_port_get_check_rcu(dev);
- 	if (!p)
- 		goto err;
+@@ -240,12 +244,19 @@ static int inet_twsk_diag_fill(struct in
  
+ 	r->idiag_family	      = tw->tw_family;
+ 	r->idiag_retrans      = 0;
++
+ 	r->id.idiag_if	      = tw->tw_bound_dev_if;
+ 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
++
+ 	r->id.idiag_sport     = tw->tw_sport;
+ 	r->id.idiag_dport     = tw->tw_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
+ 	r->id.idiag_dst[0]    = tw->tw_daddr;
++
+ 	r->idiag_state	      = tw->tw_substate;
+ 	r->idiag_timer	      = 3;
+ 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
+@@ -732,8 +743,13 @@ static int inet_diag_fill_req(struct sk_
+ 
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = ireq->rmt_port;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = ireq->loc_addr;
+ 	r->id.idiag_dst[0] = ireq->rmt_addr;
++
+ 	r->idiag_expires = jiffies_to_msecs(tmo);
+ 	r->idiag_rqueue = 0;
+ 	r->idiag_wqueue = 0;
 
 
