@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaANA6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:58:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54121 "EHLO
+	id S1755474AbaANA6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:58:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721AbaANA1f (ORCPT
+	with ESMTP id S1753385AbaANA1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:35 -0500
+	Mon, 13 Jan 2014 19:27:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 53/62] ACPI / Battery: Add a _BIX quirk for NEC LZ750/LS
-Date: Mon, 13 Jan 2014 16:27:18 -0800
-Message-Id: <20140114002711.972165301@linuxfoundation.org>
+Subject: [PATCH 3.10 52/62] ACPI / TPM: fix memory leak when walking ACPI namespace
+Date: Mon, 13 Jan 2014 16:27:17 -0800
+Message-Id: <20140114002711.944704048@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,77 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-commit a90b40385735af0d3031f98e97b439e8944a31b3 upstream.
+commit df45c712d1f4ef37714245fb75de726f4ca2bf8d upstream.
 
-The AML method _BIX of NEC LZ750/LS returns a broken package which
-skips the first member "Revision" (ACPI 5.0, Table 10-234).
+In function ppi_callback(), memory allocated by acpi_get_name() will get
+leaked when current device isn't the desired TPM device, so fix the
+memory leak.
 
-Add a quirk for this machine to skip member "Revision" during parsing
-the package returned by _BIX.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=67351
-Reported-and-tested-by: Francisco Castro <fcr@adinet.com.uy>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/battery.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ drivers/char/tpm/tpm_ppi.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -68,6 +68,7 @@ MODULE_AUTHOR("Alexey Starikovskiy <asta
- MODULE_DESCRIPTION("ACPI Battery Driver");
- MODULE_LICENSE("GPL");
- 
-+static int battery_bix_broken_package;
- static unsigned int cache_time = 1000;
- module_param(cache_time, uint, 0644);
- MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
-@@ -443,7 +444,12 @@ static int acpi_battery_get_info(struct
- 		ACPI_EXCEPTION((AE_INFO, status, "Evaluating %s", name));
- 		return -ENODEV;
- 	}
--	if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
+--- a/drivers/char/tpm/tpm_ppi.c
++++ b/drivers/char/tpm/tpm_ppi.c
+@@ -27,15 +27,18 @@ static char *tpm_device_name = "TPM";
+ static acpi_status ppi_callback(acpi_handle handle, u32 level, void *context,
+ 				void **return_value)
+ {
+-	acpi_status status;
++	acpi_status status = AE_OK;
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+-	status = acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer);
+-	if (strstr(buffer.pointer, context) != NULL) {
+-		*return_value = handle;
 +
-+	if (battery_bix_broken_package)
-+		result = extract_package(battery, buffer.pointer,
-+				extended_info_offsets + 1,
-+				ARRAY_SIZE(extended_info_offsets) - 1);
-+	else if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
- 		result = extract_package(battery, buffer.pointer,
- 				extended_info_offsets,
- 				ARRAY_SIZE(extended_info_offsets));
-@@ -1064,6 +1070,17 @@ static int battery_notify(struct notifie
- 	return 0;
++	if (ACPI_SUCCESS(acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer))) {
++		if (strstr(buffer.pointer, context) != NULL) {
++			*return_value = handle;
++			status = AE_CTRL_TERMINATE;
++		}
+ 		kfree(buffer.pointer);
+-		return AE_CTRL_TERMINATE;
+ 	}
+-	return AE_OK;
++
++	return status;
  }
  
-+static struct dmi_system_id bat_dmi_table[] = {
-+	{
-+		.ident = "NEC LZ750/LS",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "NEC"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "PC-LZ750LS"),
-+		},
-+	},
-+	{},
-+};
-+
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1174,6 +1191,8 @@ static void __init acpi_battery_init_asy
- 	if (!acpi_battery_dir)
- 		return;
- #endif
-+	if (dmi_check_system(bat_dmi_table))
-+		battery_bix_broken_package = 1;
- 	if (acpi_bus_register_driver(&acpi_battery_driver) < 0) {
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 		acpi_unlock_battery_dir(acpi_battery_dir);
+ static inline void ppi_assign_params(union acpi_object params[4],
 
 
