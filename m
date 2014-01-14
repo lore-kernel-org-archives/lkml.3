@@ -1,120 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaANELD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 23:11:03 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:57481 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaANELA (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Mon, 13 Jan 2014 23:11:00 -0500
-Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
- efi_enter_virtual_mode() (was: Re: [RFC PATCH 00/14] Support timezone of
- ACPI TAD and EFI TIME)
-From: joeyli <jlee@suse.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-In-Reply-To: <2530951.HFPX8MI38t@vostro.rjw.lan>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
-	 <3476450.BMEcId2Lgj@vostro.rjw.lan>
-	 <20131221122148.GB29501@console-pimps.org>
-	 <2530951.HFPX8MI38t@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 14 Jan 2014 12:09:08 +0800
-Message-ID: <1389672548.24105.252.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1752602AbaANEO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 23:14:59 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:37837 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173AbaANEO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 23:14:56 -0500
+Date: Mon, 13 Jan 2014 20:14:50 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/3] Crude timer-wheel latency hacks
+Message-ID: <20140114041449.GA13934@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011404-0928-0000-0000-000005603982
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 日，2014-01-12 於 01:30 +0100，Rafael J. Wysocki 提到：
-> OK
-> 
-> I don't see any adverse effects of the patch below on a couple of my
-> test
-> boxes, but (a) they are Intel-based and (b) they are non-EFI, so it
-> would be
-> good to give it a go on as many machines as reasonably possible.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: ACPI / init: Run acpi_early_init() before
-> efi_enter_virtual_mode()
-> 
-> According to Matt Fleming, if acpi_early_init() was executed befpre
-> efi_enter_virtual_mode(), the EFI initialization could benefit from
-> it, so make that happen.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  init/main.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-pm/init/main.c
-> ===================================================================
-> --- linux-pm.orig/init/main.c
-> +++ linux-pm/init/main.c
-> @@ -615,6 +615,7 @@ asmlinkage void __init start_kernel(void
->         calibrate_delay();
->         pidmap_init();
->         anon_vma_init();
-> +       acpi_early_init();
->  #ifdef CONFIG_X86
->         if (efi_enabled(EFI_RUNTIME_SERVICES))
->                 efi_enter_virtual_mode();
-> @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void
->  
->         check_bugs();
->  
-> -       acpi_early_init(); /* before LAPIC and SMP init */
->         sfi_init_late();
->  
->         if (efi_enabled(EFI_RUNTIME_SERVICES)) {
-> 
-> 
-> 
+Hello!
 
-This patch works to me on Acer Gateway Z5WT2 UEFI notebook and Intel
-UEFI development board.
+The following three patches provide some crude timer-wheel latency
+patches.  I understand that a more comprehensive solution is in progress,
+but in the meantime, these patches work well in cases where a given
+CPU has either zero or one timers pending, which is a common case for
+NO_HZ_FULL kernels.  So, on the off-chance that this is helpful to
+someone, the individual patches are as follows:
 
-Does it possible move acpi_early_init() to before timekeeping_init()?
-The position is also before efi_enter_virtual_mode() and that will be
-useful for parsing ACPI TAD to set system clock:
+1.	Avoid jiffy-at-a-time stepping when the timer wheel is empty.
 
-diff --git a/init/main.c b/init/main.c
-index febc511..b6d93c8 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -565,6 +565,7 @@ asmlinkage void __init start_kernel(void)
-        init_timers();
-        hrtimers_init();
-        softirq_init();
-+       acpi_early_init();
-        timekeeping_init();
-        time_init();
-        sched_clock_postinit();
-@@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
- 
-        check_bugs();
- 
--       acpi_early_init(); /* before LAPIC and SMP init */
-        sfi_init_late();
- 
-        if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+2.	Avoid jiffy-at-a-time stepping when the timer wheel transitions
+	to empty.
 
+3.	Avoid jiffy-at-a-time stepping after a timer is added to an
+	initially empty timer wheel.
 
-Thanks a lot!
-Joey Lee
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/kernel/timer.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
