@@ -1,57 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaANQjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:39:25 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:56574 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751986AbaANQjX (ORCPT
+	id S1752309AbaANQjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:39:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52685 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280AbaANQj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:39:23 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Takashi Iwai <tiwai@suse.de>, Len Brown <lenb@kernel.org>,
-        Oliver Neukum <oneukum@suse.de>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] ACPI: Blacklist Win8 OSI for some HP laptop 2013 models
-Date: Tue, 14 Jan 2014 17:53:20 +0100
-Message-ID: <4325437.Itfr0xDDg7@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140114163425.GA6649@srcf.ucam.org>
-References: <1389611658-19424-1-git-send-email-tiwai@suse.de> <6355285.UpbP9PuN7a@vostro.rjw.lan> <20140114163425.GA6649@srcf.ucam.org>
+	Tue, 14 Jan 2014 11:39:26 -0500
+Date: Tue, 14 Jan 2014 08:38:49 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-6jimc80yu89qkx6zb8465s6t@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf trace: Pack 'struct trace'
+Git-Commit-ID: 98eafce6bda705529e90d33b7f23706b346a6c8a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 14, 2014 04:34:25 PM Matthew Garrett wrote:
-> On Tue, Jan 14, 2014 at 05:42:57PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, January 14, 2014 04:12:44 PM Matthew Garrett wrote:
-> > > On Mon, Jan 13, 2014 at 12:14:18PM +0100, Takashi Iwai wrote:
-> > > > The BIOS on recent HP laptops behaves differently with Win8 OSI,
-> > > > e.g. no backlight control and no rfkill are available.  List them in
-> > > > the blacklist as a workaround.
-> > > 
-> > > What's the plan for fixing this properly?
-> > 
-> > What exactly do you mean by "fixing this properly"?
-> 
-> rfkill and backlight control presumably work fine under Windows 8, so 
-> there's obviously some new mechanism for doing so. HP will presumably 
-> ship more hardware that behaves this way, so if we don't add support for 
-> the new mechanisms then we'll just have to keep adding entries to the 
-> blacklist.
+Commit-ID:  98eafce6bda705529e90d33b7f23706b346a6c8a
+Gitweb:     http://git.kernel.org/tip/98eafce6bda705529e90d33b7f23706b346a6c8a
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 6 Jan 2014 15:43:02 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 13 Jan 2014 10:06:23 -0300
 
-Well, presumably.
+perf trace: Pack 'struct trace'
 
-To add any kind of support for anything we need to know how that thing
-works in the first place which we don't in this particular case, at least
-at the moment.  I hontestly don't want the users of those systems to wait
-until we figure that out.
+Initial struct stats:
 
-Thanks!
+	/* size: 368, cachelines: 6, members: 24 */
+	/* sum members: 353, holes: 3, sum holes: 15 */
+	/* last cacheline: 48 bytes */
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+After reorg:
+
+[acme@ssdandy linux]$ pahole -C trace ~/bin/trace | tail -4
+	/* size: 360, cachelines: 6, members: 24 */
+	/* padding: 7 */
+	/* last cacheline: 40 bytes */
+};
+[acme@ssdandy linux]$
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-6jimc80yu89qkx6zb8465s6t@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 399b4b9..4bd44ab 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1160,26 +1160,27 @@ struct trace {
+ 	struct record_opts	opts;
+ 	struct machine		*host;
+ 	u64			base_time;
+-	bool			full_time;
+ 	FILE			*output;
+ 	unsigned long		nr_events;
+ 	struct strlist		*ev_qualifier;
+-	bool			not_ev_qualifier;
+-	bool			live;
+ 	const char 		*last_vfs_getname;
+ 	struct intlist		*tid_list;
+ 	struct intlist		*pid_list;
++	double			duration_filter;
++	double			runtime_ms;
++	struct {
++		u64		vfs_getname,
++				proc_getname;
++	} stats;
++	bool			not_ev_qualifier;
++	bool			live;
++	bool			full_time;
+ 	bool			sched;
+ 	bool			multiple_threads;
+ 	bool			summary;
+ 	bool			summary_only;
+ 	bool			show_comm;
+ 	bool			show_tool_stats;
+-	double			duration_filter;
+-	double			runtime_ms;
+-	struct {
+-		u64		vfs_getname, proc_getname;
+-	} stats;
+ };
+ 
+ static int trace__set_fd_pathname(struct thread *thread, int fd, const char *pathname)
