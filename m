@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaANQjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:39:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52609 "EHLO
+	id S1751984AbaANQjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:39:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52621 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbaANQi4 (ORCPT
+	with ESMTP id S1752225AbaANQjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:38:56 -0500
-Date: Tue, 14 Jan 2014 08:38:29 -0800
+	Tue, 14 Jan 2014 11:39:02 -0500
+Date: Tue, 14 Jan 2014 08:38:19 -0800
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-9bb8e5edcf37182d0c97e98131cc3c5c03014b0e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+Message-ID: <tip-198430b56d4ab49d77381ef7cd3daf418a2c00c0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
         rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
         rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1388595050-23005-2-git-send-email-jolsa@redhat.com>
-References: <1388595050-23005-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <20140102095304.GA1196@krava.brq.redhat.com>
+References: <20140102095304.GA1196@krava.brq.redhat.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] tools lib traceevent:
-  Shut up plugins make message
-Git-Commit-ID: 9bb8e5edcf37182d0c97e98131cc3c5c03014b0e
+  Replace tabs with spaces for all non-commands statements
+Git-Commit-ID: 198430b56d4ab49d77381ef7cd3daf418a2c00c0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,36 +34,26 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:35 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9bb8e5edcf37182d0c97e98131cc3c5c03014b0e
-Gitweb:     http://git.kernel.org/tip/9bb8e5edcf37182d0c97e98131cc3c5c03014b0e
+Commit-ID:  198430b56d4ab49d77381ef7cd3daf418a2c00c0
+Gitweb:     http://git.kernel.org/tip/198430b56d4ab49d77381ef7cd3daf418a2c00c0
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 1 Jan 2014 17:50:50 +0100
+AuthorDate: Thu, 2 Jan 2014 10:53:04 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 13 Jan 2014 10:06:23 -0300
 
-tools lib traceevent: Shut up plugins make message
+tools lib traceevent: Replace tabs with spaces for all non-commands statements
 
-Getting rid of following build output:
+The tabbed indentation in non-commands statements could be sometimes
+considered as follow up for the rule command in the Makefile.
 
-  $ make O=/tmp/build/perf -C tools/perf/ install-bin
-  ...
-  make[3]: Nothing to be done for `plugins'.
-  make[2]: Nothing to be done for `plugins'.
-  ...
+This error is hard to find, so as a precaution replacing tabs with
+spaces for all non-commands statements.
 
-which triggers when traceevent library needs to be rebuilt, but we have
-plugins built already.
-
-Adding extra 'plugins' target with nop which is visible and triggers in
-both Makefile parts (for detached output directory (O=...) the
-traceevent Makefile spawns sub make for the build itself).
-
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -73,27 +63,99 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1388595050-23005-2-git-send-email-jolsa@redhat.com
+Link: http://marc.info/?t=136484403900003&r=1&w=2
+Link: http://lkml.kernel.org/r/20140102095304.GA1196@krava.brq.redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/Makefile | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ tools/lib/traceevent/Makefile | 54 +++++++++++++++++++++----------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
 
 diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 76fe0ae..f778d48 100644
+index ca4ab78..76fe0ae 100644
 --- a/tools/lib/traceevent/Makefile
 +++ b/tools/lib/traceevent/Makefile
-@@ -329,9 +329,12 @@ clean:
+@@ -86,8 +86,8 @@ ifeq ($(BUILD_SRC),)
+ ifneq ($(OUTPUT),)
  
- endif # skip-makefile
+ define build_output
+-	$(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
+-	BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
++  $(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
++  BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
+ endef
  
--PHONY += force
-+PHONY += force plugins
- force:
+ all: sub-make
+@@ -221,23 +221,23 @@ $(PLUGINS): %.so: %.o
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<
  
-+plugins:
-+	@echo > /dev/null
-+
- # Declare the contents of the .PHONY variable as phony.  We keep that
- # information in a variable so we can use it in if_changed and friends.
- .PHONY: $(PHONY)
+ define make_version.h
+-	(echo '/* This file is automatically generated. Do not modify. */';		\
+-	echo \#define VERSION_CODE $(shell						\
+-	expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
+-	echo '#define EXTRAVERSION ' $(EXTRAVERSION);					\
+-	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
+-	echo '#define FILE_VERSION '$(FILE_VERSION);					\
+-	) > $1
++  (echo '/* This file is automatically generated. Do not modify. */';		\
++   echo \#define VERSION_CODE $(shell						\
++   expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
++   echo '#define EXTRAVERSION ' $(EXTRAVERSION);				\
++   echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
++   echo '#define FILE_VERSION '$(FILE_VERSION);					\
++  ) > $1
+ endef
+ 
+ define update_version.h
+-	($(call make_version.h, $@.tmp);		\
+-	if [ -r $@ ] && cmp -s $@ $@.tmp; then		\
+-		rm -f $@.tmp;				\
+-	else						\
+-		echo '  UPDATE                 $@';	\
+-		mv -f $@.tmp $@;			\
+-	fi);
++  ($(call make_version.h, $@.tmp);		\
++    if [ -r $@ ] && cmp -s $@ $@.tmp; then	\
++      rm -f $@.tmp;				\
++    else					\
++      echo '  UPDATE                 $@';	\
++      mv -f $@.tmp $@;				\
++    fi);
+ endef
+ 
+ ep_version.h: force
+@@ -246,13 +246,13 @@ ep_version.h: force
+ VERSION_FILES = ep_version.h
+ 
+ define update_dir
+-	(echo $1 > $@.tmp;	\
+-	if [ -r $@ ] && cmp -s $@ $@.tmp; then		\
+-		rm -f $@.tmp;				\
+-	else						\
+-		echo '  UPDATE                 $@';	\
+-		mv -f $@.tmp $@;			\
+-	fi);
++  (echo $1 > $@.tmp;				\
++   if [ -r $@ ] && cmp -s $@ $@.tmp; then	\
++     rm -f $@.tmp;				\
++   else						\
++     echo '  UPDATE                 $@';	\
++     mv -f $@.tmp $@;				\
++   fi);
+ endef
+ 
+ ## make deps
+@@ -262,10 +262,10 @@ all_deps := $(all_objs:%.o=.%.d)
+ 
+ # let .d file also depends on the source and header files
+ define check_deps
+-		@set -e; $(RM) $@; \
+-		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
+-		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+-		$(RM) $@.$$$$
++  @set -e; $(RM) $@; \
++  $(CC) -MM $(CFLAGS) $< > $@.$$$$; \
++  sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
++  $(RM) $@.$$$$
+ endef
+ 
+ $(all_deps): .%.d: $(src)/%.c
