@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbaANA6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:58:47 -0500
-Received: from blackpearl.yuhu.biz ([85.14.7.126]:37768 "EHLO
-	BlackPearl.yuhu.biz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaANA6N (ORCPT
+	id S1755481AbaANA73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:59:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54111 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370AbaANA1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:58:13 -0500
-Message-ID: <52D48BA6.2080701@yuhu.biz>
-Date: Tue, 14 Jan 2014 02:58:14 +0200
-From: Marian Marinov <mm@yuhu.biz>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Mon, 13 Jan 2014 19:27:32 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 3.10 51/62] mfd: rtsx_pcr: Disable interrupts before cancelling delayed works
+Date: Mon, 13 Jan 2014 16:27:16 -0800
+Message-Id: <20140114002711.910775199@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
+References: <20140114002710.464561569@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: lxc-devel@lists.linuxcontainers.org, cgroups@vger.kernel.org,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, Li Zefan <lizefan@huawei.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: RFC: cgroups aware proc
-References: <52D35CD0.9070602@huawei.com> <52D41316.5080508@yuhu.biz> <20140113171238.GS31570@twins.programming.kicks-ass.net>
-In-Reply-To: <20140113171238.GS31570@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 07:12 PM, Peter Zijlstra wrote:
-> On Mon, Jan 13, 2014 at 06:23:50PM +0200, Marian Marinov wrote:
->> Hello Peter,
->>
->> I need help with the scheduler.
->>
->> I'm currently trying to patch the /proc/loadavg to show the load that is
->> only related to the processes from the current cgroup.
->>
->> I looked trough the code and I was hoping that tsk->sched_task_group->cfs_rq
->> struct will give me the needed information, but unfortunately for me, it did
->> not.
->>
->> Can you advise me, how to approach this problem?
->
-> Yeah, don't :-) Really, loadavg is a stupid metric.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Yes... stupid, but unfortunately everyone is looking at it :(
+------------------
 
->
->> I'm totally new to the scheduler code.
->
-> Luckily you won't actually have to touch much of it. Most of the actual
-> loadavg code lives in the first ~400 lines of kernel/sched/proc.c, read
-> and weep. Its one of the best documented bits around.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-I looked trough it but I don't understand how to introduce the per cgroup calculation.
+commit 73beb63d290f961c299526852884846b0d868840 upstream.
 
-I looked trough the headers and found the following, which is already implemented.
+This fixes a kernel panic when resuming from suspend to RAM.
+Without this fix an interrupt hits after the delayed work is canceled
+and thus requeues it. So we end up freeing an armed timer.
 
-   task->sched_task_group->load_avg
-   task->sched_task_group->cfs_rq->load_avg
-   task->sched_task_group->cfs_rq->load.weight
-   task->sched_task_group->cfs_rq->runnable_load_avg
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Unfortunately there is almost no documentation for these elements of the cfs_rq and task_group structs.
+---
+ drivers/mfd/rtsx_pcr.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-It seams to me that part of the per task group loadavg code is already present.
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1195,8 +1195,14 @@ static void rtsx_pci_remove(struct pci_d
+ 
+ 	pcr->remove_pci = true;
+ 
+-	cancel_delayed_work(&pcr->carddet_work);
+-	cancel_delayed_work(&pcr->idle_work);
++	/* Disable interrupts at the pcr level */
++	spin_lock_irq(&pcr->lock);
++	rtsx_pci_writel(pcr, RTSX_BIER, 0);
++	pcr->bier = 0;
++	spin_unlock_irq(&pcr->lock);
++
++	cancel_delayed_work_sync(&pcr->carddet_work);
++	cancel_delayed_work_sync(&pcr->idle_work);
+ 
+ 	mfd_remove_devices(&pcidev->dev);
+ 
 
->
-> Your proposition however is extremely expensive, you turn something
-> that's already expensive O(nr_cpus) into something O(nr_cpus *
-> nr_cgroups).
->
-> I'm fairly sure people will not like that, esp. for something of such
-> questionable use as the loadavg -- its really only a pretty number that
-> doesn't mean all that much.
-
-I know that its use is questionable but in my case I need to have it, or I will not be able to offer correct loadavg 
-values in the containers.
-
-
->
->> -------- Original Message --------
->> From: Li Zefan <lizefan@huawei.com>
->>
->> Then you should add Peter, Ingo and LKML to your Cc list. :)
->
-> You failed that, let me fix that.
->
->
 
