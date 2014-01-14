@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaANXYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:24:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:2818 "EHLO mga09.intel.com"
+	id S1751992AbaANXZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:25:46 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48862 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068AbaANXYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:24:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="458852786"
-Message-ID: <52D5C6F2.7090607@linux.intel.com>
-Date: Tue, 14 Jan 2014 15:23:30 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751353AbaANXZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 18:25:43 -0500
+Date: Wed, 15 Jan 2014 00:25:38 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Austin S Hemmelgarn <ahferroin7@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        netdev@vger.kernel.org, dborkman@redhat.com,
+        linux-kernel@vger.kernel.org, darkjames-ws@darkjames.pl
+Subject: Re: [PATCH RFC] reciprocal_divide: correction/update of the algorithm
+Message-ID: <20140114232538.GD29887@pd.tnic>
+References: <20140113214249.GK6586@order.stressinduktion.org>
+ <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
+ <52D58E6F.4050000@gmail.com>
+ <1389729032.31367.262.camel@edumazet-glaptop2.roam.corp.google.com>
+ <52D5A3DC.9030107@gmail.com>
+ <1389739537.31367.273.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, Fengguang Wu <fengguang.wu@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [x86, kaslr] BUG: kernel boot hang
-References: <20140114133125.GB26942@localhost> <CAGXu5j+uBnEJ2qddoec0Y2z3=yzAYwKE_GjMRhXzc4XRw_Se_g@mail.gmail.com>
-In-Reply-To: <CAGXu5j+uBnEJ2qddoec0Y2z3=yzAYwKE_GjMRhXzc4XRw_Se_g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1389739537.31367.273.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 02:33 PM, Kees Cook wrote:
-> 
-> Can you tell me how the initrd for quantal-core-x86_64.cgz was built
-> in the qemu instances you're using? It seems like all the failures
-> point to a problem with how kASLR is interacting with the initrd.
-> 
+On Tue, Jan 14, 2014 at 02:45:37PM -0800, Eric Dumazet wrote:
+> Even on a Jaguar, the proposed alternative
 
-If kASLR somehow causes the kernel to collide with the initrd that would
-be problem...
-	
-	-hpa
+I don't know what Jaguar you guys are talking about but the Jaguar
+I know - Fam16h - has an int hardware divider:
 
+http://developer.amd.com/wordpress/media/2012/10/SOG_16h_52128_PUB_Rev1_1.pdf
 
+So all that talk about microcode is plain wrong. The hardware divider
+comes from Llano (F12h) so it must be some other Jaguar, maybe Bobcat.
+
+:-)
+
+If it is Bobcat, then it has a 1-bit per cycle ucode int divider.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
