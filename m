@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaANPCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:02:52 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:59683 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855AbaANPCu (ORCPT
+	id S1751535AbaANPGC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:06:02 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:39372 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaANPF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:02:50 -0500
-Date: Tue, 14 Jan 2014 16:02:47 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] drm/panel: update EDID BLOB in panel_simple_get_modes()
-Message-ID: <20140114150245.GA29766@ulmo.nvidia.com>
-References: <1389292654-20491-1-git-send-email-swarren@wwwdotorg.org>
+	Tue, 14 Jan 2014 10:05:58 -0500
+Date: Tue, 14 Jan 2014 16:05:53 +0100
+From: Robert Richter <rric@kernel.org>
+To: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: oprofile-list@lists.sf.net, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, wangnan0@huawei.com,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Huang Qiang <h.huangqiang@huawei.com>
+Subject: Re: [PATCH] oprofile: check whether oprofile perf enabled in
+ op_overflow_handler()
+Message-ID: <20140114150553.GC20315@rric.localhost>
+References: <52B3F66D.6060707@huawei.com>
+ <20140113084555.GU20315@rric.localhost>
+ <52D4984B.9090600@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389292654-20491-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52D4984B.9090600@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14.01.14 09:52:11, Weng Meiling wrote:
+> On 2014/1/13 16:45, Robert Richter wrote:
+> > On 20.12.13 15:49:01, Weng Meiling wrote:
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> >> The problem was once triggered on kernel 2.6.34, the main information:
+> >> <3>BUG: soft lockup - CPU#0 stuck for 60005ms! [opcontrol:8673]
+> >>
+> >> Pid: 8673, comm:            opcontrol
+> >> =====================SOFTLOCKUP INFO BEGIN=======================
+> >> [CPU#0] the task [opcontrol] is not waiting for a lock,maybe a delay or deadcricle!
+> >> <6>opcontrol     R<c> running  <c>    0  8673   7603 0x00000002
+> >> locked:
+> >> bf0e1928   mutex            0  [<bf0de0d8>] oprofile_start+0x10/0x68 [oprofile]
+> >> bf0e1a24   mutex            0  [<bf0e07f0>] op_arm_start+0x10/0x48 [oprofile]
+> >> c0628020   &ctx->mutex      0  [<c00af85c>] perf_event_create_kernel_counter+0xa4/0x14c
+> > 
+> > I rather suspect the code of perf_install_in_context() of 2.6.34 to
+> > cause the locking issue. There was a lot of rework in between there.
+> > Can you further explain the locking and why your fix should solve it?
+> > 
+> Thanks for your answer!
+> The locking happens when the event's sample_period is small which leads to cpu
+> keeping printing the warning for the triggered unregistered event. So the thread
+> context can't be executed and trigger softlockup.
+> As you said below, the patch is not appropriate, and the patch just
+> prevents printing the warning and thus stays shorter in the interrupt handler,
+> it can't solve the problem. The problem was once triggered on kernel 2.6.34, I'll
+> try to trigger it in current kernel and resend a correct patch.
 
-On Thu, Jan 09, 2014 at 11:37:34AM -0700, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> This stashes away the EDID data so that the sysfs per-connector file
-> "edid" can display it. Without this change, the "edid" file is always
-> empty.
->=20
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  drivers/gpu/drm/panel/panel-simple.c | 1 +
->  1 file changed, 1 insertion(+)
+Weng,
 
-Applied, thanks.
+so an interrupt storm due to warning messages causes the lock.
 
-Thierry
+I was looking further at it and wrote a patch that enables the event
+after it was added to the perf_events list. This should fix spurious
+overflows and its warning messages. Could you reproduce the issue with
+a mainline kernel and then test with the patch below applied?
 
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+-Robert
 
-iQIcBAEBAgAGBQJS1VGVAAoJEN0jrNd/PrOhkyoQAL31nh2Za5hZynaCyPlx+G8C
-kSieEsDKgZGPPr3cQbOTLef3RAEJpIRipR88ipwQAZ8PdbHeLsKSaS3KKNg5TE9q
-URaC+EYKmLx3F528w4V+Y99Mno9hqDP+e9BmOVISYIfY3b7h8zo+lX4IUcU+ZM0t
-Xj9Rsrh2PgwP0dpgYUwwEL+egjXNZa6YmAZTWw/bsWkvzldFvHeNtrGP+CF6Nu9J
-c2AzcdiTWEn8oapVmJOthfBsUVQV3a0BjOkmWDCJKcFqX0PvpAOA88Ur+uVI1MvB
-fc1vKBRJ03UzknDvv8uVf9JR+SgixkBQvB6EOdah44ZVk8xcyN1vHQltXFvHTjUM
-E1GL3uWDsXlybUZ06YoB3VSy93mobqOAh/qWdww1xqlJn05PX12mSk477vqNDJzh
-YnWD/Jf8k58F2gu3i/VjnizgpmMNyd1iFRg5IF7Gl4nN8sNSPXFb8h7zS0XmpQN0
-SMn8uQNnBFv0vEjsIj1R/McQsoeXMQmRTJXX04OtpruGNHip+LQ6LU17jxxb8Nf+
-45KC8gYwc2MyUfZrujKn8d04Ag078UlWE4WBflrk2EDbqVcNMXRGevnpdEzY6KYv
-IWDCAI8+nPQpZcOyXX1xAUg6QNDqe5B4y3w69n80SamT9aloFrqw/mXGsDD4zThT
-NdUwNvmPQjJHu/4Q21V4
-=QAeN
------END PGP SIGNATURE-----
 
---uAKRQypu60I7Lcqm--
+From: Robert Richter <rric@kernel.org>
+Date: Tue, 14 Jan 2014 15:19:54 +0100
+Subject: [PATCH] oprofile_perf
+
+Signed-off-by: Robert Richter <rric@kernel.org>
+---
+ drivers/oprofile/oprofile_perf.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index d5b2732..2b07c95 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -38,6 +38,9 @@ static void op_overflow_handler(struct perf_event *event,
+ 	int id;
+ 	u32 cpu = smp_processor_id();
+ 
++	/* sync perf_events with op_create_counter(): */
++	smp_rmb();
++
+ 	for (id = 0; id < num_counters; ++id)
+ 		if (per_cpu(perf_events, cpu)[id] == event)
+ 			break;
+@@ -68,6 +71,7 @@ static void op_perf_setup(void)
+ 		attr->config		= counter_config[i].event;
+ 		attr->sample_period	= counter_config[i].count;
+ 		attr->pinned		= 1;
++		attr->disabled		= 1;
+ 	}
+ }
+ 
+@@ -94,6 +98,11 @@ static int op_create_counter(int cpu, int event)
+ 
+ 	per_cpu(perf_events, cpu)[event] = pevent;
+ 
++	/* sync perf_events with overflow handler: */
++	smp_wmb();
++
++	perf_event_enable(pevent);
++
+ 	return 0;
+ }
+ 
+-- 
+1.8.4.2
+
