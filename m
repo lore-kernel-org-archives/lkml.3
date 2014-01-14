@@ -1,44 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaANT1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:27:14 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51749 "EHLO mail.skyhub.de"
+	id S1751947AbaANT1W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:27:22 -0500
+Received: from fieldses.org ([174.143.236.118]:57283 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbaANT1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:27:08 -0500
-Date: Tue, 14 Jan 2014 20:27:02 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        Aravind.Gopalakrishnan@amd.com, tglx@linutronix.de, bp@suse.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/microcode] x86, microcode: Move to a proper location
-Message-ID: <20140114192702.GN29865@pd.tnic>
-References: <tip-bad5fa631fca5466401cd4a48e30cc1f1cb6101e@git.kernel.org>
- <52D56174.9010608@zytor.com>
- <20140114185802.GB29871@pd.tnic>
- <52D58DA1.2070400@zytor.com>
+	id S1751458AbaANT1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:27:19 -0500
+Date: Tue, 14 Jan 2014 14:27:13 -0500
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jeff Layton <jlayton@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT
+ locks
+Message-ID: <20140114192713.GA22262@fieldses.org>
+References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
+ <1389277187-18211-14-git-send-email-jlayton@redhat.com>
+ <52CF05B5.5080700@amacapital.net>
+ <20140109194930.1692fbbe@tlielax.poochiereds.net>
+ <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D58DA1.2070400@zytor.com>
+In-Reply-To: <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 11:18:57AM -0800, H. Peter Anvin wrote:
-> arch/x86/cpu/microcode seems clean. I'm wondering if what is mostly
-> currently in arch/x86/kernel/cpu should be mostly in something like
-> arch/x86/cpu/init.
+On Thu, Jan 09, 2014 at 04:58:59PM -0800, Andy Lutomirski wrote:
+> On Thu, Jan 9, 2014 at 4:49 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > On Thu, 09 Jan 2014 12:25:25 -0800
+> > Andy Lutomirski <luto@amacapital.net> wrote:
+> >> When I think of deadlocks caused by r/w locks (which these are), I think
+> >> of two kinds.  First is what the current code tries to detect: two
+> >> processes that are each waiting for each other.  I don't know whether
+> >> POSIX enshrines the idea of detecting that, but I wouldn't be surprised,
+> >> considering how awful the old POSIX locks are.
+...
+> >> The sensible kind of detectable deadlock involves just one lock, and it
+> >> happens when two processes both hold read locks and try to upgrade to
+> >> write locks.  This should be efficiently detectable and makes upgrading
+> >> locks safe(r).
 
-Yeah, I can start reorganizing stuff slowly and with time, the best
-place will dawn on us. One thing's for sure, the "kernel" in the path is
-kinda redundant because, as Ingo said, it is all kernel.
+This also involves two processes waiting on each other, and the current
+code should detect either case equally well.
 
--- 
-Regards/Gruss,
-    Boris.
+...
+> For this kind of deadlock detection, nothing global is needed -- I'm
+> only talking about detecting deadlocks due to two tasks upgrading
+> locks on the same file (with overlapping ranges) at the same time.
+> 
+> This is actually useful for SQL-like things.  Imagine this scenario:
+> 
+> Program 1:
+> 
+> Open a file
+> BEGIN;
+> SELECT whatever;  -- acquires a read lock
+> 
+> Program 2:
+> 
+> Open the same file
+> BEGIN;
+> SELECT whatever;  -- acquires a read lock
+> 
+> Program 1:
+> UPDATE something;  -- upgrades to write
+> 
+> Now program 1 is waiting for program 2 to release its lock.  But if
+> program 2 tries to UPDATE, then it deadlocks.  A friendly MySQL
+> implementation (which, sadly, does not include sqlite) will fail the
+> abort the transaction instead.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+And then I suppose you'd need to get an exclusive lock when you retry,
+to guarantee forward progress in the face of multiple processes retrying
+at once.
+
+I don't know, is this so useful?
+
+> It would be nice if the kernel
+> supported this.
+> 
+> Note that unlocking and then re-locking for write is incorrect -- it
+> would allow program 2 to write inconsistent data.
+> 
+> I think that implementing this could be as simple as having some way
+> to check if a struct file_lock is currently trying to upgrade from
+> read to write and, if you try to upgrade and end up waiting for such a
+> lock, aborting.
+
+You have to be clear what you mean by "such a lock".  What you really
+want to know is whether you'd be waiting on a lock that might be waiting
+on a lock you hold.
+
+To a first approximation, the current works with a graph with tasks as
+nodes and an arrow from node X to node Y if X is waiting on a lock held
+by node Y.  And it follows arrows in that graph looking for cycles.
+
+And sure I guess it would be a bit nicer if you only bothered checking
+for cycles that touch this one file.
+
+But I'd really rather avoid the complication of deadlock detection
+unless somebody can make a really strong case that they need it.
+
+> The nasty case, though, is if you try to write-lock a
+> range while holding a read-lock on only part of the range -- you could
+> end up acquiring part of the range and deadlocking on the rest.  Now
+> you need to remember enough state to be able to abort.
+
+We wait until the entire lock can be applied, and then apply it all
+atomically (under i_lock).
+
+> (Actually, what happens if you receive a signal which waiting on a file lock?)
+
+Return -EINTR.
+
+> I would personally be okay with removing the existing deadlock
+> detector entirely.  I wouldn't be surprised if no one relies on it.
+
+I'd be in favor.
+
+--b.
