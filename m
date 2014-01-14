@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaANXuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:50:18 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:44903 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338AbaANXuM (ORCPT
+	id S1752477AbaANXu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:50:27 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53326 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaANXuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:50:12 -0500
-From: Marc Carino <marc.ceeeee@gmail.com>
-To: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: [PATCH v3 2/7] ARM: brcmstb: add debug UART for earlyprintk support
-Date: Tue, 14 Jan 2014 15:48:48 -0800
-Message-Id: <1389743333-16741-3-git-send-email-marc.ceeeee@gmail.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com>
+	Tue, 14 Jan 2014 18:50:22 -0500
+Date: Tue, 14 Jan 2014 15:50:15 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 1/3] timers: Reduce __run_timers()
+	latency for empty list
+Message-ID: <20140114235015.GZ10038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140114041449.GA13934@linux.vnet.ibm.com>
+ <1389672919-14621-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140114184828.GA29331@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114184828.GA29331@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011423-6688-0000-0000-0000058715AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the UART definitions needed to support earlyprintk on brcmstb machines.
+On Tue, Jan 14, 2014 at 07:48:28PM +0100, Oleg Nesterov wrote:
+> On 01/13, Paul E. McKenney wrote:
+> >
+> > The __run_timers() function currently steps through the list one jiffy at
+> > a time in order to update the timer wheel.  However, if the timer wheel
+> > is empty, no adjustment is needed other than updating ->timer_jiffies.
+> 
+> Yes, but ->active_timers == 0 doesn't necessarily mean "empty", it only
+> counts the non-deferrable timers?
 
-Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
----
- arch/arm/Kconfig.debug |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
+Right you are!  Color me slow and stupid...
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 5765abf..266c699 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -94,6 +94,17 @@ choice
- 		depends on ARCH_BCM2835
- 		select DEBUG_UART_PL01X
- 
-+	config DEBUG_BRCMSTB_UART
-+		bool "Use BRCMSTB UART for low-level debug"
-+		depends on ARCH_BRCMSTB
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to the first serial port on these devices.
-+
-+		  If you have a Broadcom STB chip and would like early print
-+		  messages to appear over the UART, select this option.
-+
- 	config DEBUG_CLPS711X_UART1
- 		bool "Kernel low-level debugging messages via UART1"
- 		depends on ARCH_CLPS711X
-@@ -988,6 +999,7 @@ config DEBUG_UART_PHYS
- 	default 0x20064000 if DEBUG_RK29_UART1 || DEBUG_RK3X_UART2
- 	default 0x20068000 if DEBUG_RK29_UART2 || DEBUG_RK3X_UART3
- 	default 0x20201000 if DEBUG_BCM2835
-+	default 0xf0406b00 if DEBUG_BRCMSTB_UART
- 	default 0x4000e400 if DEBUG_LL_UART_EFM32
- 	default 0x40090000 if ARCH_LPC32XX
- 	default 0x40100000 if DEBUG_PXA_UART1
-@@ -1029,6 +1041,7 @@ config DEBUG_UART_VIRT
- 	default 0xf0009000 if DEBUG_CNS3XXX
- 	default 0xf01fb000 if DEBUG_NOMADIK_UART
- 	default 0xf0201000 if DEBUG_BCM2835
-+	default 0xfc406b00 if DEBUG_BRCMSTB_UART
- 	default 0xf11f1000 if ARCH_VERSATILE
- 	default 0xf1600000 if ARCH_INTEGRATOR
- 	default 0xf1c28000 if DEBUG_SUNXI_UART0
-@@ -1091,7 +1104,8 @@ config DEBUG_UART_8250_WORD
- 	default y if DEBUG_PICOXCELL_UART || DEBUG_SOCFPGA_UART || \
- 		ARCH_KEYSTONE || \
- 		DEBUG_DAVINCI_DMx_UART0 || DEBUG_DAVINCI_DA8XX_UART1 || \
--		DEBUG_DAVINCI_DA8XX_UART2 || DEBUG_DAVINCI_TNETV107X_UART1
-+		DEBUG_DAVINCI_DA8XX_UART2 || DEBUG_DAVINCI_TNETV107X_UART1 || \
-+		DEBUG_BRCMSTB_UART
- 
- config DEBUG_UART_8250_FLOW_CONTROL
- 	bool "Enable flow control for 8250 UART"
--- 
-1.7.1
+Separate counter clearly required.
+
+> > In this case, which is likely to be common for NO_HZ_FULL kernels, the
+> > kernel currently incurs a large latency for no good reason.  This commit
+> > therefore short-circuits this case.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/timer.c | 15 +++++++++++++++
+> >  1 file changed, 15 insertions(+)
+> > 
+> > diff --git a/kernel/timer.c b/kernel/timer.c
+> > index 6582b82fa966..21849275828f 100644
+> > --- a/kernel/timer.c
+> > +++ b/kernel/timer.c
+> > @@ -337,6 +337,17 @@ void set_timer_slack(struct timer_list *timer, int slack_hz)
+> >  }
+> >  EXPORT_SYMBOL_GPL(set_timer_slack);
+> >
+> > +static bool catchup_timer_jiffies(struct tvec_base *base)
+> > +{
+> > +#ifdef CONFIG_NO_HZ_FULL
+> > +	if (!base->active_timers) {
+> > +		base->timer_jiffies = jiffies;
+> > +		return 1;
+> > +	}
+> > +#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> > +	return 0;
+> > +}
+> > +
+> >  static void
+> >  __internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+> >  {
+> > @@ -1146,6 +1157,10 @@ static inline void __run_timers(struct tvec_base *base)
+> >  	struct timer_list *timer;
+> >
+> >  	spin_lock_irq(&base->lock);
+> 
+> Do we really need to take base->lock before catchup_timer_jiffies() ?
+> ->timer_jiffies can only be changed by us, and it seems that we do
+> not care if we race with base->active_timers++.
+
+Given that this lock should be almost always acquired by the current
+CPU, the penalty for acquiring it should be low.  After all, we were
+acquiring it prior to this patch as many times as we are after this patch,
+right?
+
+> > +	if (catchup_timer_jiffies(base)) {
+> > +		spin_unlock_irq(&base->lock);
+> > +		return;
+> 
+> This is what I can't understand... Doesn't this mean that, unless this
+> base have a non-deferrable timer, we can never run the pending deferrable
+> timers even if the system/cpu is "busy" ?
+
+It does, and that is a bug in my patch.  Good catch!
+
+							Thanx, Paul
 
