@@ -1,81 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaANPh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:37:29 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:7638 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaANPh0 (ORCPT
+	id S1751762AbaANPhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:37:35 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:46069 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaANPhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:37:26 -0500
-Message-ID: <1389713482.1792.281.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] x86, acpi memory hotplug, add parameter to disable
- memory hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
-        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Dave Young <dyoung@redhat.com>,
-        linux-acpi@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Tue, 14 Jan 2014 08:31:22 -0700
-In-Reply-To: <20140114152627.GD3096@redhat.com>
-References: <1389650161-13292-1-git-send-email-prarit@redhat.com>
-	 <CAHGf_=pX303E6VAhL+gApSQ1OsEQHqTuCN8ZSdD3E54YAcFQKA@mail.gmail.com>
-	 <52D47999.5080905@redhat.com> <52D48EC4.5070400@jp.fujitsu.com>
-	 <1389663689.1792.268.camel@misato.fc.hp.com> <52D519EB.3040709@redhat.com>
-	 <20140114152627.GD3096@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Jan 2014 10:37:31 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/3] perf tools: Spare double comparison of callchain first entry
+Date: Tue, 14 Jan 2014 16:37:15 +0100
+Message-Id: <1389713836-13375-3-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
+References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-14 at 10:26 -0500, Vivek Goyal wrote:
-> On Tue, Jan 14, 2014 at 06:05:15AM -0500, Prarit Bhargava wrote:
-> 
-> [..]
-> > >>> As mentioned, self-NAK.  I have seen a system that I needed to specify
-> > >>> memmap=exactmap & had hotplug memory.  I will only keep the acpi_no_memhotplug
-> > >>> option in the next version of the patch.
-> > >>
-> > >>
-> > >> Your following first patch is simply and makes sense.
-> > >>
-> > >> http://marc.info/?l=linux-acpi&m=138922019607796&w=2
-> > >>
-> > > 
-> > > In this option, it also requires changing kexec-tools to specify the new
-> > > option for kdump.  It won't be simpler.
-> > 
-> > It will be simpler for the kernel and those of us who have to debug busted e820
-> > maps ;)
-> > 
-> > Unfortunately I may not be able to give you the automatic disable.  I did
-> > contemplate adding a !is_kdump_kernel() to the ACPI memory hotplug init call,
-> > but it seems like that is unacceptable as well.
-> 
-> I think everybody agrees that there has to be a stand alone command line
-> option to disable memory hotplug.
-> 
-> Whether to tie it into memmap=exactmap and mem=X is the contentious bit.
-> So I would suggest that just post a patch to disable memory hotplut using
-> a command line and later more patches can go in if people strongly feel
-> the need to tie it into memmap=exactmap.
-> 
-> In the mean time, we will modify /etc/sysconfig/kdump to pass
-> acpi_no_memhotplug so that user does not have to worry about passing this
-> parameter and kexec-tools will not have to be modified either.
+When a new callchain child branch matches an existing one in the rbtree,
+the comparison of its first entry is performed twice:
 
-Fine by me.  Thanks for modifying /etc/sysconfig/kdump file. 
--Toshi
+1) From append_chain_children() on branch lookup
+
+2) If 1) reports a match, append_chain() then compares all entries of
+the new branch against the matching node in the rbtree, and this
+comparison includes the first entry of the new branch again.
+
+Lets shortcut this by performing the whole comparison only from
+append_chain() which then returns the result of the comparison between
+the first entry of the new branch and the iterating node in the rbtree.
+If the first entry matches, the lookup on the current level of siblings
+stops and propagates to the children of the matching nodes.
+
+This results in less comparisons performed by the CPU.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/util/callchain.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index e3970e3..e5ed16d 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -15,6 +15,8 @@
+ #include <errno.h>
+ #include <math.h>
+ 
++#include "asm/bug.h"
++
+ #include "hist.h"
+ #include "util.h"
+ #include "callchain.h"
+@@ -356,19 +358,14 @@ append_chain_children(struct callchain_node *root,
+ 	/* lookup in childrens */
+ 	while (*p) {
+ 		s64 ret;
+-		struct callchain_list *cnode;
+ 
+ 		parent = *p;
+ 		rnode = rb_entry(parent, struct callchain_node, rb_node_in);
+-		cnode = list_first_entry(&rnode->val, struct callchain_list,
+-					 list);
+ 
+-		/* just check first entry */
+-		ret = match_chain(node, cnode);
+-		if (ret == 0) {
+-			append_chain(rnode, cursor, period);
++		/* If at least first entry matches, rely to children */
++		ret = append_chain(rnode, cursor, period);
++		if (ret == 0)
+ 			goto inc_children_hit;
+-		}
+ 
+ 		if (ret < 0)
+ 			p = &parent->rb_left;
+@@ -394,6 +391,7 @@ append_chain(struct callchain_node *root,
+ 	u64 start = cursor->pos;
+ 	bool found = false;
+ 	u64 matches;
++	int cmp = 0;
+ 
+ 	/*
+ 	 * Lookup in the current node
+@@ -408,7 +406,8 @@ append_chain(struct callchain_node *root,
+ 		if (!node)
+ 			break;
+ 
+-		if (match_chain(node, cnode) != 0)
++		cmp = match_chain(node, cnode);
++		if (cmp)
+ 			break;
+ 
+ 		found = true;
+@@ -418,9 +417,10 @@ append_chain(struct callchain_node *root,
+ 
+ 	/* matches not, relay no the parent */
+ 	if (!found) {
++		WARN_ONCE(!cmp, "Chain comparison error\n");
+ 		cursor->curr = curr_snap;
+ 		cursor->pos = start;
+-		return -1;
++		return cmp;
+ 	}
+ 
+ 	matches = cursor->pos - start;
+-- 
+1.8.3.1
 
