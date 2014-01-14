@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaANT3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:29:22 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:48924 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaANT3S (ORCPT
+	id S1751951AbaANTaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:30:00 -0500
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:64712 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaANT36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:29:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <1389371417-379-7-git-send-email-roy.franz@linaro.org>
-References: <1389371417-379-1-git-send-email-roy.franz@linaro.org>
-	<1389371417-379-7-git-send-email-roy.franz@linaro.org>
-Date: Tue, 14 Jan 2014 13:29:17 -0600
-Message-ID: <CAL_JsqLDVBfYomiNpFRacku4pJ3TrFy4rKJKedGp+LPGQt4m0w@mail.gmail.com>
-Subject: Re: [PATCH V6 6/8] Add EFI stub for ARM
-From: Rob Herring <robherring2@gmail.com>
-To: Roy Franz <roy.franz@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        matt.fleming@intel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linaro Patches <patches@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave P Martin <dave.martin@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Jan 2014 14:29:58 -0500
+X-AuditID: cbfec37c-b7f0d6d0000057bc-e8-52d590348325
+Message-id: <52D59031.8090509@samsung.com>
+Date: Tue, 14 Jan 2014 12:29:53 -0700
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH 3.4 00/27] 3.4.77-stable review
+References: <20140114002623.356220317@linuxfoundation.org>
+In-reply-to: <20140114002623.356220317@linuxfoundation.org>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.5]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hX13TCVeDDBY0M1vMWb+GzaJ58Xo2
+	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
+	pG+XwJXR9/kYY8Enzoq9CzYxNzB+YO9i5OCQEDCRaNvv3MXICWSKSVy4t56ti5GLQ0hgGaPE
+	7jnXWCGcXiaJfTe3QWU2MEo0vpjOAtLCK6AlMefrESYQm0VAVaLr9RdWEJtNQF3i8+sd7CC2
+	kICcRNOS1cwgtqhAhMSrsxOhegUlfky+B2aLCARLrP26kBFkAbPACkaJ4y9fsoEkhAWMJX7/
+	msMGMchK4ujbw2A2p4C1xMLmO2CLmQXMJB61rGOGsOUlNq95ywxRryzx5/IpJojfFCRuLFzG
+	OoFRZBaS3bOQtM9C0r6AkXkVo1hpcXJBcVJ6aoWxXnFibnFpXrpecn7uJkZI1NTsYLz31eYQ
+	owAHoxIP74/wq0FCrIllxZW5hxglOJiVRHjl64FCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGK0D
+	erzqrOZnNHP++7dwF6+Xqr2SntP/G57NTqw5D+WkfmfoWVkvNNn9RGNS6m5uG4VVOpO/HJl2
+	9PKSqJjdsit89/bK/FWoZZ06RW/JkYt+KfMOpvB2XZDk4yxWml30t+Eev9TnE3Grbk5zdzvd
+	sUDMvVZ+yk13hWUM1uIZebbbuNPbpzocVWIpzkg01GIuKk4EAARNt7F4AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 10:30 AM, Roy Franz <roy.franz@linaro.org> wrote:
-> This patch adds EFI stub support for the ARM Linux kernel.  The EFI stub
-> operates similarly to the x86 stub: it is a shim between the EFI firmware
-> and the normal zImage entry point, and sets up the environment that the
-> zImage is expecting.  This includes loading the initrd (optionaly) and
-> device tree from the system partition based on the kernel command line.
-> The stub updates the device tree as necessary, adding entries for EFI
-> runtime services. The PE/COFF "MZ" header at offset 0 results in the
-> first instruction being an add that corrupts r5, which is not used by
-> the zImage interface.
+On 01/13/2014 05:26 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.77 release.
+> There are 27 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
-> Acked-by: Grant Likely <grant.likely@linaro.org>
-> ---
+> Responses should be made by Thu Jan 16 00:26:11 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.77-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
 
-[snip]
+Patch testing - passed
+Compile testing - passed
+Boot testing - passed
+dmesg regression testing - passed
 
-> +       /* Look up the base of DRAM from the device tree. */
-> +       fdt = (void *)fdt_addr;
-> +       node = fdt_subnode_offset(fdt, 0, "memory");
-> +       region = fdt_getprop(fdt, node, "reg", NULL);
-> +       if (region) {
-> +               dram_base = fdt64_to_cpu(region->base);
+Test systems
 
-This will not work if the address is 32-bit size.
+Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
 
-> +       } else {
-> +               /* There is no way to get amount or addresses of physical
-> +                * memory installed using EFI calls.  If the device tree
-> +                * we read from disk doesn't have this, there is no way
-> +                * for us to construct this informaion.
-> +                */
-> +               pr_efi_err(sys_table, "No 'memory' node in device tree.\n");
-> +               goto fail_free_fdt;
+Detailed test status
 
-The current pc can't be used to determine the DRAM base like AUTO_ZRELADDR?
+Patches applied cleanly
 
-Rob
+dmesgs look good. No regressions compared to the previous dmesgs for 
+this release. dmesg emerg, crit, alert, err are clean. No regressions in 
+warn.
+
+-- Shuah
+
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
