@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaANNNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:13:40 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51522 "EHLO arroyo.ext.ti.com"
+	id S1751765AbaANNNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:13:50 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51524 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342AbaANNNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:13:38 -0500
-Date: Tue, 14 Jan 2014 07:12:08 -0600
+	id S1751689AbaANNNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 08:13:46 -0500
+Date: Tue, 14 Jan 2014 07:12:23 -0600
 From: Felipe Balbi <balbi@ti.com>
 To: Suman Anna <s-anna@ti.com>
 CC: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
         Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 7/7] hwspinlock/omap: enable build for AM33xx, AM43xx &
- DRA7xx
-Message-ID: <20140114131207.GB10818@saruman.home>
+Subject: Re: [PATCHv4 0/7] omap hwspinlock dt support
+Message-ID: <20140114131223.GC10818@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <1389658764-39199-8-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
+	protocol="application/pgp-signature"; boundary="lCAWRPmW1mITcIfM"
 Content-Disposition: inline
-In-Reply-To: <1389658764-39199-8-git-send-email-s-anna@ti.com>
+In-Reply-To: <1389658764-39199-1-git-send-email-s-anna@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tjCHc7DPkfUGtrlw
+--lCAWRPmW1mITcIfM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 13, 2014 at 06:19:24PM -0600, Suman Anna wrote:
-> HwSpinlocks are supported on AM33xx, AM43xx and DRA7xx SoC
-> device families as well. The IPs are identical to that of
-> OMAP4/OMAP5, except for the number of locks.
+On Mon, Jan 13, 2014 at 06:19:17PM -0600, Suman Anna wrote:
+> This is an updated series mainly addressing Mark Rutland's comments
+> about hwlock specifier being always one-cell. The series adds the
+> support for #hwlock-cells property and adds a simple default OF
+> translate function.
 >=20
-> Add a depends on to the above family of SoCs to enable the
-> build support for OMAP hwspinlock driver for any of the above
-> SoC configs.
+> The DTS patches from previous series have already been merged, and
+> needs this property to be added. This is handled in a separate series
+> that only deals with OMAP hwspinlock DTS patches.
 >=20
-> Signed-off-by: Suman Anna <s-anna@ti.com>
-> ---
->  drivers/hwspinlock/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> The series, along with the DTS patches, is tested on top of v3.13-rc8
+> plus Tero's v13 clock DT series and Tony's 3.14 staged branches. The
+> validation on OMAP5, DRA7, AM437 requires Tero's series with couple of
+> additional base patches for AM43xx. AM43xx functionality needs a hwmod
+> fix [1] for creating the associated omap_device as well.
 >=20
-> diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
-> index 70637d2..3612cb5 100644
-> --- a/drivers/hwspinlock/Kconfig
-> +++ b/drivers/hwspinlock/Kconfig
-> @@ -10,7 +10,7 @@ menu "Hardware Spinlock drivers"
-> =20
->  config HWSPINLOCK_OMAP
->  	tristate "OMAP Hardware Spinlock device"
-> -	depends on ARCH_OMAP4 || SOC_OMAP5
-> +	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_A=
-M43XX
+> The validation logs on all the applicable OMAP SoCs are at:
+>   OMAP4 - http://paste2.org/YJ7ZwG80
+>   OMAP5 - http://paste2.org/c6vO96b9
+>   DRA7  - http://paste2.org/tHvxN439
+>   AM33x - http://paste2.org/AjCv0U4t
+>   AM43x - http://paste2.org/2AKIPa55
 
-how about just using ARCH_OMAP2PLUS ?
+I build tested your 3.13-rc8-v4 branch with the same script I used to
+build CCF series and hspinlock built without any problems ;-)
+
+Acked-by: Felipe Balbi <balbi@ti.com>
 
 --=20
 balbi
 
---tjCHc7DPkfUGtrlw
+--lCAWRPmW1mITcIfM
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJS1TenAAoJEIaOsuA1yqRE+VgQALE9r2Dqeir+0xEAU6E1BRpv
-lLFxrhyN0hiTfJ92MsMeu3XSobXZZwQgsCWyc+vsIUm6CiE7sE8rd/J6FPGO8zaN
-z33lMBWM+xjfdt7ePuJk6xE/Z9gXtvUUI5K3KTROq0mVEzWD4cOKfxZNoE9/z+lp
-WIzHUVD+zO7xpVJI2daNpwKj7lUdUpVEcpEve9IHUITEjqhZzPwXpR8l3laXV7Bd
-3ta+qWCOOH1fP0QQfhp62fHZeX/a3cVkieUWGNjTfmvqQ3ofkpWPfNB4p2LBluwN
-pYAkA8fw2PRdnNSRMkXbgT6Dj2UBdPwZLoupetLGqJ/LwSO2h+szvjdXPZuyasiH
-ZrmI67wh2lwlCGPw/e7E+XAq+UkmiTE4XTzeavpeolfH2MVq6ApPxJMKGsbPUtmf
-w+VXY2RsPu+cNPu2UfWuMKVjHkOe0NWc6C0p99xKncvh7W2WeseuMlrLaxHWU75P
-slWzq7o9tWNB1EdmOvQjIJvNkv+loWOCV/olylopQxy/wrCjmDHeee74ZDhY9qRa
-cH7FpGKW2Ul3TO6aKcREjgfN/x8myD2pdBQzSm+0d6GKXYORxCucCIY9lXAKQM/6
-HGdxYOPxG+rb2Etp0luHBWy091cq9R+blLygd7XEjJQGVbhv9ZGXsVgaZRmtH8sJ
-R0NKHjHSafswgdTVzrm6
-=hMUH
+iQIcBAEBAgAGBQJS1Te3AAoJEIaOsuA1yqRE01gP/0tYtg9gUL311bYUBeE8gdXA
+dWm9JPdFYwVIhjUmumMuwlCf7L4QnDPZibWv4S6MAfNuj4j+GdNWMqHVEWdKLp4c
+s3Y2E6Qh3ej/LycWMBwo14VX5KVO1yLK37MZ9q3gnxokbNOt27a/fY7AtDdDhnCz
+vC9Bk+9HGN8ueyLFIIsja80KixctbXBI3O9aWhu3XIuVQVEh6C6+alpFxpScytK5
+uJWqSKulZONDQjuAW1yTejfDTltyvv4100E3oTmiIazHrXGg+0l0fO8Co2YmV3/p
+jN+XCrXz9CvJ/GB2l6PBv67DtaXg8gp4YxKcEokxHvcwOYvF6lWXtSWUo9ZYx/li
+SV7yjXi4gUi2YbAsVZFnolCmUuXLAQ91fx0Axh+BCXK+ZJTmlQXHy5VM1O2Oyoem
+cgjoKfIxEZzxdbJ5JpaAJf9Wsq+91xcRrXulXtjrSGNrrR4u17ZB7OKTY7uoCZxb
+hz8vac4D1Eav8YmFjAdxvfYlfwfcSP2yD7Q8Pb30ScT0/0xD5A+2cbA5q9MrsAUv
+h6GLhE2KiWbTo7Xg3M2gKKGfzA7LldJfq1T/AU0PnetOvCwEcfzMTdwxGFpwDN5/
+s0JUnbesGkm24G8tY1+M5F29UvqsMnAy0YQFMfQEFBGcBbeOl89uVvnqe3YFKrwT
+wx1DLS+4BgVMs7mCPFPF
+=FjsK
 -----END PGP SIGNATURE-----
 
---tjCHc7DPkfUGtrlw--
+--lCAWRPmW1mITcIfM--
