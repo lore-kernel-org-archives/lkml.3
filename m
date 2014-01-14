@@ -1,51 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaANF0C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 00:26:02 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51192 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaANF0A (ORCPT
+	id S1753270AbaANFda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 00:33:30 -0500
+Received: from mail-db8lp0186.outbound.messaging.microsoft.com ([213.199.154.186]:32205
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751678AbaANFd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 00:26:00 -0500
-X-AuditID: 9c93016f-b7b1aae000000f15-85-52d4ca666c2a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 01/24] perf tools: Remove symbol_conf.use_callchain check
-Date: Tue, 14 Jan 2014 14:25:34 +0900
-Message-Id: <1389677157-30513-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1389677157-30513-1-git-send-email-namhyung@kernel.org>
-References: <1389677157-30513-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 14 Jan 2014 00:33:26 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <kuninori.morimoto.gx@renesas.com>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH resend] ASoC: simple-card: fix one bug to writing to the platform data
+Date: Tue, 14 Jan 2014 12:35:32 +0800
+Message-ID: <1389674132-14928-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The machine__resolve_callchain() is called only if symbol_conf.
-use_callchain is set so no need to check it again.
+It's a bug that writing to the platform data directly, for it should
+be constant. So just copy it before writing.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- tools/perf/util/machine.c | 2 --
- 1 file changed, 2 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 0130279aac51..ded74590b92f 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1314,8 +1314,6 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 				*root_al = al;
- 				callchain_cursor_reset(&callchain_cursor);
- 			}
--			if (!symbol_conf.use_callchain)
--				break;
+Resend this patch.
+
+
+ sound/soc/generic/simple-card.c | 40 +++++++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
+
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 5528dd6..53395f5 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -9,9 +9,10 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/clk.h>
++#include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+-#include <linux/module.h>
++#include <linux/string.h>
+ #include <sound/simple_card.h>
+ 
+ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
+@@ -190,36 +191,37 @@ static int asoc_simple_card_probe(struct platform_device *pdev)
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct device_node *of_cpu, *of_codec, *of_platform;
+ 	struct device *dev = &pdev->dev;
++	int ret;
+ 
+ 	cinfo		= NULL;
+ 	of_cpu		= NULL;
+ 	of_codec	= NULL;
+ 	of_platform	= NULL;
++
++	cinfo = devm_kzalloc(dev, sizeof(*cinfo), GFP_KERNEL);
++	if (!cinfo)
++		return -ENOMEM;
++
+ 	if (np && of_device_is_available(np)) {
+-		cinfo = devm_kzalloc(dev, sizeof(*cinfo), GFP_KERNEL);
+-		if (cinfo) {
+-			int ret;
+-			cinfo->snd_card.dev = &pdev->dev;
+-			ret = asoc_simple_card_parse_of(np, cinfo, dev,
+-							&of_cpu,
+-							&of_codec,
+-							&of_platform);
+-			if (ret < 0) {
+-				if (ret != -EPROBE_DEFER)
+-					dev_err(dev, "parse error %d\n", ret);
+-				return ret;
+-			}
+-		} else {
+-			return -ENOMEM;
++		cinfo->snd_card.dev = dev;
++
++		ret = asoc_simple_card_parse_of(np, cinfo, dev,
++						&of_cpu,
++						&of_codec,
++						&of_platform);
++		if (ret < 0) {
++			if (ret != -EPROBE_DEFER)
++				dev_err(dev, "parse error %d\n", ret);
++			return ret;
+ 		}
+ 	} else {
+-		cinfo = pdev->dev.platform_data;
+-		if (!cinfo) {
++		if (!dev->platform_data) {
+ 			dev_err(dev, "no info for asoc-simple-card\n");
+ 			return -EINVAL;
  		}
  
- 		err = callchain_cursor_append(&callchain_cursor,
+-		cinfo->snd_card.dev = &pdev->dev;
++		memcpy(cinfo, dev->platform_data, sizeof(*cinfo));
++		cinfo->snd_card.dev = dev;
+ 	}
+ 
+ 	if (!cinfo->name	||
 -- 
-1.7.11.7
+1.8.4
+
 
