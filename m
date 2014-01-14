@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaANMA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 07:00:59 -0500
-Received: from sauhun.de ([89.238.76.85]:47829 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751475AbaANL7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:59:19 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Subject: [PATCH 2/7] drivers/amba: don't check resource with devm_ioremap_resource
-Date: Tue, 14 Jan 2014 12:58:53 +0100
-Message-Id: <1389700739-3696-2-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.8.5.1
-In-Reply-To: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
+	id S1752053AbaANMBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 07:01:15 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50295 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaANMBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 07:01:12 -0500
+Date: Tue, 14 Jan 2014 12:01:03 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.13-rc8
+Message-ID: <20140114120103.436d190b@alan.etchedpixels.co.uk>
+In-Reply-To: <CA+55aFwLXnW-GWKNcUCrpS5e7fd_0ZoKk83H4qMJNUS_WCF_3A@mail.gmail.com>
+References: <CA+55aFwLXnW-GWKNcUCrpS5e7fd_0ZoKk83H4qMJNUS_WCF_3A@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+On Sun, 12 Jan 2014 20:33:03 +0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
+> Another week, another RC. And things look fine.
 
-Should go via subsystem tree
+It seems to hate Baytrail/T
 
- drivers/amba/tegra-ahb.c | 2 --
- 1 file changed, 2 deletions(-)
+My ASUS T100TA has gone from 3.11 'needs video=VGA-1:blah' to get the mode
+right but otherwise running nicely and playing 3D games to 3.13-rc8
 
-diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
-index 1f44e56c..558a239 100644
---- a/drivers/amba/tegra-ahb.c
-+++ b/drivers/amba/tegra-ahb.c
-@@ -256,8 +256,6 @@ static int tegra_ahb_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
- 	ahb->regs = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(ahb->regs))
- 		return PTR_ERR(ahb->regs);
--- 
-1.8.5.1
+- crashes and burns during boot if the Baytrail pinctrl driver is compiled
+  in
+- i915 console doesn't work
+- X can be kind of hacked to work by adding mode lines wit xrandr and
+  turning the vga back on
 
+Bugs filed on both issues. The pinctrl one is nasty as it makes the i915
+driver crash during initialisation, so the only way you can debug it is
+pretty much a USB debug cable.
+
+Without pinctrl the crash goes away but the display still doesn't work.
+
+Alan
