@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaANCdv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 21:33:51 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:32797 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaANCdt (ORCPT
+	id S1752465AbaANCfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:35:18 -0500
+Received: from smtprelay0039.hostedemail.com ([216.40.44.39]:50735 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751502AbaANCfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 21:33:49 -0500
-Date: Mon, 13 Jan 2014 18:33:46 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next bio iters break discard?
-Message-ID: <20140114023346.GN9037@kmo>
-References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 13 Jan 2014 21:35:15 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3350:3622:3866:3868:3870:3871:3872:3873:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12050:12517:12519:12555:12740:13069:13311:13357:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boats48_846ce630bd445
+X-Filterd-Recvd-Size: 1672
+Message-ID: <1389666908.24849.29.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] efi: Fix krealloc defect
+From: Joe Perches <joe@perches.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 13 Jan 2014 18:35:08 -0800
+In-Reply-To: <20140113191725.GK3256@console-pimps.org>
+References: <cover.1388793978.git.joe@perches.com>
+	 <9a8eb1c9478049318e834d5223053a5fb7484bff.1388793978.git.joe@perches.com>
+	 <20140113140334.GB3256@console-pimps.org>
+	 <1389635241.24849.22.camel@joe-AO722>
+	 <20140113191725.GK3256@console-pimps.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 12, 2014 at 07:52:40PM -0800, Hugh Dickins wrote:
-> When I try to exercise heavy swapping with discard on mmotm 2014-01-09,
-> I soon hit a NULL pointer dereference in __blk_recalc_rq_segments():
-> 
-> __blk_recalc_rq_segments
-> blk_recount_segments
-> ll_back_merge_fn
-> bio_attempt_back_merge
-> blk_queue_bio
-> generic_make_request
-> submit_bio
-> blkdev_issue_discard
-> swap_do_scheduled_discard
-> scan_swap_map_try_ssd_cluster
-> scan_swap_map
-> get_swap_page
-> add_to_swap
-> shrink_page_list
-> etc. etc.
-> 
-> The crash is on the NULL struct page pointer in page_to_pfn(bv.bv_page)
-> on line 35 of block/blk-merge.c.
-> 
-> The code around there is not very different from 3.13-rc8 (which doesn't
-> crash), and I didn't notice REQ_DISCARD or bio_has_data() checks removed.
-> 
-> I think it worked before because the old bio_for_each_segment()
-> iterator was a straightforward "i < bio->bi_vcnt" loop which would
-> do nothing when bi_vcnt is 0; but the new iterators are relying
-> (perhaps) on bio->bi_iter.bi_size which is non-0 despite no data?
-> 
-> I expect it would crash in the same way on other recent nexts and
-> mmotms, I've not tried.
-> 
-> Hugh
+On Mon, 2014-01-13 at 19:17 +0000, Matt Fleming wrote:
+> On Mon, 13 Jan, at 09:47:21AM, Joe Perches wrote:
+> > If it's queued up in some tree of yours, should that
+> > tree be included in Stephen Rothwell's -next?
+> My trees get pulled into tip and those are included in linux-next. So,
+> Borislav's patch is commit ee4114302770 ("x86/efi: Check krealloc return
+> value") in today's linux-next.
 
-Ugh, discards. Wonder why this wasn't seen sooner, I can't figure out what the
-null pointer deref actually was but if it was __blk_recalc_rq_segments() blowing
-up, that shouldn't have had to wait for two discards to get merged to get
-called.
+You're right, thanks.
+I thought I did this against -next but it appears not.
 
-(calling bio_for_each_segment() on REQ_DISCARD/REQ_WRITE_SAME bios should in
-general work; bio_advance_iter() checks against BIO_NO_ADVANCE_ITER_MASK to
-determine whether to advance down the bvec or just decrement bi_size. But for
-counting segments bio_for_each_segment() is definitely not what we want.)
+cheers, Joe
 
-I think for discards we can deal with this easily enough -
-__blk_recalc_rq_segments() will have to special case them - but there's a
-similar (but worse) issue with WRITE_SAME, and looking at the code it does
-attempt to merge WRITE_SAME requests too.
-
-Jens, Martin - are we sure we want to merge WRITE_SAME requests? I'm not sure I
-even see how that makes sense, at the very least it's a potential minefield.
