@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaANVDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:03:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41364 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693AbaANVDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:03:41 -0500
-Message-ID: <52D5A60C.7080800@ti.com>
-Date: Tue, 14 Jan 2014 16:03:08 -0500
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751819AbaANVEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:04:20 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56683 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaANVER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 16:04:17 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <stable@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] hvc: ensure hvc_init is only ever called once in hvc_console.c
+Date: Tue, 14 Jan 2014 16:03:37 -0500
+Message-ID: <1389733436-4661-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Victor Kamensky <victor.kamensky@linaro.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Patch Tracking <patches@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
-References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org> <52D404DE.2020806@ti.com> <CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com> <52D55CE5.1060902@ti.com> <CAA3XUr2cnF_rxMYvZfjBx22Sa8YE45o_qUU8GNoerQwhWqxhNQ@mail.gmail.com> <CAGo_u6oKpRFnPAWaqr9NTNAJB+m56jiDgBUgvsiZpaQ-3SF2kw@mail.gmail.com> <CAA3XUr1_cNuPmMU6Fs6c7Si2So0VFGcLyGJe+tS_R47BVKRXnw@mail.gmail.com> <CAGo_u6p7ErrKOMy4Ljg3nehVpd=DOg3XDn6gZ1nrFE_OuOjsWg@mail.gmail.com>
-In-Reply-To: <CAGo_u6p7ErrKOMy4Ljg3nehVpd=DOg3XDn6gZ1nrFE_OuOjsWg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 14 January 2014 03:56 PM, Nishanth Menon wrote:
-> On Tue, Jan 14, 2014 at 2:20 PM, Victor Kamensky
-> <victor.kamensky@linaro.org> wrote:
->> On 14 January 2014 09:56, Nishanth Menon <nm@ti.com> wrote:
->>> On Tue, Jan 14, 2014 at 11:35 AM, Victor Kamensky
->>> <victor.kamensky@linaro.org> wrote:
->>>>
->>>> When BE kernel is built Makefile does take of compiling code in BE
->>>> mode. I.e all proper flags like -mbig-endian and -Wl,--be8 will be set.
->>>
->>> Agreed, and I assume you cannot instead switch to LE mode when
->>> entering assembly assuming LE?
->>
->> Yes. Note that this asm interacts with other data in kernel that would
->> be in BE form. And after all linker will not allow to put together files
->> that were compiled in different endianity.
->>
->>> The reason I ask this is - most of our development is NOT in BE mode.
->>> we will continue to manipulate and add assembly - AM335x, DRA7/OMAP5
->>> etc.. and obviously not every code change will indulge in ensuring
->>> right markers will be in place.
->>>
->>> by ensuring readl_relaxed handles the variations, you have ensured
->>> that I dont need to care about drivers other than to ensure they use
->>> _relaxed variants. in the case of assembly, this does not seem long
->>> term manageable.
->>
->> Yes, I agree if it is outside of main use case it will get broken if not
->> attended to. Definitely universe entropy increases :) - if left without
->> attention things will decay. Note we admit that even with ARM CPU
->> core BE changes similar decay can happen eventually ...that is
->> what LNG BE group trying to prevent. I think
->> the deal here is that next user of it can/need to fix things if they
->> decayed.
->>
-> 
-> Personally, I have no idea what "LNG BE" stands for.. I see the
-> approach we are attempting here is to do any interaction external to
-> ARM boundary to go through the ARM_BE8 macro.
-> 
-> If we want to make this something we can live with, then the platforms
-> will have to ensure memory operations external to ARM must be operated
-> upon by these macros. Instead, an approach that may be used is to
-> introduce accessors macros that will provide right instruction based
-> on BE/LE build and BE/LE SoC peripheral behavior.
-> 
->>>>
->>>>> is the idea of BE build meant to deal with having a single BE kernel
->>>>> build work for all platforms (including LE ones)?
->>>>
->>>> Sort of. The idea here to run BE image on OMAP4 chip, with
->>>> kernel that would deals with LE periphery correctly, but ARM
->>>> core run in BE with special kernel that compiled for BE case (i.e
->>>> CONFIG_CPU_BIG_ENDIAN is set).
->>>
->>> I still dont get the usecase - other than "hey, we do this coz we can
->>> do it!".. I mean, yep, it sounds great and all.. but 4 years down the
->>> line, is this still going to work? is this going to be interesting
->>> careabout? or we are just maintaining additional code for a passing
->>> fancy or proof-of-concept?
->>
->> Valid concern. From LNG BE group point of view it is not "we can do
->> it". It is more like we've done it. We have Pandaboard ES running BE
->> kernel for a while. It is in LNG BE tree. We used it as development
->> and testing vehicle for BE work for a while. We are very grateful to
->> the platform for that - it is affordable and easily available! Given,
->> beyond ongoing BE testing on Pandaboard in LNG there may not be valid
->> use case for further things on OMAP4 BE. We had discussion
->> with Santosh Shilimkar from TI during last Linaro connect what to
->> do with LNG BE Pandaboard series. Santosh suggested and we
->> agreed that we would try to contribute them back to community. And
->> that is what Taras is doing. IMHO even though there may not be real
-> 
-> ok.. some sort of Linaro thing about which I have no background about
-> - but dont really care in this context.
-> 
-Nothing related Linaro. Its just that platforms are supporting ARM BE
-mode and Linaro folks had working patches for Panda. So I suggested
-to get them on the lists.
+Commit 3e6c6f630a5282df8f3393a59f10eb9c56536d23 ("Delay creation of
+khcvd thread") moved the call of hvc_init from being a device_initcall
+into hvc_alloc, and used a non-null hvc_driver as indication of whether
+hvc_init had already been called.
 
-Regards,
-Santosh
+The problem with this is that hvc_driver is only assigned a value
+at the bottom of hvc_init, and so there is a window where multiple
+hvc_alloc calls can be in progress at the same time and hence try
+and call hvc_init multiple times.  Previously the use of device_init
+guaranteed that hvc_init was only called once.
+
+This manifests itself as sporadic instances of two hvc_init calls
+racing each other, and with the loser of the race getting -EBUSY
+from tty_register_driver() and hence that virtual console fails:
+
+    Couldn't register hvc console driver
+    virtio-ports vport0p1: error -16 allocating hvc for port
+
+Here we add an atomic_t to guarantee we'll never run hvc_init twice.
+
+Cc: stable@vger.kernel.org  # v2.6.24+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: 3e6c6f630a52 ("Delay creation of khcvd thread")
+Reported-by: Jim Somerville <Jim.Somerville@windriver.com>
+Tested-by: Jim Somerville <Jim.Somerville@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+
+[Greg: I realize tty-next is closed; given that this is an ancient
+ bug, I don't see any real urgency here, so feel free to queue it
+ whenever/whereever is most convenient - assuming it is an OK fix.]
+
+ drivers/tty/hvc/hvc_console.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 9eba119bcdd3..620da5f88e91 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -31,6 +31,7 @@
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/major.h>
++#include <linux/atomic.h>
+ #include <linux/sysrq.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+@@ -70,6 +71,9 @@ static struct task_struct *hvc_task;
+ /* Picks up late kicks after list walk but before schedule() */
+ static int hvc_kicked;
+ 
++/* hvc_init is triggered from hvc_alloc, i.e. only when actually used */
++static atomic_t hvc_needs_init __read_mostly = ATOMIC_INIT(-1);
++
+ static int hvc_init(void);
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+@@ -851,7 +855,7 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
+ 	int i;
+ 
+ 	/* We wait until a driver actually comes along */
+-	if (!hvc_driver) {
++	if (atomic_inc_not_zero(&hvc_needs_init)) {
+ 		int err = hvc_init();
+ 		if (err)
+ 			return ERR_PTR(err);
+-- 
+1.8.5.2
+
