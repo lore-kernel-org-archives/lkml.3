@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaANK6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:58:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaANK6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:58:37 -0500
-Message-ID: <52D5184B.6080406@redhat.com>
-Date: Tue, 14 Jan 2014 05:58:19 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1752021AbaANK6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:58:04 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:50948 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751974AbaANK56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 05:57:58 -0500
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <stephen.gallimore@st.com>, <kernel@stlinux.com>,
+        <lee.jones@linaro.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH v1 0/6] STi reset controller suppport
+Date: Tue, 14 Jan 2014 10:50:13 +0000
+Message-ID: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Toshi Kani <toshi.kani@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
-        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Young <dyoung@redhat.com>, linux-acpi@vger.kernel.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] x86, acpi memory hotplug, add parameter to disable memory
- hotplug
-References: <1389650161-13292-1-git-send-email-prarit@redhat.com>  <CAHGf_=pX303E6VAhL+gApSQ1OsEQHqTuCN8ZSdD3E54YAcFQKA@mail.gmail.com>  <52D47999.5080905@redhat.com> <52D48EC4.5070400@jp.fujitsu.com> <1389663689.1792.268.camel@misato.fc.hp.com> <52D4A469.9090100@jp.fujitsu.com>
-In-Reply-To: <52D4A469.9090100@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
+This patch series adds reset controller support for STi SOC series STiH415 and
+STiH416. It adds support for both regular reset and soft reset controllers.
+On STi series SOCs reset lines are wired up to system configuration registers.
 
-On 01/13/2014 09:43 PM, Yasuaki Ishimatsu wrote:
-> (2014/01/14 10:41), Toshi Kani wrote:
->> On Tue, 2014-01-14 at 10:11 +0900, Yasuaki Ishimatsu wrote:
->>   :
->>>>> I think we need a knob manually enable mem-hotplug when specify memmap. But
->>>>> it is another story.
->>>>>
->>>>> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>>>
->>>> As mentioned, self-NAK.  I have seen a system that I needed to specify
->>>> memmap=exactmap & had hotplug memory.  I will only keep the acpi_no_memhotplug
->>>> option in the next version of the patch.
->>>
->>>
->>> Your following first patch is simply and makes sense.
->>>
->>> http://marc.info/?l=linux-acpi&m=138922019607796&w=2
->>>
->>
->> In this option, it also requires changing kexec-tools to specify the new
->> option for kdump.  It won't be simpler.
-> 
-> Hmm.
-> I use memm= boot option and hotplug memory for memory hot-remove.
-> At least, the patch cannot be accepted.
+Patch 01: Adds reset controller based on system configuration registers via
+regmap.
 
-Thanks for the information Yasuaki.  I will resubmit my first patch that only
-adds the kernel parameter.
+Patch 02, 03: adds STiH415 and STiH416 reset controller drivers.
 
-P.
+Patch 04, 05: adds STiH415 and STiH416 soft reset controllers.
 
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->> Thanks,
->> -Toshi
->>
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> 
+The final patch 06 selects reset controller in mach-sti Kconfig.
+
+This reset controller will be used by gmac, i2c and st-ir drivers.
+
+Comments?
+
+Thanks,
+srini
+
+Srinivas Kandagatla (2):
+  drivers: reset: stih415: add softreset controller
+  drivers: reset: stih416: add softreset controller
+
+Stephen Gallimore (4):
+  drivers: reset: STi SoC system configuration reset controller support
+  drivers: reset: Reset controller driver for STiH415
+  drivers: reset: Reset controller driver for STiH416
+  ARM: STi: Add reset controller support to mach-sti Kconfig
+
+ .../devicetree/bindings/reset/st,sti-powerdown.txt |   46 +++++
+ .../devicetree/bindings/reset/st,sti-softreset.txt |   45 +++++
+ arch/arm/boot/dts/stih415.dtsi                     |   11 ++
+ arch/arm/boot/dts/stih416.dtsi                     |   11 ++
+ arch/arm/mach-sti/Kconfig                          |    3 +
+ drivers/reset/Kconfig                              |    2 +
+ drivers/reset/Makefile                             |    3 +
+ drivers/reset/sti/Kconfig                          |   15 ++
+ drivers/reset/sti/Makefile                         |    4 +
+ drivers/reset/sti/reset-stih415.c                  |   99 +++++++++++
+ drivers/reset/sti/reset-stih416.c                  |  101 +++++++++++
+ drivers/reset/sti/reset-syscfg.c                   |  186 ++++++++++++++++++++
+ drivers/reset/sti/reset-syscfg.h                   |   69 +++++++
+ .../dt-bindings/reset-controller/stih415-resets.h  |   23 +++
+ .../dt-bindings/reset-controller/stih416-resets.h  |   25 +++
+ 15 files changed, 643 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-softreset.txt
+ create mode 100644 drivers/reset/sti/Kconfig
+ create mode 100644 drivers/reset/sti/Makefile
+ create mode 100644 drivers/reset/sti/reset-stih415.c
+ create mode 100644 drivers/reset/sti/reset-stih416.c
+ create mode 100644 drivers/reset/sti/reset-syscfg.c
+ create mode 100644 drivers/reset/sti/reset-syscfg.h
+ create mode 100644 include/dt-bindings/reset-controller/stih415-resets.h
+ create mode 100644 include/dt-bindings/reset-controller/stih416-resets.h
+
+-- 
+1.7.6.5
+
