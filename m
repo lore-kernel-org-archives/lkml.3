@@ -1,614 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150AbaANUmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:42:55 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:27103 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751965AbaANUk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:40:26 -0500
-X-IronPort-AV: E=Sophos;i="4.95,659,1384300800"; 
-   d="scan'208";a="92858965"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v4 2/9] xen-netback: Change TX path from grant copy to mapping
-Date: Tue, 14 Jan 2014 20:39:48 +0000
-Message-ID: <1389731995-9887-3-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
+	id S1751921AbaANUnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:43:22 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:51052 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaANUmy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:42:54 -0500
+Date: Tue, 14 Jan 2014 12:42:28 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Michal Hocko <mhocko@suse.cz>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
+In-Reply-To: <20140114142610.GF32227@dhcp22.suse.cz>
+Message-ID: <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
+References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils> <alpine.LSU.2.11.1401131751080.2229@eggly.anvils> <20140114132727.GB32227@dhcp22.suse.cz> <20140114142610.GF32227@dhcp22.suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the grant copy on the TX patch to grant mapping
+On Tue, 14 Jan 2014, Michal Hocko wrote:
+> On Tue 14-01-14 14:27:27, Michal Hocko wrote:
+> > On Mon 13-01-14 17:52:30, Hugh Dickins wrote:
+> > > On one home machine I can easily reproduce (by rmdir of memcgdir during
+> > > reclaim) multiple processes stuck looping forever in mem_cgroup_iter():
+> > > __mem_cgroup_iter_next() keeps selecting the memcg being destroyed, fails
+> > > to tryget it, returns NULL to mem_cgroup_iter(), which goes around again.
+> > 
+> > So you had a single memcg (without any children) and a limit-reclaim
+> > on it when you removed it, right?
+> 
+> Hmm, thinking about this once more how can this happen? There must be a
+> task to trigger the limit reclaim so the cgroup cannot go away (or is
+> this somehow related to kmem accounting?). Only if the taks was migrated
+> after the reclaim was initiated but before we started iterating?
 
-v2:
-- delete branch for handling fragmented packets fit PKT_PROT_LEN sized first
-  request
-- mark the effect of using ballooned pages in a comment
-- place setting of skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY right
-  before netif_receive_skb, and mark the importance of it
-- grab dealloc_lock before __napi_complete to avoid contention with the
-  callback's napi_schedule
-- handle fragmented packets where first request < PKT_PROT_LEN
-- fix up error path when checksum_setup failed
-- check before teardown for pending grants, and start complain if they are
-  there after 10 second
+Yes, I believe that's how it comes about (but no kmem accounting:
+it's configured in but I'm not setting limits).
 
-v3:
-- delete a surplus checking from tx_action
-- remove stray line
-- squash xenvif_idx_unmap changes into the first patch
-- init spinlocks
-- call map hypercall directly instead of gnttab_map_refs()
-- fix unmapping timeout in xenvif_free()
+The "cg" script I run for testing appended below.  Normally I just run
+it as "cg 2" to set up two memcgs, then my dual-tmpfs-kbuild script runs
+one kbuild on tmpfs in cg 1, and another kbuild on ext4 on loop on tmpfs
+in cg 2, mainly to test swapping.  But for this bug I run it as "cg m",
+to repeatedly create new memcg, move running tasks from old to new, and
+remove old.
 
-v4:
-- fix indentations and comments
-- handle errors of set_phys_to_machine
-- go back to gnttab_map_refs instead of direct hypercall. Now we rely on the
-  modified API
+Sometimes I'm doing swapoff and swapon in the background too, but
+that's not needed to see this bug.  And although we're accustomed to
+move_charge_at_immigrate being a beast, for this bug it's much quicker
+to have that turned off.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/interface.c |   60 +++++++-
- drivers/net/xen-netback/netback.c   |  256 ++++++++++++++---------------------
- 2 files changed, 159 insertions(+), 157 deletions(-)
+(Until a couple of months ago, I was working in /cg/1 and /cg/2; but
+have now pushed down a level to /cg/cg/1 and /cg/cg/2 after realizing
+that working at the root would miss some important issues - in particular
+the mem_cgroup_reparent_charges wrong-usage hang; but in fact I have
+*never* caught that here, just know that it still exists from some
+Google watchdog dumps, but we've still not identified the cause -
+seen even without MEMCG_SWAP and with Hannes's extra reparent_charges.)
 
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index a7855b3..1e0bf71 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -123,7 +123,9 @@ static int xenvif_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	BUG_ON(skb->dev != dev);
- 
- 	/* Drop the packet if vif is not ready */
--	if (vif->task == NULL || !xenvif_schedulable(vif))
-+	if (vif->task == NULL ||
-+	    vif->dealloc_task == NULL ||
-+	    !xenvif_schedulable(vif))
- 		goto drop;
- 
- 	/* At best we'll need one slot for the header and one for each
-@@ -345,8 +347,26 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 	vif->pending_prod = MAX_PENDING_REQS;
- 	for (i = 0; i < MAX_PENDING_REQS; i++)
- 		vif->pending_ring[i] = i;
--	for (i = 0; i < MAX_PENDING_REQS; i++)
--		vif->mmap_pages[i] = NULL;
-+	spin_lock_init(&vif->dealloc_lock);
-+	spin_lock_init(&vif->response_lock);
-+	/* If ballooning is disabled, this will consume real memory, so you
-+	 * better enable it. The long term solution would be to use just a
-+	 * bunch of valid page descriptors, without dependency on ballooning
-+	 */
-+	err = alloc_xenballooned_pages(MAX_PENDING_REQS,
-+				       vif->mmap_pages,
-+				       false);
-+	if (err) {
-+		netdev_err(dev, "Could not reserve mmap_pages\n");
-+		return NULL;
-+	}
-+	for (i = 0; i < MAX_PENDING_REQS; i++) {
-+		vif->pending_tx_info[i].callback_struct = (struct ubuf_info)
-+			{ .callback = xenvif_zerocopy_callback,
-+			  .ctx = NULL,
-+			  .desc = i };
-+		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
-+	}
- 
- 	/*
- 	 * Initialise a dummy MAC address. We choose the numerically
-@@ -390,6 +410,7 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 		goto err;
- 
- 	init_waitqueue_head(&vif->wq);
-+	init_waitqueue_head(&vif->dealloc_wq);
- 
- 	if (tx_evtchn == rx_evtchn) {
- 		/* feature-split-event-channels == 0 */
-@@ -431,6 +452,16 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 		goto err_rx_unbind;
- 	}
- 
-+	vif->dealloc_task = kthread_create(xenvif_dealloc_kthread,
-+					   (void *)vif,
-+					   "%s-dealloc",
-+					   vif->dev->name);
-+	if (IS_ERR(vif->dealloc_task)) {
-+		pr_warn("Could not allocate kthread for %s\n", vif->dev->name);
-+		err = PTR_ERR(vif->dealloc_task);
-+		goto err_rx_unbind;
-+	}
-+
- 	vif->task = task;
- 
- 	rtnl_lock();
-@@ -443,6 +474,7 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 	rtnl_unlock();
- 
- 	wake_up_process(vif->task);
-+	wake_up_process(vif->dealloc_task);
- 
- 	return 0;
- 
-@@ -480,6 +512,11 @@ void xenvif_disconnect(struct xenvif *vif)
- 		vif->task = NULL;
- 	}
- 
-+	if (vif->dealloc_task) {
-+		kthread_stop(vif->dealloc_task);
-+		vif->dealloc_task = NULL;
-+	}
-+
- 	if (vif->tx_irq) {
- 		if (vif->tx_irq == vif->rx_irq)
- 			unbind_from_irqhandler(vif->tx_irq, vif);
-@@ -495,6 +532,23 @@ void xenvif_disconnect(struct xenvif *vif)
- 
- void xenvif_free(struct xenvif *vif)
- {
-+	int i, unmap_timeout = 0;
-+
-+	for (i = 0; i < MAX_PENDING_REQS; ++i) {
-+		if (vif->grant_tx_handle[i] != NETBACK_INVALID_HANDLE) {
-+			unmap_timeout++;
-+			schedule_timeout(msecs_to_jiffies(1000));
-+			if (unmap_timeout > 9 &&
-+			    net_ratelimit())
-+				netdev_err(vif->dev,
-+					   "Page still granted! Index: %x\n",
-+					   i);
-+			i = -1;
-+		}
-+	}
-+
-+	free_xenballooned_pages(MAX_PENDING_REQS, vif->mmap_pages);
-+
- 	netif_napi_del(&vif->napi);
- 
- 	unregister_netdev(vif->dev);
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 7050f63..e73af87 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -645,9 +645,12 @@ static void xenvif_tx_err(struct xenvif *vif,
- 			  struct xen_netif_tx_request *txp, RING_IDX end)
- {
- 	RING_IDX cons = vif->tx.req_cons;
-+	unsigned long flags;
- 
- 	do {
-+		spin_lock_irqsave(&vif->response_lock, flags);
- 		make_tx_response(vif, txp, XEN_NETIF_RSP_ERROR);
-+		spin_unlock_irqrestore(&vif->response_lock, flags);
- 		if (cons == end)
- 			break;
- 		txp = RING_GET_REQUEST(&vif->tx, cons++);
-@@ -787,10 +790,10 @@ static inline void xenvif_tx_create_gop(struct xenvif *vif,
- 
- }
- 
--static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
--					       struct sk_buff *skb,
--					       struct xen_netif_tx_request *txp,
--					       struct gnttab_copy *gop)
-+static struct gnttab_map_grant_ref *xenvif_get_requests(struct xenvif *vif,
-+							struct sk_buff *skb,
-+							struct xen_netif_tx_request *txp,
-+							struct gnttab_map_grant_ref *gop)
- {
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	skb_frag_t *frags = shinfo->frags;
-@@ -811,83 +814,12 @@ static struct gnttab_copy *xenvif_get_requests(struct xenvif *vif,
- 	/* Skip first skb fragment if it is on same page as header fragment. */
- 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
- 
--	/* Coalesce tx requests, at this point the packet passed in
--	 * should be <= 64K. Any packets larger than 64K have been
--	 * handled in xenvif_count_requests().
--	 */
--	for (shinfo->nr_frags = slot = start; slot < nr_slots;
--	     shinfo->nr_frags++) {
--		struct pending_tx_info *pending_tx_info =
--			vif->pending_tx_info;
--
--		page = alloc_page(GFP_ATOMIC|__GFP_COLD);
--		if (!page)
--			goto err;
--
--		dst_offset = 0;
--		first = NULL;
--		while (dst_offset < PAGE_SIZE && slot < nr_slots) {
--			gop->flags = GNTCOPY_source_gref;
--
--			gop->source.u.ref = txp->gref;
--			gop->source.domid = vif->domid;
--			gop->source.offset = txp->offset;
--
--			gop->dest.domid = DOMID_SELF;
--
--			gop->dest.offset = dst_offset;
--			gop->dest.u.gmfn = virt_to_mfn(page_address(page));
--
--			if (dst_offset + txp->size > PAGE_SIZE) {
--				/* This page can only merge a portion
--				 * of tx request. Do not increment any
--				 * pointer / counter here. The txp
--				 * will be dealt with in future
--				 * rounds, eventually hitting the
--				 * `else` branch.
--				 */
--				gop->len = PAGE_SIZE - dst_offset;
--				txp->offset += gop->len;
--				txp->size -= gop->len;
--				dst_offset += gop->len; /* quit loop */
--			} else {
--				/* This tx request can be merged in the page */
--				gop->len = txp->size;
--				dst_offset += gop->len;
--
-+	for (shinfo->nr_frags = start; shinfo->nr_frags < nr_slots;
-+	     shinfo->nr_frags++, txp++, gop++) {
- 				index = pending_index(vif->pending_cons++);
--
- 				pending_idx = vif->pending_ring[index];
--
--				memcpy(&pending_tx_info[pending_idx].req, txp,
--				       sizeof(*txp));
--
--				/* Poison these fields, corresponding
--				 * fields for head tx req will be set
--				 * to correct values after the loop.
--				 */
--				vif->mmap_pages[pending_idx] = (void *)(~0UL);
--				pending_tx_info[pending_idx].head =
--					INVALID_PENDING_RING_IDX;
--
--				if (!first) {
--					first = &pending_tx_info[pending_idx];
--					start_idx = index;
--					head_idx = pending_idx;
--				}
--
--				txp++;
--				slot++;
--			}
--
--			gop++;
--		}
--
--		first->req.offset = 0;
--		first->req.size = dst_offset;
--		first->head = start_idx;
--		vif->mmap_pages[head_idx] = page;
--		frag_set_pending_idx(&frags[shinfo->nr_frags], head_idx);
-+		xenvif_tx_create_gop(vif, pending_idx, txp, gop);
-+		frag_set_pending_idx(&frags[shinfo->nr_frags], pending_idx);
- 	}
- 
- 	BUG_ON(shinfo->nr_frags > MAX_SKB_FRAGS);
-@@ -909,9 +841,9 @@ err:
- 
- static int xenvif_tx_check_gop(struct xenvif *vif,
- 			       struct sk_buff *skb,
--			       struct gnttab_copy **gopp)
-+			       struct gnttab_map_grant_ref **gopp)
- {
--	struct gnttab_copy *gop = *gopp;
-+	struct gnttab_map_grant_ref *gop = *gopp;
- 	u16 pending_idx = *((u16 *)skb->data);
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	struct pending_tx_info *tx_info;
-@@ -923,6 +855,17 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 	err = gop->status;
- 	if (unlikely(err))
- 		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_ERROR);
-+	else {
-+		if (vif->grant_tx_handle[pending_idx] !=
-+		    NETBACK_INVALID_HANDLE) {
-+			netdev_err(vif->dev,
-+				   "Stale mapped handle! pending_idx %x handle %x\n",
-+				   pending_idx,
-+				   vif->grant_tx_handle[pending_idx]);
-+			BUG();
-+		}
-+		vif->grant_tx_handle[pending_idx] = gop->handle;
-+	}
- 
- 	/* Skip first skb fragment if it is on same page as header fragment. */
- 	start = (frag_get_pending_idx(&shinfo->frags[0]) == pending_idx);
-@@ -936,18 +879,24 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 		head = tx_info->head;
- 
- 		/* Check error status: if okay then remember grant handle. */
--		do {
- 			newerr = (++gop)->status;
--			if (newerr)
--				break;
--			peek = vif->pending_ring[pending_index(++head)];
--		} while (!pending_tx_is_head(vif, peek));
- 
- 		if (likely(!newerr)) {
-+			if (vif->grant_tx_handle[pending_idx] !=
-+			    NETBACK_INVALID_HANDLE) {
-+				netdev_err(vif->dev,
-+					   "Stale mapped handle! pending_idx %x handle %x\n",
-+					   pending_idx,
-+					   vif->grant_tx_handle[pending_idx]);
-+				xenvif_fatal_tx_err(vif);
-+			}
-+			vif->grant_tx_handle[pending_idx] = gop->handle;
- 			/* Had a previous error? Invalidate this fragment. */
--			if (unlikely(err))
-+			if (unlikely(err)) {
-+				xenvif_idx_unmap(vif, pending_idx);
- 				xenvif_idx_release(vif, pending_idx,
- 						   XEN_NETIF_RSP_OKAY);
-+			}
- 			continue;
- 		}
- 
-@@ -960,9 +909,11 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 
- 		/* First error: invalidate header and preceding fragments. */
- 		pending_idx = *((u16 *)skb->data);
-+		xenvif_idx_unmap(vif, pending_idx);
- 		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
- 		for (j = start; j < i; j++) {
- 			pending_idx = frag_get_pending_idx(&shinfo->frags[j]);
-+			xenvif_idx_unmap(vif, pending_idx);
- 			xenvif_idx_release(vif, pending_idx,
- 					   XEN_NETIF_RSP_OKAY);
- 		}
-@@ -975,7 +926,9 @@ static int xenvif_tx_check_gop(struct xenvif *vif,
- 	return err;
- }
- 
--static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
-+static void xenvif_fill_frags(struct xenvif *vif,
-+			      struct sk_buff *skb,
-+			      u16 prev_pending_idx)
- {
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
- 	int nr_frags = shinfo->nr_frags;
-@@ -989,6 +942,17 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
- 
- 		pending_idx = frag_get_pending_idx(frag);
- 
-+		/* If this is not the first frag, chain it to the previous*/
-+		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
-+			skb_shinfo(skb)->destructor_arg =
-+				&vif->pending_tx_info[pending_idx].callback_struct;
-+		else if (likely(pending_idx != prev_pending_idx))
-+			vif->pending_tx_info[prev_pending_idx].callback_struct.ctx =
-+				&(vif->pending_tx_info[pending_idx].callback_struct);
-+
-+		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
-+		prev_pending_idx = pending_idx;
-+
- 		txp = &vif->pending_tx_info[pending_idx].req;
- 		page = virt_to_page(idx_to_kaddr(vif, pending_idx));
- 		__skb_fill_page_desc(skb, i, page, txp->offset, txp->size);
-@@ -996,10 +960,15 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
- 		skb->data_len += txp->size;
- 		skb->truesize += txp->size;
- 
--		/* Take an extra reference to offset xenvif_idx_release */
-+		/* Take an extra reference to offset network stack's put_page */
- 		get_page(vif->mmap_pages[pending_idx]);
--		xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
- 	}
-+	/* FIXME: __skb_fill_page_desc set this to true because page->pfmemalloc
-+	 * overlaps with "index", and "mapping" is not set. I think mapping
-+	 * should be set. If delivered to local stack, it would drop this
-+	 * skb in sk_filter unless the socket has the right to use it.
-+	 */
-+	skb->pfmemalloc	= false;
- }
- 
- static int xenvif_get_extras(struct xenvif *vif,
-@@ -1372,7 +1341,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
- 
- static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- {
--	struct gnttab_copy *gop = vif->tx_copy_ops, *request_gop;
-+	struct gnttab_map_grant_ref *gop = vif->tx_map_ops, *request_gop;
- 	struct sk_buff *skb;
- 	int ret;
- 
-@@ -1480,30 +1449,10 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- 			}
- 		}
- 
--		/* XXX could copy straight to head */
--		page = xenvif_alloc_page(vif, pending_idx);
--		if (!page) {
--			kfree_skb(skb);
--			xenvif_tx_err(vif, &txreq, idx);
--			break;
--		}
--
--		gop->source.u.ref = txreq.gref;
--		gop->source.domid = vif->domid;
--		gop->source.offset = txreq.offset;
--
--		gop->dest.u.gmfn = virt_to_mfn(page_address(page));
--		gop->dest.domid = DOMID_SELF;
--		gop->dest.offset = txreq.offset;
--
--		gop->len = txreq.size;
--		gop->flags = GNTCOPY_source_gref;
-+		xenvif_tx_create_gop(vif, pending_idx, &txreq, gop);
- 
- 		gop++;
- 
--		memcpy(&vif->pending_tx_info[pending_idx].req,
--		       &txreq, sizeof(txreq));
--		vif->pending_tx_info[pending_idx].head = index;
- 		*((u16 *)skb->data) = pending_idx;
- 
- 		__skb_put(skb, data_len);
-@@ -1532,17 +1481,17 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
- 
- 		vif->tx.req_cons = idx;
- 
--		if ((gop-vif->tx_copy_ops) >= ARRAY_SIZE(vif->tx_copy_ops))
-+		if ((gop-vif->tx_map_ops) >= ARRAY_SIZE(vif->tx_map_ops))
- 			break;
- 	}
- 
--	return gop - vif->tx_copy_ops;
-+	return gop - vif->tx_map_ops;
- }
- 
- 
- static int xenvif_tx_submit(struct xenvif *vif)
- {
--	struct gnttab_copy *gop = vif->tx_copy_ops;
-+	struct gnttab_map_grant_ref *gop = vif->tx_map_ops;
- 	struct sk_buff *skb;
- 	int work_done = 0;
- 
-@@ -1566,12 +1515,17 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		memcpy(skb->data,
- 		       (void *)(idx_to_kaddr(vif, pending_idx)|txp->offset),
- 		       data_len);
-+		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
- 		if (data_len < txp->size) {
- 			/* Append the packet payload as a fragment. */
- 			txp->offset += data_len;
- 			txp->size -= data_len;
-+			skb_shinfo(skb)->destructor_arg =
-+				&vif->pending_tx_info[pending_idx].callback_struct;
- 		} else {
- 			/* Schedule a response immediately. */
-+			skb_shinfo(skb)->destructor_arg = NULL;
-+			xenvif_idx_unmap(vif, pending_idx);
- 			xenvif_idx_release(vif, pending_idx,
- 					   XEN_NETIF_RSP_OKAY);
- 		}
-@@ -1581,7 +1535,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		else if (txp->flags & XEN_NETTXF_data_validated)
- 			skb->ip_summed = CHECKSUM_UNNECESSARY;
- 
--		xenvif_fill_frags(vif, skb);
-+		xenvif_fill_frags(vif,
-+				  skb,
-+				  skb_shinfo(skb)->destructor_arg ?
-+				  pending_idx :
-+				  INVALID_PENDING_IDX);
- 
- 		if (skb_is_nonlinear(skb) && skb_headlen(skb) < PKT_PROT_LEN) {
- 			int target = min_t(int, skb->len, PKT_PROT_LEN);
-@@ -1595,6 +1553,11 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		if (checksum_setup(vif, skb)) {
- 			netdev_dbg(vif->dev,
- 				   "Can't setup checksum in net_tx_action\n");
-+			/* We have to set this flag so the dealloc thread can
-+			 * send the slots back
-+			 */
-+			if (skb_shinfo(skb)->destructor_arg)
-+				skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
- 			kfree_skb(skb);
- 			continue;
- 		}
-@@ -1620,6 +1583,14 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 
- 		work_done++;
- 
-+		/* Set this flag right before netif_receive_skb, otherwise
-+		 * someone might think this packet already left netback, and
-+		 * do a skb_copy_ubufs while we are still in control of the
-+		 * skb. E.g. the __pskb_pull_tail earlier can do such thing.
-+		 */
-+		if (skb_shinfo(skb)->destructor_arg)
-+			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
-+
- 		netif_receive_skb(skb);
- 	}
- 
-@@ -1731,7 +1702,7 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
- int xenvif_tx_action(struct xenvif *vif, int budget)
- {
- 	unsigned nr_gops;
--	int work_done;
-+	int work_done, ret;
- 
- 	if (unlikely(!tx_work_todo(vif)))
- 		return 0;
-@@ -1741,7 +1712,10 @@ int xenvif_tx_action(struct xenvif *vif, int budget)
- 	if (nr_gops == 0)
- 		return 0;
- 
--	gnttab_batch_copy(vif->tx_copy_ops, nr_gops);
-+	ret = gnttab_map_refs(vif->tx_map_ops,
-+			      vif->pages_to_map,
-+			      nr_gops);
-+	BUG_ON(ret);
- 
- 	work_done = xenvif_tx_submit(vif);
- 
-@@ -1752,45 +1726,19 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
- 			       u8 status)
- {
- 	struct pending_tx_info *pending_tx_info;
--	pending_ring_idx_t head;
-+	pending_ring_idx_t index;
- 	u16 peek; /* peek into next tx request */
-+	unsigned long flags;
- 
--	BUG_ON(vif->mmap_pages[pending_idx] == (void *)(~0UL));
--
--	/* Already complete? */
--	if (vif->mmap_pages[pending_idx] == NULL)
--		return;
--
--	pending_tx_info = &vif->pending_tx_info[pending_idx];
--
--	head = pending_tx_info->head;
--
--	BUG_ON(!pending_tx_is_head(vif, head));
--	BUG_ON(vif->pending_ring[pending_index(head)] != pending_idx);
--
--	do {
--		pending_ring_idx_t index;
--		pending_ring_idx_t idx = pending_index(head);
--		u16 info_idx = vif->pending_ring[idx];
--
--		pending_tx_info = &vif->pending_tx_info[info_idx];
-+		pending_tx_info = &vif->pending_tx_info[pending_idx];
-+		spin_lock_irqsave(&vif->response_lock, flags);
- 		make_tx_response(vif, &pending_tx_info->req, status);
--
--		/* Setting any number other than
--		 * INVALID_PENDING_RING_IDX indicates this slot is
--		 * starting a new packet / ending a previous packet.
--		 */
--		pending_tx_info->head = 0;
--
--		index = pending_index(vif->pending_prod++);
--		vif->pending_ring[index] = vif->pending_ring[info_idx];
--
--		peek = vif->pending_ring[pending_index(++head)];
--
--	} while (!pending_tx_is_head(vif, peek));
--
--	put_page(vif->mmap_pages[pending_idx]);
--	vif->mmap_pages[pending_idx] = NULL;
-+		index = pending_index(vif->pending_prod);
-+		vif->pending_ring[index] = pending_idx;
-+		/* TX shouldn't use the index before we give it back here */
-+		mb();
-+		vif->pending_prod++;
-+		spin_unlock_irqrestore(&vif->response_lock, flags);
- }
- 
- void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+> 
+> I am confused now and have to rush shortly so I will think about it
+> tomorrow some more.
+
+Thanks, yes, I knew it's one you'd want to think about first: no rush.
+
+> 
+> > This is nasty because __mem_cgroup_iter_next will try to skip it but
+> > there is nothing else so it returns NULL. We update iter->generation++
+> > but that doesn't help us as prev = NULL as this is the first iteration
+> > so
+> > 		if (prev && reclaim->generation != iter->generation)
+> > 
+> > break out will not help us.
+> 
+> > You patch will surely help I am just not sure it is the right thing to
+> > do. Let me think about this.
+> 
+> The patch is actually not correct after all. You are returning root
+> memcg without taking a reference. So there is a risk that memcg will
+> disappear. Although, it is true that the race with removal is not that
+> probable because mem_cgroup_css_offline (resp. css_free) will see some
+> pages on LRUs and they will reclaim as well.
+> 
+> Ouch. And thinking about this shows that out_css_put is broken as well
+> for subtree walks (those that do not start at root_mem_cgroup level). We
+> need something like the the snippet bellow.
+
+It's the out_css_put precedent that I was following in not incrementing
+for the root.  I think that's been discussed in the past, and rightly or
+wrongly we've concluded that the caller of mem_cgroup_iter() always has
+some hold on the root, which makes it safe to skip get/put on it here.
+No doubt one of those many short cuts to avoid memcg overhead when
+there's no memcg other than the root_mem_cgroup.
+
+I've not given enough thought to whether that is still a good assumption.
+The try_charge route does a css_tryget, and that will be the hold on the
+root in the reclaim case, won't it?  And its css_tryget succeeding does
+not guarantee that a css_tryget a moment later will also succeed, which
+is what happens in this bug.
+
+But I have not attempted to audit other uses of mem_cgroup_iter() and
+for_each_mem_cgroup_tree().  I've not hit any problems from them, but
+may not have exercised those paths at all.  And the question of
+whether there's a good hold on the root is a separate issue, really.
+
+Hugh
+
+> I really hate this code, especially when I tried to de-obfuscate it and
+> that introduced other subtle issues.
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 1f9d14e2f8de..f75277b0bf82 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1080,7 +1080,7 @@ skip_node:
+>  	if (next_css) {
+>  		struct mem_cgroup *mem = mem_cgroup_from_css(next_css);
+>  
+> -		if (css_tryget(&mem->css))
+> +		if (mem == root_mem_cgroup || css_tryget(&mem->css))
+>  			return mem;
+>  		else {
+>  			prev_css = next_css;
+> @@ -1219,7 +1219,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>  out_unlock:
+>  	rcu_read_unlock();
+>  out_css_put:
+> -	if (prev && prev != root)
+> +	if (prev && prev != root_mem_cgroup)
+>  		css_put(&prev->css);
+>  
+>  	return memcg;
+> 
+> > Anyway very well spotted!
+> > 
+> > > It's better to err on the side of leaving the loop too soon than never
+> > > when such races occur: once we've served prev (using root if none),
+> > > get out the next time __mem_cgroup_iter_next() cannot deliver.
+> > > 
+> > > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > > ---
+> > > Securing the tree iterator against such races is difficult, I've
+> > > certainly got it wrong myself before.  Although the bug is real, and
+> > > deserves a Cc stable, you may want to play around with other solutions
+> > > before committing to this one.  The current iterator goes back to v3.12:
+> > > I'm really not sure if v3.11 was good or not - I never saw the problem
+> > > in the vanilla kernel, but with Google mods in we also had to make an
+> > > adjustment, there to stop __mem_cgroup_iter() being called endlessly
+> > > from the reclaim level.
+> > > 
+> > >  mm/memcontrol.c |    5 ++++-
+> > >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > > 
+> > > --- mmotm/mm/memcontrol.c	2014-01-10 18:25:02.236448954 -0800
+> > > +++ linux/mm/memcontrol.c	2014-01-12 22:21:10.700570471 -0800
+> > > @@ -1254,8 +1252,11 @@ struct mem_cgroup *mem_cgroup_iter(struc
+> > >  				reclaim->generation = iter->generation;
+> > >  		}
+> > >  
+> > > -		if (prev && !memcg)
+> > > +		if (!memcg) {
+> > > +			if (!prev)
+> > > +				memcg = root;
+> > >  			goto out_unlock;
+> > > +		}
+> > >  	}
+> > >  out_unlock:
+> > >  	rcu_read_unlock();
+> > 
+> > -- 
+> > Michal Hocko
+> > SUSE Labs
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+
+#!/bin/sh
+seconds=60
+
+move() {
+	s=$1
+	d=$2
+	mkdir $cg/$d || exit $?
+	echo $mem >$cg/$d/memory.limit_in_bytes || exit $?
+	[ -z "$soft" ] || echo $soft >$cg/$d/memory.soft_limit_in_bytes || exit $?
+	[ -z "$swam" ] || echo $swam >$cg/$d/memory.memsw.limit_in_bytes || exit $?
+#	echo 3 >$cg/$d/memory.move_charge_at_immigrate || exit $?
+	tasks=0
+	while [ $tasks -lt 4 ]
+	do	sleep 1
+		[ -f /tmp/swapswap ] || exit 0
+		set -- `wc -l $cg/$s/tasks`
+		tasks=$1
+	done
+	while :
+	do
+		while :
+		do	read task <$cg/$s/tasks  || break
+			echo $task >$cg/$d/tasks # but might have gone already
+			[ -f /tmp/swapswap ] || exit 0
+		done	2>/dev/null
+		rmdir $cg/$s 2>/dev/null && break
+		sleep 1
+		[ -f /tmp/swapswap ] || exit 0
+	done
+	sleep $seconds
+	[ -f /tmp/swapswap ] || exit 0
+}
+
+case "x$1" in
+x)	mem=700M ; soft=""  ; memcgs=1 ;;
+x1)	mem=700M ; soft=""  ; memcgs=1 ;;
+x2)	mem=300M ; soft=250M; memcgs=2 ;;
+xm)	mem=300M ; soft=250M; memcgs=2 ;;
+*)	mem=$1   ; soft=""  ; memcgs=1 ;;
+esac
+
+> /tmp/swapswap
+mkdir -p /cg || exit $?
+[ -f /cg/memory.usage_in_bytes ] ||
+	mount -t cgroup -o memory cg /cg || exit $?
+[ -f /cg/memory.memsw.usage_in_bytes ] && swam=1000M || swam=""
+echo 1 >/cg/memory.use_hierarchy || exit $?
+
+cg=/cg/cg
+mkdir -p $cg || exit $?
+echo 1000M >$cg/memory.limit_in_bytes
+[ -z "$soft" ] || echo  800M >$cg/memory.soft_limit_in_bytes
+[ -z "$swam" ] || echo 2000M >$cg/memory.memsw.limit_in_bytes
+echo $$ >$cg/tasks
+
+i=0
+while [ $i -lt $memcgs ]
+do	let i=$i+1
+	mkdir -p $cg/$i || exit $?
+	echo $mem >$cg/$i/memory.limit_in_bytes || exit $?
+	[ -z "$soft" ] || echo $soft >$cg/$i/memory.soft_limit_in_bytes || exit $?
+	[ -z "$swam" ] || echo $swam >$cg/$i/memory.memsw.limit_in_bytes || swam=""
+
+	chmod a+w $cg/$i/tasks || exit $?
+done
+while [ $i -lt 4 ]
+do	let i=$i+1
+	[ ! -d $cg/$i ] || rmdir $cg/$i || exit $?
+done
+[ "x$1" = xm ] || exit 0
+
+while :
+do	move 1 3
+	move 2 4
+	move 3 1
+	move 4 2
+done &
