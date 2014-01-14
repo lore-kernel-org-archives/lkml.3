@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaANK4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:56:53 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:54652 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaANK4h (ORCPT
+	id S1751683AbaANK5i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:57:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57390 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaANK5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:56:37 -0500
-Message-ID: <52D517DE.50009@dev.mellanox.co.il>
-Date: Tue, 14 Jan 2014 12:56:30 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 14 Jan 2014 05:57:30 -0500
+Date: Tue, 14 Jan 2014 11:57:21 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
+Message-ID: <20140114105721.GU7572@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu>
+ <20140108225315.GG31570@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu>
+ <20140109101921.GA26435@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu>
+ <20140110094056.GK31570@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception
- cases
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	 <1389212157-14540-3-git-send-email-nab@daterainc.com>	 <52CE7D3F.7030308@mellanox.com>	 <1389336816.5567.404.camel@haakon3.risingtidesystems.com>	 <52D4EADC.60300@dev.mellanox.co.il> <1389689607.5567.525.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1389689607.5567.525.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/14/2014 10:53 AM, Nicholas A. Bellinger wrote:
-> On Tue, 2014-01-14 at 09:44 +0200, Sagi Grimberg wrote:
->> On 1/10/2014 8:53 AM, Nicholas A. Bellinger wrote:
->>> On Thu, 2014-01-09 at 12:43 +0200, Sagi Grimberg wrote:
->>>> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
->>>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>>>
->>>>> This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
->>>>> exception cases into transport_send_check_condition_and_sense().
->>>>>
->>>>> This includes:
->>>>>
->>>>>      LOGICAL BLOCK GUARD CHECK FAILED
->>>>>      LOGICAL BLOCK APPLICATION TAG CHECK FAILED
->>>>>      LOGICAL BLOCK REFERENCE TAG CHECK FAILED
->>>>>
->>>>> that used by DIF TYPE1 and TYPE3 failure cases.
->>>>>
->>>>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
->>>>> Cc: Christoph Hellwig <hch@lst.de>
->>>>> Cc: Hannes Reinecke <hare@suse.de>
->>>>> Cc: Sagi Grimberg <sagig@mellanox.com>
->>>>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
->>>>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
->>>>> ---
->>>>>     drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
->>>>>     include/target/target_core_base.h      |    3 +++
->>>>>     2 files changed, 33 insertions(+)
->>>>>
->>>>> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
->>>>> index 91953da..707ee17 100644
->>>>> --- a/drivers/target/target_core_transport.c
->>>>> +++ b/drivers/target/target_core_transport.c
->>>>> @@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
->>>>>     		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
->>>>>     		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
->>>>>     		break;
->>>>> +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
->>>>> +		/* CURRENT ERROR */
->>>>> +		buffer[0] = 0x70;
->>>>> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
->>>>> +		/* ILLEGAL REQUEST */
->>>>> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
->>>>> +		/* LOGICAL BLOCK GUARD CHECK FAILED */
->>>>> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
->>>>> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
->> Hey Nic,
->>
->> In my iSER patches I constructed the same sense buffer (call
->> isert_pi_err_sense_buffer) and called isert_put_rsponse. So I should
->> call this routine instead correct?
-> Yes, it should be OK to use this for generating CHECK_CONDITION from
-> fabric protection failures in isert_completion_rdma_write() code after
-> device->unreg_rdma_mem() has been called.
->
-> --nab
->
+On Mon, Jan 13, 2014 at 11:55:17PM -0500, Vince Weaver wrote:
+> On Fri, 10 Jan 2014, Peter Zijlstra wrote:
+> 
+> > On Thu, Jan 09, 2014 at 11:08:47PM -0500, Vince Weaver wrote:
+> > > On Thu, 9 Jan 2014, Will Deacon wrote:
+> > > 
+> > > > I'd rather see it in the generic code if at all possible. Maybe we could add
+> > > > a flags field to perf_pmu_register?
+> > > 
+> > > I can look into adding the check in generic code.
+> > 
+> > Adding something like this to the generic code would mean adding a
+> > struct pmu capabilities field and visiting all existing PMU
+> > implementations to properly fill this out.
+> 
+> I don't see an existing pmu capabilities struct... or do you mean
+> coming up with one?
 
-Will do that.
+Yeah, adding one.
+
+> Would it only hold an "overflow_interrupt_available" flag, or are
+> there other generic capabilities it would be handy to know about?
+
+Possible (other) flags could be:
+
+  PMU_HAS_INT      -- would allow sampling events
+  PMU_HAS_PRECISE  -- would allow any ::precise value
+  PMU_HAS_FILTER   -- would allow all os/user/etc. flags
+
+> > There's a number of hardware PMU implementations that do not have an
+> > interrupt and would need to set this flag.
+> 
+> Well that can be added gradually, right?  Things wouldn't get any worse if 
+> we add a generic check without auditing all code, things will just behave 
+> the same as before for those architectures.
+
+Right, doing a sweep once every so often is useful to find more patterns
+though.
+
+> There is some subtlety here though.  On ARM (or at least rasp-pi) the 
+> overflow hardware is there, just no interrupt is hooked up.  So things 
+> like counter overflow are handled as long as overflows aren't faster than 
+> context switch time.  It's just sampled events aren't possible.
+> 
+> On architectures without overflow support at all (I've had such hardware; 
+> some SPARC machines, the Playstation 3 hypervisor) then counter overflow 
+> isn't possible without a periodic timer (sort of like what is done with 
+> Intel uncore).  Is that something that should be in generic code too?
+
+Maybe yeah, if there's enough replication of this it certainly makes
+sense to lift it into generic code.
