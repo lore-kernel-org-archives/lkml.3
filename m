@@ -1,114 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbaANTWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:22:35 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54050 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaANTW3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:22:29 -0500
+	id S1751597AbaANTZM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:25:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751274AbaANTZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:25:11 -0500
+Date: Tue, 14 Jan 2014 14:24:33 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, kosaki.motohiro@gmail.com,
+        dyoung@redhat.com, toshi.kani@hp.com, isimatu.yasuaki@jp.fujitsu.com,
+        linux-acpi@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
+ hotplug [v3]
+Message-ID: <20140114192432.GK3096@redhat.com>
+References: <1389727273-27817-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1389613034-35196-2-git-send-email-phacht@linux.vnet.ibm.com>
-References: <1389613034-35196-1-git-send-email-phacht@linux.vnet.ibm.com>
-	<1389613034-35196-2-git-send-email-phacht@linux.vnet.ibm.com>
-Date: Tue, 14 Jan 2014 11:22:28 -0800
-X-Google-Sender-Auth: Kajj3XjsmtS1wk1sW6qZMyNq2bY
-Message-ID: <CAE9FiQUwAr1naCF1wBQN1xKYkb_BwS7w3bmpt8ugB=bQhOGL+Q@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm/nobootmem: free_all_bootmem again
-From: Yinghai Lu <yinghai@kernel.org>
-To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        David Howells <dhowells@redhat.com>, daeseok.youn@gmail.com,
-        Jiang Liu <liuj97@gmail.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, grygorii.strashko@ti.com,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389727273-27817-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 3:37 AM, Philipp Hachtmann
-<phacht@linux.vnet.ibm.com> wrote:
-> get_allocated_memblock_reserved_regions_info() should work if it is
-> compiled in. Extended the ifdef around
-> get_allocated_memblock_memory_regions_info() to include
-> get_allocated_memblock_reserved_regions_info() as well.
-> Similar changes in nobootmem.c/free_low_memory_core_early() where
-> the two functions are called.
->
-> Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
-
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
+On Tue, Jan 14, 2014 at 02:21:13PM -0500, Prarit Bhargava wrote:
+> When booting a kexec/kdump kernel on a system that has specific memory hotplug
+> regions the boot will fail with warnings like:
+> 
+> [    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
+> [    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+> 3.10.0-65.el7.x86_64 #1
+> [    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
+> QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+> [    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
+> ffff8800341bd950
+> [    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
+> 00000000000084d0
+> [    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
+> 0000000000000200
+> [    2.989821] Call Trace:
+> [    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+> [    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+> [    3.004817]  [<ffffffff815b87ee>] ?
+> __alloc_pages_direct_compact+0xac/0x196
+> [    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+> [    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+> [    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+> [    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+> [    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+> [    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+> [    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+> [    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+> [    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+> [    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+> [    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+> [    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
+> [    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+> [    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+> [    3.181956] Mem-Info:
+> [    3.184490] Node 0 DMA per-cpu:
+> [    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
+> [    3.193353] Node 0 DMA32 per-cpu:
+> [    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
+> [    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
+> [    3.202410]  active_file:0 inactive_file:0 isolated_file:0
+> [    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+> [    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
+> [    3.202410]  free_cma:0
+> 
+> because the system has run out of memory at boot time.  This occurs
+> because of the following sequence in the boot:
+> 
+> Main kernel boots and sets E820 map.  The second kernel is booted with a
+> map generated by the kdump service using memmap= and memmap=exactmap.
+> These parameters are added to the kernel parameters of the kexec/kdump
+> kernel.   The kexec/kdump kernel has limited memory resources so as not
+> to severely impact the main kernel.
+> 
+> The system then panics and the kdump/kexec kernel boots (which is a
+> completely new kernel boot).  During this boot ACPI is initialized and the
+> kernel (as can be seen above) traverses the ACPI namespace and finds an
+> entry for a memory device to be hotadded.
+> 
+> ie)
+> 
+> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+> 
+> At this point the kernel adds page table information and the the kexec/kdump
+> kernel runs out of memory.
+> 
+> This can also be reproduced by using the memmap=exactmap and mem=X
+> parameters on the main kernel and booting.
+> 
+> This patchset resolves the problem by adding a kernel parameter,
+> acpi_no_memhotplug, to disable ACPI memory hotplug.
+> 
+> [v2]: changed acpi_no_memhotplug to bool
+> [v3]: cleaned up Documentation/kernel-parameters.txt
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: kosaki.motohiro@gmail.com
+> Cc: dyoung@redhat.com
+> Cc: toshi.kani@hp.com
+> Cc: isimatu.yasuaki@jp.fujitsu.com
+> Cc: kosaki.motohiro@gmail.com
+> Cc: linux-acpi@vger.kernel.org
+> Cc: kexec@lists.infradead.org
 > ---
->  mm/memblock.c  | 17 ++---------------
->  mm/nobootmem.c |  4 ++--
->  2 files changed, 4 insertions(+), 17 deletions(-)
->
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 64ed243..9c0aeef 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -266,33 +266,20 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
->         }
->  }
->
-> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+>  Documentation/kernel-parameters.txt |    3 +++
+>  drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
+>  2 files changed, 15 insertions(+)
+
+Looks good to me.
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index b9e9bd8..ea93f75 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -343,6 +343,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			no: ACPI OperationRegions are not marked as reserved,
+>  			no further checks are performed.
+>  
+> +	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
+> +			   and kdump kernels.
 > +
->  phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
->                                         phys_addr_t *addr)
->  {
->         if (memblock.reserved.regions == memblock_reserved_init_regions)
->                 return 0;
->
-> -       /*
-> -        * Don't allow nobootmem allocator to free reserved memory regions
-> -        * array if
-> -        *  - CONFIG_DEBUG_FS is enabled;
-> -        *  - CONFIG_ARCH_DISCARD_MEMBLOCK is not enabled;
-> -        *  - reserved memory regions array have been resized during boot.
-> -        * Otherwise debug_fs entry "sys/kernel/debug/memblock/reserved"
-> -        * will show garbage instead of state of memory reservations.
-> -        */
-> -       if (IS_ENABLED(CONFIG_DEBUG_FS) &&
-> -           !IS_ENABLED(CONFIG_ARCH_DISCARD_MEMBLOCK))
-> -               return 0;
-> -
->         *addr = __pa(memblock.reserved.regions);
->
->         return PAGE_ALIGN(sizeof(struct memblock_region) *
->                           memblock.reserved.max);
+>  	add_efi_memmap	[EFI; X86] Include EFI memory map in
+>  			kernel's map of available physical RAM.
+>  
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 551dad7..4a0fa94 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -361,7 +361,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+>  	acpi_memory_device_free(mem_device);
 >  }
->
-> -#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-> -
->  phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
->                                         phys_addr_t *addr)
->  {
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 17c8902..e2906a5 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -122,13 +122,13 @@ static unsigned long __init free_low_memory_core_early(void)
->         for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
->                 count += __free_memory_core(start, end);
->
-> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+>  
+> +static bool acpi_no_memhotplug;
 > +
->         /* Free memblock.reserved array if it was allocated */
->         size = get_allocated_memblock_reserved_regions_info(&start);
->         if (size)
->                 count += __free_memory_core(start, start + size);
->
-> -#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
-> -
->         /* Free memblock.memory array if it was allocated */
->         size = get_allocated_memblock_memory_regions_info(&start);
->         if (size)
-> --
-> 1.8.4.5
->
+>  void __init acpi_memory_hotplug_init(void)
+>  {
+> +	if (acpi_no_memhotplug)
+> +		return;
+> +
+>  	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+>  }
+> +
+> +static int __init disable_acpi_memory_hotplug(char *str)
+> +{
+> +	acpi_no_memhotplug = true;
+> +	return 1;
+> +}
+> +__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
+> -- 
+> 1.7.9.3
