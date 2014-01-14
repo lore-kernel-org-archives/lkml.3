@@ -1,173 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaANEtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 23:49:42 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58344 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070AbaANEtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 23:49:40 -0500
-X-AuditID: 9c930197-b7c20ae000001031-a3-52d4c1e23618
-Date: Tue, 14 Jan 2014 13:50:22 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Cai Liu <cai.liu@samsung.com>, sjenning@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, liucai.lfn@gmail.com
-Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
-Message-ID: <20140114045022.GZ1992@bbox>
-References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
- <20140113233505.GS1992@bbox>
- <52D4909B.7070107@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D4909B.7070107@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1752848AbaANEvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 23:51:15 -0500
+Received: from ozlabs.org ([203.10.76.45]:38412 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793AbaANEvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 23:51:13 -0500
+Date: Tue, 14 Jan 2014 15:51:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ian Munsie <imunsie@au1.ibm.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: linux-next: manual merge of the akpm-current tree with the
+ char-misc tree
+Message-Id: <20140114155104.0ab2772aaa909e49bc89cd61@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__14_Jan_2014_15_51_04_+1100_mW22lnhlUI2Nc4fc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bob,
+--Signature=_Tue__14_Jan_2014_15_51_04_+1100_mW22lnhlUI2Nc4fc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 14, 2014 at 09:19:23AM +0800, Bob Liu wrote:
-> 
-> On 01/14/2014 07:35 AM, Minchan Kim wrote:
-> > Hello,
-> > 
-> > On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
-> >> zswap can support multiple swapfiles. So we need to check
-> >> all zbud pool pages in zswap.
-> > 
-> > True but this patch is rather costly that we should iterate
-> > zswap_tree[MAX_SWAPFILES] to check it. SIGH.
-> > 
-> > How about defining zswap_tress as linked list instead of static
-> > array? Then, we could reduce unnecessary iteration too much.
-> > 
-> 
-> But if use linked list, it might not easy to access the tree like this:
-> struct zswap_tree *tree = zswap_trees[type];
+Hi Andrew,
 
-struct zswap_tree {
-    ..
-    ..
-    struct list_head list;
-}
+Today's linux-next merge of the akpm-current tree got a conflict in
+drivers/misc/mei/init.c between commit 33ec08263147 ("mei: revamp mei
+reset state machine") from the char-misc tree and commit dd045dab2999
+("drivers/misc/mei: ratelimit several error messages") from the
+akpm-current tree.
 
-zswap_frontswap_init()
-{
-    ..
-    ..
-    zswap_trees[type] = tree;
-    list_add(&tree->list, &zswap_list);
-}
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-get_zswap_pool_pages(void)
-{
-    struct zswap_tree *cur;
-    list_for_each_entry(cur, &zswap_list, list) {
-        pool_pages += zbud_get_pool_size(cur->pool);
-    }
-    return pool_pages;
-}
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/misc/mei/init.c
+index cdd31c2a2a2b,edd3bb6a5df9..000000000000
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@@ -43,119 -43,41 +43,119 @@@ const char *mei_dev_state_str(int state
+  #undef MEI_DEV_STATE
+  }
+ =20
+ -void mei_device_init(struct mei_device *dev)
+ -{
+ -	/* setup our list array */
+ -	INIT_LIST_HEAD(&dev->file_list);
+ -	INIT_LIST_HEAD(&dev->device_list);
+ -	mutex_init(&dev->device_lock);
+ -	init_waitqueue_head(&dev->wait_hw_ready);
+ -	init_waitqueue_head(&dev->wait_recvd_msg);
+ -	init_waitqueue_head(&dev->wait_stop_wd);
+ -	dev->dev_state =3D MEI_DEV_INITIALIZING;
+ =20
+ -	mei_io_list_init(&dev->read_list);
+ -	mei_io_list_init(&dev->write_list);
+ -	mei_io_list_init(&dev->write_waiting_list);
+ -	mei_io_list_init(&dev->ctrl_wr_list);
+ -	mei_io_list_init(&dev->ctrl_rd_list);
+ +/**
+ + * mei_cancel_work. Cancel mei background jobs
+ + *
+ + * @dev: the device structure
+ + *
+ + * returns 0 on success or < 0 if the reset hasn't succeeded
+ + */
+ +void mei_cancel_work(struct mei_device *dev)
+ +{
+ +	cancel_work_sync(&dev->init_work);
+ +	cancel_work_sync(&dev->reset_work);
+ =20
+ -	INIT_DELAYED_WORK(&dev->timer_work, mei_timer);
+ -	INIT_WORK(&dev->init_work, mei_host_client_init);
+ +	cancel_delayed_work(&dev->timer_work);
+ +}
+ +EXPORT_SYMBOL_GPL(mei_cancel_work);
+ =20
+ -	INIT_LIST_HEAD(&dev->wd_cl.link);
+ -	INIT_LIST_HEAD(&dev->iamthif_cl.link);
+ -	mei_io_list_init(&dev->amthif_cmd_list);
+ -	mei_io_list_init(&dev->amthif_rd_complete_list);
+ +/**
+ + * mei_reset - resets host and fw.
+ + *
+ + * @dev: the device structure
+ + */
+ +int mei_reset(struct mei_device *dev)
+ +{
+ +	enum mei_dev_state state =3D dev->dev_state;
+ +	bool interrupts_enabled;
+ +	int ret;
+ =20
+ -	bitmap_zero(dev->host_clients_map, MEI_CLIENTS_MAX);
+ -	dev->open_handle_count =3D 0;
+ +	if (state !=3D MEI_DEV_INITIALIZING &&
+ +	    state !=3D MEI_DEV_DISABLED &&
+ +	    state !=3D MEI_DEV_POWER_DOWN &&
+ +	    state !=3D MEI_DEV_POWER_UP)
+- 		dev_warn(&dev->pdev->dev, "unexpected reset: dev_state =3D %s\n",
+++		dev_warn_ratelimited(&dev->pdev->dev, "unexpected reset: dev_state =3D =
+%s\n",
+ +			 mei_dev_state_str(state));
+ =20
+ -	/*
+ -	 * Reserving the first client ID
+ -	 * 0: Reserved for MEI Bus Message communications
+ +	/* we're already in reset, cancel the init timer
+ +	 * if the reset was called due the hbm protocol error
+ +	 * we need to call it before hw start
+ +	 * so the hbm watchdog won't kick in
+  	 */
+ -	bitmap_set(dev->host_clients_map, 0, 1);
+ +	mei_hbm_idle(dev);
+ +
+ +	/* enter reset flow */
+ +	interrupts_enabled =3D state !=3D MEI_DEV_POWER_DOWN;
+ +	dev->dev_state =3D MEI_DEV_RESETTING;
+ +
+ +	dev->reset_count++;
+ +	if (dev->reset_count > MEI_MAX_CONSEC_RESET) {
+ +		dev_err(&dev->pdev->dev, "reset: reached maximal consecutive resets: di=
+sabling the device\n");
+ +		dev->dev_state =3D MEI_DEV_DISABLED;
+ +		return -ENODEV;
+ +	}
+ +
+ +	ret =3D mei_hw_reset(dev, interrupts_enabled);
+ +	/* fall through and remove the sw state even if hw reset has failed */
+ +
+ +	/* no need to clean up software state in case of power up */
+ +	if (state !=3D MEI_DEV_INITIALIZING &&
+ +	    state !=3D MEI_DEV_POWER_UP) {
+ +
+ +		/* remove all waiting requests */
+ +		mei_cl_all_write_clear(dev);
+ +
+ +		mei_cl_all_disconnect(dev);
+ +
+ +		/* wake up all readers and writers so they can be interrupted */
+ +		mei_cl_all_wakeup(dev);
+ +
+ +		/* remove entry if already in list */
+ +		dev_dbg(&dev->pdev->dev, "remove iamthif and wd from the file list.\n");
+ +		mei_cl_unlink(&dev->wd_cl);
+ +		mei_cl_unlink(&dev->iamthif_cl);
+ +		mei_amthif_reset_params(dev);
+ +		memset(&dev->wr_ext_msg, 0, sizeof(dev->wr_ext_msg));
+ +	}
+ +
+ +
+ +	dev->me_clients_num =3D 0;
+ +	dev->rd_msg_hdr =3D 0;
+ +	dev->wd_pending =3D false;
+ +
+ +	if (ret) {
+ +		dev_err(&dev->pdev->dev, "hw_reset failed ret =3D %d\n", ret);
+ +		dev->dev_state =3D MEI_DEV_DISABLED;
+ +		return ret;
+ +	}
+ +
+ +	if (state =3D=3D MEI_DEV_POWER_DOWN) {
+ +		dev_dbg(&dev->pdev->dev, "powering down: end of reset\n");
+ +		dev->dev_state =3D MEI_DEV_DISABLED;
+ +		return 0;
+ +	}
+ +
+ +	ret =3D mei_hw_start(dev);
+ +	if (ret) {
+ +		dev_err(&dev->pdev->dev, "hw_start failed ret =3D %d\n", ret);
+ +		dev->dev_state =3D MEI_DEV_DISABLED;
+ +		return ret;
+ +	}
+ +
+ +	dev_dbg(&dev->pdev->dev, "link is established start sending messages.\n"=
+);
+ +
+ +	dev->dev_state =3D MEI_DEV_INIT_CLIENTS;
+ +	ret =3D mei_hbm_start_req(dev);
+ +	if (ret) {
+ +		dev_err(&dev->pdev->dev, "hbm_start failed ret =3D %d\n", ret);
+ +		dev->dev_state =3D MEI_DEV_DISABLED;
+ +		return ret;
+ +	}
+ +
+ +	return 0;
+  }
+ -EXPORT_SYMBOL_GPL(mei_device_init);
+ +EXPORT_SYMBOL_GPL(mei_reset);
+ =20
+  /**
+   * mei_start - initializes host and fw to start work.
 
-> 
-> BTW: I'm still prefer to use dynamic pool size, instead of use
-> zswap_is_full(). AFAIR, Seth has a plan to replace the rbtree with radix
-> which will be more flexible to support this feature and page migration
-> as well.
-> 
-> > Other question:
-> > Why do we need to update zswap_pool_pages too frequently?
-> > As I read the code, I think it's okay to update it only when user
-> > want to see it by debugfs and zswap_is_full is called.
-> > So could we optimize it out?
-> > 
-> >>
-> >> Signed-off-by: Cai Liu <cai.liu@samsung.com>
-> 
-> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+--Signature=_Tue__14_Jan_2014_15_51_04_+1100_mW22lnhlUI2Nc4fc
+Content-Type: application/pgp-signature
 
-Hmm, I really suprised you are okay in this code piece where we have
-unnecessary cost most of case(ie, most system has a swap device) in
-*mm* part.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Anyway, I don't want to merge this patchset.
-If Andrew merge it and anybody doesn't do right work, I will send a patch.
-Cai, Could you redo a patch?
-I don't want to intercept your credit.
+iQIcBAEBCAAGBQJS1MI9AAoJEMDTa8Ir7ZwVYRkP/jjDGTsxRGSizZ1b70EGpB+U
+dg5y6AVb9bjL5WlFdm6PH5gxHY315EiVhm8IHPcLlyPPae8ePp4MyNGaSlvsG1s8
+ygpuoeEBLLkpMslimLFcJPNiWDNich88j2PokFTy4Vae55qWo+C90KaiHgjcKstp
+l3qQqQXkr2vlVNHqKdMSWdSdNMfeMuFBBt4dn6QNS6AHNsxF7iM99kV1AcTuwP5O
+xCGkZYQEz+gNCzSb9MwMX4GDwYteVCA7t4R4QBDdIfSuPYDSgJAPprQUlXNMto3l
+KJnRgeM6ilNcHteYzTWDoLLa0MWo8X0OfkzDdm3vv/Rzkt2XHEpqnAbGozdXHn3y
+sXC94Fdj8mjH7uiA/5VcvsF85jeodPWh3rZLe72bKHCkkX0PoAJM7am0BSwyQ6CC
+mc7ZGYgb1+3tfuBTlJ8kEutMCy7TKSJyE8iSctYqNB87WAby7uuIo6O1QILGsmPB
+3Vh26GGGwqPIf10UMpb0XqWURiXWTiDDlHzjqyKKwc3irOOFkWd/JvKSGHQUPuOx
+jTSmzRfkrPBVv7EUMVCKuAC/zOqR3Zn3cY461kPEmJ9iEYtlKG3gzV2GW72EJm9i
+C2tSqklWKFr3z3uhECmxCbWP0gKn7rRExfENXz+WmMKMT4BSz1oe8CzCXcG3uxE1
+KFp18tB+SHBkx7toB4rX
+=3kOu
+-----END PGP SIGNATURE-----
 
-Even, we could optimize to reduce the the number of call as I said in
-previous reply.
-
-Thanks.
-
-> 
-> >> ---
-> >>  mm/zswap.c |   18 +++++++++++++++---
-> >>  1 file changed, 15 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/mm/zswap.c b/mm/zswap.c
-> >> index d93afa6..2438344 100644
-> >> --- a/mm/zswap.c
-> >> +++ b/mm/zswap.c
-> >> @@ -291,7 +291,6 @@ static void zswap_free_entry(struct zswap_tree *tree,
-> >>  	zbud_free(tree->pool, entry->handle);
-> >>  	zswap_entry_cache_free(entry);
-> >>  	atomic_dec(&zswap_stored_pages);
-> >> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> >>  }
-> >>  
-> >>  /* caller must hold the tree lock */
-> >> @@ -405,10 +404,24 @@ cleanup:
-> >>  /*********************************
-> >>  * helpers
-> >>  **********************************/
-> >> +static u64 get_zswap_pool_pages(void)
-> >> +{
-> >> +	int i;
-> >> +	u64 pool_pages = 0;
-> >> +
-> >> +	for (i = 0; i < MAX_SWAPFILES; i++) {
-> >> +		if (zswap_trees[i])
-> >> +			pool_pages += zbud_get_pool_size(zswap_trees[i]->pool);
-> >> +	}
-> >> +	zswap_pool_pages = pool_pages;
-> >> +
-> >> +	return pool_pages;
-> >> +}
-> >> +
-> >>  static bool zswap_is_full(void)
-> >>  {
-> >>  	return (totalram_pages * zswap_max_pool_percent / 100 <
-> >> -		zswap_pool_pages);
-> >> +		get_zswap_pool_pages());
-> >>  }
-> >>  
-> >>  /*********************************
-> >> @@ -716,7 +729,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
-> >>  
-> >>  	/* update stats */
-> >>  	atomic_inc(&zswap_stored_pages);
-> >> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
-> >>  
-> >>  	return 0;
-> >>  
-> >> -- 
-> >> 1.7.10.4
-> -- 
-> Regards,
-> -Bob
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+--Signature=_Tue__14_Jan_2014_15_51_04_+1100_mW22lnhlUI2Nc4fc--
