@@ -1,87 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaANK5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:57:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57390 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaANK5a (ORCPT
+	id S1752002AbaANK6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:58:01 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:43393 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751967AbaANK55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:57:30 -0500
-Date: Tue, 14 Jan 2014 11:57:21 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Chad Paradis <chad.paradis@umit.maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
-Message-ID: <20140114105721.GU7572@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu>
- <20140108225315.GG31570@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu>
- <20140109101921.GA26435@mudshark.cambridge.arm.com>
- <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu>
- <20140110094056.GK31570@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu>
+	Tue, 14 Jan 2014 05:57:57 -0500
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <stephen.gallimore@st.com>, <kernel@stlinux.com>,
+        <lee.jones@linaro.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH v1 5/6] drivers: reset: stih416: add softreset controller
+Date: Tue, 14 Jan 2014 10:51:44 +0000
+Message-ID: <1389696704-19902-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>
+References: <1389696613-19683-1-git-send-email-srinivas.kandagatla@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1401132344570.20155@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 11:55:17PM -0500, Vince Weaver wrote:
-> On Fri, 10 Jan 2014, Peter Zijlstra wrote:
-> 
-> > On Thu, Jan 09, 2014 at 11:08:47PM -0500, Vince Weaver wrote:
-> > > On Thu, 9 Jan 2014, Will Deacon wrote:
-> > > 
-> > > > I'd rather see it in the generic code if at all possible. Maybe we could add
-> > > > a flags field to perf_pmu_register?
-> > > 
-> > > I can look into adding the check in generic code.
-> > 
-> > Adding something like this to the generic code would mean adding a
-> > struct pmu capabilities field and visiting all existing PMU
-> > implementations to properly fill this out.
-> 
-> I don't see an existing pmu capabilities struct... or do you mean
-> coming up with one?
+This patch adds softreset controller for STiH416 SOC, soft reset
+controller is based on system configuration registers which are mapped
+via regmap. This reset controller does not have any feedback or
+acknowledgement. With this patch a new device "st,stih416-softreset" is
+registered with system configuration registers based reset controller
+that controls the softreset state of the hardware such as Ethernet, IRB.
 
-Yeah, adding one.
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ arch/arm/boot/dts/stih416.dtsi                     |    5 ++++
+ drivers/reset/sti/reset-stih416.c                  |   22 ++++++++++++++++++++
+ .../dt-bindings/reset-controller/stih416-resets.h  |    4 +++
+ 3 files changed, 31 insertions(+), 0 deletions(-)
 
-> Would it only hold an "overflow_interrupt_available" flag, or are
-> there other generic capabilities it would be handy to know about?
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index e5bec66..788ba5b 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -33,6 +33,11 @@
+ 			compatible = "st,stih416-powerdown";
+ 		};
+ 
++		softreset: softreset-controller {
++			#reset-cells = <1>;
++			compatible = "st,stih416-softreset";
++		};
++
+ 		syscfg_sbc:sbc-syscfg@fe600000{
+ 			compatible	= "st,stih416-sbc-syscfg", "syscon";
+ 			reg		= <0xfe600000 0x1000>;
+diff --git a/drivers/reset/sti/reset-stih416.c b/drivers/reset/sti/reset-stih416.c
+index 0becfc5..685fd3b 100644
+--- a/drivers/reset/sti/reset-stih416.c
++++ b/drivers/reset/sti/reset-stih416.c
+@@ -37,6 +37,10 @@ static const char stih416_lpm[] = "st,stih416-lpm-syscfg";
+ #define SYSCFG_2525	0x834 /* Powerdown request USB/SATA/PCIe */
+ #define SYSSTAT_2583	0x91c /* Powerdown status USB/SATA/PCIe */
+ 
++#define SYSCFG_1539	0x86c /* Softreset Ethernet 0 */
++#define SYSCFG_510	0x7f8 /* Softreset Ethernet 1 */
++#define LPM_SYSCFG_1	0x4 /* Softreset IRB */
++
+ static const struct syscfg_reset_channel_data stih416_powerdowns[] = {
+ 	[STIH416_EMISS_POWERDOWN]	= STIH416_PDN_FRONT(0),
+ 	[STIH416_NAND_POWERDOWN]	= STIH416_PDN_FRONT(1),
+@@ -51,15 +55,33 @@ static const struct syscfg_reset_channel_data stih416_powerdowns[] = {
+ 	[STIH416_PCIE1_POWERDOWN]	= STIH416_PDN_REAR(5, 8),
+ };
+ 
++static const struct syscfg_reset_channel_data stih416_softresets[] = {
++	[STIH416_ETH0_SOFTRESET] = _SYSCFG_RST_CH_NO_ACK(stih416_front,
++							SYSCFG_1539, 0),
++	[STIH416_ETH1_SOFTRESET] = _SYSCFG_RST_CH_NO_ACK(stih416_sbc,
++							SYSCFG_510, 0),
++	[STIH416_IRB_SOFTRESET]	 = _SYSCFG_RST_CH_NO_ACK(stih416_lpm,
++							LPM_SYSCFG_1, 6),
++};
++
+ static struct syscfg_reset_controller_data stih416_powerdown_controller = {
+ 	.wait_for_ack	= true,
+ 	.nr_channels	= ARRAY_SIZE(stih416_powerdowns),
+ 	.channels	= stih416_powerdowns,
+ };
+ 
++static struct syscfg_reset_controller_data stih416_softreset_controller = {
++	.wait_for_ack = false,
++	.active_low = true,
++	.nr_channels = ARRAY_SIZE(stih416_softresets),
++	.channels = stih416_softresets,
++};
++
+ static struct of_device_id stih416_reset_match[] = {
+ 	{ .compatible = "st,stih416-powerdown",
+ 	  .data = &stih416_powerdown_controller, },
++	{ .compatible = "st,stih416-softreset",
++	  .data = &stih416_softreset_controller, },
+ 	{},
+ };
+ 
+diff --git a/include/dt-bindings/reset-controller/stih416-resets.h b/include/dt-bindings/reset-controller/stih416-resets.h
+index d7da55f..ee8ccd0 100644
+--- a/include/dt-bindings/reset-controller/stih416-resets.h
++++ b/include/dt-bindings/reset-controller/stih416-resets.h
+@@ -18,4 +18,8 @@
+ #define STIH416_PCIE0_POWERDOWN		9
+ #define STIH416_PCIE1_POWERDOWN		10
+ 
++#define STIH416_ETH0_SOFTRESET		0
++#define STIH416_ETH1_SOFTRESET		1
++#define STIH416_IRB_SOFTRESET		2
++
+ #endif /* _DT_BINDINGS_RESET_CONTROLLER_STIH416 */
+-- 
+1.7.6.5
 
-Possible (other) flags could be:
-
-  PMU_HAS_INT      -- would allow sampling events
-  PMU_HAS_PRECISE  -- would allow any ::precise value
-  PMU_HAS_FILTER   -- would allow all os/user/etc. flags
-
-> > There's a number of hardware PMU implementations that do not have an
-> > interrupt and would need to set this flag.
-> 
-> Well that can be added gradually, right?  Things wouldn't get any worse if 
-> we add a generic check without auditing all code, things will just behave 
-> the same as before for those architectures.
-
-Right, doing a sweep once every so often is useful to find more patterns
-though.
-
-> There is some subtlety here though.  On ARM (or at least rasp-pi) the 
-> overflow hardware is there, just no interrupt is hooked up.  So things 
-> like counter overflow are handled as long as overflows aren't faster than 
-> context switch time.  It's just sampled events aren't possible.
-> 
-> On architectures without overflow support at all (I've had such hardware; 
-> some SPARC machines, the Playstation 3 hypervisor) then counter overflow 
-> isn't possible without a periodic timer (sort of like what is done with 
-> Intel uncore).  Is that something that should be in generic code too?
-
-Maybe yeah, if there's enough replication of this it certainly makes
-sense to lift it into generic code.
