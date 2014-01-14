@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaANAzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:55:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54179 "EHLO
+	id S1755406AbaANAzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:55:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbaANA1u (ORCPT
+	with ESMTP id S1753495AbaANA1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:50 -0500
+	Mon, 13 Jan 2014 19:27:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Harald Welte <laforge@gnumonks.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 57/62] netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
-Date: Mon, 13 Jan 2014 16:27:22 -0800
-Message-Id: <20140114002712.090538502@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 55/62] intel_pstate: Add X86_FEATURE_APERFMPERF to cpu match parameters.
+Date: Mon, 13 Jan 2014 16:27:20 -0800
+Message-Id: <20140114002712.027849359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,105 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit 2690d97ade05c5325cbf7c72b94b90d265659886 upstream.
+commit 6cbd7ee10e2842a3d1f9b60abede1c8f3d1f1130 upstream.
 
-Commit 5901b6be885e attempted to introduce IPv6 support into
-IRC NAT helper. By doing so, the following code seemed to be removed
-by accident:
+KVM environments do not support APERF/MPERF MSRs. intel_pstate cannot
+operate without these registers.
 
-  ip = ntohl(exp->master->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3.ip);
-  sprintf(buffer, "%u %u", ip, port);
-  pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n", buffer, &ip, port);
+The previous validity checks in intel_pstate_msrs_not_valid() are
+insufficent in nested KVMs.
 
-This leads to the fact that buffer[] was left uninitialized and
-contained some stack value. When we call nf_nat_mangle_tcp_packet(),
-we call strlen(buffer) on excatly this uninitialized buffer. If we
-are unlucky and the skb has enough tailroom, we overwrite resp. leak
-contents with values that sit on our stack into the packet and send
-that out to the receiver.
-
-Since the rather informal DCC spec [1] does not seem to specify
-IPv6 support right now, we log such occurences so that admins can
-act accordingly, and drop the packet. I've looked into XChat source,
-and IPv6 is not supported there: addresses are in u32 and print
-via %u format string.
-
-Therefore, restore old behaviour as in IPv4, use snprintf(). The
-IRC helper does not support IPv6 by now. By this, we can safely use
-strlen(buffer) in nf_nat_mangle_tcp_packet() and prevent a buffer
-overflow. Also simplify some code as we now have ct variable anyway.
-
-  [1] http://www.irchelp.org/irchelp/rfc/ctcpspec.html
-
-Fixes: 5901b6be885e ("netfilter: nf_nat: support IPv6 in IRC NAT helper")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Harald Welte <laforge@gnumonks.org>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+References: https://bugzilla.redhat.com/show_bug.cgi?id=1046317
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_nat_irc.c |   32 +++++++++++++++++++++++++++-----
- 1 file changed, 27 insertions(+), 5 deletions(-)
+ drivers/cpufreq/intel_pstate.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/netfilter/nf_nat_irc.c
-+++ b/net/netfilter/nf_nat_irc.c
-@@ -34,10 +34,14 @@ static unsigned int help(struct sk_buff
- 			 struct nf_conntrack_expect *exp)
- {
- 	char buffer[sizeof("4294967296 65635")];
-+	struct nf_conn *ct = exp->master;
-+	union nf_inet_addr newaddr;
- 	u_int16_t port;
- 	unsigned int ret;
- 
- 	/* Reply comes from server. */
-+	newaddr = ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3;
-+
- 	exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
- 	exp->dir = IP_CT_DIR_REPLY;
- 	exp->expectfn = nf_nat_follow_master;
-@@ -57,17 +61,35 @@ static unsigned int help(struct sk_buff
- 	}
- 
- 	if (port == 0) {
--		nf_ct_helper_log(skb, exp->master, "all ports in use");
-+		nf_ct_helper_log(skb, ct, "all ports in use");
- 		return NF_DROP;
- 	}
- 
--	ret = nf_nat_mangle_tcp_packet(skb, exp->master, ctinfo,
--				       protoff, matchoff, matchlen, buffer,
--				       strlen(buffer));
-+	/* strlen("\1DCC CHAT chat AAAAAAAA P\1\n")=27
-+	 * strlen("\1DCC SCHAT chat AAAAAAAA P\1\n")=28
-+	 * strlen("\1DCC SEND F AAAAAAAA P S\1\n")=26
-+	 * strlen("\1DCC MOVE F AAAAAAAA P S\1\n")=26
-+	 * strlen("\1DCC TSEND F AAAAAAAA P S\1\n")=27
-+	 *
-+	 * AAAAAAAAA: bound addr (1.0.0.0==16777216, min 8 digits,
-+	 *                        255.255.255.255==4294967296, 10 digits)
-+	 * P:         bound port (min 1 d, max 5d (65635))
-+	 * F:         filename   (min 1 d )
-+	 * S:         size       (min 1 d )
-+	 * 0x01, \n:  terminators
-+	 */
-+	/* AAA = "us", ie. where server normally talks to. */
-+	snprintf(buffer, sizeof(buffer), "%u %u", ntohl(newaddr.ip), port);
-+	pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n",
-+		 buffer, &newaddr.ip, port);
-+
-+	ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo, protoff, matchoff,
-+				       matchlen, buffer, strlen(buffer));
- 	if (ret != NF_ACCEPT) {
--		nf_ct_helper_log(skb, exp->master, "cannot mangle packet");
-+		nf_ct_helper_log(skb, ct, "cannot mangle packet");
- 		nf_ct_unexpect_related(exp);
- 	}
-+
- 	return ret;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -516,7 +516,8 @@ static void intel_pstate_timer_func(unsi
  }
  
+ #define ICPU(model, policy) \
+-	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_ANY, (unsigned long)&policy }
++	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_APERFMPERF,\
++			(unsigned long)&policy }
+ 
+ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
+ 	ICPU(0x2a, default_policy),
 
 
