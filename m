@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012AbaANA24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:28:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54422 "EHLO
+	id S1754630AbaANAhR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:37:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaANA2o (ORCPT
+	with ESMTP id S1754005AbaANA2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:44 -0500
+	Mon, 13 Jan 2014 19:28:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nat Gurumoorthy <natg@google.com>, Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 18/77] tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
-Date: Mon, 13 Jan 2014 16:27:39 -0800
-Message-Id: <20140114002753.020523421@linuxfoundation.org>
+        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.12 56/77] parisc: Ensure full cache coherency for kmap/kunmap
+Date: Mon, 13 Jan 2014 16:28:17 -0800
+Message-Id: <20140114002754.093379834@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,37 +28,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nat Gurumoorthy <natg@google.com>
+From: John David Anglin <dave.anglin@bell.net>
 
-[ Upstream commit 388d3335575f4c056dcf7138a30f1454e2145cd8 ]
+commit f8dae00684d678afa13041ef170cecfd1297ed40 upstream.
 
-The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
-uninitialized. From power on reset this register may have garbage in it. The
-Register Base Address register defines the device local address of a
-register. The data pointed to by this location is read or written using
-the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
-garbage any read or write of Register Data Register (PCI 128) will cause the
-PCI bus to lock up. The TCO watchdog will fire and bring down the system.
+Helge Deller noted a few weeks ago problems with the AIO support on
+parisc. This change is the result of numerous iterations on how best to
+deal with this problem.
 
-Signed-off-by: Nat Gurumoorthy <natg@google.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The solution adopted here is to provide full cache coherency in a
+uniform manner on all parisc systems. This involves calling
+flush_dcache_page() on kmap operations and flush_kernel_dcache_page() on
+kunmap operations. As a result, the copy_user_page() and
+clear_user_page() functions can be removed and the overall code is
+simpler.
+
+The change ensures that both userspace and kernel aliases to a mapped
+page are invalidated and flushed. This is necessary for the correct
+operation of PA8800 and PA8900 based systems which do not support
+inequivalent aliases.
+
+With this change, I have observed no cache related issues on c8000 and
+rp3440. It is now possible for example to do kernel builds with "-j64"
+on four way systems.
+
+On systems using XFS file systems, the patch recently posted by Mikulas
+Patocka to "fix crash using XFS on loopback" is needed to avoid a hang
+caused by an uninitialized lock passed to flush_dcache_page() in the
+page struct.
+
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -16485,6 +16485,9 @@ static int tg3_get_invariants(struct tg3
- 	/* Clear this out for sanity. */
- 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
+---
+ arch/parisc/include/asm/cacheflush.h |   12 ++++--------
+ arch/parisc/include/asm/page.h       |    5 ++---
+ arch/parisc/kernel/cache.c           |   35 -----------------------------------
+ 3 files changed, 6 insertions(+), 46 deletions(-)
+
+--- a/arch/parisc/include/asm/cacheflush.h
++++ b/arch/parisc/include/asm/cacheflush.h
+@@ -125,42 +125,38 @@ flush_anon_page(struct vm_area_struct *v
+ void mark_rodata_ro(void);
+ #endif
  
-+	/* Clear TG3PCI_REG_BASE_ADDR to prevent hangs. */
-+	tw32(TG3PCI_REG_BASE_ADDR, 0);
-+
- 	pci_read_config_dword(tp->pdev, TG3PCI_PCISTATE,
- 			      &pci_state_reg);
- 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
+-#ifdef CONFIG_PA8X00
+-/* Only pa8800, pa8900 needs this */
+-
+ #include <asm/kmap_types.h>
+ 
+ #define ARCH_HAS_KMAP
+ 
+-void kunmap_parisc(void *addr);
+-
+ static inline void *kmap(struct page *page)
+ {
+ 	might_sleep();
++	flush_dcache_page(page);
+ 	return page_address(page);
+ }
+ 
+ static inline void kunmap(struct page *page)
+ {
+-	kunmap_parisc(page_address(page));
++	flush_kernel_dcache_page_addr(page_address(page));
+ }
+ 
+ static inline void *kmap_atomic(struct page *page)
+ {
+ 	pagefault_disable();
++	flush_dcache_page(page);
+ 	return page_address(page);
+ }
+ 
+ static inline void __kunmap_atomic(void *addr)
+ {
+-	kunmap_parisc(addr);
++	flush_kernel_dcache_page_addr(addr);
+ 	pagefault_enable();
+ }
+ 
+ #define kmap_atomic_prot(page, prot)	kmap_atomic(page)
+ #define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
+ #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
+-#endif
+ 
+ #endif /* _PARISC_CACHEFLUSH_H */
+ 
+--- a/arch/parisc/include/asm/page.h
++++ b/arch/parisc/include/asm/page.h
+@@ -28,9 +28,8 @@ struct page;
+ 
+ void clear_page_asm(void *page);
+ void copy_page_asm(void *to, void *from);
+-void clear_user_page(void *vto, unsigned long vaddr, struct page *pg);
+-void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
+-			   struct page *pg);
++#define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
++#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
+ 
+ /* #define CONFIG_PARISC_TMPALIAS */
+ 
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -388,41 +388,6 @@ void flush_kernel_dcache_page_addr(void
+ }
+ EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
+ 
+-void clear_user_page(void *vto, unsigned long vaddr, struct page *page)
+-{
+-	clear_page_asm(vto);
+-	if (!parisc_requires_coherency())
+-		flush_kernel_dcache_page_asm(vto);
+-}
+-EXPORT_SYMBOL(clear_user_page);
+-
+-void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
+-	struct page *pg)
+-{
+-	/* Copy using kernel mapping.  No coherency is needed
+-	   (all in kmap/kunmap) on machines that don't support
+-	   non-equivalent aliasing.  However, the `from' page
+-	   needs to be flushed before it can be accessed through
+-	   the kernel mapping. */
+-	preempt_disable();
+-	flush_dcache_page_asm(__pa(vfrom), vaddr);
+-	preempt_enable();
+-	copy_page_asm(vto, vfrom);
+-	if (!parisc_requires_coherency())
+-		flush_kernel_dcache_page_asm(vto);
+-}
+-EXPORT_SYMBOL(copy_user_page);
+-
+-#ifdef CONFIG_PA8X00
+-
+-void kunmap_parisc(void *addr)
+-{
+-	if (parisc_requires_coherency())
+-		flush_kernel_dcache_page_addr(addr);
+-}
+-EXPORT_SYMBOL(kunmap_parisc);
+-#endif
+-
+ void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
+ {
+ 	unsigned long flags;
 
 
