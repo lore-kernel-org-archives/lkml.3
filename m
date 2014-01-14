@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaANQ0F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:26:05 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:42778 "EHLO relay.sgi.com"
+	id S1751677AbaANQZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:25:58 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:42796 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751503AbaANQZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751492AbaANQZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Jan 2014 11:25:53 -0500
-Message-Id: <20140114162551.318251993@asylum.americas.sgi.com>
+Message-Id: <20140114162551.635540667@asylum.americas.sgi.com>
 References: <20140114162551.093907830@asylum.americas.sgi.com>
 User-Agent: quilt/0.46-1
-Date: Tue, 14 Jan 2014 10:25:52 -0600
+Date: Tue, 14 Jan 2014 10:25:54 -0600
 From: Mike Travis <travis@sgi.com>
 To: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -19,88 +19,123 @@ To: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Hedi Berriche <hedi@sgi.com>, Russ Anderson <rja@sgi.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] KGDB/KDB: Fix no KDB config problem v2.
-Content-Disposition: inline; filename=fix-no-kdb-error.patch
+Subject: [PATCH 3/3] UV/NMI/KGDB/KDB: Fix UV NMI handler when KDB not configured v2
+Content-Disposition: inline; filename=uv-fix-use-kgdb.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some code added to the debug_core module had KDB dependencies that it
-shouldn't have.  Move the KDB dependent REASON back to the caller to
-remove the dependency in the debug core code.
+Fix UV call into kgdb to depend only on whether KGDB is defined and not
+both KGDB and KDB.  This allows the power nmi command to use the gdb
+remote connection if enabled.  Note new action of 'kgdb' needs to be set
+as well to indicate user wants to wait for gdb to be connected.  If it's
+set to 'kdb' then an error message is displayed if KDB is not configured.
 
-Update the call from the UV NMI handler to conform to the new interface.
+Also note that if both KGDB and KDB are enabled, then the action of 'kgdb'
+or 'kdb' has no affect on which is used.  See the KGDB documentation for
+further information.
 
 Signed-off-by: Mike Travis <travis@sgi.com>
 Reviewed-by: Hedi Berriche <hedi@sgi.com>
 ---
-v2: fix checkpatch error: KDB_REASON_SYSTEM_NMI below had a preceding space.
+v2: Fixed some typos.
 ---
- arch/x86/platform/uv/uv_nmi.c |    2 +-
- include/linux/kgdb.h          |    3 ++-
- kernel/debug/debug_core.c     |    5 +++--
- kernel/debug/debug_core.h     |    2 --
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/platform/uv/uv_nmi.c |   56 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 42 insertions(+), 14 deletions(-)
 
 --- linux.orig/arch/x86/platform/uv/uv_nmi.c
 +++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -546,7 +546,7 @@ static void uv_call_kdb(int cpu, struct
+@@ -148,7 +148,8 @@ module_param_named(retry_count, uv_nmi_r
+  *  "dump"	- dump process stack for each cpu
+  *  "ips"	- dump IP info for each cpu
+  *  "kdump"	- do crash dump
+- *  "kdb"	- enter KDB/KGDB (default)
++ *  "kdb"	- enter KDB (default)
++ *  "kgdb"	- enter KGDB
+  */
+ static char uv_nmi_action[8] = "kdb";
+ module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
+@@ -537,18 +538,45 @@ static inline void uv_nmi_kdump(int cpu,
+ }
+ #endif /* !CONFIG_KEXEC */
+ 
++#ifdef CONFIG_KGDB
+ #ifdef CONFIG_KGDB_KDB
+-/* Call KDB from NMI handler */
+-static void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
++static inline int uv_nmi_kdb_reason(void)
+ {
+-	int ret;
++	return KDB_REASON_SYSTEM_NMI;
++}
++#else /* !CONFIG_KGDB_KDB */
++static inline int uv_nmi_kdb_reason(void)
++{
++	/* Insure user is expecting to attach gdb remote */
++	if (uv_nmi_action_is("kgdb"))
++		return 0;
+ 
++	pr_err("UV: NMI error: KDB is not enabled in this kernel\n");
++	return -1;
++}
++#endif /* CONFIG_KGDB_KDB */
++
++/*
++ * Call KGDB/KDB from NMI handler
++ *
++ * Note that if both KGDB and KDB are configured, then the action of 'kgdb' or
++ * 'kdb' has no affect on which is used.  See the KGDB documention for further
++ * information.
++ */
++static void uv_call_kgdb_kdb(int cpu, struct pt_regs *regs, int master)
++{
  	if (master) {
++		int reason = uv_nmi_kdb_reason();
++		int ret;
++
++		if (reason < 0)
++			return;
++
  		/* call KGDB NMI handler as MASTER */
- 		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
--					&uv_nmi_slave_continue);
-+			KDB_REASON_SYSTEM_NMI, &uv_nmi_slave_continue);
+-		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
+-			KDB_REASON_SYSTEM_NMI, &uv_nmi_slave_continue);
++		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs, reason,
++				&uv_nmi_slave_continue);
  		if (ret) {
- 			pr_alert("KDB returned error, is kgdboc set?\n");
+-			pr_alert("KDB returned error, is kgdboc set?\n");
++			pr_alert("KGDB returned error, is kgdboc set?\n");
  			atomic_set(&uv_nmi_slave_continue, SLAVE_EXIT);
---- linux.orig/include/linux/kgdb.h
-+++ linux/include/linux/kgdb.h
-@@ -310,7 +310,8 @@ extern int
- kgdb_handle_exception(int ex_vector, int signo, int err_code,
- 		      struct pt_regs *regs);
- extern int kgdb_nmicallback(int cpu, void *regs);
--extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *snd_rdy);
-+extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, int err_code,
-+			  atomic_t *snd_rdy);
- extern void gdbstub_exit(int status);
- 
- extern int			kgdb_single_step;
---- linux.orig/kernel/debug/debug_core.c
-+++ linux/kernel/debug/debug_core.c
-@@ -736,7 +736,8 @@ int kgdb_nmicallback(int cpu, void *regs
- 	return 1;
+ 		}
+ 	} else {
+@@ -567,12 +595,12 @@ static void uv_call_kdb(int cpu, struct
+ 	uv_nmi_sync_exit(master);
  }
  
--int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *send_ready)
-+int kgdb_nmicallin(int cpu, int trapnr, void *regs, int err_code,
-+							atomic_t *send_ready)
+-#else /* !CONFIG_KGDB_KDB */
+-static inline void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
++#else /* !CONFIG_KGDB */
++static inline void uv_call_kgdb_kdb(int cpu, struct pt_regs *regs, int master)
  {
- #ifdef CONFIG_SMP
- 	if (!kgdb_io_ready(0) || !send_ready)
-@@ -750,7 +751,7 @@ int kgdb_nmicallin(int cpu, int trapnr,
- 		ks->cpu			= cpu;
- 		ks->ex_vector		= trapnr;
- 		ks->signo		= SIGTRAP;
--		ks->err_code		= KGDB_KDB_REASON_SYSTEM_NMI;
-+		ks->err_code		= err_code;
- 		ks->linux_regs		= regs;
- 		ks->send_ready		= send_ready;
- 		kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
---- linux.orig/kernel/debug/debug_core.h
-+++ linux/kernel/debug/debug_core.h
-@@ -75,13 +75,11 @@ extern int kdb_stub(struct kgdb_state *k
- extern int kdb_parse(const char *cmdstr);
- extern int kdb_common_init_state(struct kgdb_state *ks);
- extern int kdb_common_deinit_state(void);
--#define KGDB_KDB_REASON_SYSTEM_NMI KDB_REASON_SYSTEM_NMI
- #else /* ! CONFIG_KGDB_KDB */
- static inline int kdb_stub(struct kgdb_state *ks)
- {
- 	return DBG_PASS_EVENT;
+-	pr_err("UV: NMI error: KGDB/KDB is not enabled in this kernel\n");
++	pr_err("UV: NMI error: KGDB is not enabled in this kernel\n");
  }
--#define KGDB_KDB_REASON_SYSTEM_NMI 0
- #endif /* CONFIG_KGDB_KDB */
+-#endif /* !CONFIG_KGDB_KDB */
++#endif /* !CONFIG_KGDB */
  
- #endif /* _DEBUG_CORE_H_ */
+ /*
+  * UV NMI handler
+@@ -606,9 +634,9 @@ int uv_handle_nmi(unsigned int reason, s
+ 	if (uv_nmi_action_is("ips") || uv_nmi_action_is("dump"))
+ 		uv_nmi_dump_state(cpu, regs, master);
+ 
+-	/* Call KDB if enabled */
+-	else if (uv_nmi_action_is("kdb"))
+-		uv_call_kdb(cpu, regs, master);
++	/* Call KGDB/KDB if enabled */
++	else if (uv_nmi_action_is("kdb") || uv_nmi_action_is("kgdb"))
++		uv_call_kgdb_kdb(cpu, regs, master);
+ 
+ 	/* Clear per_cpu "in nmi" flag */
+ 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
 
 -- 
