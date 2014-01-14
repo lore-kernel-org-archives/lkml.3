@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaANAlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:41:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54387 "EHLO
+	id S1754226AbaANAld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:41:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54392 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871AbaANA2g (ORCPT
+	with ESMTP id S1753874AbaANA2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 19:28:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 16/77] net: unix: allow set_peek_off to fail
-Date: Mon, 13 Jan 2014 16:27:37 -0800
-Message-Id: <20140114002752.960640210@linuxfoundation.org>
+Subject: [PATCH 3.12 43/77] sfc: Stop/re-start PTP when stopping/starting the datapath.
+Date: Mon, 13 Jan 2014 16:28:04 -0800
+Message-Id: <20140114002753.724312482@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,72 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Alexandre Rames <arames@solarflare.com>
 
-[ Upstream commit 12663bfc97c8b3fdb292428105dd92d563164050 ]
+[ Upstream commit 2ea4dc28a5bcec408e01a8772763871638a5ec79 ]
 
-unix_dgram_recvmsg() will hold the readlock of the socket until recv
-is complete.
+This disables PTP when we bring the interface down to avoid getting
+unmatched RX timestamp events, and tries to re-enable it when bringing
+the interface up.
 
-In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
-unix_dgram_recvmsg() will complete (which can take a while) without allowing
-us to break out of it, triggering a hung task spew.
+[bwh: Make efx_ptp_stop() safe on Falcon. Introduce
+ efx_ptp_{start,stop}_datapath() functions; we'll expand them later.]
 
-Instead, allow set_peek_off to fail, this way userspace will not hang.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Fixes: 7c236c43b838 ('sfc: Add support for IEEE-1588 PTP')
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/net.h |    2 +-
- net/core/sock.c     |    2 +-
- net/unix/af_unix.c  |    8 ++++++--
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/sfc/efx.c |    4 ++++
+ drivers/net/ethernet/sfc/nic.h |    2 ++
+ drivers/net/ethernet/sfc/ptp.c |   30 +++++++++++++++++++++++++++---
+ 3 files changed, 33 insertions(+), 3 deletions(-)
 
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -180,7 +180,7 @@ struct proto_ops {
- 				      int offset, size_t size, int flags);
- 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
- 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
--	void		(*set_peek_off)(struct sock *sk, int val);
-+	int		(*set_peek_off)(struct sock *sk, int val);
- };
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -645,6 +645,8 @@ static void efx_start_datapath(struct ef
+ 		WARN_ON(channel->rx_pkt_n_frags);
+ 	}
  
- #define DECLARE_SOCKADDR(type, dst, src)	\
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -888,7 +888,7 @@ set_rcvbuf:
++	efx_ptp_start_datapath(efx);
++
+ 	if (netif_device_present(efx->net_dev))
+ 		netif_tx_wake_all_queues(efx->net_dev);
+ }
+@@ -659,6 +661,8 @@ static void efx_stop_datapath(struct efx
+ 	EFX_ASSERT_RESET_SERIALISED(efx);
+ 	BUG_ON(efx->port_enabled);
  
- 	case SO_PEEK_OFF:
- 		if (sock->ops->set_peek_off)
--			sock->ops->set_peek_off(sk, val);
-+			ret = sock->ops->set_peek_off(sk, val);
- 		else
- 			ret = -EOPNOTSUPP;
- 		break;
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -530,13 +530,17 @@ static int unix_seqpacket_sendmsg(struct
- static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
- 				  struct msghdr *, size_t, int);
++	efx_ptp_stop_datapath(efx);
++
+ 	/* Stop RX refill */
+ 	efx_for_each_channel(channel, efx) {
+ 		efx_for_each_channel_rx_queue(rx_queue, channel)
+--- a/drivers/net/ethernet/sfc/nic.h
++++ b/drivers/net/ethernet/sfc/nic.h
+@@ -528,6 +528,8 @@ extern void efx_ptp_get_ts_info(struct e
+ extern bool efx_ptp_is_ptp_tx(struct efx_nic *efx, struct sk_buff *skb);
+ extern int efx_ptp_tx(struct efx_nic *efx, struct sk_buff *skb);
+ extern void efx_ptp_event(struct efx_nic *efx, efx_qword_t *ev);
++void efx_ptp_start_datapath(struct efx_nic *efx);
++void efx_ptp_stop_datapath(struct efx_nic *efx);
  
--static void unix_set_peek_off(struct sock *sk, int val)
-+static int unix_set_peek_off(struct sock *sk, int val)
+ extern const struct efx_nic_type falcon_a1_nic_type;
+ extern const struct efx_nic_type falcon_b0_nic_type;
+--- a/drivers/net/ethernet/sfc/ptp.c
++++ b/drivers/net/ethernet/sfc/ptp.c
+@@ -801,9 +801,14 @@ fail:
+ static int efx_ptp_stop(struct efx_nic *efx)
  {
- 	struct unix_sock *u = unix_sk(sk);
+ 	struct efx_ptp_data *ptp = efx->ptp_data;
+-	int rc = efx_ptp_disable(efx);
+ 	struct list_head *cursor;
+ 	struct list_head *next;
++	int rc;
++
++	if (ptp == NULL)
++		return 0;
++
++	rc = efx_ptp_disable(efx);
  
--	mutex_lock(&u->readlock);
-+	if (mutex_lock_interruptible(&u->readlock))
-+		return -EINTR;
-+
- 	sk->sk_peek_off = val;
- 	mutex_unlock(&u->readlock);
-+
-+	return 0;
+ 	if (ptp->rxfilter_installed) {
+ 		efx_filter_remove_id_safe(efx, EFX_FILTER_PRI_REQUIRED,
+@@ -828,6 +833,13 @@ static int efx_ptp_stop(struct efx_nic *
+ 	return rc;
  }
  
++static int efx_ptp_restart(struct efx_nic *efx)
++{
++	if (efx->ptp_data && efx->ptp_data->enabled)
++		return efx_ptp_start(efx);
++	return 0;
++}
++
+ static void efx_ptp_pps_worker(struct work_struct *work)
+ {
+ 	struct efx_ptp_data *ptp =
+@@ -1125,7 +1137,7 @@ static int efx_ptp_change_mode(struct ef
+ {
+ 	if ((enable_wanted != efx->ptp_data->enabled) ||
+ 	    (enable_wanted && (efx->ptp_data->mode != new_mode))) {
+-		int rc;
++		int rc = 0;
  
+ 		if (enable_wanted) {
+ 			/* Change of mode requires disable */
+@@ -1142,7 +1154,8 @@ static int efx_ptp_change_mode(struct ef
+ 			 * succeed.
+ 			 */
+ 			efx->ptp_data->mode = new_mode;
+-			rc = efx_ptp_start(efx);
++			if (netif_running(efx->net_dev))
++				rc = efx_ptp_start(efx);
+ 			if (rc == 0) {
+ 				rc = efx_ptp_synchronize(efx,
+ 							 PTP_SYNC_ATTEMPTS * 2);
+@@ -1515,3 +1528,14 @@ void efx_ptp_probe(struct efx_nic *efx)
+ 		efx->extra_channel_type[EFX_EXTRA_CHANNEL_PTP] =
+ 			&efx_ptp_channel_type;
+ }
++
++void efx_ptp_start_datapath(struct efx_nic *efx)
++{
++	if (efx_ptp_restart(efx))
++		netif_err(efx, drv, efx->net_dev, "Failed to restart PTP.\n");
++}
++
++void efx_ptp_stop_datapath(struct efx_nic *efx)
++{
++	efx_ptp_stop(efx);
++}
 
 
