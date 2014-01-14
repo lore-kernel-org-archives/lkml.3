@@ -1,133 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaANUkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:40:16 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:27967 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaANUkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:40:15 -0500
+	id S1752009AbaANUk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:40:29 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:27103 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713AbaANUkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:40:24 -0500
 X-IronPort-AV: E=Sophos;i="4.95,659,1384300800"; 
-   d="scan'208";a="90738294"
+   d="scan'208";a="92858946"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v4 4/9] xen-netback: Change RX path for mapped SKB fragments
-Date: Tue, 14 Jan 2014 20:39:50 +0000
-Message-ID: <1389731995-9887-5-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v4 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY instead of copy
+Date: Tue, 14 Jan 2014 20:39:46 +0000
+Message-ID: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RX path need to know if the SKB fragments are stored on pages from another
-domain.
+A long known problem of the upstream netback implementation that on the TX
+path (from guest to Dom0) it copies the whole packet from guest memory into
+Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
+huge perfomance penalty. The classic kernel version of netback used grant
+mapping, and to get notified when the page can be unmapped, it used page
+destructors. Unfortunately that destructor is not an upstreamable solution.
+Ian Campbell's skb fragment destructor patch series [1] tried to solve this
+problem, however it seems to be very invasive on the network stack's code,
+and therefore haven't progressed very well.
+This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
+know when the skb is freed up. That is the way KVM solved the same problem,
+and based on my initial tests it can do the same for us. Avoiding the extra
+copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
+Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
+running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
+switch)
+Based on my investigations the packet get only copied if it is delivered to
+Dom0 stack, which is due to this [2] patch. That's a bit unfortunate, but
+luckily it doesn't cause a major regression for this usecase. In the future
+we should try to eliminate that copy somehow.
+There are a few spinoff tasks which will be addressed in separate patches:
+- grant copy the header directly instead of map and memcpy. This should help
+  us avoiding TLB flushing
+- use something else than ballooned pages
+- fix grant map to use page->index properly
+I will run some more extensive tests, but some basic XenRT tests were already
+passed with good results.
+I've tried to broke it down to smaller patches, with mixed results, so I
+welcome suggestions on that part as well:
+1: Introduce TX grant map definitions
+2: Change TX path from grant copy to mapping
+3: Remove old TX grant copy definitons and fix indentations
+4: Change RX path for mapped SKB fragments
+5: Add stat counters for zerocopy
+6: Handle guests with too many frags
+7: Add stat counters for frag_list skbs
+8: Timeout packets in RX path
+9: Aggregate TX unmap operations
 
-v4:
-- indentation fixes
+v2: I've fixed some smaller things, see the individual patches. I've added a
+few new stat counters, and handling the important use case when an older guest
+sends lots of slots. Instead of delayed copy now we timeout packets on the RX
+path, based on the assumption that otherwise packets should get stucked
+anywhere else. Finally some unmap batching to avoid too much TLB flush
+
+v3: Apart from fixing a few things mentioned in responses the important change
+is the use the hypercall directly for grant [un]mapping, therefore we can
+avoid m2p override.
+
+v4: Now we are using a new grant mapping API to avoid m2p_override. The RX queue
+timeout logic changed also.
+
+[1] http://lwn.net/Articles/491522/
+[2] https://lkml.org/lkml/2012/7/20/363
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/netback.c |   46 +++++++++++++++++++++++++++++++++----
- 1 file changed, 41 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index f74fa92..d43444d 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -226,7 +226,9 @@ static struct xenvif_rx_meta *get_next_rx_buffer(struct xenvif *vif,
- static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
- 				 struct netrx_pending_operations *npo,
- 				 struct page *page, unsigned long size,
--				 unsigned long offset, int *head)
-+				 unsigned long offset, int *head,
-+				 struct xenvif *foreign_vif,
-+				 grant_ref_t foreign_gref)
- {
- 	struct gnttab_copy *copy_gop;
- 	struct xenvif_rx_meta *meta;
-@@ -268,8 +270,15 @@ static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
- 		copy_gop->flags = GNTCOPY_dest_gref;
- 		copy_gop->len = bytes;
- 
--		copy_gop->source.domid = DOMID_SELF;
--		copy_gop->source.u.gmfn = virt_to_mfn(page_address(page));
-+		if (foreign_vif) {
-+			copy_gop->source.domid = foreign_vif->domid;
-+			copy_gop->source.u.ref = foreign_gref;
-+			copy_gop->flags |= GNTCOPY_source_gref;
-+		} else {
-+			copy_gop->source.domid = DOMID_SELF;
-+			copy_gop->source.u.gmfn =
-+				virt_to_mfn(page_address(page));
-+		}
- 		copy_gop->source.offset = offset;
- 
- 		copy_gop->dest.domid = vif->domid;
-@@ -330,6 +339,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 	int old_meta_prod;
- 	int gso_type;
- 	int gso_size;
-+	struct ubuf_info *ubuf = skb_shinfo(skb)->destructor_arg;
-+	grant_ref_t foreign_grefs[MAX_SKB_FRAGS];
-+	struct xenvif *foreign_vif = NULL;
- 
- 	old_meta_prod = npo->meta_prod;
- 
-@@ -370,6 +382,26 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 	npo->copy_off = 0;
- 	npo->copy_gref = req->gref;
- 
-+	if ((skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) &&
-+		 (ubuf->callback == &xenvif_zerocopy_callback)) {
-+		u16 pending_idx = ubuf->desc;
-+		int i = 0;
-+		struct pending_tx_info *temp =
-+			container_of(ubuf,
-+				     struct pending_tx_info,
-+				     callback_struct);
-+		foreign_vif =
-+			container_of(temp - pending_idx,
-+				     struct xenvif,
-+				     pending_tx_info[0]);
-+		do {
-+			pending_idx = ubuf->desc;
-+			foreign_grefs[i++] =
-+				foreign_vif->pending_tx_info[pending_idx].req.gref;
-+			ubuf = (struct ubuf_info *) ubuf->ctx;
-+		} while (ubuf);
-+	}
-+
- 	data = skb->data;
- 	while (data < skb_tail_pointer(skb)) {
- 		unsigned int offset = offset_in_page(data);
-@@ -379,7 +411,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 			len = skb_tail_pointer(skb) - data;
- 
- 		xenvif_gop_frag_copy(vif, skb, npo,
--				     virt_to_page(data), len, offset, &head);
-+				     virt_to_page(data), len, offset, &head,
-+				     NULL,
-+				     0);
- 		data += len;
- 	}
- 
-@@ -388,7 +422,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
- 				     skb_frag_page(&skb_shinfo(skb)->frags[i]),
- 				     skb_frag_size(&skb_shinfo(skb)->frags[i]),
- 				     skb_shinfo(skb)->frags[i].page_offset,
--				     &head);
-+				     &head,
-+				     foreign_vif,
-+				     foreign_grefs[i]);
- 	}
- 
- 	return npo->meta_prod - old_meta_prod;
