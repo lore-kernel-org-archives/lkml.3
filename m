@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaANLJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 06:09:49 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:49644 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351AbaANLJr convert rfc822-to-8bit (ORCPT
+	id S1751793AbaANLKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 06:10:16 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:34506 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751503AbaANLKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:09:47 -0500
-Date: Tue, 14 Jan 2014 12:09:13 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Subject: Re: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
- asoc_simple_card_data for the simple card driver data
-Message-ID: <20140114120913.19d883fe@armhf>
-In-Reply-To: <96cb876ff05c4062ab5a2c92fb7b3c41@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1389678282-1097-1-git-send-email-Li.Xiubo@freescale.com>
-	<871u0bgiai.wl%kuninori.morimoto.gx@gmail.com>
-	<96cb876ff05c4062ab5a2c92fb7b3c41@BY2PR03MB505.namprd03.prod.outlook.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Tue, 14 Jan 2014 06:10:12 -0500
+From: <srinivas.kandagatla@st.com>
+To: <linux-media@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        <linux-kernel@vger.kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH v1] media: st-rc: Add reset support
+Date: Tue, 14 Jan 2014 11:04:21 +0000
+Message-ID: <1389697461-21001-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014 07:56:32 +0000
-"Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com> wrote:
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-> 
-> > > Whether the dt is used or not, almost all the simple card information
-> > > for the DAI link and sound card are initialized in the simple card driver.
-> > >
-> > > And for the platform caller, the snd_link and snd_card are of no use, so
-> > > move them from struct asoc_simple_card_info to struct asoc_simple_card_data.
-> > >
-> > > And now only one DAI link is supported for simple card.
-> > >
-> > > Suggested-by: Jean-Francois Moine <moinejf@free.fr>
-> > > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > > ---
-> > 
-> > This patch seems have many this kind of lines
-> >   -	info->xxx
-> >   +	sdata->info->xxx
-> > 
-> > But, how about add this line to each function ?
-> > 
-> >      struct asoc_simple_card_info *info = &sdata->info;
-> > 
-> > Patch will be more readable
-> >
-> 
-> Yes, that's looks perfect.
-> 
-> See the next version please.
+Some of the SOCs hold the IRB IP in softreset state by default.
+For this IP to work driver needs to bring it out of softreset.
+This patch adds support to reset the IP via reset framework.
 
-Please, don't work on an other version. I am preparing an other patch which will do quite the same as yours, but which will be easier to extend to many DAI links.
+Without this patch the driver can not work with SoCs which holds the IP
+in softreset.
 
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+---
+ drivers/media/rc/st_rc.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/rc/st_rc.c b/drivers/media/rc/st_rc.c
+index 65120c2..8f0cddb 100644
+--- a/drivers/media/rc/st_rc.c
++++ b/drivers/media/rc/st_rc.c
+@@ -13,6 +13,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/reset.h>
+ #include <media/rc-core.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+@@ -28,6 +29,7 @@ struct st_rc_device {
+ 	int				sample_mult;
+ 	int				sample_div;
+ 	bool				rxuhfmode;
++	struct	reset_control		*rstc;
+ };
+ 
+ /* Registers */
+@@ -161,6 +163,10 @@ static void st_rc_hardware_init(struct st_rc_device *dev)
+ 	unsigned int rx_max_symbol_per = MAX_SYMB_TIME;
+ 	unsigned int rx_sampling_freq_div;
+ 
++	/* Enable the IP */
++	if (dev->rstc)
++		reset_control_deassert(dev->rstc);
++
+ 	clk_prepare_enable(dev->sys_clock);
+ 	baseclock = clk_get_rate(dev->sys_clock);
+ 
+@@ -271,6 +277,11 @@ static int st_rc_probe(struct platform_device *pdev)
+ 	else
+ 		rc_dev->rx_base = rc_dev->base;
+ 
++
++	rc_dev->rstc = reset_control_get(dev, NULL);
++	if (IS_ERR(rc_dev->rstc))
++		rc_dev->rstc = NULL;
++
+ 	rc_dev->dev = dev;
+ 	platform_set_drvdata(pdev, rc_dev);
+ 	st_rc_hardware_init(rc_dev);
+@@ -338,6 +349,8 @@ static int st_rc_suspend(struct device *dev)
+ 		writel(0x00, rc_dev->rx_base + IRB_RX_EN);
+ 		writel(0x00, rc_dev->rx_base + IRB_RX_INT_EN);
+ 		clk_disable_unprepare(rc_dev->sys_clock);
++		if (rc_dev->rstc)
++			reset_control_assert(rc_dev->rstc);
+ 	}
+ 
+ 	return 0;
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+1.7.6.5
+
