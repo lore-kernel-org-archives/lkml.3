@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaANA73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:59:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54111 "EHLO
+	id S1753364AbaANA1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:27:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54054 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370AbaANA1c (ORCPT
+	with ESMTP id S1753269AbaANA1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:32 -0500
+	Mon, 13 Jan 2014 19:27:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 3.10 51/62] mfd: rtsx_pcr: Disable interrupts before cancelling delayed works
-Date: Mon, 13 Jan 2014 16:27:16 -0800
-Message-Id: <20140114002711.910775199@linuxfoundation.org>
+        Ahmed Tamrawi <atamrawi@iastate.edu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 35/62] netpoll: Fix missing TXQ unlock and and OOPS.
+Date: Mon, 13 Jan 2014 16:27:00 -0800
+Message-Id: <20140114002711.463655146@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,40 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 73beb63d290f961c299526852884846b0d868840 upstream.
+[ Upstream commit aca5f58f9ba803ec8c2e6bcf890db17589e8dfcc ]
 
-This fixes a kernel panic when resuming from suspend to RAM.
-Without this fix an interrupt hits after the delayed work is canceled
-and thus requeues it. So we end up freeing an armed timer.
+The VLAN tag handling code in netpoll_send_skb_on_dev() has two problems.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+1) It exits without unlocking the TXQ.
+
+2) It then tries to queue a NULL skb to npinfo->txq.
+
+Reported-by: Ahmed Tamrawi <atamrawi@iastate.edu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/mfd/rtsx_pcr.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/core/netpoll.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1195,8 +1195,14 @@ static void rtsx_pci_remove(struct pci_d
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -386,8 +386,14 @@ void netpoll_send_skb_on_dev(struct netp
+ 					    !vlan_hw_offload_capable(netif_skb_features(skb),
+ 								     skb->vlan_proto)) {
+ 						skb = __vlan_put_tag(skb, skb->vlan_proto, vlan_tx_tag_get(skb));
+-						if (unlikely(!skb))
+-							break;
++						if (unlikely(!skb)) {
++							/* This is actually a packet drop, but we
++							 * don't want the code at the end of this
++							 * function to try and re-queue a NULL skb.
++							 */
++							status = NETDEV_TX_OK;
++							goto unlock_txq;
++						}
+ 						skb->vlan_tci = 0;
+ 					}
  
- 	pcr->remove_pci = true;
+@@ -395,6 +401,7 @@ void netpoll_send_skb_on_dev(struct netp
+ 					if (status == NETDEV_TX_OK)
+ 						txq_trans_update(txq);
+ 				}
++			unlock_txq:
+ 				__netif_tx_unlock(txq);
  
--	cancel_delayed_work(&pcr->carddet_work);
--	cancel_delayed_work(&pcr->idle_work);
-+	/* Disable interrupts at the pcr level */
-+	spin_lock_irq(&pcr->lock);
-+	rtsx_pci_writel(pcr, RTSX_BIER, 0);
-+	pcr->bier = 0;
-+	spin_unlock_irq(&pcr->lock);
-+
-+	cancel_delayed_work_sync(&pcr->carddet_work);
-+	cancel_delayed_work_sync(&pcr->idle_work);
- 
- 	mfd_remove_devices(&pcidev->dev);
- 
+ 				if (status == NETDEV_TX_OK)
 
 
