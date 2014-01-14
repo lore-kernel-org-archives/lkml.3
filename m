@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaANA55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:57:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54125 "EHLO
+	id S1755456AbaANA6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:58:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaANA1g (ORCPT
+	with ESMTP id S1753395AbaANA1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:36 -0500
+	Mon, 13 Jan 2014 19:27:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Gao feng <gaofeng@cn.fujitsu.com>, Li RongQing <roy.qing.li@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 27/62] rds: prevent dereference of a NULL device
-Date: Mon, 13 Jan 2014 16:26:52 -0800
-Message-Id: <20140114002711.236683682@linuxfoundation.org>
+Subject: [PATCH 3.10 26/62] ipv6: always set the new created dsts from in ip6_rt_copy
+Date: Mon, 13 Jan 2014 16:26:51 -0800
+Message-Id: <20140114002711.209002032@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,77 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit c2349758acf1874e4c2b93fe41d072336f1a31d0 ]
+[ Upstream commit 24f5b855e17df7e355eacd6c4a12cc4d6a6c9ff0 ]
 
-Binding might result in a NULL device, which is dereferenced
-causing this BUG:
+ip6_rt_copy only sets dst.from if ort has flag RTF_ADDRCONF and RTF_DEFAULT.
+but the prefix routes which did get installed by hand locally can have an
+expiration, and no any flag combination which can ensure a potential from
+does never expire, so we should always set the new created dst's from.
 
-[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
-4
-[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
-[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
-[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1317.264179] Dumping ftrace buffer:
-[ 1317.264774]    (ftrace buffer empty)
-[ 1317.265220] Modules linked in:
-[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
-next-20131218-sasha-00013-g2cebb9b-dirty #4159
-[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
-[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
-0x82/0x110
-[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
-[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
-[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
-[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
-[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
-[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
-0000
-[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
-[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
-[ 1317.270230] Stack:
-[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
-[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
-[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
-[ 1317.270230] Call Trace:
-[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
-[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
-[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
-[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
-[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
-[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
-[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
-[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
-[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
-[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
-89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
-4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
-[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
-[ 1317.270230]  RSP <ffff8803cd31bdf8>
-[ 1317.270230] CR2: 0000000000000974
+This also fixes the new created dst is always expired since the ort, which
+is created by RA, maybe has RTF_EXPIRES and RTF_ADDRCONF, but no RTF_DEFAULT.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+CC: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/ib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/route.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/net/rds/ib.c
-+++ b/net/rds/ib.c
-@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 add
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support iWARP devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
-+	if (ret || !cm_id->device ||
-+	    cm_id->device->node_type != RDMA_NODE_IB_CA)
- 		ret = -EADDRNOTAVAIL;
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1838,9 +1838,7 @@ static struct rt6_info *ip6_rt_copy(stru
+ 		else
+ 			rt->rt6i_gateway = *dest;
+ 		rt->rt6i_flags = ort->rt6i_flags;
+-		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
+-		    (RTF_DEFAULT | RTF_ADDRCONF))
+-			rt6_set_from(rt, ort);
++		rt6_set_from(rt, ort);
+ 		rt->rt6i_metric = 0;
  
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
+ #ifdef CONFIG_IPV6_SUBTREES
 
 
