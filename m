@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaANAuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:50:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54273 "EHLO
+	id S1755241AbaANAvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:51:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661AbaANA2M (ORCPT
+	with ESMTP id S1753650AbaANA2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:12 -0500
+	Mon, 13 Jan 2014 19:28:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
         "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Vlad Yasevich <vyasevich@gmail.com>, Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 08/77] macvtap: Do not double-count received packets
-Date: Mon, 13 Jan 2014 16:27:29 -0800
-Message-Id: <20140114002752.738781371@linuxfoundation.org>
+Subject: [PATCH 3.12 07/77] tun: unbreak truncated packet signalling
+Date: Mon, 13 Jan 2014 16:27:28 -0800
+Message-Id: <20140114002752.710463983@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -31,51 +31,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 006da7b07bc4d3a7ffabad17cf639eec6849c9dc ]
+[ Upstream commit e6fd07c899cd719bb5517bc7f32ce03a62220351 ]
 
-Currently macvlan will count received packets after calling each
-vlans receive handler.   Macvtap attempts to count the packet
-yet again when the user reads the packet from the tap socket.
-This code doesn't do this consistently either.  Remove the
-counting from macvtap and let only macvlan count received
-packets.
+Commit 6680ec68eff47d36f67b4351bc9836fd6cba9532
+(tuntap: hardware vlan tx support) breaks the truncated packet signal by nev
+return a length greater than iov length in tun_put_user(). This patch fixes
+by always return the length of packet plus possible vlan header. Caller can
+detect the truncated packet by comparing the return value and the size of io
+length.
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/net/tun.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -767,7 +767,6 @@ static ssize_t macvtap_put_user(struct m
- 				const struct sk_buff *skb,
- 				const struct iovec *iv, int len)
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1184,7 +1184,7 @@ static ssize_t tun_put_user(struct tun_s
  {
--	struct macvlan_dev *vlan;
- 	int ret;
- 	int vnet_hdr_len = 0;
- 	int vlan_offset = 0;
-@@ -821,15 +820,6 @@ static ssize_t macvtap_put_user(struct m
- 	copied += len;
+ 	struct tun_pi pi = { 0, skb->protocol };
+ 	ssize_t total = 0;
+-	int vlan_offset = 0;
++	int vlan_offset = 0, copied;
+ 
+ 	if (!(tun->flags & TUN_NO_PI)) {
+ 		if ((len -= sizeof(pi)) < 0)
+@@ -1248,6 +1248,8 @@ static ssize_t tun_put_user(struct tun_s
+ 		total += tun->vnet_hdr_sz;
+ 	}
+ 
++	copied = total;
++	total += skb->len;
+ 	if (!vlan_tx_tag_present(skb)) {
+ 		len = min_t(int, skb->len, len);
+ 	} else {
+@@ -1262,24 +1264,24 @@ static ssize_t tun_put_user(struct tun_s
+ 
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 		len = min_t(int, skb->len + VLAN_HLEN, len);
++		total += VLAN_HLEN;
+ 
+ 		copy = min_t(int, vlan_offset, len);
+-		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
++		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+ 		len -= copy;
+-		total += copy;
++		copied += copy;
+ 		if (ret || !len)
+ 			goto done;
+ 
+ 		copy = min_t(int, sizeof(veth), len);
+-		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
++		ret = memcpy_toiovecend(iv, (void *)&veth, copied, copy);
+ 		len -= copy;
+-		total += copy;
++		copied += copy;
+ 		if (ret || !len)
+ 			goto done;
+ 	}
+ 
+-	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
+-	total += len;
++	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
  
  done:
--	rcu_read_lock();
--	vlan = rcu_dereference(q->vlan);
--	if (vlan) {
--		preempt_disable();
--		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
--		preempt_enable();
--	}
--	rcu_read_unlock();
--
- 	return ret ? ret : copied;
- }
- 
+ 	tun->dev->stats.tx_packets++;
 
 
