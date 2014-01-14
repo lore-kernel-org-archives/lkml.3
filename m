@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795AbaANAnX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:43:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54371 "EHLO
+	id S1753826AbaANA23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:28:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836AbaANA2b (ORCPT
+	with ESMTP id S1753729AbaANA2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:31 -0500
+	Mon, 13 Jan 2014 19:28:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Curt Brune <curt@cumulusnetworks.com>,
-        Scott Feldman <sfeldma@cumulusnetworks.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Richard Cochran <richardcochran@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 39/77] bridge: use spin_lock_bh() in br_multicast_set_hash_max
-Date: Mon, 13 Jan 2014 16:28:00 -0800
-Message-Id: <20140114002753.613667125@linuxfoundation.org>
+Subject: [PATCH 3.12 29/77] arc_emac: fix potential use after free
+Date: Mon, 13 Jan 2014 16:27:50 -0800
+Message-Id: <20140114002753.334870963@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,63 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Curt Brune <curt@cumulusnetworks.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit fe0d692bbc645786bce1a98439e548ae619269f5 ]
+[ Upstream commit 37ec274e9713eafc2ba6c4471420f06cb8f68ecf ]
 
-br_multicast_set_hash_max() is called from process context in
-net/bridge/br_sysfs_br.c by the sysfs store_hash_max() function.
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 
-br_multicast_set_hash_max() calls spin_lock(&br->multicast_lock),
-which can deadlock the CPU if a softirq that also tries to take the
-same lock interrupts br_multicast_set_hash_max() while the lock is
-held .  This can happen quite easily when any of the bridge multicast
-timers expire, which try to take the same lock.
+skb_tx_timestamp(skb) should be called _before_ TX completion
+has a chance to trigger, otherwise it is too late and we access
+freed memory.
 
-The fix here is to use spin_lock_bh(), preventing other softirqs from
-executing on this CPU.
-
-Steps to reproduce:
-
-1. Create a bridge with several interfaces (I used 4).
-2. Set the "multicast query interval" to a low number, like 2.
-3. Enable the bridge as a multicast querier.
-4. Repeatedly set the bridge hash_max parameter via sysfs.
-
-  # brctl addbr br0
-  # brctl addif br0 eth1 eth2 eth3 eth4
-  # brctl setmcqi br0 2
-  # brctl setmcquerier br0 1
-
-  # while true ; do echo 4096 > /sys/class/net/br0/bridge/hash_max; done
-
-Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
-Signed-off-by: Scott Feldman <sfeldma@cumulusnetworks.com>
+Fixes: e4f2379db6c6 ("ethernet/arc/arc_emac - Add new driver")
+From: Eric Dumazet <edumazet@google.com>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_multicast.c |    4 ++--
+ drivers/net/ethernet/arc/emac_main.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -2004,7 +2004,7 @@ int br_multicast_set_hash_max(struct net
- 	u32 old;
- 	struct net_bridge_mdb_htable *mdb;
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -565,6 +565,8 @@ static int arc_emac_tx(struct sk_buff *s
+ 	/* Make sure pointer to data buffer is set */
+ 	wmb();
  
--	spin_lock(&br->multicast_lock);
-+	spin_lock_bh(&br->multicast_lock);
- 	if (!netif_running(br->dev))
- 		goto unlock;
++	skb_tx_timestamp(skb);
++
+ 	*info = cpu_to_le32(FOR_EMAC | FIRST_OR_LAST_MASK | len);
  
-@@ -2036,7 +2036,7 @@ rollback:
- 	}
+ 	/* Increment index to point to the next BD */
+@@ -579,8 +581,6 @@ static int arc_emac_tx(struct sk_buff *s
  
- unlock:
--	spin_unlock(&br->multicast_lock);
-+	spin_unlock_bh(&br->multicast_lock);
+ 	arc_reg_set(priv, R_STATUS, TXPL_MASK);
  
- 	return err;
+-	skb_tx_timestamp(skb);
+-
+ 	return NETDEV_TX_OK;
  }
+ 
 
 
