@@ -1,66 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbaANXqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:46:38 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:57443 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693AbaANXqg (ORCPT
+	id S1752141AbaANXsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:48:33 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54374 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaANXs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:46:36 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>, Boris BREZILLON <b.brezillon@overkiz.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: cleanup for 3.14 #2
-References: <1389190989-8261-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Tue, 14 Jan 2014 15:46:33 -0800
-In-Reply-To: <1389190989-8261-1-git-send-email-nicolas.ferre@atmel.com>
-	(Nicolas Ferre's message of "Wed, 8 Jan 2014 15:23:09 +0100")
-Message-ID: <877ga25dpi.fsf@linaro.org>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.1 (gnu/linux)
+	Tue, 14 Jan 2014 18:48:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20131216221615.3539.78656.stgit@bling.home>
+References: <20131216221615.3539.78656.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 14 Jan 2014 16:48:07 -0700
+Message-ID: <CAErSpo74iO-cD71+q-Bz52r4Eg1p9KpGQQXLnQ3zUxzs54YSuw@mail.gmail.com>
+Subject: Re: [PATCH] vfio-pci: Use pci "try" reset interface
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Ferre <nicolas.ferre@atmel.com> writes:
+On Mon, Dec 16, 2013 at 3:16 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> PCI resets will attempt to take the device_lock for any device to be
+> reset.  This is a problem if that lock is already held, for instance
+> in the device remove path.  It's not sufficient to simply kill the
+> user process or skip the reset if called after .remove as a race could
+> result in the same deadlock.  Instead, we handle all resets as "best
+> effort" using the PCI "try" reset interfaces.  This prevents the user
+> from being able to induce a deadlock by triggering a reset.
+>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>
+> This depends on the proposed pci "try" function/slot/bus reset patch.
+>
+>  drivers/vfio/pci/vfio_pci.c |   29 +++++++++--------------------
+>  1 file changed, 9 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> index 6ab71b9..576e34e 100644
+> --- a/drivers/vfio/pci/vfio_pci.c
+> +++ b/drivers/vfio/pci/vfio_pci.c
+> @@ -139,25 +139,14 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
+>         pci_write_config_word(pdev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+>
+>         /*
+> -        * Careful, device_lock may already be held.  This is the case if
+> -        * a driver unbind is blocked.  Try to get the locks ourselves to
+> -        * prevent a deadlock.
+> +        * Try to reset the device.  The success of this is dependent on
+> +        * being able to lock the device, which is not always possible.
+>          */
+>         if (vdev->reset_works) {
+> -               bool reset_done = false;
+> -
+> -               if (pci_cfg_access_trylock(pdev)) {
+> -                       if (device_trylock(&pdev->dev)) {
+> -                               __pci_reset_function_locked(pdev);
+> -                               reset_done = true;
+> -                               device_unlock(&pdev->dev);
+> -                       }
+> -                       pci_cfg_access_unlock(pdev);
+> -               }
+> -
+> -               if (!reset_done)
+> -                       pr_warn("%s: Unable to acquire locks for reset of %s\n",
+> -                               __func__, dev_name(&pdev->dev));
+> +               int ret = pci_try_reset_function(pdev);
+> +               if (ret)
+> +                       pr_debug("%s: reset of device %s = %d\n",
+> +                               __func__, dev_name(&pdev->dev), ret);
 
-> Arnd, Olof, Kevin,
->
-> A little "cleanup" pull-request for 3.14 that goes on top of the previous
-> AT91 cleanup material.
-> The thing to note from this pull-request is the beginning of board file removal
-> thank to the conversion to DT. We are still waiting for more feedback from
-> board maintainer to intensify the effort.
->
-> Thanks, best regards,
->
-> The following changes since commit b46e837d8ef1f3c777bbf9513e2cdb5d87d6c374:
->
->   ARM: at91/dt: remove old clk material (2013-12-02 15:31:29 +0100)
->
-> are available in the git repository at:
->
->   git://github.com/at91linux/linux-at91.git tags/at91-cleanup2
->
-> for you to fetch changes up to e91a5555df5883bbc204b0e1f8e0489d3f7f3f2e:
->
->   ARM: at91: switch Calao QIL-A9260 board to DT (2013-12-19 17:27:30 +0100)
->
-> ----------------------------------------------------------------
-> Second cleanup pull-request for 3.14:
-> - a tiny fix for the recent AT91 CCF implementation
-> - the switch of one platform to DT with board file removal
->
-> ----------------------------------------------------------------
+Why is this a pr_debug() instead of dev_dbg()?  I see vfio_pci.c seems
+to always use pr_*() instead of dev_*(), so you probably have a
+reason.
 
-Pulled into next/cleanup.
+The text of the message ("vfio_pci_disable: reset of device
+0000:00:00.1 = -35") doesn't seem terribly clear; as a user, I'd have
+to go look up the code to know whether I should be concerned about it.
+ Maybe it should be explicit that the device was not reset?
 
-Thanks,
-
-Kevin
+>         }
+>
+>         pci_restore_state(pdev);
+> @@ -514,7 +503,7 @@ static long vfio_pci_ioctl(void *device_data,
+>
+>         } else if (cmd == VFIO_DEVICE_RESET) {
+>                 return vdev->reset_works ?
+> -                       pci_reset_function(vdev->pdev) : -EINVAL;
+> +                       pci_try_reset_function(vdev->pdev) : -EINVAL;
+>
+>         } else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
+>                 struct vfio_pci_hot_reset_info hdr;
+> @@ -684,8 +673,8 @@ reset_info_exit:
+>                                                     &info, slot);
+>                 if (!ret)
+>                         /* User has access, do the reset */
+> -                       ret = slot ? pci_reset_slot(vdev->pdev->slot) :
+> -                                    pci_reset_bus(vdev->pdev->bus);
+> +                       ret = slot ? pci_try_reset_slot(vdev->pdev->slot) :
+> +                                    pci_try_reset_bus(vdev->pdev->bus);
+>
+>  hot_reset_release:
+>                 for (i--; i >= 0; i--)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
