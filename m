@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaANAgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:36:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54486 "EHLO
+	id S1754610AbaANAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:36:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037AbaANA3A (ORCPT
+	with ESMTP id S1754587AbaANAgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:00 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.12 68/77] mac80211: move "bufferable MMPDU" check to fix AP mode scan
-Date: Mon, 13 Jan 2014 16:28:29 -0800
-Message-Id: <20140114002754.425585764@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Jan 2014 19:36:22 -0500
+Date: Mon, 13 Jan 2014 16:36:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, qiuxishi@huawei.com,
+        dhowells@redhat.com, daeseok.youn@gmail.com, liuj97@gmail.com,
+        yinghai@kernel.org, zhangyanfei@cn.fujitsu.com,
+        santosh.shilimkar@ti.com, grygorii.strashko@ti.com,
+        tangchen@cn.fujitsu.com
+Subject: Re: [PATCH V3 2/2] mm/memblock: Add support for excluded memory
+ areas
+Message-Id: <20140113163620.ade5ee9171c5f443a227f8af@linux-foundation.org>
+In-Reply-To: <1389618217-48166-3-git-send-email-phacht@linux.vnet.ibm.com>
+References: <1389618217-48166-1-git-send-email-phacht@linux.vnet.ibm.com>
+	<1389618217-48166-3-git-send-email-phacht@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 13 Jan 2014 14:03:37 +0100 Philipp Hachtmann <phacht@linux.vnet.ibm.com> wrote:
 
-------------------
+> Add a new memory state "nomap" to memblock. This can be used to truncate
+> the usable memory in the system without forgetting about what is really
+> installed.
+> 
+> ...
+>
+>  5 files changed, 254 insertions(+), 70 deletions(-)
 
-From: Felix Fietkau <nbd@openwrt.org>
+Patch is big.  I'll toss this in for some testing but it does look too
+large and late for 3.14.  How will this affect your s390 development?
 
-commit 277d916fc2e959c3f106904116bb4f7b1148d47a upstream.
-
-The check needs to apply to both multicast and unicast packets,
-otherwise probe requests on AP mode scans are sent through the multicast
-buffer queue, which adds long delays (often longer than the scanning
-interval).
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/mac80211/tx.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
-
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -463,7 +463,6 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- {
- 	struct sta_info *sta = tx->sta;
- 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
--	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
- 	struct ieee80211_local *local = tx->local;
- 
- 	if (unlikely(!sta))
-@@ -474,15 +473,6 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
- 		int ac = skb_get_queue_mapping(tx->skb);
- 
--		/* only deauth, disassoc and action are bufferable MMPDUs */
--		if (ieee80211_is_mgmt(hdr->frame_control) &&
--		    !ieee80211_is_deauth(hdr->frame_control) &&
--		    !ieee80211_is_disassoc(hdr->frame_control) &&
--		    !ieee80211_is_action(hdr->frame_control)) {
--			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
--			return TX_CONTINUE;
--		}
--
- 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
- 		       sta->sta.addr, sta->sta.aid, ac);
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
-@@ -525,9 +515,22 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- static ieee80211_tx_result debug_noinline
- ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
- {
-+	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
-+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
-+
- 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
- 		return TX_CONTINUE;
- 
-+	/* only deauth, disassoc and action are bufferable MMPDUs */
-+	if (ieee80211_is_mgmt(hdr->frame_control) &&
-+	    !ieee80211_is_deauth(hdr->frame_control) &&
-+	    !ieee80211_is_disassoc(hdr->frame_control) &&
-+	    !ieee80211_is_action(hdr->frame_control)) {
-+		if (tx->flags & IEEE80211_TX_UNICAST)
-+			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
-+		return TX_CONTINUE;
-+	}
-+
- 	if (tx->flags & IEEE80211_TX_UNICAST)
- 		return ieee80211_tx_h_unicast_ps_buf(tx);
- 	else
-
+Hopefully some people who are familiar with memblock will have time to
+review this carefully, please.
 
