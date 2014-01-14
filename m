@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaANOGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:06:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:37666 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaANOGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:06:09 -0500
-Date: Tue, 14 Jan 2014 08:04:40 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Suman Anna <s-anna@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Mark Rutland <mark.rutland@arm.com>, Tony Lindgren <tony@atomide.com>,
-        Kumar Gala <galak@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 6/7] hwspinlock/omap: enable module before reading
- SYSSTATUS register
-Message-ID: <20140114140440.GA15785@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <1389658764-39199-7-git-send-email-s-anna@ti.com>
- <20140114131052.GA10818@saruman.home>
+	id S1751494AbaANOMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:12:23 -0500
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:36864 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaANOMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 09:12:20 -0500
+Date: Tue, 14 Jan 2014 17:09:23 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] zram: rework reported to end-user zram statistics
+Message-ID: <20140114140923.GD2226@swordfish.minsk.epam.com>
+References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1389692260-4421-4-git-send-email-sergey.senozhatsky@gmail.com>
+ <52D513BD.7000800@redhat.com>
+ <20140114111012.GC2180@swordfish.minsk.epam.com>
+ <52D53F11.3090005@redhat.com>
+ <20140114135355.GC2226@swordfish.minsk.epam.com>
+ <52D54375.8070706@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114131052.GA10818@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D54375.8070706@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On (01/14/14 15:02), Jerome Marchand wrote:
+> On 01/14/2014 02:53 PM, Sergey Senozhatsky wrote:
+> > On (01/14/14 14:43), Jerome Marchand wrote:
+> > [..]
+> >>>>
+> >>>> That's weird: good/bad_compress are accounted, but it seems to me that
+> >>>> they are to never used in any way. If so, there is indeed no reason to
+> >>>> keep them.
+> >>>>
+> >>>>
+> >>>>> Account each sub-request
+> >>>>> compression size so we can calculate real device compression ratio.
+> >>>>
+> >>>> Your patch doesn't change the way pages_stored and compr[essed]_size
+> >>>> are accounted. What does your patch change that allow us to calculate
+> >>>> the "real" compression ratio?
+> >>>>
+> >>>>>
+> >>>>> 4) reported zram stats:
+> >>>>>   - num_writes  -- number of writes
+> >>>>>   - num_reads  -- number of reads
+> >>>>>   - pages_stored -- number of pages currently stored
+> >>>>>   - compressed_size -- compressed size of pages stored
+> >>>>
+> >>>> Wouldn't it be more practical to report the original and compressed
+> >>>> data sizes using the same units as it is currently done?
+> >>>>
+> >>>
+> >>> hm, do we really need pages_stored stats? what kind of unseful information it
+> >>> shows to end user?.. perhaps, it's better to replace it with accounted passed
+> >>> bvec->bv_len (as uncompressed_size).
+> >>>
+> >>
+> >> That's really going to complicates things. We would need to keep track
+> >> of which sectors of a particular page has been written to. It's much
+> >> easier to keep current page granularity and consider any partial I/O
+> >> as an whole page I/O.
+> >>
+> > 
+> > fair enough. thank you.
+> > 
+> > 2/3 and 3/3 were changed according to your comments:
+> > - 2/3 drop READA check
+> > - 3/3 update commit message.
+> > 
+> > ready to re-publish. may I add your ACK to all 3 patches or just to 1/3?
+> 
+> The READA thing was my only concern for 2/3, so yes for this one.
+> Concerning the third patch, I'd like to see what other people think
+> about which stats we want to report.
+> 
 
-Hi again,
+good. so I hold on for a bit to minimize the traffic and see what other
+people think. thank you.
 
-On Tue, Jan 14, 2014 at 07:10:52AM -0600, Felipe Balbi wrote:
-> > diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/=
-omap_hwspinlock.c
-> > index 9f56fb2..194886e 100644
-> > --- a/drivers/hwspinlock/omap_hwspinlock.c
-> > +++ b/drivers/hwspinlock/omap_hwspinlock.c
-> > @@ -101,10 +101,23 @@ static int omap_hwspinlock_probe(struct platform_=
-device *pdev)
-> >  	if (!io_base)
-> >  		return -ENOMEM;
-> > =20
-> > +	/*
-> > +	 * make sure the module is enabled and clocked before reading
-> > +	 * the module SYSSTATUS register
-> > +	 */
-> > +	pm_runtime_enable(&pdev->dev);
-> > +	pm_runtime_get_sync(&pdev->dev);
+	-ss
 
-another thing, you need to check return of pm_runtime_get_sync()
-
---=20
-balbi
-
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJS1UP3AAoJEIaOsuA1yqRElJUP/1F/oueJnqaGY9iM1/c5pe7y
-/nEliOv45s/+Xm+j8G0oau9eN002nbN83btf5t8w89Tbkntp9hR8kuKh1YdgX3NO
-7lgHT1EE4HkyQSsI8+XnBEhZVnIehnbBaExeFu7UIxY/BtA84aZ4qhVQuA2AfTMG
-HlxCCGv+pwIW5xrwiS2WkByNXlD9L72YHmqZHyzl/B4HbYjbcvkfwh1/LN1TCD21
-Kat9RVwAoUPgp7xD61JIO0ig6I+O73HRzW2Xjbj89j9gs1hVLTBEKNElxgg7LhcH
-vsPQhynShlZwNQN2iAQP9MPXVIVpb5ZI2RpWjJS26ai8B2G38sV7q95ILVrkgLTK
-T6wAgnEMjTysE67r544lvzi9QEGaAGYPOnl2M8EBnqVlxLuNh2POwBeTpGJJrQUh
-s5TFG3XD0zj6OVcpusQwrrnF4XUk2FLXxQePkmaPADJTMBnqD5g/QZnl9VfVEj7B
-0ICbmYhzODgKhdQtkIJFdstdwPSL0BmkHKkCLxc68Za34WVYFGbLeVYR/XuUt5U8
-AJKcA7MyC+vg/jKUL13qaYm7KwdmkZRkLtBT/KG90A2jEwygckrWn/pDNT66RjhS
-ukVrLw3TQEd+6Nnp+MRHV+ANJhHMzxtlF3Z97N3seckON7Wrt4SqaOsnwqII+A10
-xMGT+/pN+qjO/X93kwEC
-=tdmP
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
+> >>>
+> >>>> Jerome
+> >>>>
+> >>>>>   - pages_zero  -- number of zero filled pages
+> >>>>>   - failed_read -- number of failed reads
+> >>>>>   - failed_writes -- can happen when memory is too low
+> >>>>>   - invalid_io   -- non-page-aligned I/O requests
+> >>>>>   - notify_free  -- number of swap slot free notifications
+> >>>>>   - memory_used -- zs pool zs_get_total_size_bytes()
+> >>>>>
+> >>>>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> >>
+> >>
+> 
