@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaANAhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:37:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54475 "EHLO
+	id S1753987AbaANA2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:28:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005AbaANA2z (ORCPT
+	with ESMTP id S1753911AbaANA2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:55 -0500
+	Mon, 13 Jan 2014 19:28:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.12 56/77] parisc: Ensure full cache coherency for kmap/kunmap
-Date: Mon, 13 Jan 2014 16:28:17 -0800
-Message-Id: <20140114002754.093379834@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 47/77] sfc: Poll for MCDI completion once before timeout occurs
+Date: Mon, 13 Jan 2014 16:28:08 -0800
+Message-Id: <20140114002753.839164305@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -28,151 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Robert Stonehouse <rstonehouse@solarflare.com>
 
-commit f8dae00684d678afa13041ef170cecfd1297ed40 upstream.
+[ Upstream commit 6b294b8efedaa7cf7507154148e2c79766ad6f96 ]
 
-Helge Deller noted a few weeks ago problems with the AIO support on
-parisc. This change is the result of numerous iterations on how best to
-deal with this problem.
+There is an as-yet unexplained bug that sometimes prevents (or delays)
+the driver seeing the completion event for a completed MCDI request on
+the SFC9120.  The requested configuration change will have happened
+but the driver assumes it to have failed, and this can result in
+further failures.  We can mitigate this by polling for completion
+after unsuccessfully waiting for an event.
 
-The solution adopted here is to provide full cache coherency in a
-uniform manner on all parisc systems. This involves calling
-flush_dcache_page() on kmap operations and flush_kernel_dcache_page() on
-kunmap operations. As a result, the copy_user_page() and
-clear_user_page() functions can be removed and the overall code is
-simpler.
-
-The change ensures that both userspace and kernel aliases to a mapped
-page are invalidated and flushed. This is necessary for the correct
-operation of PA8800 and PA8900 based systems which do not support
-inequivalent aliases.
-
-With this change, I have observed no cache related issues on c8000 and
-rp3440. It is now possible for example to do kernel builds with "-j64"
-on four way systems.
-
-On systems using XFS file systems, the patch recently posted by Mikulas
-Patocka to "fix crash using XFS on loopback" is needed to avoid a hang
-caused by an uninitialized lock passed to flush_dcache_page() in the
-page struct.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Fixes: 8127d661e77f ('sfc: Add support for Solarflare SFC9100 family')
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/parisc/include/asm/cacheflush.h |   12 ++++--------
- arch/parisc/include/asm/page.h       |    5 ++---
- arch/parisc/kernel/cache.c           |   35 -----------------------------------
- 3 files changed, 6 insertions(+), 46 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/arch/parisc/include/asm/cacheflush.h
-+++ b/arch/parisc/include/asm/cacheflush.h
-@@ -125,42 +125,38 @@ flush_anon_page(struct vm_area_struct *v
- void mark_rodata_ro(void);
- #endif
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -630,6 +630,16 @@ int efx_mcdi_rpc_finish(struct efx_nic *
+ 		rc = efx_mcdi_await_completion(efx);
  
--#ifdef CONFIG_PA8X00
--/* Only pa8800, pa8900 needs this */
--
- #include <asm/kmap_types.h>
+ 	if (rc != 0) {
++		netif_err(efx, hw, efx->net_dev,
++			  "MC command 0x%x inlen %d mode %d timed out\n",
++			  cmd, (int)inlen, mcdi->mode);
++
++		if (mcdi->mode == MCDI_MODE_EVENTS && efx_mcdi_poll_once(efx)) {
++			netif_err(efx, hw, efx->net_dev,
++				  "MCDI request was completed without an event\n");
++			rc = 0;
++		}
++
+ 		/* Close the race with efx_mcdi_ev_cpl() executing just too late
+ 		 * and completing a request we've just cancelled, by ensuring
+ 		 * that the seqno check therein fails.
+@@ -638,11 +648,9 @@ int efx_mcdi_rpc_finish(struct efx_nic *
+ 		++mcdi->seqno;
+ 		++mcdi->credits;
+ 		spin_unlock_bh(&mcdi->iface_lock);
++	}
  
- #define ARCH_HAS_KMAP
+-		netif_err(efx, hw, efx->net_dev,
+-			  "MC command 0x%x inlen %d mode %d timed out\n",
+-			  cmd, (int)inlen, mcdi->mode);
+-	} else {
++	if (rc == 0) {
+ 		size_t hdr_len, data_len;
  
--void kunmap_parisc(void *addr);
--
- static inline void *kmap(struct page *page)
- {
- 	might_sleep();
-+	flush_dcache_page(page);
- 	return page_address(page);
- }
- 
- static inline void kunmap(struct page *page)
- {
--	kunmap_parisc(page_address(page));
-+	flush_kernel_dcache_page_addr(page_address(page));
- }
- 
- static inline void *kmap_atomic(struct page *page)
- {
- 	pagefault_disable();
-+	flush_dcache_page(page);
- 	return page_address(page);
- }
- 
- static inline void __kunmap_atomic(void *addr)
- {
--	kunmap_parisc(addr);
-+	flush_kernel_dcache_page_addr(addr);
- 	pagefault_enable();
- }
- 
- #define kmap_atomic_prot(page, prot)	kmap_atomic(page)
- #define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
- #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
--#endif
- 
- #endif /* _PARISC_CACHEFLUSH_H */
- 
---- a/arch/parisc/include/asm/page.h
-+++ b/arch/parisc/include/asm/page.h
-@@ -28,9 +28,8 @@ struct page;
- 
- void clear_page_asm(void *page);
- void copy_page_asm(void *to, void *from);
--void clear_user_page(void *vto, unsigned long vaddr, struct page *pg);
--void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
--			   struct page *pg);
-+#define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
-+#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
- 
- /* #define CONFIG_PARISC_TMPALIAS */
- 
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -388,41 +388,6 @@ void flush_kernel_dcache_page_addr(void
- }
- EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
- 
--void clear_user_page(void *vto, unsigned long vaddr, struct page *page)
--{
--	clear_page_asm(vto);
--	if (!parisc_requires_coherency())
--		flush_kernel_dcache_page_asm(vto);
--}
--EXPORT_SYMBOL(clear_user_page);
--
--void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
--	struct page *pg)
--{
--	/* Copy using kernel mapping.  No coherency is needed
--	   (all in kmap/kunmap) on machines that don't support
--	   non-equivalent aliasing.  However, the `from' page
--	   needs to be flushed before it can be accessed through
--	   the kernel mapping. */
--	preempt_disable();
--	flush_dcache_page_asm(__pa(vfrom), vaddr);
--	preempt_enable();
--	copy_page_asm(vto, vfrom);
--	if (!parisc_requires_coherency())
--		flush_kernel_dcache_page_asm(vto);
--}
--EXPORT_SYMBOL(copy_user_page);
--
--#ifdef CONFIG_PA8X00
--
--void kunmap_parisc(void *addr)
--{
--	if (parisc_requires_coherency())
--		flush_kernel_dcache_page_addr(addr);
--}
--EXPORT_SYMBOL(kunmap_parisc);
--#endif
--
- void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
- {
- 	unsigned long flags;
+ 		/* At the very least we need a memory barrier here to ensure
 
 
