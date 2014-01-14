@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaANTwS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:52:18 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21160 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaANTwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:52:14 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+yw5VZOoCQFKfd1/1Ag4KWJ/QysKPgBbQ=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8C3AF50A109
-Date: Tue, 14 Jan 2014 14:52:12 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: bjoern <lkml@call-home.ch>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel above 3.8 prevents booting Linux
-Message-ID: <20140114195212.GT19878@titan.lakedaemon.net>
-References: <20140114203210.76eeed0d@ubuntu>
+	id S1751615AbaANUC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:02:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472AbaANUCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:02:23 -0500
+Date: Tue, 14 Jan 2014 21:02:40 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, nschichan@freebox.fr, keescook@chromium.org,
+        james.l.morris@oracle.com, akpm@linux-foundation.org, holt@sgi.com,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 2/2] sys, seccomp: add PR_SECCOMP_EXT and
+	SECCOMP_EXT_ACT_TSYNC
+Message-ID: <20140114200240.GA801@redhat.com>
+References: <1389645028-17157-1-git-send-email-wad@chromium.org> <1389645028-17157-2-git-send-email-wad@chromium.org> <20140114192118.GA31411@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114203210.76eeed0d@ubuntu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140114192118.GA31411@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bjoern,
+On 01/14, Oleg Nesterov wrote:
+>
+> > +			get_seccomp_filter(caller);
+> > +			/*
+> > +			 * Drop the task reference to the shared ancestor since
+> > +			 * current's path will hold a reference.  (This also
+> > +			 * allows a put before the assignment.)
+> > +			 */
+> > +			put_seccomp_filter(thread);
+> > +			thread->seccomp.filter = caller->seccomp.filter;
+>
+> As I said, I do not understand this patch yet, but this looks suspicious.
+>
+> Why we can't race with this thread doing clone(CLONE_THREAD) ? We do
+> not the the new thread yet, but its ->seccomp can be already copied
+> by copy_process(), no?
 
-On Tue, Jan 14, 2014 at 08:32:10PM +0100, bjoern wrote:
-> I have an Ubuntu 12.04 x64 server. The hard disk is encrypted using LVM.
-> 
-> With kernel 3.8.8, the server works fine - I am asked to enter the
-> password and can boot the system.
-> 
-> Any kernel above 3.8, e.g. 3.9/3.11 (I didn't try many) prevents me from
-> entering the password. It seems the attached USB keyboard is no longer
-> being read from or the system is hanging.
+And it seems that this can obviously race with seccomp_attach_filter()
+called by this "thread".
 
-Have you tried adding the usb keyboard module to
-/etc/initramfs-tools/modules and rebuilding your initrds?
+Oleg.
 
-hth,
-
-Jason.
