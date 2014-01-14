@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843AbaANBJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:09:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53963 "EHLO
+	id S1755859AbaANBJs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:09:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53950 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaANA05 (ORCPT
+	with ESMTP id S1753107AbaANA0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:57 -0500
+	Mon, 13 Jan 2014 19:26:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brett Ciphery <brett.ciphery@windriver.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Andrey Vagin <avagin@openvz.org>, Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/62] ipv6: dont count addrconf generated routes against gc limit
-Date: Mon, 13 Jan 2014 16:26:39 -0800
-Message-Id: <20140114002710.865011143@linuxfoundation.org>
+Subject: [PATCH 3.10 12/62] virtio: delete napi structures from netdev before releasing memory
+Date: Mon, 13 Jan 2014 16:26:37 -0800
+Message-Id: <20140114002710.810322145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,44 +31,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Andrey Vagin <avagin@openvz.org>
 
-[ Upstream commit a3300ef4bbb1f1e33ff0400e1e6cf7733d988f4f ]
+[ Upstream commit d4fb84eefe5164f6a6ea51d0a9e26280c661a0dd ]
 
-Brett Ciphery reported that new ipv6 addresses failed to get installed
-because the addrconf generated dsts where counted against the dst gc
-limit. We don't need to count those routes like we currently don't count
-administratively added routes.
+free_netdev calls netif_napi_del too, but it's too late, because napi
+structures are placed on vi->rq. netif_napi_add() is called from
+virtnet_alloc_queues.
 
-Because the max_addresses check enforces a limit on unbounded address
-generation first in case someone plays with router advertisments, we
-are still safe here.
+general protection fault: 0000 [#1] SMP
+Dumping ftrace buffer:
+   (ftrace buffer empty)
+Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
+CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
+RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
+RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
+RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
+RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
+RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
+R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
+FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
+Stack:
+ ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
+ ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
+ ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
+Call Trace:
+ [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
+ [<ffffffff8156499b>] free_netdev+0x8b/0x110
+ [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
+ [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
+ [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
+ [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
+ [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
+ [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
+ [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
+ [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
+ [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
+ [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
+ [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
+Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
+RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
+ RSP <ffff8800379e1dd0>
+---[ end trace d5931cd3f87c9763 ]---
 
-Reported-by: Brett Ciphery <brett.ciphery@windriver.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Fixes: 986a4f4d452d (virtio_net: multiqueue support)
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/virtio_net.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2099,12 +2099,10 @@ struct rt6_info *addrconf_dst_alloc(stru
- 				    bool anycast)
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1285,6 +1285,11 @@ static void virtnet_config_changed(struc
+ 
+ static void virtnet_free_queues(struct virtnet_info *vi)
  {
- 	struct net *net = dev_net(idev->dev);
--	struct rt6_info *rt = ip6_dst_alloc(net, net->loopback_dev, 0, NULL);
--
--	if (!rt) {
--		net_warn_ratelimited("Maximum number of routes reached, consider increasing route/max_size\n");
-+	struct rt6_info *rt = ip6_dst_alloc(net, net->loopback_dev,
-+					    DST_NOCOUNT, NULL);
-+	if (!rt)
- 		return ERR_PTR(-ENOMEM);
--	}
- 
- 	in6_dev_hold(idev);
- 
++	int i;
++
++	for (i = 0; i < vi->max_queue_pairs; i++)
++		netif_napi_del(&vi->rq[i].napi);
++
+ 	kfree(vi->rq);
+ 	kfree(vi->sq);
+ }
 
 
