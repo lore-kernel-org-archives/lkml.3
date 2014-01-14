@@ -1,64 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaANTW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:22:27 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:58665 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaANTWY (ORCPT
+	id S1752061AbaANTWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:22:35 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:54050 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaANTW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:22:24 -0500
-Message-ID: <52D58E6F.4050000@gmail.com>
-Date: Tue, 14 Jan 2014 14:22:23 -0500
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 14 Jan 2014 14:22:29 -0500
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: netdev@vger.kernel.org, dborkman@redhat.com, linux-kernel@vger.kernel.org,
-        darkjames-ws@darkjames.pl
-Subject: Re: [PATCH RFC] reciprocal_divide: correction/update of the algorithm
-References: <20140113214249.GK6586@order.stressinduktion.org> <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <1389613034-35196-2-git-send-email-phacht@linux.vnet.ibm.com>
+References: <1389613034-35196-1-git-send-email-phacht@linux.vnet.ibm.com>
+	<1389613034-35196-2-git-send-email-phacht@linux.vnet.ibm.com>
+Date: Tue, 14 Jan 2014 11:22:28 -0800
+X-Google-Sender-Auth: Kajj3XjsmtS1wk1sW6qZMyNq2bY
+Message-ID: <CAE9FiQUwAr1naCF1wBQN1xKYkb_BwS7w3bmpt8ugB=bQhOGL+Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm/nobootmem: free_all_bootmem again
+From: Yinghai Lu <yinghai@kernel.org>
+To: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Xishi Qiu <qiuxishi@huawei.com>,
+        David Howells <dhowells@redhat.com>, daeseok.youn@gmail.com,
+        Jiang Liu <liuj97@gmail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>, grygorii.strashko@ti.com,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-14 13:07, Eric Dumazet wrote:
-> On Mon, 2014-01-13 at 22:42 +0100, Hannes Frederic Sowa wrote:
->> This patch is a RFC and part of a series Daniel Borkmann and me want to
->> do when introducing prandom_u32_range{,_ro} and prandom_u32_max{,_ro}
->> helpers later this week.
-> 
->> -static inline u32 reciprocal_divide(u32 A, u32 R)
->> +struct reciprocal_value reciprocal_value(u32 d);
->> +
->> +static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
->>  {
->> -	return (u32)(((u64)A * R) >> 32);
->> +	u32 t = (u32)(((u64)a * R.m) >> 32);
->> +	return (t + ((a - t) >> R.sh1)) >> R.sh2;
->>  }
-> 
-> I would rather introduce new helpers and convert users that really need
-> them.
-> 
-> For instance, just use a divide in BPF, because doing this on JIT might
-> be too complex for the gains. Strangely, libpcap doesn't seem to
-> optimize any divide, like divides by a power of two...
-> 
-> Reciprocal were added 7 years ago, for very specific uses, but current
-> cpus have reasonably fast dividers.
+On Mon, Jan 13, 2014 at 3:37 AM, Philipp Hachtmann
+<phacht@linux.vnet.ibm.com> wrote:
+> get_allocated_memblock_reserved_regions_info() should work if it is
+> compiled in. Extended the ifdef around
+> get_allocated_memblock_memory_regions_info() to include
+> get_allocated_memblock_reserved_regions_info() as well.
+> Similar changes in nobootmem.c/free_low_memory_core_early() where
+> the two functions are called.
+>
+> Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
 
-I disagree with the statement that current CPU's have reasonably fast
-dividers.  A lot of embedded processors and many low-end x86 CPU's do
-not in-fact have any hardware divider, and usually provide it using
-microcode based emulation if they provide it at all.  The AMD Jaguar
-micro-architecture in particular comes to mind, it uses an iterative
-division algorithm provided by the microcode that only produces 2 bits
-of quotient per cycle, even in the best case (2 8-bit integers and an
-integral 8-bit quotient) this still takes 4 cycles, which is twice as
-slow as any other math operation on the same processor.
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
+> ---
+>  mm/memblock.c  | 17 ++---------------
+>  mm/nobootmem.c |  4 ++--
+>  2 files changed, 4 insertions(+), 17 deletions(-)
+>
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 64ed243..9c0aeef 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -266,33 +266,20 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+>         }
+>  }
+>
+> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+> +
+>  phys_addr_t __init_memblock get_allocated_memblock_reserved_regions_info(
+>                                         phys_addr_t *addr)
+>  {
+>         if (memblock.reserved.regions == memblock_reserved_init_regions)
+>                 return 0;
+>
+> -       /*
+> -        * Don't allow nobootmem allocator to free reserved memory regions
+> -        * array if
+> -        *  - CONFIG_DEBUG_FS is enabled;
+> -        *  - CONFIG_ARCH_DISCARD_MEMBLOCK is not enabled;
+> -        *  - reserved memory regions array have been resized during boot.
+> -        * Otherwise debug_fs entry "sys/kernel/debug/memblock/reserved"
+> -        * will show garbage instead of state of memory reservations.
+> -        */
+> -       if (IS_ENABLED(CONFIG_DEBUG_FS) &&
+> -           !IS_ENABLED(CONFIG_ARCH_DISCARD_MEMBLOCK))
+> -               return 0;
+> -
+>         *addr = __pa(memblock.reserved.regions);
+>
+>         return PAGE_ALIGN(sizeof(struct memblock_region) *
+>                           memblock.reserved.max);
+>  }
+>
+> -#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+> -
+>  phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
+>                                         phys_addr_t *addr)
+>  {
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index 17c8902..e2906a5 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -122,13 +122,13 @@ static unsigned long __init free_low_memory_core_early(void)
+>         for_each_free_mem_range(i, NUMA_NO_NODE, &start, &end, NULL)
+>                 count += __free_memory_core(start, end);
+>
+> +#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+> +
+>         /* Free memblock.reserved array if it was allocated */
+>         size = get_allocated_memblock_reserved_regions_info(&start);
+>         if (size)
+>                 count += __free_memory_core(start, start + size);
+>
+> -#ifdef CONFIG_ARCH_DISCARD_MEMBLOCK
+> -
+>         /* Free memblock.memory array if it was allocated */
+>         size = get_allocated_memblock_memory_regions_info(&start);
+>         if (size)
+> --
+> 1.8.4.5
+>
