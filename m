@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaANAUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:20:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59793 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaANAUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:20:03 -0500
+	id S1751987AbaANAUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:20:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52833 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752274AbaANAUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:20:16 -0500
 From: Suman Anna <s-anna@ti.com>
 To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
 CC: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Suman Anna <s-anna@ti.com>, Rob Herring <robh+dt@kernel.org>
-Subject: [PATCHv4 1/7] Documentation: dt: add common bindings for hwspinlock
-Date: Mon, 13 Jan 2014 18:19:18 -0600
-Message-ID: <1389658764-39199-2-git-send-email-s-anna@ti.com>
+        Suman Anna <s-anna@ti.com>
+Subject: [PATCHv4 3/7] hwspinlock/core: maintain a list of registered hwspinlock banks
+Date: Mon, 13 Jan 2014 18:19:20 -0600
+Message-ID: <1389658764-39199-4-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 1.8.4.3
 In-Reply-To: <1389658764-39199-1-git-send-email-s-anna@ti.com>
 References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
@@ -25,86 +24,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the generic common bindings used to represent
-a hwlock device and use/request locks in a device-tree build.
+The hwspinlock_device structure is used for registering a bank of
+locks with the driver core. The structure already contains the
+necessary members to identify the bank of locks. The core does not
+maintain the hwspinlock_devices itself, but maintains only a radix
+tree for all the registered locks. A specific lock can be requested
+by users using a global lock id, and any device-specific fields
+can be retrieved through a reference to the hwspinlock_device in
+each lock.
 
-All the platform-specific hwlock driver implementations need the
-number of locks and associated base id for registering the locks
-present within the device with the driver core. The number of locks
-is represented by 'hwlock-num-locks' property in DT bindings. A
-property for base id is not needed in DT binding, as it can be
-satisfied using a phandle + args specifier. The args specifier
-length is dependent on each vendor-specific implementation and
-is represented through the '#hwlock-cells' property.
+The global lock id, however, is not friendly to be requested for
+users using the device-tree model. The device-tree representation
+will typically have each of the hwspinlock devices represented as
+a DT node, and a specific lock can be requested using the device's
+phandle and a lock specifier. Add support to the core therefore to
+maintain all the registered hwspinlock_devices, so that a device
+can be looked up and a specific lock belonging to the device
+requested through a phandle + args approach.
 
-Note that the document is named hwlock.txt deliberately to keep it
-a bit more generic.
-
-Cc: Rob Herring <robh+dt@kernel.org>
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- .../devicetree/bindings/hwlock/hwlock.txt          | 52 ++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+ Documentation/hwspinlock.txt             |  2 ++
+ drivers/hwspinlock/hwspinlock_core.c     | 51 ++++++++++++++++++++++++++++++++
+ drivers/hwspinlock/hwspinlock_internal.h |  2 ++
+ 3 files changed, 55 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-new file mode 100644
-index 0000000..32381cc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-@@ -0,0 +1,52 @@
-+Generic hwlock bindings
-+=======================
+diff --git a/Documentation/hwspinlock.txt b/Documentation/hwspinlock.txt
+index 62f7d4e..640ae47 100644
+--- a/Documentation/hwspinlock.txt
++++ b/Documentation/hwspinlock.txt
+@@ -251,6 +251,7 @@ implementation using the hwspin_lock_register() API.
+ 
+ /**
+  * struct hwspinlock_device - a device which usually spans numerous hwspinlocks
++ * @list: list element to link hwspinlock devices together
+  * @dev: underlying device, will be used to invoke runtime PM api
+  * @ops: platform-specific hwspinlock handlers
+  * @base_id: id index of the first lock in this device
+@@ -258,6 +259,7 @@ implementation using the hwspin_lock_register() API.
+  * @lock: dynamically allocated array of 'struct hwspinlock'
+  */
+ struct hwspinlock_device {
++	struct list_head list;
+ 	struct device *dev;
+ 	const struct hwspinlock_ops *ops;
+ 	int base_id;
+diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+index 461a0d7..48f7866 100644
+--- a/drivers/hwspinlock/hwspinlock_core.c
++++ b/drivers/hwspinlock/hwspinlock_core.c
+@@ -59,6 +59,11 @@ static RADIX_TREE(hwspinlock_tree, GFP_KERNEL);
+  */
+ static DEFINE_MUTEX(hwspinlock_tree_lock);
+ 
++/*
++ * A linked list for maintaining all the registered hwspinlock devices.
++ * The list is maintained in an ordered-list of the supported locks group.
++ */
++static LIST_HEAD(hwspinlock_devices);
+ 
+ /**
+  * __hwspin_trylock() - attempt to lock a specific hwspinlock
+@@ -307,6 +312,40 @@ out:
+ 	return hwlock;
+ }
+ 
++/*
++ * Add a new hwspinlock device to the global list, keeping the list of
++ * devices sorted by base order.
++ *
++ * Returns 0 on success, or -EBUSY if the new device overlaps with some
++ * other device's lock space.
++ */
++static int hwspinlock_device_add(struct hwspinlock_device *bank)
++{
++	struct list_head *entry = &hwspinlock_devices;
++	struct hwspinlock_device *_bank;
++	int ret = 0;
 +
-+Generic bindings that are common to all the hwlock platform specific driver
-+implementations, the retrieved values are used for registering the device
-+specific parameters with the hwspinlock core.
++	list_for_each(entry, &hwspinlock_devices) {
++		_bank = list_entry(entry, struct hwspinlock_device, list);
++		if (_bank->base_id >= bank->base_id + bank->num_locks)
++			break;
++	}
 +
-+The validity and need of these common properties may vary from one platform
-+implementation to another. The platform specific bindings should explicitly
-+state if a property is mandatory or optional. Please look through the
-+individual platform specific hwlock binding documentations for identifying
-+the applicable properties.
++	if (entry != &hwspinlock_devices &&
++	    entry->prev != &hwspinlock_devices) {
++		_bank = list_entry(entry->prev, struct hwspinlock_device, list);
++		if (_bank->base_id + _bank->num_locks > bank->base_id) {
++			dev_err(bank->dev, "hwlock space overlap, cannot add device\n");
++			ret = -EBUSY;
++		}
++	}
 +
-+Common properties:
-+- #hwlock-cells:	Specifies the number of cells needed to represent a
-+			specific lock.
-+- hwlock-num-locks:	Number of locks present in a hwlock device. This
-+			property is needed on hwlock devices, where the number
-+			of supported locks within a hwlock device cannot be
-+			read from a register.
++	if (!ret)
++		list_add_tail(&bank->list, entry);
 +
-+Hwlock Users:
-+=============
++	return ret;
++}
 +
-+Nodes that require specific hwlock(s) should specify them using one or more
-+properties, each containing a phandle to the hwlock node and an args specifier
-+value as indicated by #hwlock-cells. Multiple hwlocks can be requested using
-+an array of the phandle and hwlock number specifier tuple.
+ /**
+  * hwspin_lock_register() - register a new hw spinlock device
+  * @bank: the hwspinlock device, which usually provides numerous hw locks
+@@ -339,6 +378,12 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ 	bank->base_id = base_id;
+ 	bank->num_locks = num_locks;
+ 
++	mutex_lock(&hwspinlock_tree_lock);
++	ret = hwspinlock_device_add(bank);
++	mutex_unlock(&hwspinlock_tree_lock);
++	if (ret)
++		return ret;
 +
-+1. Example of a node using a single specific hwlock:
-+
-+The following example has a node requesting a hwlock in the bank defined by
-+the node hwlock1. hwlock1 is a hwlock provider with an argument specifier
-+of length 1.
-+
-+	node {
-+		...
-+		hwlocks = <&hwlock1 2>;
-+		...
-+	};
-+
-+2. Example of a node using multiple specific hwlocks:
-+
-+The following example has a node requesting two hwlocks, a hwlock within
-+the hwlock device node 'hwlock1' with #hwlock-cells value of 1, and another
-+hwlock within the hwlock device node 'hwlock2' with #hwlock-cells value of 2.
-+
-+	node {
-+		...
-+		hwlocks = <&hwlock1 2>, <&hwlock2 0 3>;
-+		...
-+	};
+ 	for (i = 0; i < num_locks; i++) {
+ 		hwlock = &bank->lock[i];
+ 
+@@ -355,6 +400,9 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ reg_failed:
+ 	while (--i >= 0)
+ 		hwspin_lock_unregister_single(base_id + i);
++	mutex_lock(&hwspinlock_tree_lock);
++	list_del(&bank->list);
++	mutex_unlock(&hwspinlock_tree_lock);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(hwspin_lock_register);
+@@ -386,6 +434,9 @@ int hwspin_lock_unregister(struct hwspinlock_device *bank)
+ 		WARN_ON(tmp != hwlock);
+ 	}
+ 
++	mutex_lock(&hwspinlock_tree_lock);
++	list_del(&bank->list);
++	mutex_unlock(&hwspinlock_tree_lock);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(hwspin_lock_unregister);
+diff --git a/drivers/hwspinlock/hwspinlock_internal.h b/drivers/hwspinlock/hwspinlock_internal.h
+index d26f78b..aff560c 100644
+--- a/drivers/hwspinlock/hwspinlock_internal.h
++++ b/drivers/hwspinlock/hwspinlock_internal.h
+@@ -53,6 +53,7 @@ struct hwspinlock {
+ 
+ /**
+  * struct hwspinlock_device - a device which usually spans numerous hwspinlocks
++ * @list: list element to link hwspinlock devices together
+  * @dev: underlying device, will be used to invoke runtime PM api
+  * @ops: platform-specific hwspinlock handlers
+  * @base_id: id index of the first lock in this device
+@@ -60,6 +61,7 @@ struct hwspinlock {
+  * @lock: dynamically allocated array of 'struct hwspinlock'
+  */
+ struct hwspinlock_device {
++	struct list_head list;
+ 	struct device *dev;
+ 	const struct hwspinlock_ops *ops;
+ 	int base_id;
 -- 
 1.8.4.3
 
