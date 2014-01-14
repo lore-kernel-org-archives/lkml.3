@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaANQlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:41:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52821 "EHLO
+	id S1752161AbaANQqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:46:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52799 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaANQlF (ORCPT
+	with ESMTP id S1751912AbaANQku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:41:05 -0500
-Date: Tue, 14 Jan 2014 08:40:46 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-02dfc8d775f0709ab494d4b2cce12c8429ff7530@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
+	Tue, 14 Jan 2014 11:40:50 -0500
+Date: Tue, 14 Jan 2014 08:40:05 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-b594zsbwke8khir13kudwqmj@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
         tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, namhyung.kim@lge.com, namhyung@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, rostedt@goodmis.org,
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1389276059-8829-4-git-send-email-namhyung@kernel.org>
-References: <1389276059-8829-4-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools include: Move perf'
- s bug.h to a generic place
-Git-Commit-ID: 02dfc8d775f0709ab494d4b2cce12c8429ff7530
+Subject: [tip:perf/core] perf report:
+  Move histogram entries collapsing to separate function
+Git-Commit-ID: f6d8b0571c9ac8f273d18c112c2fc3c9533c9f0a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,81 +32,131 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:40:52 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:40:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  02dfc8d775f0709ab494d4b2cce12c8429ff7530
-Gitweb:     http://git.kernel.org/tip/02dfc8d775f0709ab494d4b2cce12c8429ff7530
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 9 Jan 2014 23:00:54 +0900
+Commit-ID:  f6d8b0571c9ac8f273d18c112c2fc3c9533c9f0a
+Gitweb:     http://git.kernel.org/tip/f6d8b0571c9ac8f273d18c112c2fc3c9533c9f0a
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 8 Jan 2014 14:45:24 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Jan 2014 10:06:26 -0300
+CommitDate: Mon, 13 Jan 2014 10:06:25 -0300
 
-tools include: Move perf's bug.h to a generic place
+perf report: Move histogram entries collapsing to separate function
 
-So that it can be shared with others like libtraceevent.
+Further uncluttering the main 'report' function by group related code in
+separate function.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1389276059-8829-4-git-send-email-namhyung@kernel.org
-[ Added the new header to tools/perf/MANIFEST ]
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-b594zsbwke8khir13kudwqmj@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/{perf/util => }/include/asm/bug.h | 7 ++++---
- tools/perf/MANIFEST                     | 1 +
- tools/perf/Makefile.perf                | 2 +-
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ tools/perf/builtin-report.c | 73 ++++++++++++++++++++++++++++-----------------
+ 1 file changed, 45 insertions(+), 28 deletions(-)
 
-diff --git a/tools/perf/util/include/asm/bug.h b/tools/include/asm/bug.h
-similarity index 85%
-rename from tools/perf/util/include/asm/bug.h
-rename to tools/include/asm/bug.h
-index 7fcc681..eca78df 100644
---- a/tools/perf/util/include/asm/bug.h
-+++ b/tools/include/asm/bug.h
-@@ -1,5 +1,5 @@
--#ifndef _PERF_ASM_GENERIC_BUG_H
--#define _PERF_ASM_GENERIC_BUG_H
-+#ifndef _TOOLS_ASM_BUG_H
-+#define _TOOLS_ASM_BUG_H
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 03941ad..cff9465 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -486,13 +486,55 @@ static int report__browse_hists(struct report *rep)
+ 	return ret;
+ }
  
- #define __WARN_printf(arg...)	do { fprintf(stderr, arg); } while (0)
- 
-@@ -19,4 +19,5 @@
- 			__warned = 1;		\
- 	unlikely(__ret_warn_once);		\
- })
--#endif
++static u64 report__collapse_hists(struct report *rep)
++{
++	struct ui_progress prog;
++	struct perf_evsel *pos;
++	u64 nr_samples = 0;
++	/*
++ 	 * Count number of histogram entries to use when showing progress,
++ 	 * reusing nr_samples variable.
++ 	 */
++	list_for_each_entry(pos, &rep->session->evlist->entries, node)
++		nr_samples += pos->hists.nr_entries;
 +
-+#endif /* _TOOLS_ASM_BUG_H */
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 285f28f..4e53535 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -4,6 +4,7 @@ tools/lib/traceevent
- tools/lib/lk
- tools/lib/symbol/kallsyms.c
- tools/lib/symbol/kallsyms.h
-+tools/include/asm/bug.h
- tools/include/linux/compiler.h
- include/linux/const.h
- include/linux/perf_event.h
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 6be0676..87d7726 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -226,7 +226,7 @@ LIB_H += util/include/linux/string.h
- LIB_H += util/include/linux/types.h
- LIB_H += util/include/linux/linkage.h
- LIB_H += util/include/asm/asm-offsets.h
--LIB_H += util/include/asm/bug.h
-+LIB_H += ../include/asm/bug.h
- LIB_H += util/include/asm/byteorder.h
- LIB_H += util/include/asm/hweight.h
- LIB_H += util/include/asm/swab.h
++	ui_progress__init(&prog, nr_samples, "Merging related events...");
++	/*
++	 * Count total number of samples, will be used to check if this
++ 	 * session had any.
++ 	 */
++	nr_samples = 0;
++
++	list_for_each_entry(pos, &rep->session->evlist->entries, node) {
++		struct hists *hists = &pos->hists;
++
++		if (pos->idx == 0)
++			hists->symbol_filter_str = rep->symbol_filter_str;
++
++		hists__collapse_resort(hists, &prog);
++		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
++
++		/* Non-group events are considered as leader */
++		if (symbol_conf.event_group &&
++		    !perf_evsel__is_group_leader(pos)) {
++			struct hists *leader_hists = &pos->leader->hists;
++
++			hists__match(leader_hists, hists);
++			hists__link(leader_hists, hists);
++		}
++	}
++
++	ui_progress__finish();
++
++	return nr_samples;
++}
++
+ static int __cmd_report(struct report *rep)
+ {
+-	int ret = -EINVAL;
++	int ret;
+ 	u64 nr_samples;
+ 	struct perf_session *session = rep->session;
+ 	struct perf_evsel *pos;
+-	struct ui_progress prog;
+ 	struct perf_data_file *file = session->file;
+ 
+ 	signal(SIGINT, sig_handler);
+@@ -530,32 +572,7 @@ static int __cmd_report(struct report *rep)
+ 		}
+ 	}
+ 
+-	nr_samples = 0;
+-	list_for_each_entry(pos, &session->evlist->entries, node)
+-		nr_samples += pos->hists.nr_entries;
+-
+-	ui_progress__init(&prog, nr_samples, "Merging related events...");
+-
+-	nr_samples = 0;
+-	list_for_each_entry(pos, &session->evlist->entries, node) {
+-		struct hists *hists = &pos->hists;
+-
+-		if (pos->idx == 0)
+-			hists->symbol_filter_str = rep->symbol_filter_str;
+-
+-		hists__collapse_resort(hists, &prog);
+-		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+-
+-		/* Non-group events are considered as leader */
+-		if (symbol_conf.event_group &&
+-		    !perf_evsel__is_group_leader(pos)) {
+-			struct hists *leader_hists = &pos->leader->hists;
+-
+-			hists__match(leader_hists, hists);
+-			hists__link(leader_hists, hists);
+-		}
+-	}
+-	ui_progress__finish();
++	nr_samples = report__collapse_hists(rep);
+ 
+ 	if (session_done())
+ 		return 0;
