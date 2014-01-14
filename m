@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaANBCM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:02:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54069 "EHLO
+	id S1752871AbaANA1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:27:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53992 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaANA1V (ORCPT
+	with ESMTP id S1752489AbaANA1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:21 -0500
+	Mon, 13 Jan 2014 19:27:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 3.10 40/62] ARM: dts: exynos5250: Fix MDMA0 clock number
-Date: Mon, 13 Jan 2014 16:27:05 -0800
-Message-Id: <20140114002711.601673193@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 20/62] net: unix: allow bind to fail on mutex lock
+Date: Mon, 13 Jan 2014 16:26:45 -0800
+Message-Id: <20140114002711.044881103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,34 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Abhilash Kesavan <a.kesavan@samsung.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 8777539479abd7b3efeb691685415dc2b057d0e0 upstream.
+[ Upstream commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 ]
 
-Due to incorrect clock specified in MDMA0 node, using MDMA0 controller
-could cause system failures, due to wrong clock being controlled. This
-patch fixes this by specifying correct clock.
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
-[t.figa: Corrected commit message and description.]
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/boot/dts/exynos5250.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/unix/af_unix.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -545,7 +545,7 @@
- 			compatible = "arm,pl330", "arm,primecell";
- 			reg = <0x10800000 0x1000>;
- 			interrupts = <0 33 0>;
--			clocks = <&clock 271>;
-+			clocks = <&clock 346>;
- 			clock-names = "apb_pclk";
- 			#dma-cells = <1>;
- 			#dma-channels = <8>;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -717,7 +717,9 @@ static int unix_autobind(struct socket *
+ 	int err;
+ 	unsigned int retries = 0;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
+ 
+ 	err = 0;
+ 	if (u->addr)
+@@ -876,7 +878,9 @@ static int unix_bind(struct socket *sock
+ 		goto out;
+ 	addr_len = err;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
 
 
