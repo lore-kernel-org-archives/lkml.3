@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466AbaANA1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54077 "EHLO
+	id S1754316AbaANA4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:56:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaANA1X (ORCPT
+	with ESMTP id S1752915AbaANA1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:23 -0500
+	Mon, 13 Jan 2014 19:27:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [PATCH 3.10 42/62] ARM: shmobile: armadillo: Fix coherent DMA mask
-Date: Mon, 13 Jan 2014 16:27:07 -0800
-Message-Id: <20140114002711.657050927@linuxfoundation.org>
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michael Dalton <mwdalton@google.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 3.10 31/62] virtio-net: make all RX paths handle errors consistently
+Date: Mon, 13 Jan 2014 16:26:56 -0800
+Message-Id: <20140114002711.351847425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,45 +31,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit dcd740b645003b866d7eb30d13d34d0729cce9db upstream.
+receive mergeable now handles errors internally.
+Do same for big and small packet paths, otherwise
+the logic is too hard to follow.
 
-Commit 4dcfa60071b3d23f0181f27d8519f12e37cefbb9 ("ARM: DMA-API: better
-handing of DMA masks for coherent allocations") added an additional
-check to the coherent DMA mask that results in an error when the mask is
-larger than what dma_addr_t can address.
-
-Set the LCDC coherent DMA mask to DMA_BIT_MASK(32) instead of ~0 to fix
-the problem.
-
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
+Acked-by: Michael Dalton <mwdalton@google.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+(cherry picked from commit f121159d72091f25afb22007c833e60a6845e912)
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mach-shmobile/board-armadillo800eva.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/virtio_net.c |   56 ++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 36 insertions(+), 20 deletions(-)
 
---- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@ -437,7 +437,7 @@ static struct platform_device lcdc0_devi
- 	.id		= 0,
- 	.dev	= {
- 		.platform_data	= &lcdc0_info,
--		.coherent_dma_mask = ~0,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -294,6 +294,34 @@ static struct sk_buff *page_to_skb(struc
+ 	return skb;
+ }
  
-@@ -534,7 +534,7 @@ static struct platform_device hdmi_lcdc_
- 	.id		= 1,
- 	.dev	= {
- 		.platform_data	= &hdmi_lcdc_info,
--		.coherent_dma_mask = ~0,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
++static struct sk_buff *receive_small(void *buf, unsigned int len)
++{
++	struct sk_buff * skb = buf;
++
++	len -= sizeof(struct virtio_net_hdr);
++	skb_trim(skb, len);
++
++	return skb;
++}
++
++static struct sk_buff *receive_big(struct net_device *dev,
++				   struct receive_queue *rq,
++				   void *buf)
++{
++	struct page *page = buf;
++	struct sk_buff *skb = page_to_skb(rq, page, 0);
++
++	if (unlikely(!skb))
++		goto err;
++
++	return skb;
++
++err:
++	dev->stats.rx_dropped++;
++	give_pages(rq, page);
++	return NULL;
++}
++
+ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 					 struct receive_queue *rq,
+ 					 void *buf,
+@@ -357,7 +385,6 @@ static void receive_buf(struct receive_q
+ 	struct net_device *dev = vi->dev;
+ 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+ 	struct sk_buff *skb;
+-	struct page *page;
+ 	struct skb_vnet_hdr *hdr;
+ 
+ 	if (unlikely(len < sizeof(struct virtio_net_hdr) + ETH_HLEN)) {
+@@ -369,26 +396,15 @@ static void receive_buf(struct receive_q
+ 			dev_kfree_skb(buf);
+ 		return;
+ 	}
++	if (vi->mergeable_rx_bufs)
++		skb = receive_mergeable(dev, rq, buf, len);
++	else if (vi->big_packets)
++		skb = receive_big(dev, rq, buf);
++	else
++		skb = receive_small(buf, len);
+ 
+-	if (!vi->mergeable_rx_bufs && !vi->big_packets) {
+-		skb = buf;
+-		len -= sizeof(struct virtio_net_hdr);
+-		skb_trim(skb, len);
+-	} else {
+-		page = buf;
+-		if (vi->mergeable_rx_bufs) {
+-			skb = receive_mergeable(dev, rq, page, len);
+-			if (unlikely(!skb))
+-				return;
+-		} else {
+-			skb = page_to_skb(rq, page, len);
+-			if (unlikely(!skb)) {
+-				dev->stats.rx_dropped++;
+-				give_pages(rq, page);
+-				return;
+-			}
+-		}
+-	}
++	if (unlikely(!skb))
++		return;
+ 
+ 	hdr = skb_vnet_hdr(skb);
  
 
 
