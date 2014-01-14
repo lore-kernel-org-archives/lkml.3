@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaANOnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:43:45 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:49762 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751418AbaANOnm (ORCPT
+	id S1751867AbaANOn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:43:57 -0500
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:31090
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751722AbaANOnx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:43:42 -0500
-Date: Tue, 14 Jan 2014 09:43:41 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Daniel Vetter <daniel@ffwll.ch>
-cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Excessive WARN()s in Intel 915 driver
-In-Reply-To: <20140114090519.GP4770@phenom.ffwll.local>
-Message-ID: <Pine.LNX.4.44L0.1401140942520.1310-100000@iolanthe.rowland.org>
+	Tue, 14 Jan 2014 09:43:53 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>
+Subject: RE: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
+ asoc_simple_card_data for the simple card driver data
+Thread-Topic: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
+ asoc_simple_card_data for the simple card driver data
+Thread-Index: AQHPERknbFtgLOnVak+t7LEafhKfHJqESji/
+Date: Tue, 14 Jan 2014 14:43:51 +0000
+Message-ID: <9a2f6818586c4dfb9a5e0a019c6a2b06@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389678282-1097-1-git-send-email-Li.Xiubo@freescale.com>
+	<871u0bgiai.wl%kuninori.morimoto.gx@gmail.com>
+	<96cb876ff05c4062ab5a2c92fb7b3c41@BY2PR03MB505.namprd03.prod.outlook.com>,<20140114120913.19d883fe@armhf>
+In-Reply-To: <20140114120913.19d883fe@armhf>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [211.155.113.244]
+x-forefront-prvs: 0091C8F1EB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(779001)(689001)(679001)(164054003)(199002)(189002)(85852003)(83072002)(51856001)(56816005)(2656002)(33646001)(76796001)(93136001)(87266001)(74366001)(76482001)(63696002)(47446002)(31966008)(54316002)(74502001)(66066001)(80022001)(65816001)(74662001)(74316001)(90146001)(74876001)(74706001)(46102001)(54356001)(77982001)(83322001)(53806001)(4396001)(81816001)(56776001)(92566001)(49866001)(69226001)(79102001)(76576001)(87936001)(76786001)(80976001)(59766001)(558084003)(47736001)(81686001)(47976001)(85306002)(81342001)(50986001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:211.155.113.244;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014, Daniel Vetter wrote:
+Hi  Jean-Francios,
 
-> On Mon, Jan 13, 2014 at 03:16:42PM -0500, Alan Stern wrote:
-> > On Wed, 8 Jan 2014, Daniel Vetter wrote:
-> > 
-> > > On Wed, Jan 08, 2014 at 01:34:02PM -0500, Alan Stern wrote:
-> > > > On Wed, 8 Jan 2014, Daniel Vetter wrote:
-> > > > 
-> > > > > On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
-> > > > > > On Tue, 7 Jan 2014, Daniel Vetter wrote:
-> > > > > > 
-> > > > > > > I really want users to report these issues, and excessive WARNs seems
-> > > > > > > to be the only way to get those reports. Please boot with
-> > > > > > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
-> > > > > > > Also, which precise kernel are you running? Testing latest -rc is
-> > > > > > > always recommended, this state checker code is fairly new and gets
-> > > > > > > constantly extended and bugs fixed ...
-> > > > > > 
-> > > > > > Here you go.  This is the dmesg output after booting with
-> > > > > > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
-> > > > > > string; this is pristine 3.13-rc7.
-> > > > > 
-> > > > > That's strange, I've thought we've fixed the last struggling mismatch in
-> > > > > the lvds borber bits stuff. Can you please try latest drm-intel-nightly
-> > > > > from
-> > > > > 
-> > > > > http://cgit.freedesktop.org/~danvet/drm-intel/
-> > 
-> > I posted the output from the default branch in that repository last
-> > week:
-> > 
-> > 	http://marc.info/?l=linux-kernel&m=138922294308576&w=2
-> 
-> The default branch actually tends to be something stale, you need to
-> explicitly check out drm-intel-nightly ...
-> 
-> > Have you had time to look at the results yet?
-> 
-> It's marked on my todo, but unfortunately haven't gotten around to write
-> the patch yet (and analyze your log some more) ... I'll move it up the
-> prio list a bit.
 
-Don't bother.  I'll redo it using the drm-intel-nightly branch, but I 
-won't have time for a few days.
+I do think split the muti-issues into deferent patches will be easier to
+upstream code, and the risk will be lower.
 
-Alan Stern
+So this patch is just the first step.
 
+Thanks,
