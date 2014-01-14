@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaANVYt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:24:49 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:44133 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbaANVYo (ORCPT
+	id S1752158AbaANVZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:25:08 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:37619 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbaANVZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:24:44 -0500
+	Tue, 14 Jan 2014 16:25:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <039101cf116e$56c2de80$04489b80$@mindspring.com>
+In-Reply-To: <CALwJ=MyRRjL9kXMdQgACJ6GDTMoMzMJcckuvKk1NBqJD2G07pg@mail.gmail.com>
 References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
  <1389277187-18211-14-git-send-email-jlayton@redhat.com> <52CF05B5.5080700@amacapital.net>
  <20140109194930.1692fbbe@tlielax.poochiereds.net> <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
  <20140114192713.GA22262@fieldses.org> <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com>
- <20140114211009.GA23999@fieldses.org> <039101cf116e$56c2de80$04489b80$@mindspring.com>
+ <CALwJ=MyRRjL9kXMdQgACJ6GDTMoMzMJcckuvKk1NBqJD2G07pg@mail.gmail.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 14 Jan 2014 13:24:23 -0800
-Message-ID: <CALCETrWRWnbiX+fpeXmn7ZKVvCpb+h99R01o8jchmx4=fgb0QA@mail.gmail.com>
+Date: Tue, 14 Jan 2014 13:24:43 -0800
+Message-ID: <CALCETrU98m54jd8OHZwR9av2KRenDjHCukZztVD4GCncacjX5w@mail.gmail.com>
 Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
-To: Frank Filz <ffilzlnx@mindspring.com>
+To: Richard Hipp <drh@sqlite.org>
 Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
         Linux FS Devel <linux-fsdevel@vger.kernel.org>,
         nfs-ganesha-devel@lists.sourceforge.net,
@@ -30,183 +30,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 1:19 PM, Frank Filz <ffilzlnx@mindspring.com> wrote:
->> On Tue, Jan 14, 2014 at 12:29:17PM -0800, Andy Lutomirski wrote:
->> > [cc: drh, who I suspect is responsible for the most widespread
->> > userspace software that uses this stuff]
->> >
->> > On Tue, Jan 14, 2014 at 11:27 AM, J. Bruce Fields <bfields@fieldses.org>
->> wrote:
->> > > On Thu, Jan 09, 2014 at 04:58:59PM -0800, Andy Lutomirski wrote:
->> > >> On Thu, Jan 9, 2014 at 4:49 PM, Jeff Layton <jlayton@redhat.com>
->> wrote:
->> > >> > On Thu, 09 Jan 2014 12:25:25 -0800 Andy Lutomirski
->> > >> > <luto@amacapital.net> wrote:
->> > >> >> When I think of deadlocks caused by r/w locks (which these are),
->> > >> >> I think of two kinds.  First is what the current code tries to
->> > >> >> detect: two processes that are each waiting for each other.  I
->> > >> >> don't know whether POSIX enshrines the idea of detecting that,
->> > >> >> but I wouldn't be surprised, considering how awful the old POSIX
->> locks are.
->> > > ...
->> > >> >> The sensible kind of detectable deadlock involves just one lock,
->> > >> >> and it happens when two processes both hold read locks and try
->> > >> >> to upgrade to write locks.  This should be efficiently
->> > >> >> detectable and makes upgrading locks safe(r).
->> > >
->> > > This also involves two processes waiting on each other, and the
->> > > current code should detect either case equally well.
->> > >
->> > > ...
->> > >> For this kind of deadlock detection, nothing global is needed --
->> > >> I'm only talking about detecting deadlocks due to two tasks
->> > >> upgrading locks on the same file (with overlapping ranges) at the
-> same
->> time.
->> > >>
->> > >> This is actually useful for SQL-like things.  Imagine this scenario:
->> > >>
->> > >> Program 1:
->> > >>
->> > >> Open a file
->> > >> BEGIN;
->> > >> SELECT whatever;  -- acquires a read lock
->> > >>
->> > >> Program 2:
->> > >>
->> > >> Open the same file
->> > >> BEGIN;
->> > >> SELECT whatever;  -- acquires a read lock
->> > >>
->> > >> Program 1:
->> > >> UPDATE something;  -- upgrades to write
->> > >>
->> > >> Now program 1 is waiting for program 2 to release its lock.  But if
->> > >> program 2 tries to UPDATE, then it deadlocks.  A friendly MySQL
->> > >> implementation (which, sadly, does not include sqlite) will fail
->> > >> the abort the transaction instead.
->> > >
->> > > And then I suppose you'd need to get an exclusive lock when you
->> > > retry, to guarantee forward progress in the face of multiple
->> > > processes retrying at once.
->> >
->> > I don't think so -- as long as deadlock detection is 100% reliable and
->> > if you have writer priority,
->>
->> We don't have writer priority.  Depending on how it worked I'm not
->> convinced it would help.  E.g. consider the above but with 3 processes:
->>
->>       processes 1, 2, and 3 each get a whole-file read lock.
->>
->>       process 1 requests a write lock, blocks because it conflicts
->>       with read locks held by 2 and 3.
->>
->>       process 2 requests a write lock, gets -EDEADLK, unlocks and
->>       requests a new read lock.  That request succeeds because there
->>       is no conflicting lock.  (Note the lock manager had no
->>       opportunity to upgrade 1's lock here thanks to the conflict with
->>       3's lock.)
->
-> As I understand write lock priority, process 2 requesting a new read lock
-> would block, once there is a write lock waiter, no further read locks would
-> be granted that would conflict with that waiting write lock.
-
-...which reminds me -- if anyone implements writer priority, please
-make it optional (either w/ a writer-priority-ignoring read lock or a
-non-priority-granting write lock).  I have an application for which
-writer priority would be really annoying.
-
-Even better: Have read-lock-and-wait-for-pending-writers
-
-(Writer priority a
->
->>       process 3 requests a write lock, gets -EDEADLOCK, unlocks and
->>       requests a new read lock.
->
-> And then at this point, all read locks have been dropped, and there are
-> pending read locks blocking. The blocked write lock can now be granted. When
-> that lock is done, the read locks are again granted, and then we go through
-> the cycle again, this time with just two processes. And then one of those
-> processes wins the write lock race and blocks while the other gets EDEADLK
-> and drops it's read lock at which point of course the blocked write lock is
-> immediately granted. And then finally process 3 is granted it's read lock
-> and is able to upgrade to a write lock.
->
-> Frank
->
->>       Etc.
->>
->> > then all that readers need to do is to drop and re-acquire the read
->> > lock.  (This property is critical to avoid livelocks in SQL.  I rely
->> > on it here: a deadlocked UPDATE just retries the entire transaction
->> > without any special exclusive locks.)
->> >
->> > >
->> > > I don't know, is this so useful?
->> > >
->> > >> It would be nice if the kernel
->> > >> supported this.
->> > >>
->> > >> Note that unlocking and then re-locking for write is incorrect --
->> > >> it would allow program 2 to write inconsistent data.
->> > >>
->> > >> I think that implementing this could be as simple as having some
->> > >> way to check if a struct file_lock is currently trying to upgrade
->> > >> from read to write and, if you try to upgrade and end up waiting
->> > >> for such a lock, aborting.
->> > >
->> > > You have to be clear what you mean by "such a lock".  What you
->> > > really want to know is whether you'd be waiting on a lock that might
->> > > be waiting on a lock you hold.
->> >
->> > By "such a lock" I mean a read lock on the same file that's trying to
->> > upgrade to write.  I think that's the main (only?) interesting case.
->> > Checking for this has the nice property that you don't need to iterate
->> > and you don't care whom the holder of that lock is waiting for -- if
->> > it's upgrading and you overlap with it, you are certainly in the
->> > deadlock case.
->>
->> OK, I think.
->>
->> > > To a first approximation, the current works with a graph with tasks
->> > > as nodes and an arrow from node X to node Y if X is waiting on a
->> > > lock held by node Y.  And it follows arrows in that graph looking for
-> cycles.
->> > >
->> > > And sure I guess it would be a bit nicer if you only bothered
->> > > checking for cycles that touch this one file.
->> > >
->> > > But I'd really rather avoid the complication of deadlock detection
->> > > unless somebody can make a really strong case that they need it.
->> >
->> > TBH, I suspect that the person you really want to ask is drh, who
->> > writes/maintains sqlite (cc'd).  sqlite has fancy locks built on top
->> > of fcntl locks.
->>
->> A quick check of the sqlite source shows some complaints about posix locks
->> in src/os.c.
->>
->> Looks like all he's asking for his for the lock owner to be the file
-> descriptor not
->> the pid, and for locks not to be thrown away on first close.  Those are
-> the two
->> things jlayton addresses.
->>
->> So yes I think it would be interesting to know whether some of the extra
->> layer of internal sqlite locking could have been chucked if it could have
-> been
->> based on jlayton's locks.
->>
->> --b.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
-> in the
->> body of a message to majordomo@vger.kernel.org More majordomo info at
->> http://vger.kernel.org/majordomo-info.html
+On Tue, Jan 14, 2014 at 1:21 PM, Richard Hipp <drh@sqlite.org> wrote:
+> I have no context here.  I'm not sure what you are discussing or what
+> questions you have or what SQLite has to do with any of it.  Nevertheless, I
+> have injected a few remarks inline....
 >
 
+The discussion is about a new set of fcntl locking commands that are
+are respect locks acquired with the old ones but suck less.  This
+seems like the right time to discuss what would make them even better.
+ The immediate change is to let them be owned by the fd instead of the
+process.
 
+This might end up in POSIX and could make sqlite (and lots of other
+things') lives easier.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+--Andy
