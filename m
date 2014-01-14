@@ -1,170 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaANVKX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:10:23 -0500
-Received: from fieldses.org ([174.143.236.118]:35511 "EHLO fieldses.org"
+	id S1752041AbaANVLQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:11:16 -0500
+Received: from mga01.intel.com ([192.55.52.88]:62779 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751766AbaANVKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:10:14 -0500
-Date: Tue, 14 Jan 2014 16:10:09 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        drh@hwaci.com
-Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT
- locks
-Message-ID: <20140114211009.GA23999@fieldses.org>
-References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
- <1389277187-18211-14-git-send-email-jlayton@redhat.com>
- <52CF05B5.5080700@amacapital.net>
- <20140109194930.1692fbbe@tlielax.poochiereds.net>
- <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
- <20140114192713.GA22262@fieldses.org>
- <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751556AbaANVLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 16:11:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="458791824"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [char-misc-next] mei: allow multiple retries if the hw reset has failed
+Date: Tue, 14 Jan 2014 23:10:10 +0200
+Message-Id: <1389733810-28034-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 12:29:17PM -0800, Andy Lutomirski wrote:
-> [cc: drh, who I suspect is responsible for the most widespread
-> userspace software that uses this stuff]
-> 
-> On Tue, Jan 14, 2014 at 11:27 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > On Thu, Jan 09, 2014 at 04:58:59PM -0800, Andy Lutomirski wrote:
-> >> On Thu, Jan 9, 2014 at 4:49 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> >> > On Thu, 09 Jan 2014 12:25:25 -0800
-> >> > Andy Lutomirski <luto@amacapital.net> wrote:
-> >> >> When I think of deadlocks caused by r/w locks (which these are), I think
-> >> >> of two kinds.  First is what the current code tries to detect: two
-> >> >> processes that are each waiting for each other.  I don't know whether
-> >> >> POSIX enshrines the idea of detecting that, but I wouldn't be surprised,
-> >> >> considering how awful the old POSIX locks are.
-> > ...
-> >> >> The sensible kind of detectable deadlock involves just one lock, and it
-> >> >> happens when two processes both hold read locks and try to upgrade to
-> >> >> write locks.  This should be efficiently detectable and makes upgrading
-> >> >> locks safe(r).
-> >
-> > This also involves two processes waiting on each other, and the current
-> > code should detect either case equally well.
-> >
-> > ...
-> >> For this kind of deadlock detection, nothing global is needed -- I'm
-> >> only talking about detecting deadlocks due to two tasks upgrading
-> >> locks on the same file (with overlapping ranges) at the same time.
-> >>
-> >> This is actually useful for SQL-like things.  Imagine this scenario:
-> >>
-> >> Program 1:
-> >>
-> >> Open a file
-> >> BEGIN;
-> >> SELECT whatever;  -- acquires a read lock
-> >>
-> >> Program 2:
-> >>
-> >> Open the same file
-> >> BEGIN;
-> >> SELECT whatever;  -- acquires a read lock
-> >>
-> >> Program 1:
-> >> UPDATE something;  -- upgrades to write
-> >>
-> >> Now program 1 is waiting for program 2 to release its lock.  But if
-> >> program 2 tries to UPDATE, then it deadlocks.  A friendly MySQL
-> >> implementation (which, sadly, does not include sqlite) will fail the
-> >> abort the transaction instead.
-> >
-> > And then I suppose you'd need to get an exclusive lock when you retry,
-> > to guarantee forward progress in the face of multiple processes retrying
-> > at once.
-> 
-> I don't think so -- as long as deadlock detection is 100% reliable and
-> if you have writer priority,
+In some rare case mei hw reset may take long time to settle.
+Instead of blocking resume flow we span another driver reset flow in
+separate work context
 
-We don't have writer priority.  Depending on how it worked I'm not
-convinced it would help.  E.g. consider the above but with 3 processes:
+This allows as to shorten hw reset timeout to something more acceptable
+by DPM_WATCHDOG_TIMEOUT
 
-	processes 1, 2, and 3 each get a whole-file read lock.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+---
+ drivers/misc/mei/hbm.c   |  2 +-
+ drivers/misc/mei/hw-me.c |  2 +-
+ drivers/misc/mei/hw.h    |  4 ++--
+ drivers/misc/mei/init.c  | 40 ++++++++++++++++++++++++++++++----------
+ 4 files changed, 34 insertions(+), 14 deletions(-)
 
-	process 1 requests a write lock, blocks because it conflicts
-	with read locks held by 2 and 3.
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index 28cd74c..0aaf2c5 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -147,7 +147,7 @@ int mei_hbm_start_wait(struct mei_device *dev)
+ 	ret = wait_event_interruptible_timeout(dev->wait_recvd_msg,
+ 			dev->hbm_state == MEI_HBM_IDLE ||
+ 			dev->hbm_state >= MEI_HBM_STARTED,
+-			mei_secs_to_jiffies(MEI_INTEROP_TIMEOUT));
++			mei_secs_to_jiffies(MEI_HBM_TIMEOUT));
+ 	mutex_lock(&dev->device_lock);
+ 
+ 	if (ret <= 0 && (dev->hbm_state <= MEI_HBM_START)) {
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 6f656c0..54286f3 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -240,7 +240,7 @@ static int mei_me_hw_ready_wait(struct mei_device *dev)
+ 	mutex_unlock(&dev->device_lock);
+ 	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
+ 			dev->recvd_hw_ready,
+-			mei_secs_to_jiffies(MEI_INTEROP_TIMEOUT));
++			mei_secs_to_jiffies(MEI_HW_READY_TIMEOUT));
+ 	mutex_lock(&dev->device_lock);
+ 	if (!err && !dev->recvd_hw_ready) {
+ 		if (!err)
+diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
+index dd44e33..e06779d 100644
+--- a/drivers/misc/mei/hw.h
++++ b/drivers/misc/mei/hw.h
+@@ -22,7 +22,7 @@
+ /*
+  * Timeouts in Seconds
+  */
+-#define MEI_INTEROP_TIMEOUT         7  /* Timeout on ready message */
++#define MEI_HW_READY_TIMEOUT        2  /* Timeout on ready message */
+ #define MEI_CONNECT_TIMEOUT         3  /* HPS: at least 2 seconds */
+ 
+ #define MEI_CL_CONNECT_TIMEOUT     15  /* HPS: Client Connect Timeout */
+@@ -31,13 +31,13 @@
+ #define MEI_IAMTHIF_STALL_TIMER    12  /* HPS */
+ #define MEI_IAMTHIF_READ_TIMER     10  /* HPS */
+ 
++#define MEI_HBM_TIMEOUT            1   /* 1 second */
+ 
+ /*
+  * MEI Version
+  */
+ #define HBM_MINOR_VERSION                   0
+ #define HBM_MAJOR_VERSION                   1
+-#define HBM_TIMEOUT                         1	/* 1 second */
+ 
+ /* Host bus message command opcode */
+ #define MEI_HBM_CMD_OP_MSK                  0x7f
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index cdd31c2..95a7180 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -126,7 +126,6 @@ int mei_reset(struct mei_device *dev)
+ 
+ 	if (ret) {
+ 		dev_err(&dev->pdev->dev, "hw_reset failed ret = %d\n", ret);
+-		dev->dev_state = MEI_DEV_DISABLED;
+ 		return ret;
+ 	}
+ 
+@@ -139,7 +138,6 @@ int mei_reset(struct mei_device *dev)
+ 	ret = mei_hw_start(dev);
+ 	if (ret) {
+ 		dev_err(&dev->pdev->dev, "hw_start failed ret = %d\n", ret);
+-		dev->dev_state = MEI_DEV_DISABLED;
+ 		return ret;
+ 	}
+ 
+@@ -149,7 +147,7 @@ int mei_reset(struct mei_device *dev)
+ 	ret = mei_hbm_start_req(dev);
+ 	if (ret) {
+ 		dev_err(&dev->pdev->dev, "hbm_start failed ret = %d\n", ret);
+-		dev->dev_state = MEI_DEV_DISABLED;
++		dev->dev_state = MEI_DEV_RESETTING;
+ 		return ret;
+ 	}
+ 
+@@ -166,6 +164,7 @@ EXPORT_SYMBOL_GPL(mei_reset);
+  */
+ int mei_start(struct mei_device *dev)
+ {
++	int ret;
+ 	mutex_lock(&dev->device_lock);
+ 
+ 	/* acknowledge interrupt and stop interrupts */
+@@ -175,10 +174,18 @@ int mei_start(struct mei_device *dev)
+ 
+ 	dev_dbg(&dev->pdev->dev, "reset in start the mei device.\n");
+ 
+-	dev->dev_state = MEI_DEV_INITIALIZING;
+ 	dev->reset_count = 0;
+-	mei_reset(dev);
++	do {
++		dev->dev_state = MEI_DEV_INITIALIZING;
++		ret = mei_reset(dev);
++
++		if (ret == -ENODEV || dev->dev_state == MEI_DEV_DISABLED) {
++			dev_err(&dev->pdev->dev, "reset failed ret = %d", ret);
++			goto err;
++		}
++	} while (ret);
+ 
++	/* we cannot start the device w/o hbm start message completed */
+ 	if (dev->dev_state == MEI_DEV_DISABLED) {
+ 		dev_err(&dev->pdev->dev, "reset failed");
+ 		goto err;
+@@ -238,27 +245,40 @@ int mei_restart(struct mei_device *dev)
+ 
+ 	mutex_unlock(&dev->device_lock);
+ 
+-	if (err || dev->dev_state == MEI_DEV_DISABLED)
++	if (err == -ENODEV || dev->dev_state == MEI_DEV_DISABLED) {
++		dev_err(&dev->pdev->dev, "device disabled = %d\n", err);
+ 		return -ENODEV;
++	}
++
++	/* try to start again */
++	if (err)
++		schedule_work(&dev->reset_work);
++
+ 
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(mei_restart);
+ 
+-
+ static void mei_reset_work(struct work_struct *work)
+ {
+ 	struct mei_device *dev =
+ 		container_of(work, struct mei_device,  reset_work);
++	int ret;
+ 
+ 	mutex_lock(&dev->device_lock);
+ 
+-	mei_reset(dev);
++	ret = mei_reset(dev);
+ 
+ 	mutex_unlock(&dev->device_lock);
+ 
+-	if (dev->dev_state == MEI_DEV_DISABLED)
+-		dev_err(&dev->pdev->dev, "reset failed");
++	if (dev->dev_state == MEI_DEV_DISABLED) {
++		dev_err(&dev->pdev->dev, "device disabled = %d\n", ret);
++		return;
++	}
++
++	/* retry reset in case of failure */
++	if (ret)
++		schedule_work(&dev->reset_work);
+ }
+ 
+ void mei_stop(struct mei_device *dev)
+-- 
+1.8.4.2
 
-	process 2 requests a write lock, gets -EDEADLK, unlocks and
-	requests a new read lock.  That request succeeds because there
-	is no conflicting lock.  (Note the lock manager had no
-	opportunity to upgrade 1's lock here thanks to the conflict with
-	3's lock.)
-
-	process 3 requests a write lock, gets -EDEADLOCK, unlocks and
-	requests a new read lock.
-
-	Etc.
-
-> then all that readers need to do is to
-> drop and re-acquire the read lock.  (This property is critical to
-> avoid livelocks in SQL.  I rely on it here: a deadlocked UPDATE just
-> retries the entire transaction without any special exclusive locks.)
-> 
-> >
-> > I don't know, is this so useful?
-> >
-> >> It would be nice if the kernel
-> >> supported this.
-> >>
-> >> Note that unlocking and then re-locking for write is incorrect -- it
-> >> would allow program 2 to write inconsistent data.
-> >>
-> >> I think that implementing this could be as simple as having some way
-> >> to check if a struct file_lock is currently trying to upgrade from
-> >> read to write and, if you try to upgrade and end up waiting for such a
-> >> lock, aborting.
-> >
-> > You have to be clear what you mean by "such a lock".  What you really
-> > want to know is whether you'd be waiting on a lock that might be waiting
-> > on a lock you hold.
-> 
-> By "such a lock" I mean a read lock on the same file that's trying to
-> upgrade to write.  I think that's the main (only?) interesting case.
-> Checking for this has the nice property that you don't need to iterate
-> and you don't care whom the holder of that lock is waiting for -- if
-> it's upgrading and you overlap with it, you are certainly in the
-> deadlock case.
-
-OK, I think.
-
-> > To a first approximation, the current works with a graph with tasks as
-> > nodes and an arrow from node X to node Y if X is waiting on a lock held
-> > by node Y.  And it follows arrows in that graph looking for cycles.
-> >
-> > And sure I guess it would be a bit nicer if you only bothered checking
-> > for cycles that touch this one file.
-> >
-> > But I'd really rather avoid the complication of deadlock detection
-> > unless somebody can make a really strong case that they need it.
-> 
-> TBH, I suspect that the person you really want to ask is drh, who
-> writes/maintains sqlite (cc'd).  sqlite has fancy locks built on top
-> of fcntl locks.
-
-A quick check of the sqlite source shows some complaints about posix
-locks in src/os.c.
-
-Looks like all he's asking for his for the lock owner to be the file
-descriptor not the pid, and for locks not to be thrown away on first
-close.  Those are the two things jlayton addresses.
-
-So yes I think it would be interesting to know whether some of the extra
-layer of internal sqlite locking could have been chucked if it could
-have been based on jlayton's locks.
-
---b.
