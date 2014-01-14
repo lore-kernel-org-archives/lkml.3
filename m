@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076AbaANBEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:04:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54027 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238AbaANA1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:11 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Hunt <joshhunt00@gmail.com>, Honggang Li <honli@redhat.com>,
-        Bang Nguyen <bang.nguyen@oracle.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 07/62] rds: prevent BUG_ON triggered on congestion update to loopback
-Date: Mon, 13 Jan 2014 16:26:32 -0800
-Message-Id: <20140114002710.673468287@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
-References: <20140114002710.464561569@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1755589AbaANBEh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:04:37 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5771 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753755AbaANBEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 20:04:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
+   d="scan'208";a="458241986"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/6] perf, tools: fix BFD detection on opensuse
+Date: Mon, 13 Jan 2014 17:04:16 -0800
+Message-Id: <1389661461-18996-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
+References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: Andi Kleen <ak@linux.intel.com>
 
-------------------
+opensuse libbfd requires -lz -liberty to build. Add those
+to the BFD feature detection.
 
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-
-[ Upstream commit 18fc25c94eadc52a42c025125af24657a93638c0 ]
-
-After congestion update on a local connection, when rds_ib_xmit returns
-less bytes than that are there in the message, rds_send_xmit calls
-back rds_ib_xmit with an offset that causes BUG_ON(off & RDS_FRAG_SIZE)
-to trigger.
-
-For a 4Kb PAGE_SIZE rds_ib_xmit returns min(8240,4096)=4096 when actually
-the message contains 8240 bytes. rds_send_xmit thinks there is more to send
-and calls rds_ib_xmit again with a data offset "off" of 4096-48(rds header)
-=4048 bytes thus hitting the BUG_ON(off & RDS_FRAG_SIZE) [RDS_FRAG_SIZE=4k].
-
-The commit 6094628bfd94323fc1cea05ec2c6affd98c18f7f
-"rds: prevent BUG_ON triggering on congestion map updates" introduced
-this regression. That change was addressing the triggering of a different
-BUG_ON in rds_send_xmit() on PowerPC architecture with 64Kbytes PAGE_SIZE:
- 	BUG_ON(ret != 0 &&
-    		 conn->c_xmit_sg == rm->data.op_nents);
-This was the sequence it was going through:
-(rds_ib_xmit)
-/* Do not send cong updates to IB loopback */
-if (conn->c_loopback
-   && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-  	rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-    	return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-}
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 0 + 8240 - 48 (rds header accounted only the first time)
-   		 = 8192
-  c_xmit_data_off < 65536 (sg->length), so calls rds_ib_xmit again
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 8192 + 8240 = 16432, calls rds_ib_xmit again
-  and so on (c_xmit_data_off 24672,32912,41152,49392,57632)
-rds_ib_xmit returns 8240
-On this iteration this sequence causes the BUG_ON in rds_send_xmit:
-    while (ret) {
-    	tmp = min_t(int, ret, sg->length - conn->c_xmit_data_off);
-    	[tmp = 65536 - 57632 = 7904]
-    	conn->c_xmit_data_off += tmp;
-    	[c_xmit_data_off = 57632 + 7904 = 65536]
-    	ret -= tmp;
-    	[ret = 8240 - 7904 = 336]
-    	if (conn->c_xmit_data_off == sg->length) {
-    		conn->c_xmit_data_off = 0;
-    		sg++;
-    		conn->c_xmit_sg++;
-    		BUG_ON(ret != 0 &&
-    			conn->c_xmit_sg == rm->data.op_nents);
-    		[c_xmit_sg = 1, rm->data.op_nents = 1]
-
-What the current fix does:
-Since the congestion update over loopback is not actually transmitted
-as a message, all that rds_ib_xmit needs to do is let the caller think
-the full message has been transmitted and not return partial bytes.
-It will return 8240 (RDS_CONG_MAP_BYTES+48) when PAGE_SIZE is 4Kb.
-And 64Kb+48 when page size is 64Kb.
-
-Reported-by: Josh Hunt <joshhunt00@gmail.com>
-Tested-by: Honggang Li <honli@redhat.com>
-Acked-by: Bang Nguyen <bang.nguyen@oracle.com>
-Signed-off-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- net/rds/ib_send.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ tools/perf/config/Makefile                | 2 +-
+ tools/perf/config/feature-checks/Makefile | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *c
- 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
- 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
- 		scat = &rm->data.op_sg[sg];
--		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
--		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
--		return ret;
-+		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-+		return sizeof(struct rds_header) + ret;
- 	}
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 01dd43d..d86d33c 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -478,7 +478,7 @@ else
+ endif
  
- 	/* FIXME we may overallocate here */
-
+ ifeq ($(feature-libbfd), 1)
+-  EXTLIBS += -lbfd
++  EXTLIBS += -lbfd -lz -liberty
+ endif
+ 
+ ifdef NO_DEMANGLE
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 7cf6fcd..a430e4f 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -120,7 +120,7 @@ test-libpython-version.bin:
+ 	$(BUILD) $(FLAGS_PYTHON_EMBED)
+ 
+ test-libbfd.bin:
+-	$(BUILD) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
+ 
+ test-liberty.bin:
+ 	$(CC) -o $(OUTPUT)$@ test-libbfd.c -DPACKAGE='"perf"' -lbfd -ldl -liberty
+-- 
+1.8.3.1
 
