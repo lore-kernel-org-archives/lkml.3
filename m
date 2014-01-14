@@ -1,39 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaANV3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:29:40 -0500
-Received: from mail2.nust.ac.zw ([196.220.96.63]:52277 "EHLO mail2.nust.ac.zw"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637AbaANV3i convert rfc822-to-8bit (ORCPT
+	id S1752397AbaANVas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:30:48 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47876 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaANVaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:29:38 -0500
-X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jan 2014 16:29:37 EST
-X-Amavis-Modified: Mail body modified (using disclaimer) - mail2.nust.ac.zw
-Date: Tue, 14 Jan 2014 23:23:06 +0200 (SAST)
-From: STANDARD LOAN <blessed.mhlope@nust.ac.zw>
-Reply-To: "standloanfirm@rediffmail.com" <standloanfirm@rediffmail.com>
-Subject: KREDIT ANGEBOT
-Message-ID: <556c400d-496a-47f5-95ec-9021c9825223@mail2.nust.ac.zw>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Originating-IP: [196.46.246.188]
-X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
-To: undisclosed-recipients:;
+	Tue, 14 Jan 2014 16:30:39 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-edac@vger.kernel.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        <devicetree@vger.kernel.org>
+Subject: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
+Date: Tue, 14 Jan 2014 13:30:32 -0800
+Message-Id: <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+In-Reply-To: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
+References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Krait CPU/L1 error reporting device is made up a per-CPU
+interrupt. While we're here, document the next-level-cache
+property that's used by the Krait EDAC driver.
 
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: <devicetree@vger.kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ Documentation/devicetree/bindings/arm/cpus.txt | 52 ++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
-Sie benötigen die Finanzierung?
+diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+index 91304353eea4..c332b5168456 100644
+--- a/Documentation/devicetree/bindings/arm/cpus.txt
++++ b/Documentation/devicetree/bindings/arm/cpus.txt
+@@ -191,6 +191,16 @@ nodes to be present and contain the properties described below.
+ 			  property identifying a 64-bit zero-initialised
+ 			  memory location.
+ 
++	- interrupts
++		Usage: required for cpus with compatible string "qcom,krait".
++		Value type: <prop-encoded-array>
++		Definition: L1/CPU error interrupt
++
++	- next-level-cache
++		Usage: optional
++		Value type: <phandle>
++		Definition: phandle pointing to the next level cache
++
+ Example 1 (dual-cluster big.LITTLE system 32-bit):
+ 
+ 	cpus {
+@@ -382,3 +392,45 @@ cpus {
+ 		cpu-release-addr = <0 0x20000000>;
+ 	};
+ };
++
++
++Example 5 (Krait 32-bit system):
++
++cpus {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	interrupts = <1 9 0xf04>;
++
++	cpu@0 {
++		device_type = "cpu";
++		compatible = "qcom,krait";
++		reg = <0>;
++		next-level-cache = <&L2>;
++	};
++
++	cpu@1 {
++		device_type = "cpu";
++		compatible = "qcom,krait";
++		reg = <1>;
++		next-level-cache = <&L2>;
++	};
++
++	cpu@2 {
++		device_type = "cpu";
++		compatible = "qcom,krait";
++		reg = <2>;
++		next-level-cache = <&L2>;
++	};
++
++	cpu@3 {
++		device_type = "cpu";
++		compatible = "qcom,krait";
++		reg = <3>;
++		next-level-cache = <&L2>;
++	};
++
++	L2: l2-cache {
++		compatible = "cache";
++		interrupts = <0 2 0x4>;
++	};
++};
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Haben Sie Geschäfts-oder persönliche Darlehen benötigen?
-
-Wollen Sie Ihr Unternehmen refinanzieren wollen?
-
-
-
-Unser Unternehmen ist in den Vereinigten Staaten und Europa. Wir geben Darlehen an jedem einzelnen Unternehmen und bei 2% Zinsen jährlich. Für weitere Informationen, Kontakt E-Mail: standloanfirm@rediffmail.com
-                                                                                                                                                                                                                                                                                                                                                                                                                                    This message is intended only for the named recipient. If you are not the intended recipient you are notified that disclosing, copying, distributing or taking any action in reliance on the contents of this information is strictly prohibited. This emailis confidential, may be legally privileged, and is for the intended recipient only. If an addressing or transmission error has misdirected this e-mail, please notify the author by replying to this e-mail. If you are not the intended recipient you must not use, disclose, distribute, copy, print or rely on this email. 
- Any views or opinions presented are solely those of the author and do not necessarily represent those of the National University of Science and Technology. The National University of Science and Technology, Zimbabwe, does not accept legal responsibility for the contents of this message. Whilst all reasonable steps are taken to ensure the accuracy and integrity of information and data transmitted electronically and to preserve the confidentiality thereof, no liability or responsibility whatsoever is accepted if information or data is, for whatever reason, corrupted or does not reach its intended destination. Replies to this email may be monitored by the National University of Science and Technology, Zimbabwe, for operational, security or business reasons.
