@@ -1,201 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaANVLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:11:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62779 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556AbaANVLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:11:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="458791824"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>
-Subject: [char-misc-next] mei: allow multiple retries if the hw reset has failed
-Date: Tue, 14 Jan 2014 23:10:10 +0200
-Message-Id: <1389733810-28034-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.4.2
+	id S1752137AbaANVLg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:11:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33751 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659AbaANVLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 16:11:33 -0500
+Date: Tue, 14 Jan 2014 13:12:10 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [RFC] sysfs_rename_link() and its usage
+Message-ID: <20140114211210.GA28453@kroah.com>
+References: <20140114171740.GB1867@redhat.com>
+ <20140114182135.GA29296@kroah.com>
+ <20140114191208.GA9942@redhat.com>
+ <20140114193139.GA3636@kroah.com>
+ <20140114210610.GC9942@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114210610.GC9942@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some rare case mei hw reset may take long time to settle.
-Instead of blocking resume flow we span another driver reset flow in
-separate work context
+On Tue, Jan 14, 2014 at 10:06:10PM +0100, Veaceslav Falico wrote:
+> On Tue, Jan 14, 2014 at 11:31:39AM -0800, Greg KH wrote:
+> >On Tue, Jan 14, 2014 at 08:12:08PM +0100, Veaceslav Falico wrote:
+> >>On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
+> >>>On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
+> >>>>Hi,
+> >>>>
+> >>>>I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
+> >>>>
+> >>>>Consider having two net_device *a, *b; which are registered normally.
+> >>>>Now, to create a link from /sys/class/net/a->name/linkname to b, one should
+> >>>>use:
+> >>>>
+> >>>>sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
+> >>>>
+> >>>>To remove it, even simpler:
+> >>>>
+> >>>>sysfs_remove_link(&(a->dev.kobj), linkname);
+> >>>>
+> >>>>This works like a charm. However, if I want to use (obviously, with the
+> >>>>symlink present):
+> >>>>
+> >>>>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
+> >>>
+> >>>You forgot the namespace option to this call, what kernel version are
+> >>>you using here?
+> >>
+> >>It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
+> >>3.13-rc6 with some networking patches on top of it.
+> >>
+> >>And wrt namespace - there are two functions, one is sysfs_rename_link(),
+> >>which calls the second one - sysfs_rename_link_ns() with NULL namespace.
+> >>
+> >>>
+> >>>>this fails with:
+> >>>>
+> >>>>"sysfs: ns invalid in 'a->name' for 'oldname'"
+> >>>
+> >>>Looks like the namespace for this link isn't valid.
+> >>
+> >>Yep, though dunno why.
+> >
+> >Are you testing this with network namespaces enabled?  Perhaps that is
+> >why, you need to specify the namespace of the link that you are
+> >changing.
+> >
+> >The fact that the bridge link works is odd to me, I would think that it
+> >too needs to specify the network namespace involved, but perhaps bridge
+> >objects aren't part of any specific network namespace?  I don't know the
+> >bridging code at all, sorry.
+> 
+> Yep, might be it, will test soon and come back with the results.
+> 
+> What still bugs me, though, is the logic - why is it possible to remove/add
+> without specifying namespace, while it fails to rename it? Maybe the rename
+> function should do a better job at detecting the namespace?
 
-This allows as to shorten hw reset timeout to something more acceptable
-by DPM_WATCHDOG_TIMEOUT
+Yes, maybe it should, patches are always gladly welcome :)
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
----
- drivers/misc/mei/hbm.c   |  2 +-
- drivers/misc/mei/hw-me.c |  2 +-
- drivers/misc/mei/hw.h    |  4 ++--
- drivers/misc/mei/init.c  | 40 ++++++++++++++++++++++++++++++----------
- 4 files changed, 34 insertions(+), 14 deletions(-)
+thanks,
 
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 28cd74c..0aaf2c5 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -147,7 +147,7 @@ int mei_hbm_start_wait(struct mei_device *dev)
- 	ret = wait_event_interruptible_timeout(dev->wait_recvd_msg,
- 			dev->hbm_state == MEI_HBM_IDLE ||
- 			dev->hbm_state >= MEI_HBM_STARTED,
--			mei_secs_to_jiffies(MEI_INTEROP_TIMEOUT));
-+			mei_secs_to_jiffies(MEI_HBM_TIMEOUT));
- 	mutex_lock(&dev->device_lock);
- 
- 	if (ret <= 0 && (dev->hbm_state <= MEI_HBM_START)) {
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 6f656c0..54286f3 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -240,7 +240,7 @@ static int mei_me_hw_ready_wait(struct mei_device *dev)
- 	mutex_unlock(&dev->device_lock);
- 	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
- 			dev->recvd_hw_ready,
--			mei_secs_to_jiffies(MEI_INTEROP_TIMEOUT));
-+			mei_secs_to_jiffies(MEI_HW_READY_TIMEOUT));
- 	mutex_lock(&dev->device_lock);
- 	if (!err && !dev->recvd_hw_ready) {
- 		if (!err)
-diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
-index dd44e33..e06779d 100644
---- a/drivers/misc/mei/hw.h
-+++ b/drivers/misc/mei/hw.h
-@@ -22,7 +22,7 @@
- /*
-  * Timeouts in Seconds
-  */
--#define MEI_INTEROP_TIMEOUT         7  /* Timeout on ready message */
-+#define MEI_HW_READY_TIMEOUT        2  /* Timeout on ready message */
- #define MEI_CONNECT_TIMEOUT         3  /* HPS: at least 2 seconds */
- 
- #define MEI_CL_CONNECT_TIMEOUT     15  /* HPS: Client Connect Timeout */
-@@ -31,13 +31,13 @@
- #define MEI_IAMTHIF_STALL_TIMER    12  /* HPS */
- #define MEI_IAMTHIF_READ_TIMER     10  /* HPS */
- 
-+#define MEI_HBM_TIMEOUT            1   /* 1 second */
- 
- /*
-  * MEI Version
-  */
- #define HBM_MINOR_VERSION                   0
- #define HBM_MAJOR_VERSION                   1
--#define HBM_TIMEOUT                         1	/* 1 second */
- 
- /* Host bus message command opcode */
- #define MEI_HBM_CMD_OP_MSK                  0x7f
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index cdd31c2..95a7180 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -126,7 +126,6 @@ int mei_reset(struct mei_device *dev)
- 
- 	if (ret) {
- 		dev_err(&dev->pdev->dev, "hw_reset failed ret = %d\n", ret);
--		dev->dev_state = MEI_DEV_DISABLED;
- 		return ret;
- 	}
- 
-@@ -139,7 +138,6 @@ int mei_reset(struct mei_device *dev)
- 	ret = mei_hw_start(dev);
- 	if (ret) {
- 		dev_err(&dev->pdev->dev, "hw_start failed ret = %d\n", ret);
--		dev->dev_state = MEI_DEV_DISABLED;
- 		return ret;
- 	}
- 
-@@ -149,7 +147,7 @@ int mei_reset(struct mei_device *dev)
- 	ret = mei_hbm_start_req(dev);
- 	if (ret) {
- 		dev_err(&dev->pdev->dev, "hbm_start failed ret = %d\n", ret);
--		dev->dev_state = MEI_DEV_DISABLED;
-+		dev->dev_state = MEI_DEV_RESETTING;
- 		return ret;
- 	}
- 
-@@ -166,6 +164,7 @@ EXPORT_SYMBOL_GPL(mei_reset);
-  */
- int mei_start(struct mei_device *dev)
- {
-+	int ret;
- 	mutex_lock(&dev->device_lock);
- 
- 	/* acknowledge interrupt and stop interrupts */
-@@ -175,10 +174,18 @@ int mei_start(struct mei_device *dev)
- 
- 	dev_dbg(&dev->pdev->dev, "reset in start the mei device.\n");
- 
--	dev->dev_state = MEI_DEV_INITIALIZING;
- 	dev->reset_count = 0;
--	mei_reset(dev);
-+	do {
-+		dev->dev_state = MEI_DEV_INITIALIZING;
-+		ret = mei_reset(dev);
-+
-+		if (ret == -ENODEV || dev->dev_state == MEI_DEV_DISABLED) {
-+			dev_err(&dev->pdev->dev, "reset failed ret = %d", ret);
-+			goto err;
-+		}
-+	} while (ret);
- 
-+	/* we cannot start the device w/o hbm start message completed */
- 	if (dev->dev_state == MEI_DEV_DISABLED) {
- 		dev_err(&dev->pdev->dev, "reset failed");
- 		goto err;
-@@ -238,27 +245,40 @@ int mei_restart(struct mei_device *dev)
- 
- 	mutex_unlock(&dev->device_lock);
- 
--	if (err || dev->dev_state == MEI_DEV_DISABLED)
-+	if (err == -ENODEV || dev->dev_state == MEI_DEV_DISABLED) {
-+		dev_err(&dev->pdev->dev, "device disabled = %d\n", err);
- 		return -ENODEV;
-+	}
-+
-+	/* try to start again */
-+	if (err)
-+		schedule_work(&dev->reset_work);
-+
- 
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(mei_restart);
- 
--
- static void mei_reset_work(struct work_struct *work)
- {
- 	struct mei_device *dev =
- 		container_of(work, struct mei_device,  reset_work);
-+	int ret;
- 
- 	mutex_lock(&dev->device_lock);
- 
--	mei_reset(dev);
-+	ret = mei_reset(dev);
- 
- 	mutex_unlock(&dev->device_lock);
- 
--	if (dev->dev_state == MEI_DEV_DISABLED)
--		dev_err(&dev->pdev->dev, "reset failed");
-+	if (dev->dev_state == MEI_DEV_DISABLED) {
-+		dev_err(&dev->pdev->dev, "device disabled = %d\n", ret);
-+		return;
-+	}
-+
-+	/* retry reset in case of failure */
-+	if (ret)
-+		schedule_work(&dev->reset_work);
- }
- 
- void mei_stop(struct mei_device *dev)
--- 
-1.8.4.2
-
+greg k-h
