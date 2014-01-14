@@ -1,103 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaANOMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:12:23 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:36864 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaANOMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:12:20 -0500
-Date: Tue, 14 Jan 2014 17:09:23 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] zram: rework reported to end-user zram statistics
-Message-ID: <20140114140923.GD2226@swordfish.minsk.epam.com>
-References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389692260-4421-4-git-send-email-sergey.senozhatsky@gmail.com>
- <52D513BD.7000800@redhat.com>
- <20140114111012.GC2180@swordfish.minsk.epam.com>
- <52D53F11.3090005@redhat.com>
- <20140114135355.GC2226@swordfish.minsk.epam.com>
- <52D54375.8070706@redhat.com>
+	id S1751599AbaANONT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:13:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17778 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329AbaANONR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 09:13:17 -0500
+Message-ID: <52D545F7.2020503@redhat.com>
+Date: Tue, 14 Jan 2014 09:13:11 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D54375.8070706@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: atomlin@redhat.com, linux-kernel@vger.kernel.org
+CC: mingo@kernel.org, oleg@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 2/2] hung_task: Display every hung task warning
+References: <1389633292-23588-1-git-send-email-atomlin@redhat.com> <1389633292-23588-3-git-send-email-atomlin@redhat.com>
+In-Reply-To: <1389633292-23588-3-git-send-email-atomlin@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/14/14 15:02), Jerome Marchand wrote:
-> On 01/14/2014 02:53 PM, Sergey Senozhatsky wrote:
-> > On (01/14/14 14:43), Jerome Marchand wrote:
-> > [..]
-> >>>>
-> >>>> That's weird: good/bad_compress are accounted, but it seems to me that
-> >>>> they are to never used in any way. If so, there is indeed no reason to
-> >>>> keep them.
-> >>>>
-> >>>>
-> >>>>> Account each sub-request
-> >>>>> compression size so we can calculate real device compression ratio.
-> >>>>
-> >>>> Your patch doesn't change the way pages_stored and compr[essed]_size
-> >>>> are accounted. What does your patch change that allow us to calculate
-> >>>> the "real" compression ratio?
-> >>>>
-> >>>>>
-> >>>>> 4) reported zram stats:
-> >>>>>   - num_writes  -- number of writes
-> >>>>>   - num_reads  -- number of reads
-> >>>>>   - pages_stored -- number of pages currently stored
-> >>>>>   - compressed_size -- compressed size of pages stored
-> >>>>
-> >>>> Wouldn't it be more practical to report the original and compressed
-> >>>> data sizes using the same units as it is currently done?
-> >>>>
-> >>>
-> >>> hm, do we really need pages_stored stats? what kind of unseful information it
-> >>> shows to end user?.. perhaps, it's better to replace it with accounted passed
-> >>> bvec->bv_len (as uncompressed_size).
-> >>>
-> >>
-> >> That's really going to complicates things. We would need to keep track
-> >> of which sectors of a particular page has been written to. It's much
-> >> easier to keep current page granularity and consider any partial I/O
-> >> as an whole page I/O.
-> >>
-> > 
-> > fair enough. thank you.
-> > 
-> > 2/3 and 3/3 were changed according to your comments:
-> > - 2/3 drop READA check
-> > - 3/3 update commit message.
-> > 
-> > ready to re-publish. may I add your ACK to all 3 patches or just to 1/3?
+On 01/13/2014 12:14 PM, atomlin@redhat.com wrote:
+> From: Aaron Tomlin <atomlin@redhat.com>
 > 
-> The READA thing was my only concern for 2/3, so yes for this one.
-> Concerning the third patch, I'd like to see what other people think
-> about which stats we want to report.
+> Enable hung_task_warnings to display every hung
+> task warning when set to -1.
 > 
+> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 
-good. so I hold on for a bit to minimize the traffic and see what other
-people think. thank you.
+Aaron and I talked on IRC, and after some talking these patches
+now make sense to me :)
 
-	-ss
+The kernel apparently limits how many hung task warnings it
+will display at a time, when a timeout occurs.  Aaron's patch
+allows that limit to be set to "unlimited", which will cause
+the kernel to display info about all hung tasks.
 
-> >>>
-> >>>> Jerome
-> >>>>
-> >>>>>   - pages_zero  -- number of zero filled pages
-> >>>>>   - failed_read -- number of failed reads
-> >>>>>   - failed_writes -- can happen when memory is too low
-> >>>>>   - invalid_io   -- non-page-aligned I/O requests
-> >>>>>   - notify_free  -- number of swap slot free notifications
-> >>>>>   - memory_used -- zs pool zs_get_total_size_bytes()
-> >>>>>
-> >>>>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> >>
-> >>
-> 
+Reviewed-by: Rik van Riel <riel@redhat.com>
+
+-- 
+All rights reversed
