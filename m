@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaANMtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 07:49:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40257 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383AbaANMtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 07:49:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,658,1384329600"; 
-   d="scan'208";a="438596476"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Daniel Vetter <daniel@ffwll.ch>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] Excessive WARN()s in Intel 915 driver
-In-Reply-To: <Pine.LNX.4.44L0.1401131512380.2032-100000@iolanthe.rowland.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <Pine.LNX.4.44L0.1401131512380.2032-100000@iolanthe.rowland.org>
-User-Agent: Notmuch/0.17+27~gabca3dcf08ba (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 14 Jan 2014 14:52:17 +0200
-Message-ID: <8738kqafpa.fsf@intel.com>
+	id S1751592AbaANMwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 07:52:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59766 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaANMwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 07:52:14 -0500
+Date: Tue, 14 Jan 2014 13:51:53 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the tip
+ tree
+Message-ID: <20140114125153.GY7572@laptop.programming.kicks-ass.net>
+References: <20140114155331.88d170d3c991b9465c23a537@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114155331.88d170d3c991b9465c23a537@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 8 Jan 2014, Daniel Vetter wrote:
->
->> On Wed, Jan 08, 2014 at 01:34:02PM -0500, Alan Stern wrote:
->> > On Wed, 8 Jan 2014, Daniel Vetter wrote:
->> > 
->> > > On Wed, Jan 08, 2014 at 11:08:08AM -0500, Alan Stern wrote:
->> > > > On Tue, 7 Jan 2014, Daniel Vetter wrote:
->> > > > 
->> > > > > I really want users to report these issues, and excessive WARNs seems
->> > > > > to be the only way to get those reports. Please boot with
->> > > > > drm.debug=0xe added to your kernel cmdline and reproduce this issues.
->> > > > > Also, which precise kernel are you running? Testing latest -rc is
->> > > > > always recommended, this state checker code is fairly new and gets
->> > > > > constantly extended and bugs fixed ...
->> > > > 
->> > > > Here you go.  This is the dmesg output after booting with
->> > > > drm.debug=0xe.  Pay no attention to the "AS" suffix in the version
->> > > > string; this is pristine 3.13-rc7.
->> > > 
->> > > That's strange, I've thought we've fixed the last struggling mismatch in
->> > > the lvds borber bits stuff. Can you please try latest drm-intel-nightly
->> > > from
->> > > 
->> > > http://cgit.freedesktop.org/~danvet/drm-intel/
->
-> I posted the output from the default branch in that repository last
-> week:
->
-> 	http://marc.info/?l=linux-kernel&m=138922294308576&w=2
->
-> Have you had time to look at the results yet?
+On Tue, Jan 14, 2014 at 03:53:31PM +1100, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> Today's linux-next merge of the akpm-current tree got a conflict in
+> kernel/futex.c between commit a52b89ebb6d4 ("futexes: Increase hash table
+> size for better performance") from the tip tree and commit 61beee6c76e5
+> ("futex: switch to USER_DS for futex test") from the akpm-current tree.
+> 
+> @@@ -2869,10 -2748,13 +2871,13 @@@
+>   	 * implementation, the non-functional ones will return
+>   	 * -ENOSYS.
+>   	 */
+> + 	fs = get_fs();
+> + 	set_fs(USER_DS);
+>   	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+>   		futex_cmpxchg_enabled = 1;
+> + 	set_fs(fs);
+>   
 
-I think it might be the time to file this as a new bug on DRM/Intel at
-https://bugs.freedesktop.org/enter_bug.cgi?product=DRI
-
-BR,
-Jani.
-
-
->
-> Alan Stern
->
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
-
--- 
-Jani Nikula, Intel Open Source Technology Center
+This seems terribly broken, the *futex_value*() ops should not need
+that; they are supposed to access userspace without any of that.
