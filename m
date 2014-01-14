@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaANMXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 07:23:51 -0500
-Received: from 82-68-191-81.dsl.posilan.com ([82.68.191.81]:57714 "EHLO
-	rainbowdash.ducie.codethink.co.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751287AbaANMXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 07:23:47 -0500
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-To: linux-kernel@lists.codethink.co.uk,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>, Pavel Machek <pavel@ucw.cz>,
-        linux-pm@vger.kernel.org
-Subject: [PATCH 3/3] power: clock_ops.c: report clock errors from clk_enable()
-Date: Tue, 14 Jan 2014 12:23:42 +0000
-Message-Id: <1389702222-17260-4-git-send-email-ben.dooks@codethink.co.uk>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389702222-17260-1-git-send-email-ben.dooks@codethink.co.uk>
-References: <1389702222-17260-1-git-send-email-ben.dooks@codethink.co.uk>
+	id S1751462AbaANM2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 07:28:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287AbaANM2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 07:28:21 -0500
+Message-ID: <52D52D30.6040508@redhat.com>
+Date: Tue, 14 Jan 2014 13:27:28 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] zram: do not pass rw argument to __zram_make_request()
+References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com> <1389692260-4421-3-git-send-email-sergey.senozhatsky@gmail.com> <52D5195A.3040001@redhat.com> <20140114111311.GD2180@swordfish.minsk.epam.com>
+In-Reply-To: <20140114111311.GD2180@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If clk_enable() fails, then print a message so that the user can see
-what is happening instead of silently failing to enable the clock.
+On 01/14/2014 12:13 PM, Sergey Senozhatsky wrote:
+> On (01/14/14 12:02), Jerome Marchand wrote:
+>>>  static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+>>> -			int offset, struct bio *bio, int rw)
+>>> +			int offset, struct bio *bio)
+>>>  {
+>>>  	int ret;
+>>> +	int rw = bio_data_dir(bio);
+>>>  
+>>> -	if (rw == READ)
+>>> +	if (rw == READA)
+>>> +		rw = READ;
+>>
+>> This could never happen: bio_data_dir() can only return READ or WRITE.
+>>
+> 
+> thanks. my bad. will replace with bio_rw().
 
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-sh@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
----
- drivers/base/power/clock_ops.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+There is no point in doing that. In read-ahead case, bio_data_dir()
+already returns READ. Since we don't do anything special in read-ahead
+case, just keep bio_data_dir() and drop this test.
 
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index cad7190..e870bbe 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -33,6 +33,21 @@ struct pm_clock_entry {
- };
- 
- /**
-+ * pm_clk_enable - Enable a clock, reporting any errors
-+ * @dev: The device for the given clock
-+ * @clk: The clock being enabled.
-+ */
-+static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
-+{
-+	int ret = clk_enable(clk);
-+	if (ret)
-+		dev_err(dev, "%s: failed to enable clk %p, error %d\n",
-+			__func__, clk, ret);
-+
-+	return ret;
-+}
-+
-+/**
-  * pm_clk_acquire - Acquire a device clock.
-  * @dev: Device whose clock is to be acquired.
-  * @ce: PM clock entry corresponding to the clock.
-@@ -263,7 +278,7 @@ int pm_clk_resume(struct device *dev)
- 
- 	list_for_each_entry(ce, &psd->clock_list, node) {
- 		if (ce->status < PCE_STATUS_ERROR) {
--			ret = clk_enable(ce->clk);
-+			ret = __pm_clk_enable(dev, ce->clk);
- 			if (!ret)
- 				ce->status = PCE_STATUS_ENABLED;
- 		}
-@@ -381,7 +396,7 @@ int pm_clk_resume(struct device *dev)
- 	spin_lock_irqsave(&psd->lock, flags);
- 
- 	list_for_each_entry(ce, &psd->clock_list, node)
--		clk_enable(ce->clk);
-+		__pm_clk_enable(dev, ce->clk);
- 
- 	spin_unlock_irqrestore(&psd->lock, flags);
- 
--- 
-1.8.5.2
+> 
+> 	-ss
+> 
+>> Jerome
+>>
+>>> +
+>>> +	if (rw == READ) {
+>>> +		atomic64_inc(&zram->stats.num_reads);
+>>>  		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+>>> -	else
+>>> +	} else {
+>>> +		atomic64_inc(&zram->stats.num_writes);
+>>>  		ret = zram_bvec_write(zram, bvec, index, offset);
+>>> +	}
+>>>  
+>>>  	return ret;
+>>>  }
+>>> @@ -670,22 +677,13 @@ out:
+>>>  	return ret;
+>>>  }
+>>>  
+>>> -static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+>>> +static void __zram_make_request(struct zram *zram, struct bio *bio)
+>>>  {
+>>>  	int offset;
+>>>  	u32 index;
+>>>  	struct bio_vec bvec;
+>>>  	struct bvec_iter iter;
+>>>  
+>>> -	switch (rw) {
+>>> -	case READ:
+>>> -		atomic64_inc(&zram->stats.num_reads);
+>>> -		break;
+>>> -	case WRITE:
+>>> -		atomic64_inc(&zram->stats.num_writes);
+>>> -		break;
+>>> -	}
+>>> -
+>>>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>>>  	offset = (bio->bi_iter.bi_sector &
+>>>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+>>> @@ -704,16 +702,15 @@ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+>>>  			bv.bv_len = max_transfer_size;
+>>>  			bv.bv_offset = bvec.bv_offset;
+>>>  
+>>> -			if (zram_bvec_rw(zram, &bv, index, offset, bio, rw) < 0)
+>>> +			if (zram_bvec_rw(zram, &bv, index, offset, bio) < 0)
+>>>  				goto out;
+>>>  
+>>>  			bv.bv_len = bvec.bv_len - max_transfer_size;
+>>>  			bv.bv_offset += max_transfer_size;
+>>> -			if (zram_bvec_rw(zram, &bv, index+1, 0, bio, rw) < 0)
+>>> +			if (zram_bvec_rw(zram, &bv, index + 1, 0, bio) < 0)
+>>>  				goto out;
+>>>  		} else
+>>> -			if (zram_bvec_rw(zram, &bvec, index, offset, bio, rw)
+>>> -			    < 0)
+>>> +			if (zram_bvec_rw(zram, &bvec, index, offset, bio) < 0)
+>>>  				goto out;
+>>>  
+>>>  		update_position(&index, &offset, &bvec);
+>>> @@ -743,7 +740,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>>>  		goto error;
+>>>  	}
+>>>  
+>>> -	__zram_make_request(zram, bio, bio_data_dir(bio));
+>>> +	__zram_make_request(zram, bio);
+>>>  	up_read(&zram->init_lock);
+>>>  
+>>>  	return;
+>>>
+>>
 
