@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286AbaANAwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:52:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54234 "EHLO
+	id S1753599AbaANA2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:28:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54201 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603AbaANA2F (ORCPT
+	with ESMTP id S1752695AbaANA1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:05 -0500
+	Mon, 13 Jan 2014 19:27:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Salam Noureddine <noureddine@aristanetworks.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 12/77] packet: fix send path when running with proto == 0
-Date: Mon, 13 Jan 2014 16:27:33 -0800
-Message-Id: <20140114002752.849393633@linuxfoundation.org>
+        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.10 61/62] sched: Fix hrtimer_cancel()/rq->lock deadlock
+Date: Mon, 13 Jan 2014 16:27:26 -0800
+Message-Id: <20140114002712.207028937@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
+In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
+References: <20140114002710.464561569@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,210 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Ben Segall <bsegall@google.com>
 
-[ Upstream commit 66e56cd46b93ef407c60adcac62cf33b06119d50 ]
+commit 927b54fccbf04207ec92f669dce6806848cbec7d upstream.
 
-Commit e40526cb20b5 introduced a cached dev pointer, that gets
-hooked into register_prot_hook(), __unregister_prot_hook() to
-update the device used for the send path.
+__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
+waiting for the hrtimer to finish. However, if sched_cfs_period_timer
+runs for another loop iteration, the hrtimer can attempt to take
+rq->lock, resulting in deadlock.
 
-We need to fix this up, as otherwise this will not work with
-sockets created with protocol = 0, plus with sll_protocol = 0
-passed via sockaddr_ll when doing the bind.
+Fix this by ensuring that cfs_b->timer_active is cleared only if the
+_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
+__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
+that to succeed or timer_active == 1.
 
-So instead, assign the pointer directly. The compiler can inline
-these helper functions automagically.
-
-While at it, also assume the cached dev fast-path as likely(),
-and document this variant of socket creation as it seems it is
-not widely used (seems not even the author of TX_RING was aware
-of that in his reference example [1]). Tested with reproducer
-from e40526cb20b5.
-
- [1] http://wiki.ipxwarzone.com/index.php5?title=Linux_packet_mmap#Example
-
-Fixes: e40526cb20b5 ("packet: fix use after free race in send path when dev is released")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Tested-by: Salam Noureddine <noureddine@aristanetworks.com>
-Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- Documentation/networking/packet_mmap.txt |   10 ++++
- net/packet/af_packet.c                   |   65 +++++++++++++++++++------------
- 2 files changed, 50 insertions(+), 25 deletions(-)
 
---- a/Documentation/networking/packet_mmap.txt
-+++ b/Documentation/networking/packet_mmap.txt
-@@ -123,6 +123,16 @@ Transmission process is similar to captu
- [shutdown]  close() --------> destruction of the transmission socket and
-                               deallocation of all associated resources.
- 
-+Socket creation and destruction is also straight forward, and is done
-+the same way as in capturing described in the previous paragraph:
-+
-+ int fd = socket(PF_PACKET, mode, 0);
-+
-+The protocol can optionally be 0 in case we only want to transmit
-+via this socket, which avoids an expensive call to packet_rcv().
-+In this case, you also need to bind(2) the TX_RING with sll_protocol = 0
-+set. Otherwise, htons(ETH_P_ALL) or any other protocol, for example.
-+
- Binding the socket to your network interface is mandatory (with zero copy) to
- know the header size of frames used in the circular buffer.
- 
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -237,6 +237,30 @@ struct packet_skb_cb {
- static void __fanout_unlink(struct sock *sk, struct packet_sock *po);
- static void __fanout_link(struct sock *sk, struct packet_sock *po);
- 
-+static struct net_device *packet_cached_dev_get(struct packet_sock *po)
-+{
-+	struct net_device *dev;
-+
-+	rcu_read_lock();
-+	dev = rcu_dereference(po->cached_dev);
-+	if (likely(dev))
-+		dev_hold(dev);
-+	rcu_read_unlock();
-+
-+	return dev;
-+}
-+
-+static void packet_cached_dev_assign(struct packet_sock *po,
-+				     struct net_device *dev)
-+{
-+	rcu_assign_pointer(po->cached_dev, dev);
-+}
-+
-+static void packet_cached_dev_reset(struct packet_sock *po)
-+{
-+	RCU_INIT_POINTER(po->cached_dev, NULL);
-+}
-+
- /* register_prot_hook must be invoked with the po->bind_lock held,
-  * or from a context in which asynchronous accesses to the packet
-  * socket is not possible (packet_create()).
-@@ -246,12 +270,10 @@ static void register_prot_hook(struct so
- 	struct packet_sock *po = pkt_sk(sk);
- 
- 	if (!po->running) {
--		if (po->fanout) {
-+		if (po->fanout)
- 			__fanout_link(sk, po);
--		} else {
-+		else
- 			dev_add_pack(&po->prot_hook);
--			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
--		}
- 
- 		sock_hold(sk);
- 		po->running = 1;
-@@ -270,12 +292,11 @@ static void __unregister_prot_hook(struc
- 	struct packet_sock *po = pkt_sk(sk);
- 
- 	po->running = 0;
--	if (po->fanout) {
-+
-+	if (po->fanout)
- 		__fanout_unlink(sk, po);
--	} else {
-+	else
- 		__dev_remove_pack(&po->prot_hook);
--		RCU_INIT_POINTER(po->cached_dev, NULL);
--	}
- 
- 	__sock_put(sk);
- 
-@@ -2059,19 +2080,6 @@ static int tpacket_fill_skb(struct packe
- 	return tp_len;
- }
- 
--static struct net_device *packet_cached_dev_get(struct packet_sock *po)
--{
--	struct net_device *dev;
--
--	rcu_read_lock();
--	dev = rcu_dereference(po->cached_dev);
--	if (dev)
--		dev_hold(dev);
--	rcu_read_unlock();
--
--	return dev;
--}
--
- static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
- {
- 	struct sk_buff *skb;
-@@ -2088,7 +2096,7 @@ static int tpacket_snd(struct packet_soc
- 
- 	mutex_lock(&po->pg_vec_lock);
- 
--	if (saddr == NULL) {
-+	if (likely(saddr == NULL)) {
- 		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
-@@ -2242,7 +2250,7 @@ static int packet_snd(struct socket *soc
- 	 *	Get and verify the address.
- 	 */
- 
--	if (saddr == NULL) {
-+	if (likely(saddr == NULL)) {
- 		dev	= packet_cached_dev_get(po);
- 		proto	= po->num;
- 		addr	= NULL;
-@@ -2451,6 +2459,8 @@ static int packet_release(struct socket
- 
- 	spin_lock(&po->bind_lock);
- 	unregister_prot_hook(sk, false);
-+	packet_cached_dev_reset(po);
-+
- 	if (po->prot_hook.dev) {
- 		dev_put(po->prot_hook.dev);
- 		po->prot_hook.dev = NULL;
-@@ -2506,14 +2516,17 @@ static int packet_do_bind(struct sock *s
- 
- 	spin_lock(&po->bind_lock);
- 	unregister_prot_hook(sk, true);
-+
- 	po->num = protocol;
- 	po->prot_hook.type = protocol;
- 	if (po->prot_hook.dev)
- 		dev_put(po->prot_hook.dev);
--	po->prot_hook.dev = dev;
- 
-+	po->prot_hook.dev = dev;
- 	po->ifindex = dev ? dev->ifindex : 0;
- 
-+	packet_cached_dev_assign(po, dev);
-+
- 	if (protocol == 0)
+---
+ kernel/sched/fair.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2410,6 +2410,13 @@ static int do_sched_cfs_period_timer(str
+ 	if (idle)
  		goto out_unlock;
  
-@@ -2626,7 +2639,8 @@ static int packet_create(struct net *net
- 	po = pkt_sk(sk);
- 	sk->sk_family = PF_PACKET;
- 	po->num = proto;
--	RCU_INIT_POINTER(po->cached_dev, NULL);
++	/*
++	 * if we have relooped after returning idle once, we need to update our
++	 * status as actually running, so that other cpus doing
++	 * __start_cfs_bandwidth will stop trying to cancel us.
++	 */
++	cfs_b->timer_active = 1;
 +
-+	packet_cached_dev_reset(po);
+ 	__refill_cfs_bandwidth_runtime(cfs_b);
  
- 	sk->sk_destruct = packet_sock_destruct;
- 	sk_refcnt_debug_inc(sk);
-@@ -3337,6 +3351,7 @@ static int packet_notifier(struct notifi
- 						sk->sk_error_report(sk);
- 				}
- 				if (msg == NETDEV_UNREGISTER) {
-+					packet_cached_dev_reset(po);
- 					po->ifindex = -1;
- 					if (po->prot_hook.dev)
- 						dev_put(po->prot_hook.dev);
+ 	if (!throttled) {
+@@ -2682,11 +2689,11 @@ void __start_cfs_bandwidth(struct cfs_ba
+ 	 * (timer_active==0 becomes visible before the hrtimer call-back
+ 	 * terminates).  In either case we ensure that it's re-programmed
+ 	 */
+-	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
++	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
++	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
++		/* bounce the lock to allow do_sched_cfs_period_timer to run */
+ 		raw_spin_unlock(&cfs_b->lock);
+-		/* ensure cfs_b->lock is available while we wait */
+-		hrtimer_cancel(&cfs_b->period_timer);
+-
++		cpu_relax();
+ 		raw_spin_lock(&cfs_b->lock);
+ 		/* if someone else restarted the timer then we're done */
+ 		if (cfs_b->timer_active)
 
 
