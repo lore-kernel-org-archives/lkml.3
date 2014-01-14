@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaANA1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54134 "EHLO
+	id S1755342AbaANAxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:53:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54195 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287AbaANA1i (ORCPT
+	with ESMTP id S1752685AbaANA1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:38 -0500
+	Mon, 13 Jan 2014 19:27:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 29/62] vlan: Fix header ops passthru when doing TX VLAN offload.
-Date: Mon, 13 Jan 2014 16:26:54 -0800
-Message-Id: <20140114002711.292660728@linuxfoundation.org>
+        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.10 60/62] sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
+Date: Mon, 13 Jan 2014 16:27:25 -0800
+Message-Id: <20140114002712.179289965@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -28,105 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Ben Segall <bsegall@google.com>
 
-[ Upstream commit 2205369a314e12fcec4781cc73ac9c08fc2b47de ]
+commit db06e78cc13d70f10877e0557becc88ab3ad2be8 upstream.
 
-When the vlan code detects that the real device can do TX VLAN offloads
-in hardware, it tries to arrange for the real device's header_ops to
-be invoked directly.
+hrtimer_expires_remaining does not take internal hrtimer locks and thus
+must be guarded against concurrent __hrtimer_start_range_ns (but
+returning HRTIMER_RESTART is safe). Use cfs_b->lock to make it safe.
 
-But it does so illegally, by simply hooking the real device's
-header_ops up to the VLAN device.
-
-This doesn't work because we will end up invoking a set of header_ops
-routines which expect a device type which matches the real device, but
-will see a VLAN device instead.
-
-Fix this by providing a pass-thru set of header_ops which will arrange
-to pass the proper real device instead.
-
-To facilitate this add a dev_rebuild_header().  There are
-implementations which provide a ->cache and ->create but not a
-->rebuild (f.e. PLIP).  So we need a helper function just like
-dev_hard_header() to avoid crashes.
-
-Use this helper in the one existing place where the
-header_ops->rebuild was being invoked, the neighbour code.
-
-With lots of help from Florian Westphal.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181617.22647.73829.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/netdevice.h |    9 +++++++++
- net/8021q/vlan_dev.c      |   19 ++++++++++++++++++-
- net/core/neighbour.c      |    2 +-
- 3 files changed, 28 insertions(+), 2 deletions(-)
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1772,6 +1772,15 @@ static inline int dev_parse_header(const
- 	return dev->header_ops->parse(skb, haddr);
- }
+---
+ kernel/sched/fair.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2470,7 +2470,13 @@ static const u64 min_bandwidth_expiratio
+ /* how long we wait to gather additional slack before distributing */
+ static const u64 cfs_bandwidth_slack_period = 5 * NSEC_PER_MSEC;
  
-+static inline int dev_rebuild_header(struct sk_buff *skb)
-+{
-+	const struct net_device *dev = skb->dev;
-+
-+	if (!dev->header_ops || !dev->header_ops->rebuild)
-+		return 0;
-+	return dev->header_ops->rebuild(skb);
-+}
-+
- typedef int gifconf_func_t(struct net_device * dev, char __user * bufptr, int len);
- extern int		register_gifconf(unsigned int family, gifconf_func_t * gifconf);
- static inline int unregister_gifconf(unsigned int family)
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -549,6 +549,23 @@ static const struct header_ops vlan_head
- 	.parse	 = eth_header_parse,
- };
+-/* are we near the end of the current quota period? */
++/*
++ * Are we near the end of the current quota period?
++ *
++ * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
++ * hrtimer base being cleared by __hrtimer_start_range_ns. In the case of
++ * migrate_hrtimers, base is never cleared, so we are fine.
++ */
+ static int runtime_refresh_within(struct cfs_bandwidth *cfs_b, u64 min_expire)
+ {
+ 	struct hrtimer *refresh_timer = &cfs_b->period_timer;
+@@ -2546,10 +2552,12 @@ static void do_sched_cfs_slack_timer(str
+ 	u64 expires;
  
-+static int vlan_passthru_hard_header(struct sk_buff *skb, struct net_device *dev,
-+				     unsigned short type,
-+				     const void *daddr, const void *saddr,
-+				     unsigned int len)
-+{
-+	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
-+	struct net_device *real_dev = vlan->real_dev;
-+
-+	return dev_hard_header(skb, real_dev, type, daddr, saddr, len);
-+}
-+
-+static const struct header_ops vlan_passthru_header_ops = {
-+	.create	 = vlan_passthru_hard_header,
-+	.rebuild = dev_rebuild_header,
-+	.parse	 = eth_header_parse,
-+};
-+
- static struct device_type vlan_type = {
- 	.name	= "vlan",
- };
-@@ -592,7 +609,7 @@ static int vlan_dev_init(struct net_devi
+ 	/* confirm we're still not at a refresh boundary */
+-	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration))
++	raw_spin_lock(&cfs_b->lock);
++	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration)) {
++		raw_spin_unlock(&cfs_b->lock);
+ 		return;
++	}
  
- 	dev->needed_headroom = real_dev->needed_headroom;
- 	if (real_dev->features & NETIF_F_HW_VLAN_CTAG_TX) {
--		dev->header_ops      = real_dev->header_ops;
-+		dev->header_ops      = &vlan_passthru_header_ops;
- 		dev->hard_header_len = real_dev->hard_header_len;
- 	} else {
- 		dev->header_ops      = &vlan_header_ops;
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -1274,7 +1274,7 @@ int neigh_compat_output(struct neighbour
- 
- 	if (dev_hard_header(skb, dev, ntohs(skb->protocol), NULL, NULL,
- 			    skb->len) < 0 &&
--	    dev->header_ops->rebuild(skb))
-+	    dev_rebuild_header(skb))
- 		return 0;
- 
- 	return dev_queue_xmit(skb);
+-	raw_spin_lock(&cfs_b->lock);
+ 	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
+ 		runtime = cfs_b->runtime;
+ 		cfs_b->runtime = 0;
 
 
