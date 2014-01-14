@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaANVEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:04:20 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56683 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaANVER (ORCPT
+	id S1751990AbaANVGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:06:05 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60973 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaANVGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:04:17 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <stable@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH] hvc: ensure hvc_init is only ever called once in hvc_console.c
-Date: Tue, 14 Jan 2014 16:03:37 -0500
-Message-ID: <1389733436-4661-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Tue, 14 Jan 2014 16:06:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140114192118.GA31411@redhat.com>
+References: <1389645028-17157-1-git-send-email-wad@chromium.org>
+	<1389645028-17157-2-git-send-email-wad@chromium.org>
+	<20140114192118.GA31411@redhat.com>
+Date: Tue, 14 Jan 2014 15:06:02 -0600
+Message-ID: <CABqD9hYB7d4=cpCaXZms5v8+=SJnYnkmL8biPE5Jz0YQuJ20MQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] sys, seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+From: Will Drewry <wad@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Nicolas Schichan <nschichan@freebox.fr>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, holt@sgi.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 3e6c6f630a5282df8f3393a59f10eb9c56536d23 ("Delay creation of
-khcvd thread") moved the call of hvc_init from being a device_initcall
-into hvc_alloc, and used a non-null hvc_driver as indication of whether
-hvc_init had already been called.
+On Tue, Jan 14, 2014 at 1:21 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/13, Will Drewry wrote:
+>>
+>> +static pid_t seccomp_sync_threads(void)
+>> +{
+>> +     struct task_struct *thread, *caller;
+>> +     pid_t failed = 0;
+>> +     thread = caller = current;
+>> +
+>> +     read_lock(&tasklist_lock);
+>> +     if (thread_group_empty(caller))
+>> +             goto done;
+>> +     while_each_thread(caller, thread) {
+>> +             task_lock(thread);
+>
+> perhaps we take task_lock() to serialize with another caller of
+> seccomp_sync_threads()...
 
-The problem with this is that hvc_driver is only assigned a value
-at the bottom of hvc_init, and so there is a window where multiple
-hvc_alloc calls can be in progress at the same time and hence try
-and call hvc_init multiple times.  Previously the use of device_init
-guaranteed that hvc_init was only called once.
+Sorry for the patch being unclear!  The task_lock is meant to protect
+against the assignment of a seccomp.filter pointer which was meant to
+protect against the target task calling seccomp_attach_filter while
+another task is changing its filter pointer.
 
-This manifests itself as sporadic instances of two hvc_init calls
-racing each other, and with the loser of the race getting -EBUSY
-from tty_register_driver() and hence that virtual console fails:
+> If yes, then perhaps you can use ->siglock instead of tasklist_lock
+> and do not use task_lock(). It would be even better to rely on rcu,
+> but:
 
-    Couldn't register hvc console driver
-    virtio-ports vport0p1: error -16 allocating hvc for port
+Exactly. The siglock seems like it makes more sense.
 
-Here we add an atomic_t to guarantee we'll never run hvc_init twice.
+>> +                     get_seccomp_filter(caller);
+>> +                     /*
+>> +                      * Drop the task reference to the shared ancestor since
+>> +                      * current's path will hold a reference.  (This also
+>> +                      * allows a put before the assignment.)
+>> +                      */
+>> +                     put_seccomp_filter(thread);
+>> +                     thread->seccomp.filter = caller->seccomp.filter;
+>
+> As I said, I do not understand this patch yet, but this looks suspicious.
+>
+> Why we can't race with this thread doing clone(CLONE_THREAD) ? We do
+> not the the new thread yet, but its ->seccomp can be already copied
+> by copy_process(), no?
 
-Cc: stable@vger.kernel.org  # v2.6.24+
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Fixes: 3e6c6f630a52 ("Delay creation of khcvd thread")
-Reported-by: Jim Somerville <Jim.Somerville@windriver.com>
-Tested-by: Jim Somerville <Jim.Somerville@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+Yeah I missed that. That said, I think the worst of it would be that
+the new thread
+gets the old filter.  It should still get_seccomp_filter() its own
+reference to the filter.
+I'm not clear if it's possible to ensure that there is no pathological
+condition where
+a thread races and is created without being synchronized.  I'll see if
+the siglock helps
+here and walk the clone() code again to see what else I missed.
 
-[Greg: I realize tty-next is closed; given that this is an ancient
- bug, I don't see any real urgency here, so feel free to queue it
- whenever/whereever is most convenient - assuming it is an OK fix.]
-
- drivers/tty/hvc/hvc_console.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index 9eba119bcdd3..620da5f88e91 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -31,6 +31,7 @@
- #include <linux/list.h>
- #include <linux/module.h>
- #include <linux/major.h>
-+#include <linux/atomic.h>
- #include <linux/sysrq.h>
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
-@@ -70,6 +71,9 @@ static struct task_struct *hvc_task;
- /* Picks up late kicks after list walk but before schedule() */
- static int hvc_kicked;
- 
-+/* hvc_init is triggered from hvc_alloc, i.e. only when actually used */
-+static atomic_t hvc_needs_init __read_mostly = ATOMIC_INIT(-1);
-+
- static int hvc_init(void);
- 
- #ifdef CONFIG_MAGIC_SYSRQ
-@@ -851,7 +855,7 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
- 	int i;
- 
- 	/* We wait until a driver actually comes along */
--	if (!hvc_driver) {
-+	if (atomic_inc_not_zero(&hvc_needs_init)) {
- 		int err = hvc_init();
- 		if (err)
- 			return ERR_PTR(err);
--- 
-1.8.5.2
-
+thanks!
