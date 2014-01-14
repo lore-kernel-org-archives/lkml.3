@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772AbaANAzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:55:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54172 "EHLO
+	id S1752145AbaANAzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:55:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509AbaANA1t (ORCPT
+	with ESMTP id S1752697AbaANA1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:49 -0500
+	Mon, 13 Jan 2014 19:27:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nix <nix@esperi.org.uk>,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 56/62] SCSI: sd: Reduce buffer size for vpd request
-Date: Mon, 13 Jan 2014 16:27:21 -0800
-Message-Id: <20140114002712.055839616@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Harald Welte <laforge@gnumonks.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.10 57/62] netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
+Date: Mon, 13 Jan 2014 16:27:22 -0800
+Message-Id: <20140114002712.090538502@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -31,50 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit af73623f5f10eb3832c87a169b28f7df040a875b upstream.
+commit 2690d97ade05c5325cbf7c72b94b90d265659886 upstream.
 
-Somehow older areca firmware versions have issues with
-scsi_get_vpd_page() and a large buffer, the firmware
-seems to crash and the scsi error-handler will start endless
-recovery retries.
-Limiting the buf-size to 64-bytes fixes this issue with older
-firmware versions (<1.49 for my controller).
+Commit 5901b6be885e attempted to introduce IPv6 support into
+IRC NAT helper. By doing so, the following code seemed to be removed
+by accident:
 
-Fixes a regression with areca controllers and older firmware versions
-introduced by commit: 66c28f97120e8a621afd5aa7a31c4b85c547d33d
+  ip = ntohl(exp->master->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3.ip);
+  sprintf(buffer, "%u %u", ip, port);
+  pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n", buffer, &ip, port);
 
-Reported-by: Nix <nix@esperi.org.uk>
-Tested-by: Nix <nix@esperi.org.uk>
-Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This leads to the fact that buffer[] was left uninitialized and
+contained some stack value. When we call nf_nat_mangle_tcp_packet(),
+we call strlen(buffer) on excatly this uninitialized buffer. If we
+are unlucky and the skb has enough tailroom, we overwrite resp. leak
+contents with values that sit on our stack into the packet and send
+that out to the receiver.
+
+Since the rather informal DCC spec [1] does not seem to specify
+IPv6 support right now, we log such occurences so that admins can
+act accordingly, and drop the packet. I've looked into XChat source,
+and IPv6 is not supported there: addresses are in u32 and print
+via %u format string.
+
+Therefore, restore old behaviour as in IPv4, use snprintf(). The
+IRC helper does not support IPv6 by now. By this, we can safely use
+strlen(buffer) in nf_nat_mangle_tcp_packet() and prevent a buffer
+overflow. Also simplify some code as we now have ct variable anyway.
+
+  [1] http://www.irchelp.org/irchelp/rfc/ctcpspec.html
+
+Fixes: 5901b6be885e ("netfilter: nf_nat: support IPv6 in IRC NAT helper")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Harald Welte <laforge@gnumonks.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/netfilter/nf_nat_irc.c |   32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2634,13 +2634,16 @@ static void sd_read_write_same(struct sc
- 	}
+--- a/net/netfilter/nf_nat_irc.c
++++ b/net/netfilter/nf_nat_irc.c
+@@ -34,10 +34,14 @@ static unsigned int help(struct sk_buff
+ 			 struct nf_conntrack_expect *exp)
+ {
+ 	char buffer[sizeof("4294967296 65635")];
++	struct nf_conn *ct = exp->master;
++	union nf_inet_addr newaddr;
+ 	u_int16_t port;
+ 	unsigned int ret;
  
- 	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
-+		/* too large values might cause issues with arcmsr */
-+		int vpd_buf_len = 64;
+ 	/* Reply comes from server. */
++	newaddr = ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3;
 +
- 		sdev->no_report_opcodes = 1;
- 
- 		/* Disable WRITE SAME if REPORT SUPPORTED OPERATION
- 		 * CODES is unsupported and the device has an ATA
- 		 * Information VPD page (SAT).
- 		 */
--		if (!scsi_get_vpd_page(sdev, 0x89, buffer, SD_BUF_SIZE))
-+		if (!scsi_get_vpd_page(sdev, 0x89, buffer, vpd_buf_len))
- 			sdev->no_write_same = 1;
+ 	exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
+ 	exp->dir = IP_CT_DIR_REPLY;
+ 	exp->expectfn = nf_nat_follow_master;
+@@ -57,17 +61,35 @@ static unsigned int help(struct sk_buff
  	}
+ 
+ 	if (port == 0) {
+-		nf_ct_helper_log(skb, exp->master, "all ports in use");
++		nf_ct_helper_log(skb, ct, "all ports in use");
+ 		return NF_DROP;
+ 	}
+ 
+-	ret = nf_nat_mangle_tcp_packet(skb, exp->master, ctinfo,
+-				       protoff, matchoff, matchlen, buffer,
+-				       strlen(buffer));
++	/* strlen("\1DCC CHAT chat AAAAAAAA P\1\n")=27
++	 * strlen("\1DCC SCHAT chat AAAAAAAA P\1\n")=28
++	 * strlen("\1DCC SEND F AAAAAAAA P S\1\n")=26
++	 * strlen("\1DCC MOVE F AAAAAAAA P S\1\n")=26
++	 * strlen("\1DCC TSEND F AAAAAAAA P S\1\n")=27
++	 *
++	 * AAAAAAAAA: bound addr (1.0.0.0==16777216, min 8 digits,
++	 *                        255.255.255.255==4294967296, 10 digits)
++	 * P:         bound port (min 1 d, max 5d (65635))
++	 * F:         filename   (min 1 d )
++	 * S:         size       (min 1 d )
++	 * 0x01, \n:  terminators
++	 */
++	/* AAA = "us", ie. where server normally talks to. */
++	snprintf(buffer, sizeof(buffer), "%u %u", ntohl(newaddr.ip), port);
++	pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n",
++		 buffer, &newaddr.ip, port);
++
++	ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo, protoff, matchoff,
++				       matchlen, buffer, strlen(buffer));
+ 	if (ret != NF_ACCEPT) {
+-		nf_ct_helper_log(skb, exp->master, "cannot mangle packet");
++		nf_ct_helper_log(skb, ct, "cannot mangle packet");
+ 		nf_ct_unexpect_related(exp);
+ 	}
++
+ 	return ret;
+ }
  
 
 
