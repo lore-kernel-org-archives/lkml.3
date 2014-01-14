@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaANLuX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 06:50:23 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:48278 "EHLO mail.mev.co.uk"
+	id S1751823AbaANLz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 06:55:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56074 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342AbaANLuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:50:20 -0500
-Message-ID: <52D52478.3060706@mev.co.uk>
-Date: Tue, 14 Jan 2014 11:50:16 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751490AbaANLzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 06:55:52 -0500
+Date: Tue, 14 Jan 2014 12:55:47 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: AMD errata 793 (CVE-2013-6885) needs a workaround in Linux?
+Message-ID: <20140114115547.GA29887@pd.tnic>
+References: <20140114114133.GA31473@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH] Staging: comedi: remove unnecessary braces in pcl711.c
-References: <1389669196-15041-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1389669196-15041-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140114114133.GA31473@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-14 03:13, Chase Southwood wrote:
-> This patch for pcl711.c removes braces causing a checkpatch.pl warning.
-> It also removes an empty else arm of an if-else statement.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
->
-> I removed the "else" arm of this statement because it was empty, save for the "ignore" comment.  If it is instead preferred kernel style for this empty else to remain in, let me know and I will correct this patch accordingly.
->
->   drivers/staging/comedi/drivers/pcl711.c | 5 +----
->   1 file changed, 1 insertion(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/pcl711.c b/drivers/staging/comedi/drivers/pcl711.c
-> index f0fc123..6595788 100644
-> --- a/drivers/staging/comedi/drivers/pcl711.c
-> +++ b/drivers/staging/comedi/drivers/pcl711.c
-> @@ -336,11 +336,8 @@ static int pcl711_ai_cmdtest(struct comedi_device *dev,
->   	err |= cfc_check_trigger_arg_is(&cmd->convert_arg, 0);
->   	err |= cfc_check_trigger_arg_is(&cmd->scan_end_arg, cmd->chanlist_len);
->
-> -	if (cmd->stop_src == TRIG_NONE) {
-> +	if (cmd->stop_src == TRIG_NONE)
->   		err |= cfc_check_trigger_arg_is(&cmd->stop_arg, 0);
-> -	} else {
-> -		/* ignore */
-> -	}
->
->   	if (err)
->   		return 3;
->
+On Tue, Jan 14, 2014 at 09:41:33AM -0200, Henrique de Moraes Holschuh wrote:
+> I just got this assigned to amd64-microcode in Debian, but it is something
+> that needs to be worked around by the EFI/BIOS and/or the kernel.
+> 
+> Since we all know just how well it pans out to depend on BIOS/EFI updates
+> for *anything*, I'm raising the issue here.  IMHO looks like it would be
+> worthwhile to either set the relevant MSR in the kernel if the BIOS didn't
+> do it, or at least warn the user of the need for a BIOS/EFI update...
+> 
+> It is the usual hangs-core type of CPU errata (therefore, the best type
+> since it won't cause silent data corruption).  gcc-produced code managed to
+> trigger it (in DragonFly BSD).
 
-Not sure if it's worth me reviewing these minor clean-up patches or not, 
-but FWIW I approve of this patch.
+I think this is a different issue than the dragonfly issue. In any case,
+if AMD delivers all BIOS with this workaround enabled, we don't need to
+do anything. And I asked them about it so we'll have an answer soon, I
+hope.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+In any case, I'm on it.
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
