@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223AbaANA4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:56:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54165 "EHLO
+	id S1753484AbaANA1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:27:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488AbaANA1s (ORCPT
+	with ESMTP id S1753321AbaANA1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:48 -0500
+	Mon, 13 Jan 2014 19:27:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 54/62] mac80211: move "bufferable MMPDU" check to fix AP mode scan
-Date: Mon, 13 Jan 2014 16:27:19 -0800
-Message-Id: <20140114002712.000491278@linuxfoundation.org>
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: [PATCH 3.10 43/62] ARM: shmobile: mackerel: Fix coherent DMA mask
+Date: Mon, 13 Jan 2014 16:27:08 -0800
+Message-Id: <20140114002711.684374595@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,71 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-commit 277d916fc2e959c3f106904116bb4f7b1148d47a upstream.
+commit b6328a6b7ba57fc84c38248f6f0e387e1170f1a8 upstream.
 
-The check needs to apply to both multicast and unicast packets,
-otherwise probe requests on AP mode scans are sent through the multicast
-buffer queue, which adds long delays (often longer than the scanning
-interval).
+Commit 4dcfa60071b3d23f0181f27d8519f12e37cefbb9 ("ARM: DMA-API: better
+handing of DMA masks for coherent allocations") added an additional
+check to the coherent DMA mask that results in an error when the mask is
+larger than what dma_addr_t can address.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Set the LCDC coherent DMA mask to DMA_BIT_MASK(32) instead of ~0 to fix
+the problem.
+
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/tx.c |   23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ arch/arm/mach-shmobile/board-mackerel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -447,7 +447,6 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- {
- 	struct sta_info *sta = tx->sta;
- 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
--	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
- 	struct ieee80211_local *local = tx->local;
+--- a/arch/arm/mach-shmobile/board-mackerel.c
++++ b/arch/arm/mach-shmobile/board-mackerel.c
+@@ -421,7 +421,7 @@ static struct platform_device lcdc_devic
+ 	.resource	= lcdc_resources,
+ 	.dev	= {
+ 		.platform_data	= &lcdc_info,
+-		.coherent_dma_mask = ~0,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
+ 	},
+ };
  
- 	if (unlikely(!sta))
-@@ -458,15 +457,6 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
- 		int ac = skb_get_queue_mapping(tx->skb);
+@@ -497,7 +497,7 @@ static struct platform_device hdmi_lcdc_
+ 	.id		= 1,
+ 	.dev	= {
+ 		.platform_data	= &hdmi_lcdc_info,
+-		.coherent_dma_mask = ~0,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
+ 	},
+ };
  
--		/* only deauth, disassoc and action are bufferable MMPDUs */
--		if (ieee80211_is_mgmt(hdr->frame_control) &&
--		    !ieee80211_is_deauth(hdr->frame_control) &&
--		    !ieee80211_is_disassoc(hdr->frame_control) &&
--		    !ieee80211_is_action(hdr->frame_control)) {
--			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
--			return TX_CONTINUE;
--		}
--
- 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
- 		       sta->sta.addr, sta->sta.aid, ac);
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
-@@ -509,9 +499,22 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
- static ieee80211_tx_result debug_noinline
- ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
- {
-+	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
-+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
-+
- 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
- 		return TX_CONTINUE;
- 
-+	/* only deauth, disassoc and action are bufferable MMPDUs */
-+	if (ieee80211_is_mgmt(hdr->frame_control) &&
-+	    !ieee80211_is_deauth(hdr->frame_control) &&
-+	    !ieee80211_is_disassoc(hdr->frame_control) &&
-+	    !ieee80211_is_action(hdr->frame_control)) {
-+		if (tx->flags & IEEE80211_TX_UNICAST)
-+			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
-+		return TX_CONTINUE;
-+	}
-+
- 	if (tx->flags & IEEE80211_TX_UNICAST)
- 		return ieee80211_tx_h_unicast_ps_buf(tx);
- 	else
 
 
