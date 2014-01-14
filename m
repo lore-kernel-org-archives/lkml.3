@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaANCEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 21:04:53 -0500
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:42333 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaANCEv (ORCPT
+	id S1752070AbaANCK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:10:59 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:44078 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaANCKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 21:04:51 -0500
-MIME-Version: 1.0
-Date: Tue, 14 Jan 2014 10:04:49 +0800
-Message-ID: <CAPgLHd9hJ4Fy7NpfT1vWt7aem_ey+YA==7f=u2MpazBKJDjSvQ@mail.gmail.com>
-Subject: [PATCH -next] ion: Fix sparse non static symbol warnings
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org, john.stultz@linaro.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 13 Jan 2014 21:10:55 -0500
+Message-ID: <1389665096.1792.271.camel@misato.fc.hp.com>
+Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
+ efi_enter_virtual_mode() (was: Re: [RFC PATCH 00/14] Support timezone of
+ ACPI TAD and EFI TIME)
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Matt Fleming <matt@console-pimps.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, joeyli <jlee@suse.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Date: Mon, 13 Jan 2014 19:04:56 -0700
+In-Reply-To: <20140112090627.GB3668@pd.tnic>
+References: <1387439053-8711-1-git-send-email-jlee@suse.com>
+	 <3476450.BMEcId2Lgj@vostro.rjw.lan>
+	 <20131221122148.GB29501@console-pimps.org>
+	 <2530951.HFPX8MI38t@vostro.rjw.lan> <20140112090627.GB3668@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Sun, 2014-01-12 at 10:06 +0100, Borislav Petkov wrote:
+> On Sun, Jan 12, 2014 at 01:30:23AM +0100, Rafael J. Wysocki wrote:
+> > I don't see any adverse effects of the patch below on a couple of my test
+> > boxes, but (a) they are Intel-based and (b) they are non-EFI, so it would be
+> > good to give it a go on as many machines as reasonably possible.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Subject: ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
+> > 
+> > According to Matt Fleming, if acpi_early_init() was executed befpre
+> > efi_enter_virtual_mode(), the EFI initialization could benefit from
+> > it, so make that happen.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  init/main.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > Index: linux-pm/init/main.c
+> > ===================================================================
+> > --- linux-pm.orig/init/main.c
+> > +++ linux-pm/init/main.c
+> > @@ -615,6 +615,7 @@ asmlinkage void __init start_kernel(void
+> >  	calibrate_delay();
+> >  	pidmap_init();
+> >  	anon_vma_init();
+> > +	acpi_early_init();
+> >  #ifdef CONFIG_X86
+> >  	if (efi_enabled(EFI_RUNTIME_SERVICES))
+> >  		efi_enter_virtual_mode();
+> > @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void
+> >  
+> >  	check_bugs();
+> >  
+> > -	acpi_early_init(); /* before LAPIC and SMP init */
+> >  	sfi_init_late();
+> >  
+> >  	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+> >
+> 
+> Looks good both on kvm+OVMF and on my Dell EFI box.
+> 
+> Tested-by: Borislav Petkov <bp@suse.de>
+> 
+> Toshi has a big EFI box though - if he could run it too, that would be
+> great :-)
 
-Fixes the following sparse warnings:
+Yes, I will test the change.
 
-drivers/staging/android/ion/ion_dummy_driver.c:26:19: warning:
- symbol 'idev' was not declared. Should it be static?
-drivers/staging/android/ion/ion_dummy_driver.c:27:17: warning:
- symbol 'heaps' was not declared. Should it be static?
-drivers/staging/android/ion/ion_dummy_driver.c:29:6: warning:
- symbol 'carveout_ptr' was not declared. Should it be static?
-drivers/staging/android/ion/ion_dummy_driver.c:30:6: warning:
- symbol 'chunk_ptr' was not declared. Should it be static?
-drivers/staging/android/ion/ion_dummy_driver.c:32:26: warning:
- symbol 'dummy_heaps' was not declared. Should it be static?
-drivers/staging/android/ion/ion_dummy_driver.c:59:26: warning:
- symbol 'dummy_ion_pdata' was not declared. Should it be static?
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/staging/android/ion/ion_dummy_driver.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
-index 55b2002..b89004a 100644
---- a/drivers/staging/android/ion/ion_dummy_driver.c
-+++ b/drivers/staging/android/ion/ion_dummy_driver.c
-@@ -23,13 +23,13 @@
- #include "ion.h"
- #include "ion_priv.h"
- 
--struct ion_device *idev;
--struct ion_heap **heaps;
-+static struct ion_device *idev;
-+static struct ion_heap **heaps;
- 
--void *carveout_ptr;
--void *chunk_ptr;
-+static void *carveout_ptr;
-+static void *chunk_ptr;
- 
--struct ion_platform_heap dummy_heaps[] = {
-+static struct ion_platform_heap dummy_heaps[] = {
- 		{
- 			.id	= ION_HEAP_TYPE_SYSTEM,
- 			.type	= ION_HEAP_TYPE_SYSTEM,
-@@ -56,7 +56,7 @@ struct ion_platform_heap dummy_heaps[] = {
- 		},
- };
- 
--struct ion_platform_data dummy_ion_pdata = {
-+static struct ion_platform_data dummy_ion_pdata = {
- 	.nr = 4,
- 	.heaps = dummy_heaps,
- };
+Thanks,
+-Toshi
 
