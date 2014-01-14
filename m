@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaANWVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:21:31 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:38477 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaANWV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:21:28 -0500
-Date: Tue, 14 Jan 2014 14:24:24 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, Jens Axboe <axboe@kernel.dk>,
-        Shaohua Li <shli@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: next bio iters break discard?
-Message-ID: <20140114222424.GA7333@moria.home.lan>
-References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
- <20140114023346.GN9037@kmo>
- <yq161pnmcl2.fsf@sermon.lab.mkp.net>
- <20140114044841.GO9037@kmo>
- <yq1ob3el3mr.fsf@sermon.lab.mkp.net>
+	id S1751612AbaANWZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:25:30 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53698 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068AbaANWZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 17:25:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="466701385"
+From: "Brown, Aaron F" <aaron.f.brown@intel.com>
+To: "standby24x7@gmail.com" <standby24x7@gmail.com>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Subject: Re: [PATCH] [trivial] ixgbe: Fix format string in ixgbe_fcoe.c
+Thread-Topic: [PATCH] [trivial] ixgbe: Fix format string in ixgbe_fcoe.c
+Thread-Index: AQHPEXd/Y3sxCv3yckKtAOM3SDwLog==
+Date: Tue, 14 Jan 2014 22:25:14 +0000
+Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B7312CAA3@ORSMSX101.amr.corp.intel.com>
+References: <1389716082-23395-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1389716082-23395-1-git-send-email-standby24x7@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1ob3el3mr.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0EMPZQS003971
 
-On Tue, Jan 14, 2014 at 03:17:32PM -0500, Martin K. Petersen wrote:
-> >>>>> "Kent" == Kent Overstreet <kmo@daterainc.com> writes:
+On Wed, 2014-01-15 at 01:14 +0900, Masanari Iida wrote:
+> cppcheck detected following warning in ixgbe_fcoe.c
+> (warning) %d in format string (no. 1) requires 'int' but the
+> argument type is 'unsigned int'.
 > 
-> >> IOW, DISCARD, WRITE SAME and the impending COPY requests do not have
-> >> a 1:1 mapping between the block range worked on and the size of any
-> >> bvecs attached. Your recent changes must have changed the way we
-> >> handled that in the past.
-> 
-> Kent> Yeah - but with WRITE_SAME bios, wouldn't we at least have to
-> Kent> check that they're writing the same data to merge them?
-> 
-> We do. Check blk_write_same_mergeable().
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-) 
 
-Aha, I missed that.
-
-Side note, one of the things on my todo list/wishlist is make a separate
-enum for bio type - bare flush, normal read/write, scsi command, discard
-and write same. In particular with bi_size meaning different things
-depending on the type of the command, I think having an enum we can
-switch off of where appropriate instead of a bunch of random flags will
-make things a hell of a lot saner.
-
-Looking more at this code, I'm not sure it did what we wanted before for
-REQ_DISCARD and REQ_WRITE_SAME bios/requests - I suspect for
-REQ_WRITE_SAME requests that had been merged it overcounted.
-
-There's also that horrible hack in the scsi (?) code Christoph added for
-discards - where the driver adds a page to the bio - if the driver is
-counting the number of segments _after_ that god only knows what is
-supposed to happen.
-
-Does the below patch look like what we want? I'm assuming that if
-multiple WRITE_SAME bios are merged, since they're all writing the same
-data we can consider the entire request to be a single segment.
-
-commit 1755e7ffc5745591d37b8956ce2512f4052a104a
-Author: Kent Overstreet <kmo@daterainc.com>
-Date:   Tue Jan 14 14:22:01 2014 -0800
-
-    block: Explicitly handle discard/write same when counting segments
-
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index 8f8adaa..7d977f8 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -21,6 +21,12 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 	if (!bio)
- 		return 0;
- 
-+	if (bio->bi_rw & REQ_DISCARD)
-+		return 0;
-+
-+	if (bio->bi_rw & REQ_WRITE_SAME)
-+		return 1;
-+
- 	fbio = bio;
- 	cluster = blk_queue_cluster(q);
- 	seg_size = 0;
+Thanks Masanari, I have added it to our internal queue for testing.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
