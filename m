@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaANODr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:03:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33332 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaANODk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:03:40 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 34/38] perf diff: Color the Delta column
-Date: Mon, 13 Jan 2014 17:47:35 -0300
-Message-Id: <1389646059-24881-35-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
-References: <1389646059-24881-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1751556AbaANODa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:03:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451AbaANODZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 09:03:25 -0500
+Message-ID: <52D54375.8070706@redhat.com>
+Date: Tue, 14 Jan 2014 15:02:29 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] zram: rework reported to end-user zram statistics
+References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com> <1389692260-4421-4-git-send-email-sergey.senozhatsky@gmail.com> <52D513BD.7000800@redhat.com> <20140114111012.GC2180@swordfish.minsk.epam.com> <52D53F11.3090005@redhat.com> <20140114135355.GC2226@swordfish.minsk.epam.com>
+In-Reply-To: <20140114135355.GC2226@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+On 01/14/2014 02:53 PM, Sergey Senozhatsky wrote:
+> On (01/14/14 14:43), Jerome Marchand wrote:
+> [..]
+>>>>
+>>>> That's weird: good/bad_compress are accounted, but it seems to me that
+>>>> they are to never used in any way. If so, there is indeed no reason to
+>>>> keep them.
+>>>>
+>>>>
+>>>>> Account each sub-request
+>>>>> compression size so we can calculate real device compression ratio.
+>>>>
+>>>> Your patch doesn't change the way pages_stored and compr[essed]_size
+>>>> are accounted. What does your patch change that allow us to calculate
+>>>> the "real" compression ratio?
+>>>>
+>>>>>
+>>>>> 4) reported zram stats:
+>>>>>   - num_writes  -- number of writes
+>>>>>   - num_reads  -- number of reads
+>>>>>   - pages_stored -- number of pages currently stored
+>>>>>   - compressed_size -- compressed size of pages stored
+>>>>
+>>>> Wouldn't it be more practical to report the original and compressed
+>>>> data sizes using the same units as it is currently done?
+>>>>
+>>>
+>>> hm, do we really need pages_stored stats? what kind of unseful information it
+>>> shows to end user?.. perhaps, it's better to replace it with accounted passed
+>>> bvec->bv_len (as uncompressed_size).
+>>>
+>>
+>> That's really going to complicates things. We would need to keep track
+>> of which sectors of a particular page has been written to. It's much
+>> easier to keep current page granularity and consider any partial I/O
+>> as an whole page I/O.
+>>
+> 
+> fair enough. thank you.
+> 
+> 2/3 and 3/3 were changed according to your comments:
+> - 2/3 drop READA check
+> - 3/3 update commit message.
+> 
+> ready to re-publish. may I add your ACK to all 3 patches or just to 1/3?
 
-Color the numbers in the Delta column using percent_color_snprintf().
+The READA thing was my only concern for 2/3, so yes for this one.
+Concerning the third patch, I'd like to see what other people think
+about which stats we want to report.
 
-Generalize the coloring function so that we can accommodate all three
-comparison methods in future patches: delta, ratio, and wdiff.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1388388861-7931-3-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-diff.c | 49 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 48 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 987cac3b4bba..6c3f220115ac 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -770,6 +770,45 @@ static int hpp__entry_baseline(struct hist_entry *he, char *buf, size_t size)
- 	return ret;
- }
- 
-+static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
-+				struct perf_hpp *hpp, struct hist_entry *he,
-+				int comparison_method)
-+{
-+	struct diff_hpp_fmt *dfmt =
-+		container_of(fmt, struct diff_hpp_fmt, fmt);
-+	struct hist_entry *pair = get_pair_fmt(he, dfmt);
-+	double diff;
-+	char pfmt[20] = " ";
-+
-+	if (!pair)
-+		goto dummy_print;
-+
-+	switch (comparison_method) {
-+	case COMPUTE_DELTA:
-+		if (pair->diff.computed)
-+			diff = pair->diff.period_ratio_delta;
-+		else
-+			diff = compute_delta(he, pair);
-+
-+		if (fabs(diff) < 0.01)
-+			goto dummy_print;
-+		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
-+		return percent_color_snprintf(hpp->buf, hpp->size,
-+					pfmt, diff);
-+	default:
-+		BUG_ON(1);
-+	}
-+dummy_print:
-+	return scnprintf(hpp->buf, hpp->size, "%*s",
-+			dfmt->header_width, pfmt);
-+}
-+
-+static int hpp__color_delta(struct perf_hpp_fmt *fmt,
-+			struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	return __hpp__color_compare(fmt, hpp, he, COMPUTE_DELTA);
-+}
-+
- static void
- hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
- {
-@@ -941,8 +980,16 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	fmt->entry  = hpp__entry_global;
- 
- 	/* TODO more colors */
--	if (idx == PERF_HPP_DIFF__BASELINE)
-+	switch (idx) {
-+	case PERF_HPP_DIFF__BASELINE:
- 		fmt->color = hpp__color_baseline;
-+		break;
-+	case PERF_HPP_DIFF__DELTA:
-+		fmt->color = hpp__color_delta;
-+		break;
-+	default:
-+		break;
-+	}
- 
- 	init_header(d, dfmt);
- 	perf_hpp__column_register(fmt);
--- 
-1.8.1.4
+> 
+> 	-ss
+> 
+>>>
+>>>> Jerome
+>>>>
+>>>>>   - pages_zero  -- number of zero filled pages
+>>>>>   - failed_read -- number of failed reads
+>>>>>   - failed_writes -- can happen when memory is too low
+>>>>>   - invalid_io   -- non-page-aligned I/O requests
+>>>>>   - notify_free  -- number of swap slot free notifications
+>>>>>   - memory_used -- zs pool zs_get_total_size_bytes()
+>>>>>
+>>>>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>>
+>>
 
