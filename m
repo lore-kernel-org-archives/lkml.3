@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaANA1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53963 "EHLO
+	id S1753308AbaANA1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:27:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaANA07 (ORCPT
+	with ESMTP id S1753106AbaANA1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:59 -0500
+	Mon, 13 Jan 2014 19:27:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 16/62] net: unix: allow set_peek_off to fail
-Date: Mon, 13 Jan 2014 16:26:41 -0800
-Message-Id: <20140114002710.921758370@linuxfoundation.org>
+Subject: [PATCH 3.10 22/62] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+Date: Mon, 13 Jan 2014 16:26:47 -0800
+Message-Id: <20140114002711.099394749@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,72 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 12663bfc97c8b3fdb292428105dd92d563164050 ]
+[ Upstream commit b1aac815c0891fe4a55a6b0b715910142227700f ]
 
-unix_dgram_recvmsg() will hold the readlock of the socket until recv
-is complete.
+Jakub reported while working with nlmon netlink sniffer that parts of
+the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
+That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
 
-In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
-unix_dgram_recvmsg() will complete (which can take a while) without allowing
-us to break out of it, triggering a hung task spew.
+In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
+memory through this. At least, in udp_dump_one(), we allocate a skb in ...
 
-Instead, allow set_peek_off to fail, this way userspace will not hang.
+  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
+... and then pass that to inet_sk_diag_fill() that puts the whole struct
+inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
+r->id.idiag_dst[0] and leave the rest untouched:
+
+  r->id.idiag_src[0] = inet->inet_rcv_saddr;
+  r->id.idiag_dst[0] = inet->inet_daddr;
+
+struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
+fully filled out in IPv6 case, but for IPv4 not.
+
+So just zero them out by using plain memset (for this little amount of
+bytes it's probably not worth the extra check for idiag_family == AF_INET).
+
+Similarly, fix also other places where we fill that out.
+
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/linux/net.h |    2 +-
- net/core/sock.c     |    2 +-
- net/unix/af_unix.c  |    8 ++++++--
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ net/ipv4/inet_diag.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -180,7 +180,7 @@ struct proto_ops {
- 				      int offset, size_t size, int flags);
- 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
- 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
--	void		(*set_peek_off)(struct sock *sk, int val);
-+	int		(*set_peek_off)(struct sock *sk, int val);
- };
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -106,6 +106,10 @@ int inet_sk_diag_fill(struct sock *sk, s
  
- #define DECLARE_SOCKADDR(type, dst, src)	\
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -885,7 +885,7 @@ set_rcvbuf:
- 
- 	case SO_PEEK_OFF:
- 		if (sock->ops->set_peek_off)
--			sock->ops->set_peek_off(sk, val);
-+			ret = sock->ops->set_peek_off(sk, val);
- 		else
- 			ret = -EOPNOTSUPP;
- 		break;
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -529,13 +529,17 @@ static int unix_seqpacket_sendmsg(struct
- static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
- 				  struct msghdr *, size_t, int);
- 
--static void unix_set_peek_off(struct sock *sk, int val)
-+static int unix_set_peek_off(struct sock *sk, int val)
- {
- 	struct unix_sock *u = unix_sk(sk);
- 
--	mutex_lock(&u->readlock);
-+	if (mutex_lock_interruptible(&u->readlock))
-+		return -EINTR;
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = inet->inet_dport;
 +
- 	sk->sk_peek_off = val;
- 	mutex_unlock(&u->readlock);
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
 +
-+	return 0;
- }
+ 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
+ 	r->id.idiag_dst[0] = inet->inet_daddr;
  
+@@ -240,12 +244,19 @@ static int inet_twsk_diag_fill(struct in
  
+ 	r->idiag_family	      = tw->tw_family;
+ 	r->idiag_retrans      = 0;
++
+ 	r->id.idiag_if	      = tw->tw_bound_dev_if;
+ 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
++
+ 	r->id.idiag_sport     = tw->tw_sport;
+ 	r->id.idiag_dport     = tw->tw_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
+ 	r->id.idiag_dst[0]    = tw->tw_daddr;
++
+ 	r->idiag_state	      = tw->tw_substate;
+ 	r->idiag_timer	      = 3;
+ 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
+@@ -732,8 +743,13 @@ static int inet_diag_fill_req(struct sk_
+ 
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = ireq->rmt_port;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = ireq->loc_addr;
+ 	r->id.idiag_dst[0] = ireq->rmt_addr;
++
+ 	r->idiag_expires = jiffies_to_msecs(tmo);
+ 	r->idiag_rqueue = 0;
+ 	r->idiag_wqueue = 0;
 
 
