@@ -1,161 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaANQjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:39:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52621 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbaANQjC (ORCPT
+	id S1752275AbaANQjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:39:25 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56574 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751986AbaANQjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:39:02 -0500
-Date: Tue, 14 Jan 2014 08:38:19 -0800
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-198430b56d4ab49d77381ef7cd3daf418a2c00c0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <20140102095304.GA1196@krava.brq.redhat.com>
-References: <20140102095304.GA1196@krava.brq.redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Replace tabs with spaces for all non-commands statements
-Git-Commit-ID: 198430b56d4ab49d77381ef7cd3daf418a2c00c0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 14 Jan 2014 11:39:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Takashi Iwai <tiwai@suse.de>, Len Brown <lenb@kernel.org>,
+        Oliver Neukum <oneukum@suse.de>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] ACPI: Blacklist Win8 OSI for some HP laptop 2013 models
+Date: Tue, 14 Jan 2014 17:53:20 +0100
+Message-ID: <4325437.Itfr0xDDg7@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <20140114163425.GA6649@srcf.ucam.org>
+References: <1389611658-19424-1-git-send-email-tiwai@suse.de> <6355285.UpbP9PuN7a@vostro.rjw.lan> <20140114163425.GA6649@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:26 -0800 (PST)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  198430b56d4ab49d77381ef7cd3daf418a2c00c0
-Gitweb:     http://git.kernel.org/tip/198430b56d4ab49d77381ef7cd3daf418a2c00c0
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 2 Jan 2014 10:53:04 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Jan 2014 10:06:23 -0300
+On Tuesday, January 14, 2014 04:34:25 PM Matthew Garrett wrote:
+> On Tue, Jan 14, 2014 at 05:42:57PM +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, January 14, 2014 04:12:44 PM Matthew Garrett wrote:
+> > > On Mon, Jan 13, 2014 at 12:14:18PM +0100, Takashi Iwai wrote:
+> > > > The BIOS on recent HP laptops behaves differently with Win8 OSI,
+> > > > e.g. no backlight control and no rfkill are available.  List them in
+> > > > the blacklist as a workaround.
+> > > 
+> > > What's the plan for fixing this properly?
+> > 
+> > What exactly do you mean by "fixing this properly"?
+> 
+> rfkill and backlight control presumably work fine under Windows 8, so 
+> there's obviously some new mechanism for doing so. HP will presumably 
+> ship more hardware that behaves this way, so if we don't add support for 
+> the new mechanisms then we'll just have to keep adding entries to the 
+> blacklist.
 
-tools lib traceevent: Replace tabs with spaces for all non-commands statements
+Well, presumably.
 
-The tabbed indentation in non-commands statements could be sometimes
-considered as follow up for the rule command in the Makefile.
+To add any kind of support for anything we need to know how that thing
+works in the first place which we don't in this particular case, at least
+at the moment.  I hontestly don't want the users of those systems to wait
+until we figure that out.
 
-This error is hard to find, so as a precaution replacing tabs with
-spaces for all non-commands statements.
+Thanks!
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://marc.info/?t=136484403900003&r=1&w=2
-Link: http://lkml.kernel.org/r/20140102095304.GA1196@krava.brq.redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/Makefile | 54 +++++++++++++++++++++----------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
-
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index ca4ab78..76fe0ae 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -86,8 +86,8 @@ ifeq ($(BUILD_SRC),)
- ifneq ($(OUTPUT),)
- 
- define build_output
--	$(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
--	BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
-+  $(if $(VERBOSE:1=),@)+$(MAKE) -C $(OUTPUT) \
-+  BUILD_SRC=$(CURDIR)/ -f $(CURDIR)/Makefile $1
- endef
- 
- all: sub-make
-@@ -221,23 +221,23 @@ $(PLUGINS): %.so: %.o
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $<
- 
- define make_version.h
--	(echo '/* This file is automatically generated. Do not modify. */';		\
--	echo \#define VERSION_CODE $(shell						\
--	expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
--	echo '#define EXTRAVERSION ' $(EXTRAVERSION);					\
--	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
--	echo '#define FILE_VERSION '$(FILE_VERSION);					\
--	) > $1
-+  (echo '/* This file is automatically generated. Do not modify. */';		\
-+   echo \#define VERSION_CODE $(shell						\
-+   expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
-+   echo '#define EXTRAVERSION ' $(EXTRAVERSION);				\
-+   echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
-+   echo '#define FILE_VERSION '$(FILE_VERSION);					\
-+  ) > $1
- endef
- 
- define update_version.h
--	($(call make_version.h, $@.tmp);		\
--	if [ -r $@ ] && cmp -s $@ $@.tmp; then		\
--		rm -f $@.tmp;				\
--	else						\
--		echo '  UPDATE                 $@';	\
--		mv -f $@.tmp $@;			\
--	fi);
-+  ($(call make_version.h, $@.tmp);		\
-+    if [ -r $@ ] && cmp -s $@ $@.tmp; then	\
-+      rm -f $@.tmp;				\
-+    else					\
-+      echo '  UPDATE                 $@';	\
-+      mv -f $@.tmp $@;				\
-+    fi);
- endef
- 
- ep_version.h: force
-@@ -246,13 +246,13 @@ ep_version.h: force
- VERSION_FILES = ep_version.h
- 
- define update_dir
--	(echo $1 > $@.tmp;	\
--	if [ -r $@ ] && cmp -s $@ $@.tmp; then		\
--		rm -f $@.tmp;				\
--	else						\
--		echo '  UPDATE                 $@';	\
--		mv -f $@.tmp $@;			\
--	fi);
-+  (echo $1 > $@.tmp;				\
-+   if [ -r $@ ] && cmp -s $@ $@.tmp; then	\
-+     rm -f $@.tmp;				\
-+   else						\
-+     echo '  UPDATE                 $@';	\
-+     mv -f $@.tmp $@;				\
-+   fi);
- endef
- 
- ## make deps
-@@ -262,10 +262,10 @@ all_deps := $(all_objs:%.o=.%.d)
- 
- # let .d file also depends on the source and header files
- define check_deps
--		@set -e; $(RM) $@; \
--		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
--		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
--		$(RM) $@.$$$$
-+  @set -e; $(RM) $@; \
-+  $(CC) -MM $(CFLAGS) $< > $@.$$$$; \
-+  sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-+  $(RM) $@.$$$$
- endef
- 
- $(all_deps): .%.d: $(src)/%.c
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
