@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaANK4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:56:19 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49101 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbaANK4O (ORCPT
+	id S1751928AbaANK4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:56:39 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:54182 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaANK4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:56:14 -0500
-Subject: [PATCH v1 5/6] pseries/cpuidle: Remove MAX_IDLE_STATE macro.
+	Tue, 14 Jan 2014 05:56:34 -0500
+Subject: [PATCH v1 6/6] pseries/cpuidle: smt-snooze-delay cleanup.
 To: linux-pm@vger.kernel.org, benh@kernel.crashing.org,
         daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
         svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Date: Tue, 14 Jan 2014 16:26:28 +0530
-Message-ID: <20140114105624.3064.76270.stgit@deepthi.in.ibm.com>
+Date: Tue, 14 Jan 2014 16:26:38 +0530
+Message-ID: <20140114105633.3064.32212.stgit@deepthi.in.ibm.com>
 In-Reply-To: <20140114105525.3064.52013.stgit@deepthi.in.ibm.com>
 References: <20140114105525.3064.52013.stgit@deepthi.in.ibm.com>
 User-Agent: StGit/0.16
@@ -23,89 +23,95 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011410-9574-0000-0000-00000B7ABBB8
+x-cbid: 14011410-5140-0000-0000-00000469E779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the usage of MAX_IDLE_STATE macro
-and dead code around it. The number of states
-are determined at run time based on the cpuidle
-state table selected on a given platform
+smt-snooze-delay was designed to disable NAP state or delay the entry
+to the NAP state prior to adoption of cpuidle framework. This
+is per-cpu variable. With the coming of CPUIDLE framework,
+states can be disabled on per-cpu basis using the cpuidle/enable
+sysfs entry.
+
+Also, with the coming of cpuidle driver each state's target residency
+is per-driver unlike earlier which was per-device. Therefore,
+the per-cpu sysfs smt-snooze-delay which decides the target residency
+of the idle state on a particular cpu causes more confusion to the user
+as we cannot have different smt-snooze-delay (target residency)
+values for each cpu.
+
+In the current code, smt-snooze-delay functionality is completely broken.
+It makes sense to remove smt-snooze-delay from idle driver with the
+coming of cpuidle framework.
+However, sysfs files are retained as ppc64_util currently
+utilises it. Once we fix ppc64_util, propose to clean
+up the kernel code.
 
 Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 ---
- drivers/cpuidle/cpuidle-pseries.c |   28 ++++++++++------------------
- 1 file changed, 10 insertions(+), 18 deletions(-)
+ arch/powerpc/include/asm/processor.h |    7 -------
+ arch/powerpc/kernel/sysfs.c          |    2 --
+ drivers/cpuidle/cpuidle-pseries.c    |   17 -----------------
+ 3 files changed, 26 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
+index fa98fdf..027fefd 100644
+--- a/arch/powerpc/include/asm/processor.h
++++ b/arch/powerpc/include/asm/processor.h
+@@ -444,13 +444,6 @@ enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
+ 
+ extern int powersave_nap;	/* set if nap mode can be used in idle loop */
+ extern void power7_nap(void);
+-
+-#ifdef CONFIG_PSERIES_CPUIDLE
+-extern void update_smt_snooze_delay(int cpu, int residency);
+-#else
+-static inline void update_smt_snooze_delay(int cpu, int residency) {}
+-#endif
+-
+ extern void flush_instruction_cache(void);
+ extern void hard_reset_now(void);
+ extern void poweroff_now(void);
+diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
+index b4e6676..7f9e130 100644
+--- a/arch/powerpc/kernel/sysfs.c
++++ b/arch/powerpc/kernel/sysfs.c
+@@ -51,8 +51,6 @@ static ssize_t store_smt_snooze_delay(struct device *dev,
+ 		return -EINVAL;
+ 
+ 	per_cpu(smt_snooze_delay, cpu->dev.id) = snooze;
+-	update_smt_snooze_delay(cpu->dev.id, snooze);
+-
+ 	return count;
+ }
+ 
 diff --git a/drivers/cpuidle/cpuidle-pseries.c b/drivers/cpuidle/cpuidle-pseries.c
-index 5e13f6c..bb56091 100644
+index bb56091..7ab564a 100644
 --- a/drivers/cpuidle/cpuidle-pseries.c
 +++ b/drivers/cpuidle/cpuidle-pseries.c
-@@ -24,9 +24,7 @@ struct cpuidle_driver pseries_idle_driver = {
- 	.owner            = THIS_MODULE,
+@@ -162,23 +162,6 @@ static struct cpuidle_state shared_states[] = {
+ 		.enter = &shared_cede_loop },
  };
  
--#define MAX_IDLE_STATE_COUNT	2
+-void update_smt_snooze_delay(int cpu, int residency)
+-{
+-	struct cpuidle_driver *drv = cpuidle_get_driver();
+-	struct cpuidle_device *dev = per_cpu(cpuidle_devices, cpu);
 -
--static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-+static int max_idle_state;
- static struct cpuidle_state *cpuidle_state_table;
- 
- static inline void idle_loop_prolog(unsigned long *in_purr)
-@@ -134,7 +132,7 @@ static int shared_cede_loop(struct cpuidle_device *dev,
- /*
-  * States for dedicated partition case.
-  */
--static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
-+static struct cpuidle_state dedicated_states[] = {
- 	{ /* Snooze */
- 		.name = "snooze",
- 		.desc = "snooze",
-@@ -154,7 +152,7 @@ static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
- /*
-  * States for shared partition case.
-  */
--static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
-+static struct cpuidle_state shared_states[] = {
- 	{ /* Shared Cede */
- 		.name = "Shared Cede",
- 		.desc = "Shared Cede",
-@@ -225,12 +223,8 @@ static int pseries_cpuidle_driver_init(void)
- 
- 	drv->state_count = 0;
- 
--	for (idle_state = 0; idle_state < MAX_IDLE_STATE_COUNT; ++idle_state) {
+-	if (cpuidle_state_table != dedicated_states)
+-		return;
 -
--		if (idle_state > max_idle_state)
--			break;
+-	if (residency < 0) {
+-		/* Disable the Nap state on that cpu */
+-		if (dev)
+-			dev->states_usage[1].disable = 1;
+-	} else
+-		if (drv)
+-			drv->states[1].target_residency = residency;
+-}
 -
--		/* is the state not enabled? */
-+	for (idle_state = 0; idle_state < max_idle_state; ++idle_state) {
-+		/* Is the state not enabled? */
- 		if (cpuidle_state_table[idle_state].enter == NULL)
- 			continue;
- 
-@@ -253,16 +247,14 @@ static int pseries_idle_probe(void)
- 	if (cpuidle_disable != IDLE_NO_OVERRIDE)
- 		return -ENODEV;
- 
--	if (max_idle_state == 0) {
--		printk(KERN_DEBUG "pseries processor idle disabled.\n");
--		return -EPERM;
--	}
--
- 	if (firmware_has_feature(FW_FEATURE_SPLPAR)) {
--		if (lppaca_shared_proc(get_lppaca()))
-+		if (lppaca_shared_proc(get_lppaca())) {
- 			cpuidle_state_table = shared_states;
--		else
-+			max_idle_state = ARRAY_SIZE(shared_states);
-+		} else {
- 			cpuidle_state_table = dedicated_states;
-+			max_idle_state = ARRAY_SIZE(dedicated_states);
-+		}
- 	} else
- 		return -ENODEV;
- 
+ static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
+ 			unsigned long action, void *hcpu)
+ {
 
