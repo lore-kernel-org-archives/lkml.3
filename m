@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaANNlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:41:08 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:51017 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556AbaANNlF (ORCPT
+	id S1751663AbaANNlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:41:12 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:38887 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566AbaANNlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:41:05 -0500
-Date: Tue, 14 Jan 2014 14:40:57 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
+	Tue, 14 Jan 2014 08:41:06 -0500
+Date: Tue, 14 Jan 2014 14:41:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
 Cc: linux-kernel@vger.kernel.org,
-        Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        David Airlie <airlied@linux.ie>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 3/7] drivers/gpu/host1x/drm: don't check resource with
- devm_ioremap_resource
-Message-ID: <20140114134026.GB10936@ulmo.nvidia.com>
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
- <1389700739-3696-3-git-send-email-wsa@the-dreams.de>
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        linaro-kernel@lists.linaro.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        patches@linaro.org, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
+Message-ID: <20140114134101.GB25671@gmail.com>
+References: <1389646059-24881-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TRYliJ5NKNqkz5bu"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389700739-3696-3-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1389646059-24881-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---TRYliJ5NKNqkz5bu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-On Tue, Jan 14, 2014 at 12:58:54PM +0100, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
->=20
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> Reviewed-by: Terje Bergstrom <tbergstrom@nvidia.com>
-> ---
->=20
-> Should go via subsystem tree
->=20
->  drivers/gpu/drm/tegra/hdmi.c | 3 ---
->  1 file changed, 3 deletions(-)
+> Andi Kleen (2):
+>       perf stat: Fix --delay option in man page
+>       perf record: Add --initial-delay option
 
-Applied, thanks.
+Hm, so we now have two options that do something similar, one named 
+--delay, the other --initial-delay? That looks rather inconsistent.
 
-Thierry
+Furthermore, it looks silly to rename things --initial-delay just to 
+preserve a rarely used option, --no-delay. Instead the better option 
+would be to rename --no-delay to --no-buffering, and use --delay and 
+use it consistently within the tools.
 
---TRYliJ5NKNqkz5bu
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1T5KAAoJEN0jrNd/PrOhAqoP/1t1xG3nJ1NJhb/HzVGI0q7c
-sj+vPaiUyBYzh3W+vVxzBS1l+WXTKNm/EnbpswK5j8pWeg6k4F4cfmzaF6X0xuia
-hQ612bxFkFkQeBDgrZuOcOqxOUqLoDqYJnFA6Ay67n+P98ct+tfsDaSugPymCwse
-IDWhwXeHp2bsZ17/DwiXAN6XLP+F/CwVlLwEe/4/fK0wNhG1UjGPuwUg2z91mFoQ
-1Qoi8APACa85EPe6h6gfUyBTr7UegcPmuMo/b3hZcTiwQE1OVoGyIbHqYp+yRKjQ
-KBPsJk68oaTCShsMknlvPv2igXQk6Td3Ta1WJoZ7I2tt0h0b1SYrDl4WujoH+ON9
-ltTsOxO0hVMNwfsHejMKQQLCVvbRVweucqlm/7spiap21Ajkmurax54LF5D+qYkv
-+lmlYYkSuCDXrVcD6gLuX1pgcHmjbvBokH8V6s8oBsI6A2jRkKgdDPLCUSrKsGxy
-HH7JLHh7SUda8M+aFjAAmgBhOegwEX5+toyWYtoUkdzYWhnMOr4RsAc6pApkqiAP
-bFgGq2Du6nba4bENTd7m0S3r+vEjCMac86HXhM6HU3IB2ZBCzpvd7+xkw/YzyAnY
-n//fW5H+bpOaz7J/dDDvLkN2Vd632m0RyGQiRv3iU0xEXnI/97eW/PxpiHDSLbwn
-cO2TCBbQmHIEWCHjhEI9
-=647i
------END PGP SIGNATURE-----
-
---TRYliJ5NKNqkz5bu--
+	Ingo
