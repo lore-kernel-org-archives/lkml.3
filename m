@@ -1,150 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaANXNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:13:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34738 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaANXNl (ORCPT
+	id S1751892AbaANXUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:20:36 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61039 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751574AbaANXUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:13:41 -0500
-Date: Tue, 14 Jan 2014 15:13:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Hedi <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] hotplug, memory: move register_memory_resource out of the
- lock_memory_hotplug
-Message-Id: <20140114151340.004d25c00056d88f33cadda0@linux-foundation.org>
-In-Reply-To: <1389723874-32372-1-git-send-email-nzimmer@sgi.com>
-References: <1389723874-32372-1-git-send-email-nzimmer@sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 14 Jan 2014 18:20:31 -0500
+Date: Tue, 14 Jan 2014 18:20:29 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v6 1/8] x86: allow to handle errors in text_poke
+ function family
+Message-ID: <20140114182029.27fa13f9@gandalf.local.home>
+In-Reply-To: <1386690140-19941-2-git-send-email-pmladek@suse.cz>
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
+	<1386690140-19941-2-git-send-email-pmladek@suse.cz>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014 12:24:34 -0600 Nathan Zimmer <nzimmer@sgi.com> wrote:
 
-> We don't need to do register_memory_resource() since it has its own lock and
-> doesn't make any callbacks.
+FYI, for future patches, start the subject with a capital letter. ie:
+ x86: Allow to handle errors in text_poke function family
+
+On Tue, 10 Dec 2013 16:42:13 +0100
+Petr Mladek <pmladek@suse.cz> wrote:
+
+> The text_poke functions called BUG() in case of error. This was too strict.
+> There are situations when the system is still usable even when the patching
+> has failed, for example when enabling the dynamic ftrace.
 > 
-> Also register_memory_resource return NULL on failure so we don't have anything
-> to cleanup at this point.
+> This commit modifies text_poke and text_poke_bp functions to return an error
+> code instead of calling BUG(). They used to return the patched address. But
+> the address was just copied from the first parameter. It was no extra
+> information and it has not been used anywhere yet.
 > 
+> There are some situations where it is hard to recover from an error. Masami
+> Hiramatsu <masami.hiramatsu.pt@hitachi.com> suggested to create
+> text_poke*_or_die() variants for this purpose.
+
+I don't like the "_or_die()". Although I don't care much about it, I'm
+thinking the x86 maintainers might not like it either.
+
+What about just doing the test in the places that would call "or_die"?
+
+	ret = text_poke*();
+	BUG_ON(ret);
+
+?
+
+-- Steve
+
 > 
-> The reason for this rfc is I was doing some experiments with hotplugging of
-> memory on some of our larger systems.  While it seems to work, it can be quite
-> slow.  With some preliminary digging I found that lock_memory_hotplug is
-> clearly ripe for breakup.
+> Last but not least, we modify return value of the text_poke_early() function.
+> It is not capable of returning an error code. Let's return void to make
+> it clear.
 > 
-> It could be broken up per nid or something but it also covers the
-> online_page_callback.  The online_page_callback shouldn't be very hard to break
-> out.
+> Finally, we also need to modify the few locations where text_poke functions
+> were used and the error code has to be handled now.
 > 
-> Also there is the issue of various structures(wmarks come to mind) that are
-> only updated under the lock_memory_hotplug that would need to be dealt with.
->
-> ...
->
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1097,17 +1097,18 @@ int __ref add_memory(int nid, u64 start, u64 size)
->  	struct resource *res;
->  	int ret;
->  
-> -	lock_memory_hotplug();
-> -
->  	res = register_memory_resource(start, size);
->  	ret = -EEXIST;
->  	if (!res)
-> -		goto out;
-> +		return ret;
->  
->  	{	/* Stupid hack to suppress address-never-null warning */
->  		void *p = NODE_DATA(nid);
->  		new_pgdat = !p;
->  	}
-> +
-> +	lock_memory_hotplug();
-> +
->  	new_node = !node_online(nid);
->  	if (new_node) {
->  		pgdat = hotadd_new_pgdat(nid, start);
-
-Looks sane to me.
-
-register_memory_resource() makes me cry.  Please review:
-
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm/memory_hotplug.c: register_memory_resource() fixes
-
-- register_memory_resource() should not go BUG on ENOMEM.  That's
-  appropriate at system boot time, but not at memory-hotplug time.  Fix.
-
-- register_memory_resource()'s caller is incorrectly replacing
-  request_resource()'s -EBUSY with -EEXIST.  Fix this by propagating
-  errors appropriately.
-
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Hedi <hedi@sgi.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/memory_hotplug.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
-
-diff -puN mm/memory_hotplug.c~mm-memory_hotplugc-register_memory_resource-fixes mm/memory_hotplug.c
---- a/mm/memory_hotplug.c~mm-memory_hotplugc-register_memory_resource-fixes
-+++ a/mm/memory_hotplug.c
-@@ -64,17 +64,21 @@ void unlock_memory_hotplug(void)
- static struct resource *register_memory_resource(u64 start, u64 size)
- {
- 	struct resource *res;
-+	int err;
-+
- 	res = kzalloc(sizeof(struct resource), GFP_KERNEL);
--	BUG_ON(!res);
-+	if (!res)
-+		return ERR_PTR(-ENOMEM);
- 
- 	res->name = "System RAM";
- 	res->start = start;
- 	res->end = start + size - 1;
- 	res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
--	if (request_resource(&iomem_resource, res) < 0) {
-+	err = request_resource(&iomem_resource, res);
-+	if (err) {
- 		pr_debug("System RAM resource %pR cannot be added\n", res);
- 		kfree(res);
--		res = NULL;
-+		res = ERR_PTR(err);
- 	}
- 	return res;
- }
-@@ -1108,9 +1112,8 @@ int __ref add_memory(int nid, u64 start,
- 		return ret;
- 
- 	res = register_memory_resource(start, size);
--	ret = -EEXIST;
--	if (!res)
--		return ret;
-+	if (IS_ERR(res))
-+		return PTR_ERR(res);
- 
- 	{	/* Stupid hack to suppress address-never-null warning */
- 		void *p = NODE_DATA(nid);
-_
+> Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> ---
 
