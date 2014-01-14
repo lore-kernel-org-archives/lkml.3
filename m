@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaANA3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54543 "EHLO
+	id S1754265AbaANA33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:29:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54515 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106AbaANA3J (ORCPT
+	with ESMTP id S1754076AbaANA3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:09 -0500
+	Mon, 13 Jan 2014 19:29:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 3.12 61/77] clk: samsung: exynos5250: Add MDMA0 clocks
-Date: Mon, 13 Jan 2014 16:28:22 -0800
-Message-Id: <20140114002754.233558778@linuxfoundation.org>
+        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.12 74/77] sched: Fix race on toggling cfs_bandwidth_used
+Date: Mon, 13 Jan 2014 16:28:35 -0800
+Message-Id: <20140114002754.591291400@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,56 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Abhilash Kesavan <a.kesavan@samsung.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 8fb9aeb7a71ef4f3e0613d459a2e1366a7a90469 upstream.
+commit 1ee14e6c8cddeeb8a490d7b54cd9016e4bb900b4 upstream.
 
-Adds gate clock for MDMA0 on Exynos5250 SoC. This is needed to ensure
-that the clock is enabled when MDMA0 is used on systems on which
-firmware gates the clockby default.
+When we transition cfs_bandwidth_used to false, any currently
+throttled groups will incorrectly return false from cfs_rq_throttled.
+While tg_set_cfs_bandwidth will unthrottle them eventually, currently
+running code (including at least dequeue_task_fair and
+distribute_cfs_runtime) will cause errors.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
-[t.figa: Updated patch description.]
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Fix this by turning off cfs_bandwidth_used only after unthrottling all
+cfs_rqs.
+
+Tested: toggle bandwidth back and forth on a loaded cgroup. Caused
+crashes in minutes without the patch, hasn't crashed with it.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181611.22647.80365.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/clock/exynos5250-clock.txt |    2 ++
- drivers/clk/samsung/clk-exynos5250.c                         |    5 ++++-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ kernel/sched/core.c  |    9 ++++++++-
+ kernel/sched/fair.c  |   16 +++++++++-------
+ kernel/sched/sched.h |    3 ++-
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
---- a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-@@ -159,6 +159,8 @@ clock which they consume.
-   mixer			343
-   hdmi			344
-   g2d			345
-+  mdma0			346
-+  smmu_mdma0		347
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7277,7 +7277,12 @@ static int tg_set_cfs_bandwidth(struct t
  
+ 	runtime_enabled = quota != RUNTIME_INF;
+ 	runtime_was_enabled = cfs_b->quota != RUNTIME_INF;
+-	account_cfs_bandwidth_used(runtime_enabled, runtime_was_enabled);
++	/*
++	 * If we need to toggle cfs_bandwidth_used, off->on must occur
++	 * before making related changes, and on->off must occur afterwards
++	 */
++	if (runtime_enabled && !runtime_was_enabled)
++		cfs_bandwidth_usage_inc();
+ 	raw_spin_lock_irq(&cfs_b->lock);
+ 	cfs_b->period = ns_to_ktime(period);
+ 	cfs_b->quota = quota;
+@@ -7303,6 +7308,8 @@ static int tg_set_cfs_bandwidth(struct t
+ 			unthrottle_cfs_rq(cfs_rq);
+ 		raw_spin_unlock_irq(&rq->lock);
+ 	}
++	if (runtime_was_enabled && !runtime_enabled)
++		cfs_bandwidth_usage_dec();
+ out_unlock:
+ 	mutex_unlock(&cfs_constraints_mutex);
  
-    [Clock Muxes]
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -120,7 +120,8 @@ enum exynos5250_clks {
- 	spi2, i2s1, i2s2, pcm1, pcm2, pwm, spdif, ac97, hsi2c0, hsi2c1, hsi2c2,
- 	hsi2c3, chipid, sysreg, pmu, cmu_top, cmu_core, cmu_mem, tzpc0, tzpc1,
- 	tzpc2, tzpc3, tzpc4, tzpc5, tzpc6, tzpc7, tzpc8, tzpc9, hdmi_cec, mct,
--	wdt, rtc, tmu, fimd1, mie1, dsim0, dp, mixer, hdmi, g2d,
-+	wdt, rtc, tmu, fimd1, mie1, dsim0, dp, mixer, hdmi, g2d, mdma0,
-+	smmu_mdma0,
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2077,13 +2077,14 @@ static inline bool cfs_bandwidth_used(vo
+ 	return static_key_false(&__cfs_bandwidth_used);
+ }
  
- 	/* mux clocks */
- 	mout_hdmi = 1024,
-@@ -492,6 +493,8 @@ static struct samsung_gate_clock exynos5
- 	GATE(mixer, "mixer", "mout_aclk200_disp1", GATE_IP_DISP1, 5, 0, 0),
- 	GATE(hdmi, "hdmi", "mout_aclk200_disp1", GATE_IP_DISP1, 6, 0, 0),
- 	GATE(g2d, "g2d", "aclk200", GATE_IP_ACP, 3, 0, 0),
-+	GATE(mdma0, "mdma0", "aclk266", GATE_IP_ACP, 1, 0, 0),
-+	GATE(smmu_mdma0, "smmu_mdma0", "aclk266", GATE_IP_ACP, 5, 0, 0),
- };
+-void account_cfs_bandwidth_used(int enabled, int was_enabled)
++void cfs_bandwidth_usage_inc(void)
+ {
+-	/* only need to count groups transitioning between enabled/!enabled */
+-	if (enabled && !was_enabled)
+-		static_key_slow_inc(&__cfs_bandwidth_used);
+-	else if (!enabled && was_enabled)
+-		static_key_slow_dec(&__cfs_bandwidth_used);
++	static_key_slow_inc(&__cfs_bandwidth_used);
++}
++
++void cfs_bandwidth_usage_dec(void)
++{
++	static_key_slow_dec(&__cfs_bandwidth_used);
+ }
+ #else /* HAVE_JUMP_LABEL */
+ static bool cfs_bandwidth_used(void)
+@@ -2091,7 +2092,8 @@ static bool cfs_bandwidth_used(void)
+ 	return true;
+ }
  
- static struct samsung_pll_rate_table vpll_24mhz_tbl[] __initdata = {
+-void account_cfs_bandwidth_used(int enabled, int was_enabled) {}
++void cfs_bandwidth_usage_inc(void) {}
++void cfs_bandwidth_usage_dec(void) {}
+ #endif /* HAVE_JUMP_LABEL */
+ 
+ /*
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1305,7 +1305,8 @@ extern void print_rt_stats(struct seq_fi
+ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
+ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
+ 
+-extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
++extern void cfs_bandwidth_usage_inc(void);
++extern void cfs_bandwidth_usage_dec(void);
+ 
+ #ifdef CONFIG_NO_HZ_COMMON
+ enum rq_nohz_flag_bits {
 
 
