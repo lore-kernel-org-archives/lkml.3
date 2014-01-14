@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaANMDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 07:03:48 -0500
-Received: from nbd.name ([46.4.11.11]:53859 "EHLO nbd.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367AbaANMDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 07:03:46 -0500
-Message-ID: <52D52796.3030509@phrozen.org>
-Date: Tue, 14 Jan 2014 13:03:34 +0100
-From: John Crispin <john@phrozen.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: Re: [PATCH 1/7] arch/mips/lantiq/xway: don't check resource with
- devm_ioremap_resource
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751794AbaANMIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 07:08:35 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50310 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaANMIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 07:08:32 -0500
+Date: Tue, 14 Jan 2014 12:08:11 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Pavel Roskin <proski@gnu.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: serial8250: bogus low_latency destabilizes kernel, need sanity
+ check
+Message-ID: <20140114120811.648571ea@alan.etchedpixels.co.uk>
+In-Reply-To: <20140113193547.47b7a646@IRBT4585>
+References: <20140113193547.47b7a646@IRBT4585>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang,
+> Maybe we should unset the low_latency flag as soon as DMA fails?  There
+> are two flags, one is state->uart_port->flags and the other is
+> port->low_latency.  I guess we need to unset both.
 
-should we take 1/7 and 6/7 via the mips tree ?
+Well low latency and DMA are pretty much exclusive in the real world so
+probably DMA ports shouldn't allow low_latency to be set at all in DMA
+mode.
 
-    John
-
-
-On 14/01/2014 12:58, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
->
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> Acked-by: John Crispin <blogic@openwrt.org>
-> ---
->
-> Should go via subsystem tree
->
->  arch/mips/lantiq/xway/dma.c | 4 ----
->  1 file changed, 4 deletions(-)
->
-> diff --git a/arch/mips/lantiq/xway/dma.c b/arch/mips/lantiq/xway/dma.c
-> index 08f7ebd..78a91fa 100644
-> --- a/arch/mips/lantiq/xway/dma.c
-> +++ b/arch/mips/lantiq/xway/dma.c
-> @@ -220,10 +220,6 @@ ltq_dma_init(struct platform_device *pdev)
->  	int i;
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (!res)
-> -		panic("Failed to get dma resource");
-> -
-> -	/* remap dma register range */
->  	ltq_dma_membase = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(ltq_dma_membase))
->  		panic("Failed to remap dma resource");
-
+Alan
