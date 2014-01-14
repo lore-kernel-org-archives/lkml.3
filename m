@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989AbaANAo1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:44:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54356 "EHLO
+	id S1754309AbaANAor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:44:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669AbaANA22 (ORCPT
+	with ESMTP id S1753790AbaANA21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:28 -0500
+	Mon, 13 Jan 2014 19:28:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Wei-Chun Chao <weichunc@plumgrid.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 36/77] virtio-net: fix refill races during restore
-Date: Mon, 13 Jan 2014 16:27:57 -0800
-Message-Id: <20140114002753.527947284@linuxfoundation.org>
+Subject: [PATCH 3.12 35/77] ipv4: fix tunneled VM traffic over hw VXLAN/GRE GSO NIC
+Date: Mon, 13 Jan 2014 16:27:56 -0800
+Message-Id: <20140114002753.502383734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -33,52 +29,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Wei-Chun Chao <weichunc@plumgrid.com>
 
-[ Upstream commit 6cd4ce0099da7702f885b6fa9ebb49e3831d90b4 ]
+[ Upstream commit 7a7ffbabf99445704be01bff5d7e360da908cf8e ]
 
-During restoring, try_fill_recv() was called with neither napi lock nor napi
-disabled. This can lead two try_fill_recv() was called in the same time. Fix
-this by refilling before trying to enable napi.
+VM to VM GSO traffic is broken if it goes through VXLAN or GRE
+tunnel and the physical NIC on the host supports hardware VXLAN/GRE
+GSO offload (e.g. bnx2x and next-gen mlx4).
 
-Fixes 0741bcb5584f9e2390ae6261573c4de8314999f2
-(virtio: net: Add freeze, restore handlers to support S4).
+Two issues -
+(VXLAN) VM traffic has SKB_GSO_DODGY and SKB_GSO_UDP_TUNNEL with
+SKB_GSO_TCP/UDP set depending on the inner protocol. GSO header
+integrity check fails in udp4_ufo_fragment if inner protocol is
+TCP. Also gso_segs is calculated incorrectly using skb->len that
+includes tunnel header. Fix: robust check should only be applied
+to the inner packet.
 
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+(VXLAN & GRE) Once GSO header integrity check passes, NULL segs
+is returned and the original skb is sent to hardware. However the
+tunnel header is already pulled. Fix: tunnel header needs to be
+restored so that hardware can perform GSO properly on the original
+packet.
+
+Signed-off-by: Wei-Chun Chao <weichunc@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ include/linux/netdevice.h |   13 +++++++++++++
+ net/ipv4/gre_offload.c    |   11 +++++++----
+ net/ipv4/udp.c            |    6 +++++-
+ net/ipv4/udp_offload.c    |   37 +++++++++++++++++++------------------
+ 4 files changed, 44 insertions(+), 23 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1772,16 +1772,17 @@ static int virtnet_restore(struct virtio
- 	if (err)
- 		return err;
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2954,6 +2954,19 @@ static inline void netif_set_gso_max_siz
+ 	dev->gso_max_size = size;
+ }
  
--	if (netif_running(vi->dev))
-+	if (netif_running(vi->dev)) {
-+		for (i = 0; i < vi->curr_queue_pairs; i++)
-+			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-+				schedule_delayed_work(&vi->refill, 0);
++static inline void skb_gso_error_unwind(struct sk_buff *skb, __be16 protocol,
++					int pulled_hlen, u16 mac_offset,
++					int mac_len)
++{
++	skb->protocol = protocol;
++	skb->encapsulation = 1;
++	skb_push(skb, pulled_hlen);
++	skb_reset_transport_header(skb);
++	skb->mac_header = mac_offset;
++	skb->network_header = skb->mac_header + mac_len;
++	skb->mac_len = mac_len;
++}
 +
- 		for (i = 0; i < vi->max_queue_pairs; i++)
- 			virtnet_napi_enable(&vi->rq[i]);
+ static inline bool netif_is_bond_master(struct net_device *dev)
+ {
+ 	return dev->flags & IFF_MASTER && dev->priv_flags & IFF_BONDING;
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -28,6 +28,7 @@ static struct sk_buff *gre_gso_segment(s
+ 	netdev_features_t enc_features;
+ 	int ghl = GRE_HEADER_SECTION;
+ 	struct gre_base_hdr *greh;
++	u16 mac_offset = skb->mac_header;
+ 	int mac_len = skb->mac_len;
+ 	__be16 protocol = skb->protocol;
+ 	int tnl_hlen;
+@@ -57,13 +58,13 @@ static struct sk_buff *gre_gso_segment(s
+ 	} else
+ 		csum = false;
+ 
++	if (unlikely(!pskb_may_pull(skb, ghl)))
++		goto out;
++
+ 	/* setup inner skb. */
+ 	skb->protocol = greh->protocol;
+ 	skb->encapsulation = 0;
+ 
+-	if (unlikely(!pskb_may_pull(skb, ghl)))
+-		goto out;
+-
+ 	__skb_pull(skb, ghl);
+ 	skb_reset_mac_header(skb);
+ 	skb_set_network_header(skb, skb_inner_network_offset(skb));
+@@ -72,8 +73,10 @@ static struct sk_buff *gre_gso_segment(s
+ 	/* segment inner packet. */
+ 	enc_features = skb->dev->hw_enc_features & netif_skb_features(skb);
+ 	segs = skb_mac_gso_segment(skb, enc_features);
+-	if (!segs || IS_ERR(segs))
++	if (!segs || IS_ERR(segs)) {
++		skb_gso_error_unwind(skb, protocol, ghl, mac_offset, mac_len);
+ 		goto out;
 +	}
  
- 	netif_device_attach(vi->dev);
+ 	skb = segs;
+ 	tnl_hlen = skb_tnl_header_len(skb);
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -2294,6 +2294,7 @@ struct sk_buff *skb_udp_tunnel_segment(s
+ 				       netdev_features_t features)
+ {
+ 	struct sk_buff *segs = ERR_PTR(-EINVAL);
++	u16 mac_offset = skb->mac_header;
+ 	int mac_len = skb->mac_len;
+ 	int tnl_hlen = skb_inner_mac_header(skb) - skb_transport_header(skb);
+ 	__be16 protocol = skb->protocol;
+@@ -2313,8 +2314,11 @@ struct sk_buff *skb_udp_tunnel_segment(s
+ 	/* segment inner packet. */
+ 	enc_features = skb->dev->hw_enc_features & netif_skb_features(skb);
+ 	segs = skb_mac_gso_segment(skb, enc_features);
+-	if (!segs || IS_ERR(segs))
++	if (!segs || IS_ERR(segs)) {
++		skb_gso_error_unwind(skb, protocol, tnl_hlen, mac_offset,
++				     mac_len);
+ 		goto out;
++	}
  
--	for (i = 0; i < vi->curr_queue_pairs; i++)
--		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
--			schedule_delayed_work(&vi->refill, 0);
+ 	outer_hlen = skb_tnl_header_len(skb);
+ 	skb = segs;
+--- a/net/ipv4/udp_offload.c
++++ b/net/ipv4/udp_offload.c
+@@ -41,6 +41,14 @@ static struct sk_buff *udp4_ufo_fragment
+ {
+ 	struct sk_buff *segs = ERR_PTR(-EINVAL);
+ 	unsigned int mss;
++	int offset;
++	__wsum csum;
++
++	if (skb->encapsulation &&
++	    skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) {
++		segs = skb_udp_tunnel_segment(skb, features);
++		goto out;
++	}
+ 
+ 	mss = skb_shinfo(skb)->gso_size;
+ 	if (unlikely(skb->len <= mss))
+@@ -62,27 +70,20 @@ static struct sk_buff *udp4_ufo_fragment
+ 		goto out;
+ 	}
+ 
++	/* Do software UFO. Complete and fill in the UDP checksum as
++	 * HW cannot do checksum of UDP packets sent as multiple
++	 * IP fragments.
++	 */
++	offset = skb_checksum_start_offset(skb);
++	csum = skb_checksum(skb, offset, skb->len - offset, 0);
++	offset += skb->csum_offset;
++	*(__sum16 *)(skb->data + offset) = csum_fold(csum);
++	skb->ip_summed = CHECKSUM_NONE;
++
+ 	/* Fragment the skb. IP headers of the fragments are updated in
+ 	 * inet_gso_segment()
+ 	 */
+-	if (skb->encapsulation && skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL)
+-		segs = skb_udp_tunnel_segment(skb, features);
+-	else {
+-		int offset;
+-		__wsum csum;
 -
- 	mutex_lock(&vi->config_lock);
- 	vi->config_enable = true;
- 	mutex_unlock(&vi->config_lock);
+-		/* Do software UFO. Complete and fill in the UDP checksum as
+-		 * HW cannot do checksum of UDP packets sent as multiple
+-		 * IP fragments.
+-		 */
+-		offset = skb_checksum_start_offset(skb);
+-		csum = skb_checksum(skb, offset, skb->len - offset, 0);
+-		offset += skb->csum_offset;
+-		*(__sum16 *)(skb->data + offset) = csum_fold(csum);
+-		skb->ip_summed = CHECKSUM_NONE;
+-
+-		segs = skb_segment(skb, features);
+-	}
++	segs = skb_segment(skb, features);
+ out:
+ 	return segs;
+ }
 
 
