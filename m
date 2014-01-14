@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaANWjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:39:37 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:37354 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaANWjg (ORCPT
+	id S1751829AbaANWk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:40:57 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64254 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751462AbaANWkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:39:36 -0500
-Date: Tue, 14 Jan 2014 23:39:35 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, dborkman@redhat.com, linux-kernel@vger.kernel.org,
-        darkjames-ws@darkjames.pl
-Subject: Re: [PATCH RFC] reciprocal_divide: correction/update of the algorithm
-Message-ID: <20140114223935.GA16276@order.stressinduktion.org>
-Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
-	netdev@vger.kernel.org, dborkman@redhat.com,
-	linux-kernel@vger.kernel.org, darkjames-ws@darkjames.pl
-References: <20140113214249.GK6586@order.stressinduktion.org> <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
+	Tue, 14 Jan 2014 17:40:53 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: gregkh@linuxfoundation.org, len.brown@intel.com, pavel@ucw.cz,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhuangzhi.li@intel.com
+Subject: Re: [PATCH] PM: Enable asynchronous noirq resume threads to save the resuming time
+Date: Tue, 14 Jan 2014 23:54:50 +0100
+Message-ID: <1746120.u7vbF1Vtmp@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <1389683888.3650.78.camel@cliu38-desktop-build>
+References: <1389683888.3650.78.camel@cliu38-desktop-build>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:07:05AM -0800, Eric Dumazet wrote:
-> On Mon, 2014-01-13 at 22:42 +0100, Hannes Frederic Sowa wrote:
-> > This patch is a RFC and part of a series Daniel Borkmann and me want to
-> > do when introducing prandom_u32_range{,_ro} and prandom_u32_max{,_ro}
-> > helpers later this week.
+On Tuesday, January 14, 2014 03:18:08 PM Chuansheng Liu wrote:
 > 
-> > -static inline u32 reciprocal_divide(u32 A, u32 R)
-> > +struct reciprocal_value reciprocal_value(u32 d);
-> > +
-> > +static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
-> >  {
-> > -	return (u32)(((u64)A * R) >> 32);
-> > +	u32 t = (u32)(((u64)a * R.m) >> 32);
-> > +	return (t + ((a - t) >> R.sh1)) >> R.sh2;
-> >  }
+> Currently, the dpm_resume_noirq() is done synchronously, and for PCI devices
+> pci_pm_resume_noirq():
 > 
-> I would rather introduce new helpers and convert users that really need
-> them.
->
-> For instance, just use a divide in BPF, because doing this on JIT might
-> be too complex for the gains. Strangely, libpcap doesn't seem to
-> optimize any divide, like divides by a power of two...
+> pci_pm_resume_noirq()
+>  pci_pm_default_resume_early()
+>   pci_power_up()
+>    pci_raw_set_power_state()
+> Which set the device from D3hot to D0 mostly, for every device, there will
+> be one 10ms(pci_pm_d3_delay) to wait.
 > 
-> Reciprocal were added 7 years ago, for very specific uses, but current
-> cpus have reasonably fast dividers.
+> Hence normally dpm_resume_noirq() will cost > 100ms, which is bigger for mobile
+> platform.
 
-Agreed. The new algorithm would need to change the size of struct
-sock_filter, which is exported to user space. We will leave BPF as-is
-for the time being and check that later.
+pci_pm_d3_delay usually is not 10 ms.  What is 10 ms is dev->d3_delay, but
+that also is not on every platform now.
 
-Greetings,
+That said the approach here makes sense, but I have two questions:
 
-  Hannes
+1. On what systems has it been tested?
+2. What about suspend_late/resume_early?  If the _noirq things are to be executed
+   asynchronously, those should be too.
 
+Thanks!
+
+> Here implementing it with asynchronous way which will reduce much.
+> 
+> For example below, The 80% time is saved.
+> With synchronous way:
+> [ 1411.272218] PM: noirq resume of devices complete after 92.223 msecs
+> With asynchronous way:
+> [  110.616735] PM: noirq resume of devices complete after 10.544 msecs
+> 
+> Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+> ---
+>  drivers/base/power/main.c |   42 +++++++++++++++++++++++++++++++++---------
+>  1 file changed, 33 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 1b41fca..1b9d774 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -505,6 +505,19 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+>  	return error;
+>  }
+>  
+> +static bool is_async(struct device *dev);
+> +
+> +static void async_resume_noirq(void *data, async_cookie_t cookie)
+> +{
+> +	struct device *dev = (struct device *)data;
+> +	int error;
+> +
+> +	error = device_resume_noirq(dev, pm_transition);
+> +	if (error)
+> +		pm_dev_err(dev, pm_transition, " noirq", error);
+> +	put_device(dev);
+> +}
+> +
+>  /**
+>   * dpm_resume_noirq - Execute "noirq resume" callbacks for all devices.
+>   * @state: PM transition of the system being carried out.
+> @@ -514,29 +527,40 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
+>   */
+>  static void dpm_resume_noirq(pm_message_t state)
+>  {
+> +	struct device *dev;
+>  	ktime_t starttime = ktime_get();
+> +	pm_transition = state;
+> +
+> +	list_for_each_entry(dev, &dpm_noirq_list, power.entry) {
+> +		if (is_async(dev)) {
+> +			get_device(dev);
+> +			async_schedule(async_resume_noirq, dev);
+> +		}
+> +	}
+>  
+>  	mutex_lock(&dpm_list_mtx);
+>  	while (!list_empty(&dpm_noirq_list)) {
+> -		struct device *dev = to_device(dpm_noirq_list.next);
+> -		int error;
+> +		dev = to_device(dpm_noirq_list.next);
+>  
+>  		get_device(dev);
+>  		list_move_tail(&dev->power.entry, &dpm_late_early_list);
+>  		mutex_unlock(&dpm_list_mtx);
+>  
+> -		error = device_resume_noirq(dev, state);
+> -		if (error) {
+> -			suspend_stats.failed_resume_noirq++;
+> -			dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
+> -			dpm_save_failed_dev(dev_name(dev));
+> -			pm_dev_err(dev, state, " noirq", error);
+> +		if (!is_async(dev)) {
+> +			int error;
+> +			error = device_resume_noirq(dev, state);
+> +			if (error) {
+> +				suspend_stats.failed_resume_noirq++;
+> +				dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
+> +				dpm_save_failed_dev(dev_name(dev));
+> +				pm_dev_err(dev, state, " noirq", error);
+> +			}
+>  		}
+> -
+>  		mutex_lock(&dpm_list_mtx);
+>  		put_device(dev);
+>  	}
+>  	mutex_unlock(&dpm_list_mtx);
+> +	async_synchronize_full();
+>  	dpm_show_time(starttime, state, "noirq");
+>  	resume_device_irqs();
+>  	cpuidle_resume();
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
