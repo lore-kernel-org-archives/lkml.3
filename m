@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaANQmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:42:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52910 "EHLO
+	id S1752729AbaANQnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:43:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52948 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578AbaANQm1 (ORCPT
+	with ESMTP id S1751673AbaANQmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:42:27 -0500
-Date: Tue, 14 Jan 2014 08:42:13 -0800
-From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
-Message-ID: <tip-a5846e215bd47f61133383822422c683600efa7a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, artagnon@gmail.com, tglx@linutronix.de,
-        jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, tglx@linutronix.de, artagnon@gmail.com,
-        jolsa@redhat.com
-In-Reply-To: <1388390555-10808-1-git-send-email-artagnon@gmail.com>
-References: <1388390555-10808-1-git-send-email-artagnon@gmail.com>
+	Tue, 14 Jan 2014 11:42:53 -0500
+Date: Tue, 14 Jan 2014 08:42:33 -0800
+From: tip-bot for Yann Droneaud <tipbot@zytor.com>
+Message-ID: <tip-26f7f9877234e6b9ed87eff4ca450631bafe0182@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        ydroneaud@opteya.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        ydroneaud@opteya.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <339d86ad76741ed929defd18541f774b404003b4.1389461371.git.ydroneaud@opteya.com>
+References: <339d86ad76741ed929defd18541f774b404003b4.1389461371.git.ydroneaud@opteya.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf diff: Color the Weighted Diff column
-Git-Commit-ID: a5846e215bd47f61133383822422c683600efa7a
+Subject: [tip:perf/core] perf tools:
+  Remove unused test-volatile-register-var.c
+Git-Commit-ID: 26f7f9877234e6b9ed87eff4ca450631bafe0182
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,87 +32,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:42:19 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:42:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a5846e215bd47f61133383822422c683600efa7a
-Gitweb:     http://git.kernel.org/tip/a5846e215bd47f61133383822422c683600efa7a
-Author:     Ramkumar Ramachandra <artagnon@gmail.com>
-AuthorDate: Mon, 30 Dec 2013 13:32:35 +0530
+Commit-ID:  26f7f9877234e6b9ed87eff4ca450631bafe0182
+Gitweb:     http://git.kernel.org/tip/26f7f9877234e6b9ed87eff4ca450631bafe0182
+Author:     Yann Droneaud <ydroneaud@opteya.com>
+AuthorDate: Sat, 11 Jan 2014 18:48:15 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Jan 2014 11:38:25 -0300
+CommitDate: Mon, 13 Jan 2014 17:20:05 -0300
 
-perf diff: Color the Weighted Diff column
+perf tools: Remove unused test-volatile-register-var.c
 
-In
+Since commit 01287e2cb7ad, test-volatile-register-var.c is no more built
+as part of the automatic feature check.
 
-  $ perf diff -c wdiff:M,N
+This patch remove the unneeded file.
 
-color the numbers in the Weighted Diff column using color_snprintf(),
-picking the colors using get_percent_color().
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1388390555-10808-1-git-send-email-artagnon@gmail.com
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/339d86ad76741ed929defd18541f774b404003b4.1389461371.git.ydroneaud@opteya.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-diff.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ tools/perf/config/feature-checks/test-volatile-register-var.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 73d8bff..a77e312 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -778,6 +778,7 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		container_of(fmt, struct diff_hpp_fmt, fmt);
- 	struct hist_entry *pair = get_pair_fmt(he, dfmt);
- 	double diff;
-+	s64 wdiff;
- 	char pfmt[20] = " ";
- 
- 	if (!pair)
-@@ -806,6 +807,18 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
- 		scnprintf(pfmt, 20, "%%%d.6f", dfmt->header_width);
- 		return value_color_snprintf(hpp->buf, hpp->size,
- 					pfmt, diff);
-+	case COMPUTE_WEIGHTED_DIFF:
-+		if (he->dummy)
-+			goto dummy_print;
-+		if (pair->diff.computed)
-+			wdiff = pair->diff.wdiff;
-+		else
-+			wdiff = compute_wdiff(he, pair);
-+
-+		scnprintf(pfmt, 20, "%%14ld", dfmt->header_width);
-+		return color_snprintf(hpp->buf, hpp->size,
-+				get_percent_color(wdiff),
-+				pfmt, wdiff);
- 	default:
- 		BUG_ON(1);
- 	}
-@@ -826,6 +839,12 @@ static int hpp__color_ratio(struct perf_hpp_fmt *fmt,
- 	return __hpp__color_compare(fmt, hpp, he, COMPUTE_RATIO);
- }
- 
-+static int hpp__color_wdiff(struct perf_hpp_fmt *fmt,
-+			struct perf_hpp *hpp, struct hist_entry *he)
-+{
-+	return __hpp__color_compare(fmt, hpp, he, COMPUTE_WEIGHTED_DIFF);
-+}
-+
- static void
- hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
- {
-@@ -1007,6 +1026,9 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	case PERF_HPP_DIFF__RATIO:
- 		fmt->color = hpp__color_ratio;
- 		break;
-+	case PERF_HPP_DIFF__WEIGHTED_DIFF:
-+		fmt->color = hpp__color_wdiff;
-+		break;
- 	default:
- 		break;
- 	}
+diff --git a/tools/perf/config/feature-checks/test-volatile-register-var.c b/tools/perf/config/feature-checks/test-volatile-register-var.c
+deleted file mode 100644
+index c9f398d..0000000
+--- a/tools/perf/config/feature-checks/test-volatile-register-var.c
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#include <stdio.h>
+-
+-int main(void)
+-{
+-	return puts("hi");
+-}
