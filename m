@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaANAeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:34:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54538 "EHLO
+	id S1754557AbaANAed (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:34:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100AbaANA3H (ORCPT
+	with ESMTP id S1753092AbaANA3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:07 -0500
+	Mon, 13 Jan 2014 19:29:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 3.12 60/77] clk: samsung: exynos5250: Fix ACP gate register offset
-Date: Mon, 13 Jan 2014 16:28:21 -0800
-Message-Id: <20140114002754.206638052@linuxfoundation.org>
+        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.12 76/77] sched: Fix hrtimer_cancel()/rq->lock deadlock
+Date: Mon, 13 Jan 2014 16:28:37 -0800
+Message-Id: <20140114002754.646056592@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,42 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Abhilash Kesavan <a.kesavan@samsung.com>
+From: Ben Segall <bsegall@google.com>
 
-commit 3bf34666a0cce5234ac677ed2fbe5cea82c71329 upstream.
+commit 927b54fccbf04207ec92f669dce6806848cbec7d upstream.
 
-The CLK_GATE_IP_ACP register offset is incorrectly listed making
-definition of g2d clock incorrect, which may lead to system failures
-when trying to use G2D on systems on which firmware gates this clock
-by default. Fix this and the register ordering as well.
+__start_cfs_bandwidth calls hrtimer_cancel while holding rq->lock,
+waiting for the hrtimer to finish. However, if sched_cfs_period_timer
+runs for another loop iteration, the hrtimer can attempt to take
+rq->lock, resulting in deadlock.
 
-Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
-[t.figa: Updated patch description.]
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Fix this by ensuring that cfs_b->timer_active is cleared only if the
+_latest_ call to do_sched_cfs_period_timer is returning as idle. Then
+__start_cfs_bandwidth can just call hrtimer_try_to_cancel and wait for
+that to succeed or timer_active == 1.
+
+Signed-off-by: Ben Segall <bsegall@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: pjt@google.com
+Link: http://lkml.kernel.org/r/20131016181622.22647.16643.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/samsung/clk-exynos5250.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
---- a/drivers/clk/samsung/clk-exynos5250.c
-+++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -25,6 +25,7 @@
- #define MPLL_LOCK		0x4000
- #define MPLL_CON0		0x4100
- #define SRC_CORE1		0x4204
-+#define GATE_IP_ACP		0x8800
- #define CPLL_LOCK		0x10020
- #define EPLL_LOCK		0x10030
- #define VPLL_LOCK		0x10040
-@@ -75,7 +76,6 @@
- #define SRC_CDREX		0x20200
- #define PLL_DIV2_SEL		0x20a24
- #define GATE_IP_DISP1		0x10928
--#define GATE_IP_ACP		0x10000
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2459,6 +2459,13 @@ static int do_sched_cfs_period_timer(str
+ 	if (idle)
+ 		goto out_unlock;
  
- /* list of PLLs to be registered */
- enum exynos5250_plls {
++	/*
++	 * if we have relooped after returning idle once, we need to update our
++	 * status as actually running, so that other cpus doing
++	 * __start_cfs_bandwidth will stop trying to cancel us.
++	 */
++	cfs_b->timer_active = 1;
++
+ 	__refill_cfs_bandwidth_runtime(cfs_b);
+ 
+ 	if (!throttled) {
+@@ -2727,11 +2734,11 @@ void __start_cfs_bandwidth(struct cfs_ba
+ 	 * (timer_active==0 becomes visible before the hrtimer call-back
+ 	 * terminates).  In either case we ensure that it's re-programmed
+ 	 */
+-	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
++	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
++	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
++		/* bounce the lock to allow do_sched_cfs_period_timer to run */
+ 		raw_spin_unlock(&cfs_b->lock);
+-		/* ensure cfs_b->lock is available while we wait */
+-		hrtimer_cancel(&cfs_b->period_timer);
+-
++		cpu_relax();
+ 		raw_spin_lock(&cfs_b->lock);
+ 		/* if someone else restarted the timer then we're done */
+ 		if (cfs_b->timer_active)
 
 
