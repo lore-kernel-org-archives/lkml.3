@@ -1,50 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaANCfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 21:35:18 -0500
-Received: from smtprelay0039.hostedemail.com ([216.40.44.39]:50735 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751502AbaANCfP (ORCPT
+	id S1752608AbaANCkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:40:19 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:53481 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaANCkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 21:35:15 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3350:3622:3866:3868:3870:3871:3872:3873:3874:4321:5007:7652:10004:10400:10848:11232:11658:11914:12050:12517:12519:12555:12740:13069:13311:13357:21063,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: boats48_846ce630bd445
-X-Filterd-Recvd-Size: 1672
-Message-ID: <1389666908.24849.29.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] efi: Fix krealloc defect
-From: Joe Perches <joe@perches.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 13 Jan 2014 18:35:08 -0800
-In-Reply-To: <20140113191725.GK3256@console-pimps.org>
-References: <cover.1388793978.git.joe@perches.com>
-	 <9a8eb1c9478049318e834d5223053a5fb7484bff.1388793978.git.joe@perches.com>
-	 <20140113140334.GB3256@console-pimps.org>
-	 <1389635241.24849.22.camel@joe-AO722>
-	 <20140113191725.GK3256@console-pimps.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 21:40:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140113171412.dd90c020b103f4a686f8dc34@linux-foundation.org>
+References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+	<20140114004804.27138.18469.stgit@viggo.jf.intel.com>
+	<20140113171412.dd90c020b103f4a686f8dc34@linux-foundation.org>
+Date: Mon, 13 Jan 2014 18:40:13 -0800
+Message-ID: <CAPcyv4j4vfFfJ2V-+P+pA2Fcyn+homQVBtRjxmSTG1uMoOpkrg@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] dma debug: introduce debug_dma_assert_idle()
+From: Dan Williams <dan.j.williams@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Vinod Koul <vinod.koul@intel.com>, Netdev <netdev@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 19:17 +0000, Matt Fleming wrote:
-> On Mon, 13 Jan, at 09:47:21AM, Joe Perches wrote:
-> > If it's queued up in some tree of yours, should that
-> > tree be included in Stephen Rothwell's -next?
-> My trees get pulled into tip and those are included in linux-next. So,
-> Borislav's patch is commit ee4114302770 ("x86/efi: Check krealloc return
-> value") in today's linux-next.
+On Mon, Jan 13, 2014 at 5:14 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 13 Jan 2014 16:48:47 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
+>
+>> Record actively mapped pages and provide an api for asserting a given
+>> page is dma inactive before execution proceeds.  Placing
+>> debug_dma_assert_idle() in cow_user_page() flagged the violation of the
+>> dma-api in the NET_DMA implementation (see commit 77873803363c "net_dma:
+>> mark broken").
+>
+> Some discussion of the overlap counter thing would be useful.
 
-You're right, thanks.
-I thought I did this against -next but it appears not.
+Ok, will add:
 
-cheers, Joe
+"The implementation also has the ability to count repeat mappings of
+the same page without an intervening unmap.  This counter is limited
+to the few bits of tag space in a radix tree.  This mechanism is added
+to mitigate false negative cases where, for example, a page is dma
+mapped twice and debug_dma_assert_idle() is called after the page is
+un-mapped once."
 
+>> --- a/include/linux/dma-debug.h
+>> +++ b/include/linux/dma-debug.h
+>>
+>> ...
+>>
+>> +static void __active_pfn_inc_overlap(struct dma_debug_entry *entry)
+>> +{
+>> +     unsigned long pfn = entry->pfn;
+>> +     int i;
+>> +
+>> +     for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
+>> +             if (radix_tree_tag_get(&dma_active_pfn, pfn, i) == 0) {
+>> +                     radix_tree_tag_set(&dma_active_pfn, pfn, i);
+>> +                     return;
+>> +             }
+>> +     pr_debug("DMA-API: max overlap count (%d) reached for pfn 0x%lx\n",
+>> +              RADIX_TREE_MAX_TAGS, pfn);
+>> +}
+>> +
+>> +static void __active_pfn_dec_overlap(struct dma_debug_entry *entry)
+>> +{
+>> +     unsigned long pfn = entry->pfn;
+>> +     int i;
+>> +
+>> +     for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
+>> +             if (radix_tree_tag_get(&dma_active_pfn, pfn, i)) {
+>> +                     radix_tree_tag_clear(&dma_active_pfn, pfn, i);
+>> +                     return;
+>> +             }
+>> +     radix_tree_delete(&dma_active_pfn, pfn);
+>> +}
+>> +
+>> +static int active_pfn_insert(struct dma_debug_entry *entry)
+>> +{
+>> +     unsigned long flags;
+>> +     int rc;
+>> +
+>> +     spin_lock_irqsave(&radix_lock, flags);
+>> +     rc = radix_tree_insert(&dma_active_pfn, entry->pfn, entry);
+>> +     if (rc == -EEXIST)
+>> +             __active_pfn_inc_overlap(entry);
+>> +     spin_unlock_irqrestore(&radix_lock, flags);
+>> +
+>> +     return rc;
+>> +}
+>> +
+>> +static void active_pfn_remove(struct dma_debug_entry *entry)
+>> +{
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&radix_lock, flags);
+>> +     __active_pfn_dec_overlap(entry);
+>> +     spin_unlock_irqrestore(&radix_lock, flags);
+>> +}
+>
+> OK, I think I see what's happening.  The tags thing acts as a crude
+> counter and if the map/unmap count ends up imbalanced, we deliberately
+> leak an entry in the radix-tree so it can later be reported via undescribed
+> means.  Thoughts:
+
+Certainly the leak will be noticed by debug_dma_assert_idle(), but
+there's no guarantee that we trigger that check at the time of the
+leak.  Hmm, dma_debug_entries would also leak in that case...
+
+> - RADIX_TREE_MAX_TAGS=3 so the code could count to 7, with a bit of
+>   futzing around.
+
+Yes, if we are going to count might as well leverage the full number
+space to help debug implementations that overlap severely.  I should
+flesh out the error reporting to say that debug_dma_assert_idle() may
+give false positives in the case where the overlap counter overflows.
+
+> - from a style/readability point of view it is unexpected that
+>   __active_pfn_dec_overlap() actually removes radix-tree items.  It
+>   would be better to do:
+>
+>         spin_lock_irqsave(&radix_lock, flags);
+>         if (__active_pfn_dec_overlap(entry) == something) {
+>                 /*
+>                  * Nice comment goes here
+>                  */
+>                 radix_tree_delete(...);
+>         }
+>         spin_unlock_irqrestore(&radix_lock, flags);
+>
+
+Yes, I should have noticed the asymmetry with the insert case, will fix.
