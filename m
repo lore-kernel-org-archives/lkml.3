@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaANHm0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:42:26 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:41284 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaANHlw (ORCPT
+	id S1751500AbaANH4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:56:37 -0500
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:13452
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750999AbaANH4f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:41:52 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <davem@davemloft.net>
-CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
-        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
-        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
-        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 01/10] Drivers: Staging: cxt1e1: use __dev_get_name instead of dev_get_name to find interfaces
-Date: Tue, 14 Jan 2014 15:41:00 +0800
-Message-ID: <1389685269-18600-2-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
-References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+	Tue, 14 Jan 2014 02:56:35 -0500
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "moinejf@free.fr" <moinejf@free.fr>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
+	asoc_simple_card_data for the simple card driver data
+Thread-Topic: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
+	asoc_simple_card_data for the simple card driver data
+Thread-Index: AQHPEPZQHcGE1bEqj0q1mNvuGMgzF5qD2O6A
+Date: Tue, 14 Jan 2014 07:56:32 +0000
+Message-ID: <96cb876ff05c4062ab5a2c92fb7b3c41@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1389678282-1097-1-git-send-email-Li.Xiubo@freescale.com>
+ <871u0bgiai.wl%kuninori.morimoto.gx@gmail.com>
+In-Reply-To: <871u0bgiai.wl%kuninori.morimoto.gx@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0091C8F1EB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(679001)(689001)(51704005)(199002)(189002)(164054003)(79102001)(54356001)(53806001)(54316002)(50986001)(49866001)(46102001)(65816001)(47976001)(66066001)(63696002)(80976001)(19580405001)(19580395003)(47736001)(83322001)(51856001)(33646001)(92566001)(93136001)(81816001)(76796001)(76786001)(56776001)(76482001)(59766001)(77982001)(81686001)(76576001)(74876001)(87936001)(31966008)(4396001)(80022001)(81342001)(87266001)(56816005)(85306002)(224313003)(74662001)(69226001)(2656002)(83072002)(47446002)(224303002)(74316001)(90146001)(81542001)(85852003)(74706001)(74502001)(74366001)(15866825004)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chain denotes that both do_reset() and do_del_chan()
-are protected under rtnl_lock. If we use __dev_get_by_name() instead of
-dev_get_by_name() to find interface handlers in them, this would help
-us avoid to change interface reference counter.
 
-dev_ioctl()
-  rtnl_lock()
-  dev_ifsioc()
-    c4_ioctl()
-      do_reset()
-      do_del_chan()
+> > Whether the dt is used or not, almost all the simple card information
+> > for the DAI link and sound card are initialized in the simple card driver.
+> >
+> > And for the platform caller, the snd_link and snd_card are of no use, so
+> > move them from struct asoc_simple_card_info to struct asoc_simple_card_data.
+> >
+> > And now only one DAI link is supported for simple card.
+> >
+> > Suggested-by: Jean-Francois Moine <moinejf@free.fr>
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> 
+> This patch seems have many this kind of lines
+>   -	info->xxx
+>   +	sdata->info->xxx
+> 
+> But, how about add this line to each function ?
+> 
+>      struct asoc_simple_card_info *info = &sdata->info;
+> 
+> Patch will be more readable
+>
 
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
----
- drivers/staging/cxt1e1/linux.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+Yes, that's looks perfect.
 
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index 9b48373..4a08e16 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -770,9 +770,9 @@ do_del_chan (struct net_device *musycc_dev, void *data)
-     if (cp.channum > 999)
-         return -EINVAL;
-     snprintf (buf, sizeof(buf), CHANNAME "%d", cp.channum);
--    if (!(dev = dev_get_by_name (&init_net, buf)))
--        return -ENOENT;
--    dev_put (dev);
-+	dev = __dev_get_by_name(&init_net, buf);
-+	if (!dev)
-+		return -ENODEV;
-     ret = do_deluser (dev, 1);
-     if (ret)
-         return ret;
-@@ -792,19 +792,18 @@ do_reset (struct net_device *musycc_dev, void *data)
-         char        buf[sizeof (CHANNAME) + 3];
- 
-         sprintf (buf, CHANNAME "%d", i);
--        if (!(ndev = dev_get_by_name(&init_net, buf)))
--            continue;
-+	ndev = __dev_get_by_name(&init_net, buf);
-+	if (!ndev)
-+		continue;
-         priv = dev_to_hdlc (ndev)->priv;
- 
-         if ((unsigned long) (priv->ci) ==
-             (unsigned long) (netdev_priv(musycc_dev)))
-         {
-             ndev->flags &= ~IFF_UP;
--            dev_put (ndev);
-             netif_stop_queue (ndev);
-             do_deluser (ndev, 1);
--        } else
--            dev_put (ndev);
-+	}
-     }
-     return 0;
- }
--- 
-1.7.9.5
+See the next version please.
+
+Thanks,
+
+--
+Best Regards,
+Xiubo
+
 
