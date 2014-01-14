@@ -1,787 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaANSvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:51:39 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:56415
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458AbaANSve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:51:34 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Date: Tue, 14 Jan 2014 11:35:16 -0800
-Message-Id: <1389728116-21337-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751929AbaANSwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:52:38 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:45637 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579AbaANSwe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:52:34 -0500
+Date: Tue, 14 Jan 2014 19:52:25 +0100
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <qiuxishi@huawei.com>, <dhowells@redhat.com>,
+        <daeseok.youn@gmail.com>, <liuj97@gmail.com>, <yinghai@kernel.org>,
+        <zhangyanfei@cn.fujitsu.com>, <santosh.shilimkar@ti.com>,
+        <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH V3 2/2] mm/memblock: Add support for excluded memory
+ areas
+Message-ID: <20140114195225.078f810a@lilie>
+In-Reply-To: <52D538FD.8010907@ti.com>
+References: <1389618217-48166-1-git-send-email-phacht@linux.vnet.ibm.com>
+	<1389618217-48166-3-git-send-email-phacht@linux.vnet.ibm.com>
+	<52D538FD.8010907@ti.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011418-1948-0000-0000-00000778A8D3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the file copy service for Linux guests on Hyper-V. This permits the
-host to copy a file (over VMBUS) into the guest. This facility is part of
-"guest integration services" supported on the Windows platform.
-Here is a link that provides additional details on this functionality:
+Hello Grygorii,
 
-http://technet.microsoft.com/en-us/library/dn464282.aspx
+thank you for your comments.
 
-In V1 version of the patch I have addressed comments from
-Olaf Hering <olaf@aepfle.de> and Dan Carpenter <dan.carpenter@oracle.com>
+To clarify we have the following requirements for memblock:
 
-In this version of the patch I have made globals static.
+(1) Reserved areas can be declared before memory is added.
+(2) The physical memory is detected once only.
+(3) The free memory (i.e. not reserved) memory can be iterated to add
+it to the buddy allocator.
+(4) Memory designated to be mapped into the kernel address space can be
+iterated.
+(5) Kdump on s390 requires knowledge about the full system memory
+layout.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+The s390 kdump implementation works a bit different from the
+implementation on other architectures: The layout is not taken from the
+production system and saved for the kdump kernel. Instead the kdump
+kernel needs to gather information about the whole memory without
+respect to locked out areas (like mem= and OLDMEM etc.).
+
+Without kdump's requirement it would of course be suitable and easy
+just to remove memory from memblock.memory. But then this information
+is lost for later use by kdump.
+
+The patch does not change any behaviour of the current API - whether it
+is enabled or not.
+
+The current patch seems to be overly complicated.
+The following patch contains only the nomap functionality without any
+cleanup and refactoring. I will post a V4 patch set which will contain
+this patch.
+
+Kind regards
+
+Philipp
+
+>From eb1ad42c19c6f7bfdf3258a83dc54461c5f02d55 Mon Sep 17 00:00:00 2001
+From: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
+Date: Tue, 14 Jan 2014 19:49:39 +0100
+Subject: [PATCH] mm/memblock: Add support for excluded memory areas
+
+Add a new memory state "nomap" to memblock. This can be used to truncate
+the usable memory in the system without forgetting about what is really
+installed.
+
+Signed-off-by: Philipp Hachtmann <phacht@linux.vnet.ibm.com>
 ---
- drivers/hv/Makefile        |    2 +-
- drivers/hv/hv_fcopy.c      |  422 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/hv/hv_util.c       |   10 +
- include/linux/hyperv.h     |   60 +++++++
- tools/hv/hv_fcopy_daemon.c |  174 ++++++++++++++++++
- 5 files changed, 667 insertions(+), 1 deletions(-)
- create mode 100644 drivers/hv/hv_fcopy.c
- create mode 100644 tools/hv/hv_fcopy_daemon.c
+ include/linux/memblock.h |  25 +++++++
+ mm/Kconfig               |   3 +
+ mm/memblock.c            | 175 ++++++++++++++++++++++++++++++++++++++++++++++-
+ mm/nobootmem.c           |   9 +++
+ 4 files changed, 211 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hv/Makefile b/drivers/hv/Makefile
-index 0a74b56..5e4dfa4 100644
---- a/drivers/hv/Makefile
-+++ b/drivers/hv/Makefile
-@@ -5,4 +5,4 @@ obj-$(CONFIG_HYPERV_BALLOON)	+= hv_balloon.o
- hv_vmbus-y := vmbus_drv.o \
- 		 hv.o connection.o channel.o \
- 		 channel_mgmt.o ring_buffer.o
--hv_utils-y := hv_util.o hv_kvp.o hv_snapshot.o
-+hv_utils-y := hv_util.o hv_kvp.o hv_snapshot.o hv_fcopy.o
-diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-new file mode 100644
-index 0000000..f108a6e
---- /dev/null
-+++ b/drivers/hv/hv_fcopy.c
-@@ -0,0 +1,422 @@
-+/*
-+ * An implementation of file copy service.
-+ *
-+ * Copyright (C) 2014, Microsoft, Inc.
-+ *
-+ * Author : K. Y. Srinivasan <ksrinivasan@novell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ */
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 1ef6636..be1c819 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -18,6 +18,7 @@
+ #include <linux/mm.h>
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
++#define INIT_MEMBLOCK_NOMAP_REGIONS 4
+ 
+ /* Definition of memblock flags. */
+ #define MEMBLOCK_HOTPLUG	0x1	/* hotpluggable region */
+@@ -43,6 +44,9 @@ struct memblock {
+ 	phys_addr_t current_limit;
+ 	struct memblock_type memory;
+ 	struct memblock_type reserved;
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++	struct memblock_type nomap;
++#endif
+ };
+ 
+ extern struct memblock memblock;
+@@ -68,6 +72,10 @@ int memblock_add(phys_addr_t base, phys_addr_t size);
+ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++int memblock_nomap(phys_addr_t base, phys_addr_t size);
++int memblock_remap(phys_addr_t base, phys_addr_t size);
++#endif
+ void memblock_trim_memory(phys_addr_t align);
+ int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
+ int memblock_clear_hotplug(phys_addr_t base, phys_addr_t size);
+@@ -133,6 +141,23 @@ void __next_free_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
+ 	     i != (u64)ULLONG_MAX;					\
+ 	     __next_free_mem_range(&i, nid, p_start, p_end, p_nid))
+ 
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++#define for_each_mapped_mem_range(i, nid, p_start, p_end, p_nid)	\
++	for (i = 0,							\
++		     __next_mapped_mem_range(&i, nid, &memblock.memory,	\
++				      &memblock.nomap, p_start,		\
++				      p_end, p_nid);			\
++	     i != (u64)ULLONG_MAX;					\
++	     __next_mapped_mem_range(&i, nid, &memblock.memory,		\
++				     &memblock.nomap,			\
++				     p_start, p_end, p_nid))
 +
-+#include <linux/semaphore.h>
-+#include <linux/fs.h>
-+#include <linux/nls.h>
-+#include <linux/workqueue.h>
-+#include <linux/cdev.h>
-+#include <linux/hyperv.h>
-+#include <linux/sched.h>
-+#include <linux/uaccess.h>
++void __next_mapped_mem_range(u64 *idx, int nid, phys_addr_t *out_start,
++			     phys_addr_t *out_end, int *out_nid);
 +
-+#define WIN8_SRV_MAJOR		1
-+#define WIN8_SRV_MINOR		1
-+#define WIN8_SRV_VERSION	(WIN8_SRV_MAJOR << 16 | WIN8_SRV_MINOR)
++#endif
 +
-+/*
-+ * Global state maintained for transaction that is being processed.
-+ * For a class of integration services, including the "file copy service",
-+ * the specified protocol is a "request/response" protocol which means that
-+ * there can only be single outstanding transaction from the host at any
-+ * given point in time. We use this to simplify memory management in this
-+ * driver - we cache and process only one message at a time.
-+ *
-+ * While the request/response protocol is guaranteed by the host, we further
-+ * ensure this by serializing packet processing in this driver - we do not
-+ * read additional packets from the VMBUs until the current packet is fully
-+ * handled.
-+ *
-+ * The transaction "active" state is set when we receive a request from the
-+ * host and we cleanup this state when the transaction is completed - when we
-+ * respond to the host with our response. When the transaction active state is
-+ * set, we defer handling incoming packets.
-+ */
+ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+ 			       phys_addr_t *out_end, int *out_nid);
+ 
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 2d9f150..6907654 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -137,6 +137,9 @@ config HAVE_MEMBLOCK_NODE_MAP
+ config ARCH_DISCARD_MEMBLOCK
+ 	boolean
+ 
++config ARCH_MEMBLOCK_NOMAP
++	boolean
 +
-+static struct {
-+	bool active; /* transaction status - active or not */
-+	int recv_len; /* number of bytes received. */
-+	struct hv_fcopy_hdr  *fcopy_msg; /* current message */
-+	struct hv_start_fcopy  message; /*  sent to daemon */
-+	struct vmbus_channel *recv_channel; /* chn we got the request */
-+	u64 recv_req_id; /* request ID. */
-+	void *fcopy_context; /* for the channel callback */
-+	struct semaphore read_sema;
-+} fcopy_transaction;
+ config NO_BOOTMEM
+ 	boolean
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 9c0aeef..b36f5d3 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -28,6 +28,11 @@
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++static struct memblock_region
++memblock_nomap_init_regions[INIT_MEMBLOCK_NOMAP_REGIONS] __initdata_memblock;
++#endif
 +
-+static dev_t fcopy_dev;
-+static bool daemon_died;
-+static bool opened; /* currently device opened */
-+static struct task_struct *dtp; /* daemon task ptr */
-+
-+/*
-+ * Before we can accept copy messages from the host, we need
-+ * to handshake with the user level daemon. This state tracks
-+ * if we are in the handshake phase.
-+ */
-+static bool in_hand_shake = true;
-+static void fcopy_send_data(void);
-+static void fcopy_respond_to_host(int error);
-+static void fcopy_work_func(struct work_struct *dummy);
-+static DECLARE_DELAYED_WORK(fcopy_work, fcopy_work_func);
-+static u8 *recv_buffer;
-+
-+static void fcopy_work_func(struct work_struct *dummy)
+ struct memblock memblock __initdata_memblock = {
+ 	.memory.regions		= memblock_memory_init_regions,
+ 	.memory.cnt		= 1,	/* empty dummy entry */
+@@ -37,6 +42,11 @@ struct memblock memblock __initdata_memblock = {
+ 	.reserved.cnt		= 1,	/* empty dummy entry */
+ 	.reserved.max		= INIT_MEMBLOCK_REGIONS,
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++	.nomap.regions       = memblock_nomap_init_regions,
++	.nomap.cnt           = 1,	/* empty dummy entry */
++	.nomap.max           = INIT_MEMBLOCK_NOMAP_REGIONS,
++#endif
+ 	.bottom_up		= false,
+ 	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+ };
+@@ -292,6 +302,20 @@ phys_addr_t __init_memblock get_allocated_memblock_memory_regions_info(
+ 			  memblock.memory.max);
+ }
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++phys_addr_t __init_memblock get_allocated_memblock_nomap_regions_info(
++					phys_addr_t *addr)
 +{
-+	/*
-+	 * If the timer fires, the user-mode component has not responded;
-+	 * process the pending transaction.
-+	 */
-+	fcopy_respond_to_host(HV_E_FAIL);
++	if (memblock.memory.regions == memblock_memory_init_regions)
++		return 0;
++
++	*addr = __pa(memblock.memory.regions);
++
++	return PAGE_ALIGN(sizeof(struct memblock_region) *
++			  memblock.memory.max);
 +}
 +
-+static void fcopy_handle_handshake(void)
-+{
-+	pr_info("FCP: user-mode registering done.\n");
-+	fcopy_transaction.active = false;
-+	if (fcopy_transaction.fcopy_context)
-+		hv_fcopy_onchannelcallback(fcopy_transaction.fcopy_context);
-+	in_hand_shake = false;
-+	return;
-+}
-+
-+static void fcopy_send_data(void)
-+{
-+	struct hv_start_fcopy *smsg_out = &fcopy_transaction.message;
-+	int operation = fcopy_transaction.fcopy_msg->operation;
-+	struct hv_start_fcopy *smsg_in;
-+
-+	/*
-+	 * The  strings sent from the host are encoded in
-+	 * in utf16; convert it to utf8 strings.
-+	 * The host assures us that the utf16 strings will not exceed
-+	 * the max lengths specified. We will however, reserve room
-+	 * for the string terminating character - in the utf16s_utf8s()
-+	 * function we limit the size of the buffer where the converted
-+	 * string is placed to W_MAX_PATH -1 to gaurantee
-+	 * that the strings can be properly terminated!
-+	 */
-+
-+	switch (operation) {
-+	case START_FILE_COPY:
-+		memset(smsg_out, 0, sizeof(struct hv_start_fcopy));
-+		smsg_out->hdr.operation = operation;
-+		smsg_in = (struct hv_start_fcopy *)fcopy_transaction.fcopy_msg;
-+
-+		utf16s_to_utf8s((wchar_t *)smsg_in->file_name, W_MAX_PATH,
-+				UTF16_LITTLE_ENDIAN,
-+				(__u8 *)smsg_out->file_name, W_MAX_PATH - 1);
-+
-+		utf16s_to_utf8s((wchar_t *)smsg_in->path_name, W_MAX_PATH,
-+				UTF16_LITTLE_ENDIAN,
-+				(__u8 *)smsg_out->path_name, W_MAX_PATH - 1);
-+
-+		smsg_out->copy_flags = smsg_in->copy_flags;
-+		smsg_out->file_size = smsg_in->file_size;
-+		break;
-+
-+	default:
-+		break;
-+	}
-+	up(&fcopy_transaction.read_sema);
-+	return;
-+}
-+
++#endif /* CONFIG_ARCH_MEMBLOCK_NOMAP */
+ #endif
+ 
+ /**
+@@ -757,6 +781,60 @@ int __init_memblock memblock_clear_hotplug(phys_addr_t base, phys_addr_t size)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
 +/*
-+ * Send a response back to the host.
++ * memblock_nomap() - mark a memory range as completely unusable
++ *
++ * This can be used to exclude memory regions from every further treatment
++ * in the running system. Ranges which are added to the nomap list will
++ * also be marked as reserved. So they won't either be allocated by memblock
++ * nor freed to the page allocator.
++ *
++ * The usable (i.e. not in nomap list) memory can be iterated
++ * via for_each_mapped_mem_range().
++ *
++ * memblock_start_of_DRAM() and memblock_end_of_DRAM() still refer to the
++ * whole system memory.
 + */
-+
-+static void
-+fcopy_respond_to_host(int error)
-+{
-+	struct icmsg_hdr *icmsghdrp;
-+	u32 buf_len;
-+	struct vmbus_channel *channel;
-+	u64 req_id;
-+
-+	/*
-+	 * Copy the global state for completing the transaction. Note that
-+	 * only one transaction can be active at a time.
-+	 */
-+
-+	buf_len = fcopy_transaction.recv_len;
-+	channel = fcopy_transaction.recv_channel;
-+	req_id = fcopy_transaction.recv_req_id;
-+
-+	fcopy_transaction.active = false;
-+
-+	icmsghdrp = (struct icmsg_hdr *)
-+			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
-+
-+	if (channel->onchannel_callback == NULL)
-+		/*
-+		 * We have raced with util driver being unloaded;
-+		 * silently return.
-+		 */
-+		return;
-+
-+	icmsghdrp->status = error;
-+	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
-+	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
-+				VM_PKT_DATA_INBAND, 0);
-+}
-+
-+void hv_fcopy_onchannelcallback(void *context)
-+{
-+	struct vmbus_channel *channel = context;
-+	u32 recvlen;
-+	u64 requestid;
-+	struct hv_fcopy_hdr *fcopy_msg;
-+	struct icmsg_hdr *icmsghdrp;
-+	struct icmsg_negotiate *negop = NULL;
-+	int util_fw_version;
-+	int fcopy_srv_version;
-+
-+	if (fcopy_transaction.active) {
-+		/*
-+		 * We will defer processing this callback once
-+		 * the current transaction is complete.
-+		 */
-+		fcopy_transaction.fcopy_context = context;
-+		return;
-+	}
-+
-+	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
-+			 &requestid);
-+	if (recvlen <= 0)
-+		return;
-+
-+	icmsghdrp = (struct icmsg_hdr *)&recv_buffer[
-+			sizeof(struct vmbuspipe_hdr)];
-+	if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
-+		util_fw_version = UTIL_FW_VERSION;
-+		fcopy_srv_version = WIN8_SRV_VERSION;
-+		vmbus_prep_negotiate_resp(icmsghdrp, negop, recv_buffer,
-+				util_fw_version, fcopy_srv_version);
-+	} else {
-+		fcopy_msg = (struct hv_fcopy_hdr *)&recv_buffer[
-+				sizeof(struct vmbuspipe_hdr) +
-+				sizeof(struct icmsg_hdr)];
-+
-+		/*
-+		 * Stash away this global state for completing the
-+		 * transaction; note transactions are serialized.
-+		 */
-+
-+		fcopy_transaction.active = true;
-+		fcopy_transaction.recv_len = recvlen;
-+		fcopy_transaction.recv_channel = channel;
-+		fcopy_transaction.recv_req_id = requestid;
-+		fcopy_transaction.fcopy_msg = fcopy_msg;
-+
-+		/*
-+		 * Send the information to the user-level daemon.
-+		 */
-+		fcopy_send_data();
-+		schedule_delayed_work(&fcopy_work, 5*HZ);
-+		return;
-+	}
-+	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
-+	vmbus_sendpacket(channel, recv_buffer, recvlen, requestid,
-+			VM_PKT_DATA_INBAND, 0);
-+}
-+
-+/*
-+ * Create a char device that can support read/write for passing
-+ * the payload.
-+ */
-+static struct cdev fcopy_cdev;
-+static struct class *cl;
-+static struct device *sysfs_dev;
-+
-+static ssize_t fcopy_read(struct file *file, char __user *buf,
-+		size_t count, loff_t *ppos)
++int __init_memblock memblock_nomap(phys_addr_t base, phys_addr_t size)
 +{
 +	int ret;
-+	void *src;
-+	size_t copy_size;
-+	int operation;
++	memblock_dbg("memblock_nomap: [%#016llx-%#016llx] %pF\n",
++		     (unsigned long long)base,
++		     (unsigned long long)base + size,
++		     (void *)_RET_IP_);
 +
-+	/*
-+	 * Wait until there is something to be read.
-+	 */
-+	ret = down_interruptible(&fcopy_transaction.read_sema);
++	ret = memblock_add_region(&memblock.reserved, base,
++				  size, MAX_NUMNODES, 0);
 +	if (ret)
-+		return -EINTR;
++		return ret;
 +
-+	operation = fcopy_transaction.fcopy_msg->operation;
-+
-+	if (operation == START_FILE_COPY) {
-+		src = &fcopy_transaction.message;
-+		copy_size = sizeof(struct hv_start_fcopy);
-+		if (count < copy_size)
-+			return 0;
-+	} else {
-+		src = fcopy_transaction.fcopy_msg;
-+		copy_size = sizeof(struct hv_do_fcopy);
-+		if (count < copy_size)
-+			return 0;
-+	}
-+	if (copy_to_user(buf, src, copy_size))
-+		return -EFAULT;
-+
-+	return copy_size;
++	return memblock_add_region(&memblock.nomap, base,
++				   size, MAX_NUMNODES, 0);
 +}
-+
-+static ssize_t fcopy_write(struct file *file, const char __user *buf,
-+			size_t count, loff_t *ppos)
-+{
-+	int error = 0;
-+
-+	if (count != sizeof(int))
-+		return 0;
-+
-+	if (copy_from_user(&error, buf, sizeof(int)))
-+		return -EFAULT;
-+
-+	if (in_hand_shake) {
-+		fcopy_handle_handshake();
-+		return 0;
-+	}
-+
-+	/*
-+	 * Complete the transaction by forwarding the result
-+	 * to the host. But first, cancel the timeout.
-+	 */
-+	if (cancel_delayed_work_sync(&fcopy_work))
-+		fcopy_respond_to_host(error);
-+
-+	return sizeof(int);
-+}
-+
-+int fcopy_open(struct inode *inode, struct file *f)
-+{
-+	if (opened)
-+		return -EBUSY;
-+
-+	/*
-+	 * The daemon is alive; setup the state.
-+	 */
-+	daemon_died = false;
-+	opened = true;
-+	dtp = current;
-+	return 0;
-+}
-+
-+int fcopy_release(struct inode *inode, struct file *f)
-+{
-+	/*
-+	 * The daemon has exited; reset the state.
-+	 */
-+	daemon_died = true;
-+	in_hand_shake = true;
-+	dtp = NULL;
-+	opened = false;
-+	return 0;
-+}
-+
-+
-+static const struct file_operations fcopy_fops = {
-+	.read           = fcopy_read,
-+	.write          = fcopy_write,
-+	.release	= fcopy_release,
-+	.open		= fcopy_open,
-+};
-+
-+static int fcopy_dev_init(void)
-+{
-+	int result;
-+
-+	result = alloc_chrdev_region(&fcopy_dev, 1, 1, "hv_fcopy");
-+	if (result < 0) {
-+		pr_err("Cannot get major number\n");
-+		return result;
-+	}
-+
-+	cl = class_create(THIS_MODULE, "chardev");
-+	if (IS_ERR(cl)) {
-+		pr_err("Error creating fcopy class.\n");
-+		result = PTR_ERR(cl);
-+		goto err_unregister;
-+	}
-+
-+	sysfs_dev = device_create(cl, NULL, fcopy_dev, "%s", "hv_fcopy");
-+	if (IS_ERR(sysfs_dev)) {
-+		pr_err("Device creation failed\n");
-+		result = PTR_ERR(cl);
-+		goto err_destroy_class;
-+	}
-+
-+	cdev_init(&fcopy_cdev, &fcopy_fops);
-+	fcopy_cdev.owner = THIS_MODULE;
-+	fcopy_cdev.ops = &fcopy_fops;
-+
-+	result = cdev_add(&fcopy_cdev, fcopy_dev, 1);
-+	if (result) {
-+		pr_err("Cannot cdev_add\n");
-+		goto err_destroy_device;
-+	}
-+	return result;
-+
-+err_destroy_device:
-+	device_destroy(cl, fcopy_dev);
-+err_destroy_class:
-+	class_destroy(cl);
-+err_unregister:
-+	unregister_chrdev_region(fcopy_dev, 1);
-+	return result;
-+}
-+
-+static void fcopy_dev_deinit(void)
-+{
-+	/*
-+	 * first kill the daemon.
-+	 */
-+	if (dtp != NULL)
-+		send_sig(SIGKILL, dtp, 0);
-+	opened = false;
-+	device_destroy(cl, fcopy_dev);
-+	class_destroy(cl);
-+	cdev_del(&fcopy_cdev);
-+	unregister_chrdev_region(fcopy_dev, 1);
-+}
-+
-+int hv_fcopy_init(struct hv_util_service *srv)
-+{
-+	recv_buffer = srv->recv_buffer;
-+
-+	/*
-+	 * When this driver loads, the user level daemon that
-+	 * processes the host requests may not yet be running.
-+	 * Defer processing channel callbacks until the daemon
-+	 * has registered.
-+	 */
-+	fcopy_transaction.active = true;
-+	sema_init(&fcopy_transaction.read_sema, 0);
-+
-+	return fcopy_dev_init();
-+}
-+
-+void hv_fcopy_deinit(void)
-+{
-+	cancel_delayed_work_sync(&fcopy_work);
-+	fcopy_dev_deinit();
-+}
-diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
-index 62dfd246..efc5e83 100644
---- a/drivers/hv/hv_util.c
-+++ b/drivers/hv/hv_util.c
-@@ -82,6 +82,12 @@ static struct hv_util_service util_vss = {
- 	.util_deinit = hv_vss_deinit,
- };
- 
-+static struct hv_util_service util_fcopy = {
-+	.util_cb = hv_fcopy_onchannelcallback,
-+	.util_init = hv_fcopy_init,
-+	.util_deinit = hv_fcopy_deinit,
-+};
-+
- static void perform_shutdown(struct work_struct *dummy)
- {
- 	orderly_poweroff(true);
-@@ -401,6 +407,10 @@ static const struct hv_vmbus_device_id id_table[] = {
- 	{ HV_VSS_GUID,
- 	  .driver_data = (unsigned long)&util_vss
- 	},
-+	/* File copy GUID */
-+	{ HV_FCOPY_GUID,
-+	  .driver_data = (unsigned long)&util_fcopy
-+	},
- 	{ },
- };
- 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 15da677..e573ae9 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -26,6 +26,8 @@
- #define _HYPERV_H
- 
- #include <linux/types.h>
-+#include <linux/uuid.h>
-+#include <linux/limits.h>
- 
- /*
-  * Framework version for util services.
-@@ -96,6 +98,49 @@ struct hv_vss_msg {
- } __attribute__((packed));
- 
- /*
-+ * Implementation of a host to guest copy facility.
-+ */
-+
-+#define W_MAX_PATH 260
-+
-+enum hv_fcopy_op {
-+	START_FILE_COPY = 0,
-+	WRITE_TO_FILE,
-+	COMPLETE_FCOPY,
-+	CANCEL_FCOPY,
-+};
-+
-+struct hv_fcopy_hdr {
-+	enum hv_fcopy_op operation;
-+	uuid_le service_id0; /* currently unused */
-+	uuid_le service_id1; /* currently unused */
-+} __attribute__((packed));
-+
-+#define OVER_WRITE	0x1
-+#define CREATE_PATH	0x2
-+
-+struct hv_start_fcopy {
-+	struct hv_fcopy_hdr hdr;
-+	__u16 file_name[W_MAX_PATH];
-+	__u16 path_name[W_MAX_PATH];
-+	__u32 copy_flags;
-+	__u64 file_size;
-+} __attribute__((packed));
 +
 +/*
-+ * The file is chunked into fragments.
++ * memblock_remap() - remove a memory range from the nomap list
++ *
++ * This is the inverse function to memblock_nomap().
 + */
-+#define DATA_FRAGMENT	(6 * 1024)
++int __init_memblock memblock_remap(phys_addr_t base, phys_addr_t size)
++{
++	int ret;
++	memblock_dbg("memblock_remap: [%#016llx-%#016llx] %pF\n",
++		     (unsigned long long)base,
++		     (unsigned long long)base + size,
++		     (void *)_RET_IP_);
 +
-+struct hv_do_fcopy {
-+	struct hv_fcopy_hdr hdr;
-+	__u64	offset;
-+	__u32	size;
-+	__u8	data[DATA_FRAGMENT];
-+};
++	ret = __memblock_remove(&memblock.reserved, base, size);
++	if (ret)
++		return ret;
 +
++	return __memblock_remove(&memblock.nomap, base, size);
++}
 +
-+/*
-  * An implementation of HyperV key value pair (KVP) functionality for Linux.
-  *
-  *
-@@ -1352,6 +1397,17 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver);
- 		}
++#endif
++
+ /**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+@@ -836,6 +914,88 @@ void __init_memblock __next_free_mem_range(u64 *idx, int nid,
+ 	*idx = ULLONG_MAX;
+ }
  
- /*
-+ * Guest File Copy Service
-+ * {34D14BE3-DEE4-41c8-9AE7-6B174977C192}
++#ifdef ARCH_MEMBLOCK_NOMAP
++/**
++ * __next_mapped_mem_range - next function for for_each_free_mem_range()
++ * @idx: pointer to u64 loop variable
++ * @nid: node selector, %NUMA_NO_NODE for all nodes
++ * @out_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @out_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ * @out_nid: ptr to int for nid of the range, can be %NULL
++ *
++ * Find the first free area from *@idx which matches @nid, fill the out
++ * parameters, and update *@idx for the next iteration.  The lower 32bit of
++ * *@idx contains index into memory region and the upper 32bit indexes the
++ * areas before each reserved region.  For example, if reserved regions
++ * look like the following,
++ *
++ *	0:[0-16), 1:[32-48), 2:[128-130)
++ *
++ * The upper 32bit indexes the following regions.
++ *
++ *	0:[0-0), 1:[16-32), 2:[48-128), 3:[130-MAX)
++ *
++ * As both region arrays are sorted, the function advances the two indices
++ * in lockstep and returns each intersection.
 + */
-+
-+#define HV_FCOPY_GUID \
-+	.guid = { \
-+			0xE3, 0x4B, 0xD1, 0x34, 0xE4, 0xDE, 0xC8, 0x41, \
-+			0x9A, 0xE7, 0x6B, 0x17, 0x49, 0x77, 0xC1, 0x92 \
-+		}
-+
-+/*
-  * Common header for Hyper-V ICs
-  */
- 
-@@ -1459,6 +1515,10 @@ int hv_vss_init(struct hv_util_service *);
- void hv_vss_deinit(void);
- void hv_vss_onchannelcallback(void *);
- 
-+int hv_fcopy_init(struct hv_util_service *);
-+void hv_fcopy_deinit(void);
-+void hv_fcopy_onchannelcallback(void *);
-+
- /*
-  * Negotiated version with the Host.
-  */
-diff --git a/tools/hv/hv_fcopy_daemon.c b/tools/hv/hv_fcopy_daemon.c
-new file mode 100644
-index 0000000..c0e5c90
---- /dev/null
-+++ b/tools/hv/hv_fcopy_daemon.c
-@@ -0,0 +1,174 @@
-+/*
-+ * An implementation of host to guest copy functionality for Linux.
-+ *
-+ * Copyright (C) 2014, Microsoft, Inc.
-+ *
-+ * Author : K. Y. Srinivasan <kys@microsoft.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ */
-+
-+
-+#include <sys/types.h>
-+#include <sys/socket.h>
-+#include <sys/poll.h>
-+#include <linux/types.h>
-+#include <linux/kdev_t.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <string.h>
-+#include <ctype.h>
-+#include <errno.h>
-+#include <linux/hyperv.h>
-+#include <syslog.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <dirent.h>
-+
-+static int target_fd;
-+char target_fname[W_MAX_PATH];
-+
-+static int hv_start_fcopy(struct hv_start_fcopy *smsg)
++void __init_memblock __next_mapped_mem_range(u64 *idx, int nid,
++					   phys_addr_t *out_start,
++					   phys_addr_t *out_end, int *out_nid)
 +{
-+	int error = HV_E_FAIL;
++	struct memblock_type *mem = &memblock.memory;
++	struct memblock_type *rsv = &memblock.nomap;
++	int mi = *idx & 0xffffffff;
++	int ri = *idx >> 32;
 +
-+	sprintf(target_fname, "%s%s%s", smsg->path_name, "/",
-+		smsg->file_name);
++	if (WARN_ONCE(nid == MAX_NUMNODES, "Usage of MAX_NUMNODES is deprecated. Use NUMA_NO_NODE instead\n"))
++		nid = NUMA_NO_NODE;
 +
-+	syslog(LOG_INFO, "Target file name: %s\n", target_fname);
-+	/*
-+	 * Check to see if the path is already in place; if not,
-+	 * create if required.
-+	 */
-+	if (access((char *)smsg->path_name, F_OK)) {
-+		if (smsg->copy_flags & CREATE_PATH) {
-+			if (mkdir((char *)smsg->path_name, 0755)) {
-+				syslog(LOG_ERR,
-+					"Failed to create '%s'; error: %d %s\n",
-+					smsg->path_name,
-+					errno, strerror(errno));
-+				goto done;
-+			}
-+		} else {
-+			syslog(LOG_ERR, "Invalid path: %s\n", smsg->path_name);
-+			goto done;
-+		}
-+	}
++	for (; mi < mem->cnt; mi++) {
++		struct memblock_region *m = &mem->regions[mi];
++		phys_addr_t m_start = m->base;
++		phys_addr_t m_end = m->base + m->size;
 +
-+	if (!access(target_fname, F_OK)) {
-+		syslog(LOG_INFO, "File: %s exists\n", target_fname);
-+		if (!smsg->copy_flags & OVER_WRITE)
-+			goto done;
-+	}
-+
-+	target_fd = open(target_fname, O_RDWR | O_CREAT | O_CLOEXEC, 0744);
-+	if (target_fd == -1) {
-+		syslog(LOG_INFO, "Open Failed: %s\n", strerror(errno));
-+		goto done;
-+	}
-+
-+	error = 0;
-+done:
-+	return error;
-+}
-+
-+static int hv_copy_data(struct hv_do_fcopy *cpmsg)
-+{
-+	ssize_t bytes_written;
-+
-+	bytes_written = pwrite(target_fd, cpmsg->data, cpmsg->size,
-+				cpmsg->offset);
-+
-+	if (bytes_written != cpmsg->size)
-+		return HV_E_FAIL;
-+
-+	return 0;
-+}
-+
-+static int hv_copy_finished(void)
-+{
-+	close(target_fd);
-+	return 0;
-+}
-+static int hv_copy_cancel(void)
-+{
-+	close(target_fd);
-+	unlink(target_fname);
-+	return 0;
-+
-+}
-+
-+int main(void)
-+{
-+	int fd, fcopy_fd, len;
-+	int error = 0;
-+	int version = 0;
-+	char *buffer[4096 * 2];
-+	struct hv_fcopy_hdr *in_msg;
-+
-+	daemon(1, 0);
-+	openlog("HV_FCOPY", 0, LOG_USER);
-+	syslog(LOG_INFO, "HV_FCOPY starting; pid is:%d", getpid());
-+
-+	fcopy_fd = open("/dev/hv_fcopy", O_RDWR);
-+
-+	if (fcopy_fd < 0) {
-+		syslog(LOG_ERR, "open /dev/hv_fcopy failed; error: %d %s",
-+			errno, strerror(errno));
-+		exit(EXIT_FAILURE);
-+	}
-+
-+	/*
-+	 * Register with the kernel.
-+	 */
-+	write(fcopy_fd, &version, sizeof(int));
-+
-+	while (1) {
-+		/*
-+		 * In this loop we process fcopy messages after the
-+		 * handshake is complete.
-+		 */
-+
-+		len = pread(fcopy_fd, buffer, (4096 * 2), 0);
-+		if (len <= 0) {
-+			if (!error) {
-+				syslog(LOG_ERR, "Read error: %s\n",
-+					 strerror(errno));
-+				error = HV_E_FAIL;
-+			}
++		/* only memory regions are associated with nodes, check it */
++		if (nid != NUMA_NO_NODE && nid != memblock_get_region_node(m))
 +			continue;
++
++		/* scan areas before each reservation for intersection */
++		for (; ri < rsv->cnt + 1; ri++) {
++			struct memblock_region *r = &rsv->regions[ri];
++			phys_addr_t r_start = ri ? r[-1].base + r[-1].size : 0;
++			phys_addr_t r_end = ri < rsv->cnt ?
++				r->base : ULLONG_MAX;
++
++			/* if ri advanced past mi, break out to advance mi */
++			if (r_start >= m_end)
++				break;
++			/* if the two regions intersect, we're done */
++			if (m_start < r_end) {
++				if (out_start)
++					*out_start = max(m_start, r_start);
++				if (out_end)
++					*out_end = min(m_end, r_end);
++				if (out_nid)
++					*out_nid = memblock_get_region_node(m);
++				/*
++				 * The region which ends first is advanced
++				 * for the next iteration.
++				 */
++				if (m_end <= r_end)
++					mi++;
++				else
++					ri++;
++				*idx = (u32)mi | (u64)ri << 32;
++				return;
++			}
 +		}
-+		in_msg = (struct hv_fcopy_hdr *)buffer;
-+
-+		switch (in_msg->operation) {
-+		case START_FILE_COPY:
-+			error = hv_start_fcopy((struct hv_start_fcopy *)in_msg);
-+			break;
-+		case WRITE_TO_FILE:
-+			error = hv_copy_data((struct hv_do_fcopy *)in_msg);
-+			break;
-+		case COMPLETE_FCOPY:
-+			error = hv_copy_finished();
-+			break;
-+		case CANCEL_FCOPY:
-+			error = hv_copy_cancel();
-+			break;
-+
-+		default:
-+			syslog(LOG_ERR, "Unknown operation: %d\n",
-+				in_msg->operation);
-+
-+		}
-+
-+		pwrite(fcopy_fd, &error, sizeof(int), 0);
 +	}
++
++	/* signal end of iteration */
++	*idx = ULLONG_MAX;
 +}
++#endif
++
+ /**
+  * __next_free_mem_range_rev - next function for for_each_free_mem_range_reverse()
+  * @idx: pointer to u64 loop variable
+@@ -1438,12 +1598,21 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
+ void __init_memblock __memblock_dump_all(void)
+ {
+ 	pr_info("MEMBLOCK configuration:\n");
++#ifndef CONFIG_ARCH_MEMBLOCK_NOMAP
+ 	pr_info(" memory size = %#llx reserved size = %#llx\n",
+ 		(unsigned long long)memblock.memory.total_size,
+ 		(unsigned long long)memblock.reserved.total_size);
+-
++#else
++	pr_info(" memory size = %#llx reserved size = %#llx nomap size = %#llx\n",
++		(unsigned long long)memblock.memory.total_size,
++		(unsigned long long)memblock.reserved.total_size,
++		(unsigned long long)memblock.nomap.total_size);
++#endif
+ 	memblock_dump(&memblock.memory, "memory");
+ 	memblock_dump(&memblock.reserved, "reserved");
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++	memblock_dump(&memblock.nomap, "nomap");
++#endif
+ }
+ 
+ void __init memblock_allow_resize(void)
+@@ -1502,6 +1671,10 @@ static int __init memblock_init_debugfs(void)
+ 		return -ENXIO;
+ 	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
+ 	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++	debugfs_create_file("nomap", S_IRUGO, root,
++			    &memblock.nomap, &memblock_debug_fops);
++#endif
+ 
+ 	return 0;
+ }
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index e2906a5..c57d5e3 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -133,6 +133,15 @@ static unsigned long __init free_low_memory_core_early(void)
+ 	size = get_allocated_memblock_memory_regions_info(&start);
+ 	if (size)
+ 		count += __free_memory_core(start, start + size);
++
++#ifdef CONFIG_ARCH_MEMBLOCK_NOMAP
++
++	/* Free memblock.nomap array if it was allocated */
++	size = get_allocated_memblock_memory_regions_info(&start);
++	if (size)
++		count += __free_memory_core(start, start + size);
++
++#endif
+ #endif
+ 
+ 	return count;
 -- 
-1.7.4.1
+1.8.4.5
 
