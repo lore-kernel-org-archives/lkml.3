@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaANSYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:24:53 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:34600 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751342AbaANSYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:24:51 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, Hedi <hedi@sgi.com>,
-        Mike Travis <travis@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC] hotplug, memory: move register_memory_resource out of the lock_memory_hotplug
-Date: Tue, 14 Jan 2014 12:24:34 -0600
-Message-Id: <1389723874-32372-1-git-send-email-nzimmer@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
-To: unlisted-recipients:; (no To-header on input)
+	id S1751942AbaANS0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:26:45 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:59604 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761AbaANS0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:26:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140114133125.GB26942@localhost>
+References: <20140114133125.GB26942@localhost>
+Date: Tue, 14 Jan 2014 10:26:42 -0800
+X-Google-Sender-Auth: qdeVewrUasGYLR4aIe4h3nwCa4Y
+Message-ID: <CAGXu5jKqx6JYBhHf08ru9B62RdD1A_WX7on64Cw-v1wYKT2jnQ@mail.gmail.com>
+Subject: Re: [x86, kaslr] BUG: kernel boot hang
+From: Kees Cook <keescook@chromium.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to do register_memory_resource() since it has its own lock and
-doesn't make any callbacks.
+On Tue, Jan 14, 2014 at 5:31 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Greetings,
+>
+> I got the below dmesg and the first bad commit is
+>
+> commit 82fa9637a2ba285bcc7c5050c73010b2c1b3d803
+> Author:     Kees Cook <keescook@chromium.org>
+> AuthorDate: Thu Oct 10 17:18:16 2013 -0700
+> Commit:     H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Sun Oct 13 03:12:19 2013 -0700
+>
+>     x86, kaslr: Select random position from e820 maps
+>
+>     Counts available alignment positions across all e820 maps, and chooses
+>     one randomly for the new kernel base address, making sure not to collide
+>     with unsafe memory areas.
+>
+>     Signed-off-by: Kees Cook <keescook@chromium.org>
+>     Link: http://lkml.kernel.org/r/1381450698-28710-5-git-send-email-keescook@chromium.org
+>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>
+> Note that there are many other warning/errors and it's not very
+> reproducible, so this report might be wrong.
+>
+> ===================================================
+> PARENT COMMIT NOT CLEAN. LOOK OUT FOR WRONG BISECT!
+> ===================================================
+>
+> +-----------------------------------------------------------+--------------+--------------+
+> |                                                           | 5bfce5ef55cb | 1955a14a5ba6 |
+> +-----------------------------------------------------------+--------------+--------------+
+> | boot_successes                                            | 3948         | 0            |
+> | boot_failures                                             | 52           | 89           |
+> | page_allocation_failure:order:,mode                       | 48           | 2            |
+> | Out_of_memory:Kill_process                                | 7            |              |
+> | BUG:kernel_early_hang_without_any_printk_output           | 1            |              |
+> | BUG:soft_lockup-CPU_stuck_for_s                           | 1            |              |
+> | WARNING:CPU:PID:at_kernel/locking/lockdep.c:check_flags() | 0            | 85           |
 
-Also register_memory_resource return NULL on failure so we don't have anything
-to cleanup at this point.
+Does this mean that
+"WARNING:CPU:PID:at_kernel/locking/lockdep.c:check_flags()" is the
+most common failure condition?
 
+> | general_protection_fault:SMP_SMP                          | 0            | 1            |
+> | RIP:__lock_acquire                                        | 0            | 1            |
+> | Kernel_panic-not_syncing:Fatal_exception                  | 0            | 1            |
+> | BUG:kernel_boot_hang                                      | 0            | 2            |
+> | BUG:kernel_boot_crashed                                   | 0            | 1            |
+> +-----------------------------------------------------------+--------------+--------------+
+>
+> The last dmesg is
+>
+> [    0.803796] Initramfs unpacking failed: junk in compressed archive
+> [    0.803796] Initramfs unpacking failed: junk in compressed archive
+>
+> or in some cases
+>
+> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
+> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+> [    0.000000] BRK [0x07886000, 0x07886fff] PGTABLE
+> [    0.000000] BRK [0x07887000, 0x07887fff] PGTABLE
+> [    0.000000] BRK [0x07888000, 0x07888fff] PGTABLE
+> PANIC: early exception 0e rip 10:ffffffff86204c6e error 0 cr2 ffffffff81972b28
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc4-00008-g6e6a493 #614
+> PANIC: early exception 0e rip 10:ffffffff86204f22 error 0 cr2 ffffffff81972b28
 
-The reason for this rfc is I was doing some experiments with hotplugging of
-memory on some of our larger systems.  While it seems to work, it can be quite
-slow.  With some preliminary digging I found that lock_memory_hotplug is
-clearly ripe for breakup.
+I will try to reproduce this, but it's not clear to me what is causing
+the failure. The generated config doesn't look insane to me, so I'm
+not sure what's happening here. Is QEMU doing something unexpected
+with the ordering of where things go for its boot loader?
 
-It could be broken up per nid or something but it also covers the
-online_page_callback.  The online_page_callback shouldn't be very hard to break
-out.
+-Kees
 
-Also there is the issue of various structures(wmarks come to mind) that are
-only updated under the lock_memory_hotplug that would need to be dealt with.
-
-
-cc: Andrew Morton <akpm@linux-foundation.org>
-cc: Tang Chen <tangchen@cn.fujitsu.com>
-cc: Wen Congyang <wency@cn.fujitsu.com>
-cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-cc: Hedi <hedi@sgi.com>
-cc: Mike Travis <travis@sgi.com>
-cc: linux-mm@kvack.org
-cc: linux-kernel@vger.kernel.org
-
-
----
- mm/memory_hotplug.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 1ad92b4..62a0cd1 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1097,17 +1097,18 @@ int __ref add_memory(int nid, u64 start, u64 size)
- 	struct resource *res;
- 	int ret;
- 
--	lock_memory_hotplug();
--
- 	res = register_memory_resource(start, size);
- 	ret = -EEXIST;
- 	if (!res)
--		goto out;
-+		return ret;
- 
- 	{	/* Stupid hack to suppress address-never-null warning */
- 		void *p = NODE_DATA(nid);
- 		new_pgdat = !p;
- 	}
-+
-+	lock_memory_hotplug();
-+
- 	new_node = !node_online(nid);
- 	if (new_node) {
- 		pgdat = hotadd_new_pgdat(nid, start);
 -- 
-1.8.2.1
-
+Kees Cook
+Chrome OS Security
