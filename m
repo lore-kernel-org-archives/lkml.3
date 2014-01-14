@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaANOUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:20:41 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54001 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447AbaANOU0 (ORCPT
+	id S1751789AbaANOVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:21:31 -0500
+Received: from mail-gg0-f176.google.com ([209.85.161.176]:42001 "EHLO
+	mail-gg0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbaANOV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:20:26 -0500
-Date: Tue, 14 Jan 2014 14:20:14 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: lgirdwood@gmail.com, Xiubo Li <Li.Xiubo@freescale.com>,
-        alsa-devel@alsa-project.org, kuninori.morimoto.gx@renesas.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140114142014.GM15567@sirena.org.uk>
-References: <20140114123606.2241d8ab@armhf>
+	Tue, 14 Jan 2014 09:21:29 -0500
+Date: Tue, 14 Jan 2014 11:21:23 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: perf probe: Build error with missing libraries
+Message-ID: <20140114142123.GC29798@ghostprotocols.net>
+References: <20140113180400.GD5318@ghostprotocols.net>
+ <20140113181458.GE5318@ghostprotocols.net>
+ <52D495D1.5080505@hitachi.com>
+ <20140114130907.GA29798@ghostprotocols.net>
+ <20140114131540.GB5520@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QqzFzR/RUlLahzby"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114123606.2241d8ab@armhf>
-X-Cookie: Marriage is the sole cause of divorce.
+In-Reply-To: <20140114131540.GB5520@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: simple-card: simplify code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, Jan 14, 2014 at 02:15:40PM +0100, Jiri Olsa escreveu:
+> On Tue, Jan 14, 2014 at 10:09:07AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Jan 14, 2014 at 10:41:37AM +0900, Masami Hiramatsu escreveu:
+> > > (2014/01/14 3:14), Arnaldo Carvalho de Melo wrote:
+> > > > Jiri, this is something else for the give-me-more-ponies list for
+> > > > tests/make: build it on freshly provisioned systems with multiple mixes
+> > > > of devel packages installed ;-)
 
---QqzFzR/RUlLahzby
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > I think we can change makefile to get some combinations of config options
+> > > when building perf tools.
 
-On Tue, Jan 14, 2014 at 12:36:06PM +0100, Jean-Francois Moine wrote:
-> This patch
-> - removes the fields of the platform data which are of no use to the
->   non-DT platform callers,
-> - uses a new private structure to handle all the sound card information,
-> - simplifies the code and make easier a possible multi-DAI links extensio=
-n.
->=20
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
-> Xiubo, I also removed 'of_device_is_available' which seems really
-> useless: the module is not probed when the DT status is not "okay".
+> > This is what:
+> > 
+> >  make -C tools/perf -f tests/make
 
-Please send this as a patch series to aid review, one patch doing four
-different changes is much harder to review.
+> > does, and we use it already, many config combos are tested, but that
+> > kinda expects that all optional devel libs be installed.
 
->  		ret =3D asoc_simple_card_sub_parse_of(np,
-> -						  &info->cpu_dai,
-> -						  of_cpu);
-> +						  &priv->cpu_dai,
-> +					  (struct device_node **)
-> +						  &dai_link->cpu_of_node,
-> +						  &dai_link->cpu_dai_name);
+> > What I'm talking about is to, in addition, install the devel packages
+> > iteratively, testing those config options combos with and without
+> > installed devel packages combos.
 
+> yep, sounds good.. maybe another script setting the environment
+> (randomly, with some logic never to repeat any config?) and running
+> tests/make suite
 
-What's this cast here for?  That code doesn't look at all safe.
+What I'm usually doing, from time to time, when people report problems
+building on some specific distro, is to install a VM with the default
+set of packages, then try to build perf and go on installing the strict
+requirements, then add the suggested libraries for features marked as
+OFF by the automatic feature detection mechanism.
 
---QqzFzR/RUlLahzby
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Something that kinda replicated that, perhaps using 'mock'
+(https://fedoraproject.org/wiki/Using_Mock_to_test_package_builds) or
+something similar, could help testing that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1UebAAoJELSic+t+oim9n/EQAJYfDiya2h2k595VXqeMpQ5s
-ueWeFI2novw43r944ire0/CzMO490MTRkuh1LTBN+0dT2Ef7tKOmIid/5wsvgk8v
-rzcC9JhWwth4Z6gVHCB0/t5qh6tkzjwzZyiNYQixh5XogJ9xKwZ8UCcyUYnJDkep
-cy3JsAXzcw6gGAMn0pnKEojFnRysSVNrO7R7cHgdAhQLrOFoyK8ZICpowe6gI1SW
-683509CP4Qr4cpqlGrLD3AGqYmwf6RRercm+rYPN+6h9tu58zfOuEPOGCdRPyDr2
-Fhbhw/TMQTbgduiufBB8wpcvEyArLryA0lg2XhcCAO0RFpgsg524xjLqe7WJ0f1r
-8uyB4PQCIgNCU7KV7L+Pz2gR0rfdS9huO25JyXT6EmCg6Eq1gPYIGAiyXfcwjTHb
-Lxa+NdqpT8opqW7dK/ogS7dByJEtnTmi7dfT8KP6TLLoq8V7ZzWY0K+j2A5fMZ59
-u7U376PHJ4M5CiaguB8SKdJPVcUMYMs7ijcF0+7JubzopIOR/7xSgT3sKsNblNn3
-xtbHPyGC3L4t0OWuPbYsR4MbwEDxLBn6rH9yI5gVkXHLB5HV3VTEsyN0mXOBQofZ
-6SI2nNgIRYJ9p6qTEFnLyh9UPvowg+1imJ/sKDToYAIPEV1i2GyBOZ6js+rZ6Ivy
-qKhl/UuhyKagPFfb47z5
-=Lp9F
------END PGP SIGNATURE-----
-
---QqzFzR/RUlLahzby--
+- Arnaldo
