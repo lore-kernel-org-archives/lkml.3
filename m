@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaANA3f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54551 "EHLO
+	id S1754282AbaANA3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:29:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54543 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130AbaANA3K (ORCPT
+	with ESMTP id S1754106AbaANA3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:10 -0500
+	Mon, 13 Jan 2014 19:29:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
         Mike Turquette <mturquette@linaro.org>,
         Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 3.12 63/77] clk: exynos5250: fix sysmmu_mfc{l,r} gate clocks
-Date: Mon, 13 Jan 2014 16:28:24 -0800
-Message-Id: <20140114002754.288634176@linuxfoundation.org>
+Subject: [PATCH 3.12 61/77] clk: samsung: exynos5250: Add MDMA0 clocks
+Date: Mon, 13 Jan 2014 16:28:22 -0800
+Message-Id: <20140114002754.233558778@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -31,36 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Bresticker <abrestic@chromium.org>
+From: Abhilash Kesavan <a.kesavan@samsung.com>
 
-commit 97c3557c3e0413efb1f021f582d1459760e22727 upstream.
+commit 8fb9aeb7a71ef4f3e0613d459a2e1366a7a90469 upstream.
 
-The gate clocks for the MFC sysmmus appear to be flipped, i.e.
-GATE_IP_MFC[2] gates sysmmu_mfcl and GATE_IP_MFC[1] gates sysmmu_mfcr.
-Fix this so that the MFC will start up.
+Adds gate clock for MDMA0 on Exynos5250 SoC. This is needed to ensure
+that the clock is enabled when MDMA0 is used on systems on which
+firmware gates the clockby default.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
 Acked-by: Mike Turquette <mturquette@linaro.org>
+[t.figa: Updated patch description.]
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/samsung/clk-exynos5250.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/clock/exynos5250-clock.txt |    2 ++
+ drivers/clk/samsung/clk-exynos5250.c                         |    5 ++++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
+--- a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
++++ b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
+@@ -159,6 +159,8 @@ clock which they consume.
+   mixer			343
+   hdmi			344
+   g2d			345
++  mdma0			346
++  smmu_mdma0		347
+ 
+ 
+    [Clock Muxes]
 --- a/drivers/clk/samsung/clk-exynos5250.c
 +++ b/drivers/clk/samsung/clk-exynos5250.c
-@@ -355,8 +355,8 @@ static struct samsung_gate_clock exynos5
- 	GATE(smmu_gscl2, "smmu_gscl2", "aclk266", GATE_IP_GSCL, 9, 0, 0),
- 	GATE(smmu_gscl3, "smmu_gscl3", "aclk266", GATE_IP_GSCL, 10, 0, 0),
- 	GATE(mfc, "mfc", "aclk333", GATE_IP_MFC, 0, 0, 0),
--	GATE(smmu_mfcl, "smmu_mfcl", "aclk333", GATE_IP_MFC, 1, 0, 0),
--	GATE(smmu_mfcr, "smmu_mfcr", "aclk333", GATE_IP_MFC, 2, 0, 0),
-+	GATE(smmu_mfcl, "smmu_mfcl", "aclk333", GATE_IP_MFC, 2, 0, 0),
-+	GATE(smmu_mfcr, "smmu_mfcr", "aclk333", GATE_IP_MFC, 1, 0, 0),
- 	GATE(rotator, "rotator", "aclk266", GATE_IP_GEN, 1, 0, 0),
- 	GATE(jpeg, "jpeg", "aclk166", GATE_IP_GEN, 2, 0, 0),
- 	GATE(mdma1, "mdma1", "aclk266", GATE_IP_GEN, 4, 0, 0),
+@@ -120,7 +120,8 @@ enum exynos5250_clks {
+ 	spi2, i2s1, i2s2, pcm1, pcm2, pwm, spdif, ac97, hsi2c0, hsi2c1, hsi2c2,
+ 	hsi2c3, chipid, sysreg, pmu, cmu_top, cmu_core, cmu_mem, tzpc0, tzpc1,
+ 	tzpc2, tzpc3, tzpc4, tzpc5, tzpc6, tzpc7, tzpc8, tzpc9, hdmi_cec, mct,
+-	wdt, rtc, tmu, fimd1, mie1, dsim0, dp, mixer, hdmi, g2d,
++	wdt, rtc, tmu, fimd1, mie1, dsim0, dp, mixer, hdmi, g2d, mdma0,
++	smmu_mdma0,
+ 
+ 	/* mux clocks */
+ 	mout_hdmi = 1024,
+@@ -492,6 +493,8 @@ static struct samsung_gate_clock exynos5
+ 	GATE(mixer, "mixer", "mout_aclk200_disp1", GATE_IP_DISP1, 5, 0, 0),
+ 	GATE(hdmi, "hdmi", "mout_aclk200_disp1", GATE_IP_DISP1, 6, 0, 0),
+ 	GATE(g2d, "g2d", "aclk200", GATE_IP_ACP, 3, 0, 0),
++	GATE(mdma0, "mdma0", "aclk266", GATE_IP_ACP, 1, 0, 0),
++	GATE(smmu_mdma0, "smmu_mdma0", "aclk266", GATE_IP_ACP, 5, 0, 0),
+ };
+ 
+ static struct samsung_pll_rate_table vpll_24mhz_tbl[] __initdata = {
 
 
