@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaANWjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:39:16 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11240 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353AbaANWjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:39:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="465180734"
-Date: Tue, 14 Jan 2014 14:44:19 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Add Clovertrail and Merrifeld support to Intel MID
-Message-ID: <20140114224419.GB9834@psi-dev26.jf.intel.com>
-References: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752205AbaANWjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:39:37 -0500
+Received: from order.stressinduktion.org ([87.106.68.36]:37354 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928AbaANWjg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 17:39:36 -0500
+Date: Tue, 14 Jan 2014 23:39:35 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, dborkman@redhat.com, linux-kernel@vger.kernel.org,
+        darkjames-ws@darkjames.pl
+Subject: Re: [PATCH RFC] reciprocal_divide: correction/update of the algorithm
+Message-ID: <20140114223935.GA16276@order.stressinduktion.org>
+Mail-Followup-To: Eric Dumazet <eric.dumazet@gmail.com>,
+	netdev@vger.kernel.org, dborkman@redhat.com,
+	linux-kernel@vger.kernel.org, darkjames-ws@darkjames.pl
+References: <20140113214249.GK6586@order.stressinduktion.org> <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 12:07:35PM -0800, David Cohen wrote:
-> Hi,
+On Tue, Jan 14, 2014 at 10:07:05AM -0800, Eric Dumazet wrote:
+> On Mon, 2014-01-13 at 22:42 +0100, Hannes Frederic Sowa wrote:
+> > This patch is a RFC and part of a series Daniel Borkmann and me want to
+> > do when introducing prandom_u32_range{,_ro} and prandom_u32_max{,_ro}
+> > helpers later this week.
 > 
-> I've a bunch of Intel MID patches under review but it seems they are becoming
-> old and start to need changes.
-> I gathered an up-to-date version of all of them in this single patch set.
+> > -static inline u32 reciprocal_divide(u32 A, u32 R)
+> > +struct reciprocal_value reciprocal_value(u32 d);
+> > +
+> > +static inline u32 reciprocal_divide(u32 a, struct reciprocal_value R)
+> >  {
+> > -	return (u32)(((u64)A * R) >> 32);
+> > +	u32 t = (u32)(((u64)a * R.m) >> 32);
+> > +	return (t + ((a - t) >> R.sh1)) >> R.sh2;
+> >  }
 > 
-> This series implements support of Clovertrail and Merrifield to Intel MID.
-> It also removes the unwanted X86_MDFLD option since *all* Intel MID platforms
-> should be supported through CONFIG_X86_INTEL_MID option.
+> I would rather introduce new helpers and convert users that really need
+> them.
+>
+> For instance, just use a divide in BPF, because doing this on JIT might
+> be too complex for the gains. Strangely, libpcap doesn't seem to
+> optimize any divide, like divides by a power of two...
 > 
-> This makes obsolete the following patches:
-> https://lkml.org/lkml/2013/10/18/480
-> https://lkml.org/lkml/2013/10/22/533
-> http://lkml.indiana.edu/hypermail/linux/kernel/1311.1/02937.html
+> Reciprocal were added 7 years ago, for very specific uses, but current
+> cpus have reasonably fast dividers.
 
-Ping :)
-Any comments on this whole patch set?
+Agreed. The new algorithm would need to change the size of struct
+sock_filter, which is exported to user space. We will leave BPF as-is
+for the time being and check that later.
 
-Br, David Cohen
+Greetings,
 
-> 
-> Br, David
-> 
-> ---
-> David Cohen (3):
->   x86: intel-mid: move Medfield code out of intel-mid.c core file
->   x86: intel-mid: add Merrifield platform support
->   x86: intel-mid: remove deprecated X86_MDFLD and X86_WANT_INTEL_MID
->     configs
-> 
-> Kuppuswamy Sathyanarayanan (1):
->   x86: intel-mid: add Clovertrail platform support
-> 
->  arch/x86/Kconfig                                   |  29 +-----
->  arch/x86/include/asm/intel-mid.h                   |  48 +++++++++-
->  arch/x86/pci/intel_mid_pci.c                       |   6 +-
->  arch/x86/platform/intel-mid/Makefile               |   4 +-
->  arch/x86/platform/intel-mid/intel-mid.c            |  64 +++++++------
->  arch/x86/platform/intel-mid/intel_mid_weak_decls.h |  19 ++++
->  arch/x86/platform/intel-mid/mfld.c                 |  75 +++++++++++++++
->  arch/x86/platform/intel-mid/mrfl.c                 | 103 +++++++++++++++++++++
->  arch/x86/platform/intel-mid/sfi.c                  |  34 +++++--
->  9 files changed, 317 insertions(+), 65 deletions(-)
->  create mode 100644 arch/x86/platform/intel-mid/intel_mid_weak_decls.h
->  create mode 100644 arch/x86/platform/intel-mid/mfld.c
->  create mode 100644 arch/x86/platform/intel-mid/mrfl.c
-> 
-> -- 
-> 1.8.4.2
+  Hannes
+
