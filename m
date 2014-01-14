@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaANWZa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:25:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53698 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068AbaANWZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:25:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="466701385"
-From: "Brown, Aaron F" <aaron.f.brown@intel.com>
-To: "standby24x7@gmail.com" <standby24x7@gmail.com>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-Subject: Re: [PATCH] [trivial] ixgbe: Fix format string in ixgbe_fcoe.c
-Thread-Topic: [PATCH] [trivial] ixgbe: Fix format string in ixgbe_fcoe.c
-Thread-Index: AQHPEXd/Y3sxCv3yckKtAOM3SDwLog==
-Date: Tue, 14 Jan 2014 22:25:14 +0000
-Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B7312CAA3@ORSMSX101.amr.corp.intel.com>
-References: <1389716082-23395-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1389716082-23395-1-git-send-email-standby24x7@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1751923AbaANW0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:26:53 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:36376 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631AbaANW0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 17:26:51 -0500
 MIME-Version: 1.0
+In-Reply-To: <20140114215127.GE23999@fieldses.org>
+References: <1389277187-18211-14-git-send-email-jlayton@redhat.com>
+ <52CF05B5.5080700@amacapital.net> <20140109194930.1692fbbe@tlielax.poochiereds.net>
+ <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
+ <20140114192713.GA22262@fieldses.org> <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com>
+ <20140114211009.GA23999@fieldses.org> <039101cf116e$56c2de80$04489b80$@mindspring.com>
+ <CALCETrWRWnbiX+fpeXmn7ZKVvCpb+h99R01o8jchmx4=fgb0QA@mail.gmail.com>
+ <CALCETrVRe2koQAwEiR7p10LqSi4durr9s6uo-1iv_aG-ZNGSkg@mail.gmail.com> <20140114215127.GE23999@fieldses.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 Jan 2014 14:26:30 -0800
+Message-ID: <CALCETrVFikuA7kFy6QRRTyp=-ufMXKJZmu4uSVBf-p4aPn7LbQ@mail.gmail.com>
+Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Frank Filz <ffilzlnx@mindspring.com>, Jeff Layton <jlayton@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Hipp <drh@hwaci.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0EMPZQS003971
 
-On Wed, 2014-01-15 at 01:14 +0900, Masanari Iida wrote:
-> cppcheck detected following warning in ixgbe_fcoe.c
-> (warning) %d in format string (no. 1) requires 'int' but the
-> argument type is 'unsigned int'.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/net/ethernet/intel/ixgbe/ixgbe_fcoe.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-) 
+On Tue, Jan 14, 2014 at 1:51 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Tue, Jan 14, 2014 at 01:26:26PM -0800, Andy Lutomirski wrote:
+>> [grr, gmail -- I didn't actually intend to send that.]
+>>
+>> On Tue, Jan 14, 2014 at 1:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> > On Tue, Jan 14, 2014 at 1:19 PM, Frank Filz <ffilzlnx@mindspring.com> wrote:
+>> >>>       process 2 requests a write lock, gets -EDEADLK, unlocks and
+>> >>>       requests a new read lock.  That request succeeds because there
+>> >>>       is no conflicting lock.  (Note the lock manager had no
+>> >>>       opportunity to upgrade 1's lock here thanks to the conflict with
+>> >>>       3's lock.)
+>> >>
+>> >> As I understand write lock priority, process 2 requesting a new read lock
+>> >> would block, once there is a write lock waiter, no further read locks would
+>> >> be granted that would conflict with that waiting write lock.
+>> >
+>> > ...which reminds me -- if anyone implements writer priority, please
+>> > make it optional (either w/ a writer-priority-ignoring read lock or a
+>> > non-priority-granting write lock).  I have an application for which
+>> > writer priority would be really annoying.
+>> >
+>> > Even better: Have read-lock-and-wait-for-pending-writers be an explicit new operation.
+>> >
+>> > (Writer priority a
+>>
+>> Writer priority can introduce new deadlocks.  Suppose that a reader
+>> (holding a read lock) starts a subprocess that takes a new read lock
+>> and waits for that subprocess.  Throw an unrelated process in that
+>> tries to take a write lock and you have an instant deadlock.
+>
+> OK, so we definitely can't silently change existing lock behavior to
+> prioritize writes in this way.
+>
+> A remaining interesting question is whether we'd like the new locks to
+> support either behavior or both.
+>
+> I'd still be inclined to stick to the existing (unprioritized) behavior
+> just to minimize the scope of the project.
 
-Thanks Masanari, I have added it to our internal queue for testing.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I think it would be silly to change the behavior at all (other than
+probably documenting that -EDEADLK is a valid return value) until this
+stuff is merged.  None of this has identified anything that's either
+wrong or unnecessarily limiting about the current proposal, so I see
+no reason to try to do anything fancy right now.
+
+Long term, I'd advocate for a new l_type value
+F_RDLCK_WAIT_FOR_WRITERS (or the equivalent with a better name) and
+implementing -EDEADLK, for the case where two overlapping upgrade
+attempts conflict.
+
+If it's indeed true that a failed F_SETLK (or F_SETLKW) does not
+change lock state, documenting that would be nice, too.
+
+Finally, on a completely unrelated note, IIRC lock positions are
+treated as *signed* integers and can't be negative.  Documenting that
+(or the reverse) would be nice, too.  This bit me once, and it's
+probably briefly confused other people, too.
+
+--Andy
