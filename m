@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaANAvx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:51:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54244 "EHLO
+	id S1755286AbaANAwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:52:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54234 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618AbaANA2H (ORCPT
+	with ESMTP id S1753603AbaANA2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:07 -0500
+	Mon, 13 Jan 2014 19:28:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Hunt <joshhunt00@gmail.com>, Honggang Li <honli@redhat.com>,
-        Bang Nguyen <bang.nguyen@oracle.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Salam Noureddine <noureddine@aristanetworks.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 03/77] rds: prevent BUG_ON triggered on congestion update to loopback
-Date: Mon, 13 Jan 2014 16:27:24 -0800
-Message-Id: <20140114002752.598546589@linuxfoundation.org>
+Subject: [PATCH 3.12 12/77] packet: fix send path when running with proto == 0
+Date: Mon, 13 Jan 2014 16:27:33 -0800
+Message-Id: <20140114002752.849393633@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -31,90 +31,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 18fc25c94eadc52a42c025125af24657a93638c0 ]
+[ Upstream commit 66e56cd46b93ef407c60adcac62cf33b06119d50 ]
 
-After congestion update on a local connection, when rds_ib_xmit returns
-less bytes than that are there in the message, rds_send_xmit calls
-back rds_ib_xmit with an offset that causes BUG_ON(off & RDS_FRAG_SIZE)
-to trigger.
+Commit e40526cb20b5 introduced a cached dev pointer, that gets
+hooked into register_prot_hook(), __unregister_prot_hook() to
+update the device used for the send path.
 
-For a 4Kb PAGE_SIZE rds_ib_xmit returns min(8240,4096)=4096 when actually
-the message contains 8240 bytes. rds_send_xmit thinks there is more to send
-and calls rds_ib_xmit again with a data offset "off" of 4096-48(rds header)
-=4048 bytes thus hitting the BUG_ON(off & RDS_FRAG_SIZE) [RDS_FRAG_SIZE=4k].
+We need to fix this up, as otherwise this will not work with
+sockets created with protocol = 0, plus with sll_protocol = 0
+passed via sockaddr_ll when doing the bind.
 
-The commit 6094628bfd94323fc1cea05ec2c6affd98c18f7f
-"rds: prevent BUG_ON triggering on congestion map updates" introduced
-this regression. That change was addressing the triggering of a different
-BUG_ON in rds_send_xmit() on PowerPC architecture with 64Kbytes PAGE_SIZE:
- 	BUG_ON(ret != 0 &&
-    		 conn->c_xmit_sg == rm->data.op_nents);
-This was the sequence it was going through:
-(rds_ib_xmit)
-/* Do not send cong updates to IB loopback */
-if (conn->c_loopback
-   && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-  	rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-    	return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-}
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 0 + 8240 - 48 (rds header accounted only the first time)
-   		 = 8192
-  c_xmit_data_off < 65536 (sg->length), so calls rds_ib_xmit again
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 8192 + 8240 = 16432, calls rds_ib_xmit again
-  and so on (c_xmit_data_off 24672,32912,41152,49392,57632)
-rds_ib_xmit returns 8240
-On this iteration this sequence causes the BUG_ON in rds_send_xmit:
-    while (ret) {
-    	tmp = min_t(int, ret, sg->length - conn->c_xmit_data_off);
-    	[tmp = 65536 - 57632 = 7904]
-    	conn->c_xmit_data_off += tmp;
-    	[c_xmit_data_off = 57632 + 7904 = 65536]
-    	ret -= tmp;
-    	[ret = 8240 - 7904 = 336]
-    	if (conn->c_xmit_data_off == sg->length) {
-    		conn->c_xmit_data_off = 0;
-    		sg++;
-    		conn->c_xmit_sg++;
-    		BUG_ON(ret != 0 &&
-    			conn->c_xmit_sg == rm->data.op_nents);
-    		[c_xmit_sg = 1, rm->data.op_nents = 1]
+So instead, assign the pointer directly. The compiler can inline
+these helper functions automagically.
 
-What the current fix does:
-Since the congestion update over loopback is not actually transmitted
-as a message, all that rds_ib_xmit needs to do is let the caller think
-the full message has been transmitted and not return partial bytes.
-It will return 8240 (RDS_CONG_MAP_BYTES+48) when PAGE_SIZE is 4Kb.
-And 64Kb+48 when page size is 64Kb.
+While at it, also assume the cached dev fast-path as likely(),
+and document this variant of socket creation as it seems it is
+not widely used (seems not even the author of TX_RING was aware
+of that in his reference example [1]). Tested with reproducer
+from e40526cb20b5.
 
-Reported-by: Josh Hunt <joshhunt00@gmail.com>
-Tested-by: Honggang Li <honli@redhat.com>
-Acked-by: Bang Nguyen <bang.nguyen@oracle.com>
-Signed-off-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+ [1] http://wiki.ipxwarzone.com/index.php5?title=Linux_packet_mmap#Example
+
+Fixes: e40526cb20b5 ("packet: fix use after free race in send path when dev is released")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Salam Noureddine <noureddine@aristanetworks.com>
+Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/ib_send.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ Documentation/networking/packet_mmap.txt |   10 ++++
+ net/packet/af_packet.c                   |   65 +++++++++++++++++++------------
+ 2 files changed, 50 insertions(+), 25 deletions(-)
 
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *c
- 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
- 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
- 		scat = &rm->data.op_sg[sg];
--		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
--		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
--		return ret;
-+		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-+		return sizeof(struct rds_header) + ret;
- 	}
+--- a/Documentation/networking/packet_mmap.txt
++++ b/Documentation/networking/packet_mmap.txt
+@@ -123,6 +123,16 @@ Transmission process is similar to captu
+ [shutdown]  close() --------> destruction of the transmission socket and
+                               deallocation of all associated resources.
  
- 	/* FIXME we may overallocate here */
++Socket creation and destruction is also straight forward, and is done
++the same way as in capturing described in the previous paragraph:
++
++ int fd = socket(PF_PACKET, mode, 0);
++
++The protocol can optionally be 0 in case we only want to transmit
++via this socket, which avoids an expensive call to packet_rcv().
++In this case, you also need to bind(2) the TX_RING with sll_protocol = 0
++set. Otherwise, htons(ETH_P_ALL) or any other protocol, for example.
++
+ Binding the socket to your network interface is mandatory (with zero copy) to
+ know the header size of frames used in the circular buffer.
+ 
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -237,6 +237,30 @@ struct packet_skb_cb {
+ static void __fanout_unlink(struct sock *sk, struct packet_sock *po);
+ static void __fanout_link(struct sock *sk, struct packet_sock *po);
+ 
++static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++{
++	struct net_device *dev;
++
++	rcu_read_lock();
++	dev = rcu_dereference(po->cached_dev);
++	if (likely(dev))
++		dev_hold(dev);
++	rcu_read_unlock();
++
++	return dev;
++}
++
++static void packet_cached_dev_assign(struct packet_sock *po,
++				     struct net_device *dev)
++{
++	rcu_assign_pointer(po->cached_dev, dev);
++}
++
++static void packet_cached_dev_reset(struct packet_sock *po)
++{
++	RCU_INIT_POINTER(po->cached_dev, NULL);
++}
++
+ /* register_prot_hook must be invoked with the po->bind_lock held,
+  * or from a context in which asynchronous accesses to the packet
+  * socket is not possible (packet_create()).
+@@ -246,12 +270,10 @@ static void register_prot_hook(struct so
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	if (!po->running) {
+-		if (po->fanout) {
++		if (po->fanout)
+ 			__fanout_link(sk, po);
+-		} else {
++		else
+ 			dev_add_pack(&po->prot_hook);
+-			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
+-		}
+ 
+ 		sock_hold(sk);
+ 		po->running = 1;
+@@ -270,12 +292,11 @@ static void __unregister_prot_hook(struc
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	po->running = 0;
+-	if (po->fanout) {
++
++	if (po->fanout)
+ 		__fanout_unlink(sk, po);
+-	} else {
++	else
+ 		__dev_remove_pack(&po->prot_hook);
+-		RCU_INIT_POINTER(po->cached_dev, NULL);
+-	}
+ 
+ 	__sock_put(sk);
+ 
+@@ -2059,19 +2080,6 @@ static int tpacket_fill_skb(struct packe
+ 	return tp_len;
+ }
+ 
+-static struct net_device *packet_cached_dev_get(struct packet_sock *po)
+-{
+-	struct net_device *dev;
+-
+-	rcu_read_lock();
+-	dev = rcu_dereference(po->cached_dev);
+-	if (dev)
+-		dev_hold(dev);
+-	rcu_read_unlock();
+-
+-	return dev;
+-}
+-
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+ 	struct sk_buff *skb;
+@@ -2088,7 +2096,7 @@ static int tpacket_snd(struct packet_soc
+ 
+ 	mutex_lock(&po->pg_vec_lock);
+ 
+-	if (saddr == NULL) {
++	if (likely(saddr == NULL)) {
+ 		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+@@ -2242,7 +2250,7 @@ static int packet_snd(struct socket *soc
+ 	 *	Get and verify the address.
+ 	 */
+ 
+-	if (saddr == NULL) {
++	if (likely(saddr == NULL)) {
+ 		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+@@ -2451,6 +2459,8 @@ static int packet_release(struct socket
+ 
+ 	spin_lock(&po->bind_lock);
+ 	unregister_prot_hook(sk, false);
++	packet_cached_dev_reset(po);
++
+ 	if (po->prot_hook.dev) {
+ 		dev_put(po->prot_hook.dev);
+ 		po->prot_hook.dev = NULL;
+@@ -2506,14 +2516,17 @@ static int packet_do_bind(struct sock *s
+ 
+ 	spin_lock(&po->bind_lock);
+ 	unregister_prot_hook(sk, true);
++
+ 	po->num = protocol;
+ 	po->prot_hook.type = protocol;
+ 	if (po->prot_hook.dev)
+ 		dev_put(po->prot_hook.dev);
+-	po->prot_hook.dev = dev;
+ 
++	po->prot_hook.dev = dev;
+ 	po->ifindex = dev ? dev->ifindex : 0;
+ 
++	packet_cached_dev_assign(po, dev);
++
+ 	if (protocol == 0)
+ 		goto out_unlock;
+ 
+@@ -2626,7 +2639,8 @@ static int packet_create(struct net *net
+ 	po = pkt_sk(sk);
+ 	sk->sk_family = PF_PACKET;
+ 	po->num = proto;
+-	RCU_INIT_POINTER(po->cached_dev, NULL);
++
++	packet_cached_dev_reset(po);
+ 
+ 	sk->sk_destruct = packet_sock_destruct;
+ 	sk_refcnt_debug_inc(sk);
+@@ -3337,6 +3351,7 @@ static int packet_notifier(struct notifi
+ 						sk->sk_error_report(sk);
+ 				}
+ 				if (msg == NETDEV_UNREGISTER) {
++					packet_cached_dev_reset(po);
+ 					po->ifindex = -1;
+ 					if (po->prot_hook.dev)
+ 						dev_put(po->prot_hook.dev);
 
 
