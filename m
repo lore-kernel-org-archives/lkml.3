@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219AbaANAuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:50:32 -0500
-Received: from ozlabs.org ([203.10.76.45]:36300 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753932AbaANAu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:50:26 -0500
-Date: Tue, 14 Jan 2014 11:50:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: linux-next: manual merge of the v4l-dvb tree with Linus' tree
-Message-Id: <20140114115018.b8dfc68565fa0f033a38e606@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__14_Jan_2014_11_50_18_+1100_7atiCk9OgUCJca5m"
+	id S1755226AbaANAuu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:50:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54273 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661AbaANA2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:28:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 08/77] macvtap: Do not double-count received packets
+Date: Mon, 13 Jan 2014 16:27:29 -0800
+Message-Id: <20140114002752.738781371@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
+References: <20140114002752.497010554@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Jan_2014_11_50_18_+1100_7atiCk9OgUCJca5m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Mauro,
+------------------
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-drivers/staging/media/go7007/go7007-usb.c between commits 66a528c1c3d6
-("Revert "staging:media: Use dev_dbg() instead of pr_debug()"") and
-e6bbda9da9e8 ("Staging: go7007: fix up some remaining go->dev issues")
-from Linus' tree and commit c61c3094a630 ("[media] go7007-usb: only use
-go->dev after allocated") from the v4l-dvb tree.
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-I fixed it up (I basically used the version from the patches in Linus'
-tree (they are in v3.13-rc2) - see below) and can carry the fix as necessar=
-y (no action is
-required).
+[ Upstream commit 006da7b07bc4d3a7ffabad17cf639eec6849c9dc ]
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Currently macvlan will count received packets after calling each
+vlans receive handler.   Macvtap attempts to count the packet
+yet again when the user reads the packet from the tap socket.
+This code doesn't do this consistently either.  Remove the
+counting from macvtap and let only macvlan count received
+packets.
 
-diff --cc drivers/staging/media/go7007/go7007-usb.c
-index b658c2316df3,1d747de6dfa6..000000000000
---- a/drivers/staging/media/go7007/go7007-usb.c
-+++ b/drivers/staging/media/go7007/go7007-usb.c
-@@@ -1099,13 -1097,16 +1099,15 @@@ static int go7007_usb_probe(struct usb_
-  		board =3D &board_px_tv402u;
-  		break;
-  	case GO7007_BOARDID_LIFEVIEW_LR192:
- -		printk(KERN_ERR
- -		       "The Lifeview TV Walker Ultra is not supported. Sorry!\n");
- +		dev_err(&intf->dev, "The Lifeview TV Walker Ultra is not supported. Sor=
-ry!\n");
-  		return -ENODEV;
-+ #if 0
-  		name =3D "Lifeview TV Walker Ultra";
-  		board =3D &board_lifeview_lr192;
-  		break;
-+ #endif
-  	case GO7007_BOARDID_SENSORAY_2250:
- -		printk(KERN_INFO "Sensoray 2250 found\n");
- +		dev_info(&intf->dev, "Sensoray 2250 found\n");
-  		name =3D "Sensoray 2250/2251";
-  		board =3D &board_sensoray_2250;
-  		break;
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/macvtap.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
---Signature=_Tue__14_Jan_2014_11_50_18_+1100_7atiCk9OgUCJca5m
-Content-Type: application/pgp-signature
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -767,7 +767,6 @@ static ssize_t macvtap_put_user(struct m
+ 				const struct sk_buff *skb,
+ 				const struct iovec *iv, int len)
+ {
+-	struct macvlan_dev *vlan;
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+@@ -821,15 +820,6 @@ static ssize_t macvtap_put_user(struct m
+ 	copied += len;
+ 
+ done:
+-	rcu_read_lock();
+-	vlan = rcu_dereference(q->vlan);
+-	if (vlan) {
+-		preempt_disable();
+-		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
+-		preempt_enable();
+-	}
+-	rcu_read_unlock();
+-
+ 	return ret ? ret : copied;
+ }
+ 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJS1InPAAoJEMDTa8Ir7ZwVE/QP/046TFQZMkmgiYoQTDV614zS
-saupnyBcoAjvbDEQhWiUdhnXxl41BvxhLcOvRfVsqIfFKnot6tD+5IWEQA18md6v
-Yg8qtWrFUXOYHN1t66yZ350xF3iliEq1JHR3pCrmWyU6jteNBMjrJHCSdn3qdN8v
-Ps4pDwzvtVR06XJv4bItapaIPwx5DuU0spaIwzHKdokd/rOK9EEl27btN11bkB6R
-TkNPFoTKl33Wg52g3v0j/t6nE/KVXl9DtdM2/8TfON9/cHLiIauP1RZNl5BEmHmQ
-yxLYEBVqelt9ST9MvNSLojms9Heoqe4anjh+2OpybAyZrrM+sg6NX2hJFJuaLCjr
-o7brOaRYdXbowhLFOnDAiOeUHMA9QduyV96bNoLIy2rnaCcwMHUXDHsBUAGz8yVk
-hlZdgk33dO1Xk47OyAAxKd2WRtgSqJMgSJPCml6JV2Bs5tQ5uDvmFS1HrbpQaVqF
-JtA1lbax+lBIHCvG6QCM7+Hz3TlcPz99W3myuat9td43GP+fmqSRl+F2N+bkpg8r
-ANHKb6NlssPT5/SJ7fiZRpoeHCK4zx+yZIM+UCdnOfmo5PUC5dH5R4Iczi4a52uE
-W9mItZLYFaF5za1OxYTYL39eFgLiIVtVj+qi2q8jscLiUc/kyuvdqGF+MEn1cOzX
-iXEXm5S8sOkVtFx+nS9+
-=ApDJ
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Jan_2014_11_50_18_+1100_7atiCk9OgUCJca5m--
