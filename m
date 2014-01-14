@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaANA23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:28:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54315 "EHLO
+	id S1754826AbaANAnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:43:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54360 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729AbaANA2V (ORCPT
+	with ESMTP id S1753821AbaANA23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:21 -0500
+	Mon, 13 Jan 2014 19:28:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Richard Cochran <richardcochran@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 29/77] arc_emac: fix potential use after free
-Date: Mon, 13 Jan 2014 16:27:50 -0800
-Message-Id: <20140114002753.334870963@linuxfoundation.org>
+Subject: [PATCH 3.12 37/77] net: llc: fix use after free in llc_ui_recvmsg
+Date: Mon, 13 Jan 2014 16:27:58 -0800
+Message-Id: <20140114002753.555282448@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -31,45 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 37ec274e9713eafc2ba6c4471420f06cb8f68ecf ]
+[ Upstream commit 4d231b76eef6c4a6bd9c96769e191517765942cb ]
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+While commit 30a584d944fb fixes datagram interface in LLC, a use
+after free bug has been introduced for SOCK_STREAM sockets that do
+not make use of MSG_PEEK.
 
-skb_tx_timestamp(skb) should be called _before_ TX completion
-has a chance to trigger, otherwise it is too late and we access
-freed memory.
+The flow is as follow ...
 
-Fixes: e4f2379db6c6 ("ethernet/arc/arc_emac - Add new driver")
-From: Eric Dumazet <edumazet@google.com>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
+  if (!(flags & MSG_PEEK)) {
+    ...
+    sk_eat_skb(sk, skb, false);
+    ...
+  }
+  ...
+  if (used + offset < skb->len)
+    continue;
+
+... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
+original length and work on skb_len to check partial reads.
+
+Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/arc/emac_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/llc/af_llc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -565,6 +565,8 @@ static int arc_emac_tx(struct sk_buff *s
- 	/* Make sure pointer to data buffer is set */
- 	wmb();
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *
+ 	unsigned long cpu_flags;
+ 	size_t copied = 0;
+ 	u32 peek_seq = 0;
+-	u32 *seq;
++	u32 *seq, skb_len;
+ 	unsigned long used;
+ 	int target;	/* Read at least this many bytes */
+ 	long timeo;
+@@ -812,6 +812,7 @@ static int llc_ui_recvmsg(struct kiocb *
+ 		}
+ 		continue;
+ 	found_ok_skb:
++		skb_len = skb->len;
+ 		/* Ok so how much can we use? */
+ 		used = skb->len - offset;
+ 		if (len < used)
+@@ -844,7 +845,7 @@ static int llc_ui_recvmsg(struct kiocb *
+ 		}
  
-+	skb_tx_timestamp(skb);
-+
- 	*info = cpu_to_le32(FOR_EMAC | FIRST_OR_LAST_MASK | len);
- 
- 	/* Increment index to point to the next BD */
-@@ -579,8 +581,6 @@ static int arc_emac_tx(struct sk_buff *s
- 
- 	arc_reg_set(priv, R_STATUS, TXPL_MASK);
- 
--	skb_tx_timestamp(skb);
--
- 	return NETDEV_TX_OK;
- }
+ 		/* Partial read */
+-		if (used + offset < skb->len)
++		if (used + offset < skb_len)
+ 			continue;
+ 	} while (len > 0);
  
 
 
