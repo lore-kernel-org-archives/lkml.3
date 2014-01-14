@@ -1,127 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaANT1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:27:22 -0500
-Received: from fieldses.org ([174.143.236.118]:57283 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458AbaANT1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:27:19 -0500
-Date: Tue, 14 Jan 2014 14:27:13 -0500
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        nfs-ganesha-devel@lists.sourceforge.net,
-        samba-technical@lists.samba.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT
- locks
-Message-ID: <20140114192713.GA22262@fieldses.org>
-References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
- <1389277187-18211-14-git-send-email-jlayton@redhat.com>
- <52CF05B5.5080700@amacapital.net>
- <20140109194930.1692fbbe@tlielax.poochiereds.net>
- <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
+	id S1751526AbaANT2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:28:53 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:44471 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaANT2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:28:49 -0500
+X-IronPort-AV: E=Sophos;i="4.95,658,1384300800"; 
+   d="scan'208";a="90708278"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next] xen-netback: Rework rx_work_todo
+Date: Tue, 14 Jan 2014 19:28:39 +0000
+Message-ID: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 09, 2014 at 04:58:59PM -0800, Andy Lutomirski wrote:
-> On Thu, Jan 9, 2014 at 4:49 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > On Thu, 09 Jan 2014 12:25:25 -0800
-> > Andy Lutomirski <luto@amacapital.net> wrote:
-> >> When I think of deadlocks caused by r/w locks (which these are), I think
-> >> of two kinds.  First is what the current code tries to detect: two
-> >> processes that are each waiting for each other.  I don't know whether
-> >> POSIX enshrines the idea of detecting that, but I wouldn't be surprised,
-> >> considering how awful the old POSIX locks are.
-...
-> >> The sensible kind of detectable deadlock involves just one lock, and it
-> >> happens when two processes both hold read locks and try to upgrade to
-> >> write locks.  This should be efficiently detectable and makes upgrading
-> >> locks safe(r).
+The recent patch to fix receive side flow control (11b57f) solved the spinning
+thread problem, however caused an another one. The receive side can stall, if:
+- xenvif_rx_action sets rx_queue_stopped to false
+- interrupt happens, and sets rx_event to true
+- then xenvif_kthread sets rx_event to false
 
-This also involves two processes waiting on each other, and the current
-code should detect either case equally well.
+Also, through rx_event a malicious guest can force the RX thread to spin. This
+patch ditch that two variable, and rework rx_work_todo. If the thread finds it
+can't fit more skb's into the ring, it saves the last slot estimation into
+rx_last_skb_slots, otherwise it's kept as 0. Then rx_work_todo will check if:
+- there is something to send to the ring
+- there is space for the topmost packet in the queue
 
-...
-> For this kind of deadlock detection, nothing global is needed -- I'm
-> only talking about detecting deadlocks due to two tasks upgrading
-> locks on the same file (with overlapping ranges) at the same time.
-> 
-> This is actually useful for SQL-like things.  Imagine this scenario:
-> 
-> Program 1:
-> 
-> Open a file
-> BEGIN;
-> SELECT whatever;  -- acquires a read lock
-> 
-> Program 2:
-> 
-> Open the same file
-> BEGIN;
-> SELECT whatever;  -- acquires a read lock
-> 
-> Program 1:
-> UPDATE something;  -- upgrades to write
-> 
-> Now program 1 is waiting for program 2 to release its lock.  But if
-> program 2 tries to UPDATE, then it deadlocks.  A friendly MySQL
-> implementation (which, sadly, does not include sqlite) will fail the
-> abort the transaction instead.
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+ drivers/net/xen-netback/common.h    |    6 +-----
+ drivers/net/xen-netback/interface.c |    1 -
+ drivers/net/xen-netback/netback.c   |   16 ++++++----------
+ 3 files changed, 7 insertions(+), 16 deletions(-)
 
-And then I suppose you'd need to get an exclusive lock when you retry,
-to guarantee forward progress in the face of multiple processes retrying
-at once.
-
-I don't know, is this so useful?
-
-> It would be nice if the kernel
-> supported this.
-> 
-> Note that unlocking and then re-locking for write is incorrect -- it
-> would allow program 2 to write inconsistent data.
-> 
-> I think that implementing this could be as simple as having some way
-> to check if a struct file_lock is currently trying to upgrade from
-> read to write and, if you try to upgrade and end up waiting for such a
-> lock, aborting.
-
-You have to be clear what you mean by "such a lock".  What you really
-want to know is whether you'd be waiting on a lock that might be waiting
-on a lock you hold.
-
-To a first approximation, the current works with a graph with tasks as
-nodes and an arrow from node X to node Y if X is waiting on a lock held
-by node Y.  And it follows arrows in that graph looking for cycles.
-
-And sure I guess it would be a bit nicer if you only bothered checking
-for cycles that touch this one file.
-
-But I'd really rather avoid the complication of deadlock detection
-unless somebody can make a really strong case that they need it.
-
-> The nasty case, though, is if you try to write-lock a
-> range while holding a read-lock on only part of the range -- you could
-> end up acquiring part of the range and deadlocking on the rest.  Now
-> you need to remember enough state to be able to abort.
-
-We wait until the entire lock can be applied, and then apply it all
-atomically (under i_lock).
-
-> (Actually, what happens if you receive a signal which waiting on a file lock?)
-
-Return -EINTR.
-
-> I would personally be okay with removing the existing deadlock
-> detector entirely.  I wouldn't be surprised if no one relies on it.
-
-I'd be in favor.
-
---b.
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 4c76bcb..ae413a2 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -143,11 +143,7 @@ struct xenvif {
+ 	char rx_irq_name[IFNAMSIZ+4]; /* DEVNAME-rx */
+ 	struct xen_netif_rx_back_ring rx;
+ 	struct sk_buff_head rx_queue;
+-	bool rx_queue_stopped;
+-	/* Set when the RX interrupt is triggered by the frontend.
+-	 * The worker thread may need to wake the queue.
+-	 */
+-	bool rx_event;
++	RING_IDX rx_last_skb_slots;
+ 
+ 	/* This array is allocated seperately as it is large */
+ 	struct gnttab_copy *grant_copy_op;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index b9de31e..7669d49 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -100,7 +100,6 @@ static irqreturn_t xenvif_rx_interrupt(int irq, void *dev_id)
+ {
+ 	struct xenvif *vif = dev_id;
+ 
+-	vif->rx_event = true;
+ 	xenvif_kick_thread(vif);
+ 
+ 	return IRQ_HANDLED;
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 2738563..bb241d0 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -477,7 +477,6 @@ static void xenvif_rx_action(struct xenvif *vif)
+ 	unsigned long offset;
+ 	struct skb_cb_overlay *sco;
+ 	bool need_to_notify = false;
+-	bool ring_full = false;
+ 
+ 	struct netrx_pending_operations npo = {
+ 		.copy  = vif->grant_copy_op,
+@@ -487,7 +486,7 @@ static void xenvif_rx_action(struct xenvif *vif)
+ 	skb_queue_head_init(&rxq);
+ 
+ 	while ((skb = skb_dequeue(&vif->rx_queue)) != NULL) {
+-		int max_slots_needed;
++		RING_IDX max_slots_needed;
+ 		int i;
+ 
+ 		/* We need a cheap worse case estimate for the number of
+@@ -510,9 +509,10 @@ static void xenvif_rx_action(struct xenvif *vif)
+ 		if (!xenvif_rx_ring_slots_available(vif, max_slots_needed)) {
+ 			skb_queue_head(&vif->rx_queue, skb);
+ 			need_to_notify = true;
+-			ring_full = true;
++			vif->rx_last_skb_slots = max_slots_needed;
+ 			break;
+-		}
++		} else
++			vif->rx_last_skb_slots = 0;
+ 
+ 		sco = (struct skb_cb_overlay *)skb->cb;
+ 		sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
+@@ -523,8 +523,6 @@ static void xenvif_rx_action(struct xenvif *vif)
+ 
+ 	BUG_ON(npo.meta_prod > ARRAY_SIZE(vif->meta));
+ 
+-	vif->rx_queue_stopped = !npo.copy_prod && ring_full;
+-
+ 	if (!npo.copy_prod)
+ 		goto done;
+ 
+@@ -1727,8 +1725,8 @@ static struct xen_netif_rx_response *make_rx_response(struct xenvif *vif,
+ 
+ static inline int rx_work_todo(struct xenvif *vif)
+ {
+-	return (!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) ||
+-		vif->rx_event;
++	return !skb_queue_empty(&vif->rx_queue) &&
++	       xenvif_rx_ring_slots_available(vif, vif->rx_last_skb_slots);
+ }
+ 
+ static inline int tx_work_todo(struct xenvif *vif)
+@@ -1814,8 +1812,6 @@ int xenvif_kthread(void *data)
+ 		if (!skb_queue_empty(&vif->rx_queue))
+ 			xenvif_rx_action(vif);
+ 
+-		vif->rx_event = false;
+-
+ 		if (skb_queue_empty(&vif->rx_queue) &&
+ 		    netif_queue_stopped(vif->dev))
+ 			xenvif_start_queue(vif);
