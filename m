@@ -1,121 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707AbaANWy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:54:59 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:53473 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaANWy5 (ORCPT
+	id S1751859AbaANW73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:59:29 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55242 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaANW7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:54:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <52D578A7.8020000@infradead.org>
-References: <20140114165128.0dd51f362e0f34a2ef4dc92f@canb.auug.org.au>
-	<52D578A7.8020000@infradead.org>
-Date: Wed, 15 Jan 2014 02:54:56 +0400
-Message-ID: <CALT56yPzfkz7=WdT0p6EYXdsQJUT+Ld9gdd72z6_czn0YaKUWA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 14 (lowpan, 802.15.4)
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Content-Type: multipart/mixed; boundary=001a11c1d7f4cf6a6704eff6147f
+	Tue, 14 Jan 2014 17:59:24 -0500
+Message-Id: <cover.1389738151.git.joshc@codeaurora.org>
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: [PATCH v4 0/6] Add support for the System Power Management Interface (SPMI)
+Date: Tue, 14 Jan 2014 12:41:34 -0600
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c1d7f4cf6a6704eff6147f
-Content-Type: text/plain; charset=ISO-8859-1
+The System Power Management Interface (SPMI) is a high-speed,
+low-latency, bi-directional, two-wire serial bus suitable for real-time
+control of voltage and frequency scaled multi-core application
+processors and its power management of auxiliary components. SPMI
+obsoletes a number of legacy, custom point-to-point interfaces and
+provides a low pin count, high-speed control bus for up to 4 Master and
+16 Slave devices.
 
-Hello,
+SPMI is specified by the MIPI (Mobile Industry Process Interface)
+Alliance [1].
 
+This patchset is intended both to provide a core implementation of SPMI and
+also to provide a controller driver implementation.
+  - Patches 1-2 implement the SPMI core functionality and provide basic
+    DT binding documentation
+  - Patches 3-5 provide an implementation of an SPMI controller, the
+    Qualcomm SPMI PMIC Arbiter", currently used on the 8x74 series SoCs.
+  - Patch 6 rounds out regmap support for SPMI
 
-On Tue, Jan 14, 2014 at 9:49 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->
-> On 01/13/2014 09:51 PM, Stephen Rothwell wrote:
-> > Hi all,
-> >
-> > This tree fails (more than usual) the powerpc allyesconfig build.
-> >
-> > Changes since 20140113:
-> >
->
->
-> on i386:
->
-> net/built-in.o: In function `header_create':
-> 6lowpan.c:(.text+0x166149): undefined reference to `lowpan_header_compress'
-> net/built-in.o: In function `bt_6lowpan_recv':
-> (.text+0x166b3c): undefined reference to `lowpan_process_data'
+Changes from v3[2]:
+  - Dropped the pm8x41 PMIC driver and pm8xxx-rtc changes as part of this patchset.
+    I'll be working with Stephen Boyd to see if we can't adapt his pm8xxx
+    patches[3] to suit the needs of the pm8x41.
+  - Rebased on v3.13-rc2
+  - Move to simple_ida_* for controller ID allocation
+  - Addressed documentation fixes and nits
+  - Provide pm_runtime implementation, which leverages SPMI's SLEEP and WAKEUP
+    commands
+  - Address spmi_controller object lifetime issues
 
-Ah, nice Makefile hack there.
-David, Marcel, could you please consider the attached patch.
+Changes from v2[4]:
+  - Dropped RFC.
+  - Add basic regmap support at Mark Brown's suggestion
+  - Drop debugfs interface.  Debugging SPMI accesses can happen via the regmap
+    debugfs interface if necessary.
+  - Add second address-cell in SPMI generic device tree binding, encoding the
+    address type (suggestion by Stephen Warren)
+  - Implement interrupt handling functionality within the PMIC Arbiter driver
+  - Provide basic MFD driver for the PMIC8x41 PMICs, demonstrating SPMI regmap
+    client use
+  - Adapt existing pm8xxx-rtc driver to work as a child of the PM8x41 mfd device
 
+Changes from v1[5]:
+  - Adopted patch (1/5) to #define for_each_available_node() shim
+    in the !CONFIG_OF case
+  - Moved device tree logic out of drivers/of and into spmi.c core (this
+    mirrors what SPI is doing, and what i2c will soon be doing)
+  - Move of_spmi_add_devices() call into spmi_device_add(), so drivers don't
+    have to call it explicitly
+  - Unconditionally build in debugfs code (rely on the underlying
+    CONFIG_DEBUG_FS switch to throw unused code away)
+  - Change pr_* print functions to their dev_* equivalents
+  - Fix copy_{to,from}_user error handling
+  - Renamed "board_lock" to "ctrl_idr_lock" to better describe it's purpose
+  - Rework device object lifetime management
+  - Rename PMIC arb binding document, add description of PMIC arb
+  - Add generic SPMI device tree bindings
+
+[1]: http://www.mipi.org/specifications/system-power-management-interface
+[2]: http://lkml.kernel.org/r/cover.1382985169.git.joshc@codeaurora.org
+[3]: http://lkml.kernel.org/r/1389206270-3728-1-git-send-email-sboyd@codeaurora.org
+[4]: http://lkml.kernel.org/r/cover.1377202730.git.joshc@codeaurora.org
+[5]: http://lkml.kernel.org/r/cover.1376596224.git.joshc@codeaurora.org
+
+Josh Cartwright (4):
+  spmi: add generic SPMI controller binding documentation
+  spmi: pmic_arb: add support for interrupt handling
+  spmi: document the PMIC arbiter SPMI bindings
+  regmap: spmi: support base and extended register spaces
+
+Kenneth Heitke (2):
+  spmi: Linux driver framework for SPMI
+  spmi: Add MSM PMIC Arbiter SPMI controller
+
+ .../bindings/spmi/qcom,spmi-pmic-arb.txt           |  46 ++
+ Documentation/devicetree/bindings/spmi/spmi.txt    |  41 ++
+ drivers/Kconfig                                    |   2 +
+ drivers/Makefile                                   |   1 +
+ drivers/base/regmap/regmap-spmi.c                  | 228 +++++-
+ drivers/spmi/Kconfig                               |  24 +
+ drivers/spmi/Makefile                              |   6 +
+ drivers/spmi/spmi-pmic-arb.c                       | 802 +++++++++++++++++++++
+ drivers/spmi/spmi.c                                | 609 ++++++++++++++++
+ include/dt-bindings/spmi/spmi.h                    |  18 +
+ include/linux/mod_devicetable.h                    |   8 +
+ include/linux/regmap.h                             |  12 +-
+ include/linux/spmi.h                               | 191 +++++
+ 13 files changed, 1953 insertions(+), 35 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
+ create mode 100644 Documentation/devicetree/bindings/spmi/spmi.txt
+ create mode 100644 drivers/spmi/Kconfig
+ create mode 100644 drivers/spmi/Makefile
+ create mode 100644 drivers/spmi/spmi-pmic-arb.c
+ create mode 100644 drivers/spmi/spmi.c
+ create mode 100644 include/dt-bindings/spmi/spmi.h
+ create mode 100644 include/linux/spmi.h
 
 -- 
-With best wishes
-Dmitry
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
---001a11c1d7f4cf6a6704eff6147f
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-net-move-6lowpan-compression-code-to-separate-module.patch"
-Content-Disposition: attachment; 
-	filename="0001-net-move-6lowpan-compression-code-to-separate-module.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hqfrd7t71
-
-RnJvbSA0YzNkYjZkM2MyNDRkZWNmNDM0NjY1YzMwYzFiZjc1YWFkMWY5NGIyIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEbWl0cnkgRXJlbWluLVNvbGVuaWtvdiA8ZG1pdHJ5X2VyZW1p
-bkBtZW50b3IuY29tPgpEYXRlOiBXZWQsIDE1IEphbiAyMDE0IDAyOjUwOjQwICswNDAwClN1Ympl
-Y3Q6IFtQQVRDSF0gbmV0OiBtb3ZlIDZsb3dwYW4gY29tcHJlc3Npb24gY29kZSB0byBzZXBhcmF0
-ZSBtb2R1bGUKCklFRUUgODAyLjE1LjQgYW5kIEJsdWV0b290aCBuZXR3b3JraW5nIHN0YWNrcyBz
-aGFyZSA2bG93cGFuIGNvbXByZXNzaW9uCmNvZGUuIEluc3RlYWQgb2YgaW50cm9kdWNpbmcgTWFr
-ZWZpbGUvS2NvbmZpZyBoYWNrcywgYnVpbGQgdGhpcyBjb2RlIGFzCmEgc2VwYXJhdGUgbW9kdWxl
-IHJlZmVyZW5jZWQgZnJvbSBib3RoIGllZWU4MDIxNTQgYW5kIGJsdWV0b290aCBtb2R1bGVzLgoK
-VGhpcyBmaXhlcyB0aGUgZm9sbG93aW5nIGJ1aWxkIGVycm9yIG9ic2VydmVkIGluIHNvbWUga2Vy
-bmVsCmNvbmZpZ3VyYXRpb25zOgoKbmV0L2J1aWx0LWluLm86IEluIGZ1bmN0aW9uIGBoZWFkZXJf
-Y3JlYXRlJzogNmxvd3Bhbi5jOigudGV4dCsweDE2NjE0OSk6IHVuZGVmaW5lZCByZWZlcmVuY2Ug
-dG8gYGxvd3Bhbl9oZWFkZXJfY29tcHJlc3MnCm5ldC9idWlsdC1pbi5vOiBJbiBmdW5jdGlvbiBg
-YnRfNmxvd3Bhbl9yZWN2JzogKC50ZXh0KzB4MTY2YjNjKTogdW5kZWZpbmVkIHJlZmVyZW5jZSB0
-byBgbG93cGFuX3Byb2Nlc3NfZGF0YScKClNpZ25lZC1vZmYtYnk6IERtaXRyeSBFcmVtaW4tU29s
-ZW5pa292IDxkbWl0cnlfZXJlbWluQG1lbnRvci5jb20+Ci0tLQogbmV0L01ha2VmaWxlICAgICAg
-ICAgICAgfCAyICstCiBuZXQvYmx1ZXRvb3RoL0tjb25maWcgICB8IDEgKwogbmV0L2llZWU4MDIx
-NTQvS2NvbmZpZyAgfCA3ICsrKysrKysKIG5ldC9pZWVlODAyMTU0L01ha2VmaWxlIHwgMyArKy0K
-IDQgZmlsZXMgY2hhbmdlZCwgMTEgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYg
-LS1naXQgYS9uZXQvTWFrZWZpbGUgYi9uZXQvTWFrZWZpbGUKaW5kZXggOGZhMmY5MS4uY2JiYmU2
-ZCAxMDA2NDQKLS0tIGEvbmV0L01ha2VmaWxlCisrKyBiL25ldC9NYWtlZmlsZQpAQCAtNTcsNyAr
-NTcsNyBAQCBvYmotJChDT05GSUdfQ0FJRikJCSs9IGNhaWYvCiBpZm5lcSAoJChDT05GSUdfRENC
-KSwpCiBvYmoteQkJCQkrPSBkY2IvCiBlbmRpZgotb2JqLSQoQ09ORklHX0lFRUU4MDIxNTQpCSs9
-IGllZWU4MDIxNTQvCitvYmoteQkJCQkrPSBpZWVlODAyMTU0Lwogb2JqLSQoQ09ORklHX01BQzgw
-MjE1NCkJCSs9IG1hYzgwMjE1NC8KIAogaWZlcSAoJChDT05GSUdfTkVUKSx5KQpkaWZmIC0tZ2l0
-IGEvbmV0L2JsdWV0b290aC9LY29uZmlnIGIvbmV0L2JsdWV0b290aC9LY29uZmlnCmluZGV4IGQz
-ZjNmN2IuLjk4NWI1NjAgMTAwNjQ0Ci0tLSBhL25ldC9ibHVldG9vdGgvS2NvbmZpZworKysgYi9u
-ZXQvYmx1ZXRvb3RoL0tjb25maWcKQEAgLTEyLDYgKzEyLDcgQEAgbWVudWNvbmZpZyBCVAogCXNl
-bGVjdCBDUllQVE9fQUVTCiAJc2VsZWN0IENSWVBUT19FQ0IKIAlzZWxlY3QgQ1JZUFRPX1NIQTI1
-NgorCXNlbGVjdCA2TE9XUEFOX0lQSEMKIAloZWxwCiAJICBCbHVldG9vdGggaXMgbG93LWNvc3Qs
-IGxvdy1wb3dlciwgc2hvcnQtcmFuZ2Ugd2lyZWxlc3MgdGVjaG5vbG9neS4KIAkgIEl0IHdhcyBk
-ZXNpZ25lZCBhcyBhIHJlcGxhY2VtZW50IGZvciBjYWJsZXMgYW5kIG90aGVyIHNob3J0LXJhbmdl
-CmRpZmYgLS1naXQgYS9uZXQvaWVlZTgwMjE1NC9LY29uZmlnIGIvbmV0L2llZWU4MDIxNTQvS2Nv
-bmZpZwppbmRleCBiMmUwNmRmLi45Yzk4NzlkIDEwMDY0NAotLS0gYS9uZXQvaWVlZTgwMjE1NC9L
-Y29uZmlnCisrKyBiL25ldC9pZWVlODAyMTU0L0tjb25maWcKQEAgLTEzLDUgKzEzLDEyIEBAIGNv
-bmZpZyBJRUVFODAyMTU0CiBjb25maWcgSUVFRTgwMjE1NF82TE9XUEFOCiAJdHJpc3RhdGUgIjZs
-b3dwYW4gc3VwcG9ydCBvdmVyIElFRUUgODAyLjE1LjQiCiAJZGVwZW5kcyBvbiBJRUVFODAyMTU0
-ICYmIElQVjYKKwlzZWxlY3QgNkxPV1BBTl9JUEhDCiAJLS0taGVscC0tLQogCUlQdjYgY29tcHJl
-c3Npb24gb3ZlciBJRUVFIDgwMi4xNS40LgorCitjb25maWcgNkxPV1BBTl9JUEhDCisJdHJpc3Rh
-dGUKKwktLS1oZWxwLS0tCisJICA2bG93cGFuIGNvbXByZXNzaW9uIGNvZGUgd2hpY2ggaXMgc2hh
-cmVkIGJldHdlZW4gSUVFRSA4MDIuMTUuNCBhbmQgQmx1ZXRvb3RoCisJICBzdGFja3MuCmRpZmYg
-LS1naXQgYS9uZXQvaWVlZTgwMjE1NC9NYWtlZmlsZSBiL25ldC9pZWVlODAyMTU0L01ha2VmaWxl
-CmluZGV4IDk1MWE4M2UuLmU4ZjA1ODggMTAwNjQ0Ci0tLSBhL25ldC9pZWVlODAyMTU0L01ha2Vm
-aWxlCisrKyBiL25ldC9pZWVlODAyMTU0L01ha2VmaWxlCkBAIC0xLDUgKzEsNiBAQAogb2JqLSQo
-Q09ORklHX0lFRUU4MDIxNTQpICs9IGllZWU4MDIxNTQubyBhZl84MDIxNTQubwotb2JqLSQoQ09O
-RklHX0lFRUU4MDIxNTRfNkxPV1BBTikgKz0gNmxvd3Bhbi5vIDZsb3dwYW5faXBoYy5vCitvYmot
-JChDT05GSUdfSUVFRTgwMjE1NF82TE9XUEFOKSArPSA2bG93cGFuLm8KK29iai0kKENPTkZJR182
-TE9XUEFOX0lQSEMpICs9IDZsb3dwYW5faXBoYy5vCiAKIGllZWU4MDIxNTQteSA6PSBuZXRsaW5r
-Lm8gbmwtbWFjLm8gbmwtcGh5Lm8gbmxfcG9saWN5Lm8gd3Bhbi1jbGFzcy5vCiBhZl84MDIxNTQt
-eSA6PSBhZl9pZWVlODAyMTU0Lm8gcmF3Lm8gZGdyYW0ubwotLSAKMS44LjUuMgoK
---001a11c1d7f4cf6a6704eff6147f--
