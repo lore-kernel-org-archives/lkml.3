@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaANXJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:09:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34716 "EHLO
+	id S1752043AbaANXL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:11:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34726 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253AbaANXJZ (ORCPT
+	with ESMTP id S1751065AbaANXLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:09:25 -0500
-Date: Tue, 14 Jan 2014 15:10:03 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chase Southwood <chase.southwood@yahoo.com>
-Cc: devel@driverdev.osuosl.org, abbotti@mev.co.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Staging: comedi: convert while loop to timeout in
- ni_mio_common.c
-Message-ID: <20140114231003.GB7877@kroah.com>
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
- <1389735061-24626-1-git-send-email-chase.southwood@yahoo.com>
+	Tue, 14 Jan 2014 18:11:25 -0500
+Date: Tue, 14 Jan 2014 15:12:03 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/62] 3.10.27-stable review
+Message-ID: <20140114231203.GE7877@kroah.com>
+References: <20140114002710.464561569@linuxfoundation.org>
+ <52D4A8BF.2080207@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389735061-24626-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <52D4A8BF.2080207@roeck-us.net>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 03:31:01PM -0600, Chase Southwood wrote:
-> This patch to ni_mio_common.c changes a simple while loop to a timeout,
-> which is preferred.
+On Mon, Jan 13, 2014 at 07:02:23PM -0800, Guenter Roeck wrote:
+> On 01/13/2014 04:26 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.10.27 release.
+> >There are 62 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Thu Jan 16 00:26:56 UTC 2014.
+> >Anything received after that time might be too late.
+> >
 > 
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
+> New build failures:
+> 	m68k:allmodconfig
+> 	sparc64:allmodconfig
 > 
-> I removed the extra counter variable this time.  Greg, you mentioned that I could just look at the time that has expired to far, and exit and error out if that exceeds a limit.  Right now I'm just tracking how many times udelay is called, since that seems to conform more to other timeouts in this file, but did you instead want me to use some time function to keep track of actual real time that expires?
+> drivers/net/virtio_net.c: In function 'receive_mergeable':
+> drivers/net/virtio_net.c:330:29: warning: dereferencing 'void *' pointer [enabled by default]
+> drivers/net/virtio_net.c:330:29: error: request for member 'virtual' in something not a structure or union
+> 
+> Caused by "virtio_net: fix error handling for mergeable buffers".
 
-Please wrap your lines of text, as that's one very long line :)
+Hopefully we now have a fix for this one.
 
-The best way to do this is to do:
-	unsigned long timeout;
-	...
-	timeout = jiffies + msec_to_jiffies(500);	/* Or how ever long you want to wait */
-	do {
-		do something...
-		udelay(10);
-	} while (time_before(jiffies, timeout);
-
-	or switch the loop around and do:
-
-	while (something hasn't happened) {
-		if (time_after(jjiffies, timeout)) {
-			we timed out, handle it here;
-			break;
-		}
-		udelay(10);
-	}
-
-That's much better than having to count up a "number" and have to look
-to see how long you are sleeping for to determine just exactly how long
-you are going to have until the loop times out, as your code did.
-
-Make sense?
+thanks for testing and finding this.
 
 greg k-h
