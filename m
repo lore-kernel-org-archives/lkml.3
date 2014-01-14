@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009AbaANUk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:40:29 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:27103 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751713AbaANUkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:40:24 -0500
+	id S1752034AbaANUke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:40:34 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:59183 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaANUkX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:40:23 -0500
 X-IronPort-AV: E=Sophos;i="4.95,659,1384300800"; 
-   d="scan'208";a="92858946"
+   d="scan'208";a="90738351"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
 CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v4 0/9] xen-netback: TX grant mapping with SKBTX_DEV_ZEROCOPY instead of copy
-Date: Tue, 14 Jan 2014 20:39:46 +0000
-Message-ID: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v4 7/9] xen-netback: Add stat counters for frag_list skbs
+Date: Tue, 14 Jan 2014 20:39:53 +0000
+Message-ID: <1389731995-9887-8-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A long known problem of the upstream netback implementation that on the TX
-path (from guest to Dom0) it copies the whole packet from guest memory into
-Dom0. That simply became a bottleneck with 10Gb NICs, and generally it's a
-huge perfomance penalty. The classic kernel version of netback used grant
-mapping, and to get notified when the page can be unmapped, it used page
-destructors. Unfortunately that destructor is not an upstreamable solution.
-Ian Campbell's skb fragment destructor patch series [1] tried to solve this
-problem, however it seems to be very invasive on the network stack's code,
-and therefore haven't progressed very well.
-This patch series use SKBTX_DEV_ZEROCOPY flags to tell the stack it needs to
-know when the skb is freed up. That is the way KVM solved the same problem,
-and based on my initial tests it can do the same for us. Avoiding the extra
-copy boosted up TX throughput from 6.8 Gbps to 7.9 (I used a slower
-Interlagos box, both Dom0 and guest on upstream kernel, on the same NUMA node,
-running iperf 2.0.5, and the remote end was a bare metal box on the same 10Gb
-switch)
-Based on my investigations the packet get only copied if it is delivered to
-Dom0 stack, which is due to this [2] patch. That's a bit unfortunate, but
-luckily it doesn't cause a major regression for this usecase. In the future
-we should try to eliminate that copy somehow.
-There are a few spinoff tasks which will be addressed in separate patches:
-- grant copy the header directly instead of map and memcpy. This should help
-  us avoiding TLB flushing
-- use something else than ballooned pages
-- fix grant map to use page->index properly
-I will run some more extensive tests, but some basic XenRT tests were already
-passed with good results.
-I've tried to broke it down to smaller patches, with mixed results, so I
-welcome suggestions on that part as well:
-1: Introduce TX grant map definitions
-2: Change TX path from grant copy to mapping
-3: Remove old TX grant copy definitons and fix indentations
-4: Change RX path for mapped SKB fragments
-5: Add stat counters for zerocopy
-6: Handle guests with too many frags
-7: Add stat counters for frag_list skbs
-8: Timeout packets in RX path
-9: Aggregate TX unmap operations
-
-v2: I've fixed some smaller things, see the individual patches. I've added a
-few new stat counters, and handling the important use case when an older guest
-sends lots of slots. Instead of delayed copy now we timeout packets on the RX
-path, based on the assumption that otherwise packets should get stucked
-anywhere else. Finally some unmap batching to avoid too much TLB flush
-
-v3: Apart from fixing a few things mentioned in responses the important change
-is the use the hypercall directly for grant [un]mapping, therefore we can
-avoid m2p override.
-
-v4: Now we are using a new grant mapping API to avoid m2p_override. The RX queue
-timeout logic changed also.
-
-[1] http://lwn.net/Articles/491522/
-[2] https://lkml.org/lkml/2012/7/20/363
+These counters help determine how often the guest sends a packet with more
+than MAX_SKB_FRAGS frags.
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+ drivers/net/xen-netback/common.h    |    1 +
+ drivers/net/xen-netback/interface.c |    7 +++++++
+ drivers/net/xen-netback/netback.c   |    1 +
+ 3 files changed, 9 insertions(+)
 
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index e3c28ff..c037efb 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -158,6 +158,7 @@ struct xenvif {
+ 	unsigned long tx_zerocopy_sent;
+ 	unsigned long tx_zerocopy_success;
+ 	unsigned long tx_zerocopy_fail;
++	unsigned long tx_frag_overflow;
+ 
+ 	/* Miscellaneous private stuff. */
+ 	struct net_device *dev;
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index ac27af3..b7daf8d 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -254,6 +254,13 @@ static const struct xenvif_stat {
+ 		"tx_zerocopy_fail",
+ 		offsetof(struct xenvif, tx_zerocopy_fail)
+ 	},
++	/* Number of packets exceeding MAX_SKB_FRAG slots. You should use
++	 * a guest with the same MAX_SKB_FRAG
++	 */
++	{
++		"tx_frag_overflow",
++		offsetof(struct xenvif, tx_frag_overflow)
++	},
+ };
+ 
+ static int xenvif_get_sset_count(struct net_device *dev, int string_set)
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 9841429..4305965 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1656,6 +1656,7 @@ static int xenvif_tx_submit(struct xenvif *vif, int budget)
+ 			skb_shinfo(skb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+ 			skb_shinfo(nskb)->tx_flags |= SKBTX_DEV_ZEROCOPY;
+ 			vif->tx_zerocopy_sent += 2;
++			vif->tx_frag_overflow++;
+ 			nskb = skb;
+ 
+ 			skb = skb_copy_expand(skb, 0, 0, GFP_ATOMIC | __GFP_NOWARN);
