@@ -1,117 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961AbaANBOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:14:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54962 "EHLO
+	id S1755980AbaANBOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:14:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaANBON (ORCPT
+	with ESMTP id S1752570AbaANA0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 20:14:13 -0500
-Date: Mon, 13 Jan 2014 17:14:12 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        netdev@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [PATCH v3 4/4] dma debug: introduce debug_dma_assert_idle()
-Message-Id: <20140113171412.dd90c020b103f4a686f8dc34@linux-foundation.org>
-In-Reply-To: <20140114004804.27138.18469.stgit@viggo.jf.intel.com>
-References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
-	<20140114004804.27138.18469.stgit@viggo.jf.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 13 Jan 2014 19:26:23 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 13/27] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+Date: Mon, 13 Jan 2014 16:26:27 -0800
+Message-Id: <20140114002623.743802865@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
+References: <20140114002623.356220317@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 13 Jan 2014 16:48:47 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Record actively mapped pages and provide an api for asserting a given
-> page is dma inactive before execution proceeds.  Placing
-> debug_dma_assert_idle() in cow_user_page() flagged the violation of the
-> dma-api in the NET_DMA implementation (see commit 77873803363c "net_dma:
-> mark broken").
+------------------
 
-Some discussion of the overlap counter thing would be useful.
+From: Daniel Borkmann <dborkman@redhat.com>
 
-> --- a/include/linux/dma-debug.h
-> +++ b/include/linux/dma-debug.h
->
-> ...
->
-> +static void __active_pfn_inc_overlap(struct dma_debug_entry *entry)
-> +{
-> +	unsigned long pfn = entry->pfn;
-> +	int i;
-> +
-> +	for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
-> +		if (radix_tree_tag_get(&dma_active_pfn, pfn, i) == 0) {
-> +			radix_tree_tag_set(&dma_active_pfn, pfn, i);
-> +			return;
-> +		}
-> +	pr_debug("DMA-API: max overlap count (%d) reached for pfn 0x%lx\n",
-> +		 RADIX_TREE_MAX_TAGS, pfn);
-> +}
-> +
-> +static void __active_pfn_dec_overlap(struct dma_debug_entry *entry)
-> +{
-> +	unsigned long pfn = entry->pfn;
-> +	int i;
-> +
-> +	for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
-> +		if (radix_tree_tag_get(&dma_active_pfn, pfn, i)) {
-> +			radix_tree_tag_clear(&dma_active_pfn, pfn, i);
-> +			return;
-> +		}
-> +	radix_tree_delete(&dma_active_pfn, pfn);
-> +}
-> +
-> +static int active_pfn_insert(struct dma_debug_entry *entry)
-> +{
-> +	unsigned long flags;
-> +	int rc;
-> +
-> +	spin_lock_irqsave(&radix_lock, flags);
-> +	rc = radix_tree_insert(&dma_active_pfn, entry->pfn, entry);
-> +	if (rc == -EEXIST)
-> +		__active_pfn_inc_overlap(entry);
-> +	spin_unlock_irqrestore(&radix_lock, flags);
-> +
-> +	return rc;
-> +}
-> +
-> +static void active_pfn_remove(struct dma_debug_entry *entry)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&radix_lock, flags);
-> +	__active_pfn_dec_overlap(entry);
-> +	spin_unlock_irqrestore(&radix_lock, flags);
-> +}
+[ Upstream commit b1aac815c0891fe4a55a6b0b715910142227700f ]
 
-OK, I think I see what's happening.  The tags thing acts as a crude
-counter and if the map/unmap count ends up imbalanced, we deliberately
-leak an entry in the radix-tree so it can later be reported via undescribed
-means.  Thoughts:
+Jakub reported while working with nlmon netlink sniffer that parts of
+the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
+That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
 
-- RADIX_TREE_MAX_TAGS=3 so the code could count to 7, with a bit of
-  futzing around.
+In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
+memory through this. At least, in udp_dump_one(), we allocate a skb in ...
 
-- from a style/readability point of view it is unexpected that
-  __active_pfn_dec_overlap() actually removes radix-tree items.  It
-  would be better to do:
+  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
 
-	spin_lock_irqsave(&radix_lock, flags);
-	if (__active_pfn_dec_overlap(entry) == something) {
-		/*
-		 * Nice comment goes here
-		 */
-		radix_tree_delete(...);
-	}
-	spin_unlock_irqrestore(&radix_lock, flags);
+... and then pass that to inet_sk_diag_fill() that puts the whole struct
+inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
+r->id.idiag_dst[0] and leave the rest untouched:
+
+  r->id.idiag_src[0] = inet->inet_rcv_saddr;
+  r->id.idiag_dst[0] = inet->inet_daddr;
+
+struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
+fully filled out in IPv6 case, but for IPv4 not.
+
+So just zero them out by using plain memset (for this little amount of
+bytes it's probably not worth the extra check for idiag_family == AF_INET).
+
+Similarly, fix also other places where we fill that out.
+
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/inet_diag.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -110,6 +110,10 @@ int inet_sk_diag_fill(struct sock *sk, s
+ 
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = inet->inet_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
+ 	r->id.idiag_dst[0] = inet->inet_daddr;
+ 
+@@ -227,12 +231,19 @@ static int inet_twsk_diag_fill(struct in
+ 
+ 	r->idiag_family	      = tw->tw_family;
+ 	r->idiag_retrans      = 0;
++
+ 	r->id.idiag_if	      = tw->tw_bound_dev_if;
+ 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
++
+ 	r->id.idiag_sport     = tw->tw_sport;
+ 	r->id.idiag_dport     = tw->tw_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
+ 	r->id.idiag_dst[0]    = tw->tw_daddr;
++
+ 	r->idiag_state	      = tw->tw_substate;
+ 	r->idiag_timer	      = 3;
+ 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
+@@ -714,8 +725,13 @@ static int inet_diag_fill_req(struct sk_
+ 
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = ireq->rmt_port;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = ireq->loc_addr;
+ 	r->id.idiag_dst[0] = ireq->rmt_addr;
++
+ 	r->idiag_expires = jiffies_to_msecs(tmo);
+ 	r->idiag_rqueue = 0;
+ 	r->idiag_wqueue = 0;
 
 
