@@ -1,124 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaANTq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:46:58 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60312 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751367AbaANTqz (ORCPT
+	id S1751662AbaANTtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:49:11 -0500
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:51613 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751274AbaANTtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:46:55 -0500
-Message-ID: <1389728812.28068.9.camel@x220>
-Subject: [PATCH v2 2/2] net/mlx4_core: clean up srq_res_start_move_to()
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Or Gerlitz <ogerlitz@mellanox.com>,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Rony Efraim <ronye@mellanox.com>, Hadar Hen Zion <hadarh@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 14 Jan 2014 20:46:52 +0100
-In-Reply-To: <20140114084050.70a612af@jpm-OptiPlex-GX620>
-References: <1389099734.15032.20.camel@x41>
-	 <20140114084050.70a612af@jpm-OptiPlex-GX620>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jan 2014 19:46:53.0697 (UTC) FILETIME=[5FFD4F10:01CF1161]
-X-RcptDomain: vger.kernel.org
+	Tue, 14 Jan 2014 14:49:09 -0500
+Date: Tue, 14 Jan 2014 13:49:06 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Dave Hansen <dave@sr71.net>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, penberg@kernel.org
+Subject: Re: [RFC][PATCH 3/9] mm: page->pfmemalloc only used by slab/skb
+In-Reply-To: <20140114180051.0181E467@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.10.1401141348130.19618@nuc>
+References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180051.0181E467@viggo.jf.intel.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building resource_tracker.o triggers a GCC warning:
-    drivers/net/ethernet/mellanox/mlx4/resource_tracker.c: In function 'mlx4_HW2SW_SRQ_wrapper':
-    drivers/net/ethernet/mellanox/mlx4/resource_tracker.c:3202:17: warning: 'srq' may be used uninitialized in this function [-Wmaybe-uninitialized]
-      atomic_dec(&srq->mtt->ref_count);
-                     ^
+On Tue, 14 Jan 2014, Dave Hansen wrote:
 
-This is a false positive. But a cleanup of srq_res_start_move_to() can
-help GCC here. The code currently uses a switch statement where a plain
-if/else would do, since only two of the switch's four cases can ever
-occur. Dropping that switch makes the warning go away.
+> page->pfmemalloc does not deserve a spot in 'struct page'.  It is
+> only used transiently _just_ after a page leaves the buddy
+> allocator.
 
-While we're at it, add some missing braces, and convert state to the
-correct type.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-v2: adjust to Jack's review.
-
- .../net/ethernet/mellanox/mlx4/resource_tracker.c  | 46 ++++++++--------------
- 1 file changed, 16 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-index 15cd659..4acd84c 100644
---- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-@@ -1371,7 +1371,7 @@ static int cq_res_start_move_to(struct mlx4_dev *dev, int slave, int cqn,
- }
- 
- static int srq_res_start_move_to(struct mlx4_dev *dev, int slave, int index,
--				 enum res_cq_states state, struct res_srq **srq)
-+				 enum res_srq_states state, struct res_srq **srq)
- {
- 	struct mlx4_priv *priv = mlx4_priv(dev);
- 	struct mlx4_resource_tracker *tracker = &priv->mfunc.master.res_tracker;
-@@ -1380,39 +1380,25 @@ static int srq_res_start_move_to(struct mlx4_dev *dev, int slave, int index,
- 
- 	spin_lock_irq(mlx4_tlock(dev));
- 	r = res_tracker_lookup(&tracker->res_tree[RES_SRQ], index);
--	if (!r)
-+	if (!r) {
- 		err = -ENOENT;
--	else if (r->com.owner != slave)
-+	} else if (r->com.owner != slave) {
- 		err = -EPERM;
--	else {
--		switch (state) {
--		case RES_SRQ_BUSY:
--			err = -EINVAL;
--			break;
--
--		case RES_SRQ_ALLOCATED:
--			if (r->com.state != RES_SRQ_HW)
--				err = -EINVAL;
--			else if (atomic_read(&r->ref_count))
--				err = -EBUSY;
--			break;
--
--		case RES_SRQ_HW:
--			if (r->com.state != RES_SRQ_ALLOCATED)
--				err = -EINVAL;
--			break;
--
--		default:
-+	} else if (state == RES_SRQ_ALLOCATED) {
-+		if (r->com.state != RES_SRQ_HW)
- 			err = -EINVAL;
--		}
-+		else if (atomic_read(&r->ref_count))
-+			err = -EBUSY;
-+	} else if (state != RES_SRQ_HW || r->com.state != RES_SRQ_ALLOCATED) {
-+		err = -EINVAL;
-+	}
- 
--		if (!err) {
--			r->com.from_state = r->com.state;
--			r->com.to_state = state;
--			r->com.state = RES_SRQ_BUSY;
--			if (srq)
--				*srq = r;
--		}
-+	if (!err) {
-+		r->com.from_state = r->com.state;
-+		r->com.to_state = state;
-+		r->com.state = RES_SRQ_BUSY;
-+		if (srq)
-+			*srq = r;
- 	}
- 
- 	spin_unlock_irq(mlx4_tlock(dev));
--- 
-1.8.4.2
-
-
+Why would we need to do this if we are removing the cmpxchg_double?
