@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaANEJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 23:09:52 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:3218 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaANEJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 23:09:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 13 Jan 2014 20:09:45 -0800
-Message-ID: <52D4B88E.8090109@nvidia.com>
-Date: Mon, 13 Jan 2014 20:09:50 -0800
-From: Paul Walmsley <pwalmsley@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel-build-reports@lists.linaro.org" 
-	<kernel-build-reports@lists.linaro.org>
-Subject: Tegra baseline test results for v3.13-rc8
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752747AbaANELD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 23:11:03 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:57481 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaANELA (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 13 Jan 2014 23:11:00 -0500
+Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
+ efi_enter_virtual_mode() (was: Re: [RFC PATCH 00/14] Support timezone of
+ ACPI TAD and EFI TIME)
+From: joeyli <jlee@suse.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Matt Fleming <matt@console-pimps.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
+In-Reply-To: <2530951.HFPX8MI38t@vostro.rjw.lan>
+References: <1387439053-8711-1-git-send-email-jlee@suse.com>
+	 <3476450.BMEcId2Lgj@vostro.rjw.lan>
+	 <20131221122148.GB29501@console-pimps.org>
+	 <2530951.HFPX8MI38t@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 14 Jan 2014 12:09:08 +0800
+Message-ID: <1389672548.24105.252.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some basic Tegra test results for Linux v3.13-rc8.
-Logs and other details at:
+於 日，2014-01-12 於 01:30 +0100，Rafael J. Wysocki 提到：
+> OK
+> 
+> I don't see any adverse effects of the patch below on a couple of my
+> test
+> boxes, but (a) they are Intel-based and (b) they are non-EFI, so it
+> would be
+> good to give it a go on as many machines as reasonably possible.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI / init: Run acpi_early_init() before
+> efi_enter_virtual_mode()
+> 
+> According to Matt Fleming, if acpi_early_init() was executed befpre
+> efi_enter_virtual_mode(), the EFI initialization could benefit from
+> it, so make that happen.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  init/main.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-pm/init/main.c
+> ===================================================================
+> --- linux-pm.orig/init/main.c
+> +++ linux-pm/init/main.c
+> @@ -615,6 +615,7 @@ asmlinkage void __init start_kernel(void
+>         calibrate_delay();
+>         pidmap_init();
+>         anon_vma_init();
+> +       acpi_early_init();
+>  #ifdef CONFIG_X86
+>         if (efi_enabled(EFI_RUNTIME_SERVICES))
+>                 efi_enter_virtual_mode();
+> @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void
+>  
+>         check_bugs();
+>  
+> -       acpi_early_init(); /* before LAPIC and SMP init */
+>         sfi_init_late();
+>  
+>         if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+> 
+> 
+> 
 
-     http://nvt.pwsan.com/pub/linux/testlogs/test_v3.13-rc8/20140112023108/
+This patch works to me on Acer Gateway Z5WT2 UEFI notebook and Intel
+UEFI development board.
+
+Does it possible move acpi_early_init() to before timekeeping_init()?
+The position is also before efi_enter_virtual_mode() and that will be
+useful for parsing ACPI TAD to set system clock:
+
+diff --git a/init/main.c b/init/main.c
+index febc511..b6d93c8 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -565,6 +565,7 @@ asmlinkage void __init start_kernel(void)
+        init_timers();
+        hrtimers_init();
+        softirq_init();
++       acpi_early_init();
+        timekeeping_init();
+        time_init();
+        sched_clock_postinit();
+@@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
+ 
+        check_bugs();
+ 
+-       acpi_early_init(); /* before LAPIC and SMP init */
+        sfi_init_late();
+ 
+        if (efi_enabled(EFI_RUNTIME_SERVICES)) {
 
 
-Test summary
-------------
+Thanks a lot!
+Joey Lee
 
-Build: zImage:
-     Pass: ( 2/ 2): multi_v7_defconfig, tegra_defconfig
-
-Boot to userspace: multi_v7_defconfig:
-     Pass: ( 2/ 2): tegra114-dalmore-headless, tegra30-beaver
-
-Boot to userspace: tegra_defconfig:
-     Pass: ( 2/ 2): tegra114-dalmore-headless, tegra30-beaver
-
-
-vmlinux object size
-(delta in bytes from test_v3.13-rc7 (d6e0a2dd12f4067a5bcefb8bbd8ddbeff800afbc)):
-    text     data      bss    total  kernel
-     +56        0        0      +56  multi_v7_defconfig
-   +1373      -24        0    +1349  tegra_defconfig
-
-
-Boot-time memory difference
-(delta in bytes from test_v3.13-rc7 (d6e0a2dd12f4067a5bcefb8bbd8ddbeff800afbc))
-     avail    rsrvd     high    freed                board              kconfig                  dtb
-         .        .        .        . tegra114-dalmore-hea   multi_v7_defconfig     tegra114-dalmore
-         .        .        .        . tegra114-dalmore-hea      tegra_defconfig     tegra114-dalmore
-         .        .        .        .       tegra30-beaver   multi_v7_defconfig       tegra30-beaver
-         .        .        .        .       tegra30-beaver      tegra_defconfig       tegra30-beaver
-
-
-- Paul
