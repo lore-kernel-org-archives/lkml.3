@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaANXUg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:20:36 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:61039 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751574AbaANXUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:20:31 -0500
-Date: Tue, 14 Jan 2014 18:20:29 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v6 1/8] x86: allow to handle errors in text_poke
- function family
-Message-ID: <20140114182029.27fa13f9@gandalf.local.home>
-In-Reply-To: <1386690140-19941-2-git-send-email-pmladek@suse.cz>
-References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
-	<1386690140-19941-2-git-send-email-pmladek@suse.cz>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751834AbaANXYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:24:24 -0500
+Received: from mga09.intel.com ([134.134.136.24]:2818 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751068AbaANXYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 18:24:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="458852786"
+Message-ID: <52D5C6F2.7090607@linux.intel.com>
+Date: Tue, 14 Jan 2014 15:23:30 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>, Fengguang Wu <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [x86, kaslr] BUG: kernel boot hang
+References: <20140114133125.GB26942@localhost> <CAGXu5j+uBnEJ2qddoec0Y2z3=yzAYwKE_GjMRhXzc4XRw_Se_g@mail.gmail.com>
+In-Reply-To: <CAGXu5j+uBnEJ2qddoec0Y2z3=yzAYwKE_GjMRhXzc4XRw_Se_g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-FYI, for future patches, start the subject with a capital letter. ie:
- x86: Allow to handle errors in text_poke function family
-
-On Tue, 10 Dec 2013 16:42:13 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
-
-> The text_poke functions called BUG() in case of error. This was too strict.
-> There are situations when the system is still usable even when the patching
-> has failed, for example when enabling the dynamic ftrace.
+On 01/14/2014 02:33 PM, Kees Cook wrote:
 > 
-> This commit modifies text_poke and text_poke_bp functions to return an error
-> code instead of calling BUG(). They used to return the patched address. But
-> the address was just copied from the first parameter. It was no extra
-> information and it has not been used anywhere yet.
+> Can you tell me how the initrd for quantal-core-x86_64.cgz was built
+> in the qemu instances you're using? It seems like all the failures
+> point to a problem with how kASLR is interacting with the initrd.
 > 
-> There are some situations where it is hard to recover from an error. Masami
-> Hiramatsu <masami.hiramatsu.pt@hitachi.com> suggested to create
-> text_poke*_or_die() variants for this purpose.
 
-I don't like the "_or_die()". Although I don't care much about it, I'm
-thinking the x86 maintainers might not like it either.
+If kASLR somehow causes the kernel to collide with the initrd that would
+be problem...
+	
+	-hpa
 
-What about just doing the test in the places that would call "or_die"?
-
-	ret = text_poke*();
-	BUG_ON(ret);
-
-?
-
--- Steve
-
-> 
-> Last but not least, we modify return value of the text_poke_early() function.
-> It is not capable of returning an error code. Let's return void to make
-> it clear.
-> 
-> Finally, we also need to modify the few locations where text_poke functions
-> were used and the error code has to be handled now.
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> ---
 
