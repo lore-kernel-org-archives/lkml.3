@@ -1,168 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaANA0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:26:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53793 "EHLO
+	id S1752361AbaANA0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:26:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53801 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaANA0F (ORCPT
+	with ESMTP id S1751414AbaANA0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:05 -0500
+	Mon, 13 Jan 2014 19:26:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [PATCH 3.4 00/27] 3.4.77-stable review
-Date: Mon, 13 Jan 2014 16:26:14 -0800
-Message-Id: <20140114002623.356220317@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 01/27] net: do not pretend FRAGLIST support
+Date: Mon, 13 Jan 2014 16:26:15 -0800
+Message-Id: <20140114002623.404031928@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
+References: <20140114002623.356220317@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.77 release.
-There are 27 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Thu Jan 16 00:26:11 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.77-rc1.gz
-and the diffstat can be found below.
+From: Eric Dumazet <edumazet@google.com>
 
-thanks,
+[ Upstream commit 28e24c62ab3062e965ef1b3bcc244d50aee7fa85 ]
 
-greg k-h
+Few network drivers really supports frag_list : virtual drivers.
 
--------------
-Pseudo-Shortlog of commits:
+Some drivers wrongly advertise NETIF_F_FRAGLIST feature.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.77-rc1
+If skb with a frag_list is given to them, packet on the wire will be
+corrupt.
 
-Paul Turner <pjt@google.com>
-    sched: Guarantee new group-entities always have weight
+Remove this flag, as core networking stack will make sure to
+provide packets that can be sent without corruption.
 
-Ben Segall <bsegall@google.com>
-    sched: Fix hrtimer_cancel()/rq->lock deadlock
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Anirudha Sarangi <anirudh@xilinx.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/calxeda/xgmac.c              |    2 +-
+ drivers/net/ethernet/ibm/ehea/ehea_main.c         |    2 +-
+ drivers/net/ethernet/tehuti/tehuti.c              |    1 -
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |    2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2 +-
+ 5 files changed, 4 insertions(+), 5 deletions(-)
 
-Ben Segall <bsegall@google.com>
-    sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
-
-Ben Segall <bsegall@google.com>
-    sched: Fix race on toggling cfs_bandwidth_used
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
-
-Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-    ARM: shmobile: mackerel: Fix coherent DMA mask
-
-Russell King <rmk+kernel@arm.linux.org.uk>
-    ARM: fix "bad mode in ... handler" message for undefined instructions
-
-Curt Brune <curt@cumulusnetworks.com>
-    bridge: use spin_lock_bh() in br_multicast_set_hash_max
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: llc: fix use after free in llc_ui_recvmsg
-
-David S. Miller <davem@davemloft.net>
-    vlan: Fix header ops passthru when doing TX VLAN offload.
-
-Florian Westphal <fw@strlen.de>
-    net: rose: restore old recvmsg behavior
-
-Sasha Levin <sasha.levin@oracle.com>
-    rds: prevent dereference of a NULL device
-
-Salva Peiró <speiro@ai2.upv.es>
-    hamradio/yam: fix info leak in ioctl
-
-Wenliang Fan <fanwlexca@gmail.com>
-    drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: inet_diag: zero out uninitialized idiag_{src,dst} fields
-
-Sasha Levin <sasha.levin@oracle.com>
-    net: unix: allow bind to fail on mutex lock
-
-Jason Wang <jasowang@redhat.com>
-    netvsc: don't flush peers notifying work during setting mtu
-
-Nat Gurumoorthy <natg@google.com>
-    tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
-
-Sasha Levin <sasha.levin@oracle.com>
-    net: unix: allow set_peek_off to fail
-
-Changli Gao <xiaosuo@gmail.com>
-    net: drop_monitor: fix the value of maxattr
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: don't count addrconf generated routes against gc limit
-
-Jason Wang <jasowang@redhat.com>
-    macvtap: signal truncated packets
-
-Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-    tun: update file current position
-
-Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-    macvtap: update file current position
-
-Vlad Yasevich <vyasevic@redhat.com>
-    macvtap: Do not double-count received packets
-
-Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-    rds: prevent BUG_ON triggered on congestion update to loopback
-
-Eric Dumazet <edumazet@google.com>
-    net: do not pretend FRAGLIST support
-
-
--------------
-
-Diffstat:
-
- Makefile                                          |  4 +-
- arch/arm/kernel/traps.c                           |  8 +++-
- arch/arm/mach-shmobile/board-mackerel.c           |  4 +-
- arch/x86/include/asm/fpu-internal.h               | 13 +++---
- drivers/net/ethernet/broadcom/tg3.c               |  3 ++
- drivers/net/ethernet/calxeda/xgmac.c              |  2 +-
- drivers/net/ethernet/ibm/ehea/ehea_main.c         |  2 +-
- drivers/net/ethernet/tehuti/tehuti.c              |  1 -
- drivers/net/ethernet/xilinx/ll_temac_main.c       |  2 +-
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c |  2 +-
- drivers/net/hamradio/hdlcdrv.c                    |  2 +
- drivers/net/hamradio/yam.c                        |  1 +
- drivers/net/hyperv/netvsc_drv.c                   |  1 -
- drivers/net/macvtap.c                             | 20 ++++------
- drivers/net/tun.c                                 |  2 +
- include/linux/net.h                               |  2 +-
- include/linux/netdevice.h                         |  9 +++++
- kernel/sched/core.c                               |  9 ++++-
- kernel/sched/fair.c                               | 48 ++++++++++++++++-------
- kernel/sched/sched.h                              |  3 +-
- net/8021q/vlan_dev.c                              | 19 ++++++++-
- net/bridge/br_multicast.c                         |  4 +-
- net/core/drop_monitor.c                           |  1 -
- net/core/sock.c                                   |  2 +-
- net/ipv4/inet_diag.c                              | 16 ++++++++
- net/ipv6/route.c                                  |  8 +---
- net/llc/af_llc.c                                  |  5 ++-
- net/rds/ib.c                                      |  3 +-
- net/rds/ib_send.c                                 |  5 +--
- net/rose/af_rose.c                                | 16 ++------
- net/unix/af_unix.c                                | 16 ++++++--
- 31 files changed, 153 insertions(+), 80 deletions(-)
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -1776,7 +1776,7 @@ static int xgmac_probe(struct platform_d
+ 	if (device_can_wakeup(priv->device))
+ 		priv->wolopts = WAKE_MAGIC;	/* Magic Frame as default */
+ 
+-	ndev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_HIGHDMA;
++	ndev->hw_features = NETIF_F_SG | NETIF_F_HIGHDMA;
+ 	if (readl(priv->base + XGMAC_DMA_HW_FEATURE) & DMA_HW_FEAT_TXCOESEL)
+ 		ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+ 				     NETIF_F_RXCSUM;
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -3029,7 +3029,7 @@ static struct ehea_port *ehea_setup_sing
+ 
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_TSO
+ 		      | NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_TX | NETIF_F_LRO;
+-	dev->features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_TSO
++	dev->features = NETIF_F_SG | NETIF_F_TSO
+ 		      | NETIF_F_HIGHDMA | NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_TX
+ 		      | NETIF_F_HW_VLAN_RX | NETIF_F_HW_VLAN_FILTER
+ 		      | NETIF_F_RXCSUM;
+--- a/drivers/net/ethernet/tehuti/tehuti.c
++++ b/drivers/net/ethernet/tehuti/tehuti.c
+@@ -1995,7 +1995,6 @@ bdx_probe(struct pci_dev *pdev, const st
+ 		ndev->features = NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO
+ 		    | NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX |
+ 		    NETIF_F_HW_VLAN_FILTER | NETIF_F_RXCSUM
+-		    /*| NETIF_F_FRAGLIST */
+ 		    ;
+ 		ndev->hw_features = NETIF_F_IP_CSUM | NETIF_F_SG |
+ 			NETIF_F_TSO | NETIF_F_HW_VLAN_TX;
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -1026,7 +1026,7 @@ static int __devinit temac_of_probe(stru
+ 	dev_set_drvdata(&op->dev, ndev);
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &temac_netdev_ops;
+ 	ndev->ethtool_ops = &temac_ethtool_ops;
+ #if 0
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -1494,7 +1494,7 @@ static int __devinit axienet_of_probe(st
+ 
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &axienet_netdev_ops;
+ 	ndev->ethtool_ops = &axienet_ethtool_ops;
+ 
 
 
