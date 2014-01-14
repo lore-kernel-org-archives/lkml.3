@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaANQnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:43:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52962 "EHLO
+	id S1752773AbaANQoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:44:06 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52880 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312AbaANQnI (ORCPT
+	with ESMTP id S1751966AbaANQl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:43:08 -0500
-Date: Tue, 14 Jan 2014 08:42:24 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-73kc2fopt81517hrdgdra18o@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com, dsahern@gmail.com,
-        adrian.hunter@intel.com, tglx@linutronix.de
+	Tue, 14 Jan 2014 11:41:57 -0500
+Date: Tue, 14 Jan 2014 08:41:43 -0800
+From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
+Message-ID: <tip-f77c6e9c8f9c444cd44423df0c2708e86a06a696@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, artagnon@gmail.com, tglx@linutronix.de,
+        jolsa@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, tglx@linutronix.de, artagnon@gmail.com,
+        jolsa@redhat.com
+In-Reply-To: <1388388861-7931-2-git-send-email-artagnon@gmail.com>
+References: <1388388861-7931-2-git-send-email-artagnon@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Fix build when DWARF support libraries not present
-Git-Commit-ID: 1d027ee9b80c30e83769ef306ccfafe483dd1672
+Subject: [tip:perf/core] perf tools: Generalize percent_color_snprintf()
+Git-Commit-ID: f77c6e9c8f9c444cd44423df0c2708e86a06a696
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,92 +29,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:42:30 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:41:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1d027ee9b80c30e83769ef306ccfafe483dd1672
-Gitweb:     http://git.kernel.org/tip/1d027ee9b80c30e83769ef306ccfafe483dd1672
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 13 Jan 2014 15:15:25 -0300
+Commit-ID:  f77c6e9c8f9c444cd44423df0c2708e86a06a696
+Gitweb:     http://git.kernel.org/tip/f77c6e9c8f9c444cd44423df0c2708e86a06a696
+Author:     Ramkumar Ramachandra <artagnon@gmail.com>
+AuthorDate: Mon, 30 Dec 2013 13:04:18 +0530
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Jan 2014 15:15:25 -0300
+CommitDate: Mon, 13 Jan 2014 10:46:39 -0300
 
-perf probe: Fix build when DWARF support libraries not present
+perf tools: Generalize percent_color_snprintf()
 
-On a freshly installed system, after libelf-dev is installed we get:
+Make percent_color_snprintf() handle negative values correctly.
 
-    CC       /tmp/build/perf/util/probe-event.o
-  util/probe-event.c: In function ‘try_to_find_probe_trace_events’:
-  util/probe-event.c:753:46: error: unused parameter ‘target’ [-Werror=unused-parameter]
-       int max_tevs __maybe_unused, const char *target)
-                                                ^
-    CC       /tmp/build/perf/util/cgroup.o
-  util/probe-event.c: At top level:
-  util/probe-event.c:193:12: error: ‘get_text_start_address’ defined but not used [-Werror=unused-function]
-   static int get_text_start_address(const char *exec, unsigned long *address)
-            ^
-  cc1: all warnings being treated as errors
-  make[1]: *** [/tmp/build/perf/util/probe-event.o] Error 1
-  make[1]: *** Waiting for unfinished jobs....
-  make: *** [install] Error 2
-
-Fix it by enclosing functions only used when those libraries are installed
-under the suitable preprocessor define and using __maybe_unused to a function
-that is only built when DWARF support is disabled.
-
-Problem introduced in this changeset:
-
-  commit fb7345bbf7fad9bf72ef63a19c707970b9685812
-  Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-  Date:   Thu Dec 26 05:41:53 2013 +0000
-
-      perf probe: Support basic dwarf-based operations on uprobe events
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-73kc2fopt81517hrdgdra18o@git.kernel.org
+Link: http://lkml.kernel.org/r/1388388861-7931-2-git-send-email-artagnon@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ tools/perf/util/color.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 86ed858..a4ee6b4 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -172,6 +172,7 @@ const char *kernel_get_module_path(const char *module)
- 	return (dso) ? dso->long_name : NULL;
- }
+diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
+index 66e44a5..8cda46c 100644
+--- a/tools/perf/util/color.c
++++ b/tools/perf/util/color.c
+@@ -1,6 +1,7 @@
+ #include <linux/kernel.h>
+ #include "cache.h"
+ #include "color.h"
++#include <math.h>
  
-+#ifdef HAVE_DWARF_SUPPORT
- /* Copied from unwind.c */
- static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
- 				    GElf_Shdr *shp, const char *name)
-@@ -217,6 +218,7 @@ out:
- 	elf_end(elf);
- 	return ret;
- }
-+#endif
+ int perf_use_color_default = -1;
  
- static int init_user_exec(void)
- {
-@@ -750,7 +752,8 @@ static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 				struct probe_trace_event **tevs __maybe_unused,
--				int max_tevs __maybe_unused, const char *target)
-+				int max_tevs __maybe_unused,
-+				const char *target __maybe_unused)
- {
- 	if (perf_probe_event_need_dwarf(pev)) {
- 		pr_warning("Debuginfo-analysis is not supported.\n");
+@@ -298,10 +299,10 @@ const char *get_percent_color(double percent)
+ 	 * entries in green - and keep the low overhead places
+ 	 * normal:
+ 	 */
+-	if (percent >= MIN_RED)
++	if (fabs(percent) >= MIN_RED)
+ 		color = PERF_COLOR_RED;
+ 	else {
+-		if (percent > MIN_GREEN)
++		if (fabs(percent) > MIN_GREEN)
+ 			color = PERF_COLOR_GREEN;
+ 	}
+ 	return color;
