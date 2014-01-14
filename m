@@ -1,104 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaANUGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:06:02 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43767 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaANUGA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:06:00 -0500
-Date: Tue, 14 Jan 2014 21:05:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20140114200547.GM7572@laptop.programming.kicks-ass.net>
-References: <20140114142627.537a702607e703c6eff63640@canb.auug.org.au>
- <20140114141406.GD7572@laptop.programming.kicks-ass.net>
- <alpine.LRH.2.02.1401141400030.19206@file01.intranet.prod.int.rdu2.redhat.com>
+	id S1751843AbaANUHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:07:31 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33616 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548AbaANUH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:07:28 -0500
+Date: Wed, 15 Jan 2014 04:07:20 +0800
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-ID: <20140114200720.GM4106@localhost.localdomain>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Michal Hocko <mhocko@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+	linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>
+References: <52C5AA61.8060701@intel.com>
+ <20140103033303.GB4106@localhost.localdomain>
+ <52C6FED2.7070700@intel.com>
+ <20140105003501.GC4106@localhost.localdomain>
+ <20140106164604.GC27602@dhcp22.suse.cz>
+ <20140108101611.GD27937@dhcp22.suse.cz>
+ <20140110081744.GC9437@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1401141400030.19206@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140110081744.GC9437@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011420-7182-0000-0000-0000098DE301
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 02:06:57PM -0500, Mikulas Patocka wrote:
-> On Tue, 14 Jan 2014, Peter Zijlstra wrote:
-> > > Caused by commit 62b94a08da1b ("sched/preempt: Take away
-> > > preempt_enable_no_resched() from modules")
-
-Read these two lines, then note that:
-
-> Try adding #include <linux/preempt.h> to speedstep-lib.c. Does it help?
-
-this obviously will not work as preempt_check_resched() and
-preempt_enable_no_resched() are no longer available to modules.
-
-> > I think that pm commit is a very good example of why the sched/preempt
-> > patch is a very good idea.
+On Fri, Jan 10, 2014 at 09:17:44AM +0100, Michal Hocko wrote:
+> On Fri 10-01-14 00:13:44, Andrew Morton wrote:
+> > On Fri, 10 Jan 2014 09:05:04 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 > > 
-> > Also that Changelog fails to explain why enabling interrupts helps. What
-> > interrupt is required for progress, and how does it make the progress
-> > happen.
+> > > > > --- a/mm/huge_memory.c
+> > > > > +++ b/mm/huge_memory.c
+> > > > > @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
+> > > > >  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
+> > > > >  };
+> > > > >  
+> > > > > +extern int user_min_free_kbytes;
+> > > > >  
+> > > > 
+> > > > We don't add extern declarations to .c files.  How many other examples of 
+> > > > this can you find in mm/?
+> > > 
+> > > I have suggested this because general visibility is not needed.
+> > 
+> > It's best to use a common declaration which is seen by the definition
+> > site and all references, so everyone agrees on the variable's type. 
+> > Otherwise we could have "long foo;" in one file and "extern char foo;"
+> > in another and the compiler won't tell us.  I think the linker could
+> > tell us, but it doesn't, afaik.  Perhaps there's an option...
+> > 
+> > > But if
+> > > you think that it should then include/linux/mm.h sounds like a proper
+> > > place.
+> > 
+> > mm/internal.h might suit.
 > 
-> There is no explanation. It's hardware issue and I have no documentation 
-> for the hardware.
-
-Rafael works for Intel, he ought to be able to figure out wtf the
-hardware does/needs.
-
-> The general problem is that if there are bus-master transfers running (or 
-> possibly for other hardware reasons), the CPU refuses to change frequency. 
-> You can wait a little bit and retry and maybe you succeed changing the 
-> frequency next time.
+> min_free_kbytes is in mm.h so I thought having them together would be
+> appropriate.
 > 
-> If you enable interrupts, wait, disable interrupts and retry, you may 
-> succeed. If you keep interrupts disabled and retry, you never succeed, no 
-> matter how long do you wait. I found it experimentally, I don't know 
-> reason for that.
 
-Sounds like magic goo..
+This is the latest version which put user_min_free_kbytes in
+mm/internal.h. Please have a look. Thanks.
 
-In any case, try the below, it does the same but is far less horrid.
 
+>From 0d2583bea1f8ffa919e2cee3ee8ed08ec547284a Mon Sep 17 00:00:00 2001
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+Date: Thu, 9 Jan 2014 15:24:26 +0800
+Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
+
+min_free_kbytes may be raised during THP's initialization. Sometimes,
+this will change the value being set by user. Showing message will
+clarify this confusion.
+
+Only show this message when changing the value set by user according to
+Michal Hocko's suggestion.
+
+Showing the old value of min_free_kbytes according to Dave Hansen's
+suggestion. This will give user the chance to restore old value of
+min_free_kbytes.
+
+Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
 ---
- drivers/cpufreq/speedstep-smi.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ mm/huge_memory.c |    8 +++++++-
+ mm/internal.h    |    1 +
+ mm/page_alloc.c  |    2 +-
+ 3 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
-index 0f5326d6f79f..57d31538c248 100644
---- a/drivers/cpufreq/speedstep-smi.c
-+++ b/drivers/cpufreq/speedstep-smi.c
-@@ -188,6 +188,7 @@ static void speedstep_set_state(unsigned int state)
- 		return;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7de1bf8..2ca526b8 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -130,8 +130,14 @@ static int set_recommended_min_free_kbytes(void)
+ 			      (unsigned long) nr_free_buffer_pages() / 20);
+ 	recommended_min <<= (PAGE_SHIFT-10);
  
- 	/* Disable IRQs */
-+	preempt_disable();
- 	local_irq_save(flags);
+-	if (recommended_min > min_free_kbytes)
++	if (recommended_min > min_free_kbytes) {
++		if (user_min_free_kbytes >= 0)
++			pr_info("raising min_free_kbytes from %d to %lu "
++				"to help transparent hugepage allocations\n",
++				min_free_kbytes, recommended_min);
++
+ 		min_free_kbytes = recommended_min;
++	}
+ 	setup_per_zone_wmarks();
+ 	return 0;
+ }
+diff --git a/mm/internal.h b/mm/internal.h
+index 684f7aa..110d8da 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -101,6 +101,7 @@ extern void prep_compound_page(struct page *page, unsigned long order);
+ #ifdef CONFIG_MEMORY_FAILURE
+ extern bool is_free_buddy_page(struct page *page);
+ #endif
++extern int user_min_free_kbytes;
  
- 	command = (smi_sig & 0xffffff00) | (smi_cmd & 0xff);
-@@ -200,7 +201,9 @@ static void speedstep_set_state(unsigned int state)
- 		if (retry) {
- 			pr_debug("retry %u, previous result %u, waiting...\n",
- 					retry, result);
-+			local_irq_restore(flags);
- 			mdelay(retry * 50);
-+			local_irq_save(flags);
- 		}
- 		retry++;
- 		__asm__ __volatile__(
-@@ -217,6 +220,7 @@ static void speedstep_set_state(unsigned int state)
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
  
- 	/* enable IRQs */
- 	local_irq_restore(flags);
-+	preempt_enable();
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9ea62b2..a9dcfd8 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -205,7 +205,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
+ };
  
- 	if (new_state == state)
- 		pr_debug("change to %u MHz succeeded after %u tries "
+ int min_free_kbytes = 1024;
+-int user_min_free_kbytes;
++int user_min_free_kbytes = -1;
+ 
+ static unsigned long __meminitdata nr_kernel_pages;
+ static unsigned long __meminitdata nr_all_pages;
+-- 
+1.7.7.6
+
