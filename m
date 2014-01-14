@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaANHm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:42:56 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:41309 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270AbaANHmK (ORCPT
+	id S1752884AbaANHmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47584 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaANHmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Jan 2014 02:42:10 -0500
 From: Ying Xue <ying.xue@windriver.com>
@@ -14,9 +14,9 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 09/10] can: use __dev_get_by_index instead of dev_get_by_index to find interface
-Date: Tue, 14 Jan 2014 15:41:08 +0800
-Message-ID: <1389685269-18600-10-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next 08/10] caif: __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Tue, 14 Jan 2014 15:41:07 +0800
+Message-ID: <1389685269-18600-9-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
@@ -26,60 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As cgw_create_job() is always under rtnl_lock protection,
-__dev_get_by_index() instead of dev_get_by_index() should be used to
-find interface handler in it having us avoid to change interface
-reference counter.
+The following call chains indicate that chnl_net_open() is under
+rtnl_lock protection as __dev_open() is protected by rtnl_lock.
+So if __dev_get_by_index() instead of dev_get_by_index() is used
+to find interface handler in it, this would help us avoid to change
+interface reference counter.
 
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+__dev_open()
+  chnl_net_open()
+
+Cc: Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
 Signed-off-by: Ying Xue <ying.xue@windriver.com>
 ---
- net/can/gw.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ net/caif/chnl_net.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/net/can/gw.c b/net/can/gw.c
-index 88c8a39..ac31891 100644
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -839,21 +839,21 @@ static int cgw_create_job(struct sk_buff *skb,  struct nlmsghdr *nlh)
- 	if (!gwj->ccgw.src_idx || !gwj->ccgw.dst_idx)
- 		goto out;
+diff --git a/net/caif/chnl_net.c b/net/caif/chnl_net.c
+index 7344a8f..4589ff67 100644
+--- a/net/caif/chnl_net.c
++++ b/net/caif/chnl_net.c
+@@ -285,7 +285,7 @@ static int chnl_net_open(struct net_device *dev)
+ 				goto error;
+ 		}
  
--	gwj->src.dev = dev_get_by_index(&init_net, gwj->ccgw.src_idx);
-+	gwj->src.dev = __dev_get_by_index(&init_net, gwj->ccgw.src_idx);
+-		lldev = dev_get_by_index(dev_net(dev), llifindex);
++		lldev = __dev_get_by_index(dev_net(dev), llifindex);
  
- 	if (!gwj->src.dev)
- 		goto out;
+ 		if (lldev == NULL) {
+ 			pr_debug("no interface?\n");
+@@ -307,7 +307,6 @@ static int chnl_net_open(struct net_device *dev)
+ 		mtu = min_t(int, dev->mtu, lldev->mtu - (headroom + tailroom));
+ 		mtu = min_t(int, GPRS_PDP_MTU, mtu);
+ 		dev_set_mtu(dev, mtu);
+-		dev_put(lldev);
  
- 	if (gwj->src.dev->type != ARPHRD_CAN)
--		goto put_src_out;
-+		goto out;
- 
--	gwj->dst.dev = dev_get_by_index(&init_net, gwj->ccgw.dst_idx);
-+	gwj->dst.dev = __dev_get_by_index(&init_net, gwj->ccgw.dst_idx);
- 
- 	if (!gwj->dst.dev)
--		goto put_src_out;
-+		goto out;
- 
- 	if (gwj->dst.dev->type != ARPHRD_CAN)
--		goto put_src_dst_out;
-+		goto out;
- 
- 	gwj->limit_hops = limhops;
- 
-@@ -862,11 +862,6 @@ static int cgw_create_job(struct sk_buff *skb,  struct nlmsghdr *nlh)
- 	err = cgw_register_filter(gwj);
- 	if (!err)
- 		hlist_add_head_rcu(&gwj->list, &cgw_list);
--
--put_src_dst_out:
--	dev_put(gwj->dst.dev);
--put_src_out:
--	dev_put(gwj->src.dev);
- out:
- 	if (err)
- 		kmem_cache_free(cgw_cache, gwj);
+ 		if (mtu < 100) {
+ 			pr_warn("CAIF Interface MTU too small (%d)\n", mtu);
 -- 
 1.7.9.5
 
