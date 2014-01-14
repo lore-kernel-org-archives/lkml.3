@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaANHmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:42:32 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:41285 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066AbaANHlw (ORCPT
+	id S1752962AbaANHm7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:59 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47605 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416AbaANHmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:41:52 -0500
+	Tue, 14 Jan 2014 02:42:17 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,9 +14,9 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 03/10] eql: use __dev_get_by_name instead of dev_get_by_name to find interface
-Date: Tue, 14 Jan 2014 15:41:02 +0800
-Message-ID: <1389685269-18600-4-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next 10/10] net: nl80211: __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Tue, 14 Jan 2014 15:41:09 +0800
+Message-ID: <1389685269-18600-11-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
@@ -26,180 +26,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chain indicates that eql_ioctl(), eql_enslave(),
-eql_emancipate(), eql_g_slave_cfg() and eql_s_slave_cfg() are
-protected under rtnl_lock. So if we use __dev_get_by_name() instead
-of dev_get_by_name() to find interface handlers in them, this would
-help us avoid to change interface reference counters.
+As __cfg80211_rdev_from_attrs(), nl80211_dump_wiphy_parse() and
+nl80211_set_wiphy() are all under rtnl_lock protection,
+__dev_get_by_index() instead of dev_get_by_index() should be used
+to find interface handler in them allowing us to avoid to change
+interface reference counter.
 
-dev_ioctl()
-  rtnl_lock()
-    dev_ifsioc()
-      eql_ioctl()
-        eql_enslave()
-	eql_emancipate()
-	eql_g_slave_cfg()
-	eql_s_slave_cfg()
-  rtnl_unlock()
-
-Additionally we also change their return values from -EINVAL to
--ENODEV in case that interfaces are no found.
-
+Cc: Johannes Berg <johannes@sipsolutions.net>
 Signed-off-by: Ying Xue <ying.xue@windriver.com>
 ---
- drivers/net/eql.c |   95 +++++++++++++++++++++++------------------------------
- 1 file changed, 42 insertions(+), 53 deletions(-)
+ net/wireless/nl80211.c |  100 +++++++++++++++++-------------------------------
+ 1 file changed, 36 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/net/eql.c b/drivers/net/eql.c
-index f219d38..7a79b60 100644
---- a/drivers/net/eql.c
-+++ b/drivers/net/eql.c
-@@ -395,6 +395,7 @@ static int __eql_insert_slave(slave_queue_t *queue, slave_t *slave)
- 		if (duplicate_slave)
- 			eql_kill_one_slave(queue, duplicate_slave);
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index b4f40fe..0d4d7fd 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -165,7 +165,7 @@ __cfg80211_rdev_from_attrs(struct net *netns, struct nlattr **attrs)
  
-+		dev_hold(slave->dev);
- 		list_add(&slave->list, &queue->all_slaves);
- 		queue->num_slaves++;
- 		slave->dev->flags |= IFF_SLAVE;
-@@ -413,39 +414,35 @@ static int eql_enslave(struct net_device *master_dev, slaving_request_t __user *
- 	if (copy_from_user(&srq, srqp, sizeof (slaving_request_t)))
- 		return -EFAULT;
+ 	if (attrs[NL80211_ATTR_IFINDEX]) {
+ 		int ifindex = nla_get_u32(attrs[NL80211_ATTR_IFINDEX]);
+-		netdev = dev_get_by_index(netns, ifindex);
++		netdev = __dev_get_by_index(netns, ifindex);
+ 		if (netdev) {
+ 			if (netdev->ieee80211_ptr)
+ 				tmp = wiphy_to_dev(
+@@ -173,8 +173,6 @@ __cfg80211_rdev_from_attrs(struct net *netns, struct nlattr **attrs)
+ 			else
+ 				tmp = NULL;
  
--	slave_dev  = dev_get_by_name(&init_net, srq.slave_name);
--	if (slave_dev) {
--		if ((master_dev->flags & IFF_UP) == IFF_UP) {
--			/* slave is not a master & not already a slave: */
--			if (!eql_is_master(slave_dev) &&
--			    !eql_is_slave(slave_dev)) {
--				slave_t *s = kmalloc(sizeof(*s), GFP_KERNEL);
--				equalizer_t *eql = netdev_priv(master_dev);
--				int ret;
+-			dev_put(netdev);
 -
--				if (!s) {
--					dev_put(slave_dev);
--					return -ENOMEM;
--				}
--
--				memset(s, 0, sizeof(*s));
--				s->dev = slave_dev;
--				s->priority = srq.priority;
--				s->priority_bps = srq.priority;
--				s->priority_Bps = srq.priority / 8;
--
--				spin_lock_bh(&eql->queue.lock);
--				ret = __eql_insert_slave(&eql->queue, s);
--				if (ret) {
--					dev_put(slave_dev);
--					kfree(s);
--				}
--				spin_unlock_bh(&eql->queue.lock);
--
--				return ret;
--			}
-+	slave_dev = __dev_get_by_name(&init_net, srq.slave_name);
-+	if (!slave_dev)
-+		return -ENODEV;
-+
-+	if ((master_dev->flags & IFF_UP) == IFF_UP) {
-+		/* slave is not a master & not already a slave: */
-+		if (!eql_is_master(slave_dev) && !eql_is_slave(slave_dev)) {
-+			slave_t *s = kmalloc(sizeof(*s), GFP_KERNEL);
-+			equalizer_t *eql = netdev_priv(master_dev);
-+			int ret;
-+
-+			if (!s)
-+				return -ENOMEM;
-+
-+			memset(s, 0, sizeof(*s));
-+			s->dev = slave_dev;
-+			s->priority = srq.priority;
-+			s->priority_bps = srq.priority;
-+			s->priority_Bps = srq.priority / 8;
-+
-+			spin_lock_bh(&eql->queue.lock);
-+			ret = __eql_insert_slave(&eql->queue, s);
-+			if (ret)
-+				kfree(s);
-+
-+			spin_unlock_bh(&eql->queue.lock);
-+
-+			return ret;
+ 			/* not wireless device -- return error */
+ 			if (!tmp)
+ 				return ERR_PTR(-EINVAL);
+@@ -1656,7 +1654,7 @@ static int nl80211_dump_wiphy_parse(struct sk_buff *skb,
+ 		struct cfg80211_registered_device *rdev;
+ 		int ifidx = nla_get_u32(tb[NL80211_ATTR_IFINDEX]);
+ 
+-		netdev = dev_get_by_index(sock_net(skb->sk), ifidx);
++		netdev = __dev_get_by_index(sock_net(skb->sk), ifidx);
+ 		if (!netdev)
+ 			return -ENODEV;
+ 		if (netdev->ieee80211_ptr) {
+@@ -1664,7 +1662,6 @@ static int nl80211_dump_wiphy_parse(struct sk_buff *skb,
+ 				netdev->ieee80211_ptr->wiphy);
+ 			state->filter_wiphy = rdev->wiphy_idx;
  		}
--		dev_put(slave_dev);
+-		dev_put(netdev);
  	}
  
- 	return -EINVAL;
-@@ -461,24 +458,20 @@ static int eql_emancipate(struct net_device *master_dev, slaving_request_t __use
- 	if (copy_from_user(&srq, srqp, sizeof (slaving_request_t)))
- 		return -EFAULT;
+ 	return 0;
+@@ -1987,7 +1984,7 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 	if (info->attrs[NL80211_ATTR_IFINDEX]) {
+ 		int ifindex = nla_get_u32(info->attrs[NL80211_ATTR_IFINDEX]);
  
--	slave_dev = dev_get_by_name(&init_net, srq.slave_name);
--	ret = -EINVAL;
--	if (slave_dev) {
--		spin_lock_bh(&eql->queue.lock);
--
--		if (eql_is_slave(slave_dev)) {
--			slave_t *slave = __eql_find_slave_dev(&eql->queue,
--							      slave_dev);
-+	slave_dev = __dev_get_by_name(&init_net, srq.slave_name);
-+	if (!slave_dev)
-+		return -ENODEV;
+-		netdev = dev_get_by_index(genl_info_net(info), ifindex);
++		netdev = __dev_get_by_index(genl_info_net(info), ifindex);
+ 		if (netdev && netdev->ieee80211_ptr)
+ 			rdev = wiphy_to_dev(netdev->ieee80211_ptr->wiphy);
+ 		else
+@@ -2015,32 +2012,24 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 			rdev, nla_data(info->attrs[NL80211_ATTR_WIPHY_NAME]));
  
--			if (slave) {
--				eql_kill_one_slave(&eql->queue, slave);
--				ret = 0;
--			}
-+	ret = -EINVAL;
-+	spin_lock_bh(&eql->queue.lock);
-+	if (eql_is_slave(slave_dev)) {
-+		slave_t *slave = __eql_find_slave_dev(&eql->queue, slave_dev);
-+		if (slave) {
-+			eql_kill_one_slave(&eql->queue, slave);
-+			ret = 0;
+ 	if (result)
+-		goto bad_res;
++		return result;
+ 
+ 	if (info->attrs[NL80211_ATTR_WIPHY_TXQ_PARAMS]) {
+ 		struct ieee80211_txq_params txq_params;
+ 		struct nlattr *tb[NL80211_TXQ_ATTR_MAX + 1];
+ 
+-		if (!rdev->ops->set_txq_params) {
+-			result = -EOPNOTSUPP;
+-			goto bad_res;
+-		}
++		if (!rdev->ops->set_txq_params)
++			return -EOPNOTSUPP;
+ 
+-		if (!netdev) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		if (!netdev)
++			return -EINVAL;
+ 
+ 		if (netdev->ieee80211_ptr->iftype != NL80211_IFTYPE_AP &&
+-		    netdev->ieee80211_ptr->iftype != NL80211_IFTYPE_P2P_GO) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		    netdev->ieee80211_ptr->iftype != NL80211_IFTYPE_P2P_GO)
++			return -EINVAL;
+ 
+-		if (!netif_running(netdev)) {
+-			result = -ENETDOWN;
+-			goto bad_res;
+-		}
++		if (!netif_running(netdev))
++			return -ENETDOWN;
+ 
+ 		nla_for_each_nested(nl_txq_params,
+ 				    info->attrs[NL80211_ATTR_WIPHY_TXQ_PARAMS],
+@@ -2051,12 +2040,12 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 				  txq_params_policy);
+ 			result = parse_txq_params(tb, &txq_params);
+ 			if (result)
+-				goto bad_res;
++				return result;
+ 
+ 			result = rdev_set_txq_params(rdev, netdev,
+ 						     &txq_params);
+ 			if (result)
+-				goto bad_res;
++				return result;
  		}
--		dev_put(slave_dev);
--
--		spin_unlock_bh(&eql->queue.lock);
  	}
-+	spin_unlock_bh(&eql->queue.lock);
  
- 	return ret;
- }
-@@ -494,7 +487,7 @@ static int eql_g_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
- 	if (copy_from_user(&sc, scp, sizeof (slave_config_t)))
- 		return -EFAULT;
- 
--	slave_dev = dev_get_by_name(&init_net, sc.slave_name);
-+	slave_dev = __dev_get_by_name(&init_net, sc.slave_name);
- 	if (!slave_dev)
- 		return -ENODEV;
- 
-@@ -510,8 +503,6 @@ static int eql_g_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+@@ -2065,7 +2054,7 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 				nl80211_can_set_dev_channel(wdev) ? wdev : NULL,
+ 				info);
+ 		if (result)
+-			goto bad_res;
++			return result;
  	}
- 	spin_unlock_bh(&eql->queue.lock);
  
--	dev_put(slave_dev);
--
- 	if (!ret && copy_to_user(scp, &sc, sizeof (slave_config_t)))
- 		ret = -EFAULT;
+ 	if (info->attrs[NL80211_ATTR_WIPHY_TX_POWER_SETTING]) {
+@@ -2076,19 +2065,15 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 		if (!(rdev->wiphy.features & NL80211_FEATURE_VIF_TXPOWER))
+ 			txp_wdev = NULL;
  
-@@ -529,7 +520,7 @@ static int eql_s_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
- 	if (copy_from_user(&sc, scp, sizeof (slave_config_t)))
- 		return -EFAULT;
+-		if (!rdev->ops->set_tx_power) {
+-			result = -EOPNOTSUPP;
+-			goto bad_res;
+-		}
++		if (!rdev->ops->set_tx_power)
++			return -EOPNOTSUPP;
  
--	slave_dev = dev_get_by_name(&init_net, sc.slave_name);
-+	slave_dev = __dev_get_by_name(&init_net, sc.slave_name);
- 	if (!slave_dev)
- 		return -ENODEV;
+ 		idx = NL80211_ATTR_WIPHY_TX_POWER_SETTING;
+ 		type = nla_get_u32(info->attrs[idx]);
  
-@@ -548,8 +539,6 @@ static int eql_s_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 		if (!info->attrs[NL80211_ATTR_WIPHY_TX_POWER_LEVEL] &&
+-		    (type != NL80211_TX_POWER_AUTOMATIC)) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		    (type != NL80211_TX_POWER_AUTOMATIC))
++			return -EINVAL;
+ 
+ 		if (type != NL80211_TX_POWER_AUTOMATIC) {
+ 			idx = NL80211_ATTR_WIPHY_TX_POWER_LEVEL;
+@@ -2097,7 +2082,7 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 
+ 		result = rdev_set_tx_power(rdev, txp_wdev, type, mbm);
+ 		if (result)
+-			goto bad_res;
++			return result;
  	}
- 	spin_unlock_bh(&eql->queue.lock);
  
--	dev_put(slave_dev);
+ 	if (info->attrs[NL80211_ATTR_WIPHY_ANTENNA_TX] &&
+@@ -2105,10 +2090,8 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 		u32 tx_ant, rx_ant;
+ 		if ((!rdev->wiphy.available_antennas_tx &&
+ 		     !rdev->wiphy.available_antennas_rx) ||
+-		    !rdev->ops->set_antenna) {
+-			result = -EOPNOTSUPP;
+-			goto bad_res;
+-		}
++		    !rdev->ops->set_antenna)
++			return -EOPNOTSUPP;
+ 
+ 		tx_ant = nla_get_u32(info->attrs[NL80211_ATTR_WIPHY_ANTENNA_TX]);
+ 		rx_ant = nla_get_u32(info->attrs[NL80211_ATTR_WIPHY_ANTENNA_RX]);
+@@ -2116,17 +2099,15 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 		/* reject antenna configurations which don't match the
+ 		 * available antenna masks, except for the "all" mask */
+ 		if ((~tx_ant && (tx_ant & ~rdev->wiphy.available_antennas_tx)) ||
+-		    (~rx_ant && (rx_ant & ~rdev->wiphy.available_antennas_rx))) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		    (~rx_ant && (rx_ant & ~rdev->wiphy.available_antennas_rx)))
++			return -EINVAL;
+ 
+ 		tx_ant = tx_ant & rdev->wiphy.available_antennas_tx;
+ 		rx_ant = rx_ant & rdev->wiphy.available_antennas_rx;
+ 
+ 		result = rdev_set_antenna(rdev, tx_ant, rx_ant);
+ 		if (result)
+-			goto bad_res;
++			return result;
+ 	}
+ 
+ 	changed = 0;
+@@ -2134,30 +2115,27 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 	if (info->attrs[NL80211_ATTR_WIPHY_RETRY_SHORT]) {
+ 		retry_short = nla_get_u8(
+ 			info->attrs[NL80211_ATTR_WIPHY_RETRY_SHORT]);
+-		if (retry_short == 0) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		if (retry_short == 0)
++			return -EINVAL;
++
+ 		changed |= WIPHY_PARAM_RETRY_SHORT;
+ 	}
+ 
+ 	if (info->attrs[NL80211_ATTR_WIPHY_RETRY_LONG]) {
+ 		retry_long = nla_get_u8(
+ 			info->attrs[NL80211_ATTR_WIPHY_RETRY_LONG]);
+-		if (retry_long == 0) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		if (retry_long == 0)
++			return -EINVAL;
++
+ 		changed |= WIPHY_PARAM_RETRY_LONG;
+ 	}
+ 
+ 	if (info->attrs[NL80211_ATTR_WIPHY_FRAG_THRESHOLD]) {
+ 		frag_threshold = nla_get_u32(
+ 			info->attrs[NL80211_ATTR_WIPHY_FRAG_THRESHOLD]);
+-		if (frag_threshold < 256) {
+-			result = -EINVAL;
+-			goto bad_res;
+-		}
++		if (frag_threshold < 256)
++			return -EINVAL;
++
+ 		if (frag_threshold != (u32) -1) {
+ 			/*
+ 			 * Fragments (apart from the last one) are required to
+@@ -2187,10 +2165,8 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 		u32 old_frag_threshold, old_rts_threshold;
+ 		u8 old_coverage_class;
+ 
+-		if (!rdev->ops->set_wiphy_params) {
+-			result = -EOPNOTSUPP;
+-			goto bad_res;
+-		}
++		if (!rdev->ops->set_wiphy_params)
++			return -EOPNOTSUPP;
+ 
+ 		old_retry_short = rdev->wiphy.retry_short;
+ 		old_retry_long = rdev->wiphy.retry_long;
+@@ -2218,10 +2194,6 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
+ 			rdev->wiphy.coverage_class = old_coverage_class;
+ 		}
+ 	}
 -
- 	return ret;
+- bad_res:
+-	if (netdev)
+-		dev_put(netdev);
+ 	return result;
  }
  
 -- 
