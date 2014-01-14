@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964AbaANBOm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:14:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53849 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbaANA0Y (ORCPT
+	id S1755396AbaANBPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:15:11 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:34098 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570AbaANBPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:24 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 08/27] net: drop_monitor: fix the value of maxattr
-Date: Mon, 13 Jan 2014 16:26:22 -0800
-Message-Id: <20140114002623.596776577@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
-References: <20140114002623.356220317@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Jan 2014 20:15:06 -0500
+Message-ID: <1389661746.1792.254.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory
+ mapping is specified by user [v2]
+From: Toshi Kani <toshi.kani@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bodo Eggert <7eggert@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        dyoung@redhat.com, linux-acpi@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Mon, 13 Jan 2014 18:09:06 -0700
+In-Reply-To: <52D48A9D.7000003@zytor.com>
+References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
+		 <1389380698-19361-4-git-send-email-prarit@redhat.com>
+		 <alpine.DEB.2.02.1401111624170.20677@be1.lrz>
+	 <52D32962.5050908@redhat.com>
+		 <CAHGf_=qWB81f8fdDdjaXXh1JoSDUsJmcEHwH+CEJ2E-5XWz6qA@mail.gmail.com>
+		 <52D4793E.8070102@redhat.com> <1389659632.1792.247.camel@misato.fc.hp.com>
+	 <52D48A9D.7000003@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-01-13 at 16:53 -0800, H. Peter Anvin wrote:
+> On 01/13/2014 04:33 PM, Toshi Kani wrote:
+> > 
+> > I do not think it makes sense.  You needed memmap=exactmap as a
+> > workaround because the kernel did not boot with the firmware's memory
+> > info.  So, it's broken, and you requested the kernel to ignore the
+> > firmware info.
+> > 
+> > Why do you think memory hotplug needs to be supported under such
+> > condition, which has to use the broken firmware info?
+> > 
+> 
+> Even more than memory hotplug: what do we do with NUMA?  Since we have
+> already told the kernel "the firmware is bogus" it would seem that any
+> NUMA optimizations would be a bit ... cantankerous at best, no?
 
-------------------
+Agreed that NUMA info can be bogus in this case, but is probably not
+critical.
 
-From: Changli Gao <xiaosuo@gmail.com>
+In majority of the cases, memmap=exactmap is used for kdump and the
+firmware info is sane.  So, I think we should keep NUMA enabled since it
+could be useful when multiple CPUs are enabled for kdump.
 
-[ Upstream commit d323e92cc3f4edd943610557c9ea1bb4bb5056e8 ]
-
-maxattr in genl_family should be used to save the max attribute
-type, but not the max command type. Drop monitor doesn't support
-any attributes, so we should leave it as zero.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/drop_monitor.c |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/net/core/drop_monitor.c
-+++ b/net/core/drop_monitor.c
-@@ -61,7 +61,6 @@ static struct genl_family net_drop_monit
- 	.hdrsize        = 0,
- 	.name           = "NET_DM",
- 	.version        = 2,
--	.maxattr        = NET_DM_CMD_MAX,
- };
- 
- static DEFINE_PER_CPU(struct per_cpu_dm_data, dm_cpu_data);
+Thanks,
+-Toshi
 
 
