@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaANVHK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:07:10 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26651 "EHLO mga09.intel.com"
+	id S1752063AbaANVJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:09:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1112 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612AbaANVHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:07:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="438838030"
-From: Andi Kleen <andi@firstfloor.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 3/5] perf report: Add --percentage option
-References: <1389674599-28227-1-git-send-email-namhyung@kernel.org>
-	<1389674599-28227-4-git-send-email-namhyung@kernel.org>
-Date: Tue, 14 Jan 2014 13:07:00 -0800
-In-Reply-To: <1389674599-28227-4-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Tue, 14 Jan 2014 13:43:17 +0900")
-Message-ID: <87zjmy2ryj.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751274AbaANVJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 16:09:08 -0500
+Date: Tue, 14 Jan 2014 22:06:10 +0100
+From: Veaceslav Falico <vfalico@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [RFC] sysfs_rename_link() and its usage
+Message-ID: <20140114210610.GC9942@redhat.com>
+References: <20140114171740.GB1867@redhat.com>
+ <20140114182135.GA29296@kroah.com>
+ <20140114191208.GA9942@redhat.com>
+ <20140114193139.GA3636@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20140114193139.GA3636@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim <namhyung@kernel.org> writes:
->  
-> +--percentage::
-> +	Determine how to display the overhead percentage of filtered
-> entries.
+On Tue, Jan 14, 2014 at 11:31:39AM -0800, Greg KH wrote:
+>On Tue, Jan 14, 2014 at 08:12:08PM +0100, Veaceslav Falico wrote:
+>> On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
+>> >On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
+>> >>Hi,
+>> >>
+>> >>I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
+>> >>
+>> >>Consider having two net_device *a, *b; which are registered normally.
+>> >>Now, to create a link from /sys/class/net/a->name/linkname to b, one should
+>> >>use:
+>> >>
+>> >>sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
+>> >>
+>> >>To remove it, even simpler:
+>> >>
+>> >>sysfs_remove_link(&(a->dev.kobj), linkname);
+>> >>
+>> >>This works like a charm. However, if I want to use (obviously, with the
+>> >>symlink present):
+>> >>
+>> >>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
+>> >
+>> >You forgot the namespace option to this call, what kernel version are
+>> >you using here?
+>>
+>> It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
+>> 3.13-rc6 with some networking patches on top of it.
+>>
+>> And wrt namespace - there are two functions, one is sysfs_rename_link(),
+>> which calls the second one - sysfs_rename_link_ns() with NULL namespace.
+>>
+>> >
+>> >>this fails with:
+>> >>
+>> >>"sysfs: ns invalid in 'a->name' for 'oldname'"
+>> >
+>> >Looks like the namespace for this link isn't valid.
+>>
+>> Yep, though dunno why.
+>
+>Are you testing this with network namespaces enabled?  Perhaps that is
+>why, you need to specify the namespace of the link that you are
+>changing.
+>
+>The fact that the bridge link works is odd to me, I would think that it
+>too needs to specify the network namespace involved, but perhaps bridge
+>objects aren't part of any specific network namespace?  I don't know the
+>bridging code at all, sorry.
 
-This should describe also what a "filtered entry" exactly is. It's not clear
-even to me.
+Yep, might be it, will test soon and come back with the results.
 
--Andi
+What still bugs me, though, is the logic - why is it possible to remove/add
+without specifying namespace, while it fails to rename it? Maybe the rename
+function should do a better job at detecting the namespace?
 
-> +	"relative" means it's relative to filtered entries only so that the
-> +	sum of shown entries will be always 100%.  "absolute" means it retains
-> +	original value before and after the filter applied.
-> +
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+>
+>So try calling sysfs_rename_link_ns() and specify the namespace of the
+>kobject you are changing, and see if that works or not.
+>
+>thanks,
+>
+>greg k-h
