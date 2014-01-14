@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaANBD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:03:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54049 "EHLO
+	id S1755578AbaANBDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:03:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaANA1Q (ORCPT
+	with ESMTP id S1753249AbaANA1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:16 -0500
+	Mon, 13 Jan 2014 19:27:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 34/62] net: llc: fix use after free in llc_ui_recvmsg
-Date: Mon, 13 Jan 2014 16:26:59 -0800
-Message-Id: <20140114002711.434616897@linuxfoundation.org>
+Subject: [PATCH 3.10 08/62] macvtap: Do not double-count received packets
+Date: Mon, 13 Jan 2014 16:26:33 -0800
+Message-Id: <20140114002710.700830159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -31,65 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 4d231b76eef6c4a6bd9c96769e191517765942cb ]
+[ Upstream commit 006da7b07bc4d3a7ffabad17cf639eec6849c9dc ]
 
-While commit 30a584d944fb fixes datagram interface in LLC, a use
-after free bug has been introduced for SOCK_STREAM sockets that do
-not make use of MSG_PEEK.
+Currently macvlan will count received packets after calling each
+vlans receive handler.   Macvtap attempts to count the packet
+yet again when the user reads the packet from the tap socket.
+This code doesn't do this consistently either.  Remove the
+counting from macvtap and let only macvlan count received
+packets.
 
-The flow is as follow ...
-
-  if (!(flags & MSG_PEEK)) {
-    ...
-    sk_eat_skb(sk, skb, false);
-    ...
-  }
-  ...
-  if (used + offset < skb->len)
-    continue;
-
-... where sk_eat_skb() calls __kfree_skb(). Therefore, cache
-original length and work on skb_len to check partial reads.
-
-Fixes: 30a584d944fb ("[LLX]: SOCK_DGRAM interface fixes")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/llc/af_llc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/macvtap.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -715,7 +715,7 @@ static int llc_ui_recvmsg(struct kiocb *
- 	unsigned long cpu_flags;
- 	size_t copied = 0;
- 	u32 peek_seq = 0;
--	u32 *seq;
-+	u32 *seq, skb_len;
- 	unsigned long used;
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
-@@ -812,6 +812,7 @@ static int llc_ui_recvmsg(struct kiocb *
- 		}
- 		continue;
- 	found_ok_skb:
-+		skb_len = skb->len;
- 		/* Ok so how much can we use? */
- 		used = skb->len - offset;
- 		if (len < used)
-@@ -844,7 +845,7 @@ static int llc_ui_recvmsg(struct kiocb *
- 		}
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -797,7 +797,6 @@ static ssize_t macvtap_put_user(struct m
+ 				const struct sk_buff *skb,
+ 				const struct iovec *iv, int len)
+ {
+-	struct macvlan_dev *vlan;
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+@@ -851,12 +850,6 @@ static ssize_t macvtap_put_user(struct m
+ 	copied += len;
  
- 		/* Partial read */
--		if (used + offset < skb->len)
-+		if (used + offset < skb_len)
- 			continue;
- 	} while (len > 0);
+ done:
+-	rcu_read_lock_bh();
+-	vlan = rcu_dereference_bh(q->vlan);
+-	if (vlan)
+-		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
+-	rcu_read_unlock_bh();
+-
+ 	return ret ? ret : copied;
+ }
  
 
 
