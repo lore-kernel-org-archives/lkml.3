@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaANHof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:44:35 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:52116 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771AbaANHoc (ORCPT
+	id S1752711AbaANHmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:40 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:41300 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaANHmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:44:32 -0500
-Message-ID: <52D4EADC.60300@dev.mellanox.co.il>
-Date: Tue, 14 Jan 2014 09:44:28 +0200
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 14 Jan 2014 02:42:00 -0500
+From: Ying Xue <ying.xue@windriver.com>
+To: <davem@davemloft.net>
+CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
+        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
+        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
+        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next 05/10] decnet: use __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Tue, 14 Jan 2014 15:41:04 +0800
+Message-ID: <1389685269-18600-6-git-send-email-ying.xue@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>
-Subject: Re: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception
- cases
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	 <1389212157-14540-3-git-send-email-nab@daterainc.com>	 <52CE7D3F.7030308@mellanox.com> <1389336816.5567.404.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1389336816.5567.404.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/10/2014 8:53 AM, Nicholas A. Bellinger wrote:
-> On Thu, 2014-01-09 at 12:43 +0200, Sagi Grimberg wrote:
->> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
->>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>
->>> This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
->>> exception cases into transport_send_check_condition_and_sense().
->>>
->>> This includes:
->>>
->>>     LOGICAL BLOCK GUARD CHECK FAILED
->>>     LOGICAL BLOCK APPLICATION TAG CHECK FAILED
->>>     LOGICAL BLOCK REFERENCE TAG CHECK FAILED
->>>
->>> that used by DIF TYPE1 and TYPE3 failure cases.
->>>
->>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
->>> Cc: Christoph Hellwig <hch@lst.de>
->>> Cc: Hannes Reinecke <hare@suse.de>
->>> Cc: Sagi Grimberg <sagig@mellanox.com>
->>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
->>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
->>> ---
->>>    drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
->>>    include/target/target_core_base.h      |    3 +++
->>>    2 files changed, 33 insertions(+)
->>>
->>> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
->>> index 91953da..707ee17 100644
->>> --- a/drivers/target/target_core_transport.c
->>> +++ b/drivers/target/target_core_transport.c
->>> @@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
->>>    		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
->>>    		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
->>>    		break;
->>> +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
->>> +		/* CURRENT ERROR */
->>> +		buffer[0] = 0x70;
->>> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
->>> +		/* ILLEGAL REQUEST */
->>> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
->>> +		/* LOGICAL BLOCK GUARD CHECK FAILED */
->>> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
->>> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
->>
+The following call chain we can identify that dn_cache_getroute() is
+protected under rtnl_lock. So if we use __dev_get_by_index() instead
+of dev_get_by_index() to find interface handlers in it, this would help
+us avoid to change interface reference counter.
 
-Hey Nic,
+rtnetlink_rcv()
+  rtnl_lock()
+    netlink_rcv_skb()
+      dn_cache_getroute()
+  rtnl_unlock()
 
-In my iSER patches I constructed the same sense buffer (call 
-isert_pi_err_sense_buffer) and called isert_put_rsponse. So I should 
-call this routine instead correct?
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+---
+ net/decnet/dn_route.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
+index ad2efa5..22390e4 100644
+--- a/net/decnet/dn_route.c
++++ b/net/decnet/dn_route.c
+@@ -1666,12 +1666,12 @@ static int dn_cache_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh)
+ 
+ 	if (fld.flowidn_iif) {
+ 		struct net_device *dev;
+-		if ((dev = dev_get_by_index(&init_net, fld.flowidn_iif)) == NULL) {
++		dev = __dev_get_by_index(&init_net, fld.flowidn_iif);
++		if (!dev) {
+ 			kfree_skb(skb);
+ 			return -ENODEV;
+ 		}
+ 		if (!dev->dn_ptr) {
+-			dev_put(dev);
+ 			kfree_skb(skb);
+ 			return -ENODEV;
+ 		}
+@@ -1693,8 +1693,6 @@ static int dn_cache_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh)
+ 		err = dn_route_output_key((struct dst_entry **)&rt, &fld, 0);
+ 	}
+ 
+-	if (skb->dev)
+-		dev_put(skb->dev);
+ 	skb->dev = NULL;
+ 	if (err)
+ 		goto out_free;
+-- 
+1.7.9.5
+
