@@ -1,239 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755705AbaANBF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:05:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:62451 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013AbaANBEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 20:04:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
-   d="scan'208";a="466147306"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: jolsa@redhat.com, namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 6/6] perf, tools: Support source line numbers in annotate
-Date: Mon, 13 Jan 2014 17:04:21 -0800
-Message-Id: <1389661461-18996-7-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
-References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
+	id S1755743AbaANBGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:06:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54021 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641AbaANA1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:27:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 06/62] net: do not pretend FRAGLIST support
+Date: Mon, 13 Jan 2014 16:26:31 -0800
+Message-Id: <20140114002710.646452262@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
+References: <20140114002710.464561569@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-With srcline key/sort'ing it's useful to have line numbers
-in the annotate window. This patch implements this.
+------------------
 
-Use objdump -l to request the line numbers and
-save them in the line structure. Then the browser
-displays them for source lines.
+From: Eric Dumazet <edumazet@google.com>
 
-The line numbers are not displayed by default, but can be
-toggled on with 'k'
+[ Upstream commit 28e24c62ab3062e965ef1b3bcc244d50aee7fa85 ]
 
-There is one unfortunate problem with this setup. For
-lines not containing source and which are outside functions
-objdump -l reports line numbers off by a few: it always reports
-the first line number in the next function even for lines
-that are outside the function.
-I haven't find a nice way to detect/correct this. Probably objdump
-has to be fixed.
-See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
+Few network drivers really supports frag_list : virtual drivers.
 
-The line numbers are still useful even with these problems,
-as most are correct and the ones which are not are nearby.
+Some drivers wrongly advertise NETIF_F_FRAGLIST feature.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+If skb with a frag_list is given to them, packet on the wire will be
+corrupt.
+
+Remove this flag, as core networking stack will make sure to
+provide packets that can be sent without corruption.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Anirudha Sarangi <anirudh@xilinx.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
- tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
- tools/perf/util/annotate.h        |  1 +
- 3 files changed, 38 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/ibm/ehea/ehea_main.c         |    2 +-
+ drivers/net/ethernet/tehuti/tehuti.c              |    1 -
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |    2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2 +-
+ 4 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index f0697a3..8df6787 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
- 	bool hide_src_code,
- 	     use_offset,
- 	     jump_arrows,
-+	     show_linenr,
- 	     show_nr_jumps;
- } annotate_browser__opts = {
- 	.use_offset	= true,
-@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	if (!*dl->line)
- 		slsmg_write_nstring(" ", width - pcnt_width);
- 	else if (dl->offset == -1) {
--		printed = scnprintf(bf, sizeof(bf), "%*s  ",
-+		if (dl->line_nr && annotate_browser__opts.show_linenr)
-+			printed = scnprintf(bf, sizeof(bf), "%*s %-5d ",
-+					ab->addr_width, " ", dl->line_nr);
-+		else
-+			printed = scnprintf(bf, sizeof(bf), "%*s  ",
- 				    ab->addr_width, " ");
- 		slsmg_write_nstring(bf, printed);
- 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
-@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 		"o             Toggle disassembler output/simplified view\n"
- 		"s             Toggle source code view\n"
- 		"/             Search string\n"
-+		"k	       Toggle line numbers\n"
- 		"r             Run available scripts\n"
- 		"?             Search string backwards\n");
- 			continue;
-@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 				script_browse(NULL);
- 				continue;
- 			}
-+		case 'k':
-+			annotate_browser__opts.show_linenr =
-+				!annotate_browser__opts.show_linenr;
-+			break;
- 		case 'H':
- 			nd = browser->curr_hot;
- 			break;
-@@ -984,6 +994,7 @@ static struct annotate_config {
- } annotate__configs[] = {
- 	ANNOTATE_CFG(hide_src_code),
- 	ANNOTATE_CFG(jump_arrows),
-+	ANNOTATE_CFG(show_linenr),
- 	ANNOTATE_CFG(show_nr_jumps),
- 	ANNOTATE_CFG(use_offset),
- };
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 469eb67..f020110 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -15,11 +15,13 @@
- #include "debug.h"
- #include "annotate.h"
- #include "evsel.h"
-+#include <regex.h>
- #include <pthread.h>
- #include <linux/bitops.h>
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -3023,7 +3023,7 @@ static struct ehea_port *ehea_setup_sing
  
- const char 	*disassembler_style;
- const char	*objdump_path;
-+static regex_t	 file_lineno;
+ 	dev->hw_features = NETIF_F_SG | NETIF_F_TSO |
+ 		      NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_CTAG_TX;
+-	dev->features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_TSO |
++	dev->features = NETIF_F_SG | NETIF_F_TSO |
+ 		      NETIF_F_HIGHDMA | NETIF_F_IP_CSUM |
+ 		      NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
+ 		      NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_RXCSUM;
+--- a/drivers/net/ethernet/tehuti/tehuti.c
++++ b/drivers/net/ethernet/tehuti/tehuti.c
+@@ -2019,7 +2019,6 @@ bdx_probe(struct pci_dev *pdev, const st
+ 		ndev->features = NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO
+ 		    | NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
+ 		    NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_RXCSUM
+-		    /*| NETIF_F_FRAGLIST */
+ 		    ;
+ 		ndev->hw_features = NETIF_F_IP_CSUM | NETIF_F_SG |
+ 			NETIF_F_TSO | NETIF_F_HW_VLAN_CTAG_TX;
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -1016,7 +1016,7 @@ static int temac_of_probe(struct platfor
+ 	dev_set_drvdata(&op->dev, ndev);
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &temac_netdev_ops;
+ 	ndev->ethtool_ops = &temac_ethtool_ops;
+ #if 0
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -1488,7 +1488,7 @@ static int axienet_of_probe(struct platf
  
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
-@@ -562,13 +564,15 @@ out_free_name:
- 	return -1;
- }
+ 	SET_NETDEV_DEV(ndev, &op->dev);
+ 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
+-	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
++	ndev->features = NETIF_F_SG;
+ 	ndev->netdev_ops = &axienet_netdev_ops;
+ 	ndev->ethtool_ops = &axienet_ethtool_ops;
  
--static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
-+static struct disasm_line *disasm_line__new(s64 offset, char *line,
-+					size_t privsize, int line_nr)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
- 
- 	if (dl != NULL) {
- 		dl->offset = offset;
- 		dl->line = strdup(line);
-+		dl->line_nr = line_nr;
- 		if (dl->line == NULL)
- 			goto out_delete;
- 
-@@ -780,13 +784,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
-  * The ops.raw part will be parsed further according to type of the instruction.
-  */
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
--				      FILE *file, size_t privsize)
-+				      FILE *file, size_t privsize,
-+				      int *line_nr)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct disasm_line *dl;
- 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
- 	size_t line_len;
- 	s64 line_ip, offset = -1;
-+	regmatch_t match[2];
- 
- 	if (getline(&line, &line_len, file) < 0)
- 		return -1;
-@@ -804,6 +810,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	line_ip = -1;
- 	parsed_line = line;
- 
-+	/* /filename:linenr ? Save line number and ignore. */
-+	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
-+		*line_nr = atoi(line + match[1].rm_so);
-+		return 0;
-+	}
-+
- 	/*
- 	 * Strip leading spaces:
- 	 */
-@@ -834,8 +846,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 			parsed_line = tmp2 + 1;
- 	}
- 
--	dl = disasm_line__new(offset, parsed_line, privsize);
-+	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
- 	free(line);
-+	(*line_nr)++;
- 
- 	if (dl == NULL)
- 		return -1;
-@@ -861,6 +874,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	return 0;
- }
- 
-+static __attribute__((constructor)) void symbol__init_regexpr(void)
-+{
-+	regcomp(&file_lineno, "^/[^:]+:([0-9]+)$", REG_EXTENDED);
-+}
-+
- static void delete_last_nop(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -896,6 +914,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
- 	char symfs_filename[PATH_MAX];
- 	struct kcore_extract kce;
- 	bool delete_extract = false;
-+	int lineno = 0;
- 
- 	if (filename) {
- 		snprintf(symfs_filename, sizeof(symfs_filename), "%s%s",
-@@ -977,7 +996,7 @@ fallback:
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
--		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
-+		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
- 		 objdump_path ? objdump_path : "objdump",
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
-@@ -994,7 +1013,8 @@ fallback:
- 		goto out_free_filename;
- 
- 	while (!feof(file))
--		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
-+		if (symbol__parse_objdump_line(sym, map, file, privsize,
-+			    &lineno) < 0)
- 			break;
- 
- 	/*
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index b2aef59..a124e7e 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -58,6 +58,7 @@ struct disasm_line {
- 	char		    *line;
- 	char		    *name;
- 	struct ins	    *ins;
-+	int		    line_nr;
- 	struct ins_operands ops;
- };
- 
--- 
-1.8.3.1
+
 
