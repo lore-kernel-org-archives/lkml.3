@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaANSai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:30:38 -0500
-Received: from sauhun.de ([89.238.76.85]:52289 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342AbaANSah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:30:37 -0500
-Date: Tue, 14 Jan 2014 19:30:34 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/7] drivers/amba: don't check resource with
- devm_ioremap_resource
-Message-ID: <20140114183034.GA10340@katana>
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
- <1389700739-3696-2-git-send-email-wsa@the-dreams.de>
- <52D57688.8070105@wwwdotorg.org>
+	id S1751949AbaANScJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:32:09 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:49396 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaANScH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:32:07 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
-Content-Disposition: inline
-In-Reply-To: <52D57688.8070105@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D55F92.8040108@linux.intel.com>
+References: <20140114133125.GB26942@localhost>
+	<52D55F92.8040108@linux.intel.com>
+Date: Tue, 14 Jan 2014 10:32:06 -0800
+X-Google-Sender-Auth: yOgPg_IJx83N-jJ5EB14mktWtYw
+Message-ID: <CAGXu5j+eWG8h_+K9pn42u9tXWrjc6tWthNGURhd8yfM2ODeMyw@mail.gmail.com>
+Subject: Re: [x86, kaslr] BUG: kernel boot hang
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 14, 2014 at 8:02 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 01/14/2014 05:31 AM, Fengguang Wu wrote:
+>> Greetings,
+>>
+>> I got the below dmesg and the first bad commit is
+>>
+>> commit 82fa9637a2ba285bcc7c5050c73010b2c1b3d803
+>> Author:     Kees Cook <keescook@chromium.org>
+>> AuthorDate: Thu Oct 10 17:18:16 2013 -0700
+>> Commit:     H. Peter Anvin <hpa@linux.intel.com>
+>> CommitDate: Sun Oct 13 03:12:19 2013 -0700
+>>
+>>     x86, kaslr: Select random position from e820 maps
+>>
+>>     Counts available alignment positions across all e820 maps, and chooses
+>>     one randomly for the new kernel base address, making sure not to collide
+>>     with unsafe memory areas.
+>>
+>>     Signed-off-by: Kees Cook <keescook@chromium.org>
+>>     Link: http://lkml.kernel.org/r/1381450698-28710-5-git-send-email-keescook@chromium.org
+>>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>>
+>> Note that there are many other warning/errors and it's not very
+>> reproducible, so this report might be wrong.
+>>
+>> ===================================================
+>> PARENT COMMIT NOT CLEAN. LOOK OUT FOR WRONG BISECT!
+>> ===================================================
+>>
+>
+> I wonder if this is in any way related to the fact that the ELF parser
+> we have in the decompressor is quite frankly complete crap... it assumes
+> that all sections can only be moved downward.
 
---ZPt4rx8FFjLCG7dd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Not that this would change the code here, but I notice tip:x86/kaslr
+isn't fully up to date. It's still missing the two most recent
+commits:
 
+https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=kaslr-c-v8
 
-> This looks fine. I expect to apply it for 3.15 after the 3.14 merge
-> window, unless it's urgent to get it into 3.14 for some reason?
+"x86, kaslr: clarify RANDOMIZE_BASE_MAX_OFFSET"
+"x86, kaslr: remove unused including <linux/version.h>"
 
-Nope, it is not. I wasn't aiming for 3.14, it was simply in my queue.
+-Kees
 
-
---ZPt4rx8FFjLCG7dd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1YJKAAoJEBQN5MwUoCm2KlsQAKz/uNzJh5VmCSYB3XN/4gOE
-kXEM5LmVOoRlXHFl66szL3TFyTQ9Q7qD691dfSLQCDbelQhYA5WEe4abMF1Gqr69
-int+Z4h7sjFjXyzMr1CnhvoH7a42x5gjq0ORQs6M9F10f32ziEMH8xX2skN75vL3
-9XsOWvnBZ3bKC4pTVSXN09FhrEzLZB91bSx5qamcLC3R/seRMlin1SZylLQa/AfE
-4el1U1A4psTntgRs8gDDIJOoan6dN/8/FjW5MVuKnw2reQpLt+BvJKgEVi9yvjKv
-Gw/XJxwx5j+Tut/kkxrw7CXtE4q/xk4PFoEQiVvivBKgmdP7s8s9Ech4jvMhPp6f
-hgLbDnq0DnG0ogaiAcDqA7Yepa9a7mzwPu8Qo4XVheFXk4sbbwsIDDp2JRB72Iwk
-VCUgE36JITPBPSVUztl60v1X5SCD24Ii1wc99djnN4gLRpED52kJZzlFm826QoPe
-wGDcWsSlQ97S+9H9WmWzHRMv3cbJELEUCzbk71hGV+oSDQxiv4dfZT/GDok7MxJ9
-03YSmV0PkNIlHV7soVAz8jS/l6qpuUQBqboRmWtG3bD+DMVNXoZria4/MrASeTND
-jrH5fDY7BRlJ49g6g5SNm8qS6CfwOqJLVLjXHG8PR5M135qerQO4xjNDp8FTs8ul
-XKrNvp7p63YoYsqKuDzu
-=gNUN
------END PGP SIGNATURE-----
-
---ZPt4rx8FFjLCG7dd--
+-- 
+Kees Cook
+Chrome OS Security
