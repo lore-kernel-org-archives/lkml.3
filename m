@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaANSgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:36:51 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46606 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669AbaANSgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:36:46 -0500
-Message-ID: <52D5839D.9050100@ti.com>
-Date: Tue, 14 Jan 2014 12:36:13 -0600
-From: "Anna, Suman" <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751898AbaANShI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:37:08 -0500
+Received: from sauhun.de ([89.238.76.85]:48340 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751623AbaANShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:37:04 -0500
+Date: Tue, 14 Jan 2014 19:37:02 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] i2c: i2c-core: fix coding style issues in i2c-core.c
+Message-ID: <20140114183702.GC10340@katana>
+References: <525C0C5B.6040703@gmail.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 7/7] hwspinlock/omap: enable build for AM33xx, AM43xx
- & DRA7xx
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com> <1389658764-39199-8-git-send-email-s-anna@ti.com> <20140114131207.GB10818@saruman.home> <52D56B13.2050409@ti.com> <20140114172901.GB27374@saruman.home>
-In-Reply-To: <20140114172901.GB27374@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
+Content-Disposition: inline
+In-Reply-To: <525C0C5B.6040703@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 11:29 AM, Felipe Balbi wrote:
-> On Tue, Jan 14, 2014 at 10:51:31AM -0600, Anna, Suman wrote:
->> Felipe,
->>
->> On 01/14/2014 07:12 AM, Felipe Balbi wrote:
->>> On Mon, Jan 13, 2014 at 06:19:24PM -0600, Suman Anna wrote:
->>>> HwSpinlocks are supported on AM33xx, AM43xx and DRA7xx SoC
->>>> device families as well. The IPs are identical to that of
->>>> OMAP4/OMAP5, except for the number of locks.
->>>>
->>>> Add a depends on to the above family of SoCs to enable the
->>>> build support for OMAP hwspinlock driver for any of the above
->>>> SoC configs.
->>>>
->>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>> ---
->>>>   drivers/hwspinlock/Kconfig | 2 +-
->>>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
->>>> index 70637d2..3612cb5 100644
->>>> --- a/drivers/hwspinlock/Kconfig
->>>> +++ b/drivers/hwspinlock/Kconfig
->>>> @@ -10,7 +10,7 @@ menu "Hardware Spinlock drivers"
->>>>
->>>>   config HWSPINLOCK_OMAP
->>>>   	tristate "OMAP Hardware Spinlock device"
->>>> -	depends on ARCH_OMAP4 || SOC_OMAP5
->>>> +	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_AM43XX
->>>
->>> how about just using ARCH_OMAP2PLUS ?
->>
->> We do not want the driver to build in OMAP2-only and/or OMAP3-only
->> configurations, on which the hwspinlock IP is not even present.
->
-> It won't be enabled by default, will it ? You're just saying that it
-> _can_ be enabled.
->
-Yes, that's correct. The menuconfig will not even show this driver at 
-present on OMAP2-only and/or OMAP3-only configs. I would prefer to keep 
-it that way.
 
-regards
-Suman
+--mvpLiMfbWzRoNl4x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Oct 14, 2013 at 08:53:07PM +0530, RAGHAVENDRA GANIGA wrote:
+> From b21e6a52aa9c36e8c01173cff13bbfd2a380d0bd Mon Sep 17 00:00:00 2001
+> From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+> Date: Mon, 14 Oct 2013 00:29:08 +0530
+> Subject: [PATCH 2/3] i2c: i2c-core: fix coding style issues in i2c-core.c
+>=20
+> This is a patch to the i2c-core.c file that fixes up warnings and
+> the code indent error reported by the checkpatch.pl tool
+
+Please describe which warnings.
+
+> @@ -1737,9 +1735,10 @@ int i2c_transfer(struct i2c_adapter *adap, struct =
+i2c_msg *msgs, int num)
+>  	if (adap->algo->master_xfer) {
+>  #ifdef DEBUG
+>  		for (ret =3D 0; ret < num; ret++) {
+> -			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=3D0x%02x, "
+> -				"len=3D%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
+> -				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
+> +			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=3D0x%02x, len=3D%d%s\n",
+> +				ret,
+> +				((msgs[ret].flags & I2C_M_RD) ? 'R' : 'W'),
+> +				msgs[ret].addr, msgs[ret].len,
+>  				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
+
+You added some extra paranthesis here? No need to. Also ret doesn't need
+to be in a seperate line.
+
+>  		}
+>  #endif
+> @@ -1905,8 +1904,9 @@ static int i2c_detect_address(struct i2c_client *te=
+mp_client,
+> =20
+>  	/* Consistency check */
+>  	if (info.type[0] =3D=3D '\0') {
+> -		dev_err(&adapter->dev, "%s detection function provided "
+> -			"no name for 0x%x\n", driver->driver.name,
+> +		dev_err(&adapter->dev,
+> +			"%s detection function provided no name for 0x%x\n",
+> +			driver->driver.name,
+>  			addr);
+
+'addr' is dangling.
+
+And merge 1/3 into it.
+
+
+--mvpLiMfbWzRoNl4x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1YPOAAoJEBQN5MwUoCm2XPgP+QEnqHQlOqVRr1NoUR5l7iXr
+t+9oPXEBmnxqtcWjzINpK6O6zK8ZITwSiT09TAuPBJgobwHM9MW92nEydkDhPsGr
+WRqOv5LbXzKmZrdguvq9nQ8zU8XXQnx0hrtQhsxW0fuqnfQj02XXT4jMmARN/dnb
+PpsbVxJlCwCBznYmQUvPWHJTMF2byLxvB+8ks7wL0j0jCOf81LDehGA74eMnZxF6
+z7Cz1wqvv12ozC/V1DUGHnjZROMLrWB6V8o6jdQu8tbL5PNPNKCEG3fVsxSAUuj3
+Z0UiArlKRuKbHv8knixmsvXu3F6nppc5Sh1K5s9WG4g2wc/4DJ+0icZK+Yf+kRkJ
+EtNCaGIrIDQfImmas+6r13ere4zFowN/vbrC2GvQwiMdm8ydV0E6CZKjKj1P5Ds+
+7sgONGAD2JMZgVTmP/gOywUZyDZKe4HhdCkR3QbepldIVzvY78MYNbl2/kUDjXC9
+kxvhExJ8RTnHnYzAXHUF+HVQ/coW9E+iHnFkc/vjvdcuV4gJzgEguKMXONLwKkho
+Nma0OJ0fJ/JHMSO8vIXAW4/rdAPD2CIkI+bqj0YzcLklMTcTt7+kqHRoKJ0dbw97
+p9Z+bK5+IIEB5JiSKhPg9nHK2xvS8Wc2QSxF6mx4eovTHciGHN0rzcQKEGrC5ZwO
+sO32SbpfjqeMxS2zKu/E
+=hBjp
+-----END PGP SIGNATURE-----
+
+--mvpLiMfbWzRoNl4x--
