@@ -1,96 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaANOuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:50:11 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54041 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaANOuI (ORCPT
+	id S1751605AbaANOwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:52:09 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:54258 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479AbaANOwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:50:08 -0500
-Date: Tue, 14 Jan 2014 14:50:02 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Message-ID: <20140114145002.GR15567@sirena.org.uk>
-References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
- <20140114125242.GE15567@sirena.org.uk>
- <CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
- <20140114134528.GG15567@sirena.org.uk>
- <CAMuHMdXEsNKRxYv8gh5sDzpg_QH2RmrjYhLhCZx0QCcRN+gdOg@mail.gmail.com>
+	Tue, 14 Jan 2014 09:52:06 -0500
+Date: Tue, 14 Jan 2014 09:52:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH driver-core-next] kernfs: fix get_active failure handling in
+ kernfs_seq_*()
+Message-ID: <20140114145201.GD12131@htj.dyndns.org>
+References: <13896533783@kroah.com>
+ <20140113225053.GA10124@mtj.dyndns.org>
+ <20140113230017.GB26622@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="o99acAvKqrTZeiCU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdXEsNKRxYv8gh5sDzpg_QH2RmrjYhLhCZx0QCcRN+gdOg@mail.gmail.com>
-X-Cookie: Marriage is the sole cause of divorce.
+In-Reply-To: <20140113230017.GB26622@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When kernfs_seq_start() fails to obtain an active reference, it
+returns ERR_PTR(-ENODEV).  kernfs_seq_stop() is then invoked with the
+error pointer value; however, it still proceeds to invoke
+kernfs_put_active() on the node leading to unbalanced put.
 
---o99acAvKqrTZeiCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If kernfs_seq_stop() is called even after active ref failure, it
+should skip invocation of @ops->seq_stop() and put_active.
+Unfortunately, this is a bit complicated because active ref failure
+isn't the only thing which may fail with ERR_PTR(-ENODEV).
+@ops->seq_start/next() may also fail with the error value and
+kernfs_seq_stop() doesn't have a way to tell apart those failures.
 
-On Tue, Jan 14, 2014 at 03:44:43PM +0100, Geert Uytterhoeven wrote:
-> On Tue, Jan 14, 2014 at 2:45 PM, Mark Brown <broonie@kernel.org> wrote:
+Work it around by factoring out the active part of kernfs_seq_stop()
+into kernfs_seq_stop_active() and invoking it directly if
+@ops->seq_start/next() fail with ERR_PTR(-ENODEV) and updating
+kernfs_seq_stop() to skip kernfs_seq_stop_active() on
+ERR_PTR(-ENODEV).  This is a bit nasty but ensures that the active put
+is skipped iff get_active failed in kernfs_seq_start().
 
-> > If we're manually setting /CS it really makes no difference what the
-> > chip thinks the polarity is - something that is controlling /CS
-> > autonomously can't implement this operation and something that can just
-> > set it at any time doesn't need to worry if the chip thinks it's
-> > asserted or not.
+tj: This was originally committed as d92d2e6bd72b but got reverted by
+    683bb2761fbf along with other kernfs self removal patches.
+    However, this one is an independent fix and shouldn't have been
+    reverted together.  Reinstate the change.  Sorry about the mess.
 
-> Doh, so I'm the only one where it does matter, as RSPI has separate
-> Slave Select Signal Polarity (high/low) and Slave Select Output Setting
-> (enable/disable)...
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+---
+ fs/kernfs/file.c |   51 ++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 44 insertions(+), 7 deletions(-)
 
-I'm sure there's other hardware out there which has such control, it's
-just that there's no value in actually using the polarity select if
-we have manual control over the enable.  All you're doing is adding
-complexity in drivers.
-
-> >> > when calling set_cs() is probably OK though.
-
-> >> Just flipping the sense of enable still needs a documentation update.
-
-> > Huh?  Why were you updating the code then...
-
-> "true to assert" in the documentation means that enable is true when
-> enabling the chip select.
-> Currently the value of enable depends on SPI_CS_HIGH. Just "flipping
-> the sense of enable" doesn't change that dependency.
-
-Oh, so the code update was purely about factoring that out of the core?
-
---o99acAvKqrTZeiCU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1U6XAAoJELSic+t+oim925AP/RAoKiKl9mEQuAN7KPKk+P3q
-ISa5pPpkIULOKPMqVNAq7ZBVOEroZXzVTxRQEN9087QoVxh+YoOZCublm6BBPsje
-/qrXWJGBBL7rn3ERoU+5N0ukuJJmCYc/IfgJw5WghyBxzrQ9mspY8cUb2PnYhVdF
-d4BfOIKvCfl9wbokElW+/HAG0GXyr4dK1iwKEwl31cf7+HRDmdAa/XSeRbo5XaYJ
-jVNapyg+7feImsOBiJoGoCimWxI2ou5N6CGM0pWMLCm3OHAtjBukDee26HYEEMQO
-d5P+DZuJsjWlRFeyY3U0riLUuk+SMAp2HAZ1OJ7yKRoeADsiVu4dgYwB2niYlhHC
-fS9khbAufcLu3YSFWUiwuu+gaRxEX4VHqWz/8o0rO6n9I1VJtsZJfb60b48MU7VU
-9cOfntxEhdaa/xAq6fdVBBWu5p68kv6piq8dyus65OYTQuane2k0tQqIw9OU3gjP
-UXY7W243XALeXOOv3r64+65JiTlebYnYTg83yFUJvYF8bOozj90KptdMTKha4LPR
-zqTQVYDUtV9X4PqnwxAqgB0plOqvA+jw/s7YybqfNRWXuBOrVeogk+fiOwr71DFp
-0iA3iH2+sFqy8EhJgcBiwQdcZtviJZxh1cFkcRMG65Xd07nLz6/N/s8Yycwzt8g5
-TYO4hna6Lpq6M1Brb7Az
-=ct++
------END PGP SIGNATURE-----
-
---o99acAvKqrTZeiCU--
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -54,6 +54,38 @@ static const struct kernfs_ops *kernfs_o
+ 	return kn->attr.ops;
+ }
+ 
++/*
++ * As kernfs_seq_stop() is also called after kernfs_seq_start() or
++ * kernfs_seq_next() failure, it needs to distinguish whether it's stopping
++ * a seq_file iteration which is fully initialized with an active reference
++ * or an aborted kernfs_seq_start() due to get_active failure.  The
++ * position pointer is the only context for each seq_file iteration and
++ * thus the stop condition should be encoded in it.  As the return value is
++ * directly visible to userland, ERR_PTR(-ENODEV) is the only acceptable
++ * choice to indicate get_active failure.
++ *
++ * Unfortunately, this is complicated due to the optional custom seq_file
++ * operations which may return ERR_PTR(-ENODEV) too.  kernfs_seq_stop()
++ * can't distinguish whether ERR_PTR(-ENODEV) is from get_active failure or
++ * custom seq_file operations and thus can't decide whether put_active
++ * should be performed or not only on ERR_PTR(-ENODEV).
++ *
++ * This is worked around by factoring out the custom seq_stop() and
++ * put_active part into kernfs_seq_stop_active(), skipping it from
++ * kernfs_seq_stop() if ERR_PTR(-ENODEV) while invoking it directly after
++ * custom seq_file operations fail with ERR_PTR(-ENODEV) - this ensures
++ * that kernfs_seq_stop_active() is skipped only after get_active failure.
++ */
++static void kernfs_seq_stop_active(struct seq_file *sf, void *v)
++{
++	struct kernfs_open_file *of = sf->private;
++	const struct kernfs_ops *ops = kernfs_ops(of->kn);
++
++	if (ops->seq_stop)
++		ops->seq_stop(sf, v);
++	kernfs_put_active(of->kn);
++}
++
+ static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
+ {
+ 	struct kernfs_open_file *of = sf->private;
+@@ -69,7 +101,11 @@ static void *kernfs_seq_start(struct seq
+ 
+ 	ops = kernfs_ops(of->kn);
+ 	if (ops->seq_start) {
+-		return ops->seq_start(sf, ppos);
++		void *next = ops->seq_start(sf, ppos);
++		/* see the comment above kernfs_seq_stop_active() */
++		if (next == ERR_PTR(-ENODEV))
++			kernfs_seq_stop_active(sf, next);
++		return next;
+ 	} else {
+ 		/*
+ 		 * The same behavior and code as single_open().  Returns
+@@ -85,7 +121,11 @@ static void *kernfs_seq_next(struct seq_
+ 	const struct kernfs_ops *ops = kernfs_ops(of->kn);
+ 
+ 	if (ops->seq_next) {
+-		return ops->seq_next(sf, v, ppos);
++		void *next = ops->seq_next(sf, v, ppos);
++		/* see the comment above kernfs_seq_stop_active() */
++		if (next == ERR_PTR(-ENODEV))
++			kernfs_seq_stop_active(sf, next);
++		return next;
+ 	} else {
+ 		/*
+ 		 * The same behavior and code as single_open(), always
+@@ -99,12 +139,9 @@ static void *kernfs_seq_next(struct seq_
+ static void kernfs_seq_stop(struct seq_file *sf, void *v)
+ {
+ 	struct kernfs_open_file *of = sf->private;
+-	const struct kernfs_ops *ops = kernfs_ops(of->kn);
+ 
+-	if (ops->seq_stop)
+-		ops->seq_stop(sf, v);
+-
+-	kernfs_put_active(of->kn);
++	if (v != ERR_PTR(-ENODEV))
++		kernfs_seq_stop_active(sf, v);
+ 	mutex_unlock(&of->mutex);
+ }
+ 
