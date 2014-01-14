@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaANHmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:42:45 -0500
-Received: from mail.windriver.com ([147.11.1.11]:47568 "EHLO
+	id S1752767AbaANHmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:43 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47556 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaANHmE (ORCPT
+	with ESMTP id S1752128AbaANHmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:42:04 -0500
+	Tue, 14 Jan 2014 02:42:01 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,9 +14,9 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 04/10] dcb: use __dev_get_by_name instead of dev_get_by_name to find interface
-Date: Tue, 14 Jan 2014 15:41:03 +0800
-Message-ID: <1389685269-18600-5-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next 06/10] vxlan: use __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Tue, 14 Jan 2014 15:41:05 +0800
+Message-ID: <1389685269-18600-7-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
@@ -26,62 +26,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chain indicates that dcb_doit() is protected
-under rtnl_lock. So if we use __dev_get_by_name() instead of
-dev_get_by_name() to find interface handlers in it, this would
-help us avoid to change interface reference counter.
+The following call chains indicate that vxlan_fdb_parse() is
+under rtnl_lock protection. So if we use __dev_get_by_index()
+instead of dev_get_by_index() to find interface handler in it,
+this would help us avoid to change interface reference counter.
 
 rtnetlink_rcv()
   rtnl_lock()
   netlink_rcv_skb()
-    dcb_doit()
+    rtnl_fdb_add()
+      vxlan_fdb_add()
+        vxlan_fdb_parse()
   rtnl_unlock()
 
-Cc: John Fastabend <john.r.fastabend@intel.com>
+rtnetlink_rcv()
+  rtnl_lock()
+  netlink_rcv_skb()
+    rtnl_fdb_del()
+      vxlan_fdb_del()
+        vxlan_fdb_parse()
+  rtnl_unlock()
+
+Cc: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: Ying Xue <ying.xue@windriver.com>
 ---
- net/dcb/dcbnl.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/net/vxlan.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/net/dcb/dcbnl.c b/net/dcb/dcbnl.c
-index 66fbe19..5536444 100644
---- a/net/dcb/dcbnl.c
-+++ b/net/dcb/dcbnl.c
-@@ -1688,21 +1688,17 @@ static int dcb_doit(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	if (!tb[DCB_ATTR_IFNAME])
- 		return -EINVAL;
- 
--	netdev = dev_get_by_name(net, nla_data(tb[DCB_ATTR_IFNAME]));
-+	netdev = __dev_get_by_name(net, nla_data(tb[DCB_ATTR_IFNAME]));
- 	if (!netdev)
- 		return -ENODEV;
- 
--	if (!netdev->dcbnl_ops) {
--		ret = -EOPNOTSUPP;
--		goto out;
--	}
-+	if (!netdev->dcbnl_ops)
-+		return -EOPNOTSUPP;
- 
- 	reply_skb = dcbnl_newmsg(fn->type, dcb->cmd, portid, nlh->nlmsg_seq,
- 				 nlh->nlmsg_flags, &reply_nlh);
--	if (!reply_skb) {
--		ret = -ENOBUFS;
--		goto out;
--	}
-+	if (!reply_skb)
-+		return -ENOBUFS;
- 
- 	ret = fn->cb(netdev, nlh, nlh->nlmsg_seq, tb, reply_skb);
- 	if (ret < 0) {
-@@ -1714,7 +1710,6 @@ static int dcb_doit(struct sk_buff *skb, struct nlmsghdr *nlh)
- 
- 	ret = rtnl_unicast(reply_skb, net, portid);
- out:
--	dev_put(netdev);
- 	return ret;
- }
- 
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 481f85d..8c40802 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -741,10 +741,9 @@ static int vxlan_fdb_parse(struct nlattr *tb[], struct vxlan_dev *vxlan,
+ 		if (nla_len(tb[NDA_IFINDEX]) != sizeof(u32))
+ 			return -EINVAL;
+ 		*ifindex = nla_get_u32(tb[NDA_IFINDEX]);
+-		tdev = dev_get_by_index(net, *ifindex);
++		tdev = __dev_get_by_index(net, *ifindex);
+ 		if (!tdev)
+ 			return -EADDRNOTAVAIL;
+-		dev_put(tdev);
+ 	} else {
+ 		*ifindex = 0;
+ 	}
 -- 
 1.7.9.5
 
