@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343AbaANElO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 23:41:14 -0500
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:63770 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaANElM (ORCPT
+	id S1752680AbaANEnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 23:43:23 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54417 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428AbaANEnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 23:41:12 -0500
-Date: Mon, 13 Jan 2014 23:42:13 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Will Deacon <will.deacon@arm.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Chad Paradis <chad.paradis@umit.maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
-In-Reply-To: <20140110100804.GB11045@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.10.1401132331290.20155@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu> <20140108225315.GG31570@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu> <20140109101921.GA26435@mudshark.cambridge.arm.com>
- <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu> <20140110100804.GB11045@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 13 Jan 2014 23:43:21 -0500
+X-AuditID: 9c93016f-b7b1aae000000f15-6b-52d4c0688959
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCHSET 0/5] perf tools: Update on filtered entries' percentage output
+Date: Tue, 14 Jan 2014 13:43:14 +0900
+Message-Id: <1389674599-28227-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jan 2014, Will Deacon wrote:
+Hello,
 
-> In the absence of a core change, I think I'd rather have something like your
-> second patch, but without the extra no_overflow_irq field (you can check the
-> platform device, as I mentioned previously).
+I added --percentage option to perf report to control display of
+percentage of filtered entries.
 
-Something like the following?  It works on my rasp-pi, still waiting for
-the compile to finish on the pandaboard so I haven't verified that the
-has-working-interrupt case still works.
+ usage: perf report [<options>]
 
----
+        --percentage <relative|absolute>
+                          how to display percentage of filtered entries
 
-Allow hardware perf_events to be enabled even if no overflow
-interrupt is available.  Return EOPNOTSUPP if a sampling event
-is attempted and the interrupt is not available.
+"relative" means it's relative to filtered entries only so that the
+sum of shown entries will be always 100%.  "absolute" means it retains
+original value before and after the filter applied.  In patch 5, I
+made the "absolute" as default since it makes more sense IMHO.
+    
+      $ perf report -s comm
+      # Overhead       Command
+      # ........  ............
+      #
+          74.19%           cc1
+           7.61%           gcc
+           6.11%            as
+           4.35%            sh
+           4.14%          make
+           1.13%        fixdep
+      ...
+    
+      $ perf report -s comm -c cc1,gcc --percentage absolute
+      # Overhead       Command
+      # ........  ............
+      #
+          74.19%           cc1
+           7.61%           gcc
+    
+      $ perf report -s comm -c cc1,gcc --percentage relative
+      # Overhead       Command
+      # ........  ............
+      #
+          90.69%           cc1
+           9.31%           gcc
+    
+Note that it has zero effect if no filter was applied.
 
-This is necessary for access to hardware perf_events on
-the Raspberry-Pi (bcm2835).
+I only added the option to perf report for now.  If it looks good to
+you I'll add it to perf top too.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Any comments are welcome, thanks
+Namhyung
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index bc3f2ef..e2c4aa2 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -397,7 +397,7 @@ __hw_perf_event_init(struct perf_event *event)
- 	 */
- 	hwc->config_base	    |= (unsigned long)mapping;
- 
--	if (!hwc->sample_period) {
-+	if (!is_sampling_event(event)) {
- 		/*
- 		 * For non-sampling runs, limit the sample_period to half
- 		 * of the counter width. That way, the new counter value
-@@ -407,6 +407,14 @@ __hw_perf_event_init(struct perf_event *event)
- 		hwc->sample_period  = armpmu->max_period >> 1;
- 		hwc->last_period    = hwc->sample_period;
- 		local64_set(&hwc->period_left, hwc->sample_period);
-+	} else {
-+
-+		/*
-+		 * If we have no PMU interrupt we cannot sample.
-+		 */
-+		if (platform_get_irq(armpmu->plat_device, 0) < 0)
-+			return -EOPNOTSUPP;
-+
- 	}
- 
- 	if (event->group_leader != event) {
-diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-index d85055c..7a84738 100644
---- a/arch/arm/kernel/perf_event_cpu.c
-+++ b/arch/arm/kernel/perf_event_cpu.c
-@@ -97,8 +97,8 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
- 
- 	irqs = min(pmu_device->num_resources, num_possible_cpus());
- 	if (irqs < 1) {
--		pr_err("no irqs for PMUs defined\n");
--		return -ENODEV;
-+		printk_once("no irqs for PMUs defined, sampled events not supported\n");
-+		return 0;
- 	}
- 
- 	for (i = 0; i < irqs; ++i) {
+
+Namhyung Kim (5):
+  perf tools: Count filtered entries to total period also
+  perf ui/tui: Add support for showing relative percentage
+  perf report: Add --percentage option
+  perf report: Add report.percentage config option
+  perf tools: Show absolute percentage by default
+
+ tools/perf/Documentation/perf-report.txt |  6 ++++++
+ tools/perf/builtin-report.c              | 28 +++++++++++++++++++++++++++-
+ tools/perf/util/event.c                  | 18 ++++++++----------
+ tools/perf/util/hist.c                   | 27 ++++++++++++++-------------
+ tools/perf/util/hist.h                   |  7 +++++++
+ tools/perf/util/symbol.h                 |  5 +++--
+ 6 files changed, 65 insertions(+), 26 deletions(-)
+
+-- 
+1.7.11.7
+
