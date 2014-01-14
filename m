@@ -1,123 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbaANEoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 23:44:14 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50909 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaANEnW (ORCPT
+	id S1752606AbaANEss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 23:48:48 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:64114 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaANEsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 23:43:22 -0500
-X-AuditID: 9c93016f-b7b1aae000000f15-6e-52d4c068e2a0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 3/5] perf report: Add --percentage option
-Date: Tue, 14 Jan 2014 13:43:17 +0900
-Message-Id: <1389674599-28227-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1389674599-28227-1-git-send-email-namhyung@kernel.org>
-References: <1389674599-28227-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 13 Jan 2014 23:48:45 -0500
+Date: Mon, 13 Jan 2014 20:48:41 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: next bio iters break discard?
+Message-ID: <20140114044841.GO9037@kmo>
+References: <alpine.LSU.2.11.1401121909160.1239@eggly.anvils>
+ <20140114023346.GN9037@kmo>
+ <yq161pnmcl2.fsf@sermon.lab.mkp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq161pnmcl2.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The --percentage option is for controlling overhead percentage
-displayed.  It can only receive either of "relative" or "absolute".
+On Mon, Jan 13, 2014 at 11:06:33PM -0500, Martin K. Petersen wrote:
+> >>>>> "Kent" == Kent Overstreet <kmo@daterainc.com> writes:
+> 
+> Kent,
+> 
+> Kent> I think for discards we can deal with this easily enough -
+> Kent> __blk_recalc_rq_segments() will have to special case them - but
+> Kent> there's a similar (but worse) issue with WRITE_SAME, and looking
+> Kent> at the code it does attempt to merge WRITE_SAME requests too.
+> 
+> DISCARD bios have no payload going down the stack. They get a payload
+> attached in the sd driver and will therefore have a single bvec at
+> completion time.
+> 
+> WRITE_SAME bios have a single bvec payload throughout their lifetime.
+> 
+> For both these types of requests we never attempt to merge the actual
+> payloads. But the block range worked on may shrink or grow as the bio is
+> split or merged going down the stack.
+> 
+> IOW, DISCARD, WRITE SAME and the impending COPY requests do not have a
+> 1:1 mapping between the block range worked on and the size of any bvecs
+> attached. Your recent changes must have changed the way we handled that
+> in the past.
 
-"relative" means it's relative to filtered entries only so that the
-sum of shown entries will be always 100%.  "absolute" means it retains
-original value before and after the filter applied.
-
-  $ perf report -s comm
-  # Overhead       Command
-  # ........  ............
-  #
-      74.19%           cc1
-       7.61%           gcc
-       6.11%            as
-       4.35%            sh
-       4.14%          make
-       1.13%        fixdep
-  ...
-
-  $ perf report -s comm -c cc1,gcc --percentage absolute
-  # Overhead       Command
-  # ........  ............
-  #
-      74.19%           cc1
-       7.61%           gcc
-
-  $ perf report -s comm -c cc1,gcc --percentage relative
-  # Overhead       Command
-  # ........  ............
-  #
-      90.69%           cc1
-       9.31%           gcc
-
-Note that it has zero effect if no filter was applied.
-
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Documentation/perf-report.txt |  6 ++++++
- tools/perf/builtin-report.c              | 16 ++++++++++++++++
- 2 files changed, 22 insertions(+)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 8eab8a4bdeb8..9a67a42356d6 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -237,6 +237,12 @@ OPTIONS
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
- 
-+--percentage::
-+	Determine how to display the overhead percentage of filtered entries.
-+	"relative" means it's relative to filtered entries only so that the
-+	sum of shown entries will be always 100%.  "absolute" means it retains
-+	original value before and after the filter applied.
-+
- --header::
- 	Show header information in the perf.data file.  This includes
- 	various information like hostname, OS and perf version, cpu/mem
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 664a3dcdf0e0..535bd6745355 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -717,6 +717,20 @@ parse_percent_limit(const struct option *opt, const char *str,
- 	return 0;
- }
- 
-+static int
-+parse_percentage(const struct option *opt __maybe_unused, const char *str,
-+		 int unset __maybe_unused)
-+{
-+	if (!strcmp(str, "relative"))
-+		symbol_conf.filter_relative = true;
-+	else if (!strcmp(str, "absolute"))
-+		symbol_conf.filter_relative = false;
-+	else
-+		return -1;
-+
-+	return 0;
-+}
-+
- int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_session *session;
-@@ -839,6 +853,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
- 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
-+	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
-+		     "how to display percentage of filtered entries", parse_percentage),
- 	OPT_END()
- 	};
- 	struct perf_data_file file = {
--- 
-1.7.11.7
-
+Yeah - but with WRITE_SAME bios, wouldn't we at least have to check that they're
+writing the same data to merge them?
