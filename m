@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaANN6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:58:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49965 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaANN6a (ORCPT
+	id S1751642AbaANODc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:03:32 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:38963 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaANODa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:58:30 -0500
-Date: Tue, 14 Jan 2014 05:58:12 -0800
-From: tip-bot for Richard Weinberger <tipbot@zytor.com>
-Message-ID: <tip-60283df7ac26a4fe2d56631ca2946e04725e7eaf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, richard@nod.at, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, richard@nod.at, tglx@linutronix.de
-In-Reply-To: <1389685487-20872-1-git-send-email-richard@nod.at>
-References: <1389685487-20872-1-git-send-email-richard@nod.at>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic: Read Error Status Register correctly
-Git-Commit-ID: 60283df7ac26a4fe2d56631ca2946e04725e7eaf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 14 Jan 2014 09:03:30 -0500
+Date: Tue, 14 Jan 2014 11:03:16 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        linaro-kernel@lists.linaro.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        patches@linaro.org, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL 00/38] perf/core improvements and fixes
+Message-ID: <20140114140316.GB29798@ghostprotocols.net>
+References: <1389646059-24881-1-git-send-email-acme@infradead.org>
+ <20140114134101.GB25671@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 05:58:18 -0800 (PST)
+In-Reply-To: <20140114134101.GB25671@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60283df7ac26a4fe2d56631ca2946e04725e7eaf
-Gitweb:     http://git.kernel.org/tip/60283df7ac26a4fe2d56631ca2946e04725e7eaf
-Author:     Richard Weinberger <richard@nod.at>
-AuthorDate: Tue, 14 Jan 2014 08:44:47 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 14 Jan 2014 14:05:36 +0100
+Em Tue, Jan 14, 2014 at 02:41:01PM +0100, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-x86/apic: Read Error Status Register correctly
+> > Andi Kleen (2):
+> >       perf stat: Fix --delay option in man page
+> >       perf record: Add --initial-delay option
 
-Currently we do a read, a dummy write and a final read to fetch
-the error code. The value from the final read is taken.
-This is not the recommended way and leads to corrupted/lost ESR
-values.
+> Hm, so we now have two options that do something similar, one named
+> --delay, the other --initial-delay? That looks rather inconsistent.
 
-Intel(c) 64 and IA-32 Architectures Software Developer's Manual,
-Combined Volumes 1, 2ABC, 3ABC, Section 10.5.3 states:
+> Furthermore, it looks silly to rename things --initial-delay just to
+> preserve a rarely used option, --no-delay. Instead the better option
+> would be to rename --no-delay to --no-buffering, and use --delay and
+> use it consistently within the tools.
 
-  Before attempt to read from the ESR, software should first
-  write to it. (The value written does not affect the values read
-  subsequently; only zero may be written in x2APIC mode.) This
-  write clears any previously logged errors and updates the ESR
-  with any errors detected since the last write to the ESR.
-  This write also rearms the APIC error interrupt triggering
-  mechanism.
+Ok, agreed, I'll do that, adding a patch that renames the old option,
+then reworking Andi's patches to use --delay consistently.
 
-This patch removes the first read such that we are conform with
-the manual.
-
-On my (very old) Pentium MMX SMP system this patch fixes the
-issue that APIC errors:
-
-  a) are not always reported and
-  b) are reported with false error numbers.
-
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Cc: seiji.aguchi@hds.com
-Cc: rientjes@google.com
-Cc: konrad.wilk@oracle.com
-Cc: bp@alien8.de
-Cc: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/1389685487-20872-1-git-send-email-richard@nod.at
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/apic/apic.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index d278736..4ec1dd6 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1968,7 +1968,7 @@ __visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
-  */
- static inline void __smp_error_interrupt(struct pt_regs *regs)
- {
--	u32 v0, v1;
-+	u32 v;
- 	u32 i = 0;
- 	static const char * const error_interrupt_reason[] = {
- 		"Send CS error",		/* APIC Error Bit 0 */
-@@ -1982,21 +1982,20 @@ static inline void __smp_error_interrupt(struct pt_regs *regs)
- 	};
- 
- 	/* First tickle the hardware, only then report what went on. -- REW */
--	v0 = apic_read(APIC_ESR);
- 	apic_write(APIC_ESR, 0);
--	v1 = apic_read(APIC_ESR);
-+	v = apic_read(APIC_ESR);
- 	ack_APIC_irq();
- 	atomic_inc(&irq_err_count);
- 
--	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
--		    smp_processor_id(), v0 , v1);
-+	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x",
-+		    smp_processor_id(), v);
- 
--	v1 = v1 & 0xff;
--	while (v1) {
--		if (v1 & 0x1)
-+	v &= 0xff;
-+	while (v) {
-+		if (v & 0x1)
- 			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
- 		i++;
--		v1 >>= 1;
-+		v >>= 1;
- 	}
- 
- 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+- Arnaldo
