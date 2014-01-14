@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaANHbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:31:35 -0500
-Received: from smtprelay0009.hostedemail.com ([216.40.44.9]:38557 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752379AbaANHba (ORCPT
+	id S1752365AbaANHmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:12 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47522 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaANHlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:31:30 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:960:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:3871:3872:4321:5007:6119:6120:7652:7903:8603:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12555:13069:13146:13230:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: route42_64459adde4a21
-X-Filterd-Recvd-Size: 1950
-Message-ID: <1389684687.24849.39.camel@joe-AO722>
-Subject: [RFC PATCH] audit: Use hex_byte_pack_upper
-From: Joe Perches <joe@perches.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 13 Jan 2014 23:31:27 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Jan 2014 02:41:47 -0500
+From: Ying Xue <ying.xue@windriver.com>
+To: <davem@davemloft.net>
+CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
+        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
+        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
+        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next 02/10] bonding: use __dev_get_by_name instead of dev_get_by_name to find interface
+Date: Tue, 14 Jan 2014 15:41:01 +0800
+Message-ID: <1389685269-18600-3-git-send-email-ying.xue@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the generic kernel function causes the
-object size to increase with gcc 4.8.1.
+The following call chain indicates that bond_do_ioctl() is protected
+under rtnl_lock. If we use __dev_get_by_name() instead of
+dev_get_by_name() to find interface handler in it, this would
+help us avoid to change reference counter of interface once.
 
-$ size kernel/audit.o*
-   text	   data	    bss	    dec	    hex	filename
-  18577	   6079	   8436	  33092	   8144	kernel/audit.o.new
-  18579	   6015	   8420	  33014	   80f6	kernel/audit.o.old
+dev_ioctl()
+  rtnl_lock()
+  dev_ifsioc()
+    bond_do_ioctl()
+  rtnl_unlock()
 
-Unsigned...
+Additionally we also change the coding style in bond_do_ioctl(),
+letting it more readable for us.
+
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
 ---
-Generally, it makes sense to use generic functions
-but when it increases object size?  blech.
+ drivers/net/bonding/bond_main.c |   49 ++++++++++++++++++---------------------
+ 1 file changed, 23 insertions(+), 26 deletions(-)
 
- kernel/audit.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 2dc7573..af8ad29 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1455,7 +1455,6 @@ void audit_log_n_hex(struct audit_buffer *ab, const unsigned char *buf,
- 	int i, avail, new_len;
- 	unsigned char *ptr;
- 	struct sk_buff *skb;
--	static const unsigned char *hex = "0123456789ABCDEF";
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index e06c445..a69afbf 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3213,37 +3213,34 @@ static int bond_do_ioctl(struct net_device *bond_dev, struct ifreq *ifr, int cmd
+ 	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
  
- 	if (!ab)
- 		return;
-@@ -1473,10 +1472,8 @@ void audit_log_n_hex(struct audit_buffer *ab, const unsigned char *buf,
+-	slave_dev = dev_get_by_name(net, ifr->ifr_slave);
++	slave_dev = __dev_get_by_name(net, ifr->ifr_slave);
+ 
+ 	pr_debug("slave_dev=%p:\n", slave_dev);
+ 
+ 	if (!slave_dev)
+-		res = -ENODEV;
+-	else {
+-		pr_debug("slave_dev->name=%s:\n", slave_dev->name);
+-		switch (cmd) {
+-		case BOND_ENSLAVE_OLD:
+-		case SIOCBONDENSLAVE:
+-			res = bond_enslave(bond_dev, slave_dev);
+-			break;
+-		case BOND_RELEASE_OLD:
+-		case SIOCBONDRELEASE:
+-			res = bond_release(bond_dev, slave_dev);
+-			break;
+-		case BOND_SETHWADDR_OLD:
+-		case SIOCBONDSETHWADDR:
+-			bond_set_dev_addr(bond_dev, slave_dev);
+-			res = 0;
+-			break;
+-		case BOND_CHANGE_ACTIVE_OLD:
+-		case SIOCBONDCHANGEACTIVE:
+-			res = bond_option_active_slave_set(bond, slave_dev);
+-			break;
+-		default:
+-			res = -EOPNOTSUPP;
+-		}
++		return -ENODEV;
+ 
+-		dev_put(slave_dev);
++	pr_debug("slave_dev->name=%s:\n", slave_dev->name);
++	switch (cmd) {
++	case BOND_ENSLAVE_OLD:
++	case SIOCBONDENSLAVE:
++		res = bond_enslave(bond_dev, slave_dev);
++		break;
++	case BOND_RELEASE_OLD:
++	case SIOCBONDRELEASE:
++		res = bond_release(bond_dev, slave_dev);
++		break;
++	case BOND_SETHWADDR_OLD:
++	case SIOCBONDSETHWADDR:
++		bond_set_dev_addr(bond_dev, slave_dev);
++		res = 0;
++		break;
++	case BOND_CHANGE_ACTIVE_OLD:
++	case SIOCBONDCHANGEACTIVE:
++		res = bond_option_active_slave_set(bond, slave_dev);
++		break;
++	default:
++		res = -EOPNOTSUPP;
  	}
  
- 	ptr = skb_tail_pointer(skb);
--	for (i=0; i<len; i++) {
--		*ptr++ = hex[(buf[i] & 0xF0)>>4]; /* Upper nibble */
--		*ptr++ = hex[buf[i] & 0x0F];	  /* Lower nibble */
--	}
-+	for (i = 0; i < len; i++)
-+		ptr = hex_byte_pack_upper(ptr, buf[i]);
- 	*ptr = 0;
- 	skb_put(skb, len << 1); /* new string is twice the old string */
- }
-
+ 	return res;
+-- 
+1.7.9.5
 
