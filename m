@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaANBqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:46:04 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1690 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaANBp7 (ORCPT
+	id S1753299AbaANBqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:46:19 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:39676 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbaANBqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 20:45:59 -0500
-Message-ID: <52D496D1.2080104@huawei.com>
-Date: Tue, 14 Jan 2014 09:45:53 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jack Wang <jinpu.wang@profitbricks.com>
-CC: stable <stable@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sebastian Riemer <sebastian.riemer@profitbricks.com>
-Subject: Re: [STABLE] find missing bug fixes in a stable kernel
-References: <52D3958B.1060902@huawei.com> <52D3B411.70106@profitbricks.com>
-In-Reply-To: <52D3B411.70106@profitbricks.com>
-Content-Type: text/plain; charset="gb18030"
+	Mon, 13 Jan 2014 20:46:15 -0500
+Message-ID: <1389663614.1792.267.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/2] x86, e820 disable ACPI Memory Hotplug if memory
+ mapping is specified by user [v2]
+From: Toshi Kani <toshi.kani@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bodo Eggert <7eggert@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        dyoung@redhat.com, linux-acpi@vger.kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Mon, 13 Jan 2014 18:40:14 -0700
+In-Reply-To: <52D49307.3040406@zytor.com>
+References: <1389380698-19361-1-git-send-email-prarit@redhat.com>
+			 <1389380698-19361-4-git-send-email-prarit@redhat.com>
+			 <alpine.DEB.2.02.1401111624170.20677@be1.lrz>
+		 <52D32962.5050908@redhat.com>
+			 <CAHGf_=qWB81f8fdDdjaXXh1JoSDUsJmcEHwH+CEJ2E-5XWz6qA@mail.gmail.com>
+			 <52D4793E.8070102@redhat.com>
+	 <1389659632.1792.247.camel@misato.fc.hp.com>	 <52D48A9D.7000003@zytor.com>
+	 <1389661746.1792.254.camel@misato.fc.hp.com> <52D49307.3040406@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/1/13 17:38, Jack Wang wrote:
-> On 01/13/2014 08:28 AM, Li Zefan wrote:
->> We have several long-term and extended stable kernels, and it's possible
->> that a bug fix is in some stable versions but is missing in some other
->> versions, so I've written a script to find out those fixes.
->>
->> Take 3.4.xx and 3.2.xx for example. If a bug fix was merged into upstream
->> kernel after 3.4, and then it was backported to 3.2.xx, then it probably
->> needs to be backported to 3.4.xx.
->>
->> The result is, there're ~430 bug fixes in 3.2.xx that probably need to be
->> backported to 3.4.xx. Given there're about 4500 commits in 3.2.xx, that
->> is ~10%, which is quite a big number for stable kernels.
->>
->> We (our team in Huawei) are going to go through the whole list to filter
->> out fixes that're applicable for 3.4.xx.
->>
->> I've attached the lists for 3.4 and 3.10.
->>
->> If a commit ID appears more than once in changelogs, it's possible that's
->> because the commit was reverted later, so I tagged this kind of commits
->> in the lists.
->>
-> Hello Zefan,
+On Mon, 2014-01-13 at 17:29 -0800, H. Peter Anvin wrote:
+> On 01/13/2014 05:09 PM, Toshi Kani wrote:
+> > 
+> > In majority of the cases, memmap=exactmap is used for kdump and the
+> > firmware info is sane.  So, I think we should keep NUMA enabled since it
+> > could be useful when multiple CPUs are enabled for kdump.
+> > 
 > 
-> Thanks for share, great job, it's very useful info for other companies
-> who build their kernel base on long term kernel like here in ProfitBricks.
-> 
+> Rather unlikely since all of the kdump memory is likely to sit in a
+> single node.
 
-This can also be used to find bug fixes for 2.6.34 stable. As 2.6.34.xx isn't
-maintained anymore while 2.6.32.xx is still being taken care of.
+Right, but CPUs are distributed into multiple nodes, which dump the 1st
+kernel's memory.  So, these CPUs should dump their local memory ranges.
 
-> I'm a little confused about the column occurrences, what do the 2
-> numbers mean, eg :
-> 8c4f3c3fa968 874d3954a35c 2 1
-> the first is the occurrences in upstream and second for the occurrence
-> in 3.2.xx right?
-> 
-
-Yeah. As I replied to Greg, you can think of this as
-
-# git log v3.2..v3.2.61 | grep -c 8c4f3c3fa968
-# git log v3.2..v3.2.61 | grep -c 874d3954a35c
+Thanks,
+-Toshi
 
