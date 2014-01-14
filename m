@@ -1,184 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaANIru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 03:47:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63516 "EHLO mga11.intel.com"
+	id S1751776AbaANIso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 03:48:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1279 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaANIqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 03:46:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,657,1384329600"; 
-   d="scan'208";a="464783240"
-From: Zhang Rui <rui.zhang@intel.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org
-Cc: wsa@the-dreams.de, broonie@linaro.org, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, grant.likely@linaro.org,
-        rob.herring@calxeda.com, jarkko.nikula@linux.intel.com,
-        mika.westerberg@linux.intel.com, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 2/4] ACPI: add module autoloading support for ACPI enumerated devices
-Date: Tue, 14 Jan 2014 16:46:36 +0800
-Message-Id: <1389689198-2641-3-git-send-email-rui.zhang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
-References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
+	id S1750906AbaANIsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 03:48:42 -0500
+Date: Tue, 14 Jan 2014 09:50:40 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 3/7] ahci: Use new interfaces for MSI/MSI-X enablement
+Message-ID: <20140114085040.GA6873@dhcp-26-207.brq.redhat.com>
+References: <cover.1389103215.git.agordeev@redhat.com>
+ <7fe2a5563efac19c87213a48b58cae6b4d76c91d.1389103215.git.agordeev@redhat.com>
+ <20140113191220.GA6525@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140113191220.GA6525@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An ACPI enumerated device may have its compatible id strings.
+On Mon, Jan 13, 2014 at 12:12:20PM -0700, Bjorn Helgaas wrote:
+> > -	nvec = rc;
+> > -	rc = pci_enable_msi_block(pdev, nvec);
+> > -	if (rc)
+> > +	if (pci_enable_msi_range(pdev, nvec, nvec) < 0)
+> >  		goto intx;
+> >  
+> >  	return nvec;
+> >  
+> >  single_msi:
+> > -	rc = pci_enable_msi(pdev);
+> > -	if (rc)
+> > +	if (pci_enable_msi_range(pdev, 1, 1) < 0)
+> 
+> This part doesn't seem like an improvement.  There are a hundred or so
+> callers of pci_enable_msi() that only want a single MSI.  Is there any
+> benefit in changing them to use pci_enable_msi_range()?
 
-To support the compatible ACPI ids (acpi_device->pnp.ids),
-we introduced acpi_driver_match_device() to match
-the driver->acpi_match_table and acpi_device->pnp.ids.
+In this particular case it reads better to me as one sees on the screen
+pci_enable_msi_range(pdev, nvec, nvec) and pci_enable_msi_range(pdev, 1, 1)
+calls. That allows to avoid switching in mind between negative-or-positive
+return in the former call and negative-or-zero return from pci_enable_msi()
+if we had it.
 
-For those drivers, MODULE_DEVICE_TABLE(acpi, xxx) is used to
-exports the driver module alias in the format of
-"acpi:device_compatible_ids".
-But in the mean time, the current code does not export the
-ACPI compatible strings as part of the module_alias for the
-ACPI enumerated devices, which will break the module autoloading.
+But in most cases when single MSI is enabled we do cause complication
+with the patterns below (which I expect I am going be hated for ;) ):
 
-Take the following piece of code for example,
-static const struct acpi_device_id xxx_acpi_match[] = {
-        { "INTABCD", 0 },
-        { }
-};
-MODULE_DEVICE_TABLE(acpi, xxx_acpi_match);
 
-If this piece of code is used in a platform driver for
-an ACPI enumerated platform device, the platform driver module_alias
-is "acpi:INTABCD", but the uevent attribute of its platform device node
-is "platform:INTABCD:00" (PREFIX:platform_device->name).
-If this piece of code is used in an i2c driver for an ACPI enumerated
-i2c device, the i2c driver module_alias is "acpi:INTABCD", but
-the uevent of its i2c device node is "i2c:INTABCD:00" (PREFIX:i2c_client->name).
-If this piece of code is used in an spi driver for an ACPI enumerated
-spi device, the spi driver module_alias is "acpi:INTABCD", but
-the uevent of its spi device node is "spi:INTABCD" (PREFIX:spi_device->modalias).
+-	rc = pci_enable_msi(pdev);
+-	if (rc)
++	rc = pci_enable_msi_range(pdev, 1, 1);
++	if (rc < 0)
+		...
 
-The reason why the module autoloading is not broken for now is that
-the uevent file of the ACPI device node is "acpi:INTABCD".
-Thus it is the ACPI device node creation that loads the platform/i2c/spi driver.
 
-So this is a problem that will affect us the day when the ACPI bus
-is removed from device model.
+-	rc = pci_enable_msi(pdev);
+-	if (!rc)
++	rc = pci_enable_msi_range(pdev, 1, 1);
++	if (rc > 0)
+		...
 
-This patch introduces two new APIs,
-one for exporting ACPI ids in uevent MODALIAS field,
-and another for exporting ACPI ids in device' modalias sysfs attribute.
+ 
+I think we have a tradeoff between the interface simplicity and code clarity.
+What if we try to address both goals by making pci_enable_msi() a helper over
+pci_enable_msi_range(pdev, 1, 1)? In this case the return value will match
+negative-or-positive binary semantics while reads almost as good as it used to:
 
-For any bus that supports ACPI enumerated devices, it needs to invoke
-these two functions for their uevent and modalias attribute.
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/acpi/scan.c  |   57 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h |   15 +++++++++++++
- 2 files changed, 72 insertions(+)
+-	rc = pci_enable_msi(pdev);
+-	if (rc)
++	rc = pci_enable_msi(pdev);
++	if (rc < 0)
+		...
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index c925321..680bb56 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -116,6 +116,63 @@ static int create_modalias(struct acpi_device *acpi_dev, char *modalias,
- 	return len;
+
+-	rc = pci_enable_msi(pdev);
+-	if (!rc)
++	rc = pci_enable_msi(pdev);
++	if (rc > 0)
+		...
+
+
+The whole interface would not be inflated as well, with just:
+
+diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+index a8d0100..fa0b27d 100644
+--- a/Documentation/PCI/MSI-HOWTO.txt
++++ b/Documentation/PCI/MSI-HOWTO.txt
+@@ -158,6 +158,9 @@ static int foo_driver_enable_single_msi(struct pci_dev *pdev)
+ 	return pci_enable_msi_range(pdev, 1, 1);
  }
  
-+/*
-+ * Creates uevent modalias field for ACPI enumerated devices.
-+ * Because the other buses does not support ACPI HIDs & CIDs.
-+ * e.g. for a device with hid:IBM0001 and cid:ACPI0001 you get:
-+ * "acpi:IBM0001:ACPI0001"
-+ */
-+int acpi_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	struct acpi_device *acpi_dev;
-+	int len;
++A helper function pci_enable_msi() could be used instead. Note, as just
++one MSI is requested it could return either a negative errno or 1.
 +
-+	acpi_dev = ACPI_COMPANION(dev);
-+	if (!acpi_dev)
-+		return -ENODEV;
-+
-+	/* Fall back to bus specific way of modalias exporting */
-+	if (list_empty(&acpi_dev->pnp.ids))
-+		return -ENODEV;
-+
-+	if (add_uevent_var(env, "MODALIAS="))
-+		return -ENOMEM;
-+	len = create_modalias(acpi_dev, &env->buf[env->buflen - 1],
-+				sizeof(env->buf) - env->buflen);
-+	if (len <= 0)
-+		return len;
-+	env->buflen += len;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_device_uevent_modalias);
-+
-+/*
-+ * Creates modalias sysfs attribute for ACPI enumerated devices.
-+ * Because the other buses does not support ACPI HIDs & CIDs.
-+ * e.g. for a device with hid:IBM0001 and cid:ACPI0001 you get:
-+ * "acpi:IBM0001:ACPI0001"
-+ */
-+int acpi_device_modalias(struct device *dev, char *buf, int size)
-+{
-+	struct acpi_device *acpi_dev;
-+	int len;
-+
-+	acpi_dev = ACPI_COMPANION(dev);
-+	if (!acpi_dev)
-+		return -ENODEV;
-+
-+	/* Fall back to bus specific way of modalias exporting */
-+	if (list_empty(&acpi_dev->pnp.ids))
-+		return -ENODEV;
-+
-+	len = create_modalias(acpi_dev, buf, size -1);
-+	if (len <= 0)
-+		return len;
-+	buf[len++] = '\n';
-+	return len;
-+}
-+EXPORT_SYMBOL_GPL(acpi_device_modalias);
-+
- static ssize_t
- acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, char *buf) {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index d9099b1..22325ed 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -409,6 +409,9 @@ static inline bool acpi_driver_match_device(struct device *dev,
- 	return !!acpi_match_device(drv->acpi_match_table, dev);
- }
+ 4.2.2 pci_disable_msi
  
-+int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
-+int acpi_device_modalias(struct device *, char *, int);
-+
- #define ACPI_PTR(_ptr)	(_ptr)
- 
- #else	/* !CONFIG_ACPI */
-@@ -488,6 +491,18 @@ static inline bool acpi_driver_match_device(struct device *dev,
- 	return false;
- }
- 
-+static inline int acpi_device_uevent_modalias(struct device *dev,
-+				struct kobj_uevent_env *env)
-+{
-+	return -ENODEV;
-+}
-+
-+static inline int acpi_device_modalias(struct device *dev,
-+				char *buf, int size)
-+{
-+	return -ENODEV;
-+}
-+
- #define ACPI_PTR(_ptr)	(NULL)
- 
- #endif	/* !CONFIG_ACPI */
+ void pci_disable_msi(struct pci_dev *dev)
+
+
 -- 
-1.7.9.5
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
