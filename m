@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729AbaANLln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 06:41:43 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35634 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751375AbaANLli (ORCPT
+	id S1751881AbaANLl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 06:41:56 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43792 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbaANLlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:41:38 -0500
-X-Sasl-enc: dhg78pZopSlcbnFahOL1ZinGkrZqmYBNRgcbe+sicKYQ 1389699697
-Date: Tue, 14 Jan 2014 09:41:33 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: AMD errata 793 (CVE-2013-6885) needs a workaround in Linux?
-Message-ID: <20140114114133.GA31473@khazad-dum.debian.net>
+	Tue, 14 Jan 2014 06:41:53 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52D52269.6070705@jp.fujitsu.com>
+Date: Tue, 14 Jan 2014 20:41:29 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jingbai Ma <jingbai.ma@hp.com>
+Subject: Re: [PATCH v10] x86, apic, kexec, Documentation: Add disable_cpu_apic
+ kernel parameter
+References: <529EE392.6060400@jp.fujitsu.com> <20131210144910.GC13909@redhat.com>
+In-Reply-To: <20131210144910.GC13909@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just got this assigned to amd64-microcode in Debian, but it is something
-that needs to be worked around by the EFI/BIOS and/or the kernel.
+(2013/12/10 23:49), Vivek Goyal wrote:
+> On Wed, Dec 04, 2013 at 05:10:58PM +0900, HATAYAMA Daisuke wrote:
+>> This patch set is to allow kdump 2nd kernel to wake up multiple CPUs,
+>> a continueing work from:
+>>
+>>    [PATCH v3 0/2] x86, apic, kdump: Disable BSP if boot cpu is AP
+>>    https://lkml.org/lkml/2013/10/16/300.
+>>
+>> At v4, basic design has changed. Now users need to figure out initial
+>> APIC ID of BSP in the 1st kernel and configures kernel parameter for
+>> the 2nd kernel manually using disable_cpu_apicid kernel parameter,
+>> which is newly introduced by this patch set. This design is more
+>> flexible than the previous version in that we no longer have to rely
+>> on ACPI/MP table to get initial APIC ID of BSP.
+>>
+>> Sorry, this patch set have not include in-source documentation
+>> requested by Borislav Petkov yet, but I'll post it later separately,
+>> which would be better to focus on documentation reviewing.
+>
+> Hi hpa,
+>
+> Can you please consider this patch for inclusion.
+>
+> Thanks
+> Vivek
+>
 
-Since we all know just how well it pans out to depend on BIOS/EFI updates
-for *anything*, I'm raising the issue here.  IMHO looks like it would be
-worthwhile to either set the relevant MSR in the kernel if the BIOS didn't
-do it, or at least warn the user of the need for a BIOS/EFI update...
+Hello HPA,
 
-It is the usual hangs-core type of CPU errata (therefore, the best type
-since it won't cause silent data corruption).  gcc-produced code managed to
-trigger it (in DragonFly BSD).
+Could you please give me a next feedback for inclusion?
 
-A quick search under arch/x86 did not locate any existing workaround for
-this issue.
-
-
-Date: Wed, 27 Nov 2013 21:23:37 -0500 (EST)
-From: cve-assign@...re.org
-To: oss-security@...ts.openwall.com
-Cc: cve-assign@...re.org
-Subject: CVE-2013-6885 AMD Publ. 51810 Errata 793 system hang
-
-The person who requested CVE-2013-6885 asked that we send the CVE
-assignment here because various open-source software will probably be
-adding code to prevent this denial of service attack.
-
-http://support.amd.com/TechDocs/51810_16h_00h-0Fh_Rev_Guide.pdf
-http://lists.dragonflybsd.org/pipermail/kernel/2011-December/046594.html
-http://www.zdnet.com/blog/hardware/amd-owns-up-to-cpu-bug/18924
-
-  793 Specific Combination of Writes to Write Combined Memory
-  Types and Locked Instructions May Cause Core Hang
-
-  Under a highly specific and detailed set of internal timing
-  conditions, a locked instruction may trigger a timing sequence whereby
-  the write to a write combined memory type is not flushed, causing the
-  locked instruction to stall indefinitely.
-
-  Potential Effect on System
-  Processor core hang.
-
-  Suggested Workaround
-  BIOS should set MSRC001_1020[15] = 1b.
-
-  No fix planned
-
-- -- 
-CVE assignment team, MITRE CVE Numbering Authority
-M/S M300
-202 Burlington Road, Bedford, MA 01730 USA
+This patch set has already been acked by Vivek and now I'm waiting for a reaction of x86 maintainers.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Thanks.
+HATAYAMA, Daisuke
+
