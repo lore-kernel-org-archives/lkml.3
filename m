@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaANWtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:49:19 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:48425 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaANWtQ (ORCPT
+	id S1751952AbaANWuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:50:46 -0500
+Received: from mail-gg0-f175.google.com ([209.85.161.175]:50834 "EHLO
+	mail-gg0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181AbaANWum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:49:16 -0500
-Message-ID: <52D5CCFB.1090205@cogentembedded.com>
-Date: Wed, 15 Jan 2014 02:49:15 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: tglx@linutronix.de
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] irq-gic: remove file name from heading comment
-References: <201312140224.53928.sergei.shtylyov@cogentembedded.com>
-In-Reply-To: <201312140224.53928.sergei.shtylyov@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 14 Jan 2014 17:50:42 -0500
+Message-ID: <1389739537.31367.273.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH RFC] reciprocal_divide: correction/update of the
+ algorithm
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>, netdev@vger.kernel.org,
+        dborkman@redhat.com, linux-kernel@vger.kernel.org,
+        darkjames-ws@darkjames.pl
+Date: Tue, 14 Jan 2014 14:45:37 -0800
+In-Reply-To: <52D5A3DC.9030107@gmail.com>
+References: <20140113214249.GK6586@order.stressinduktion.org>
+		 <1389722825.31367.260.camel@edumazet-glaptop2.roam.corp.google.com>
+		 <52D58E6F.4050000@gmail.com>
+	 <1389729032.31367.262.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <52D5A3DC.9030107@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 2014-01-14 at 15:53 -0500, Austin S Hemmelgarn wrote:
+> On 2014-01-14 14:50, Eric Dumazet wrote:
+> > On Tue, 2014-01-14 at 14:22 -0500, Austin S Hemmelgarn wrote:
+> > 
+> >> I disagree with the statement that current CPU's have reasonably fast
+> >> dividers.  A lot of embedded processors and many low-end x86 CPU's do
+> >> not in-fact have any hardware divider, and usually provide it using
+> >> microcode based emulation if they provide it at all.  The AMD Jaguar
+> >> micro-architecture in particular comes to mind, it uses an iterative
+> >> division algorithm provided by the microcode that only produces 2 bits
+> >> of quotient per cycle, even in the best case (2 8-bit integers and an
+> >> integral 8-bit quotient) this still takes 4 cycles, which is twice as
+> >> slow as any other math operation on the same processor.
+> > 
+> > I doubt you run any BPF filter with a divide instruction in it on these
+> > platform.
+> > 
+> > Get real, do not over optimize things where it does not matter.
+> > 
+> Actually, I have three Jaguar based routers, and use BPF regularly as
+> part of their iptables rules to log certain packet types.
 
-On 12/14/2013 02:24 AM, Sergei Shtylyov wrote:
 
-> File names in the heading comments  fell out of favor long ago, and this one
-> weren't even changed when the driver was moved from arch/arm/common/, so remove
-> it at last...
 
-> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+1) Have you enabled BPF JIT
 
-> ---
-> The patch is against the 'irq/core' branch of the 'tip.git' repo.
+2) Do you have divide instructions in a BPF filter, 
+   if yes, I would like to have an example.
+   (current code works well for small divisors anyway)
 
-    Thomas, is there a chance that you merge this patch for 3.14? Is it even 
-the right branch for cleanups (I'm seeing fixes there)?
+3) How much time is spent in BPF compared to the rest of the stack,
+   especially if you run iptables...
 
-WBR, Sergei
+Spending 2 or 3 days of work to save ~7 cycles for a divide that
+probably can be replaced by a shift anyway, while spending 5000 cycles
+per packet is what I call not a wise optimization, especially
+if dealing with old hardware.
+
+Even on a Jaguar, the proposed alternative 
+
++       u32 t = (u32)(((u64)a * R.m) >> 32);
++       return (t + ((a - t) >> R.sh1)) >> R.sh2;
+
+will have a similar cost.
+
 
