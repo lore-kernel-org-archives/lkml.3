@@ -1,136 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaANQbU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:31:20 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:44284 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaANQbP (ORCPT
+	id S1751987AbaANQcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:32:01 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:28874 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaANQb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:31:15 -0500
-X-AuditID: cbfec7f5-b7fc96d000004885-ff-52d5665242bb
-Message-id: <52D56650.9070607@samsung.com>
-Date: Tue, 14 Jan 2014 17:31:12 +0100
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Vladimir Barinov <vladimir.barinov@cogentembedded.com>,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: anton@enomsg.org, mk7.kang@samsung.com, kmpark@infradead.org
-Subject: Re: [PATCH 1/3] power_supply: modelgauge_battery: Maxim ModelGauge ICs
- gauge
-References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com>
- <1389286145-15375-2-git-send-email-vladimir.barinov@cogentembedded.com>
-In-reply-to: <1389286145-15375-2-git-send-email-vladimir.barinov@cogentembedded.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xa7pBaVeDDBafEbQ4uFXTYv6Rc6wW
-	E1dOZrZ4/cLQ4tblVSwWl3fNYbPoONLCaNHXdZHdgcPjwdT/TB4T+j8xemxeoeXRt2UVo8fn
-	TXIBrFFcNimpOZllqUX6dglcGZ8mpBS8FKuY8+0VSwPjb8EuRk4OCQETibuzN7FD2GISF+6t
-	Z+ti5OIQEljKKNHxqAHK+cwoMW3FM5YuRg4OXgEtie+vKkAaWARUJZaemcgIYrMJGEtsXr6E
-	DcQWFYiQeHV2IguIzSsgKPFj8j0WkDkiAt2MEst27AMrYhZwkFhwp4EZxBYWCJdYdHYj1LL5
-	jBJ7W1eygiQ4BcIk3k7ezwLRYCbxqGUdM4QtL7F5zVvmCYwCs5AsmYWkbBaSsgWMzKsYRVNL
-	kwuKk9JzjfSKE3OLS/PS9ZLzczcxQkL96w7GpcesDjEKcDAq8fD+CL8aJMSaWFZcmXuIUYKD
-	WUmEd2Y0UIg3JbGyKrUoP76oNCe1+BAjEwenVANjQ9NerQed7g+LLtZldmi/EW47Xfchcu/2
-	iT8m3vuyZvHLxrt9DcfWqm445Na0sWjSqtLaixMbP86d/WnDhPf7FP/OF/rte16d88B2c46g
-	J7deudffYGGyWcbqGlrQdm/++cmGFoty7u+xWXTjTMLJjsslt39FfXh2J0rQSbZrRZ7VMv6i
-	qVZnFyqxFGckGmoxFxUnAgAxLMs4UwIAAA==
+	Tue, 14 Jan 2014 11:31:59 -0500
+Message-ID: <1389716758.1792.282.camel@misato.fc.hp.com>
+Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
+ efi_enter_virtual_mode() (was: Re: [RFC PATCH 00/14] Support timezone of
+ ACPI TAD and EFI TIME)
+From: Toshi Kani <toshi.kani@hp.com>
+To: Borislav Petkov <bp@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Matt Fleming <matt@console-pimps.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, joeyli <jlee@suse.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Date: Tue, 14 Jan 2014 09:25:58 -0700
+In-Reply-To: <1389665096.1792.271.camel@misato.fc.hp.com>
+References: <1387439053-8711-1-git-send-email-jlee@suse.com>
+	 <3476450.BMEcId2Lgj@vostro.rjw.lan>
+	 <20131221122148.GB29501@console-pimps.org>
+	 <2530951.HFPX8MI38t@vostro.rjw.lan> <20140112090627.GB3668@pd.tnic>
+	 <1389665096.1792.271.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2014 05:49 PM, Vladimir Barinov wrote:
-> Add Maxim ModelGauge ICs gauge driver for MAX17040/41/43/44/48/49/58/59 chips
->
-> Signed-off-by: Vladimir Barinov <vladimir.barinov-M4DtvfQ/ZS1MRgGoP+s0PdBPR1lH4CV8@public.gmane.org>
->
-> ---
->   drivers/power/Kconfig                            |    8
->   drivers/power/Makefile                           |    1
->   drivers/power/modelgauge_battery.c               |  875 +++++++++++++++++++++++
->   include/linux/platform_data/battery-modelgauge.h |   44 +
->   4 files changed, 928 insertions(+)
->
+On Mon, 2014-01-13 at 19:04 -0700, Toshi Kani wrote:
+> On Sun, 2014-01-12 at 10:06 +0100, Borislav Petkov wrote:
+> > On Sun, Jan 12, 2014 at 01:30:23AM +0100, Rafael J. Wysocki wrote:
+> > > I don't see any adverse effects of the patch below on a couple of my test
+> > > boxes, but (a) they are Intel-based and (b) they are non-EFI, so it would be
+> > > good to give it a go on as many machines as reasonably possible.
+> > > 
+> > > Thanks,
+> > > Rafael
+> > > 
+> > > ---
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > Subject: ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
+> > > 
+> > > According to Matt Fleming, if acpi_early_init() was executed befpre
+> > > efi_enter_virtual_mode(), the EFI initialization could benefit from
+> > > it, so make that happen.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > >  init/main.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > Index: linux-pm/init/main.c
+> > > ===================================================================
+> > > --- linux-pm.orig/init/main.c
+> > > +++ linux-pm/init/main.c
+> > > @@ -615,6 +615,7 @@ asmlinkage void __init start_kernel(void
+> > >  	calibrate_delay();
+> > >  	pidmap_init();
+> > >  	anon_vma_init();
+> > > +	acpi_early_init();
+> > >  #ifdef CONFIG_X86
+> > >  	if (efi_enabled(EFI_RUNTIME_SERVICES))
+> > >  		efi_enter_virtual_mode();
+> > > @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void
+> > >  
+> > >  	check_bugs();
+> > >  
+> > > -	acpi_early_init(); /* before LAPIC and SMP init */
+> > >  	sfi_init_late();
+> > >  
+> > >  	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+> > >
+> > 
+> > Looks good both on kvm+OVMF and on my Dell EFI box.
+> > 
+> > Tested-by: Borislav Petkov <bp@suse.de>
+> > 
+> > Toshi has a big EFI box though - if he could run it too, that would be
+> > great :-)
+> 
+> Yes, I will test the change.
 
-[...]
+Tested-by: Toshi Kani <toshi.kani@hp.com>
 
-> +static int modelgauge_read_reg(struct i2c_client *client, u8 reg, u16 *value)
-> +{
-> +	int ret = i2c_smbus_read_word_data(client, reg);
-> +
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
-> +		return ret;
-> +	}
-> +
-> +	*value = be16_to_cpu(ret);
-> +	return 0;
-> +}
+Thanks,
+-Toshi
 
-Have you considered using regmap for accessing registers? I know that 
-other max17* drivers don't use it but it may be this could be the time 
-to switch to regmap API?
-
-[...]
-
-> +static int modelgauge_probe(struct i2c_client *client,
-> +			    const struct i2c_device_id *id)
-> +{
-> +	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
-> +	struct modelgauge_priv *priv;
-> +	int ret;
-> +
-> +	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
-> +		return -EIO;
-> +
-> +	priv = devm_kzalloc(&client->dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	if (client->dev.of_node)
-> +		priv->pdata = modelgauge_parse_dt(&client->dev);
-> +	else
-> +		priv->pdata = client->dev.platform_data;
-> +
-> +	priv->client	= client;
-> +	priv->chip	= id->driver_data;
-> +
-> +	i2c_set_clientdata(client, priv);
-> +
-> +	priv->battery.name		= "modelgauge_battery";
-> +	priv->battery.type		= POWER_SUPPLY_TYPE_BATTERY;
-> +	priv->battery.get_property	= modelgauge_get_property;
-> +	priv->battery.properties	= modelgauge_battery_props;
-> +	priv->battery.num_properties	= ARRAY_SIZE(modelgauge_battery_props);
-> +
-> +	INIT_WORK(&priv->load_work, modelgauge_load_model_work);
-> +	INIT_DELAYED_WORK(&priv->rcomp_work, modelgauge_update_rcomp_work);
-> +
-> +	ret = modelgauge_init(priv);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = power_supply_register(&client->dev, &priv->battery);
-> +	if (ret) {
-> +		dev_err(&client->dev, "failed: power supply register\n");
-> +		goto err_supply;
-> +	}
-> +
-> +	if (client->irq) {
-> +		switch (priv->chip) {
-> +		case ID_MAX17040:
-> +		case ID_MAX17041:
-> +			dev_err(&client->dev, "alert line is not supported\n");
-> +			ret = -EINVAL;
-> +			goto err_irq;
-> +		default:
-> +			ret = request_threaded_irq(client->irq, NULL,
-> +						   modelgauge_irq_handler,
-> +						   IRQF_TRIGGER_FALLING,
-> +						   priv->battery.name, priv);
-
-I think you may use devm_request_threaded_irq() here.
-
-Best regards,
-Krzysztof
