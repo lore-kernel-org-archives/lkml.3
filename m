@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaANNol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:44:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318AbaANNok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:44:40 -0500
-Message-ID: <52D53F11.3090005@redhat.com>
-Date: Tue, 14 Jan 2014 14:43:45 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751574AbaANNph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:45:37 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53957 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaANNpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 08:45:34 -0500
+Date: Tue, 14 Jan 2014 13:45:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Message-ID: <20140114134528.GG15567@sirena.org.uk>
+References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
+ <20140114125242.GE15567@sirena.org.uk>
+ <CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] zram: rework reported to end-user zram statistics
-References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com> <1389692260-4421-4-git-send-email-sergey.senozhatsky@gmail.com> <52D513BD.7000800@redhat.com> <20140114111012.GC2180@swordfish.minsk.epam.com>
-In-Reply-To: <20140114111012.GC2180@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+1TulI7fc0PCHNy3"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
+X-Cookie: Marriage is the sole cause of divorce.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 12:10 PM, Sergey Senozhatsky wrote:
-> On (01/14/14 11:38), Jerome Marchand wrote:
->> On 01/14/2014 10:37 AM, Sergey Senozhatsky wrote:
->>> 1) Introduce ZRAM_ATTR_RO macro to generate zram atomic64_t stats
->>> `show' functions and reduce code duplication.
->>>
->>> 2) Account and report back to user numbers of failed READ and WRITE
->>> operations.
->>>
->>> 3) Remove `good' and `bad' compressed sub-requests stats. RW request may
->>> cause a number of RW sub-requests. zram used to account `good' compressed
->>> sub-queries (with compressed size less than 50% of original size), `bad'
->>> compressed sub-queries (with compressed size greater that 75% of original
->>> size), leaving sub-requests with compression size between 50% and 75% of
->>> original size not accounted and not reported.
->>
->> That's weird: good/bad_compress are accounted, but it seems to me that
->> they are to never used in any way. If so, there is indeed no reason to
->> keep them.
->>
->>
->>> Account each sub-request
->>> compression size so we can calculate real device compression ratio.
->>
->> Your patch doesn't change the way pages_stored and compr[essed]_size
->> are accounted. What does your patch change that allow us to calculate
->> the "real" compression ratio?
->>
->>>
->>> 4) reported zram stats:
->>>   - num_writes  -- number of writes
->>>   - num_reads  -- number of reads
->>>   - pages_stored -- number of pages currently stored
->>>   - compressed_size -- compressed size of pages stored
->>
->> Wouldn't it be more practical to report the original and compressed
->> data sizes using the same units as it is currently done?
->>
-> 
-> hm, do we really need pages_stored stats? what kind of unseful information it
-> shows to end user?.. perhaps, it's better to replace it with accounted passed
-> bvec->bv_len (as uncompressed_size).
-> 
 
-That's really going to complicates things. We would need to keep track
-of which sectors of a particular page has been written to. It's much
-easier to keep current page granularity and consider any partial I/O
-as an whole page I/O.
+--+1TulI7fc0PCHNy3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 	-ss
-> 
->> Jerome
->>
->>>   - pages_zero  -- number of zero filled pages
->>>   - failed_read -- number of failed reads
->>>   - failed_writes -- can happen when memory is too low
->>>   - invalid_io   -- non-page-aligned I/O requests
->>>   - notify_free  -- number of swap slot free notifications
->>>   - memory_used -- zs pool zs_get_total_size_bytes()
->>>
->>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+On Tue, Jan 14, 2014 at 02:23:37PM +0100, Geert Uytterhoeven wrote:
+> On Tue, Jan 14, 2014 at 1:52 PM, Mark Brown <broonie@kernel.org> wrote:
+> >On Tue, Jan 14, 2014 at 12:36:51PM +0100, Geert Uytterhoeven wrote:
 
+> > This also pushes the handling of CS_HIGH back out into the driver which
+> > doesn't seem like it's helping anything.  Flipping the sense of enable
 
+> It depends: on hardware with separate register bits for chip select polarity
+> and chip select assertion it avoids having to invert the enable value a second
+> time.
+
+If we're manually setting /CS it really makes no difference what the
+chip thinks the polarity is - something that is controlling /CS
+autonomously can't implement this operation and something that can just
+set it at any time doesn't need to worry if the chip thinks it's
+asserted or not.
+
+> > when calling set_cs() is probably OK though.
+
+> Just flipping the sense of enable still needs a documentation update.
+
+Huh?  Why were you updating the code then...
+
+--+1TulI7fc0PCHNy3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1T91AAoJELSic+t+oim9tIwP/2/SgvM2l05oxvTaRmpUMjvP
+c20RIruqXkijo0g9QoNPHVAK65dk3S5TuPwo61f/T8LPQ8brA3g/x1y1AbHs7UhU
+0q2+vZJ9y0WnwP+8Mh6O401TcnMlspAYJ02e6U+fNCx9eHvDAsz/eIxIDr2Q8uuy
+LIWQRaF+HSHzO8OhWs6Ce8Jlk3hCw5AJQDqs8El3oa4ZQVBACkyxo1o8/YknVn5V
+KyFQ5DW+UsFePI1uPHs27itYSS608Yr1nfgn2JPlMx+en7jEfPAk7hJm7FaZHfO9
+N65LfUYr4PjGBbVLxbd8Fo/v76lbOhpyJpyIpre3FTeD4Kw6G66wEe/qd9Y+XvVd
+9cvFRY0mGPW1S6WPCnJ+cB+a4Ot0V5kQnYfUqrEeOD32rQizHTG6hfpT0JWF+xeG
+A5q78wadsdcVp9zraHWbw16r5bJmi4cCr6DOxbgwpMJ9Ev3CVfZRqWSyUci62jjL
+2Ai2QEfm364z9PhxGk/sC5Nu7CKott5z6qgQrAL+eD7fLf24ce+t1gHWOBVUf/+F
+iGU4wP9Njz3sPnAC/yzFqDmNqV/AMxuvA9ngM9wqD3pehKmXm3gGpxhxVZa+YOxr
+5mtnhTfkAti+uo+aYlpsTikMvBDiMY4iDOBrrgDaTW6FvvtSroASNZFfhYbiGve4
+UxapnPH/NefQKzE+2E8J
+=rdbn
+-----END PGP SIGNATURE-----
+
+--+1TulI7fc0PCHNy3--
