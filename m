@@ -1,138 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaANCkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 21:40:19 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:53481 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaANCkO (ORCPT
+	id S1752506AbaANCox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:44:53 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52247 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaANCou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 21:40:14 -0500
+	Mon, 13 Jan 2014 21:44:50 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <52D4A469.9090100@jp.fujitsu.com>
+Date: Tue, 14 Jan 2014 11:43:53 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140113171412.dd90c020b103f4a686f8dc34@linux-foundation.org>
-References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
-	<20140114004804.27138.18469.stgit@viggo.jf.intel.com>
-	<20140113171412.dd90c020b103f4a686f8dc34@linux-foundation.org>
-Date: Mon, 13 Jan 2014 18:40:13 -0800
-Message-ID: <CAPcyv4j4vfFfJ2V-+P+pA2Fcyn+homQVBtRjxmSTG1uMoOpkrg@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] dma debug: introduce debug_dma_assert_idle()
-From: Dan Williams <dan.j.williams@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>, Netdev <netdev@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <JBottomley@parallels.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Toshi Kani <toshi.kani@hp.com>, Prarit Bhargava <prarit@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
+        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Dave Young <dyoung@redhat.com>, <linux-acpi@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] x86, acpi memory hotplug, add parameter to disable memory
+ hotplug
+References: <1389650161-13292-1-git-send-email-prarit@redhat.com>  <CAHGf_=pX303E6VAhL+gApSQ1OsEQHqTuCN8ZSdD3E54YAcFQKA@mail.gmail.com>  <52D47999.5080905@redhat.com> <52D48EC4.5070400@jp.fujitsu.com> <1389663689.1792.268.camel@misato.fc.hp.com>
+In-Reply-To: <1389663689.1792.268.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 5:14 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 13 Jan 2014 16:48:47 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
->
->> Record actively mapped pages and provide an api for asserting a given
->> page is dma inactive before execution proceeds.  Placing
->> debug_dma_assert_idle() in cow_user_page() flagged the violation of the
->> dma-api in the NET_DMA implementation (see commit 77873803363c "net_dma:
->> mark broken").
->
-> Some discussion of the overlap counter thing would be useful.
-
-Ok, will add:
-
-"The implementation also has the ability to count repeat mappings of
-the same page without an intervening unmap.  This counter is limited
-to the few bits of tag space in a radix tree.  This mechanism is added
-to mitigate false negative cases where, for example, a page is dma
-mapped twice and debug_dma_assert_idle() is called after the page is
-un-mapped once."
-
->> --- a/include/linux/dma-debug.h
->> +++ b/include/linux/dma-debug.h
+(2014/01/14 10:41), Toshi Kani wrote:
+> On Tue, 2014-01-14 at 10:11 +0900, Yasuaki Ishimatsu wrote:
+>   :
+>>>> I think we need a knob manually enable mem-hotplug when specify memmap. But
+>>>> it is another story.
+>>>>
+>>>> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>
+>>> As mentioned, self-NAK.  I have seen a system that I needed to specify
+>>> memmap=exactmap & had hotplug memory.  I will only keep the acpi_no_memhotplug
+>>> option in the next version of the patch.
 >>
->> ...
 >>
->> +static void __active_pfn_inc_overlap(struct dma_debug_entry *entry)
->> +{
->> +     unsigned long pfn = entry->pfn;
->> +     int i;
->> +
->> +     for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
->> +             if (radix_tree_tag_get(&dma_active_pfn, pfn, i) == 0) {
->> +                     radix_tree_tag_set(&dma_active_pfn, pfn, i);
->> +                     return;
->> +             }
->> +     pr_debug("DMA-API: max overlap count (%d) reached for pfn 0x%lx\n",
->> +              RADIX_TREE_MAX_TAGS, pfn);
->> +}
->> +
->> +static void __active_pfn_dec_overlap(struct dma_debug_entry *entry)
->> +{
->> +     unsigned long pfn = entry->pfn;
->> +     int i;
->> +
->> +     for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
->> +             if (radix_tree_tag_get(&dma_active_pfn, pfn, i)) {
->> +                     radix_tree_tag_clear(&dma_active_pfn, pfn, i);
->> +                     return;
->> +             }
->> +     radix_tree_delete(&dma_active_pfn, pfn);
->> +}
->> +
->> +static int active_pfn_insert(struct dma_debug_entry *entry)
->> +{
->> +     unsigned long flags;
->> +     int rc;
->> +
->> +     spin_lock_irqsave(&radix_lock, flags);
->> +     rc = radix_tree_insert(&dma_active_pfn, entry->pfn, entry);
->> +     if (rc == -EEXIST)
->> +             __active_pfn_inc_overlap(entry);
->> +     spin_unlock_irqrestore(&radix_lock, flags);
->> +
->> +     return rc;
->> +}
->> +
->> +static void active_pfn_remove(struct dma_debug_entry *entry)
->> +{
->> +     unsigned long flags;
->> +
->> +     spin_lock_irqsave(&radix_lock, flags);
->> +     __active_pfn_dec_overlap(entry);
->> +     spin_unlock_irqrestore(&radix_lock, flags);
->> +}
+>> Your following first patch is simply and makes sense.
+>>
+>> http://marc.info/?l=linux-acpi&m=138922019607796&w=2
+>>
 >
-> OK, I think I see what's happening.  The tags thing acts as a crude
-> counter and if the map/unmap count ends up imbalanced, we deliberately
-> leak an entry in the radix-tree so it can later be reported via undescribed
-> means.  Thoughts:
+> In this option, it also requires changing kexec-tools to specify the new
+> option for kdump.  It won't be simpler.
 
-Certainly the leak will be noticed by debug_dma_assert_idle(), but
-there's no guarantee that we trigger that check at the time of the
-leak.  Hmm, dma_debug_entries would also leak in that case...
+Hmm.
+I use memm= boot option and hotplug memory for memory hot-remove.
+At least, the patch cannot be accepted.
 
-> - RADIX_TREE_MAX_TAGS=3 so the code could count to 7, with a bit of
->   futzing around.
+Thanks,
+Yasuaki Ishimatsu
 
-Yes, if we are going to count might as well leverage the full number
-space to help debug implementations that overlap severely.  I should
-flesh out the error reporting to say that debug_dma_assert_idle() may
-give false positives in the case where the overlap counter overflows.
-
-> - from a style/readability point of view it is unexpected that
->   __active_pfn_dec_overlap() actually removes radix-tree items.  It
->   would be better to do:
 >
->         spin_lock_irqsave(&radix_lock, flags);
->         if (__active_pfn_dec_overlap(entry) == something) {
->                 /*
->                  * Nice comment goes here
->                  */
->                 radix_tree_delete(...);
->         }
->         spin_unlock_irqrestore(&radix_lock, flags);
+> Thanks,
+> -Toshi
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
-Yes, I should have noticed the asymmetry with the insert case, will fix.
+
