@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaANQlr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:41:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52857 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583AbaANQli (ORCPT
+	id S1752095AbaANQpC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:45:02 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:60895 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaANQpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:41:38 -0500
-Date: Tue, 14 Jan 2014 08:40:55 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-1wwjs01rt3xbyhn6kjl2gfs9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, bp@suse.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Include tools/lib/api/ in MANIFEST
-Git-Commit-ID: c023f534c31f69a658fc21d619116ad12c7be464
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 14 Jan 2014 11:45:00 -0500
+Date: Tue, 14 Jan 2014 16:44:57 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Oliver Neukum <oneukum@suse.de>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] ACPI: Blacklist Win8 OSI for some HP laptop
+ 2013 models
+Message-ID: <20140114164457.GA8166@srcf.ucam.org>
+References: <1389611658-19424-1-git-send-email-tiwai@suse.de>
+ <20140114161244.GD4307@srcf.ucam.org>
+ <s5hvbxmtte9.wl%tiwai@suse.de>
+ <20140114163600.GB6649@srcf.ucam.org>
+ <s5hsisqtsxf.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:41:02 -0800 (PST)
+In-Reply-To: <s5hsisqtsxf.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c023f534c31f69a658fc21d619116ad12c7be464
-Gitweb:     http://git.kernel.org/tip/c023f534c31f69a658fc21d619116ad12c7be464
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 10 Jan 2014 16:25:05 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 13 Jan 2014 10:06:26 -0300
+On Tue, Jan 14, 2014 at 05:43:56PM +0100, Takashi Iwai wrote:
+> At Tue, 14 Jan 2014 16:36:00 +0000,
+> Matthew Garrett wrote:
+> > 
+> > On Tue, Jan 14, 2014 at 05:33:50PM +0100, Takashi Iwai wrote:
+> > 
+> > > For the rfkill part, it depends on the user-space.  Without the patch,
+> > > it sends a scan code, and OS is supposed to do rfkill via each
+> > > driver.  The proper key mapping would be needed.  Not sure about the
+> > > LED state on the WiFi button, though, whether it's properly controlled
+> > > by WiFi and/or BT driver.  With the patch, all rfkill and LED are
+> > > handled by BIOS, so it works as is.
+> > 
+> > Ok, so userspace needs to work - there's plenty of hardware that only 
+> > sends a scancode already. Let's just add the keycode and then remove 
+> > this once the backlight stuff is fixed.
+> 
+> Yes, sounds feasible.
 
-perf tools: Include tools/lib/api/ in MANIFEST
+Oh, and once we've got the keycode in it's possible to handle this 
+in-kernel - you just need rfkill-input.
 
-When 553873e1df63 renamed tools/lib/lk to tools/lib/api we forgot to
-do the switch in tools/perf/MANIFEST, breaking tarball building:
-
-  [acme@ssdandy linux]$ make perf-targz-src-pkg
-    TAR
-  [acme@ssdandy linux]$ tar xf perf-3.13.0-rc4.tar.gz -C /tmp/tmp.OgdYyvp77p/
-  [acme@ssdandy linux]$ make -C /tmp/tmp.OgdYyvp77p/perf-3.13.0-rc4/tools/perf
-  make: Entering directory
-  `/tmp/tmp.OgdYyvp77p/perf-3.13.0-rc4/tools/perf'
-    BUILD:   Doing 'make -j8' parallel build
-    FLEX     util/pmu-flex.c
-    CC       util/evlist.o
-    CC       util/evsel.o
-  util/evsel.c:12:28: fatal error: api/fs/debugfs.h: No such file or directory compilation terminated.
-  In file included from util/cache.h:5:0,
-  <SNIP>
-
-Fix it.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-1wwjs01rt3xbyhn6kjl2gfs9@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/MANIFEST | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 4e53535..f41572d 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -1,7 +1,7 @@
- tools/perf
- tools/scripts
- tools/lib/traceevent
--tools/lib/lk
-+tools/lib/api
- tools/lib/symbol/kallsyms.c
- tools/lib/symbol/kallsyms.h
- tools/include/asm/bug.h
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
