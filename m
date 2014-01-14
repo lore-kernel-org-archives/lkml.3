@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaANPSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:18:10 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:54542 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaANPSH (ORCPT
+	id S1751503AbaANPUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:20:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59504 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaANPUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:18:07 -0500
+	Tue, 14 Jan 2014 10:20:36 -0500
+Date: Tue, 14 Jan 2014 07:20:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: rogerable@realtek.com
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>, Maxim Levitsky <maximlevitsky@gmail.com>,
+        Alex Dubov <oakad@yahoo.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn
+Subject: Re: [PATCH 1/3] mfd: Add realtek USB card reader driver
+Message-ID: <20140114152048.GB6512@kroah.com>
+References: <1389685656-880-1-git-send-email-rogerable@realtek.com>
+ <1389685656-880-2-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <20140114145002.GR15567@sirena.org.uk>
-References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
-	<20140114125242.GE15567@sirena.org.uk>
-	<CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
-	<20140114134528.GG15567@sirena.org.uk>
-	<CAMuHMdXEsNKRxYv8gh5sDzpg_QH2RmrjYhLhCZx0QCcRN+gdOg@mail.gmail.com>
-	<20140114145002.GR15567@sirena.org.uk>
-Date: Tue, 14 Jan 2014 16:18:06 +0100
-X-Google-Sender-Auth: RkIIV4sWigkTOGDXe_92Y52vak8
-Message-ID: <CAMuHMdVhmtA0ogEqu-jj8Kvii5CwV8qfHn+GzgQ9uFKzH7Ua6w@mail.gmail.com>
-Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389685656-880-2-git-send-email-rogerable@realtek.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Tue, Jan 14, 2014 at 03:47:34PM +0800, rogerable@realtek.com wrote:
+> From: Roger Tseng <rogerable@realtek.com>
+> 
+> Realtek USB card reader provides a channel to transfer command or data to flash
+> memory cards. This driver exports host instances for mmc and memstick subsystems
+> and handles basic works.
+> 
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> ---
+>  drivers/mfd/Kconfig          |  10 +
+>  drivers/mfd/Makefile         |   1 +
+>  drivers/mfd/rtsx_usb.c       | 788 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rtsx_usb.h | 619 +++++++++++++++++++++++++++++++++
+>  4 files changed, 1418 insertions(+)
+>  create mode 100644 drivers/mfd/rtsx_usb.c
+>  create mode 100644 include/linux/mfd/rtsx_usb.h
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b7c74a7..4c99ebd 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -507,6 +507,16 @@ config MFD_RTSX_PCI
+>  	  types of memory cards, such as Memory Stick, Memory Stick Pro,
+>  	  Secure Digital and MultiMediaCard.
+>  
+> +config MFD_RTSX_USB
+> +	tristate "Realtek USB card reader"
+> +	depends on USB
+> +	select MFD_CORE
+> +	help
+> +	Select this option to get support for Realtek USB 2.0 card readers
+> +	including RTS5129, RTS5139, RTS5179 and RTS5170.
+> +	Realtek card reader supports access to many types of memory cards,
+> +	such as Memory Stick Pro, Secure Digital and MultiMediaCard.
+> +
+>  config MFD_RC5T583
+>  	bool "Ricoh RC5T583 Power Management system device"
+>  	depends on I2C=y
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 8a28dc9..33b8de6 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -14,6 +14,7 @@ obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+>  
+>  rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+>  obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+> +obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
+>  
+>  obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o
+>  obj-$(CONFIG_HTC_PASIC3)	+= htc-pasic3.o
+> diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
+> new file mode 100644
+> index 0000000..905ec8d
+> --- /dev/null
+> +++ b/drivers/mfd/rtsx_usb.c
+> @@ -0,0 +1,788 @@
+> +/* Driver for Realtek USB card reader
+> + *
+> + * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2, or (at your option) any
+> + * later version.
 
-On Tue, Jan 14, 2014 at 3:50 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Jan 14, 2014 at 03:44:43PM +0100, Geert Uytterhoeven wrote:
->> On Tue, Jan 14, 2014 at 2:45 PM, Mark Brown <broonie@kernel.org> wrote:
->> >> > when calling set_cs() is probably OK though.
->
->> >> Just flipping the sense of enable still needs a documentation update.
->
->> > Huh?  Why were you updating the code then...
->
->> "true to assert" in the documentation means that enable is true when
->> enabling the chip select.
->> Currently the value of enable depends on SPI_CS_HIGH. Just "flipping
->> the sense of enable" doesn't change that dependency.
->
-> Oh, so the code update was purely about factoring that out of the core?
+Do you really mean "any later version"?  (sorry, I have to ask.)
 
-No, it was about fixing the mismatch between code and documentation.
+Same goes for the other files you add with this specific license
+wording.
 
-There are two ways to correct the mismatch:
-  1. Make the code match the documentation.
-      That's what I did, as it avoids a double conditional inversion on RSPI.
-  2. Make the documentation match the code.
-      It seems this is what you prefer?
-      So "assert or deassert chip select, true to assert" has to be replaced by
-      "Set the logical level of the chip select line"? Or do you have a better
-      suggestion?
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/mutex.h>
+> +#include <linux/usb.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/mfd/core.h>
+> +#include <asm/unaligned.h>
 
-Thanks!
+Why is this file neded?
 
-Gr{oetje,eeting}s,
+thanks,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+greg k-h
