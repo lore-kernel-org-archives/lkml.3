@@ -1,263 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaANUfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:35:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43664 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaANUe7 (ORCPT
+	id S1751904AbaANUh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:37:29 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54301 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaANUh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:34:59 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>
-Subject: [PATCH] msm_serial: Add support for poll_{get,put}_char()
-Date: Tue, 14 Jan 2014 12:34:55 -0800
-Message-Id: <1389731695-28265-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+	Tue, 14 Jan 2014 15:37:27 -0500
+Date: Tue, 14 Jan 2014 20:36:50 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        linux-sound@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org
+Message-ID: <20140114203650.GX15567@sirena.org.uk>
+References: <1389669956-2304-1-git-send-email-voice.shen@atmel.com>
+ <1389669956-2304-3-git-send-email-voice.shen@atmel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v6gilOcl2gU05R9Q"
+Content-Disposition: inline
+In-Reply-To: <1389669956-2304-3-git-send-email-voice.shen@atmel.com>
+X-Cookie: Marriage is the sole cause of divorce.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] ASoC: atmel_wm8904: make it available to choose clock
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the polling functionality for the MSM serial driver.
-This allows us to use KGDB on this hardware.
 
-Cc: David Brown <davidb@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/tty/serial/msm_serial.c | 140 +++++++++++++++++++++++++++++++++++++++-
- drivers/tty/serial/msm_serial.h |   9 +++
- 2 files changed, 146 insertions(+), 3 deletions(-)
+--v6gilOcl2gU05R9Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index b5d779cd3c2b..053b98eb46c8 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -39,6 +39,13 @@
- 
- #include "msm_serial.h"
- 
-+enum {
-+	UARTDM_1P1 = 1,
-+	UARTDM_1P2,
-+	UARTDM_1P3,
-+	UARTDM_1P4,
-+};
-+
- struct msm_port {
- 	struct uart_port	uart;
- 	char			name[16];
-@@ -309,6 +316,8 @@ static unsigned int msm_get_mctrl(struct uart_port *port)
- 
- static void msm_reset(struct uart_port *port)
- {
-+	struct msm_port *msm_port = UART_TO_MSM(port);
-+
- 	/* reset everything */
- 	msm_write(port, UART_CR_CMD_RESET_RX, UART_CR);
- 	msm_write(port, UART_CR_CMD_RESET_TX, UART_CR);
-@@ -316,6 +325,10 @@ static void msm_reset(struct uart_port *port)
- 	msm_write(port, UART_CR_CMD_RESET_BREAK_INT, UART_CR);
- 	msm_write(port, UART_CR_CMD_RESET_CTS, UART_CR);
- 	msm_write(port, UART_CR_CMD_SET_RFR, UART_CR);
-+
-+	/* Disable DM modes */
-+	if (msm_port->is_uartdm)
-+		msm_write(port, 0, UARTDM_DMEN);
- }
- 
- static void msm_set_mctrl(struct uart_port *port, unsigned int mctrl)
-@@ -711,6 +724,117 @@ static void msm_power(struct uart_port *port, unsigned int state,
- 	}
- }
- 
-+#ifdef CONFIG_CONSOLE_POLL
-+static int msm_poll_init(struct uart_port *port)
-+{
-+	struct msm_port *msm_port = UART_TO_MSM(port);
-+
-+	/* Enable single character mode on RX FIFO */
-+	if (msm_port->is_uartdm >= UARTDM_1P4)
-+		msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN);
-+
-+	return 0;
-+}
-+
-+static int msm_poll_get_char_single(struct uart_port *port)
-+{
-+	struct msm_port *msm_port = UART_TO_MSM(port);
-+	unsigned int rf_reg = msm_port->is_uartdm ? UARTDM_RF : UART_RF;
-+
-+	if (!(msm_read(port, UART_SR) & UART_SR_RX_READY))
-+		return NO_POLL_CHAR;
-+	else
-+		return msm_read(port, rf_reg) & 0xff;
-+}
-+
-+static int msm_poll_get_char_dm_1p3(struct uart_port *port)
-+{
-+	int c;
-+	static u32 slop;
-+	static int count;
-+	unsigned char *sp = (unsigned char *)&slop;
-+
-+	/* Check if a previous read had more than one char */
-+	if (count) {
-+		c = sp[sizeof(slop) - count];
-+		count--;
-+	/* Or if FIFO is empty */
-+	} else if (!(msm_read(port, UART_SR) & UART_SR_RX_READY)) {
-+		/*
-+		 * If RX packing buffer has less than a word, force stale to
-+		 * push contents into RX FIFO
-+		 */
-+		count = msm_read(port, UARTDM_RXFS);
-+		count = (count >> UARTDM_RXFS_BUF_SHIFT) & UARTDM_RXFS_BUF_MASK;
-+		if (count) {
-+			msm_write(port, UART_CR_CMD_FORCE_STALE, UART_CR);
-+			slop = msm_read(port, UARTDM_RF);
-+			c = sp[0];
-+			count--;
-+		} else {
-+			c = NO_POLL_CHAR;
-+		}
-+	/* FIFO has a word */
-+	} else {
-+		slop = msm_read(port, UARTDM_RF);
-+		c = sp[0];
-+		count = sizeof(slop) - 1;
-+	}
-+
-+	return c;
-+}
-+
-+static int msm_poll_get_char(struct uart_port *port)
-+{
-+	u32 imr;
-+	int c;
-+	struct msm_port *msm_port = UART_TO_MSM(port);
-+
-+	/* Disable all interrupts */
-+	imr = msm_read(port, UART_IMR);
-+	msm_write(port, 0, UART_IMR);
-+
-+	if (msm_port->is_uartdm == UARTDM_1P3)
-+		c = msm_poll_get_char_dm_1p3(port);
-+	else
-+		c = msm_poll_get_char_single(port);
-+
-+	/* Enable interrupts */
-+	msm_write(port, imr, UART_IMR);
-+
-+	return c;
-+}
-+
-+static void msm_poll_put_char(struct uart_port *port, unsigned char c)
-+{
-+	u32 imr;
-+	struct msm_port *msm_port = UART_TO_MSM(port);
-+
-+	/* Disable all interrupts */
-+	imr = msm_read(port, UART_IMR);
-+	msm_write(port, 0, UART_IMR);
-+
-+	if (msm_port->is_uartdm)
-+		reset_dm_count(port, 1);
-+
-+	/* Wait until FIFO is empty */
-+	while (!(msm_read(port, UART_SR) & UART_SR_TX_READY))
-+		cpu_relax();
-+
-+	/* Write a character */
-+	msm_write(port, c, msm_port->is_uartdm ? UARTDM_TF : UART_TF);
-+
-+	/* Wait until FIFO is empty */
-+	while (!(msm_read(port, UART_SR) & UART_SR_TX_READY))
-+		cpu_relax();
-+
-+	/* Enable interrupts */
-+	msm_write(port, imr, UART_IMR);
-+
-+	return;
-+}
-+#endif
-+
- static struct uart_ops msm_uart_pops = {
- 	.tx_empty = msm_tx_empty,
- 	.set_mctrl = msm_set_mctrl,
-@@ -729,6 +853,11 @@ static struct uart_ops msm_uart_pops = {
- 	.config_port = msm_config_port,
- 	.verify_port = msm_verify_port,
- 	.pm = msm_power,
-+#ifdef CONFIG_CONSOLE_POLL
-+	.poll_init = msm_poll_init,
-+	.poll_get_char	= msm_poll_get_char,
-+	.poll_put_char	= msm_poll_put_char,
-+#endif
- };
- 
- static struct msm_port msm_uart_ports[] = {
-@@ -900,7 +1029,10 @@ static struct uart_driver msm_uart_driver = {
- static atomic_t msm_uart_next_id = ATOMIC_INIT(0);
- 
- static const struct of_device_id msm_uartdm_table[] = {
--	{ .compatible = "qcom,msm-uartdm" },
-+	{ .compatible = "qcom,msm-uartdm-v1.1", .data = (void *)UARTDM_1P1 },
-+	{ .compatible = "qcom,msm-uartdm-v1.2", .data = (void *)UARTDM_1P2 },
-+	{ .compatible = "qcom,msm-uartdm-v1.3", .data = (void *)UARTDM_1P3 },
-+	{ .compatible = "qcom,msm-uartdm-v1.4", .data = (void *)UARTDM_1P4 },
- 	{ }
- };
- 
-@@ -909,6 +1041,7 @@ static int __init msm_serial_probe(struct platform_device *pdev)
- 	struct msm_port *msm_port;
- 	struct resource *resource;
- 	struct uart_port *port;
-+	const struct of_device_id *id;
- 	int irq;
- 
- 	if (pdev->id == -1)
-@@ -923,8 +1056,9 @@ static int __init msm_serial_probe(struct platform_device *pdev)
- 	port->dev = &pdev->dev;
- 	msm_port = UART_TO_MSM(port);
- 
--	if (of_match_device(msm_uartdm_table, &pdev->dev))
--		msm_port->is_uartdm = 1;
-+	id = of_match_device(msm_uartdm_table, &pdev->dev);
-+	if (id)
-+		msm_port->is_uartdm = (unsigned long)id->data;
- 	else
- 		msm_port->is_uartdm = 0;
- 
-diff --git a/drivers/tty/serial/msm_serial.h b/drivers/tty/serial/msm_serial.h
-index 469fda50ac63..1e9b68b6f9eb 100644
---- a/drivers/tty/serial/msm_serial.h
-+++ b/drivers/tty/serial/msm_serial.h
-@@ -59,6 +59,7 @@
- #define UART_CR_CMD_RESET_RFR		(14 << 4)
- #define UART_CR_CMD_PROTECTION_EN	(16 << 4)
- #define UART_CR_CMD_STALE_EVENT_ENABLE	(80 << 4)
-+#define UART_CR_CMD_FORCE_STALE		(4 << 8)
- #define UART_CR_CMD_RESET_TX_READY	(3 << 8)
- #define UART_CR_TX_DISABLE		(1 << 3)
- #define UART_CR_TX_ENABLE		(1 << 2)
-@@ -113,6 +114,14 @@
- #define GSBI_PROTOCOL_UART	0x40
- #define GSBI_PROTOCOL_IDLE	0x0
- 
-+#define UARTDM_RXFS		0x50
-+#define UARTDM_RXFS_BUF_SHIFT	0x7
-+#define UARTDM_RXFS_BUF_MASK	0x7
-+
-+#define UARTDM_DMEN		0x3C
-+#define UARTDM_DMEN_RX_SC_ENABLE BIT(5)
-+#define UARTDM_DMEN_TX_SC_ENABLE BIT(4)
-+
- #define UARTDM_DMRX		0x34
- #define UARTDM_NCF_TX		0x40
- #define UARTDM_RX_TOTAL_SNAP	0x38
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+On Tue, Jan 14, 2014 at 11:25:55AM +0800, Bo Shen wrote:
+> Make it available to choose the clock from TK pin or RK pin. This
+> is hardware design decided.
 
+> --- a/sound/soc/atmel/atmel_wm8904.c
+> +++ b/sound/soc/atmel/atmel_wm8904.c
+> @@ -108,6 +108,7 @@ static int atmel_asoc_wm8904_dt_init(struct platform_=
+device *pdev)
+>  	struct device_node *codec_np, *cpu_np;
+>  	struct snd_soc_card *card =3D &atmel_asoc_wm8904_card;
+>  	struct snd_soc_dai_link *dailink =3D &atmel_asoc_wm8904_dailink;
+> +	struct atmel_ssc_info *ssc_info;
+>  	int ret;
+> =20
+>  	if (!np) {
+> @@ -115,6 +116,15 @@ static int atmel_asoc_wm8904_dt_init(struct platform=
+_device *pdev)
+>  		return -EINVAL;
+>  	}
+> =20
+> +	ssc_info =3D devm_kzalloc(&pdev->dev, sizeof(*ssc_info), GFP_KERNEL);
+> +	if (!ssc_info)
+> +		return -ENOMEM;
+> +
+> +	ssc_info->clk_from_rk_pin =3D
+> +		of_property_read_bool(np, "clk_from_rk_pin");
+> +
+> +	card->drvdata =3D (void *)ssc_info;
+
+Shouldn't this code be in the DAI driver?  Otherwise this series looks
+fine to me, though the DT folks might have something to say I guess.
+
+--v6gilOcl2gU05R9Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1Z/fAAoJELSic+t+oim9uCwP/AhnO/W9V0FYXNgrkZQjOI6d
+1n1QeHGJiSw2soGqnv4FMwx0c23eIYvnL8fiHw04vZY4qyEQYDZdHv4Rgq99U4XX
+6wfTDUi+atk3G7UP2nUIanmZqTNyUmkOI/plRcrQS+kqSuoJlH/bCwiNSi4ig+oU
+5Bi/xyO7EJJvG+RasL0uBrU6nk3WpFc9JMXsXyy51A2Wnm5CK+/uXheSJOP3x5jg
+Pywg40ld0E5P2Z6YItTUwIHQJk/odqe36dpC88pCRyAtQwby2Hq4oqX9M+flkZ0P
+587JT6suCmxsHqgJveeQY2HT7QdyIDrz9JYLR0RGN+d3z2XAXUIsl6CnzNBavnYH
++MTpTR7J5ONkSRqM84VfQJGnfiUMtouzfRzweUO3jiJnyDIiKki/8VG3c6ttKiQu
+V94i8Lai+F3CJPXoh5sudKDSVw+14R5KvH0MlqrjNQnNjc6+8oj64XJ0Zorfjec6
+EltejJKwgQKjtCkqhJtlVI0TLvs5TWAZu7YaIQ45thT/vA2q9INEEfg9UOP11swv
+W4qHnZvMPCixPXhD0+4PeJkJafEihtkvJuiS/IFAa6ID1Ygumh+97DEFTdMvslZ4
+8yestG9mmU847ziUSh1+0ZTDzkSzHLyPy+H03tFfX/69muvnTPTBaGFRuTjugjOo
+sH1yHarTztFhogG4Vmkk
+=zanM
+-----END PGP SIGNATURE-----
+
+--v6gilOcl2gU05R9Q--
