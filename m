@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaANSAV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:00:21 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54167 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaANSAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:00:19 -0500
-Date: Tue, 14 Jan 2014 18:00:05 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: lgirdwood@gmail.com, Xiubo Li <Li.Xiubo@freescale.com>,
-        alsa-devel@alsa-project.org, kuninori.morimoto.gx@renesas.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140114180005.GT15567@sirena.org.uk>
-References: <20140114123606.2241d8ab@armhf>
- <20140114142014.GM15567@sirena.org.uk>
- <20140114171258.2d027ee5@armhf>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IQvoI1rdlCKiYEYW"
-Content-Disposition: inline
-In-Reply-To: <20140114171258.2d027ee5@armhf>
-X-Cookie: Marriage is the sole cause of divorce.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: simple-card: simplify code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1751878AbaANSBD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:01:03 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12798 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537AbaANSA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:00:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,658,1384329600"; 
+   d="scan'208";a="465049735"
+Subject: [RFC][PATCH 1/9] mm: slab/slub: use page->list consistently instead of page->lru
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        penberg@kernel.org, cl@linux-foundation.org,
+        Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 14 Jan 2014 10:00:44 -0800
+References: <20140114180042.C1C33F78@viggo.jf.intel.com>
+In-Reply-To: <20140114180042.C1C33F78@viggo.jf.intel.com>
+Message-Id: <20140114180044.1E401C47@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---IQvoI1rdlCKiYEYW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-On Tue, Jan 14, 2014 at 05:12:58PM +0100, Jean-Francois Moine wrote:
-> Mark Brown <broonie@kernel.org> wrote:
+'struct page' has two list_head fields: 'lru' and 'list'.
+Conveniently, they are unioned together.  This means that code
+can use them interchangably, which gets horribly confusing like
+with this nugget from slab.c:
 
-> > Please send this as a patch series to aid review, one patch doing four
-> > different changes is much harder to review.
+>	list_del(&page->lru);
+>	if (page->active == cachep->num)
+>		list_add(&page->list, &n->slabs_full);
 
-> As there are other bugs to fix, I may put back the 'of_device_is_available',
-> but there are not 3 different changes: I just explain the visible
-> effects of the patch. The patch itself is, as the subject says,
-> 'simplify code', that is, 'have a simpler code with no change in the
-> logic'.
+This patch makes the slab and slub code use page->lru
+universally instead of mixing ->list and ->lru.
 
-There's several different simplifications going on here, or at least it
-sounded that way.  For example creating a private data struct doesn't
-seem obviously related to deleting unused fields from the platform data.
-The larger a change is the more benefit there is from a series of
-mechanical individual updates rather than several at once.
+So, the new rule is: page->lru is what the you use if you want to
+keep your page on a list.  Don't like the fact that it's not
+called ->list?  Too bad.
 
-> > >  		ret = asoc_simple_card_sub_parse_of(np,
-> > > -						  &info->cpu_dai,
-> > > -						  of_cpu);
-> > > +						  &priv->cpu_dai,
-> > > +					  (struct device_node **)
-> > > +						  &dai_link->cpu_of_node,
-> > > +						  &dai_link->cpu_dai_name);
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
-> > What's this cast here for?  That code doesn't look at all safe.
+ b/include/linux/mm_types.h |    3 ++-
+ b/mm/slab.c                |    4 ++--
+ b/mm/slob.c                |   10 +++++-----
+ 3 files changed, 9 insertions(+), 8 deletions(-)
 
-> dai_link->cpu_of_node is 'const struct device_node *' and both
-> of_clk_get() and of_node_put() want 'struct device_node *'. So, there
-> must be a cast somewhere.
-
-> Do you prefer I put these ones when calling the 'of_xx' functions?
-
-No, I think this stuff needs to actually be type safe with no dodgy
-casts.  I'm not sure why we're doing an of_node_put(), for the
-of_clk_get() it's not immediately obvious why it's not taking a const
-clk.  Or perhaps the pointer shouldn't be stored as const.
-
---IQvoI1rdlCKiYEYW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1XsiAAoJELSic+t+oim9yeMP/jnThYE8FYGnXYoruMF/XFwd
-u2jIZEeHVW/xDGMKYA7P1JhBuviGMPiWtAuL8ypFHX5MEsY81wZ55igYOdQHfCeX
-e1Gsd07I7tMN1KvWURh5lWhEA2Bsmz3/C1vYgOW3ps/vONFyQBbaZY9J4mPqwNuo
-wATxZcga/Eicr89DDyU6hbPlFnI3TAIJLAmpLLyVd73NoDlqNyhdBjVpLBeMIrO4
-lfuJ97blj+WpvRTX/valnxp0OlGpo0Suw1SNtwjbb69pQ+ScjMKKsVGYBOxzjrc5
-v33igqiSZGrMcyR6Gr9kuJTmVukw4E9ledQyo5uc3XIaes9zXyp7lezjHNVgtCFu
-Q+4n6d70BST1bZGMMYGukuopGWne0xpHC1o86VhXSFAFigcOBoS1afIDC4mEHKv9
-yKOaSXL/Wy6y+Mdyp7S106O0ndPF937tEL6ohghpVvP8QyRSys6q1Kcjkrd/Hatg
-l7LhCpjkSm30sOKLOgt7xYyDgELUmcL713Rqji4KbICfqu2rjCqcxhk5Hx014Ekk
-Ysq7dwdWFElu4Hd237Cn4Rv0RqA2gUzaaF2zZJAz0Y913WfpThYfB+PMRTYaCt4Z
-JguTxquGhYgyvnu9inLzVkUoS6hM5dpxVVeglYow+T3hmhjbJiO1WO96QrdVNOFj
-QE/h14u53Pjqc45zsxI3
-=ndoj
------END PGP SIGNATURE-----
-
---IQvoI1rdlCKiYEYW--
+diff -puN include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently include/linux/mm_types.h
+--- a/include/linux/mm_types.h~make-slab-use-page-lru-vs-list-consistently	2014-01-14 09:57:56.099621967 -0800
++++ b/include/linux/mm_types.h	2014-01-14 09:57:56.106622281 -0800
+@@ -124,6 +124,8 @@ struct page {
+ 	union {
+ 		struct list_head lru;	/* Pageout list, eg. active_list
+ 					 * protected by zone->lru_lock !
++					 * Can be used as a generic list
++					 * by the page owner.
+ 					 */
+ 		struct {		/* slub per cpu partial pages */
+ 			struct page *next;	/* Next partial slab */
+@@ -136,7 +138,6 @@ struct page {
+ #endif
+ 		};
+ 
+-		struct list_head list;	/* slobs list of pages */
+ 		struct slab *slab_page; /* slab fields */
+ 		struct rcu_head rcu_head;	/* Used by SLAB
+ 						 * when destroying via RCU
+diff -puN mm/slab.c~make-slab-use-page-lru-vs-list-consistently mm/slab.c
+--- a/mm/slab.c~make-slab-use-page-lru-vs-list-consistently	2014-01-14 09:57:56.101622056 -0800
++++ b/mm/slab.c	2014-01-14 09:57:56.108622370 -0800
+@@ -2886,9 +2886,9 @@ retry:
+ 		/* move slabp to correct slabp list: */
+ 		list_del(&page->lru);
+ 		if (page->active == cachep->num)
+-			list_add(&page->list, &n->slabs_full);
++			list_add(&page->lru, &n->slabs_full);
+ 		else
+-			list_add(&page->list, &n->slabs_partial);
++			list_add(&page->lru, &n->slabs_partial);
+ 	}
+ 
+ must_grow:
+diff -puN mm/slob.c~make-slab-use-page-lru-vs-list-consistently mm/slob.c
+--- a/mm/slob.c~make-slab-use-page-lru-vs-list-consistently	2014-01-14 09:57:56.103622146 -0800
++++ b/mm/slob.c	2014-01-14 09:57:56.109622415 -0800
+@@ -111,13 +111,13 @@ static inline int slob_page_free(struct
+ 
+ static void set_slob_page_free(struct page *sp, struct list_head *list)
+ {
+-	list_add(&sp->list, list);
++	list_add(&sp->lru, list);
+ 	__SetPageSlobFree(sp);
+ }
+ 
+ static inline void clear_slob_page_free(struct page *sp)
+ {
+-	list_del(&sp->list);
++	list_del(&sp->lru);
+ 	__ClearPageSlobFree(sp);
+ }
+ 
+@@ -282,7 +282,7 @@ static void *slob_alloc(size_t size, gfp
+ 
+ 	spin_lock_irqsave(&slob_lock, flags);
+ 	/* Iterate through each partially free page, try to find room */
+-	list_for_each_entry(sp, slob_list, list) {
++	list_for_each_entry(sp, slob_list, lru) {
+ #ifdef CONFIG_NUMA
+ 		/*
+ 		 * If there's a node specification, search for a partial
+@@ -296,7 +296,7 @@ static void *slob_alloc(size_t size, gfp
+ 			continue;
+ 
+ 		/* Attempt to alloc */
+-		prev = sp->list.prev;
++		prev = sp->lru.prev;
+ 		b = slob_page_alloc(sp, size, align);
+ 		if (!b)
+ 			continue;
+@@ -322,7 +322,7 @@ static void *slob_alloc(size_t size, gfp
+ 		spin_lock_irqsave(&slob_lock, flags);
+ 		sp->units = SLOB_UNITS(PAGE_SIZE);
+ 		sp->freelist = b;
+-		INIT_LIST_HEAD(&sp->list);
++		INIT_LIST_HEAD(&sp->lru);
+ 		set_slob(b, SLOB_UNITS(PAGE_SIZE), b + SLOB_UNITS(PAGE_SIZE));
+ 		set_slob_page_free(sp, slob_list);
+ 		b = slob_page_alloc(sp, size, align);
+_
