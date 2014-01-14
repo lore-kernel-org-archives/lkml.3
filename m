@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaANPwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:52:12 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:63260 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaANPwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:52:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-Subject: Re: build_skb() and data corruption
-Date: Tue, 14 Jan 2014 16:51:34 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        alexander.h.duyck@intel.com, Florian Fainelli <florian@openwrt.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-References: <CACmBeS35RAEQ+t2vtYtFTKNT-VdQw20hURjTi193Jk8HG7UECA@mail.gmail.com> <1389620539.3720.157.camel@deadeye.wl.decadent.org.uk> <CACmBeS1gTfdjwiCkHMViOnF6G2zjy3HSMm3NVq8Jiq5F22ynJA@mail.gmail.com>
-In-Reply-To: <CACmBeS1gTfdjwiCkHMViOnF6G2zjy3HSMm3NVq8Jiq5F22ynJA@mail.gmail.com>
+	id S1751787AbaANPyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:54:31 -0500
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:27045
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751500AbaANPy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 10:54:29 -0500
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "unaiur@gmail.com" <unaiur@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH] toshiba_acpi: Support RFKILL hotkey scancode
+Thread-Topic: [PATCH] toshiba_acpi: Support RFKILL hotkey scancode
+Thread-Index: AQHPERBc1muZPJc7iUGdvohpa1nqLpqEX5sA
+Date: Tue, 14 Jan 2014 15:54:13 +0000
+Message-ID: <1389714852.3720.0.camel@x230>
+References: <1389694007-8342-1-git-send-email-unaiur@gmail.com>
+In-Reply-To: <1389694007-8342-1-git-send-email-unaiur@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.124.4]
+x-forefront-prvs: 0091C8F1EB
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(679001)(779001)(689001)(189002)(199002)(24454002)(377424004)(74876001)(47736001)(4396001)(50986001)(81816001)(59766001)(83072002)(74706001)(83322001)(19580405001)(56816005)(92566001)(93136001)(90146001)(92726001)(76786001)(80976001)(77096001)(81542001)(77982001)(33646001)(33716001)(53806001)(49866001)(54316002)(47976001)(51856001)(87936001)(2656002)(46102001)(79102001)(80022001)(65816001)(85852003)(74366001)(47446002)(74502001)(19580395003)(81686001)(85306002)(81342001)(87266001)(54356001)(56776001)(31966008)(76796001)(1411001)(69226001)(76482001)(74662001)(63696002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB431;H:DM2PR05MB430.namprd05.prod.outlook.com;CLIP:10.255.124.4;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4AB87F1E2DB9BD4EB70B4338C8892E4C@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401141651.34633.arnd@arndb.de>
-X-Provags-ID: V02:K0:cHPRVIx5O/ODy9uDc9Xb9kHRpXF4GW9Oy+NlzqXCCUf
- PUVY1Vt3+gKFSz8YjvzVhk4ubpp5PiEQHOGhrMNFc/MMgwVNhu
- b+7iAm6PuZj0KLAEi6IyyG+YvzUiWPDgZg7KJ/TTDHq2RyIVhs
- CToYyRuZcsy+HXm4RhQuAv9HBuULUVZk5qrMYMl2UM3GHfzjcH
- faPujo26CMh6Klaqt98ADAPnZA5tQw1GrA9RNqHlrJJImPz1EB
- Jic0U39d4A0DVzBgh6xwHLpFCWiUwicntc3M4w5VVw/m8n8Yav
- dxku+z3tvqAedgS5ZqdFBlSfhxxtfr9ldtXumbv5OCK9ARQIBT
- 2vvZZFDYvEMS97of1Dzg=
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0EFsaa9001373
 
-On Tuesday 14 January 2014, Jonas Jensen wrote:
-> Thanks for the replies, you led me to a new solution,
-> 
-> 
-> I now think build_skb() is not the right choice, my motivation for
-> using it in the first place, that I thought it meant getting away with
-> not copying memory.
-> 
-> build_skb() is replaced by netdev_alloc_skb_ip_align() and memcpy()
-> (derived from drivers/net/ethernet/realtek/r8169.c).
-> 
-> Read errors are gone, even without syncing DMA. Is it a good idea to
-> do it anyway, i.e. leave calls to dma_sync_single_* in?
+On Tue, 2014-01-14 at 11:06 +0100, Unai Uribarri wrote:
+> This scancode is used in new 2013 models like Satellite P75-A7200.
 
-The calls to dma_sync_single_* in the moxart_rx() function are needed.
-The call to arm_dma_ops.sync_single_for_device() in
-moxart_mac_setup_desc_ring() is wrong, because the buffer is already
-owned by the device at that point (just after dma_map_single), and
-because you should use the official dma_* api rather than using
-the arm_dma_ops struct.
+Just to check - this is generated by a key that otherwise does nothing,
+right? Ie, hitting the key generates the scancode but doesn't
+automatically change the wireless state?
 
-	Arnd
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
