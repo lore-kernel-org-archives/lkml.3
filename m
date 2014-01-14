@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbaANAf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:35:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54506 "EHLO
+	id S1754044AbaANA3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:29:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54428 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048AbaANA3C (ORCPT
+	with ESMTP id S1753947AbaANA2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:02 -0500
+	Mon, 13 Jan 2014 19:28:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Harald Welte <laforge@gnumonks.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.12 72/77] netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
-Date: Mon, 13 Jan 2014 16:28:33 -0800
-Message-Id: <20140114002754.535378129@linuxfoundation.org>
+        Yaju Cao <yacao@redhat.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 19/77] netvsc: dont flush peers notifying work during setting mtu
+Date: Mon, 13 Jan 2014 16:27:40 -0800
+Message-Id: <20140114002753.046760713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,105 +31,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 2690d97ade05c5325cbf7c72b94b90d265659886 upstream.
+[ Upstream commit 50dc875f2e6e2e04aed3b3033eb0ac99192d6d02 ]
 
-Commit 5901b6be885e attempted to introduce IPv6 support into
-IRC NAT helper. By doing so, the following code seemed to be removed
-by accident:
+There's a possible deadlock if we flush the peers notifying work during setting
+mtu:
 
-  ip = ntohl(exp->master->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3.ip);
-  sprintf(buffer, "%u %u", ip, port);
-  pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n", buffer, &ip, port);
+[   22.991149] ======================================================
+[   22.991173] [ INFO: possible circular locking dependency detected ]
+[   22.991198] 3.10.0-54.0.1.el7.x86_64.debug #1 Not tainted
+[   22.991219] -------------------------------------------------------
+[   22.991243] ip/974 is trying to acquire lock:
+[   22.991261]  ((&(&net_device_ctx->dwork)->work)){+.+.+.}, at: [<ffffffff8108af95>] flush_work+0x5/0x2e0
+[   22.991307]
+but task is already holding lock:
+[   22.991330]  (rtnl_mutex){+.+.+.}, at: [<ffffffff81539deb>] rtnetlink_rcv+0x1b/0x40
+[   22.991367]
+which lock already depends on the new lock.
 
-This leads to the fact that buffer[] was left uninitialized and
-contained some stack value. When we call nf_nat_mangle_tcp_packet(),
-we call strlen(buffer) on excatly this uninitialized buffer. If we
-are unlucky and the skb has enough tailroom, we overwrite resp. leak
-contents with values that sit on our stack into the packet and send
-that out to the receiver.
+[   22.991398]
+the existing dependency chain (in reverse order) is:
+[   22.991426]
+-> #1 (rtnl_mutex){+.+.+.}:
+[   22.991449]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
+[   22.991477]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
+[   22.991501]        [<ffffffff81673659>] mutex_lock_nested+0x89/0x4f0
+[   22.991529]        [<ffffffff815392b7>] rtnl_lock+0x17/0x20
+[   22.991552]        [<ffffffff815230b2>] netdev_notify_peers+0x12/0x30
+[   22.991579]        [<ffffffffa0340212>] netvsc_send_garp+0x22/0x30 [hv_netvsc]
+[   22.991610]        [<ffffffff8108d251>] process_one_work+0x211/0x6e0
+[   22.991637]        [<ffffffff8108d83b>] worker_thread+0x11b/0x3a0
+[   22.991663]        [<ffffffff81095e5d>] kthread+0xed/0x100
+[   22.991686]        [<ffffffff81681c6c>] ret_from_fork+0x7c/0xb0
+[   22.991715]
+-> #0 ((&(&net_device_ctx->dwork)->work)){+.+.+.}:
+[   22.991715]        [<ffffffff810de817>] check_prevs_add+0x967/0x970
+[   22.991715]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
+[   22.991715]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
+[   22.991715]        [<ffffffff8108afde>] flush_work+0x4e/0x2e0
+[   22.991715]        [<ffffffff8108e1b5>] __cancel_work_timer+0x95/0x130
+[   22.991715]        [<ffffffff8108e303>] cancel_delayed_work_sync+0x13/0x20
+[   22.991715]        [<ffffffffa03404e4>] netvsc_change_mtu+0x84/0x200 [hv_netvsc]
+[   22.991715]        [<ffffffff815233d4>] dev_set_mtu+0x34/0x80
+[   22.991715]        [<ffffffff8153bc2a>] do_setlink+0x23a/0xa00
+[   22.991715]        [<ffffffff8153d054>] rtnl_newlink+0x394/0x5e0
+[   22.991715]        [<ffffffff81539eac>] rtnetlink_rcv_msg+0x9c/0x260
+[   22.991715]        [<ffffffff8155cdd9>] netlink_rcv_skb+0xa9/0xc0
+[   22.991715]        [<ffffffff81539dfa>] rtnetlink_rcv+0x2a/0x40
+[   22.991715]        [<ffffffff8155c41d>] netlink_unicast+0xdd/0x190
+[   22.991715]        [<ffffffff8155c807>] netlink_sendmsg+0x337/0x750
+[   22.991715]        [<ffffffff8150d219>] sock_sendmsg+0x99/0xd0
+[   22.991715]        [<ffffffff8150d63e>] ___sys_sendmsg+0x39e/0x3b0
+[   22.991715]        [<ffffffff8150eba2>] __sys_sendmsg+0x42/0x80
+[   22.991715]        [<ffffffff8150ebf2>] SyS_sendmsg+0x12/0x20
+[   22.991715]        [<ffffffff81681d19>] system_call_fastpath+0x16/0x1b
 
-Since the rather informal DCC spec [1] does not seem to specify
-IPv6 support right now, we log such occurences so that admins can
-act accordingly, and drop the packet. I've looked into XChat source,
-and IPv6 is not supported there: addresses are in u32 and print
-via %u format string.
+This is because we hold the rtnl_lock() before ndo_change_mtu() and try to flush
+the work in netvsc_change_mtu(), in the mean time, netdev_notify_peers() may be
+called from worker and also trying to hold the rtnl_lock. This will lead the
+flush won't succeed forever. Solve this by not canceling and flushing the work,
+this is safe because the transmission done by NETDEV_NOTIFY_PEERS was
+synchronized with the netif_tx_disable() called by netvsc_change_mtu().
 
-Therefore, restore old behaviour as in IPv4, use snprintf(). The
-IRC helper does not support IPv6 by now. By this, we can safely use
-strlen(buffer) in nf_nat_mangle_tcp_packet() and prevent a buffer
-overflow. Also simplify some code as we now have ct variable anyway.
-
-  [1] http://www.irchelp.org/irchelp/rfc/ctcpspec.html
-
-Fixes: 5901b6be885e ("netfilter: nf_nat: support IPv6 in IRC NAT helper")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Harald Welte <laforge@gnumonks.org>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Reported-by: Yaju Cao <yacao@redhat.com>
+Tested-by: Yaju Cao <yacao@redhat.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/netfilter/nf_nat_irc.c |   32 +++++++++++++++++++++++++++-----
- 1 file changed, 27 insertions(+), 5 deletions(-)
+ drivers/net/hyperv/netvsc_drv.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/netfilter/nf_nat_irc.c
-+++ b/net/netfilter/nf_nat_irc.c
-@@ -34,10 +34,14 @@ static unsigned int help(struct sk_buff
- 			 struct nf_conntrack_expect *exp)
- {
- 	char buffer[sizeof("4294967296 65635")];
-+	struct nf_conn *ct = exp->master;
-+	union nf_inet_addr newaddr;
- 	u_int16_t port;
- 	unsigned int ret;
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -327,7 +327,6 @@ static int netvsc_change_mtu(struct net_
+ 		return -EINVAL;
  
- 	/* Reply comes from server. */
-+	newaddr = ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3;
-+
- 	exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
- 	exp->dir = IP_CT_DIR_REPLY;
- 	exp->expectfn = nf_nat_follow_master;
-@@ -57,17 +61,35 @@ static unsigned int help(struct sk_buff
- 	}
- 
- 	if (port == 0) {
--		nf_ct_helper_log(skb, exp->master, "all ports in use");
-+		nf_ct_helper_log(skb, ct, "all ports in use");
- 		return NF_DROP;
- 	}
- 
--	ret = nf_nat_mangle_tcp_packet(skb, exp->master, ctinfo,
--				       protoff, matchoff, matchlen, buffer,
--				       strlen(buffer));
-+	/* strlen("\1DCC CHAT chat AAAAAAAA P\1\n")=27
-+	 * strlen("\1DCC SCHAT chat AAAAAAAA P\1\n")=28
-+	 * strlen("\1DCC SEND F AAAAAAAA P S\1\n")=26
-+	 * strlen("\1DCC MOVE F AAAAAAAA P S\1\n")=26
-+	 * strlen("\1DCC TSEND F AAAAAAAA P S\1\n")=27
-+	 *
-+	 * AAAAAAAAA: bound addr (1.0.0.0==16777216, min 8 digits,
-+	 *                        255.255.255.255==4294967296, 10 digits)
-+	 * P:         bound port (min 1 d, max 5d (65635))
-+	 * F:         filename   (min 1 d )
-+	 * S:         size       (min 1 d )
-+	 * 0x01, \n:  terminators
-+	 */
-+	/* AAA = "us", ie. where server normally talks to. */
-+	snprintf(buffer, sizeof(buffer), "%u %u", ntohl(newaddr.ip), port);
-+	pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n",
-+		 buffer, &newaddr.ip, port);
-+
-+	ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo, protoff, matchoff,
-+				       matchlen, buffer, strlen(buffer));
- 	if (ret != NF_ACCEPT) {
--		nf_ct_helper_log(skb, exp->master, "cannot mangle packet");
-+		nf_ct_helper_log(skb, ct, "cannot mangle packet");
- 		nf_ct_unexpect_related(exp);
- 	}
-+
- 	return ret;
- }
- 
+ 	nvdev->start_remove = true;
+-	cancel_delayed_work_sync(&ndevctx->dwork);
+ 	cancel_work_sync(&ndevctx->work);
+ 	netif_tx_disable(ndev);
+ 	rndis_filter_device_remove(hdev);
 
 
