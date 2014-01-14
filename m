@@ -1,40 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaANJfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 04:35:05 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53546 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaANJfB (ORCPT
+	id S1751475AbaANJlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 04:41:08 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48154 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287AbaANJlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 04:35:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <1389084056-17076-1-git-send-email-ldewangan@nvidia.com>
-References: <1389084056-17076-1-git-send-email-ldewangan@nvidia.com>
-Date: Tue, 14 Jan 2014 10:35:00 +0100
-Message-ID: <CACRpkdYfPKr7VGPGSifVnG_xwifstQnLsHBxZkZQOt6vqnr6JQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: as3722: Set pin to output mode for some function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mallikarjun Kasoju <mkasoju@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 14 Jan 2014 04:41:03 -0500
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCH 0/3] zram stats rework and code cleanup
+Date: Tue, 14 Jan 2014 12:37:37 +0300
+Message-Id: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 1.8.5.2.487.g7559984
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 7, 2014 at 9:40 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+This patchset includes code clean up and zram stats rework.
 
-> From: Mallikarjun Kasoju <mkasoju@nvidia.com>
->
-> If pins are used for function output like pwm, clk32k,
-> power good etc then set it as output mode default.
->
-> Signed-off-by: Mallikarjun Kasoju <mkasoju@nvidia.com>
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Sergey Senozhatsky (3):
+  zram: drop `init_done' struct zram member
+  zram: do not pass rw argument to __zram_make_request()
+  zram: rework reported to end-user zram statistics
 
-Patch applied with Lee's ACK.
+ drivers/block/zram/zram_drv.c | 213 ++++++++++++++----------------------------
+ drivers/block/zram/zram_drv.h |  18 ++--
+ 2 files changed, 76 insertions(+), 155 deletions(-)
 
-Yours,
-Linus Walleij
+-- 
+1.8.5.2.487.g7559984
+
