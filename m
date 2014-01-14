@@ -1,126 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaANTe0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:34:26 -0500
-Received: from nwas14.bluewin.ch ([195.186.228.231]:60193 "EHLO
-	zhhdzmsp-nwas14.bluewin.ch" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751274AbaANTeX (ORCPT
+	id S1751819AbaANTf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:35:29 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:36248 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaANTf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:34:23 -0500
-Date: Tue, 14 Jan 2014 20:34:10 +0100 (CET)
-From: Daniel Matuschek <daniel@matuschek.net>
-X-X-Sender: parallels@parallels-Parallels-Virtual-Platform
-To: daniel@matuschek.net, alsa-devel@alsa-project.org
-cc: Dimitris.Papastamos@wolfsonmicro.com, lgirdwood@gmail.com,
-        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: wm8804: Allow control of master clock divider in PLL
- generation
-Message-ID: <alpine.DEB.2.02.1401142030110.23472@parallels-Parallels-Virtual-Platform>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 14 Jan 2014 14:35:26 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <CAL_JsqLDVBfYomiNpFRacku4pJ3TrFy4rKJKedGp+LPGQt4m0w@mail.gmail.com>
+References: <1389371417-379-1-git-send-email-roy.franz@linaro.org>
+	<1389371417-379-7-git-send-email-roy.franz@linaro.org>
+	<CAL_JsqLDVBfYomiNpFRacku4pJ3TrFy4rKJKedGp+LPGQt4m0w@mail.gmail.com>
+Date: Tue, 14 Jan 2014 11:35:25 -0800
+Message-ID: <CAFECyb83kmpj20nX3fw5HXw_hFyzj45aFga6nhG04qdKc-6jJw@mail.gmail.com>
+Subject: Re: [PATCH V6 6/8] Add EFI stub for ARM
+From: Roy Franz <roy.franz@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linaro Patches <patches@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Dave P Martin <dave.martin@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WM8804 can run with PLL frequencies of 256xfs and 128xfs for
-most sample rates. At 192kHz only 128xfs is supported. The
-existing driver selects 128xfs automatically for some lower
-samples rates. By using an additional mclk_div divider, it
-is now possible to control the behaviour. This allows using
-256xfs PLL frequency on all sample rates up to 96kHz. It
-should allow lower jitter and better signal quality. The
-behavior has to be controlled by the sound card driver,
-because some sample frequency share the same setting. e.g.
-192kHz and 96kHz use 24.576MHz master clock. The only
-difference is the MCLK divider.
+On Tue, Jan 14, 2014 at 11:29 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On Fri, Jan 10, 2014 at 10:30 AM, Roy Franz <roy.franz@linaro.org> wrote:
+>> This patch adds EFI stub support for the ARM Linux kernel.  The EFI stub
+>> operates similarly to the x86 stub: it is a shim between the EFI firmware
+>> and the normal zImage entry point, and sets up the environment that the
+>> zImage is expecting.  This includes loading the initrd (optionaly) and
+>> device tree from the system partition based on the kernel command line.
+>> The stub updates the device tree as necessary, adding entries for EFI
+>> runtime services. The PE/COFF "MZ" header at offset 0 results in the
+>> first instruction being an add that corrupts r5, which is not used by
+>> the zImage interface.
+>>
+>> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+>> Acked-by: Grant Likely <grant.likely@linaro.org>
+>> ---
+>
+> [snip]
+>
+>> +       /* Look up the base of DRAM from the device tree. */
+>> +       fdt = (void *)fdt_addr;
+>> +       node = fdt_subnode_offset(fdt, 0, "memory");
+>> +       region = fdt_getprop(fdt, node, "reg", NULL);
+>> +       if (region) {
+>> +               dram_base = fdt64_to_cpu(region->base);
+>
+> This will not work if the address is 32-bit size.
+>
+>> +       } else {
+>> +               /* There is no way to get amount or addresses of physical
+>> +                * memory installed using EFI calls.  If the device tree
+>> +                * we read from disk doesn't have this, there is no way
+>> +                * for us to construct this informaion.
+>> +                */
+>> +               pr_efi_err(sys_table, "No 'memory' node in device tree.\n");
+>> +               goto fail_free_fdt;
+>
+> The current pc can't be used to determine the DRAM base like AUTO_ZRELADDR?
+>
+> Rob
 
-Signed-off-by: Daniel Matuschek <daniel@matuschek.net>
+Hi Rob,
 
----
-  sound/soc/codecs/wm8804.c |   17 ++++++++++++++---
-  sound/soc/codecs/wm8804.h |    4 ++++
-  2 files changed, 18 insertions(+), 3 deletions(-)
+   UEFI may load the stub based kernel anywhere, so we don't get any
+useful information from where we were loaded.
+I am currently working on getting the base address from the EFI memory
+map, so all of the above code will go away, the only FDT
+operations that the stub will perform is to add the EFI related fields.
 
-diff --git a/sound/soc/codecs/wm8804.c b/sound/soc/codecs/wm8804.c
-index 1704b1e..4619bf8 100644
---- a/sound/soc/codecs/wm8804.c
-+++ b/sound/soc/codecs/wm8804.c
-@@ -63,6 +63,7 @@ struct wm8804_priv {
-  	struct regmap *regmap;
-  	struct regulator_bulk_data supplies[WM8804_NUM_SUPPLIES];
-  	struct notifier_block disable_nb[WM8804_NUM_SUPPLIES];
-+	int mclk_div;
-  };
-
-  static int txsrc_get(struct snd_kcontrol *kcontrol,
-@@ -318,7 +319,7 @@ static struct {
-
-  #define FIXED_PLL_SIZE ((1ULL << 22) * 10)
-  static int pll_factors(struct pll_div *pll_div, unsigned int target,
--		       unsigned int source)
-+		       unsigned int source, unsigned int mclk_div)
-  {
-  	u64 Kpart;
-  	unsigned long int K, Ndiv, Nmod, tmp;
-@@ -330,7 +331,8 @@ static int pll_factors(struct pll_div *pll_div, unsigned int target,
-  	 */
-  	for (i = 0; i < ARRAY_SIZE(post_table); i++) {
-  		tmp = target * post_table[i].div;
--		if (tmp >= 90000000 && tmp <= 100000000) {
-+		if ((tmp >= 90000000 && tmp <= 100000000) &&
-+		    (mclk_div == post_table[i].mclkdiv)) {
-  			pll_div->freqmode = post_table[i].freqmode;
-  			pll_div->mclkdiv = post_table[i].mclkdiv;
-  			target *= post_table[i].div;
-@@ -387,8 +389,12 @@ static int wm8804_set_pll(struct snd_soc_dai *dai, int pll_id,
-  	} else {
-  		int ret;
-  		struct pll_div pll_div;
-+		struct wm8804_priv *wm8804;
-
--		ret = pll_factors(&pll_div, freq_out, freq_in);
-+		wm8804 = snd_soc_codec_get_drvdata(codec);
-+
-+		ret = pll_factors(&pll_div, freq_out, freq_in,
-+			wm8804->mclk_div);
-  		if (ret)
-  			return ret;
-
-@@ -452,6 +458,7 @@ static int wm8804_set_clkdiv(struct snd_soc_dai *dai,
-  			     int div_id, int div)
-  {
-  	struct snd_soc_codec *codec;
-+	struct wm8804_priv *wm8804;
-
-  	codec = dai->codec;
-  	switch (div_id) {
-@@ -459,6 +466,10 @@ static int wm8804_set_clkdiv(struct snd_soc_dai *dai,
-  		snd_soc_update_bits(codec, WM8804_PLL5, 0x30,
-  				    (div & 0x3) << 4);
-  		break;
-+	case WM8804_MCLK_DIV:
-+		wm8804 = snd_soc_codec_get_drvdata(codec);
-+		wm8804->mclk_div = div;
-+		break;
-  	default:
-  		dev_err(dai->dev, "Unknown clock divider: %d\n", div_id);
-  		return -EINVAL;
-diff --git a/sound/soc/codecs/wm8804.h b/sound/soc/codecs/wm8804.h
-index 8ec14f5..e72d4f4 100644
---- a/sound/soc/codecs/wm8804.h
-+++ b/sound/soc/codecs/wm8804.h
-@@ -57,5 +57,9 @@
-  #define WM8804_CLKOUT_SRC_OSCCLK		4
-
-  #define WM8804_CLKOUT_DIV			1
-+#define WM8804_MCLK_DIV				2
-+
-+#define WM8804_MCLKDIV_256FS			0
-+#define WM8804_MCLKDIV_128FS			1
-
-  #endif  /* _WM8804_H */
--- 
-1.7.9.5
-
+Roy
