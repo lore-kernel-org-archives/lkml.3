@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaANShI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:37:08 -0500
-Received: from sauhun.de ([89.238.76.85]:48340 "EHLO pokefinder.org"
+	id S1751634AbaANSiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:38:51 -0500
+Received: from sauhun.de ([89.238.76.85]:48352 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbaANShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:37:04 -0500
-Date: Tue, 14 Jan 2014 19:37:02 +0100
+	id S1751472AbaANSis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:38:48 -0500
+Date: Tue, 14 Jan 2014 19:38:45 +0100
 From: Wolfram Sang <wsa@the-dreams.de>
 To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] i2c: i2c-core: fix coding style issues in i2c-core.c
-Message-ID: <20140114183702.GC10340@katana>
-References: <525C0C5B.6040703@gmail.com>
+Subject: Re: [PATCH 3/3] i2c: i2c-core: fix coding style issues in i2c-core.c
+Message-ID: <20140114183845.GD10340@katana>
+References: <525C0CDB.6020305@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
+	protocol="application/pgp-signature"; boundary="GyRA7555PLgSTuth"
 Content-Disposition: inline
-In-Reply-To: <525C0C5B.6040703@gmail.com>
+In-Reply-To: <525C0CDB.6020305@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mvpLiMfbWzRoNl4x
+--GyRA7555PLgSTuth
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Oct 14, 2013 at 08:53:07PM +0530, RAGHAVENDRA GANIGA wrote:
-> From b21e6a52aa9c36e8c01173cff13bbfd2a380d0bd Mon Sep 17 00:00:00 2001
-> From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
-> Date: Mon, 14 Oct 2013 00:29:08 +0530
-> Subject: [PATCH 2/3] i2c: i2c-core: fix coding style issues in i2c-core.c
->=20
-> This is a patch to the i2c-core.c file that fixes up warnings and
-> the code indent error reported by the checkpatch.pl tool
-
-Please describe which warnings.
-
-> @@ -1737,9 +1735,10 @@ int i2c_transfer(struct i2c_adapter *adap, struct =
-i2c_msg *msgs, int num)
->  	if (adap->algo->master_xfer) {
->  #ifdef DEBUG
->  		for (ret =3D 0; ret < num; ret++) {
-> -			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=3D0x%02x, "
-> -				"len=3D%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
-> -				? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
-> +			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=3D0x%02x, len=3D%d%s\n",
-> +				ret,
-> +				((msgs[ret].flags & I2C_M_RD) ? 'R' : 'W'),
-> +				msgs[ret].addr, msgs[ret].len,
->  				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
-
-You added some extra paranthesis here? No need to. Also ret doesn't need
-to be in a seperate line.
-
->  		}
->  #endif
-> @@ -1905,8 +1904,9 @@ static int i2c_detect_address(struct i2c_client *te=
-mp_client,
-> =20
->  	/* Consistency check */
->  	if (info.type[0] =3D=3D '\0') {
-> -		dev_err(&adapter->dev, "%s detection function provided "
-> -			"no name for 0x%x\n", driver->driver.name,
-> +		dev_err(&adapter->dev,
-> +			"%s detection function provided no name for 0x%x\n",
-> +			driver->driver.name,
->  			addr);
-
-'addr' is dangling.
-
-And merge 1/3 into it.
 
 
---mvpLiMfbWzRoNl4x
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -1737,9 +1737,9 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
+>  		for (ret = 0; ret < num; ret++) {
+>  			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, len=%d%s\n",
+>  				ret,
+> -				((msgs[ret].flags & I2C_M_RD) ? 'R' : 'W'),
+> +				msgs[ret].flags & I2C_M_RD ? 'R' : 'W',
+>  				msgs[ret].addr, msgs[ret].len,
+> -				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
+> +				msgs[ret].flags & I2C_M_RECV_LEN ? "+" : "");
+
+Don't spend time changing too much here like the paranthesis. It will
+probably be removed soon in favour of the tracing approach.
+
+> @@ -2120,7 +2120,8 @@ EXPORT_SYMBOL(i2c_smbus_read_byte);
+>  s32 i2c_smbus_write_byte(const struct i2c_client *client, u8 value)
+>  {
+>  	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
+> -				I2C_SMBUS_WRITE, value, I2C_SMBUS_BYTE, NULL);
+> +			      I2C_SMBUS_WRITE, value,
+> +			      I2C_SMBUS_BYTE, NULL);
+
+Not worth the change IMO. Just drop this patch.
+
+
+--GyRA7555PLgSTuth
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.15 (GNU/Linux)
 
-iQIcBAEBAgAGBQJS1YPOAAoJEBQN5MwUoCm2XPgP+QEnqHQlOqVRr1NoUR5l7iXr
-t+9oPXEBmnxqtcWjzINpK6O6zK8ZITwSiT09TAuPBJgobwHM9MW92nEydkDhPsGr
-WRqOv5LbXzKmZrdguvq9nQ8zU8XXQnx0hrtQhsxW0fuqnfQj02XXT4jMmARN/dnb
-PpsbVxJlCwCBznYmQUvPWHJTMF2byLxvB+8ks7wL0j0jCOf81LDehGA74eMnZxF6
-z7Cz1wqvv12ozC/V1DUGHnjZROMLrWB6V8o6jdQu8tbL5PNPNKCEG3fVsxSAUuj3
-Z0UiArlKRuKbHv8knixmsvXu3F6nppc5Sh1K5s9WG4g2wc/4DJ+0icZK+Yf+kRkJ
-EtNCaGIrIDQfImmas+6r13ere4zFowN/vbrC2GvQwiMdm8ydV0E6CZKjKj1P5Ds+
-7sgONGAD2JMZgVTmP/gOywUZyDZKe4HhdCkR3QbepldIVzvY78MYNbl2/kUDjXC9
-kxvhExJ8RTnHnYzAXHUF+HVQ/coW9E+iHnFkc/vjvdcuV4gJzgEguKMXONLwKkho
-Nma0OJ0fJ/JHMSO8vIXAW4/rdAPD2CIkI+bqj0YzcLklMTcTt7+kqHRoKJ0dbw97
-p9Z+bK5+IIEB5JiSKhPg9nHK2xvS8Wc2QSxF6mx4eovTHciGHN0rzcQKEGrC5ZwO
-sO32SbpfjqeMxS2zKu/E
-=hBjp
+iQIcBAEBAgAGBQJS1YQ1AAoJEBQN5MwUoCm2cWUP/iPQ/gtly2Xlct1tCpcpehdR
+6BURkU26U5+BKU4dmJUoBkgt3ipC6lvID8mKyV2/pFipv0n8yTjnllP4W/6eckTU
+y2F9craZizBgLE2XQVT4LDtUBuf9AqoI4ynjLIePHVU35WmwkBJ+rjTJ/C+tU2pQ
+kFQxWrAthhtxiyPWFO+0kQyu3KB82T8fpxXnHIlKk35bRhV9elmUZk5UDcwR7c3v
+1UhyK5ELfj/ANAmZqb2T8SefTMM84HVyfrUYt02To0uERZShMKGuhwaHA5dktz+N
+h9P+QAFO5+ksGQdCLiLeFSSIsx/wFMaeh5pO8nS6Ie25+/JPFRfoQb3KyGQ2DZDo
+lUuD1A+c+/it6O6jiwjz1VjiCvqLSvaVeCYw7EdSLpGbu6JO1+mUciTk/+QLOPqC
+33evlEyvxm7ntyZVy/Bf2/0/Wmv0o1BGGJ/4CTBxU2l2HKyJrGtEM8hwQg6vQXwr
+FW7FxShTYWZEVHhNLJpanjRU+LnFrQOfBbzhkp7mfZBvwTCKKm2qHSwYR0DBtgji
+SubgrGxHshRsxJOlytW+10e3abgYs/wKZZeSTpBLnvGeaBCYnUTHLtJOq2V/Srmn
+Bg/ue1p2r+oi1P9426cArbxk2nDRQn+rvKyEPQ4P4DImROjYAAsmHN6A8+XQNJST
+L6dNMjA8g/OSqSx3Y6Pk
+=N2k1
 -----END PGP SIGNATURE-----
 
---mvpLiMfbWzRoNl4x--
+--GyRA7555PLgSTuth--
