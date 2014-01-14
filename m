@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743AbaANBGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:06:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54021 "EHLO
+	id S1753223AbaANA1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:27:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53939 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaANA1K (ORCPT
+	with ESMTP id S1753101AbaANA0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:10 -0500
+	Mon, 13 Jan 2014 19:26:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 06/62] net: do not pretend FRAGLIST support
-Date: Mon, 13 Jan 2014 16:26:31 -0800
-Message-Id: <20140114002710.646452262@linuxfoundation.org>
+Subject: [PATCH 3.10 10/62] tun: update file current position
+Date: Mon, 13 Jan 2014 16:26:35 -0800
+Message-Id: <20140114002710.755610217@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -31,74 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-[ Upstream commit 28e24c62ab3062e965ef1b3bcc244d50aee7fa85 ]
+[ Upstream commit d0b7da8afa079ffe018ab3e92879b7138977fc8f ]
 
-Few network drivers really supports frag_list : virtual drivers.
-
-Some drivers wrongly advertise NETIF_F_FRAGLIST feature.
-
-If skb with a frag_list is given to them, packet on the wire will be
-corrupt.
-
-Remove this flag, as core networking stack will make sure to
-provide packets that can be sent without corruption.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Anirudha Sarangi <anirudh@xilinx.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/ibm/ehea/ehea_main.c         |    2 +-
- drivers/net/ethernet/tehuti/tehuti.c              |    1 -
- drivers/net/ethernet/xilinx/ll_temac_main.c       |    2 +-
- drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2 +-
- 4 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/tun.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
-+++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-@@ -3023,7 +3023,7 @@ static struct ehea_port *ehea_setup_sing
- 
- 	dev->hw_features = NETIF_F_SG | NETIF_F_TSO |
- 		      NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_CTAG_TX;
--	dev->features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_TSO |
-+	dev->features = NETIF_F_SG | NETIF_F_TSO |
- 		      NETIF_F_HIGHDMA | NETIF_F_IP_CSUM |
- 		      NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
- 		      NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_RXCSUM;
---- a/drivers/net/ethernet/tehuti/tehuti.c
-+++ b/drivers/net/ethernet/tehuti/tehuti.c
-@@ -2019,7 +2019,6 @@ bdx_probe(struct pci_dev *pdev, const st
- 		ndev->features = NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO
- 		    | NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX |
- 		    NETIF_F_HW_VLAN_CTAG_FILTER | NETIF_F_RXCSUM
--		    /*| NETIF_F_FRAGLIST */
- 		    ;
- 		ndev->hw_features = NETIF_F_IP_CSUM | NETIF_F_SG |
- 			NETIF_F_TSO | NETIF_F_HW_VLAN_CTAG_TX;
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -1016,7 +1016,7 @@ static int temac_of_probe(struct platfor
- 	dev_set_drvdata(&op->dev, ndev);
- 	SET_NETDEV_DEV(ndev, &op->dev);
- 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
--	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
-+	ndev->features = NETIF_F_SG;
- 	ndev->netdev_ops = &temac_netdev_ops;
- 	ndev->ethtool_ops = &temac_ethtool_ops;
- #if 0
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -1488,7 +1488,7 @@ static int axienet_of_probe(struct platf
- 
- 	SET_NETDEV_DEV(ndev, &op->dev);
- 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
--	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
-+	ndev->features = NETIF_F_SG;
- 	ndev->netdev_ops = &axienet_netdev_ops;
- 	ndev->ethtool_ops = &axienet_ethtool_ops;
- 
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1412,6 +1412,8 @@ static ssize_t tun_chr_aio_read(struct k
+ 	ret = tun_do_read(tun, tfile, iocb, iv, len,
+ 			  file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len);
++	if (ret > 0)
++		iocb->ki_pos = ret;
+ out:
+ 	tun_put(tun);
+ 	return ret;
 
 
