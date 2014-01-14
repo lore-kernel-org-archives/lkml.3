@@ -1,83 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaANTbE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:31:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32994 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559AbaANTbC (ORCPT
+	id S1752069AbaANTbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:31:16 -0500
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:35431 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751942AbaANTbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:31:02 -0500
-Date: Tue, 14 Jan 2014 11:31:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [RFC] sysfs_rename_link() and its usage
-Message-ID: <20140114193139.GA3636@kroah.com>
-References: <20140114171740.GB1867@redhat.com>
- <20140114182135.GA29296@kroah.com>
- <20140114191208.GA9942@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140114191208.GA9942@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 14 Jan 2014 14:31:12 -0500
+Date: Tue, 14 Jan 2014 13:31:09 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Dave Hansen <dave@sr71.net>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, penberg@kernel.org
+Subject: Re: [RFC][PATCH 1/9] mm: slab/slub: use page->list consistently
+ instead of page->lru
+In-Reply-To: <20140114180044.1E401C47@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.10.1401141330440.19618@nuc>
+References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180044.1E401C47@viggo.jf.intel.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 08:12:08PM +0100, Veaceslav Falico wrote:
-> On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
-> >On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
-> >>Hi,
-> >>
-> >>I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
-> >>
-> >>Consider having two net_device *a, *b; which are registered normally.
-> >>Now, to create a link from /sys/class/net/a->name/linkname to b, one should
-> >>use:
-> >>
-> >>sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
-> >>
-> >>To remove it, even simpler:
-> >>
-> >>sysfs_remove_link(&(a->dev.kobj), linkname);
-> >>
-> >>This works like a charm. However, if I want to use (obviously, with the
-> >>symlink present):
-> >>
-> >>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
-> >
-> >You forgot the namespace option to this call, what kernel version are
-> >you using here?
-> 
-> It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
-> 3.13-rc6 with some networking patches on top of it.
-> 
-> And wrt namespace - there are two functions, one is sysfs_rename_link(),
-> which calls the second one - sysfs_rename_link_ns() with NULL namespace.
-> 
-> >
-> >>this fails with:
-> >>
-> >>"sysfs: ns invalid in 'a->name' for 'oldname'"
-> >
-> >Looks like the namespace for this link isn't valid.
-> 
-> Yep, though dunno why.
+On Tue, 14 Jan 2014, Dave Hansen wrote:
 
-Are you testing this with network namespaces enabled?  Perhaps that is
-why, you need to specify the namespace of the link that you are
-changing.
+> This patch makes the slab and slub code use page->lru
+> universally instead of mixing ->list and ->lru.
 
-The fact that the bridge link works is odd to me, I would think that it
-too needs to specify the network namespace involved, but perhaps bridge
-objects aren't part of any specific network namespace?  I don't know the
-bridging code at all, sorry.
-
-So try calling sysfs_rename_link_ns() and specify the namespace of the
-kobject you are changing, and see if that works or not.
-
-thanks,
-
-greg k-h
+Acked-by: Christoph Lameter <cl@linux.com>
