@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaANSVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:21:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60684 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaANSU5 (ORCPT
+	id S1751879AbaANSW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:22:56 -0500
+Received: from smtpgcba1.buenosaires.gob.ar ([200.89.135.225]:24914 "EHLO
+	smtpgcba1.buenosaires.gob.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751472AbaANSWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:20:57 -0500
-Date: Tue, 14 Jan 2014 10:21:35 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [RFC] sysfs_rename_link() and its usage
-Message-ID: <20140114182135.GA29296@kroah.com>
-References: <20140114171740.GB1867@redhat.com>
+	Tue, 14 Jan 2014 13:22:53 -0500
+X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Tue, 14 Jan 2014 13:22:53 EST
+Message-ID: <20140114151727.10688asfuwg2l8af@webmail.buenosaires.gob.ar>
+Date: Tue, 14 Jan 2014 15:17:27 -0300
+From: Yung kyu kim <yung.kyu.kim@qq.com>
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20140114171740.GB1867@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+X-GCBA-Alerce-Info: Al
+X-MailScanner-Id: 8c00f83b29c67effcac67f27890554ca
+X-GCBA-Alerce: limpio
+X-GCBA-Alerce-SpamAnalisis: spam
+X-GCBA-Alerce-From: yung.kyu.kim@qq.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
-> Hi,
-> 
-> I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
-> 
-> Consider having two net_device *a, *b; which are registered normally.
-> Now, to create a link from /sys/class/net/a->name/linkname to b, one should
-> use:
-> 
-> sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
-> 
-> To remove it, even simpler:
-> 
-> sysfs_remove_link(&(a->dev.kobj), linkname);
-> 
-> This works like a charm. However, if I want to use (obviously, with the
-> symlink present):
-> 
-> sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
+Hello,
 
-You forgot the namespace option to this call, what kernel version are
-you using here?
+The Project is about the exportation of 100,000 barrels of Light Crude
+Oil daily out from Iraq to Turkey through my client's company in Iraq
+at the rate of $92.00 a barrel. This amount to $9,200,000 daily. I ask
+for your support as a foreigner to handle this business project with my
+client and you are not expected to invest in Iraq
 
-> this fails with:
-> 
-> "sysfs: ns invalid in 'a->name' for 'oldname'"
+If yes, let me know and we will discuss this project proper.
 
-Looks like the namespace for this link isn't valid.
 
-> in
-> 
->  608 struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
-> ...
->  615         if (!!sysfs_ns_type(parent_sd) != !!ns) {
->  616                 WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
->  617                         sysfs_ns_type(parent_sd) ? "required" : "invalid",
->  618                         parent_sd->s_name, name);
->  619                 return NULL;
->  620         }
-> 
-> Code path:
-> warn_slowpath_fmt+0x46/0x50
-> sysfs_get_dirent_ns+0x30/0x80
-> sysfs_find_dirent+0x84/0x110
-> sysfs_get_dirent_ns+0x3e/0x80
-> sysfs_rename_link_ns+0x54/0xd0
-> 
-> I have no idea what this code means. Is there any reason for it to
-> fail (i.e. am I doing something wrong?) or I've hit a bug?
 
-What exactly are you trying to do here?  Care to provide a pointer to
-your code somewhere?
+Kim.
 
-> I've tested the only user of it (bridge) - and it works fine, however it's
-> not using its own net_device's kobject but rather its own dir.
 
-The driver core also uses this function, and it works there, so I'd
-blame your code :)
-
-thanks,
-
-greg k-h
