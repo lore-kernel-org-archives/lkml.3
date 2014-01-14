@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaANPUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:20:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59504 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaANPUg (ORCPT
+	id S1751662AbaANPUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:20:42 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:53780 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaANPUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 14 Jan 2014 10:20:36 -0500
-Date: Tue, 14 Jan 2014 07:20:48 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: rogerable@realtek.com
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <cjb@laptop.org>, Maxim Levitsky <maximlevitsky@gmail.com>,
-        Alex Dubov <oakad@yahoo.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn
-Subject: Re: [PATCH 1/3] mfd: Add realtek USB card reader driver
-Message-ID: <20140114152048.GB6512@kroah.com>
-References: <1389685656-880-1-git-send-email-rogerable@realtek.com>
- <1389685656-880-2-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389685656-880-2-git-send-email-rogerable@realtek.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52D55479.9010802@zytor.com>
+References: <20140114155331.88d170d3c991b9465c23a537@canb.auug.org.au>
+	<20140114125153.GY7572@laptop.programming.kicks-ass.net>
+	<52D55479.9010802@zytor.com>
+Date: Tue, 14 Jan 2014 16:20:36 +0100
+X-Google-Sender-Auth: PsCGbc1t0TJtT_5bl-B4Qbjwh2Q
+Message-ID: <CAMuHMdUt2jCVLHr9mbV8JVnY4+vv5vEKNfk1=FoSnZ+nx6qhNw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the tip tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 03:47:34PM +0800, rogerable@realtek.com wrote:
-> From: Roger Tseng <rogerable@realtek.com>
-> 
-> Realtek USB card reader provides a channel to transfer command or data to flash
-> memory cards. This driver exports host instances for mmc and memstick subsystems
-> and handles basic works.
-> 
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> ---
->  drivers/mfd/Kconfig          |  10 +
->  drivers/mfd/Makefile         |   1 +
->  drivers/mfd/rtsx_usb.c       | 788 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/rtsx_usb.h | 619 +++++++++++++++++++++++++++++++++
->  4 files changed, 1418 insertions(+)
->  create mode 100644 drivers/mfd/rtsx_usb.c
->  create mode 100644 include/linux/mfd/rtsx_usb.h
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index b7c74a7..4c99ebd 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -507,6 +507,16 @@ config MFD_RTSX_PCI
->  	  types of memory cards, such as Memory Stick, Memory Stick Pro,
->  	  Secure Digital and MultiMediaCard.
->  
-> +config MFD_RTSX_USB
-> +	tristate "Realtek USB card reader"
-> +	depends on USB
-> +	select MFD_CORE
-> +	help
-> +	Select this option to get support for Realtek USB 2.0 card readers
-> +	including RTS5129, RTS5139, RTS5179 and RTS5170.
-> +	Realtek card reader supports access to many types of memory cards,
-> +	such as Memory Stick Pro, Secure Digital and MultiMediaCard.
-> +
->  config MFD_RC5T583
->  	bool "Ricoh RC5T583 Power Management system device"
->  	depends on I2C=y
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8a28dc9..33b8de6 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -14,6 +14,7 @@ obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
->  
->  rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
->  obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
-> +obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
->  
->  obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o
->  obj-$(CONFIG_HTC_PASIC3)	+= htc-pasic3.o
-> diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
-> new file mode 100644
-> index 0000000..905ec8d
-> --- /dev/null
-> +++ b/drivers/mfd/rtsx_usb.c
-> @@ -0,0 +1,788 @@
-> +/* Driver for Realtek USB card reader
-> + *
-> + * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2, or (at your option) any
-> + * later version.
+On Tue, Jan 14, 2014 at 4:15 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 01/14/2014 04:51 AM, Peter Zijlstra wrote:
+>> On Tue, Jan 14, 2014 at 03:53:31PM +1100, Stephen Rothwell wrote:
+>>> Hi Andrew,
+>>>
+>>> Today's linux-next merge of the akpm-current tree got a conflict in
+>>> kernel/futex.c between commit a52b89ebb6d4 ("futexes: Increase hash table
+>>> size for better performance") from the tip tree and commit 61beee6c76e5
+>>> ("futex: switch to USER_DS for futex test") from the akpm-current tree.
+>>>
+>>> @@@ -2869,10 -2748,13 +2871,13 @@@
+>>>       * implementation, the non-functional ones will return
+>>>       * -ENOSYS.
+>>>       */
+>>> +    fs = get_fs();
+>>> +    set_fs(USER_DS);
+>>>      if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+>>>              futex_cmpxchg_enabled = 1;
+>>> +    set_fs(fs);
+>>>
+>>
+>> This seems terribly broken, the *futex_value*() ops should not need
+>> that; they are supposed to access userspace without any of that.
+>
+> I am *guessing* that m68k is has get_fs() == KERNEL_DS at the point that
+> futex_init() is called.  This would seem a bit of a peculiarity to m68k,
+> and as such it would seem like it would be better for it to belong in
+> the m68k-specific code, but since futex_init() is init code and only
+> called once anyway it shouldn't cause any harm...
 
-Do you really mean "any later version"?  (sorry, I have to ask.)
+Yes it does. So when getting the exception on 68030, we notice it's a kernel
+space access error, not a user space access error, and crash.
 
-Same goes for the other files you add with this specific license
-wording.
+Gr{oetje,eeting}s,
 
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/mutex.h>
-> +#include <linux/usb.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/mfd/core.h>
-> +#include <asm/unaligned.h>
+                        Geert
 
-Why is this file neded?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-thanks,
-
-greg k-h
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
