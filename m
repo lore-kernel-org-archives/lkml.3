@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaANAsG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:48:06 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48755 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632AbaANAsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:48:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
-   d="scan'208";a="466140926"
-Subject: [PATCH v3 3/4] net: make tcp_cleanup_rbuf private
-From: Dan Williams <dan.j.williams@intel.com>
-To: dmaengine@vger.kernel.org
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
-        James Morris <jmorris@namei.org>, Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Neal Cardwell <ncardwell@google.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Date: Mon, 13 Jan 2014 16:47:59 -0800
-Message-ID: <20140114004719.27138.21488.stgit@viggo.jf.intel.com>
-In-Reply-To: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
-References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
-User-Agent: StGit/0.17.1-3-g7cb9
+	id S1755086AbaANAsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:48:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54307 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713AbaANA2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:28:19 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Gao feng <gaofeng@cn.fujitsu.com>, Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 27/77] ipv6: always set the new created dsts from in ip6_rt_copy
+Date: Mon, 13 Jan 2014 16:27:48 -0800
+Message-Id: <20140114002753.272926002@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
+In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
+References: <20140114002752.497010554@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-net_dma was the only external user so this can become local to tcp.c
-again.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Cc: James Morris <jmorris@namei.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+------------------
+
+From: Li RongQing <roy.qing.li@gmail.com>
+
+[ Upstream commit 24f5b855e17df7e355eacd6c4a12cc4d6a6c9ff0 ]
+
+ip6_rt_copy only sets dst.from if ort has flag RTF_ADDRCONF and RTF_DEFAULT.
+but the prefix routes which did get installed by hand locally can have an
+expiration, and no any flag combination which can ensure a potential from
+does never expire, so we should always set the new created dst's from.
+
+This also fixes the new created dst is always expired since the ort, which
+is created by RA, maybe has RTF_EXPIRES and RTF_ADDRCONF, but no RTF_DEFAULT.
+
+Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+CC: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ net/ipv6/route.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Since v1: keep the tcp_ prefix.
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1910,9 +1910,7 @@ static struct rt6_info *ip6_rt_copy(stru
+ 		else
+ 			rt->rt6i_gateway = *dest;
+ 		rt->rt6i_flags = ort->rt6i_flags;
+-		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
+-		    (RTF_DEFAULT | RTF_ADDRCONF))
+-			rt6_set_from(rt, ort);
++		rt6_set_from(rt, ort);
+ 		rt->rt6i_metric = 0;
+ 
+ #ifdef CONFIG_IPV6_SUBTREES
 
- include/net/tcp.h |    1 -
- net/ipv4/tcp.c    |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 084c163e9d40..571036b3bead 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -370,7 +370,6 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
- void tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
- 			 const struct tcphdr *th, unsigned int len);
- void tcp_rcv_space_adjust(struct sock *sk);
--void tcp_cleanup_rbuf(struct sock *sk, int copied);
- int tcp_twsk_unique(struct sock *sk, struct sock *sktw, void *twp);
- void tcp_twsk_destructor(struct sock *sk);
- ssize_t tcp_splice_read(struct socket *sk, loff_t *ppos,
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 8dc913dfbaef..10dda80fccc9 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1332,7 +1332,7 @@ static int tcp_peek_sndq(struct sock *sk, struct msghdr *msg, int len)
-  * calculation of whether or not we must ACK for the sake of
-  * a window update.
-  */
--void tcp_cleanup_rbuf(struct sock *sk, int copied)
-+static void tcp_cleanup_rbuf(struct sock *sk, int copied)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	bool time_to_ack = false;
 
