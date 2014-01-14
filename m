@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaANVmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:42:45 -0500
-Received: from www.sr71.net ([198.145.64.142]:54092 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499AbaANVmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:42:42 -0500
-Message-ID: <52D5AEF7.6020707@sr71.net>
-Date: Tue, 14 Jan 2014 13:41:11 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752168AbaANVnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:43:07 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:62600 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaANVnF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 16:43:05 -0500
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, penberg@kernel.org
-Subject: Re: [RFC][PATCH 2/9] mm: slub: abstract out double cmpxchg option
-References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180046.C897727E@viggo.jf.intel.com> <alpine.DEB.2.10.1401141346310.19618@nuc>
-In-Reply-To: <alpine.DEB.2.10.1401141346310.19618@nuc>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1389734895-2760-1-git-send-email-michaelflowersky@geekingspree.com>
+References: <1389734895-2760-1-git-send-email-michaelflowersky@geekingspree.com>
+Date: Tue, 14 Jan 2014 22:43:04 +0100
+X-Google-Sender-Auth: xrszpqA7OutlOSGWabQKLnManrw
+Message-ID: <CAAsK9AG0J_+f+DPZ-j9uYJ9gPLkxG8ZGa20Poa2rLdUvb7-F_w@mail.gmail.com>
+Subject: Re: [PATCH] Staging: android: fix parentheses coding style issue in alarm-dev.c
+From: Levente Kurusa <levex@linux.com>
+To: =?ISO-8859-2?Q?Micha=B3_Kwiatkowski?= 
+	<michaelflowersky@geekingspree.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>, dan.carpenter@oracle.com,
+        Cruz Bishop <cruzjbishop@gmail.com>, devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 11:49 AM, Christoph Lameter wrote:
-> On Tue, 14 Jan 2014, Dave Hansen wrote:
->> I found this useful to have in my testing.  I would like to have
->> it available for a bit, at least until other folks have had a
->> chance to do some testing with it.
-> 
-> I dont really see the point of this patch since we already have
-> CONFIG_HAVE_ALIGNED_STRUCT_PAGE to play with.
+Hello,
 
-With the current code, if you wanted to turn off the double-cmpxchg abd
-get a 56-byte 'struct page' how would you do it?  Can you do it with a
-.config, or do you need to hack the code?
+2014/1/14 Micha³ Kwiatkowski <michaelflowersky@geekingspree.com>:
+> From: Michal Kwiatkowski <michaelflowersky@geekingspree.com>
+>
+> This is a patch to the alarm-dev.c file that removes parentheses which
+> should not appear in return statement. This error was found by the
+> checkpatch.pl tool.
+>
+> Signed-off-by: Micha³ Kwiatkowski <michaelflowersky@geekingspree.com>
+> --
+
+This is like the third patch in this two week period that does the
+exact same with more or less success, and I recall one getting applied
+(I might be wrong). Anyway, this one finally looks good! :-)
+
+--
+Regards,
+Levente Kurusa
