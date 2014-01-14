@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaANVGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:06:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54335 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaANVGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:06:23 -0500
-Date: Tue, 14 Jan 2014 21:06:18 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Yi Zhang <yizhang.mrvl@gmail.com>
-Cc: Yi Zhang <yizhang@marvell.com>, hongfeng@marvell.com,
-        linux-kernel@vger.kernel.org, zhouqiao@marvell.com
-Message-ID: <20140114210618.GZ15567@sirena.org.uk>
-References: <CAK=oMXebE=OKzGbaRH_baOvRyhPXnw0MZuRrcZYLpeR73=XdqA@mail.gmail.com>
+	id S1752060AbaANVHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:07:10 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26651 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751612AbaANVHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 16:07:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="438838030"
+From: Andi Kleen <andi@firstfloor.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 3/5] perf report: Add --percentage option
+References: <1389674599-28227-1-git-send-email-namhyung@kernel.org>
+	<1389674599-28227-4-git-send-email-namhyung@kernel.org>
+Date: Tue, 14 Jan 2014 13:07:00 -0800
+In-Reply-To: <1389674599-28227-4-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 14 Jan 2014 13:43:17 +0900")
+Message-ID: <87zjmy2ryj.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dZHW955j1vPFHE0Q"
-Content-Disposition: inline
-In-Reply-To: <CAK=oMXebE=OKzGbaRH_baOvRyhPXnw0MZuRrcZYLpeR73=XdqA@mail.gmail.com>
-X-Cookie: Marriage is the sole cause of divorce.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Question] Should we make the primary interrupt handler
- configurable for regmap_add_irq_chip()?
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Namhyung Kim <namhyung@kernel.org> writes:
+>  
+> +--percentage::
+> +	Determine how to display the overhead percentage of filtered
+> entries.
 
---dZHW955j1vPFHE0Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This should describe also what a "filtered entry" exactly is. It's not clear
+even to me.
 
-On Sat, Jan 11, 2014 at 12:15:21PM +0800, Yi Zhang wrote:
+-Andi
 
-> I met a scenario:
-> As soon as the interrupt is triggered, a wakelock is needed to be held
-> until the threaded handler finishes,
-> I think we may hold it in the primary interrupt handler, but now it's
-> NULL by default;
+> +	"relative" means it's relative to filtered entries only so that the
+> +	sum of shown entries will be always 100%.  "absolute" means it retains
+> +	original value before and after the filter applied.
+> +
 
-This sounds like something we should just support in the core, though to
-be honest I'd expect the interrupt core to hold a wakelock itself during
-interrupt processing.  If we're doing it in regmap then allowing the
-caller to set a wakelock to hold seems better than making them all write
-the code to take and release it.
-
---dZHW955j1vPFHE0Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1abGAAoJELSic+t+oim9Xy0P/iCmbzvKomK/nUB7FSX4OLC6
-CIAnNVHou/ospwi1Q189tz5G2bYtDkw4VVHeW+fqT8bOTu48YPoYTQ88B8ILWARv
-9lztCdBkEXoHujcn3+3O6Vh9eLwh2Dr/vFN8kep6YcV5f5wCknuM9aJLUsMTdGOR
-1H43mGeYOaLn/VlME8Uj++7rV9I1RDpy474rt2H1/zXSpUN00TOtE6o2kmZTQCDZ
-0vwEAHznkv+aAciKTgCKtmiQwNH+XtG1UQvkcWL45tbvXbbYIN0ZXw4BJ4KI+nV6
-wxSyxjyLyncGD0KFZgZU7HJi7ahwgjZlfgwxz08wN+aP32ued1PqP960XSPnBMsC
-3twLgEGz9hKSobID7i7Gvemo2+PUck83jlwTDy/Ma+u66fB2Bg3hBOe14nEXi20u
-G3CZyCY0gvpOfzUdh69PK2xOTQXawKtMvl7SCiOsQLCjybmVxnv+GTbx91vhlwdW
-S8XKkENxQ0pY7oNQQOT4Mvx33tQgKtRHUi+VizCXJs5prdVMnQOQD5EppwoBtpSa
-asbpHKBAGWWuxYg8qGxf90h6461080XkJ+M8vezy82xmTJMXVhpV5jujUm/DrwL0
-g8sBVT1lXmGqBAKQ4j5Urz/bhxmOf0DeudbRA7Xk0tCfwCSkuvGIQHxE72vlDLLv
-j97Nt/lZ8Js5ZuseAOOQ
-=FJhK
------END PGP SIGNATURE-----
-
---dZHW955j1vPFHE0Q--
+-- 
+ak@linux.intel.com -- Speaking for myself only
