@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaANBN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:13:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53863 "EHLO
+	id S1755961AbaANBOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:14:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54962 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaANA00 (ORCPT
+	with ESMTP id S1752617AbaANBON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:26 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        halfdog <me@halfdog.net>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.4 23/27] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
-Date: Mon, 13 Jan 2014 16:26:37 -0800
-Message-Id: <20140114002624.037399545@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
-References: <20140114002623.356220317@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 13 Jan 2014 20:14:13 -0500
+Date: Mon, 13 Jan 2014 17:14:12 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        netdev@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <JBottomley@Parallels.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v3 4/4] dma debug: introduce debug_dma_assert_idle()
+Message-Id: <20140113171412.dd90c020b103f4a686f8dc34@linux-foundation.org>
+In-Reply-To: <20140114004804.27138.18469.stgit@viggo.jf.intel.com>
+References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+	<20140114004804.27138.18469.stgit@viggo.jf.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 13 Jan 2014 16:48:47 -0800 Dan Williams <dan.j.williams@intel.com> wrote:
 
-------------------
+> Record actively mapped pages and provide an api for asserting a given
+> page is dma inactive before execution proceeds.  Placing
+> debug_dma_assert_idle() in cow_user_page() flagged the violation of the
+> dma-api in the NET_DMA implementation (see commit 77873803363c "net_dma:
+> mark broken").
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+Some discussion of the overlap counter thing would be useful.
 
-commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
+> --- a/include/linux/dma-debug.h
+> +++ b/include/linux/dma-debug.h
+>
+> ...
+>
+> +static void __active_pfn_inc_overlap(struct dma_debug_entry *entry)
+> +{
+> +	unsigned long pfn = entry->pfn;
+> +	int i;
+> +
+> +	for (i = 0; i < RADIX_TREE_MAX_TAGS; i++)
+> +		if (radix_tree_tag_get(&dma_active_pfn, pfn, i) == 0) {
+> +			radix_tree_tag_set(&dma_active_pfn, pfn, i);
+> +			return;
+> +		}
+> +	pr_debug("DMA-API: max overlap count (%d) reached for pfn 0x%lx\n",
+> +		 RADIX_TREE_MAX_TAGS, pfn);
+> +}
+> +
+> +static void __active_pfn_dec_overlap(struct dma_debug_entry *entry)
+> +{
+> +	unsigned long pfn = entry->pfn;
+> +	int i;
+> +
+> +	for (i = RADIX_TREE_MAX_TAGS - 1; i >= 0; i--)
+> +		if (radix_tree_tag_get(&dma_active_pfn, pfn, i)) {
+> +			radix_tree_tag_clear(&dma_active_pfn, pfn, i);
+> +			return;
+> +		}
+> +	radix_tree_delete(&dma_active_pfn, pfn);
+> +}
+> +
+> +static int active_pfn_insert(struct dma_debug_entry *entry)
+> +{
+> +	unsigned long flags;
+> +	int rc;
+> +
+> +	spin_lock_irqsave(&radix_lock, flags);
+> +	rc = radix_tree_insert(&dma_active_pfn, entry->pfn, entry);
+> +	if (rc == -EEXIST)
+> +		__active_pfn_inc_overlap(entry);
+> +	spin_unlock_irqrestore(&radix_lock, flags);
+> +
+> +	return rc;
+> +}
+> +
+> +static void active_pfn_remove(struct dma_debug_entry *entry)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&radix_lock, flags);
+> +	__active_pfn_dec_overlap(entry);
+> +	spin_unlock_irqrestore(&radix_lock, flags);
+> +}
 
-Before we do an EMMS in the AMD FXSAVE information leak workaround we
-need to clear any pending exceptions, otherwise we trap with a
-floating-point exception inside this code.
+OK, I think I see what's happening.  The tags thing acts as a crude
+counter and if the map/unmap count ends up imbalanced, we deliberately
+leak an entry in the radix-tree so it can later be reported via undescribed
+means.  Thoughts:
 
-Reported-by: halfdog <me@halfdog.net>
-Tested-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+- RADIX_TREE_MAX_TAGS=3 so the code could count to 7, with a bit of
+  futzing around.
 
----
- arch/x86/include/asm/fpu-internal.h |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+- from a style/readability point of view it is unexpected that
+  __active_pfn_dec_overlap() actually removes radix-tree items.  It
+  would be better to do:
 
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -266,12 +266,13 @@ static inline int restore_fpu_checking(s
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. "m" is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"		/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (tsk->thread.fpu.has_fpu));
-+	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %P[addr]"	/* set F?P to defined value */
-+			: : [addr] "m" (tsk->thread.fpu.has_fpu));
-+	}
- 
- 	return fpu_restore_checking(&tsk->thread.fpu);
- }
+	spin_lock_irqsave(&radix_lock, flags);
+	if (__active_pfn_dec_overlap(entry) == something) {
+		/*
+		 * Nice comment goes here
+		 */
+		radix_tree_delete(...);
+	}
+	spin_unlock_irqrestore(&radix_lock, flags);
 
 
