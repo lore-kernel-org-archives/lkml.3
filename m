@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaANNXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:23:39 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57314 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaANNXh (ORCPT
+	id S1751593AbaANN0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:26:36 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58123 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaANN0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:23:37 -0500
+	Tue, 14 Jan 2014 08:26:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Subject: Re: [PATCH v4 4/5] arm: Add [U]EFI runtime services support
+Date: Tue, 14 Jan 2014 14:26:15 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, linux-efi@vger.kernel.org,
+        linux@arm.linux.org.uk, patches@linaro.org,
+        Will Deacon <will.deacon@arm.com>, roy.franz@linaro.org,
+        matt.fleming@intel.com, msalter@redhat.com
+References: <1389445524-30623-1-git-send-email-leif.lindholm@linaro.org> <201401140752.33257.arnd@arndb.de> <20140114114419.GH30907@bivouac.eciton.net>
+In-Reply-To: <20140114114419.GH30907@bivouac.eciton.net>
 MIME-Version: 1.0
-In-Reply-To: <20140114125242.GE15567@sirena.org.uk>
-References: <1389699411-29135-1-git-send-email-geert@linux-m68k.org>
-	<20140114125242.GE15567@sirena.org.uk>
-Date: Tue, 14 Jan 2014 14:23:37 +0100
-X-Google-Sender-Auth: Ax0rtbMRqyqt_5Ciu1llQ3hZZfQ
-Message-ID: <CAMuHMdVmSUh8yphZ4oPR=QYp5uMS9BXgPRVuwa19S9q7jWxxiQ@mail.gmail.com>
-Subject: Re: [PATCH/RFC] spi: core: Fix logic mismatch in spi_master.set_cs()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401141426.16497.arnd@arndb.de>
+X-Provags-ID: V02:K0:yayI5za+F2vrFN9oV9CbC68Y9IBDiQYy8wIPLF0FJh5
+ rYUle4jz5oubEz+hDo9pCxpKB9laivuuOVOxZHQ59+iV/SxKOZ
+ +acq6bf750XtHgYy+rOBptASpL4mXLk1dpu3EJxPrNfBxpuhVb
+ 7i3Rgp4oD6Gi5uQP8uv1sEUD+cJI2uSK+zoNUeRQP51sicZJvN
+ v/YO/kRbxoWQMSb7p8XRQhKQ21UgCbayF6cdmBuDY/XA5S2LeY
+ uSnKLX73mfZgqM6RZiPjLeOz865Vr4ohsdkRV4vadxSIFypUrS
+ ruHPkwZ3zsBcP2gNTTUK6H24QFSfFexkwn+U9mtq7kD8p/k1qx
+ 8h34guCmz4BossQbBn7o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Tuesday 14 January 2014, Leif Lindholm wrote:
+> On Tue, Jan 14, 2014 at 07:52:32AM +0100, Arnd Bergmann wrote:
+> > > > > It uses the generic configuration table scanning to populate ACPI and
+> > > > > SMBIOS pointers.
+> > > > 
+> > > > As far as I'm concerned there are no plans to have ACPI support on ARM32,
+> > > > so I wonder what the code to populate the ACPI tables is about. Can
+> > > > you clarify this?
+> > > 
+> > > Are you suggesting that I should #ifndef ARM in common code, or that I
+> > > should neglect to document what the common code will do with data it is
+> > > given by UEFI?
+> > 
+> > It would probably be good to document the fact that it won't work,
+> > possibly even having a BUG_ON statement in the code for this case.
+> 
+> Why?
+> 
+> You'll only touch that pointer if you enable CONFIG_ACPI, and if you
+> do you probably want that address. Sounds a bit hostile to throw a BUG
+> in the face of someone who's (for example) just succeeded to get Linux
+> running on a Windows RT device.
 
-On Tue, Jan 14, 2014 at 1:52 PM, Mark Brown <broonie@kernel.org> wrote:
->On Tue, Jan 14, 2014 at 12:36:51PM +0100, Geert Uytterhoeven wrote:
->
->> The documentation for spi_master.set_cs() says:
->>
->>     assert or deassert chip select, true to assert
->>
->> i.e. its "enable" parameter uses assertion-level logic.
+But we know that it can't work unless a lot of other things get changed
+in the kernel.
 
->> For SPI controller-based chip selects, active high chip selects must be
->> handled by the SPI master driver, if supported (some SPI controllers have
->> configurable chip select polarity).
->
-> This also pushes the handling of CS_HIGH back out into the driver which
-> doesn't seem like it's helping anything.  Flipping the sense of enable
+> > > > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > > > > index 78a79a6a..1ab24cc 100644
+> > > > > --- a/arch/arm/Kconfig
+> > > > > +++ b/arch/arm/Kconfig
+> > > > > @@ -1853,6 +1853,20 @@ config EARLY_IOREMAP
+> > > > >  	  the same virtual memory range as kmap so all early mappings must
+> > > > >  	  be unapped before paging_init() is called.
+> > > > >  
+> > > > > +config EFI
+> > > > > +	bool "UEFI runtime service support"
+> > > > > +	depends on OF && !CPU_BIG_ENDIAN
+> > > > 
+> > > > What is the dependency on !CPU_BIG_ENDIAN?
+> > > 
+> > > Mainly on code not being implemented to byte-reverse UCS strings.
+> > 
+> > Why would you byte-reverse /strings/? They normally just come in
+> > order of the characters, and UTF-16 strings are already defined
+> > as being big-endian or marked by the BOM character.
+> 
+> Well, then that bit might just work[tm].
+> 
+> Although no other architectures supported by UEFI support big-endian,
+> so to be honest, I don't want to have to be the first one to validate
+> that in order to get the basic support into the kernel.
 
-It depends: on hardware with separate register bits for chip select polarity
-and chip select assertion it avoids having to invert the enable value a second
-time.
+I think there was a project to run UEFI on PowerPC on some stage, though
+I can't find any code now.
 
-> when calling set_cs() is probably OK though.
+> Some of the data structures might need swizzling though...
+> Again - if there is demand, this can be dealt with at a later date.
 
-Just flipping the sense of enable still needs a documentation update.
+Ok.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Arnd
