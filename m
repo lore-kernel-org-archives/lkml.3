@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaANS0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:26:45 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:59604 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761AbaANS0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:26:43 -0500
+	id S1751847AbaANSai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:30:38 -0500
+Received: from sauhun.de ([89.238.76.85]:52289 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342AbaANSah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:30:37 -0500
+Date: Tue, 14 Jan 2014 19:30:34 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 2/7] drivers/amba: don't check resource with
+ devm_ioremap_resource
+Message-ID: <20140114183034.GA10340@katana>
+References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
+ <1389700739-3696-2-git-send-email-wsa@the-dreams.de>
+ <52D57688.8070105@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <20140114133125.GB26942@localhost>
-References: <20140114133125.GB26942@localhost>
-Date: Tue, 14 Jan 2014 10:26:42 -0800
-X-Google-Sender-Auth: qdeVewrUasGYLR4aIe4h3nwCa4Y
-Message-ID: <CAGXu5jKqx6JYBhHf08ru9B62RdD1A_WX7on64Cw-v1wYKT2jnQ@mail.gmail.com>
-Subject: Re: [x86, kaslr] BUG: kernel boot hang
-From: Kees Cook <keescook@chromium.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
+Content-Disposition: inline
+In-Reply-To: <52D57688.8070105@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 5:31 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Greetings,
->
-> I got the below dmesg and the first bad commit is
->
-> commit 82fa9637a2ba285bcc7c5050c73010b2c1b3d803
-> Author:     Kees Cook <keescook@chromium.org>
-> AuthorDate: Thu Oct 10 17:18:16 2013 -0700
-> Commit:     H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Sun Oct 13 03:12:19 2013 -0700
->
->     x86, kaslr: Select random position from e820 maps
->
->     Counts available alignment positions across all e820 maps, and chooses
->     one randomly for the new kernel base address, making sure not to collide
->     with unsafe memory areas.
->
->     Signed-off-by: Kees Cook <keescook@chromium.org>
->     Link: http://lkml.kernel.org/r/1381450698-28710-5-git-send-email-keescook@chromium.org
->     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
->
-> Note that there are many other warning/errors and it's not very
-> reproducible, so this report might be wrong.
->
-> ===================================================
-> PARENT COMMIT NOT CLEAN. LOOK OUT FOR WRONG BISECT!
-> ===================================================
->
-> +-----------------------------------------------------------+--------------+--------------+
-> |                                                           | 5bfce5ef55cb | 1955a14a5ba6 |
-> +-----------------------------------------------------------+--------------+--------------+
-> | boot_successes                                            | 3948         | 0            |
-> | boot_failures                                             | 52           | 89           |
-> | page_allocation_failure:order:,mode                       | 48           | 2            |
-> | Out_of_memory:Kill_process                                | 7            |              |
-> | BUG:kernel_early_hang_without_any_printk_output           | 1            |              |
-> | BUG:soft_lockup-CPU_stuck_for_s                           | 1            |              |
-> | WARNING:CPU:PID:at_kernel/locking/lockdep.c:check_flags() | 0            | 85           |
 
-Does this mean that
-"WARNING:CPU:PID:at_kernel/locking/lockdep.c:check_flags()" is the
-most common failure condition?
+--ZPt4rx8FFjLCG7dd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> | general_protection_fault:SMP_SMP                          | 0            | 1            |
-> | RIP:__lock_acquire                                        | 0            | 1            |
-> | Kernel_panic-not_syncing:Fatal_exception                  | 0            | 1            |
-> | BUG:kernel_boot_hang                                      | 0            | 2            |
-> | BUG:kernel_boot_crashed                                   | 0            | 1            |
-> +-----------------------------------------------------------+--------------+--------------+
->
-> The last dmesg is
->
-> [    0.803796] Initramfs unpacking failed: junk in compressed archive
-> [    0.803796] Initramfs unpacking failed: junk in compressed archive
->
-> or in some cases
->
-> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-> [    0.000000] BRK [0x07886000, 0x07886fff] PGTABLE
-> [    0.000000] BRK [0x07887000, 0x07887fff] PGTABLE
-> [    0.000000] BRK [0x07888000, 0x07888fff] PGTABLE
-> PANIC: early exception 0e rip 10:ffffffff86204c6e error 0 cr2 ffffffff81972b28
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc4-00008-g6e6a493 #614
-> PANIC: early exception 0e rip 10:ffffffff86204f22 error 0 cr2 ffffffff81972b28
 
-I will try to reproduce this, but it's not clear to me what is causing
-the failure. The generated config doesn't look insane to me, so I'm
-not sure what's happening here. Is QEMU doing something unexpected
-with the ordering of where things go for its boot loader?
+> This looks fine. I expect to apply it for 3.15 after the 3.14 merge
+> window, unless it's urgent to get it into 3.14 for some reason?
 
--Kees
+Nope, it is not. I wasn't aiming for 3.14, it was simply in my queue.
 
--- 
-Kees Cook
-Chrome OS Security
+
+--ZPt4rx8FFjLCG7dd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1YJKAAoJEBQN5MwUoCm2KlsQAKz/uNzJh5VmCSYB3XN/4gOE
+kXEM5LmVOoRlXHFl66szL3TFyTQ9Q7qD691dfSLQCDbelQhYA5WEe4abMF1Gqr69
+int+Z4h7sjFjXyzMr1CnhvoH7a42x5gjq0ORQs6M9F10f32ziEMH8xX2skN75vL3
+9XsOWvnBZ3bKC4pTVSXN09FhrEzLZB91bSx5qamcLC3R/seRMlin1SZylLQa/AfE
+4el1U1A4psTntgRs8gDDIJOoan6dN/8/FjW5MVuKnw2reQpLt+BvJKgEVi9yvjKv
+Gw/XJxwx5j+Tut/kkxrw7CXtE4q/xk4PFoEQiVvivBKgmdP7s8s9Ech4jvMhPp6f
+hgLbDnq0DnG0ogaiAcDqA7Yepa9a7mzwPu8Qo4XVheFXk4sbbwsIDDp2JRB72Iwk
+VCUgE36JITPBPSVUztl60v1X5SCD24Ii1wc99djnN4gLRpED52kJZzlFm826QoPe
+wGDcWsSlQ97S+9H9WmWzHRMv3cbJELEUCzbk71hGV+oSDQxiv4dfZT/GDok7MxJ9
+03YSmV0PkNIlHV7soVAz8jS/l6qpuUQBqboRmWtG3bD+DMVNXoZria4/MrASeTND
+jrH5fDY7BRlJ49g6g5SNm8qS6CfwOqJLVLjXHG8PR5M135qerQO4xjNDp8FTs8ul
+XKrNvp7p63YoYsqKuDzu
+=gNUN
+-----END PGP SIGNATURE-----
+
+--ZPt4rx8FFjLCG7dd--
