@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaANAqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:46:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54323 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734AbaANA2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 30/77] net: rose: restore old recvmsg behavior
-Date: Mon, 13 Jan 2014 16:27:51 -0800
-Message-Id: <20140114002753.362316736@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1754902AbaANAqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:46:39 -0500
+Received: from mga14.intel.com ([143.182.124.37]:11784 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752334AbaANAqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:46:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
+   d="scan'208";a="458235461"
+Subject: [PATCH v3 0/4] net_dma removal, and dma debug extension
+From: Dan Williams <dan.j.williams@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 13 Jan 2014 16:46:17 -0800
+Message-ID: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+User-Agent: StGit/0.17.1-3-g7cb9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Follow up patches to 77873803363c "net_dma: mark broken" to remove
+net_dma bits and provide debug infrastructure to flag other
+get_user_pages() vs dma instances that might violate the dma api.
 
-------------------
+Will takes this through the dmaengine tree once acked.  Just looking for
+an ack to patch 2 at this point.
 
-From: Florian Westphal <fw@strlen.de>
+Changes since v2 [1]:
 
-[ Upstream commit f81152e35001e91997ec74a7b4e040e6ab0acccf ]
+1/ Keep the 'tcp_' prefix to cleanup_rbuf() in patch 3
 
-recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
+2/ Fix up patch 4 according to Andrew's comments:  Added documentation
+   and dropped CONFIG_DMA_VS_CPU_DEBUG. [2]
 
-After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic), we now
-always take the else branch due to namelen being initialized to 0.
+Changes since v1 [3]:
 
-Digging in netdev-vger-cvs git repo shows that msg_namelen was
-initialized with a fixed-size since at least 1995, so the else branch
-was never taken.
+1/ net_dma removal patch has been expanded to revert other
+   net_dma induced changes.
 
-Compile tested only.
+2/ updated the debug_dma_assert_idle() api to be gated on
+   CONFIG_DMA_VS_CPU_DEBUG
 
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[1]: http://marc.info/?l=linux-netdev&m=138929837129496&w=2
+[2]: http://marc.info/?l=linux-netdev&m=138931431901890&w=2
+[3]: http://marc.info/?l=linux-netdev&m=138732574814049&w=2
+
 ---
- net/rose/af_rose.c |   16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
 
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1253,6 +1253,7 @@ static int rose_recvmsg(struct kiocb *io
- 
- 	if (msg->msg_name) {
- 		struct sockaddr_rose *srose;
-+		struct full_sockaddr_rose *full_srose = msg->msg_name;
- 
- 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
- 		srose = msg->msg_name;
-@@ -1260,18 +1261,9 @@ static int rose_recvmsg(struct kiocb *io
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
- 		srose->srose_ndigis = rose->dest_ndigis;
--		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
--			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
--			for (n = 0 ; n < rose->dest_ndigis ; n++)
--				full_srose->srose_digis[n] = rose->dest_digis[n];
--			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
--		} else {
--			if (rose->dest_ndigis >= 1) {
--				srose->srose_ndigis = 1;
--				srose->srose_digi = rose->dest_digis[0];
--			}
--			msg->msg_namelen = sizeof(struct sockaddr_rose);
--		}
-+		for (n = 0 ; n < rose->dest_ndigis ; n++)
-+			full_srose->srose_digis[n] = rose->dest_digis[n];
-+		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
- 	}
- 
- 	skb_free_datagram(sk, skb);
+Dan Williams (4):
+      net_dma: simple removal
+      net_dma: revert 'copied_early'
+      net: make tcp_cleanup_rbuf private
+      dma debug: introduce debug_dma_assert_idle()
 
 
+ Documentation/ABI/removed/net_dma      |    8 +
+ Documentation/networking/ip-sysctl.txt |    6 -
+ drivers/dma/Kconfig                    |   12 -
+ drivers/dma/Makefile                   |    1 
+ drivers/dma/dmaengine.c                |  104 ------------
+ drivers/dma/ioat/dma.c                 |    1 
+ drivers/dma/ioat/dma.h                 |    7 -
+ drivers/dma/ioat/dma_v2.c              |    1 
+ drivers/dma/ioat/dma_v3.c              |    1 
+ drivers/dma/iovlock.c                  |  280 --------------------------------
+ include/linux/dma-debug.h              |    6 +
+ include/linux/dmaengine.h              |   22 ---
+ include/linux/skbuff.h                 |    8 -
+ include/linux/tcp.h                    |    8 -
+ include/net/netdma.h                   |   32 ----
+ include/net/sock.h                     |   19 --
+ include/net/tcp.h                      |    9 -
+ kernel/sysctl_binary.c                 |    1 
+ lib/Kconfig.debug                      |   12 +
+ lib/dma-debug.c                        |  169 ++++++++++++++++++-
+ mm/memory.c                            |    3 
+ net/core/Makefile                      |    1 
+ net/core/dev.c                         |   10 -
+ net/core/sock.c                        |    6 -
+ net/core/user_dma.c                    |  131 ---------------
+ net/dccp/proto.c                       |    4 
+ net/ipv4/sysctl_net_ipv4.c             |    9 -
+ net/ipv4/tcp.c                         |  149 ++---------------
+ net/ipv4/tcp_input.c                   |   83 +--------
+ net/ipv4/tcp_ipv4.c                    |   18 --
+ net/ipv6/tcp_ipv6.c                    |   13 -
+ net/llc/af_llc.c                       |   10 +
+ 32 files changed, 219 insertions(+), 925 deletions(-)
+ create mode 100644 Documentation/ABI/removed/net_dma
+ delete mode 100644 drivers/dma/iovlock.c
+ delete mode 100644 include/net/netdma.h
+ delete mode 100644 net/core/user_dma.c
