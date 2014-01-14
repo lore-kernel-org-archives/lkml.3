@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaANUic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:38:32 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:13797 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaANUia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:38:30 -0500
-Message-ID: <1389731547.1792.296.camel@misato.fc.hp.com>
-Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
- efi_enter_virtual_mode()
-From: Toshi Kani <toshi.kani@hp.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: joeyli <jlee@suse.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Matt Fleming <matt@console-pimps.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
-Date: Tue, 14 Jan 2014 13:32:27 -0700
-In-Reply-To: <52D57B54.7080509@zytor.com>
-References: <1387439053-8711-1-git-send-email-jlee@suse.com>
-		 <3476450.BMEcId2Lgj@vostro.rjw.lan>
-		 <20131221122148.GB29501@console-pimps.org>
-		 <2530951.HFPX8MI38t@vostro.rjw.lan>
-	 <1389672548.24105.252.camel@linux-s257.site> <52D57B54.7080509@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751953AbaANUi4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:38:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49819 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751690AbaANUiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:38:54 -0500
+Date: Tue, 14 Jan 2014 21:38:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
+        Sherry Hurwitz <sherry.hurwitz@amd.com>
+Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum 793
+Message-ID: <20140114203848.GP29865@pd.tnic>
+References: <20140114114133.GA31473@khazad-dum.debian.net>
+ <20140114115547.GA29887@pd.tnic>
+ <52D55468.6000000@zytor.com>
+ <20140114153534.GE29865@pd.tnic>
+ <20140114162722.GF29865@pd.tnic>
+ <52D59ACC.3090100@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52D59ACC.3090100@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-14 at 10:00 -0800, H. Peter Anvin wrote:
-> On 01/13/2014 08:09 PM, joeyli wrote:
-> > 
-> > This patch works to me on Acer Gateway Z5WT2 UEFI notebook and Intel
-> > UEFI development board.
-> > 
-> > Does it possible move acpi_early_init() to before timekeeping_init()?
-> > The position is also before efi_enter_virtual_mode() and that will be
-> > useful for parsing ACPI TAD to set system clock:
-> > 
-> > diff --git a/init/main.c b/init/main.c
-> > index febc511..b6d93c8 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -565,6 +565,7 @@ asmlinkage void __init start_kernel(void)
-> >         init_timers();
-> >         hrtimers_init();
-> >         softirq_init();
-> > +       acpi_early_init();
-> >         timekeeping_init();
-> >         time_init();
-> >         sched_clock_postinit();
-> > @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
-> >  
-> >         check_bugs();
-> >  
-> > -       acpi_early_init(); /* before LAPIC and SMP init */
-> >         sfi_init_late();
-> >  
-> >         if (efi_enabled(EFI_RUNTIME_SERVICES)) {
-> > 
-> 
-> Hi Toshi,
-> 
-> Could you try this variant, too?  If this works as well then we end up
-> solving two problems in one patch...
+On Tue, Jan 14, 2014 at 02:15:08PM -0600, Aravind Gopalakrishnan wrote:
+> Scrubbing the RevGuide for Fam16, I found couple more Errata that need
+> workarounds:
 
-Hi Peter,
+Before you go and do that, just ask internally whether those workarounds
+are being delivered with AGESA instead. We don't want to have a fix in
+the kernel for *every* erratum if it can be helped.
 
-Yes, this version works fine as well.
+We're making an exception for this one because it can freeze the core
+just by executing a locked insn which can be done even in userspace.
 
-Tested-by: Toshi Kani <toshi.kani@hp.com>
+> @Boris: Could you please create a branch at bp.git with your patch so
+> I can base my work on top of it?
 
-Thanks,
--Toshi
+For future AMD patches, make sure to almost always use tip master, i.e.
 
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git#master
+
+to base your work off of.
+
+> Also, I tested this patch against linux.git on a fam16 based machine
+> and it works fine.
+
+Thanks, much appreciated. I'll add your Tested-by.
+
+> (I wasn't sure if you had access to a fam16 based box)
+
+Yeah, I don't. So I'm relying on you for future patches :-)
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
