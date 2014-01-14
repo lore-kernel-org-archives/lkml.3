@@ -1,126 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaANAwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:52:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54217 "EHLO
+	id S1755303AbaANAwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:52:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580AbaANA2D (ORCPT
+	with ESMTP id S1753578AbaANA2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:03 -0500
+	Mon, 13 Jan 2014 19:28:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kamala R <kamala@aristanetworks.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 01/77] IPv6: Fixed support for blackhole and prohibit routes
-Date: Mon, 13 Jan 2014 16:27:22 -0800
-Message-Id: <20140114002752.540962852@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [PATCH 3.12 00/77] 3.12.8-stable review
+Date: Mon, 13 Jan 2014 16:27:21 -0800
+Message-Id: <20140114002752.497010554@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.12.8 release.
+There are 77 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Jan 16 00:27:35 UTC 2014.
+Anything received after that time might be too late.
 
-From: Kamala R <kamala@aristanetworks.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.12.8-rc1.gz
+and the diffstat can be found below.
 
-[ Upstream commit 7150aede5dd241539686e17d9592f5ebd28a2cda ]
+thanks,
 
-The behaviour of blackhole and prohibit routes has been corrected by setting
-the input and output pointers of the dst variable appropriately. For
-blackhole routes, they are set to dst_discard and to ip6_pkt_discard and
-ip6_pkt_discard_out respectively for prohibit routes.
+greg k-h
 
-ipv6: ip6_pkt_prohibit(_out) should not depend on
-CONFIG_IPV6_MULTIPLE_TABLES
+-------------
+Pseudo-Shortlog of commits:
 
-We need ip6_pkt_prohibit(_out) available without
-CONFIG_IPV6_MULTIPLE_TABLES
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.12.8-rc1
 
-Signed-off-by: Kamala R <kamala@aristanetworks.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+Paul Turner <pjt@google.com>
+    sched: Guarantee new group-entities always have weight
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -84,6 +84,8 @@ static int		 ip6_dst_gc(struct dst_ops *
- 
- static int		ip6_pkt_discard(struct sk_buff *skb);
- static int		ip6_pkt_discard_out(struct sk_buff *skb);
-+static int		ip6_pkt_prohibit(struct sk_buff *skb);
-+static int		ip6_pkt_prohibit_out(struct sk_buff *skb);
- static void		ip6_link_failure(struct sk_buff *skb);
- static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
- 					   struct sk_buff *skb, u32 mtu);
-@@ -234,9 +236,6 @@ static const struct rt6_info ip6_null_en
- 
- #ifdef CONFIG_IPV6_MULTIPLE_TABLES
- 
--static int ip6_pkt_prohibit(struct sk_buff *skb);
--static int ip6_pkt_prohibit_out(struct sk_buff *skb);
--
- static const struct rt6_info ip6_prohibit_entry_template = {
- 	.dst = {
- 		.__refcnt	= ATOMIC_INIT(1),
-@@ -1570,21 +1569,24 @@ int ip6_route_add(struct fib6_config *cf
- 				goto out;
- 			}
- 		}
--		rt->dst.output = ip6_pkt_discard_out;
--		rt->dst.input = ip6_pkt_discard;
- 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
- 		switch (cfg->fc_type) {
- 		case RTN_BLACKHOLE:
- 			rt->dst.error = -EINVAL;
-+			rt->dst.output = dst_discard;
-+			rt->dst.input = dst_discard;
- 			break;
- 		case RTN_PROHIBIT:
- 			rt->dst.error = -EACCES;
-+			rt->dst.output = ip6_pkt_prohibit_out;
-+			rt->dst.input = ip6_pkt_prohibit;
- 			break;
- 		case RTN_THROW:
--			rt->dst.error = -EAGAIN;
--			break;
- 		default:
--			rt->dst.error = -ENETUNREACH;
-+			rt->dst.error = (cfg->fc_type == RTN_THROW) ? -EAGAIN
-+					: -ENETUNREACH;
-+			rt->dst.output = ip6_pkt_discard_out;
-+			rt->dst.input = ip6_pkt_discard;
- 			break;
- 		}
- 		goto install_route;
-@@ -2149,8 +2151,6 @@ static int ip6_pkt_discard_out(struct sk
- 	return ip6_pkt_drop(skb, ICMPV6_NOROUTE, IPSTATS_MIB_OUTNOROUTES);
- }
- 
--#ifdef CONFIG_IPV6_MULTIPLE_TABLES
--
- static int ip6_pkt_prohibit(struct sk_buff *skb)
- {
- 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_INNOROUTES);
-@@ -2162,8 +2162,6 @@ static int ip6_pkt_prohibit_out(struct s
- 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
- }
- 
--#endif
--
- /*
-  *	Allocate a dst for local (unicast / anycast) address.
-  */
+Ben Segall <bsegall@google.com>
+    sched: Fix hrtimer_cancel()/rq->lock deadlock
+
+Ben Segall <bsegall@google.com>
+    sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
+
+Ben Segall <bsegall@google.com>
+    sched: Fix race on toggling cfs_bandwidth_used
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
+
+Daniel Borkmann <dborkman@redhat.com>
+    netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
+
+Phil Oester <kernel@linuxace.com>
+    netfilter: fix wrong byte order in nf_ct_seqadj_set internal information
+
+Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+    SCSI: sd: Reduce buffer size for vpd request
+
+Dirk Brandewie <dirk.j.brandewie@intel.com>
+    intel_pstate: Add X86_FEATURE_APERFMPERF to cpu match parameters.
+
+Felix Fietkau <nbd@openwrt.org>
+    mac80211: move "bufferable MMPDU" check to fix AP mode scan
+
+Lan Tianyu <tianyu.lan@intel.com>
+    ACPI / Battery: Add a _BIX quirk for NEC LZ750/LS
+
+Jiang Liu <jiang.liu@linux.intel.com>
+    ACPI / TPM: fix memory leak when walking ACPI namespace
+
+Thomas Gleixner <tglx@linutronix.de>
+    mfd: rtsx_pcr: Disable interrupts before cancelling delayed works
+
+Milo Kim <milo.kim@ti.com>
+    leds: lp5521/5523: Remove duplicate mutex
+
+Andrew Bresticker <abrestic@chromium.org>
+    clk: exynos5250: fix sysmmu_mfc{l,r} gate clocks
+
+Abhilash Kesavan <a.kesavan@samsung.com>
+    clk: samsung: exynos5250: Add CLK_IGNORE_UNUSED flag for the sysreg clock
+
+Abhilash Kesavan <a.kesavan@samsung.com>
+    clk: samsung: exynos5250: Add MDMA0 clocks
+
+Abhilash Kesavan <a.kesavan@samsung.com>
+    clk: samsung: exynos5250: Fix ACP gate register offset
+
+Seung-Woo Kim <sw0312.kim@samsung.com>
+    clk: samsung: exynos4: Correct SRC_MFC register
+
+James Hogan <james.hogan@imgtec.com>
+    clk: clk-divider: fix divisor > 255 bug
+
+Simon Guinot <sguinot@lacie.com>
+    ahci: add PCI ID for Marvell 88SE9170 SATA controller
+
+John David Anglin <dave.anglin@bell.net>
+    parisc: Ensure full cache coherency for kmap/kunmap
+
+Ilia Mirkin <imirkin@alum.mit.edu>
+    drm/nouveau/bios: make jump conditional
+
+Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+    ARM: shmobile: mackerel: Fix coherent DMA mask
+
+Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+    ARM: shmobile: armadillo: Fix coherent DMA mask
+
+Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+    ARM: shmobile: kzm9g: Fix coherent DMA mask
+
+Abhilash Kesavan <a.kesavan@samsung.com>
+    ARM: dts: exynos5250: Fix MDMA0 clock number
+
+Steven Capper <steve.capper@linaro.org>
+    ARM: 7923/1: mm: fix dcache flush logic for compound high pages
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: fix "bad mode in ... handler" message for undefined instructions
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: fix footbridge clockevent device
+
+Robert Stonehouse <rstonehouse@solarflare.com>
+    sfc: Poll for MCDI completion once before timeout occurs
+
+Robert Stonehouse <rstonehouse@solarflare.com>
+    sfc: Refactor efx_mcdi_poll() by introducing efx_mcdi_poll_once()
+
+Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+    sfc: RX buffer allocation takes prefix size into account in IP header alignment
+
+Ben Hutchings <bhutchings@solarflare.com>
+    sfc: Maintain current frequency adjustment when applying a time offset
+
+Alexandre Rames <arames@solarflare.com>
+    sfc: Stop/re-start PTP when stopping/starting the datapath.
+
+Ben Hutchings <bhutchings@solarflare.com>
+    sfc: Rate-limit log message for PTP packets without a matching timestamp event
+
+Laurence Evans <levans@solarflare.com>
+    sfc: PTP: Moderate log message on event queue overflow
+
+Ben Hutchings <bhutchings@solarflare.com>
+    sfc: Add length checks to efx_xmit_with_hwtstamp() and efx_ptp_is_ptp_tx()
+
+Curt Brune <curt@cumulusnetworks.com>
+    bridge: use spin_lock_bh() in br_multicast_set_hash_max
+
+David S. Miller <davem@davemloft.net>
+    netpoll: Fix missing TXQ unlock and and OOPS.
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: llc: fix use after free in llc_ui_recvmsg
+
+Jason Wang <jasowang@redhat.com>
+    virtio-net: fix refill races during restore
+
+Wei-Chun Chao <weichunc@plumgrid.com>
+    ipv4: fix tunneled VM traffic over hw VXLAN/GRE GSO NIC
+
+Michael S. Tsirkin <mst@redhat.com>
+    virtio_net: don't leak memory or block when too many frags
+
+Michael S. Tsirkin <mst@redhat.com>
+    virtio-net: make all RX paths handle errors consistently
+
+Michael S. Tsirkin <mst@redhat.com>
+    virtio_net: fix error handling for mergeable buffers
+
+David S. Miller <davem@davemloft.net>
+    vlan: Fix header ops passthru when doing TX VLAN offload.
+
+Florian Westphal <fw@strlen.de>
+    net: rose: restore old recvmsg behavior
+
+Eric Dumazet <eric.dumazet@gmail.com>
+    arc_emac: fix potential use after free
+
+Sasha Levin <sasha.levin@oracle.com>
+    rds: prevent dereference of a NULL device
+
+Li RongQing <roy.qing.li@gmail.com>
+    ipv6: always set the new created dst's from in ip6_rt_copy
+
+Eric Dumazet <edumazet@google.com>
+    net: fec: fix potential use after free
+
+Salva Peiró <speiro@ai2.upv.es>
+    hamradio/yam: fix info leak in ioctl
+
+Wenliang Fan <fanwlexca@gmail.com>
+    drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+
+Timo Teräs <timo.teras@iki.fi>
+    ip_gre: fix msg_name parsing for recvfrom/recvmsg
+
+Sasha Levin <sasha.levin@oracle.com>
+    net: unix: allow bind to fail on mutex lock
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: fix illegal mac_header comparison on 32bit
+
+Jason Wang <jasowang@redhat.com>
+    netvsc: don't flush peers notifying work during setting mtu
+
+Nat Gurumoorthy <natg@google.com>
+    tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
+
+Fan Du <fan.du@windriver.com>
+    vxlan: release rt when found circular route
+
+Sasha Levin <sasha.levin@oracle.com>
+    net: unix: allow set_peek_off to fail
+
+Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+    inet: fix NULL pointer Oops in fib(6)_rule_suppress
+
+Changli Gao <xiaosuo@gmail.com>
+    net: drop_monitor: fix the value of maxattr
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: don't count addrconf generated routes against gc limit
+
+Daniel Borkmann <dborkman@redhat.com>
+    packet: fix send path when running with proto == 0
+
+Jiri Pirko <jiri@resnulli.us>
+    br: fix use of ->rx_handler_data in code executed on non-rx_handler path
+
+Andrey Vagin <avagin@openvz.org>
+    virtio: delete napi structures from netdev before releasing memory
+
+Jason Wang <jasowang@redhat.com>
+    macvtap: signal truncated packets
+
+Vlad Yasevich <vyasevic@redhat.com>
+    macvtap: Do not double-count received packets
+
+Jason Wang <jasowang@redhat.com>
+    tun: unbreak truncated packet signalling
+
+Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+    tun: update file current position
+
+Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+    macvtap: update file current position
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    net: clear local_df when passing skb between namespaces
+
+Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+    rds: prevent BUG_ON triggered on congestion update to loopback
+
+Eric Dumazet <edumazet@google.com>
+    net: do not pretend FRAGLIST support
+
+Kamala R <kamala@aristanetworks.com>
+    IPv6: Fixed support for blackhole and prohibit routes
+
+
+-------------
+
+Diffstat:
+
+ .../devicetree/bindings/clock/exynos5250-clock.txt |   2 +
+ Documentation/networking/packet_mmap.txt           |  10 ++
+ Makefile                                           |   4 +-
+ arch/arm/boot/dts/exynos5250.dtsi                  |   2 +-
+ arch/arm/kernel/traps.c                            |   8 +-
+ arch/arm/mach-footbridge/dc21285-timer.c           |   5 +-
+ arch/arm/mach-shmobile/board-armadillo800eva.c     |   4 +-
+ arch/arm/mach-shmobile/board-kzm9g.c               |   2 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |   4 +-
+ arch/arm/mm/flush.c                                |   6 +-
+ arch/parisc/include/asm/cacheflush.h               |  12 +--
+ arch/parisc/include/asm/page.h                     |   5 +-
+ arch/parisc/kernel/cache.c                         |  35 ------
+ arch/x86/include/asm/fpu-internal.h                |  13 +--
+ drivers/acpi/battery.c                             |  21 +++-
+ drivers/ata/ahci.c                                 |   3 +
+ drivers/char/tpm/tpm_ppi.c                         |  15 +--
+ drivers/clk/clk-divider.c                          |   2 +-
+ drivers/clk/samsung/clk-exynos4.c                  |   2 +-
+ drivers/clk/samsung/clk-exynos5250.c               |  14 ++-
+ drivers/cpufreq/intel_pstate.c                     |   3 +-
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c    |   6 +-
+ drivers/leds/leds-lp5521.c                         |  12 +--
+ drivers/leds/leds-lp5523.c                         |  12 +--
+ drivers/mfd/rtsx_pcr.c                             |  10 +-
+ drivers/net/ethernet/arc/emac_main.c               |   4 +-
+ drivers/net/ethernet/broadcom/tg3.c                |   3 +
+ drivers/net/ethernet/freescale/fec_main.c          |   4 +-
+ drivers/net/ethernet/ibm/ehea/ehea_main.c          |   2 +-
+ drivers/net/ethernet/sfc/efx.c                     |   8 +-
+ drivers/net/ethernet/sfc/mcdi.c                    |  39 +++++--
+ drivers/net/ethernet/sfc/net_driver.h              |   3 +
+ drivers/net/ethernet/sfc/nic.h                     |   2 +
+ drivers/net/ethernet/sfc/ptp.c                     |  66 ++++++++++--
+ drivers/net/ethernet/sfc/rx.c                      |   6 +-
+ drivers/net/ethernet/tehuti/tehuti.c               |   1 -
+ drivers/net/ethernet/xilinx/ll_temac_main.c        |   2 +-
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c  |   2 +-
+ drivers/net/hamradio/hdlcdrv.c                     |   2 +
+ drivers/net/hamradio/yam.c                         |   1 +
+ drivers/net/hyperv/netvsc_drv.c                    |   1 -
+ drivers/net/macvtap.c                              |  23 ++--
+ drivers/net/tun.c                                  |  18 ++--
+ drivers/net/virtio_net.c                           | 119 +++++++++++++++------
+ drivers/net/vxlan.c                                |   2 +-
+ drivers/scsi/sd.c                                  |   5 +-
+ include/linux/net.h                                |   2 +-
+ include/linux/netdevice.h                          |  22 ++++
+ include/linux/skbuff.h                             |   5 +
+ kernel/sched/core.c                                |   9 +-
+ kernel/sched/fair.c                                |  48 ++++++---
+ kernel/sched/sched.h                               |   3 +-
+ net/8021q/vlan_dev.c                               |  19 +++-
+ net/bridge/br_multicast.c                          |   4 +-
+ net/bridge/br_private.h                            |  10 ++
+ net/bridge/br_stp_bpdu.c                           |   2 +-
+ net/core/drop_monitor.c                            |   1 -
+ net/core/neighbour.c                               |   2 +-
+ net/core/netpoll.c                                 |  11 +-
+ net/core/skbuff.c                                  |   1 +
+ net/core/sock.c                                    |   2 +-
+ net/ipv4/fib_rules.c                               |   5 +-
+ net/ipv4/gre_offload.c                             |  11 +-
+ net/ipv4/inet_diag.c                               |  16 +++
+ net/ipv4/ip_gre.c                                  |   1 +
+ net/ipv4/udp.c                                     |   6 +-
+ net/ipv4/udp_offload.c                             |  37 +++----
+ net/ipv6/fib6_rules.c                              |   6 +-
+ net/ipv6/route.c                                   |  34 +++---
+ net/ipv6/udp_offload.c                             |   2 +-
+ net/llc/af_llc.c                                   |   5 +-
+ net/mac80211/tx.c                                  |  23 ++--
+ net/netfilter/nf_conntrack_seqadj.c                |   4 +-
+ net/netfilter/nf_nat_irc.c                         |  32 +++++-
+ net/packet/af_packet.c                             |  65 ++++++-----
+ net/rds/ib.c                                       |   3 +-
+ net/rds/ib_send.c                                  |   5 +-
+ net/rose/af_rose.c                                 |  16 +--
+ net/unix/af_unix.c                                 |  16 ++-
+ 79 files changed, 625 insertions(+), 328 deletions(-)
 
 
