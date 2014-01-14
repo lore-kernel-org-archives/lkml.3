@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaANAfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:35:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54510 "EHLO
+	id S1754262AbaANAf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:35:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051AbaANA3D (ORCPT
+	with ESMTP id S1754048AbaANA3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:03 -0500
+	Mon, 13 Jan 2014 19:29:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        halfdog <me@halfdog.net>, Borislav Petkov <bp@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 3.12 73/77] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
-Date: Mon, 13 Jan 2014 16:28:34 -0800
-Message-Id: <20140114002754.563489428@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Harald Welte <laforge@gnumonks.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.12 72/77] netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT helper
+Date: Mon, 13 Jan 2014 16:28:33 -0800
+Message-Id: <20140114002754.535378129@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,45 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
+commit 2690d97ade05c5325cbf7c72b94b90d265659886 upstream.
 
-Before we do an EMMS in the AMD FXSAVE information leak workaround we
-need to clear any pending exceptions, otherwise we trap with a
-floating-point exception inside this code.
+Commit 5901b6be885e attempted to introduce IPv6 support into
+IRC NAT helper. By doing so, the following code seemed to be removed
+by accident:
 
-Reported-by: halfdog <me@halfdog.net>
-Tested-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+  ip = ntohl(exp->master->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3.ip);
+  sprintf(buffer, "%u %u", ip, port);
+  pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n", buffer, &ip, port);
+
+This leads to the fact that buffer[] was left uninitialized and
+contained some stack value. When we call nf_nat_mangle_tcp_packet(),
+we call strlen(buffer) on excatly this uninitialized buffer. If we
+are unlucky and the skb has enough tailroom, we overwrite resp. leak
+contents with values that sit on our stack into the packet and send
+that out to the receiver.
+
+Since the rather informal DCC spec [1] does not seem to specify
+IPv6 support right now, we log such occurences so that admins can
+act accordingly, and drop the packet. I've looked into XChat source,
+and IPv6 is not supported there: addresses are in u32 and print
+via %u format string.
+
+Therefore, restore old behaviour as in IPv4, use snprintf(). The
+IRC helper does not support IPv6 by now. By this, we can safely use
+strlen(buffer) in nf_nat_mangle_tcp_packet() and prevent a buffer
+overflow. Also simplify some code as we now have ct variable anyway.
+
+  [1] http://www.irchelp.org/irchelp/rfc/ctcpspec.html
+
+Fixes: 5901b6be885e ("netfilter: nf_nat: support IPv6 in IRC NAT helper")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Harald Welte <laforge@gnumonks.org>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/fpu-internal.h |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ net/netfilter/nf_nat_irc.c |   32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -293,12 +293,13 @@ static inline int restore_fpu_checking(s
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. "m" is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"		/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (tsk->thread.fpu.has_fpu));
-+	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %P[addr]"	/* set F?P to defined value */
-+			: : [addr] "m" (tsk->thread.fpu.has_fpu));
-+	}
+--- a/net/netfilter/nf_nat_irc.c
++++ b/net/netfilter/nf_nat_irc.c
+@@ -34,10 +34,14 @@ static unsigned int help(struct sk_buff
+ 			 struct nf_conntrack_expect *exp)
+ {
+ 	char buffer[sizeof("4294967296 65635")];
++	struct nf_conn *ct = exp->master;
++	union nf_inet_addr newaddr;
+ 	u_int16_t port;
+ 	unsigned int ret;
  
- 	return fpu_restore_checking(&tsk->thread.fpu);
+ 	/* Reply comes from server. */
++	newaddr = ct->tuplehash[IP_CT_DIR_REPLY].tuple.dst.u3;
++
+ 	exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
+ 	exp->dir = IP_CT_DIR_REPLY;
+ 	exp->expectfn = nf_nat_follow_master;
+@@ -57,17 +61,35 @@ static unsigned int help(struct sk_buff
+ 	}
+ 
+ 	if (port == 0) {
+-		nf_ct_helper_log(skb, exp->master, "all ports in use");
++		nf_ct_helper_log(skb, ct, "all ports in use");
+ 		return NF_DROP;
+ 	}
+ 
+-	ret = nf_nat_mangle_tcp_packet(skb, exp->master, ctinfo,
+-				       protoff, matchoff, matchlen, buffer,
+-				       strlen(buffer));
++	/* strlen("\1DCC CHAT chat AAAAAAAA P\1\n")=27
++	 * strlen("\1DCC SCHAT chat AAAAAAAA P\1\n")=28
++	 * strlen("\1DCC SEND F AAAAAAAA P S\1\n")=26
++	 * strlen("\1DCC MOVE F AAAAAAAA P S\1\n")=26
++	 * strlen("\1DCC TSEND F AAAAAAAA P S\1\n")=27
++	 *
++	 * AAAAAAAAA: bound addr (1.0.0.0==16777216, min 8 digits,
++	 *                        255.255.255.255==4294967296, 10 digits)
++	 * P:         bound port (min 1 d, max 5d (65635))
++	 * F:         filename   (min 1 d )
++	 * S:         size       (min 1 d )
++	 * 0x01, \n:  terminators
++	 */
++	/* AAA = "us", ie. where server normally talks to. */
++	snprintf(buffer, sizeof(buffer), "%u %u", ntohl(newaddr.ip), port);
++	pr_debug("nf_nat_irc: inserting '%s' == %pI4, port %u\n",
++		 buffer, &newaddr.ip, port);
++
++	ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo, protoff, matchoff,
++				       matchlen, buffer, strlen(buffer));
+ 	if (ret != NF_ACCEPT) {
+-		nf_ct_helper_log(skb, exp->master, "cannot mangle packet");
++		nf_ct_helper_log(skb, ct, "cannot mangle packet");
+ 		nf_ct_unexpect_related(exp);
+ 	}
++
+ 	return ret;
  }
+ 
 
 
