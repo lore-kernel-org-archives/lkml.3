@@ -1,118 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaANTPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:15:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27284 "EHLO mx1.redhat.com"
+	id S1751792AbaANTRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:17:23 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:43406 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891AbaANTPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:15:06 -0500
-Date: Tue, 14 Jan 2014 20:12:08 +0100
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [RFC] sysfs_rename_link() and its usage
-Message-ID: <20140114191208.GA9942@redhat.com>
-References: <20140114171740.GB1867@redhat.com>
- <20140114182135.GA29296@kroah.com>
+	id S1751367AbaANTRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:17:18 -0500
+Date: Tue, 14 Jan 2014 14:16:19 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 7/9] mm: thrash detection-based file cache sizing
+Message-ID: <20140114191619.GI6963@cmpxchg.org>
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org>
+ <1389377443-11755-8-git-send-email-hannes@cmpxchg.org>
+ <52D48C55.3020200@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114182135.GA29296@kroah.com>
+In-Reply-To: <52D48C55.3020200@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
->On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
->> Hi,
->>
->> I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
->>
->> Consider having two net_device *a, *b; which are registered normally.
->> Now, to create a link from /sys/class/net/a->name/linkname to b, one should
->> use:
->>
->> sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
->>
->> To remove it, even simpler:
->>
->> sysfs_remove_link(&(a->dev.kobj), linkname);
->>
->> This works like a charm. However, if I want to use (obviously, with the
->> symlink present):
->>
->> sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
->
->You forgot the namespace option to this call, what kernel version are
->you using here?
+On Tue, Jan 14, 2014 at 09:01:09AM +0800, Bob Liu wrote:
+> Hi Johannes,
+> 
+> On 01/11/2014 02:10 AM, Johannes Weiner wrote:
+> > The VM maintains cached filesystem pages on two types of lists.  One
+> > list holds the pages recently faulted into the cache, the other list
+> > holds pages that have been referenced repeatedly on that first list.
+> > The idea is to prefer reclaiming young pages over those that have
+> > shown to benefit from caching in the past.  We call the recently used
+> > list "inactive list" and the frequently used list "active list".
+> > 
+> > Currently, the VM aims for a 1:1 ratio between the lists, which is the
+> > "perfect" trade-off between the ability to *protect* frequently used
+> > pages and the ability to *detect* frequently used pages.  This means
+> > that working set changes bigger than half of cache memory go
+> > undetected and thrash indefinitely, whereas working sets bigger than
+> > half of cache memory are unprotected against used-once streams that
+> > don't even need caching.
+> > 
+> 
+> Good job! This patch looks good to me and with nice descriptions.
+> But it seems that this patch only fix the issue "working set changes
+> bigger than half of cache memory go undetected and thrash indefinitely".
+> My concern is could it be extended easily to address all other issues
+> based on this patch set?
+> 
+> The other possible way is something like Peter has implemented the CART
+> and Clock-Pro which I think may be better because of using advanced
+> algorithms and consider the problem as a whole from the beginning.(Sorry
+> I haven't get enough time to read the source code, so I'm not 100% sure.)
+> http://linux-mm.org/PeterZClockPro2
 
-It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
-3.13-rc6 with some networking patches on top of it.
+My patches are moving the VM towards something that is comparable to
+how Peter implemented Clock-Pro.  However, the current VM has evolved
+over time in small increments based on real life performance
+observations.  Rewriting everything in one go would be incredibly
+disruptive and I doubt very much we would merge any such proposal in
+the first place.  So it's not like I don't see the big picture, it's
+just divide and conquer:
 
-And wrt namespace - there are two functions, one is sysfs_rename_link(),
-which calls the second one - sysfs_rename_link_ns() with NULL namespace.
+Peter's Clock-Pro implementation was basically a double clock with an
+intricate system to classify hotness, augmented by eviction
+information to work with reuse distances independent of memory size.
 
->
->> this fails with:
->>
->> "sysfs: ns invalid in 'a->name' for 'oldname'"
->
->Looks like the namespace for this link isn't valid.
+What we have right now is a double clock with a very rudimentary
+system to classify whether a page is hot: it has been accessed twice
+while on the inactive clock.  My patches now add eviction information
+to this, and improve the classification so that it can work with reuse
+distances up to memory size and is no longer dependent on the inactive
+clock size.
 
-Yep, though dunno why.
+This is the smallest imaginable step that is still useful, and even
+then we had a lot of discussions about scalability of the data
+structures and confusion about how the new data point should be
+interpreted.  It also took a long time until somebody read the series
+and went, "Ok, this actually makes sense to me."  Now, maybe I suck at
+documenting, but maybe this is just complicated stuff.  Either way, we
+have to get there collectively, so that the code is maintainable in
+the long term.
 
->
->> in
->>
->>  608 struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
->> ...
->>  615         if (!!sysfs_ns_type(parent_sd) != !!ns) {
->>  616                 WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
->>  617                         sysfs_ns_type(parent_sd) ? "required" : "invalid",
->>  618                         parent_sd->s_name, name);
->>  619                 return NULL;
->>  620         }
->>
->> Code path:
->> warn_slowpath_fmt+0x46/0x50
->> sysfs_get_dirent_ns+0x30/0x80
->> sysfs_find_dirent+0x84/0x110
->> sysfs_get_dirent_ns+0x3e/0x80
->> sysfs_rename_link_ns+0x54/0xd0
->>
->> I have no idea what this code means. Is there any reason for it to
->> fail (i.e. am I doing something wrong?) or I've hit a bug?
->
->What exactly are you trying to do here?  Care to provide a pointer to
->your code somewhere?
+Once we have these new concepts established, we can further improve
+the hotness detector so that it can classify and order pages with
+reuse distances beyond memory size.  But this will come with its own
+set of problems.  For example, some time ago we stopped regularly
+scanning and rotating active pages because of scalability issues, but
+we'll most likely need an uptodate estimate of the reuse distances on
+the active list in order to classify refaults properly.
 
-I've tried to handle the network device renames, ended up doing it with
-sysfs_remove/add_link() calls. Patches:
+> > + * Approximating inactive page access frequency - Observations:
+> > + *
+> > + * 1. When a page is accessed for the first time, it is added to the
+> > + *    head of the inactive list, slides every existing inactive page
+> > + *    towards the tail by one slot, and pushes the current tail page
+> > + *    out of memory.
+> > + *
+> > + * 2. When a page is accessed for the second time, it is promoted to
+> > + *    the active list, shrinking the inactive list by one slot.  This
+> > + *    also slides all inactive pages that were faulted into the cache
+> > + *    more recently than the activated page towards the tail of the
+> > + *    inactive list.
+> > + *
+> 
+> Nitpick, how about the reference bit?
 
-http://patchwork.ozlabs.org/patch/310798/
-http://patchwork.ozlabs.org/patch/310796/
-
-If an upper device (say, vlan, bonding, bridge etc.) enslaves another
-device, symlinks are created (given bridge0 and eth0):
-
-/sys/class/net/eth0/upper_bridge0 -> ../bridge0
-/sys/class/net/bridge0/lower_eth0 -> ../eth0
-
-However, in case someone renames eth0/bridge0, these symlinks should also
-be renamed, and sysfs_rename_link() should fit great here. But it fails.
-
->
->> I've tested the only user of it (bridge) - and it works fine, however it's
->> not using its own net_device's kobject but rather its own dir.
->
->The driver core also uses this function, and it works there, so I'd
->blame your code :)
-
-Yeah, I'd also like to blame it, I'm afraid of touching anything
-sysfs-related :).
-
->
->thanks,
->
->greg k-h
+What do you mean?
