@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050AbaANA0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:26:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53906 "EHLO
+	id S1753024AbaANA0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:26:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916AbaANA0d (ORCPT
+	with ESMTP id S1752602AbaANA0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:33 -0500
+	Mon, 13 Jan 2014 19:26:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 17/27] net: rose: restore old recvmsg behavior
-Date: Mon, 13 Jan 2014 16:26:31 -0800
-Message-Id: <20140114002623.867006270@linuxfoundation.org>
+Subject: [PATCH 3.4 16/27] rds: prevent dereference of a NULL device
+Date: Mon, 13 Jan 2014 16:26:30 -0800
+Message-Id: <20140114002623.837657360@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -30,61 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit f81152e35001e91997ec74a7b4e040e6ab0acccf ]
+[ Upstream commit c2349758acf1874e4c2b93fe41d072336f1a31d0 ]
 
-recvmsg handler in net/rose/af_rose.c performs size-check ->msg_namelen.
+Binding might result in a NULL device, which is dereferenced
+causing this BUG:
 
-After commit f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic), we now
-always take the else branch due to namelen being initialized to 0.
+[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
+4
+[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
+[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 1317.264179] Dumping ftrace buffer:
+[ 1317.264774]    (ftrace buffer empty)
+[ 1317.265220] Modules linked in:
+[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
+next-20131218-sasha-00013-g2cebb9b-dirty #4159
+[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
+[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
+0x82/0x110
+[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
+[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
+[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
+[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
+[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
+[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
+[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
+0000
+[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
+[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
+[ 1317.270230] Stack:
+[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
+[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
+[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
+[ 1317.270230] Call Trace:
+[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
+[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
+[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
+[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
+[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
+[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
+[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
+[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
+[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
+[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
+89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
+4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
+[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
+[ 1317.270230]  RSP <ffff8803cd31bdf8>
+[ 1317.270230] CR2: 0000000000000974
 
-Digging in netdev-vger-cvs git repo shows that msg_namelen was
-initialized with a fixed-size since at least 1995, so the else branch
-was never taken.
-
-Compile tested only.
-
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rose/af_rose.c |   16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ net/rds/ib.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1257,6 +1257,7 @@ static int rose_recvmsg(struct kiocb *io
+--- a/net/rds/ib.c
++++ b/net/rds/ib.c
+@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 add
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support iWARP devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_IB_CA)
+ 		ret = -EADDRNOTAVAIL;
  
- 	if (msg->msg_name) {
- 		struct sockaddr_rose *srose;
-+		struct full_sockaddr_rose *full_srose = msg->msg_name;
- 
- 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
- 		srose = msg->msg_name;
-@@ -1264,18 +1265,9 @@ static int rose_recvmsg(struct kiocb *io
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
- 		srose->srose_ndigis = rose->dest_ndigis;
--		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
--			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
--			for (n = 0 ; n < rose->dest_ndigis ; n++)
--				full_srose->srose_digis[n] = rose->dest_digis[n];
--			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
--		} else {
--			if (rose->dest_ndigis >= 1) {
--				srose->srose_ndigis = 1;
--				srose->srose_digi = rose->dest_digis[0];
--			}
--			msg->msg_namelen = sizeof(struct sockaddr_rose);
--		}
-+		for (n = 0 ; n < rose->dest_ndigis ; n++)
-+			full_srose->srose_digis[n] = rose->dest_digis[n];
-+		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
- 	}
- 
- 	skb_free_datagram(sk, skb);
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 
 
