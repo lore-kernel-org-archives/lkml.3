@@ -1,69 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaANUi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:38:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49819 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751690AbaANUiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:38:54 -0500
-Date: Tue, 14 Jan 2014 21:38:48 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
-        Sherry Hurwitz <sherry.hurwitz@amd.com>
-Subject: Re: [PATCH] x86, CPU, AMD: Add workaround for family 16h, erratum 793
-Message-ID: <20140114203848.GP29865@pd.tnic>
-References: <20140114114133.GA31473@khazad-dum.debian.net>
- <20140114115547.GA29887@pd.tnic>
- <52D55468.6000000@zytor.com>
- <20140114153534.GE29865@pd.tnic>
- <20140114162722.GF29865@pd.tnic>
- <52D59ACC.3090100@amd.com>
+	id S1751928AbaANUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:40:16 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:27967 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaANUkP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:40:15 -0500
+X-IronPort-AV: E=Sophos;i="4.95,659,1384300800"; 
+   d="scan'208";a="90738294"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+CC: Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v4 4/9] xen-netback: Change RX path for mapped SKB fragments
+Date: Tue, 14 Jan 2014 20:39:50 +0000
+Message-ID: <1389731995-9887-5-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52D59ACC.3090100@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 02:15:08PM -0600, Aravind Gopalakrishnan wrote:
-> Scrubbing the RevGuide for Fam16, I found couple more Errata that need
-> workarounds:
+RX path need to know if the SKB fragments are stored on pages from another
+domain.
 
-Before you go and do that, just ask internally whether those workarounds
-are being delivered with AGESA instead. We don't want to have a fix in
-the kernel for *every* erratum if it can be helped.
+v4:
+- indentation fixes
 
-We're making an exception for this one because it can freeze the core
-just by executing a locked insn which can be done even in userspace.
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+ drivers/net/xen-netback/netback.c |   46 +++++++++++++++++++++++++++++++++----
+ 1 file changed, 41 insertions(+), 5 deletions(-)
 
-> @Boris: Could you please create a branch at bp.git with your patch so
-> I can base my work on top of it?
-
-For future AMD patches, make sure to almost always use tip master, i.e.
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git#master
-
-to base your work off of.
-
-> Also, I tested this patch against linux.git on a fam16 based machine
-> and it works fine.
-
-Thanks, much appreciated. I'll add your Tested-by.
-
-> (I wasn't sure if you had access to a fam16 based box)
-
-Yeah, I don't. So I'm relying on you for future patches :-)
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index f74fa92..d43444d 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -226,7 +226,9 @@ static struct xenvif_rx_meta *get_next_rx_buffer(struct xenvif *vif,
+ static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
+ 				 struct netrx_pending_operations *npo,
+ 				 struct page *page, unsigned long size,
+-				 unsigned long offset, int *head)
++				 unsigned long offset, int *head,
++				 struct xenvif *foreign_vif,
++				 grant_ref_t foreign_gref)
+ {
+ 	struct gnttab_copy *copy_gop;
+ 	struct xenvif_rx_meta *meta;
+@@ -268,8 +270,15 @@ static void xenvif_gop_frag_copy(struct xenvif *vif, struct sk_buff *skb,
+ 		copy_gop->flags = GNTCOPY_dest_gref;
+ 		copy_gop->len = bytes;
+ 
+-		copy_gop->source.domid = DOMID_SELF;
+-		copy_gop->source.u.gmfn = virt_to_mfn(page_address(page));
++		if (foreign_vif) {
++			copy_gop->source.domid = foreign_vif->domid;
++			copy_gop->source.u.ref = foreign_gref;
++			copy_gop->flags |= GNTCOPY_source_gref;
++		} else {
++			copy_gop->source.domid = DOMID_SELF;
++			copy_gop->source.u.gmfn =
++				virt_to_mfn(page_address(page));
++		}
+ 		copy_gop->source.offset = offset;
+ 
+ 		copy_gop->dest.domid = vif->domid;
+@@ -330,6 +339,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+ 	int old_meta_prod;
+ 	int gso_type;
+ 	int gso_size;
++	struct ubuf_info *ubuf = skb_shinfo(skb)->destructor_arg;
++	grant_ref_t foreign_grefs[MAX_SKB_FRAGS];
++	struct xenvif *foreign_vif = NULL;
+ 
+ 	old_meta_prod = npo->meta_prod;
+ 
+@@ -370,6 +382,26 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+ 	npo->copy_off = 0;
+ 	npo->copy_gref = req->gref;
+ 
++	if ((skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) &&
++		 (ubuf->callback == &xenvif_zerocopy_callback)) {
++		u16 pending_idx = ubuf->desc;
++		int i = 0;
++		struct pending_tx_info *temp =
++			container_of(ubuf,
++				     struct pending_tx_info,
++				     callback_struct);
++		foreign_vif =
++			container_of(temp - pending_idx,
++				     struct xenvif,
++				     pending_tx_info[0]);
++		do {
++			pending_idx = ubuf->desc;
++			foreign_grefs[i++] =
++				foreign_vif->pending_tx_info[pending_idx].req.gref;
++			ubuf = (struct ubuf_info *) ubuf->ctx;
++		} while (ubuf);
++	}
++
+ 	data = skb->data;
+ 	while (data < skb_tail_pointer(skb)) {
+ 		unsigned int offset = offset_in_page(data);
+@@ -379,7 +411,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+ 			len = skb_tail_pointer(skb) - data;
+ 
+ 		xenvif_gop_frag_copy(vif, skb, npo,
+-				     virt_to_page(data), len, offset, &head);
++				     virt_to_page(data), len, offset, &head,
++				     NULL,
++				     0);
+ 		data += len;
+ 	}
+ 
+@@ -388,7 +422,9 @@ static int xenvif_gop_skb(struct sk_buff *skb,
+ 				     skb_frag_page(&skb_shinfo(skb)->frags[i]),
+ 				     skb_frag_size(&skb_shinfo(skb)->frags[i]),
+ 				     skb_shinfo(skb)->frags[i].page_offset,
+-				     &head);
++				     &head,
++				     foreign_vif,
++				     foreign_grefs[i]);
+ 	}
+ 
+ 	return npo->meta_prod - old_meta_prod;
