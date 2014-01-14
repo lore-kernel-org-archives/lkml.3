@@ -1,139 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaANEYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 23:24:43 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:59701 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752146AbaANEYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 23:24:10 -0500
-Message-Id: <20140114042408.438955013@asylum.americas.sgi.com>
-References: <20140114042407.913800664@asylum.americas.sgi.com>
-User-Agent: quilt/0.46-1
-Date: Mon, 13 Jan 2014 22:24:10 -0600
-From: Mike Travis <travis@sgi.com>
-To: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
+	id S1752343AbaANElO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 23:41:14 -0500
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:63770 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaANElM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 23:41:12 -0500
+Date: Mon, 13 Jan 2014 23:42:13 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Will Deacon <will.deacon@arm.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Chad Paradis <chad.paradis@umit.maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Hedi Berriche <hedi@sgi.com>, Russ Anderson <rja@sgi.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] PATCH: UV/NMI/KGDB/KDB Fix UV NMI handler when KDB not configed.
-Content-Disposition: inline; filename=uv-fix-use-kgdb.patch
+        Stephane Eranian <eranian@gmail.com>
+Subject: Re: [patch/rfc] perf on raspberry-pi without overflow interrupt
+In-Reply-To: <20140110100804.GB11045@mudshark.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.10.1401132331290.20155@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1401081613370.4410@vincent-weaver-1.um.maine.edu> <20140108225315.GG31570@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1401082245120.22965@vincent-weaver-1.um.maine.edu> <20140109101921.GA26435@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.10.1401092304590.31813@vincent-weaver-1.um.maine.edu> <20140110100804.GB11045@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix UV call into kgdb to depend only on whether KGDB is defined and not
-both KGDB and KDB.  This allows the power nmi command to use the gdb
-remote connection if enabled.  Note new action of 'kgdb' needs to be set
-as well to indicate user wants to wait for gdb to be connected.  If it's
-set to 'kdb' then an error message is displayed if KDB is not configured.
+On Fri, 10 Jan 2014, Will Deacon wrote:
 
-Note that if both KGDB and KDB are enabled, then the action of 'kgdb' or
-'kdb' has no affect on which is used.  See the KGDB documention for further
-information.
+> In the absence of a core change, I think I'd rather have something like your
+> second patch, but without the extra no_overflow_irq field (you can check the
+> platform device, as I mentioned previously).
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Reviewed-by: Hedi Berriche <hedi@sgi.com>
+Something like the following?  It works on my rasp-pi, still waiting for
+the compile to finish on the pandaboard so I haven't verified that the
+has-working-interrupt case still works.
+
 ---
- arch/x86/platform/uv/uv_nmi.c |   56 +++++++++++++++++++++++++++++++-----------
- 1 file changed, 42 insertions(+), 14 deletions(-)
 
---- linux.orig/arch/x86/platform/uv/uv_nmi.c
-+++ linux/arch/x86/platform/uv/uv_nmi.c
-@@ -148,7 +148,8 @@ module_param_named(retry_count, uv_nmi_r
-  *  "dump"	- dump process stack for each cpu
-  *  "ips"	- dump IP info for each cpu
-  *  "kdump"	- do crash dump
-- *  "kdb"	- enter KDB/KGDB (default)
-+ *  "kdb"	- enter KDB (default)
-+ *  "kgdb"	- enter KGDB
-  */
- static char uv_nmi_action[8] = "kdb";
- module_param_string(action, uv_nmi_action, sizeof(uv_nmi_action), 0644);
-@@ -537,18 +538,45 @@ static inline void uv_nmi_kdump(int cpu,
- }
- #endif /* !CONFIG_KEXEC */
+Allow hardware perf_events to be enabled even if no overflow
+interrupt is available.  Return EOPNOTSUPP if a sampling event
+is attempted and the interrupt is not available.
+
+This is necessary for access to hardware perf_events on
+the Raspberry-Pi (bcm2835).
+
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index bc3f2ef..e2c4aa2 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -397,7 +397,7 @@ __hw_perf_event_init(struct perf_event *event)
+ 	 */
+ 	hwc->config_base	    |= (unsigned long)mapping;
  
-+#ifdef CONFIG_KGDB
- #ifdef CONFIG_KGDB_KDB
--/* Call KDB from NMI handler */
--static void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
-+static inline int uv_nmi_kdb_reason(void)
- {
--	int ret;
-+	return KDB_REASON_SYSTEM_NMI;
-+}
-+#else /* !CONFIG_KGDB_KDB */
-+static inline int uv_nmi_kdb_reason(void)
-+{
-+	/* Insure user is expecting to attach gdb remote */
-+	if (uv_nmi_action_is("kgdb"))
+-	if (!hwc->sample_period) {
++	if (!is_sampling_event(event)) {
+ 		/*
+ 		 * For non-sampling runs, limit the sample_period to half
+ 		 * of the counter width. That way, the new counter value
+@@ -407,6 +407,14 @@ __hw_perf_event_init(struct perf_event *event)
+ 		hwc->sample_period  = armpmu->max_period >> 1;
+ 		hwc->last_period    = hwc->sample_period;
+ 		local64_set(&hwc->period_left, hwc->sample_period);
++	} else {
++
++		/*
++		 * If we have no PMU interrupt we cannot sample.
++		 */
++		if (platform_get_irq(armpmu->plat_device, 0) < 0)
++			return -EOPNOTSUPP;
++
+ 	}
+ 
+ 	if (event->group_leader != event) {
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index d85055c..7a84738 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -97,8 +97,8 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 
+ 	irqs = min(pmu_device->num_resources, num_possible_cpus());
+ 	if (irqs < 1) {
+-		pr_err("no irqs for PMUs defined\n");
+-		return -ENODEV;
++		printk_once("no irqs for PMUs defined, sampled events not supported\n");
 +		return 0;
+ 	}
  
-+	pr_err("UV: NMI error: KDB is not enabled in this kernel\n");
-+	return -1;
-+}
-+#endif /* CONFIG_KGDB_KDB */
-+
-+/*
-+ * Call KGDB/KDB from NMI handler
-+ *
-+ * Note that if both KGDB and KDB are configured, then the action of 'kgdb' or
-+ * 'kdb' has no affect on which is used.  See the KGDB documention for further
-+ * information.
-+ */
-+static void uv_call_kgdb_kdb(int cpu, struct pt_regs *regs, int master)
-+{
- 	if (master) {
-+		int reason = uv_nmi_kdb_reason();
-+		int ret;
-+
-+		if (reason < 0)
-+			return;
-+
- 		/* call KGDB NMI handler as MASTER */
--		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs,
--  				KDB_REASON_SYSTEM_NMI, &uv_nmi_slave_continue);
-+		ret = kgdb_nmicallin(cpu, X86_TRAP_NMI, regs, reason,
-+				&uv_nmi_slave_continue);
- 		if (ret) {
--			pr_alert("KDB returned error, is kgdboc set?\n");
-+			pr_alert("KGDB returned error, is kgdboc set?\n");
- 			atomic_set(&uv_nmi_slave_continue, SLAVE_EXIT);
- 		}
- 	} else {
-@@ -567,12 +595,12 @@ static void uv_call_kdb(int cpu, struct
- 	uv_nmi_sync_exit(master);
- }
- 
--#else /* !CONFIG_KGDB_KDB */
--static inline void uv_call_kdb(int cpu, struct pt_regs *regs, int master)
-+#else /* !CONFIG_KGDB */
-+static inline void uv_call_kgdb_kdb(int cpu, struct pt_regs *regs, int master)
- {
--	pr_err("UV: NMI error: KGDB/KDB is not enabled in this kernel\n");
-+	pr_err("UV: NMI error: KGDB is not enabled in this kernel\n");
- }
--#endif /* !CONFIG_KGDB_KDB */
-+#endif /* !CONFIG_KGDB */
- 
- /*
-  * UV NMI handler
-@@ -606,9 +634,9 @@ int uv_handle_nmi(unsigned int reason, s
- 	if (uv_nmi_action_is("ips") || uv_nmi_action_is("dump"))
- 		uv_nmi_dump_state(cpu, regs, master);
- 
--	/* Call KDB if enabled */
--	else if (uv_nmi_action_is("kdb"))
--		uv_call_kdb(cpu, regs, master);
-+	/* Call KGDB/KDB if enabled */
-+	else if (uv_nmi_action_is("kdb") || uv_nmi_action_is("kgdb"))
-+		uv_call_kgdb_kdb(cpu, regs, master);
- 
- 	/* Clear per_cpu "in nmi" flag */
- 	atomic_set(&uv_cpu_nmi.state, UV_NMI_STATE_OUT);
-
--- 
+ 	for (i = 0; i < irqs; ++i) {
