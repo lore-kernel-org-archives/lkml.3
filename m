@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbaANAec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:34:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54532 "EHLO
+	id S1754077AbaANA3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:29:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54436 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050AbaANA3H (ORCPT
+	with ESMTP id S1752336AbaANA2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:07 -0500
+	Mon, 13 Jan 2014 19:28:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Subject: [PATCH 3.12 77/77] sched: Guarantee new group-entities always have weight
-Date: Mon, 13 Jan 2014 16:28:38 -0800
-Message-Id: <20140114002754.673831569@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 21/77] net: unix: allow bind to fail on mutex lock
+Date: Mon, 13 Jan 2014 16:27:42 -0800
+Message-Id: <20140114002753.100720637@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,61 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Turner <pjt@google.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 0ac9b1c21874d2490331233b3242085f8151e166 upstream.
+[ Upstream commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 ]
 
-Currently, group entity load-weights are initialized to zero. This
-admits some races with respect to the first time they are re-weighted in
-earlty use. ( Let g[x] denote the se for "g" on cpu "x". )
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-Suppose that we have root->a and that a enters a throttled state,
-immediately followed by a[0]->t1 (the only task running on cpu[0])
-blocking:
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
 
-  put_prev_task(group_cfs_rq(a[0]), t1)
-  put_prev_entity(..., t1)
-  check_cfs_rq_runtime(group_cfs_rq(a[0]))
-  throttle_cfs_rq(group_cfs_rq(a[0]))
-
-Then, before unthrottling occurs, let a[0]->b[0]->t2 wake for the first
-time:
-
-  enqueue_task_fair(rq[0], t2)
-  enqueue_entity(group_cfs_rq(b[0]), t2)
-  enqueue_entity_load_avg(group_cfs_rq(b[0]), t2)
-  account_entity_enqueue(group_cfs_ra(b[0]), t2)
-  update_cfs_shares(group_cfs_rq(b[0]))
-  < skipped because b is part of a throttled hierarchy >
-  enqueue_entity(group_cfs_rq(a[0]), b[0])
-  ...
-
-We now have b[0] enqueued, yet group_cfs_rq(a[0])->load.weight == 0
-which violates invariants in several code-paths. Eliminate the
-possibility of this by initializing group entity weight.
-
-Signed-off-by: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20131016181627.22647.47543.stgit@sword-of-the-dawn.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/sched/fair.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/unix/af_unix.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6240,7 +6240,8 @@ void init_tg_cfs_entry(struct task_group
- 		se->cfs_rq = parent->my_q;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -718,7 +718,9 @@ static int unix_autobind(struct socket *
+ 	int err;
+ 	unsigned int retries = 0;
  
- 	se->my_q = cfs_rq;
--	update_load_set(&se->load, 0);
-+	/* guarantee group entities always have weight */
-+	update_load_set(&se->load, NICE_0_LOAD);
- 	se->parent = parent;
- }
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
  
+ 	err = 0;
+ 	if (u->addr)
+@@ -877,7 +879,9 @@ static int unix_bind(struct socket *sock
+ 		goto out;
+ 	addr_len = err;
+ 
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
 
 
