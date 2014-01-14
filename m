@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaANA1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53935 "EHLO
+	id S1755143AbaANBIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:08:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53984 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096AbaANA0x (ORCPT
+	with ESMTP id S1753167AbaANA1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:53 -0500
+	Mon, 13 Jan 2014 19:27:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [PATCH 3.10 01/62] irqchip: renesas-irqc: Fix irqc_probe error handling
-Date: Mon, 13 Jan 2014 16:26:26 -0800
-Message-Id: <20140114002710.508747601@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Subject: [PATCH 3.10 19/62] ipv6: fix illegal mac_header comparison on 32bit
+Date: Mon, 13 Jan 2014 16:26:44 -0800
+Message-Id: <20140114002711.010498709@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,33 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit dfaf820a13ec160f06556e08dab423818ba87f14 upstream.
-
-The code in goto err3 path is wrong because it will call fee_irq() with k == 0,
-which means it does free_irq(p->irq[-1].requested_irq, &p->irq[-1]);
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/irqchip/irq-renesas-irqc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/skbuff.h |    5 +++++
+ net/ipv6/udp_offload.c |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/irqchip/irq-renesas-irqc.c
-+++ b/drivers/irqchip/irq-renesas-irqc.c
-@@ -248,8 +248,8 @@ static int irqc_probe(struct platform_de
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1741,6 +1741,11 @@ static inline void skb_set_mac_header(st
+ }
+ #endif /* NET_SKBUFF_DATA_USES_OFFSET */
  
- 	return 0;
- err3:
--	for (; k >= 0; k--)
--		free_irq(p->irq[k - 1].requested_irq, &p->irq[k - 1]);
-+	while (--k >= 0)
-+		free_irq(p->irq[k].requested_irq, &p->irq[k]);
++static inline void skb_pop_mac_header(struct sk_buff *skb)
++{
++	skb->mac_header = skb->network_header;
++}
++
+ static inline void skb_probe_transport_header(struct sk_buff *skb,
+ 					      const int offset_hint)
+ {
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -85,7 +85,7 @@ static struct sk_buff *udp6_ufo_fragment
  
- 	irq_domain_remove(p->irq_domain);
- err2:
+ 	/* Check if there is enough headroom to insert fragment header. */
+ 	tnl_hlen = skb_tnl_header_len(skb);
+-	if (skb->mac_header < (tnl_hlen + frag_hdr_sz)) {
++	if (skb_mac_header(skb) < skb->head + tnl_hlen + frag_hdr_sz) {
+ 		if (gso_pskb_expand_head(skb, tnl_hlen + frag_hdr_sz))
+ 			goto out;
+ 	}
 
 
