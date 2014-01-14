@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaANQG1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:06:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23673 "EHLO mx1.redhat.com"
+	id S1751946AbaANQHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:07:14 -0500
+Received: from plane.gmane.org ([80.91.229.3]:59939 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634AbaANQG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:06:26 -0500
-Date: Tue, 14 Jan 2014 17:07:52 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <ak@linux.jf.intel.com>
-Subject: Re: [PATCH RFC v2 0/4] perf: IRQ-bound performance events
-Message-ID: <20140114160751.GC6873@dhcp-26-207.brq.redhat.com>
-References: <cover.1388858996.git.agordeev@redhat.com>
- <20140113155034.GA10355@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113155034.GA10355@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751634AbaANQHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 11:07:11 -0500
+X-AuditID: cbfec7f4-b7f796d000005a13-97-52d560521b41
+Message-id: <1389715537.11145.5.camel@AMDC1943>
+Subject: Re: Please confirm your message
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Gmane Remailer 
+	<public-linux-kernel-u79uwXL29TY76Z2rM5mHXA@plane.gmane.org>
+Date: Tue, 14 Jan 2014 17:05:37 +0100
+In-reply-to: <1389715520.8422.TMDA@plane.gmane.org>
+References: <1389286145-15375-1-git-send-email-vladimir.barinov@cogentembedded.com>
+ <52D55EEE.3060502@samsung.com> <1389715207.8892.TMDA@plane.gmane.org>
+ <1389715475.11145.1.camel@AMDC1943> <1389715485.4811.TMDA@plane.gmane.org>
+ <1389715510.11145.3.camel@AMDC1943> <1389715520.8422.TMDA@plane.gmane.org>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4Vd2ghKtBBqe+mlgsmcTmwOix//Bp
+	lgDGKC6blNSczLLUIn27BK6MfU2b2AresVZs2vOQvYHxOUsXIyeHhICJxOe/7ewQtpjEhXvr
+	2boYuTiEBJYyStw59YEdwtnCJPHg+TY2kCpeAX2J/xvamEBsYQENiW9rV7KC2GwCxhKbly8B
+	quHgEBHwl/j2yBEkzCKgKvHzwGdGEJsTqOTZ9JesEDO3M0n8ubAMbCazgLrEpHmLmCGuUJLY
+	3d7JDhGXl9i85i0zxF5BiR+T77FMYOSfhaRlFpKyWUjKFjAyr2IUTS1NLihOSs811CtOzC0u
+	zUvXS87P3cQICbUvOxgXH7M6xCjAwajEw/sz/GqQEGtiWXFl7iFGCQ5mJRHemdFAId6UxMqq
+	1KL8+KLSnNTiQ4xMHJxSDYw1n9ujHy1ME5qq1jmlWzyxyP9QijDDIvfDrVuUFMw8X69qVlBZ
+	q3s5qoRvkqB4ZPDrfaEzfGK3T9ogZdn3bLHUid9ecbuObrNcaPx/f9LTDxmWiV/nfa1cN+Nv
+	4KlTDzS0lq8vb9v2Msl6VdPZmufcBccEJ/rbnta86piccmm234+Vqx9/a7uhxFKckWioxVxU
+	nAgAbbzF0BMCAAA=
+X-TMDA-Confirmed: Tue, 14 Jan 2014 17:07:00 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 04:50:37PM +0100, Frederic Weisbecker wrote:
-> On Sat, Jan 04, 2014 at 07:22:32PM +0100, Alexander Gordeev wrote:
-> > Hello,
-> > 
-> > This is version 2 of RFC "perf: IRQ-bound performance events". That is an
-> > introduction of IRQ-bound performance events - ones that only count in a
-> > context of a hardware interrupt handler. Ingo suggested to extend this
-> > functionality to softirq and threaded handlers as well:
+
+
+
+
+
+On Tue, 2014-01-14 at 17:05 +0100, Gmane Remailer wrote:
+> This message was created automatically by mail delivery software (TMDA).
 > 
-> Hi Alexander,
+> Your message attached below is being held because the address
+> <k.kozlowski@samsung.com> has not been verified.
 > 
-> I still strongly think we should use toggle events to achieve that:
-> https://lkml.org/lkml/2013/9/25/227
-
-Hi Frederic,
-
-The toggle events would not allow counting per-action in hardware interrupt
-context. The design I propose provisions any possible combination of actions/
-IRQs.
-
-I.e. if we had few drivers on IRQn and few drivers on IRQm we could assign
-an event to let's say ISR0, ISR2 on IRQn and ISR1 on IRQm.
-
-Moreover, given that hardware context handlers are running with local
-interrupts disabled and therefore an IRQ-bound event could be enabled/
-disabled only from a single handler at a time - we just need to allocate
-a single hardware counter for any possible combination.
-
-Unless I missing something, neither kernel nor user level for toggle events
-can meet the features described above.
-
-I think it would be ideal if the two approaches could be converged somehow,
-but I just do not know how at the moment. I believe the next step is to
-measure the overhead Andi mentioned. That well might be a showstopper for
-either or both approaches.
-
-By contrast with the hardware context, the toggle events seem to able
-monitoring softirq in its current form.
-
-As of the threaded context handlers, I have not come up with the idea how to
-make it yet, but it does not seem the toggle events are able eigher.
-
-> This will let us count not just IRQs (-e 'cycles,irq_entry/on=cycles/,irq_exit/off=cycles/') but much more. 
+> To release your message for delivery, please send an empty message
+> to the following address, or use your mailer's "Reply" feature.
 > 
-> The patchset still needs some polishing but I think that's a better diection.
+>    public-linux-kernel-u79uwXL29TY76Z2rM5mHXA-confirm-1389715519.8422.1f4b95@plane.gmane.org
+> 
+> This confirmation verifies that your message is legitimate and not
+> junk-mail. You should only have to confirm your address once.
+> 
+> If you do not respond to this confirmation request within 14 days,
+> your message will not be delivered.
 
-Thanks, Frederic.
 
-> Thanks.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
