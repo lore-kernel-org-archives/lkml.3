@@ -1,82 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaANQjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:39:53 -0500
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:50098 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752263AbaANQjs (ORCPT
+	id S1752339AbaANQji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:39:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52682 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaANQjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:39:48 -0500
-Date: Tue, 14 Jan 2014 16:39:54 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "markgross@thegnar.org" <markgross@thegnar.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [3/11] issue 3: No understanding of potential cpu capacity
-Message-ID: <20140114163953.GF3000@e103034-lin>
-References: <1389111587-5923-1-git-send-email-morten.rasmussen@arm.com>
- <1389111587-5923-4-git-send-email-morten.rasmussen@arm.com>
- <3700155.hLuCBAXQoy@vostro.rjw.lan>
+	Tue, 14 Jan 2014 11:39:25 -0500
+Date: Tue, 14 Jan 2014 08:38:39 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-3d9tshamloinzxcqeb7mtd1n@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf header: Pack 'struct perf_session_env'
+Git-Commit-ID: 3ba4d2e1a8235d862657ded9f20b3170b477768b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <3700155.hLuCBAXQoy@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:38:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 09:07:12PM +0000, Rafael J. Wysocki wrote:
-> On Tuesday, January 07, 2014 04:19:39 PM Morten Rasmussen wrote:
-> > To minimize energy it may sometimes be better to put waking tasks on
-> > partially loaded cpus instead of powering up more cpus (particularly if
-> > it implies powering up a new cluster/group of cpus with associated
-> > caches). To make that call, information about the potential spare cycles
-> > on the busy cpus is required.
-> 
-> That generally is not the only thing that matters.  There's one more factor
-> called "responsiveness" that used to be popular in the past.  It, roughly,
-> is about how much time it takes for the system to respond to user actions,
-> on the average.
+Commit-ID:  3ba4d2e1a8235d862657ded9f20b3170b477768b
+Gitweb:     http://git.kernel.org/tip/3ba4d2e1a8235d862657ded9f20b3170b477768b
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 6 Jan 2014 15:28:35 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 13 Jan 2014 10:06:23 -0300
 
-Responsiveness is still very important. It is quite hard to control. CFS
-doesn't consider latency. The only way to get the best responsiveness is
-to go for best performance which comes at a high cost in energy.
+perf header: Pack 'struct perf_session_env'
 
-IMHO, we are looking for ways to reduce energy without sacrificing too
-much responsiveness, but we can't really guarantee the impact without
-having latency awareness in the scheduler. I don't think it is feasible
-to introduce that, so we have to do the best we can with whatever
-heuristics we can come up with.
+Initial struct:
 
-> 
-> > Currently, the CFS scheduler has no knowledge about frequency scaling.
-> > Frequency scaling governors generally try to match the frequency to
-> > the load, which means that the idle time has no absolute meaning. The
-> > potential spare cpu capacity may be much higher than indicated by the
-> > idle time if the cpu is running at a low P-state.
-> > 
-> > The energy trade-off may justify putting another task on a loaded cpu
-> > even if it causes a change to a higher P-state to handle the extra load.
-> > Related issues are frequency (and cpu micro architecture) invariant task
-> > load and power topology information, which are both needed to enable the
-> > scheduler for energy-aware task placement. This is covered in more
-> > detail in issue 5.
-> > 
-> > The potential cpu capacity cannot be assumed to be constant as thermal
-> > management may restrict the usage of high performance P-states
-> > dynamically.
-> 
-> That's correct.  Moreover, all of the above seems to assume that we can get
-> exact power numbers for all of the involved C-states and P-states.  What if
-> we can't?
+[acme@ssdandy linux]$ pahole -C perf_session_env ~/bin/perf
+struct perf_session_env {
+	char *                     hostname;             /*     0     8 */
+	char *                     os_release;           /*     8     8 */
+	char *                     version;              /*    16     8 */
+	char *                     arch;                 /*    24     8 */
+	int                        nr_cpus_online;       /*    32     4 */
+	int                        nr_cpus_avail;        /*    36     4 */
+	char *                     cpu_desc;             /*    40     8 */
+	char *                     cpuid;                /*    48     8 */
+	long long unsigned int     total_mem;            /*    56     8 */
+	/* --- cacheline 1 boundary (64 bytes) --- */
+	int                        nr_cmdline;           /*    64     4 */
 
-None of the current load-tracking in the scheduler is exact or even
-accurate. As long as we can get some hints it is better than nothing.
+	/* XXX 4 bytes hole, try to pack */
 
-Morten
+	char *                     cmdline;              /*    72     8 */
+	int                        nr_sibling_cores;     /*    80     4 */
+
+	/* XXX 4 bytes hole, try to pack */
+
+	char *                     sibling_cores;        /*    88     8 */
+	int                        nr_sibling_threads;   /*    96     4 */
+
+	/* XXX 4 bytes hole, try to pack */
+
+	char *                     sibling_threads;      /*   104     8 */
+	int                        nr_numa_nodes;        /*   112     4 */
+
+	/* XXX 4 bytes hole, try to pack */
+
+	char *                     numa_nodes;           /*   120     8 */
+	/* --- cacheline 2 boundary (128 bytes) --- */
+	int                        nr_pmu_mappings;      /*   128     4 */
+
+	/* XXX 4 bytes hole, try to pack */
+
+	char *                     pmu_mappings;         /*   136     8 */
+	int                        nr_groups;            /*   144     4 */
+
+	/* size: 152, cachelines: 3, members: 20 */
+	/* sum members: 128, holes: 5, sum holes: 20 */
+	/* padding: 4 */
+	/* last cacheline: 24 bytes */
+};
+[acme@ssdandy linux]$
+
+[acme@ssdandy linux]$ pahole -C perf_session_env --reorganize --show_reorg_steps ~/bin/perf | grep ^/ | grep -v Final
+/* Moving 'nr_sibling_cores' from after 'cmdline' to after 'nr_cmdline' */
+/* Moving 'nr_numa_nodes' from after 'sibling_threads' to after 'nr_sibling_threads' */
+/* Moving 'nr_groups' from after 'pmu_mappings' to after 'nr_pmu_mappings' */
+[acme@ssdandy linux]$
+
+Final struct stats:
+
+[acme@ssdandy linux]$ pahole -C perf_session_env --reorganize --show_reorg_steps ~/bin/perf | tail -4
+	/* --- cacheline 2 boundary (128 bytes) --- */
+
+	/* size: 128, cachelines: 2, members: 20 */
+};   /* saved 24 bytes and 1 cacheline! */
+[acme@ssdandy linux]$
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-3d9tshamloinzxcqeb7mtd1n@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/header.h | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index 307c9ae..a2d047b 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -77,16 +77,16 @@ struct perf_session_env {
+ 	unsigned long long	total_mem;
+ 
+ 	int			nr_cmdline;
+-	char			*cmdline;
+ 	int			nr_sibling_cores;
+-	char			*sibling_cores;
+ 	int			nr_sibling_threads;
+-	char			*sibling_threads;
+ 	int			nr_numa_nodes;
+-	char			*numa_nodes;
+ 	int			nr_pmu_mappings;
+-	char			*pmu_mappings;
+ 	int			nr_groups;
++	char			*cmdline;
++	char			*sibling_cores;
++	char			*sibling_threads;
++	char			*numa_nodes;
++	char			*pmu_mappings;
+ };
+ 
+ struct perf_header {
