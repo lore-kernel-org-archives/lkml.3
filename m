@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010AbaANAry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:47:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54311 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaANA2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:20 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 28/77] rds: prevent dereference of a NULL device
-Date: Mon, 13 Jan 2014 16:27:49 -0800
-Message-Id: <20140114002753.306988502@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1755041AbaANAsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:48:06 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48755 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753632AbaANAsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:48:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
+   d="scan'208";a="466140926"
+Subject: [PATCH v3 3/4] net: make tcp_cleanup_rbuf private
+From: Dan Williams <dan.j.williams@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
+        James Morris <jmorris@namei.org>, Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Date: Mon, 13 Jan 2014 16:47:59 -0800
+Message-ID: <20140114004719.27138.21488.stgit@viggo.jf.intel.com>
+In-Reply-To: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+User-Agent: StGit/0.17.1-3-g7cb9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+net_dma was the only external user so this can become local to tcp.c
+again.
 
-------------------
-
-From: Sasha Levin <sasha.levin@oracle.com>
-
-[ Upstream commit c2349758acf1874e4c2b93fe41d072336f1a31d0 ]
-
-Binding might result in a NULL device, which is dereferenced
-causing this BUG:
-
-[ 1317.260548] BUG: unable to handle kernel NULL pointer dereference at 000000000000097
-4
-[ 1317.261847] IP: [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
-[ 1317.263315] PGD 418bcb067 PUD 3ceb21067 PMD 0
-[ 1317.263502] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1317.264179] Dumping ftrace buffer:
-[ 1317.264774]    (ftrace buffer empty)
-[ 1317.265220] Modules linked in:
-[ 1317.265824] CPU: 4 PID: 836 Comm: trinity-child46 Tainted: G        W    3.13.0-rc4-
-next-20131218-sasha-00013-g2cebb9b-dirty #4159
-[ 1317.267415] task: ffff8803ddf33000 ti: ffff8803cd31a000 task.ti: ffff8803cd31a000
-[ 1317.268399] RIP: 0010:[<ffffffff84225f52>]  [<ffffffff84225f52>] rds_ib_laddr_check+
-0x82/0x110
-[ 1317.269670] RSP: 0000:ffff8803cd31bdf8  EFLAGS: 00010246
-[ 1317.270230] RAX: 0000000000000000 RBX: ffff88020b0dd388 RCX: 0000000000000000
-[ 1317.270230] RDX: ffffffff8439822e RSI: 00000000000c000a RDI: 0000000000000286
-[ 1317.270230] RBP: ffff8803cd31be38 R08: 0000000000000000 R09: 0000000000000000
-[ 1317.270230] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-[ 1317.270230] R13: 0000000054086700 R14: 0000000000a25de0 R15: 0000000000000031
-[ 1317.270230] FS:  00007ff40251d700(0000) GS:ffff88022e200000(0000) knlGS:000000000000
-0000
-[ 1317.270230] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1317.270230] CR2: 0000000000000974 CR3: 00000003cd478000 CR4: 00000000000006e0
-[ 1317.270230] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1317.270230] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000090602
-[ 1317.270230] Stack:
-[ 1317.270230]  0000000054086700 5408670000a25de0 5408670000000002 0000000000000000
-[ 1317.270230]  ffffffff84223542 00000000ea54c767 0000000000000000 ffffffff86d26160
-[ 1317.270230]  ffff8803cd31be68 ffffffff84223556 ffff8803cd31beb8 ffff8800c6765280
-[ 1317.270230] Call Trace:
-[ 1317.270230]  [<ffffffff84223542>] ? rds_trans_get_preferred+0x42/0xa0
-[ 1317.270230]  [<ffffffff84223556>] rds_trans_get_preferred+0x56/0xa0
-[ 1317.270230]  [<ffffffff8421c9c3>] rds_bind+0x73/0xf0
-[ 1317.270230]  [<ffffffff83e4ce62>] SYSC_bind+0x92/0xf0
-[ 1317.270230]  [<ffffffff812493f8>] ? context_tracking_user_exit+0xb8/0x1d0
-[ 1317.270230]  [<ffffffff8119313d>] ? trace_hardirqs_on+0xd/0x10
-[ 1317.270230]  [<ffffffff8107a852>] ? syscall_trace_enter+0x32/0x290
-[ 1317.270230]  [<ffffffff83e4cece>] SyS_bind+0xe/0x10
-[ 1317.270230]  [<ffffffff843a6ad0>] tracesys+0xdd/0xe2
-[ 1317.270230] Code: 00 8b 45 cc 48 8d 75 d0 48 c7 45 d8 00 00 00 00 66 c7 45 d0 02 00
-89 45 d4 48 89 df e8 78 49 76 ff 41 89 c4 85 c0 75 0c 48 8b 03 <80> b8 74 09 00 00 01 7
-4 06 41 bc 9d ff ff ff f6 05 2a b6 c2 02
-[ 1317.270230] RIP  [<ffffffff84225f52>] rds_ib_laddr_check+0x82/0x110
-[ 1317.270230]  RSP <ffff8803cd31bdf8>
-[ 1317.270230] CR2: 0000000000000974
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: James Morris <jmorris@namei.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
- net/rds/ib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/rds/ib.c
-+++ b/net/rds/ib.c
-@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 add
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support iWARP devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
-+	if (ret || !cm_id->device ||
-+	    cm_id->device->node_type != RDMA_NODE_IB_CA)
- 		ret = -EADDRNOTAVAIL;
- 
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
+Since v1: keep the tcp_ prefix.
 
+ include/net/tcp.h |    1 -
+ net/ipv4/tcp.c    |    2 +-
+ 2 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 084c163e9d40..571036b3bead 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -370,7 +370,6 @@ int tcp_rcv_state_process(struct sock *sk, struct sk_buff *skb,
+ void tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
+ 			 const struct tcphdr *th, unsigned int len);
+ void tcp_rcv_space_adjust(struct sock *sk);
+-void tcp_cleanup_rbuf(struct sock *sk, int copied);
+ int tcp_twsk_unique(struct sock *sk, struct sock *sktw, void *twp);
+ void tcp_twsk_destructor(struct sock *sk);
+ ssize_t tcp_splice_read(struct socket *sk, loff_t *ppos,
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 8dc913dfbaef..10dda80fccc9 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1332,7 +1332,7 @@ static int tcp_peek_sndq(struct sock *sk, struct msghdr *msg, int len)
+  * calculation of whether or not we must ACK for the sake of
+  * a window update.
+  */
+-void tcp_cleanup_rbuf(struct sock *sk, int copied)
++static void tcp_cleanup_rbuf(struct sock *sk, int copied)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	bool time_to_ack = false;
 
