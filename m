@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbaANHmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:42:52 -0500
-Received: from mail.windriver.com ([147.11.1.11]:47584 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbaANHmK (ORCPT
+	id S1752848AbaANHms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:48 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:41308 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaANHmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:42:10 -0500
+	Tue, 14 Jan 2014 02:42:08 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,9 +14,9 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 08/10] caif: __dev_get_by_index instead of dev_get_by_index to find interface
-Date: Tue, 14 Jan 2014 15:41:07 +0800
-Message-ID: <1389685269-18600-9-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next 07/10] batman-adv: use __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Tue, 14 Jan 2014 15:41:06 +0800
+Message-ID: <1389685269-18600-8-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
@@ -26,42 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chains indicate that chnl_net_open() is under
-rtnl_lock protection as __dev_open() is protected by rtnl_lock.
-So if __dev_get_by_index() instead of dev_get_by_index() is used
-to find interface handler in it, this would help us avoid to change
-interface reference counter.
+The following call chains indicate that batadv_is_on_batman_iface()
+is always under rtnl_lock protection as call_netdevice_notifier()
+is protected by rtnl_lock. So if __dev_get_by_index() rather than
+dev_get_by_index() is used to find interface handler in it, this
+would help us avoid to change interface reference counter.
 
-__dev_open()
-  chnl_net_open()
+call_netdevice_notifier()
+  batadv_hard_if_event()
+    batadv_hardif_add_interface()
+      batadv_is_valid_iface()
+        batadv_is_on_batman_iface()
 
-Cc: Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
+Cc: Antonio Quartulli <antonio@meshcoding.com>
 Signed-off-by: Ying Xue <ying.xue@windriver.com>
 ---
- net/caif/chnl_net.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/batman-adv/hard-interface.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/net/caif/chnl_net.c b/net/caif/chnl_net.c
-index 7344a8f..4589ff67 100644
---- a/net/caif/chnl_net.c
-+++ b/net/caif/chnl_net.c
-@@ -285,7 +285,7 @@ static int chnl_net_open(struct net_device *dev)
- 				goto error;
- 		}
+diff --git a/net/batman-adv/hard-interface.c b/net/batman-adv/hard-interface.c
+index bebd46c..115d14e 100644
+--- a/net/batman-adv/hard-interface.c
++++ b/net/batman-adv/hard-interface.c
+@@ -86,15 +86,13 @@ static bool batadv_is_on_batman_iface(const struct net_device *net_dev)
+ 		return false;
  
--		lldev = dev_get_by_index(dev_net(dev), llifindex);
-+		lldev = __dev_get_by_index(dev_net(dev), llifindex);
+ 	/* recurse over the parent device */
+-	parent_dev = dev_get_by_index(&init_net, net_dev->iflink);
++	parent_dev = __dev_get_by_index(&init_net, net_dev->iflink);
+ 	/* if we got a NULL parent_dev there is something broken.. */
+ 	if (WARN(!parent_dev, "Cannot find parent device"))
+ 		return false;
  
- 		if (lldev == NULL) {
- 			pr_debug("no interface?\n");
-@@ -307,7 +307,6 @@ static int chnl_net_open(struct net_device *dev)
- 		mtu = min_t(int, dev->mtu, lldev->mtu - (headroom + tailroom));
- 		mtu = min_t(int, GPRS_PDP_MTU, mtu);
- 		dev_set_mtu(dev, mtu);
--		dev_put(lldev);
+ 	ret = batadv_is_on_batman_iface(parent_dev);
  
- 		if (mtu < 100) {
- 			pr_warn("CAIF Interface MTU too small (%d)\n", mtu);
+-	if (parent_dev)
+-		dev_put(parent_dev);
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
