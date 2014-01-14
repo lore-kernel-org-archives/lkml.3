@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaANA1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54000 "EHLO
+	id S1753394AbaANA1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:27:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaANA1G (ORCPT
+	with ESMTP id S1752721AbaANA1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:06 -0500
+	Mon, 13 Jan 2014 19:27:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
-        Daniel Borkmann <dborkman@redhat.com>,
+        Simon Horman <horms@verge.net.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 22/62] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
-Date: Mon, 13 Jan 2014 16:26:47 -0800
-Message-Id: <20140114002711.099394749@linuxfoundation.org>
+Subject: [PATCH 3.10 37/62] net: Loosen constraints for recalculating checksum in skb_segment()
+Date: Mon, 13 Jan 2014 16:27:02 -0800
+Message-Id: <20140114002711.518466117@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -30,88 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Simon Horman <horms@verge.net.au>
 
-[ Upstream commit b1aac815c0891fe4a55a6b0b715910142227700f ]
+[ Upstream commit 1cdbcb7957cf9e5f841dbcde9b38fd18a804208b ]
 
-Jakub reported while working with nlmon netlink sniffer that parts of
-the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
-That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
+This is a generic solution to resolve a specific problem that I have observed.
 
-In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
-memory through this. At least, in udp_dump_one(), we allocate a skb in ...
+If the encapsulation of an skb changes then ability to offload checksums
+may also change. In particular it may be necessary to perform checksumming
+in software.
 
-  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
+An example of such a case is where a non-GRE packet is received but
+is to be encapsulated and transmitted as GRE.
 
-... and then pass that to inet_sk_diag_fill() that puts the whole struct
-inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
-r->id.idiag_dst[0] and leave the rest untouched:
+Another example relates to my proposed support for for packets
+that are non-MPLS when received but MPLS when transmitted.
 
-  r->id.idiag_src[0] = inet->inet_rcv_saddr;
-  r->id.idiag_dst[0] = inet->inet_daddr;
+The cost of this change is that the value of the csum variable may be
+checked when it previously was not. In the case where the csum variable is
+true this is pure overhead. In the case where the csum variable is false it
+leads to software checksumming, which I believe also leads to correct
+checksums in transmitted packets for the cases described above.
 
-struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
-fully filled out in IPv6 case, but for IPv4 not.
+Further analysis:
 
-So just zero them out by using plain memset (for this little amount of
-bytes it's probably not worth the extra check for idiag_family == AF_INET).
+This patch relies on the return value of can_checksum_protocol()
+being correct and in turn the return value of skb_network_protocol(),
+used to provide the protocol parameter of can_checksum_protocol(),
+being correct. It also relies on the features passed to skb_segment()
+and in turn to can_checksum_protocol() being correct.
 
-Similarly, fix also other places where we fill that out.
+I believe that this problem has not been observed for VLANs because it
+appears that almost all drivers, the exception being xgbe, set
+vlan_features such that that the checksum offload support for VLAN packets
+is greater than or equal to that of non-VLAN packets.
 
-Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+I wonder if the code in xgbe may be an oversight and the hardware does
+support checksumming of VLAN packets.  If so it may be worth updating the
+vlan_features of the driver as this patch will force such checksums to be
+performed in software rather than hardware.
+
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/inet_diag.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ net/core/skbuff.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -106,6 +106,10 @@ int inet_sk_diag_fill(struct sock *sk, s
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2854,7 +2854,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 						 doffset + tnl_hlen);
  
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = inet->inet_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
- 	r->id.idiag_dst[0] = inet->inet_daddr;
+ 		if (fskb != skb_shinfo(skb)->frag_list)
+-			continue;
++			goto perform_csum_check;
  
-@@ -240,12 +244,19 @@ static int inet_twsk_diag_fill(struct in
+ 		if (!sg) {
+ 			nskb->ip_summed = CHECKSUM_NONE;
+@@ -2918,6 +2918,7 @@ skip_fraglist:
+ 		nskb->len += nskb->data_len;
+ 		nskb->truesize += nskb->data_len;
  
- 	r->idiag_family	      = tw->tw_family;
- 	r->idiag_retrans      = 0;
-+
- 	r->id.idiag_if	      = tw->tw_bound_dev_if;
- 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
-+
- 	r->id.idiag_sport     = tw->tw_sport;
- 	r->id.idiag_dport     = tw->tw_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
- 	r->id.idiag_dst[0]    = tw->tw_daddr;
-+
- 	r->idiag_state	      = tw->tw_substate;
- 	r->idiag_timer	      = 3;
- 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
-@@ -732,8 +743,13 @@ static int inet_diag_fill_req(struct sk_
- 
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = ireq->rmt_port;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = ireq->loc_addr;
- 	r->id.idiag_dst[0] = ireq->rmt_addr;
-+
- 	r->idiag_expires = jiffies_to_msecs(tmo);
- 	r->idiag_rqueue = 0;
- 	r->idiag_wqueue = 0;
++perform_csum_check:
+ 		if (!csum) {
+ 			nskb->csum = skb_checksum(nskb, doffset,
+ 						  nskb->len - doffset, 0);
 
 
