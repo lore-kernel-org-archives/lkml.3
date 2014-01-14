@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaANA3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54468 "EHLO
+	id S1754460AbaANAcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:32:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54574 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911AbaANA2y (ORCPT
+	with ESMTP id S1752766AbaANA3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:54 -0500
+	Mon, 13 Jan 2014 19:29:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: [PATCH 3.12 54/77] ARM: shmobile: mackerel: Fix coherent DMA mask
-Date: Mon, 13 Jan 2014 16:28:15 -0800
-Message-Id: <20140114002754.038332174@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>, Rajendra Nayak <rnayak@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.12 58/77] clk: clk-divider: fix divisor > 255 bug
+Date: Mon, 13 Jan 2014 16:28:19 -0800
+Message-Id: <20140114002754.147369432@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -29,45 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit b6328a6b7ba57fc84c38248f6f0e387e1170f1a8 upstream.
+commit 778037e1ccb75609846deca9e419449c1dc137fa upstream.
 
-Commit 4dcfa60071b3d23f0181f27d8519f12e37cefbb9 ("ARM: DMA-API: better
-handing of DMA masks for coherent allocations") added an additional
-check to the coherent DMA mask that results in an error when the mask is
-larger than what dma_addr_t can address.
+Commit 6d9252bd9a4bb (clk: Add support for power of two type dividers)
+merged in v3.6 added the _get_val function to convert a divisor value to
+a register field value depending on the flags. However it used the type
+u8 for the div field, causing divisors larger than 255 to be masked
+and the resultant clock rate to be too high.
 
-Set the LCDC coherent DMA mask to DMA_BIT_MASK(32) instead of ~0 to fix
-the problem.
+E.g. in my case an 11bit divider was supposed to divide 24.576 MHz down
+to 32.768KHz. The divisor was correctly calculated as 750 (0x2ee). This
+was masked to 238 (0xee) resulting in a frequency of 103.26KHz.
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-shmobile/board-mackerel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/clk/clk-divider.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-shmobile/board-mackerel.c
-+++ b/arch/arm/mach-shmobile/board-mackerel.c
-@@ -409,7 +409,7 @@ static struct platform_device lcdc_devic
- 	.resource	= lcdc_resources,
- 	.dev	= {
- 		.platform_data	= &lcdc_info,
--		.coherent_dma_mask = ~0,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -87,7 +87,7 @@ static unsigned int _get_table_val(const
+ 	return 0;
+ }
  
-@@ -499,7 +499,7 @@ static struct platform_device hdmi_lcdc_
- 	.id		= 1,
- 	.dev	= {
- 		.platform_data	= &hdmi_lcdc_info,
--		.coherent_dma_mask = ~0,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
- 
+-static unsigned int _get_val(struct clk_divider *divider, u8 div)
++static unsigned int _get_val(struct clk_divider *divider, unsigned int div)
+ {
+ 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
+ 		return div;
 
 
