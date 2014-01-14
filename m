@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaANXwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:52:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59165 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216AbaANXw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:52:27 -0500
-Message-ID: <52D5CDA1.3050306@zytor.com>
-Date: Tue, 14 Jan 2014 15:52:01 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: David Cohen <david.a.cohen@linux.intel.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org
-CC: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] Add Clovertrail and Merrifeld support to Intel
- MID
-References: <1387224459-25746-1-git-send-email-david.a.cohen@linux.intel.com> <20140114224419.GB9834@psi-dev26.jf.intel.com>
-In-Reply-To: <20140114224419.GB9834@psi-dev26.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1752607AbaANXwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:52:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34971 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094AbaANXwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 18:52:43 -0500
+Date: Tue, 14 Jan 2014 15:52:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Han Pingtian <hanpt@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>
+Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
+Message-Id: <20140114155241.7891fce1fb2b9dfdcde15a8c@linux-foundation.org>
+In-Reply-To: <20140114200720.GM4106@localhost.localdomain>
+References: <52C5AA61.8060701@intel.com>
+	<20140103033303.GB4106@localhost.localdomain>
+	<52C6FED2.7070700@intel.com>
+	<20140105003501.GC4106@localhost.localdomain>
+	<20140106164604.GC27602@dhcp22.suse.cz>
+	<20140108101611.GD27937@dhcp22.suse.cz>
+	<20140110081744.GC9437@dhcp22.suse.cz>
+	<20140114200720.GM4106@localhost.localdomain>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 02:44 PM, David Cohen wrote:
-> On Mon, Dec 16, 2013 at 12:07:35PM -0800, David Cohen wrote:
->> Hi,
->>
->> I've a bunch of Intel MID patches under review but it seems they are becoming
->> old and start to need changes.
->> I gathered an up-to-date version of all of them in this single patch set.
->>
->> This series implements support of Clovertrail and Merrifield to Intel MID.
->> It also removes the unwanted X86_MDFLD option since *all* Intel MID platforms
->> should be supported through CONFIG_X86_INTEL_MID option.
->>
->> This makes obsolete the following patches:
->> https://lkml.org/lkml/2013/10/18/480
->> https://lkml.org/lkml/2013/10/22/533
->> http://lkml.indiana.edu/hypermail/linux/kernel/1311.1/02937.html
+On Wed, 15 Jan 2014 04:07:20 +0800 Han Pingtian <hanpt@linux.vnet.ibm.com> wrote:
+
+> min_free_kbytes may be raised during THP's initialization. Sometimes,
+> this will change the value being set by user. Showing message will
+> clarify this confusion.
 > 
-> Ping :)
-> Any comments on this whole patch set?
+> Only show this message when changing the value set by user according to
+> Michal Hocko's suggestion.
+> 
+> Showing the old value of min_free_kbytes according to Dave Hansen's
+> suggestion. This will give user the chance to restore old value of
+> min_free_kbytes.
 > 
 
-You got some feedback from Bjorn and Ingo... mostly description-related,
-but that is important enough.
+This is all a bit nasty, isn't it?  THP goes and alters min_free_kbytes
+to improve its own reliability, but min_free_kbytes is also
+user-modifiable.  And over many years we have trained a *lot* of users
+to alter min_free_kbytes.  Often to prevent nasty page allocation
+failure warnings from net drivers.
 
-Other than that we should queue it up ASAP.
+So there are probably quite a lot of people out there who are manually
+rubbing out THP's efforts.  And there may also be people who are
+setting min_free_kbytes to a value which is unnecessarily high for more
+recent kernels.
 
-	-hpa
+I don't know what to do about this mess though :(
 
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -130,8 +130,14 @@ static int set_recommended_min_free_kbytes(void)
+>  			      (unsigned long) nr_free_buffer_pages() / 20);
+>  	recommended_min <<= (PAGE_SHIFT-10);
+>  
+> -	if (recommended_min > min_free_kbytes)
+> +	if (recommended_min > min_free_kbytes) {
+> +		if (user_min_free_kbytes >= 0)
+> +			pr_info("raising min_free_kbytes from %d to %lu "
+> +				"to help transparent hugepage allocations\n",
+> +				min_free_kbytes, recommended_min);
+
+hm, recommended_min shouldn't have had long type.  Oh well, we've done
+worse things.
+
+>  		min_free_kbytes = recommended_min;
+> +	}
+>  	setup_per_zone_wmarks();
+>  	return 0;
+>  }
 
