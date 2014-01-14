@@ -1,201 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaANUet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:34:49 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:33842 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610AbaANUep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:34:45 -0500
-Date: Tue, 14 Jan 2014 21:34:35 +0100
-From: Guillaume Morin <guillaume@morinfr.org>
-To: linux-kernel@vger.kernel.org
-Subject: BUG: Bad page state in process with linux 3.4.76
-Message-ID: <20140114203434.GA22994@bender.morinfr.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="azLHFNyN32YCQGCU"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751898AbaANUfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:35:05 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:43664 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaANUe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:34:59 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>
+Subject: [PATCH] msm_serial: Add support for poll_{get,put}_char()
+Date: Tue, 14 Jan 2014 12:34:55 -0800
+Message-Id: <1389731695-28265-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Implement the polling functionality for the MSM serial driver.
+This allows us to use KGDB on this hardware.
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: David Brown <davidb@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/tty/serial/msm_serial.c | 140 +++++++++++++++++++++++++++++++++++++++-
+ drivers/tty/serial/msm_serial.h |   9 +++
+ 2 files changed, 146 insertions(+), 3 deletions(-)
 
-Hi,
-
-I wrote this simple program (attached) to play around with kernel AIO.
-It simply does kernel AIO with O_DIRECT on a small temp file stored on
-an ext4 filesystem.
-
-When I run it with "HUGETLB_MORECORE=yes LD_PRELOAD=libhugetlbfs.so", it
-triggers the kernel bug on exit every time.
-
-Removing HUGETLB_MORECORE from the command line fixes the problem.  Note
-that my kernel does not use THP, it is NOT compiled with
-CONFIG_TRANSPARENT_HUGEPAGE.
-
-I've tried it only with this 3.4.76 but I've been able to reproduce it without
-any issue on multiple machines running the same kernel.
-
-BUG: Bad page state in process aio_test  pfn:1b7a01
-page:ffffea0006de8040 count:0 mapcount:1 mapping:          (null) index:0x0
-page flags: 0x20000000008000(tail)
-Modules linked in: nfsd exportfs nfs nfs_acl auth_rpcgss fscache lockd sunrpc
-rdma_ucm rdma_cm ib_addr iw_cm ib_uverbs ib_cm ib_sa ib_mad ib_core ipmi_si
-ipmi_devintf coretemp pcspkr microcode serio_raw i2c_i801 ioatdma i2c_core dca
-dm_mod sg sr_mod cdrom crc32c_intel ahci libahci [last unloaded: scsi_wait_scan]
-Pid: 4441, comm: aio_test Not tainted 3.4.76bug #1
-Call Trace:
-[<ffffffff810f3300>] ? is_free_buddy_page+0xa0/0xd0
-[<ffffffff814c0791>] bad_page+0xe6/0xfc
-[<ffffffff810f3dbc>] free_pages_prepare+0xfc/0x110
-[<ffffffff810f3dff>] __free_pages_ok+0x2f/0xd0
-[<ffffffff810f4080>] __free_pages+0x20/0x40
-[<ffffffff81124737>] update_and_free_page+0x77/0x80
-[<ffffffff8112633e>] free_huge_page+0x16e/0x180
-[<ffffffff810f8030>] __put_compound_page+0x20/0x50
-[<ffffffff810f8108>] put_compound_page+0x78/0x140
-[<ffffffff810f8546>] put_page+0x36/0x40
-[<ffffffff81126ede>] __unmap_hugepage_range+0x1ce/0x230
-[<ffffffff81127331>] unmap_hugepage_range+0x51/0x90
-[<ffffffff8110e880>] unmap_single_vma+0x730/0x740
-[<ffffffff8110f05f>] unmap_vmas+0x5f/0x80
-[<ffffffff8111672c>] exit_mmap+0xbc/0x130
-[<ffffffff8112e170>] ? kmem_cache_free+0x20/0xe0
-[<ffffffff81035155>] mmput+0x35/0xf0
-[<ffffffff8103a58d>] exit_mm+0xfd/0x120
-[<ffffffff8103bb6c>] do_exit+0x16c/0x8b0
-[<ffffffff811540c4>] ? mntput+0x24/0x40
-[<ffffffff81138962>] ? fput+0x192/0x250
-[<ffffffff8103c5ff>] do_group_exit+0x3f/0xa0
-[<ffffffff8103c677>] sys_exit_group+0x17/0x20
-[<ffffffff814d03d2>] system_call_fastpath+0x16/0x1b
-
-
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index b5d779cd3c2b..053b98eb46c8 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -39,6 +39,13 @@
+ 
+ #include "msm_serial.h"
+ 
++enum {
++	UARTDM_1P1 = 1,
++	UARTDM_1P2,
++	UARTDM_1P3,
++	UARTDM_1P4,
++};
++
+ struct msm_port {
+ 	struct uart_port	uart;
+ 	char			name[16];
+@@ -309,6 +316,8 @@ static unsigned int msm_get_mctrl(struct uart_port *port)
+ 
+ static void msm_reset(struct uart_port *port)
+ {
++	struct msm_port *msm_port = UART_TO_MSM(port);
++
+ 	/* reset everything */
+ 	msm_write(port, UART_CR_CMD_RESET_RX, UART_CR);
+ 	msm_write(port, UART_CR_CMD_RESET_TX, UART_CR);
+@@ -316,6 +325,10 @@ static void msm_reset(struct uart_port *port)
+ 	msm_write(port, UART_CR_CMD_RESET_BREAK_INT, UART_CR);
+ 	msm_write(port, UART_CR_CMD_RESET_CTS, UART_CR);
+ 	msm_write(port, UART_CR_CMD_SET_RFR, UART_CR);
++
++	/* Disable DM modes */
++	if (msm_port->is_uartdm)
++		msm_write(port, 0, UARTDM_DMEN);
+ }
+ 
+ static void msm_set_mctrl(struct uart_port *port, unsigned int mctrl)
+@@ -711,6 +724,117 @@ static void msm_power(struct uart_port *port, unsigned int state,
+ 	}
+ }
+ 
++#ifdef CONFIG_CONSOLE_POLL
++static int msm_poll_init(struct uart_port *port)
++{
++	struct msm_port *msm_port = UART_TO_MSM(port);
++
++	/* Enable single character mode on RX FIFO */
++	if (msm_port->is_uartdm >= UARTDM_1P4)
++		msm_write(port, UARTDM_DMEN_RX_SC_ENABLE, UARTDM_DMEN);
++
++	return 0;
++}
++
++static int msm_poll_get_char_single(struct uart_port *port)
++{
++	struct msm_port *msm_port = UART_TO_MSM(port);
++	unsigned int rf_reg = msm_port->is_uartdm ? UARTDM_RF : UART_RF;
++
++	if (!(msm_read(port, UART_SR) & UART_SR_RX_READY))
++		return NO_POLL_CHAR;
++	else
++		return msm_read(port, rf_reg) & 0xff;
++}
++
++static int msm_poll_get_char_dm_1p3(struct uart_port *port)
++{
++	int c;
++	static u32 slop;
++	static int count;
++	unsigned char *sp = (unsigned char *)&slop;
++
++	/* Check if a previous read had more than one char */
++	if (count) {
++		c = sp[sizeof(slop) - count];
++		count--;
++	/* Or if FIFO is empty */
++	} else if (!(msm_read(port, UART_SR) & UART_SR_RX_READY)) {
++		/*
++		 * If RX packing buffer has less than a word, force stale to
++		 * push contents into RX FIFO
++		 */
++		count = msm_read(port, UARTDM_RXFS);
++		count = (count >> UARTDM_RXFS_BUF_SHIFT) & UARTDM_RXFS_BUF_MASK;
++		if (count) {
++			msm_write(port, UART_CR_CMD_FORCE_STALE, UART_CR);
++			slop = msm_read(port, UARTDM_RF);
++			c = sp[0];
++			count--;
++		} else {
++			c = NO_POLL_CHAR;
++		}
++	/* FIFO has a word */
++	} else {
++		slop = msm_read(port, UARTDM_RF);
++		c = sp[0];
++		count = sizeof(slop) - 1;
++	}
++
++	return c;
++}
++
++static int msm_poll_get_char(struct uart_port *port)
++{
++	u32 imr;
++	int c;
++	struct msm_port *msm_port = UART_TO_MSM(port);
++
++	/* Disable all interrupts */
++	imr = msm_read(port, UART_IMR);
++	msm_write(port, 0, UART_IMR);
++
++	if (msm_port->is_uartdm == UARTDM_1P3)
++		c = msm_poll_get_char_dm_1p3(port);
++	else
++		c = msm_poll_get_char_single(port);
++
++	/* Enable interrupts */
++	msm_write(port, imr, UART_IMR);
++
++	return c;
++}
++
++static void msm_poll_put_char(struct uart_port *port, unsigned char c)
++{
++	u32 imr;
++	struct msm_port *msm_port = UART_TO_MSM(port);
++
++	/* Disable all interrupts */
++	imr = msm_read(port, UART_IMR);
++	msm_write(port, 0, UART_IMR);
++
++	if (msm_port->is_uartdm)
++		reset_dm_count(port, 1);
++
++	/* Wait until FIFO is empty */
++	while (!(msm_read(port, UART_SR) & UART_SR_TX_READY))
++		cpu_relax();
++
++	/* Write a character */
++	msm_write(port, c, msm_port->is_uartdm ? UARTDM_TF : UART_TF);
++
++	/* Wait until FIFO is empty */
++	while (!(msm_read(port, UART_SR) & UART_SR_TX_READY))
++		cpu_relax();
++
++	/* Enable interrupts */
++	msm_write(port, imr, UART_IMR);
++
++	return;
++}
++#endif
++
+ static struct uart_ops msm_uart_pops = {
+ 	.tx_empty = msm_tx_empty,
+ 	.set_mctrl = msm_set_mctrl,
+@@ -729,6 +853,11 @@ static struct uart_ops msm_uart_pops = {
+ 	.config_port = msm_config_port,
+ 	.verify_port = msm_verify_port,
+ 	.pm = msm_power,
++#ifdef CONFIG_CONSOLE_POLL
++	.poll_init = msm_poll_init,
++	.poll_get_char	= msm_poll_get_char,
++	.poll_put_char	= msm_poll_put_char,
++#endif
+ };
+ 
+ static struct msm_port msm_uart_ports[] = {
+@@ -900,7 +1029,10 @@ static struct uart_driver msm_uart_driver = {
+ static atomic_t msm_uart_next_id = ATOMIC_INIT(0);
+ 
+ static const struct of_device_id msm_uartdm_table[] = {
+-	{ .compatible = "qcom,msm-uartdm" },
++	{ .compatible = "qcom,msm-uartdm-v1.1", .data = (void *)UARTDM_1P1 },
++	{ .compatible = "qcom,msm-uartdm-v1.2", .data = (void *)UARTDM_1P2 },
++	{ .compatible = "qcom,msm-uartdm-v1.3", .data = (void *)UARTDM_1P3 },
++	{ .compatible = "qcom,msm-uartdm-v1.4", .data = (void *)UARTDM_1P4 },
+ 	{ }
+ };
+ 
+@@ -909,6 +1041,7 @@ static int __init msm_serial_probe(struct platform_device *pdev)
+ 	struct msm_port *msm_port;
+ 	struct resource *resource;
+ 	struct uart_port *port;
++	const struct of_device_id *id;
+ 	int irq;
+ 
+ 	if (pdev->id == -1)
+@@ -923,8 +1056,9 @@ static int __init msm_serial_probe(struct platform_device *pdev)
+ 	port->dev = &pdev->dev;
+ 	msm_port = UART_TO_MSM(port);
+ 
+-	if (of_match_device(msm_uartdm_table, &pdev->dev))
+-		msm_port->is_uartdm = 1;
++	id = of_match_device(msm_uartdm_table, &pdev->dev);
++	if (id)
++		msm_port->is_uartdm = (unsigned long)id->data;
+ 	else
+ 		msm_port->is_uartdm = 0;
+ 
+diff --git a/drivers/tty/serial/msm_serial.h b/drivers/tty/serial/msm_serial.h
+index 469fda50ac63..1e9b68b6f9eb 100644
+--- a/drivers/tty/serial/msm_serial.h
++++ b/drivers/tty/serial/msm_serial.h
+@@ -59,6 +59,7 @@
+ #define UART_CR_CMD_RESET_RFR		(14 << 4)
+ #define UART_CR_CMD_PROTECTION_EN	(16 << 4)
+ #define UART_CR_CMD_STALE_EVENT_ENABLE	(80 << 4)
++#define UART_CR_CMD_FORCE_STALE		(4 << 8)
+ #define UART_CR_CMD_RESET_TX_READY	(3 << 8)
+ #define UART_CR_TX_DISABLE		(1 << 3)
+ #define UART_CR_TX_ENABLE		(1 << 2)
+@@ -113,6 +114,14 @@
+ #define GSBI_PROTOCOL_UART	0x40
+ #define GSBI_PROTOCOL_IDLE	0x0
+ 
++#define UARTDM_RXFS		0x50
++#define UARTDM_RXFS_BUF_SHIFT	0x7
++#define UARTDM_RXFS_BUF_MASK	0x7
++
++#define UARTDM_DMEN		0x3C
++#define UARTDM_DMEN_RX_SC_ENABLE BIT(5)
++#define UARTDM_DMEN_TX_SC_ENABLE BIT(4)
++
+ #define UARTDM_DMRX		0x34
+ #define UARTDM_NCF_TX		0x40
+ #define UARTDM_RX_TOTAL_SNAP	0x38
 -- 
-Guillaume Morin <guillaume@morinfr.org>
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
---azLHFNyN32YCQGCU
-Content-Type: text/x-csrc; charset=us-ascii
-Content-Disposition: attachment; filename="aio_test.c"
-
-#define _GNU_SOURCE
-#include <libaio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/eventfd.h>
-#include <sys/epoll.h>
-#include <sys/mman.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#define FILE_SIZE 4096
-
-int main(void)
-{
-    io_context_t ctx;
-    int fd,fd_odirect,i,event_fd,epoll_fd;
-    struct epoll_event ev;
-    void *buf;
-    size_t offset = 0;
-    struct iocb cb;
-    struct iocb * cbs[1] = { &cb };
-
-    fd = open("/tmp/foo",O_RDWR|O_CREAT);
-    if (fd == -1) {
-        perror("open");
-        return 1;
-    }
-    for (i = 0; i < FILE_SIZE; ++i) {
-        char c = rand() % 255;
-        write(fd, &c, 1);
-    }
-    close(fd);
-
-    fd_odirect = open("/tmp/foo",O_RDONLY|O_DIRECT);
-    if (fd_odirect == -1) {
-        perror("open");
-        return 1;
-    }
-    memset(&ctx, 0, sizeof(ctx));
-    if (0 != io_queue_init(1, &ctx)) {
-        perror("ctx");
-        return 1;
-    }
-    event_fd = eventfd(0, EFD_CLOEXEC);
-    if (event_fd == -1) {
-        perror("eventfd");
-        return -1;
-    }
-
-    epoll_fd = epoll_create(1);
-    if (epoll_fd == -1) {
-        perror("epoll_fd");
-        return 1;
-    }
-
-    ev.events = EPOLLIN;
-
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, event_fd, &ev) == -1) {
-        perror("epoll_ctl");
-        return 1;
-    }
-
-    posix_memalign(&buf, 512, 32768);
-
-    while (1) {
-        struct timespec ts = { 0, 0 };
-        struct io_event ioev;
-        int ret;
-        long v;
-        io_prep_pread(&cb, fd_odirect, buf + offset, 512, offset);
-        io_set_eventfd(&cb, event_fd);
-        if (1 != io_submit(ctx, 1, cbs)) {
-            perror("io_submit");
-            return 1;
-        }
-
-        ret = epoll_wait(epoll_fd, &ev, 1, -1);
-        if (ret != 1) {
-            perror("epoll_wait");
-        }
-
-        read(event_fd, &v, 8);
-        
-        printf("event_fd returned %ld\n", v);
-
-
-        if (io_getevents(ctx, 1, 1, &ioev, &ts) != 1) {
-            perror("io_getevents");
-            return 1;
-        }
-
-        printf("Read 1 res %ld res2 %ld\n", ioev.res, ioev.res2);
-        offset += ioev.res;
-
-        if (ioev.res == 0) {
-            break;
-        } 
-        if ((offset + 512) > 32768) {
-            puts("ERROR - reading past buffer");
-            return 1;
-        }
-    }
-
-    free(buf);
-    io_destroy(ctx);
-    close(event_fd);
-    close(epoll_fd);
-    close(fd_odirect);
-
-    return 0;
-}
-
---azLHFNyN32YCQGCU--
