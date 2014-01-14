@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaANAPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:15:12 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:52264 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaANAPJ (ORCPT
+	id S1752154AbaANAPS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:15:18 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53392 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaANAPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:15:09 -0500
-X-AuditID: cbfee68d-b7fcd6d00000315b-04-52d48188d159
-Message-id: <52D4818A.3050905@samsung.com>
-Date: Tue, 14 Jan 2014 09:15:06 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Alexey Perevalov <a.perevalov@samsung.com>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        Anton Vorontsov <anton@scarybugs.org>, anton@enomsg.org,
-        kyungmin.park@samsung.com, akpm@linux-foundation.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH v2 1/3] kernel/time: Add new helpers to convert ktime
- to/from jiffies
-References: <1389609835-24377-1-git-send-email-a.perevalov@samsung.com>
- <1389609835-24377-2-git-send-email-a.perevalov@samsung.com>
-In-reply-to: <1389609835-24377-2-git-send-email-a.perevalov@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsWyRsSkQLej8UqQwf+74hZz755nsZizfg2b
-	xcXW2ywWB7dqWrQ+7mS1OPNb1+Js0xt2i8u75rA5cHhM6P/E6HHn2h42jxMzfrN49G1Zxejx
-	+PBqFo/Pm+QC2KK4bFJSczLLUov07RK4MtqvH2EpWMBWcf3/aqYGxumsXYycHBICJhKbvm9h
-	g7DFJC7cWw9kc3EICSxllHj/chcbTNG2k7NZIRKLGCVetF9lgXBeMUrMu3KfGaSKV0BLovfJ
-	WXYQm0VAVaJ1wWIwmw0ovv/FDbBJogJhEiunX2GBqBeU+DH5HpgtIqAnsfzld7A5zAK3GSUe
-	LzbvYuTgEBaIlmifLAESFhJoBdq1QQkkzCngIfH3YxZEtY7E/tZpbBC2vMTmNW+ZQU6TELjG
-	LrFg9WQmiHMEJL5NPsQC0ishICux6QAzxF+SEgdX3GCZwCg2C8lBs5CMnYVk7AJG5lWMoqkF
-	yQXFSelFhnrFibnFpXnpesn5uZsYgVF4+t+z3h2Mtw9YH2JMBlo5kVlKNDkfGMV5JfGGxmZG
-	FqYmpsZG5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCo3uYstoX1XnPL
-	gq8m9Sx+H5salp188KHBeImB2lIXh3CmZQ+TA5NVSq18P87fdGj9JmO2z6FTY8Q29hass2Y5
-	X7xrX27QlJ5Fp9rKFRv+zLKducRZ/cQGgeULf7Jodi/iFgurmnKt6H71wt1xC4SfJ3mtdZtX
-	8txz48o9jpsN7+xIKkgt0ClWYinOSDTUYi4qTgQAKGJ9+dgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t9jAd2OxitBBjNbBCzm3j3PYjFn/Ro2
-	i4utt1ksDm7VtGh93Mlqcea3rsXZpjfsFpd3zWFz4PCY0P+J0ePOtT1sHidm/Gbx6NuyitHj
-	8eHVLB6fN8kFsEU1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5
-	+AToumXmAN2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcxov36EpWAB
-	W8X1/6uZGhins3YxcnJICJhIbDs5G8oWk7hwbz1bFyMXh5DAIkaJF+1XWSCcV4wS867cZwap
-	4hXQkuh9cpYdxGYRUJVoXbAYzGYDiu9/cYMNxBYVCJNYOf0KC0S9oMSPyffAbBEBPYnlL7+D
-	zWEWuM0o8XixeRcjB4ewQLRE+2QJkLCQQCvQrg1KIGFOAQ+Jvx+zIKp1JPa3TmODsOUlNq95
-	yzyBUWAWkgWzkJTNQlK2gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwjD+T2sG4ssHi
-	EKMAB6MSD+8JxitBQqyJZcWVuYcYJTiYlUR4l9cBhXhTEiurUovy44tKc1KLDzEmA/0/kVlK
-	NDkfmH7ySuINjU3MjCyNzA0tjIzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHR6f6v
-	fSbbvDUmaDM+ZeHki9p3ISlDN3Wq2m8Wn92brsfMuJVxs6vmm9avj7vPlXF1HH4xc9KLQ17T
-	KmXj11hcdnh+6s+P4y8OBH26lZ0Z8/d5ZmBp5v7A2w8v3UtY+utd7ufoUrfr9T2sSb90hLdG
-	ut+RMHBkW/d19sz59nMOlfW0+ugm2V8+qsRSnJFoqMVcVJwIAPCv5Is1AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 13 Jan 2014 19:15:14 -0500
+X-AuditID: 9c930179-b7c5fae000006619-27-52d48190366e
+Date: Tue, 14 Jan 2014 09:15:55 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/7] zram: fix race between reset and flushing pending
+ work
+Message-ID: <20140114001555.GV1992@bbox>
+References: <1389611942-15544-1-git-send-email-minchan@kernel.org>
+ <1389611942-15544-2-git-send-email-minchan@kernel.org>
+ <20140113155527.5731d24ca86f01bfd5ec716f@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140113155527.5731d24ca86f01bfd5ec716f@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 07:43 PM, Alexey Perevalov wrote:
-> From: Anton Vorontsov <anton@scarybugs.org>
+On Mon, Jan 13, 2014 at 03:55:27PM -0800, Andrew Morton wrote:
+> On Mon, 13 Jan 2014 20:18:56 +0900 Minchan Kim <minchan@kernel.org> wrote:
 > 
-> Two new functions: jiffies_to_ktime() and ktime_to_jiffies(), we'll use
-> them for timerfd deferred timers handling.
+> > Dan and Sergey reported that there is a racy between reset and
+> > flushing of pending work so that it could make oops by freeing
+> > zram->meta in reset while zram_slot_free can access zram->meta
+> > if new request is adding during the race window.
+> > 
+> > This patch moves flush after taking init_lock so it prevents
+> > new request so that it closes the race.
+> > 
+> > ..
+> >
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -553,14 +553,14 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  	size_t index;
+> >  	struct zram_meta *meta;
+> >  
+> > -	flush_work(&zram->free_work);
+> > -
+> >  	down_write(&zram->init_lock);
+> >  	if (!zram->init_done) {
+> >  		up_write(&zram->init_lock);
+> >  		return;
+> >  	}
+> >  
+> > +	flush_work(&zram->free_work);
+> > +
+> >  	meta = zram->meta;
+> >  	zram->init_done = 0;
 > 
-> We fully reuse the logic from timespec implementations, so the functions
-> are pretty straightforward.
+> This makes zram.lock nest inside zram.init_lock, which afaict is new
+> behaviour.
+
+Originally, it was nested so it's not new. :)
+Look at zram_make_request which hold init_lock and then zram_bvec_rw
+hold zram->lock.
+
 > 
-> The only tricky part is in headers: we have to include jiffies.h after
-> we defined ktime_t, this is because ktime.h needs some declarations from
-> jiffies.h (e.g. TICK_NSEC).
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> Signed-off-by: Alexey Perevalov <a.perevalov@samsung.com>
+> That all seems OK and logical - has it been well tested with lockdep?
 
-Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
+Yeb.
 
-I tested this patchset about operation of deferrable timer on user-space.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks,
-Chanwoo Choi
-
+-- 
+Kind regards,
+Minchan Kim
