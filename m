@@ -1,132 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaANGPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 01:15:47 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47062 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaANGPp (ORCPT
+	id S1752234AbaANGQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 01:16:43 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52245 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaANGQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 01:15:45 -0500
+	Tue, 14 Jan 2014 01:16:38 -0500
+Message-ID: <52D4D64F.7020000@linux.vnet.ibm.com>
+Date: Tue, 14 Jan 2014 11:46:47 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <52D4CE4C.1030809@oracle.com>
-References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
-	<20140113233505.GS1992@bbox>
-	<52D4909B.7070107@oracle.com>
-	<20140114045022.GZ1992@bbox>
-	<20140114050528.GA1992@bbox>
-	<52D4CE4C.1030809@oracle.com>
-Date: Tue, 14 Jan 2014 14:15:44 +0800
-Message-ID: <CAL1ERfMYXuQ48BEi=5pFCbDjAJ75RRRmnUGEanhWpxYh9RgZOQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Bob Liu <bob.liu@oracle.com>
-Cc: Minchan Kim <minchan@kernel.org>, Cai Liu <cai.liu@samsung.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, liucai.lfn@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+CC: paulmck@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        benh@kernel.crashing.org, daniel.lezcano@linaro.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        tuukka.tikkanen@linaro.org
+Subject: Re: [PATCH] cpuidle/menu: Fail cpuidle_idle_call() if no idle state
+ is acceptable
+References: <20140114060516.6109.14901.stgit@preeti.in.ibm.com>
+In-Reply-To: <20140114060516.6109.14901.stgit@preeti.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011406-5140-0000-0000-00000469A88D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 1:42 PM, Bob Liu <bob.liu@oracle.com> wrote:
->
-> On 01/14/2014 01:05 PM, Minchan Kim wrote:
->> On Tue, Jan 14, 2014 at 01:50:22PM +0900, Minchan Kim wrote:
->>> Hello Bob,
->>>
->>> On Tue, Jan 14, 2014 at 09:19:23AM +0800, Bob Liu wrote:
->>>>
->>>> On 01/14/2014 07:35 AM, Minchan Kim wrote:
->>>>> Hello,
->>>>>
->>>>> On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
->>>>>> zswap can support multiple swapfiles. So we need to check
->>>>>> all zbud pool pages in zswap.
->>>>>
->>>>> True but this patch is rather costly that we should iterate
->>>>> zswap_tree[MAX_SWAPFILES] to check it. SIGH.
->>>>>
->>>>> How about defining zswap_tress as linked list instead of static
->>>>> array? Then, we could reduce unnecessary iteration too much.
->>>>>
->>>>
->>>> But if use linked list, it might not easy to access the tree like this:
->>>> struct zswap_tree *tree = zswap_trees[type];
->>>
->>> struct zswap_tree {
->>>     ..
->>>     ..
->>>     struct list_head list;
->>> }
->>>
->>> zswap_frontswap_init()
->>> {
->>>     ..
->>>     ..
->>>     zswap_trees[type] = tree;
->>>     list_add(&tree->list, &zswap_list);
->>> }
->>>
->>> get_zswap_pool_pages(void)
->>> {
->>>     struct zswap_tree *cur;
->>>     list_for_each_entry(cur, &zswap_list, list) {
->>>         pool_pages += zbud_get_pool_size(cur->pool);
->>>     }
->>>     return pool_pages;
->>> }
->
-> Okay, I see your point. Yes, it's much better.
-> Cai, Please make an new patch.
+On 01/14/2014 11:35 AM, Preeti U Murthy wrote:
+> On PowerPC, in a particular test scenario, all the cpu idle states were disabled.
+> Inspite of this it was observed that the idle state count of the shallowest
+> idle state, snooze, was increasing.
+> 
+> This is because the governor returns the idle state index as 0 even in
+> scenarios when no idle state can be chosen. These scenarios could be when the
+> latency requirement is 0 or as mentioned above when the user wants to disable
+> certain cpu idle states at runtime. In the latter case, its possible that no
+> cpu idle state is valid because the suitable states were disabled
+> and the rest did not match the menu governor criteria to be chosen as the
+> next idle state.
+> 
+> This patch adds the code to indicate that a valid cpu idle state could not be
+> chosen by the menu governor and reports back to arch so that it can take some
+> default action.
+> 
+> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> ---
 
-This improved patch could reduce unnecessary iteration too much.
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 
-But I still have a question: why do we need so many zbud pools?
-How about use only one global zbud pool for all zswap_tree?
-I do not test it, but I think it can improve the strore density.
+> 
+>  drivers/cpuidle/cpuidle.c        |    6 +++++-
+>  drivers/cpuidle/governors/menu.c |    7 ++++---
+>  2 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index a55e68f..5bf06bb 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -131,8 +131,9 @@ int cpuidle_idle_call(void)
+> 
+>  	/* ask the governor for the next state */
+>  	next_state = cpuidle_curr_governor->select(drv, dev);
+> +
+> +	dev->last_residency = 0;
+>  	if (need_resched()) {
+> -		dev->last_residency = 0;
+>  		/* give the governor an opportunity to reflect on the outcome */
+>  		if (cpuidle_curr_governor->reflect)
+>  			cpuidle_curr_governor->reflect(dev, next_state);
+> @@ -140,6 +141,9 @@ int cpuidle_idle_call(void)
+>  		return 0;
+>  	}
+> 
+> +	if (next_state < 0)
+> +		return -EINVAL;
+> +
+>  	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> 
+>  	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index cf7f2f0..6921543 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -283,6 +283,7 @@ again:
+>   * menu_select - selects the next idle state to enter
+>   * @drv: cpuidle driver containing state data
+>   * @dev: the CPU
+> + * Returns -1 when no idle state is suitable
+>   */
+>  static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  {
+> @@ -292,17 +293,17 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  	int multiplier;
+>  	struct timespec t;
+> 
+> -	if (data->needs_update) {
+> +	if (data->last_state_idx >= 0 && data->needs_update) {
+>  		menu_update(drv, dev);
+>  		data->needs_update = 0;
+>  	}
+> 
+> -	data->last_state_idx = 0;
+> +	data->last_state_idx = -1;
+>  	data->exit_us = 0;
+> 
+>  	/* Special case when user has set very strict latency requirement */
+>  	if (unlikely(latency_req == 0))
+> -		return 0;
+> +		return data->last_state_idx;
+> 
+>  	/* determine the expected residency time, round up */
+>  	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+> 
 
-Just for your reference, Thanks!
-
-> Thanks,
-> -Bob
->
->>>
->>>
->>>>
->>>> BTW: I'm still prefer to use dynamic pool size, instead of use
->>>> zswap_is_full(). AFAIR, Seth has a plan to replace the rbtree with radix
->>>> which will be more flexible to support this feature and page migration
->>>> as well.
->>>>
->>>>> Other question:
->>>>> Why do we need to update zswap_pool_pages too frequently?
->>>>> As I read the code, I think it's okay to update it only when user
->>>>> want to see it by debugfs and zswap_is_full is called.
->>>>> So could we optimize it out?
->>>>>
->>>>>>
->>>>>> Signed-off-by: Cai Liu <cai.liu@samsung.com>
->>>>
->>>> Reviewed-by: Bob Liu <bob.liu@oracle.com>
->>>
->>> Hmm, I really suprised you are okay in this code piece where we have
->>> unnecessary cost most of case(ie, most system has a swap device) in
->>> *mm* part.
->>>
->>> Anyway, I don't want to merge this patchset.
->>> If Andrew merge it and anybody doesn't do right work, I will send a patch.
->>> Cai, Could you redo a patch?
->>> I don't want to intercept your credit.
->>>
->>> Even, we could optimize to reduce the the number of call as I said in
->>> previous reply.
->>
->> You did it already. Please write it out in description.
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
