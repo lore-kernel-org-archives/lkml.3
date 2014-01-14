@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaANA0W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:26:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53828 "EHLO
+	id S1755992AbaANBPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:15:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53843 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394AbaANA0S (ORCPT
+	with ESMTP id S1752460AbaANA0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:18 -0500
+	Mon, 13 Jan 2014 19:26:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Brett Ciphery <brett.ciphery@windriver.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 04/27] macvtap: update file current position
-Date: Mon, 13 Jan 2014 16:26:18 -0800
-Message-Id: <20140114002623.484039019@linuxfoundation.org>
+Subject: [PATCH 3.4 07/27] ipv6: dont count addrconf generated routes against gc limit
+Date: Mon, 13 Jan 2014 16:26:21 -0800
+Message-Id: <20140114002623.569582570@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -29,27 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit e6ebc7f16ca1434a334647aa56399c546be4e64b ]
+[ Upstream commit a3300ef4bbb1f1e33ff0400e1e6cf7733d988f4f ]
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Brett Ciphery reported that new ipv6 addresses failed to get installed
+because the addrconf generated dsts where counted against the dst gc
+limit. We don't need to count those routes like we currently don't count
+administratively added routes.
+
+Because the max_addresses check enforces a limit on unbounded address
+generation first in case someone plays with router advertisments, we
+are still safe here.
+
+Reported-by: Brett Ciphery <brett.ciphery@windriver.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv6/route.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -905,6 +905,8 @@ static ssize_t macvtap_aio_read(struct k
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -2114,15 +2114,11 @@ struct rt6_info *addrconf_dst_alloc(stru
+ {
+ 	struct net *net = dev_net(idev->dev);
+ 	struct rt6_info *rt = ip6_dst_alloc(&net->ipv6.ip6_dst_ops,
+-					    net->loopback_dev, 0);
++					    net->loopback_dev, DST_NOCOUNT);
+ 	int err;
  
- 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
-+	if (ret > 0)
-+		iocb->ki_pos = ret;
- out:
- 	return ret;
- }
+-	if (!rt) {
+-		if (net_ratelimit())
+-			pr_warning("IPv6:  Maximum number of routes reached,"
+-				   " consider increasing route/max_size.\n");
++	if (!rt)
+ 		return ERR_PTR(-ENOMEM);
+-	}
+ 
+ 	in6_dev_hold(idev);
+ 
 
 
