@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030AbaANBQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:16:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53820 "EHLO
+	id S1756013AbaANBQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:16:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbaANA0R (ORCPT
+	with ESMTP id S1752273AbaANA0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 19:26:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Hunt <joshhunt00@gmail.com>, Honggang Li <honli@redhat.com>,
-        Bang Nguyen <bang.nguyen@oracle.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 02/27] rds: prevent BUG_ON triggered on congestion update to loopback
-Date: Mon, 13 Jan 2014 16:26:16 -0800
-Message-Id: <20140114002623.428482670@linuxfoundation.org>
+Subject: [PATCH 3.4 03/27] macvtap: Do not double-count received packets
+Date: Mon, 13 Jan 2014 16:26:17 -0800
+Message-Id: <20140114002623.456448603@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -31,90 +31,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 18fc25c94eadc52a42c025125af24657a93638c0 ]
+[ Upstream commit 006da7b07bc4d3a7ffabad17cf639eec6849c9dc ]
 
-After congestion update on a local connection, when rds_ib_xmit returns
-less bytes than that are there in the message, rds_send_xmit calls
-back rds_ib_xmit with an offset that causes BUG_ON(off & RDS_FRAG_SIZE)
-to trigger.
+Currently macvlan will count received packets after calling each
+vlans receive handler.   Macvtap attempts to count the packet
+yet again when the user reads the packet from the tap socket.
+This code doesn't do this consistently either.  Remove the
+counting from macvtap and let only macvlan count received
+packets.
 
-For a 4Kb PAGE_SIZE rds_ib_xmit returns min(8240,4096)=4096 when actually
-the message contains 8240 bytes. rds_send_xmit thinks there is more to send
-and calls rds_ib_xmit again with a data offset "off" of 4096-48(rds header)
-=4048 bytes thus hitting the BUG_ON(off & RDS_FRAG_SIZE) [RDS_FRAG_SIZE=4k].
-
-The commit 6094628bfd94323fc1cea05ec2c6affd98c18f7f
-"rds: prevent BUG_ON triggering on congestion map updates" introduced
-this regression. That change was addressing the triggering of a different
-BUG_ON in rds_send_xmit() on PowerPC architecture with 64Kbytes PAGE_SIZE:
- 	BUG_ON(ret != 0 &&
-    		 conn->c_xmit_sg == rm->data.op_nents);
-This was the sequence it was going through:
-(rds_ib_xmit)
-/* Do not send cong updates to IB loopback */
-if (conn->c_loopback
-   && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-  	rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-    	return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-}
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 0 + 8240 - 48 (rds header accounted only the first time)
-   		 = 8192
-  c_xmit_data_off < 65536 (sg->length), so calls rds_ib_xmit again
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 8192 + 8240 = 16432, calls rds_ib_xmit again
-  and so on (c_xmit_data_off 24672,32912,41152,49392,57632)
-rds_ib_xmit returns 8240
-On this iteration this sequence causes the BUG_ON in rds_send_xmit:
-    while (ret) {
-    	tmp = min_t(int, ret, sg->length - conn->c_xmit_data_off);
-    	[tmp = 65536 - 57632 = 7904]
-    	conn->c_xmit_data_off += tmp;
-    	[c_xmit_data_off = 57632 + 7904 = 65536]
-    	ret -= tmp;
-    	[ret = 8240 - 7904 = 336]
-    	if (conn->c_xmit_data_off == sg->length) {
-    		conn->c_xmit_data_off = 0;
-    		sg++;
-    		conn->c_xmit_sg++;
-    		BUG_ON(ret != 0 &&
-    			conn->c_xmit_sg == rm->data.op_nents);
-    		[c_xmit_sg = 1, rm->data.op_nents = 1]
-
-What the current fix does:
-Since the congestion update over loopback is not actually transmitted
-as a message, all that rds_ib_xmit needs to do is let the caller think
-the full message has been transmitted and not return partial bytes.
-It will return 8240 (RDS_CONG_MAP_BYTES+48) when PAGE_SIZE is 4Kb.
-And 64Kb+48 when page size is 64Kb.
-
-Reported-by: Josh Hunt <joshhunt00@gmail.com>
-Tested-by: Honggang Li <honli@redhat.com>
-Acked-by: Bang Nguyen <bang.nguyen@oracle.com>
-Signed-off-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/ib_send.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/macvtap.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *c
- 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
- 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
- 		scat = &rm->data.op_sg[sg];
--		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
--		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
--		return ret;
-+		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-+		return sizeof(struct rds_header) + ret;
- 	}
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -797,7 +797,6 @@ static ssize_t macvtap_put_user(struct m
+ 				const struct sk_buff *skb,
+ 				const struct iovec *iv, int len)
+ {
+-	struct macvlan_dev *vlan;
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+@@ -851,12 +850,6 @@ static ssize_t macvtap_put_user(struct m
+ 	copied += len;
  
- 	/* FIXME we may overallocate here */
+ done:
+-	rcu_read_lock_bh();
+-	vlan = rcu_dereference_bh(q->vlan);
+-	if (vlan)
+-		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
+-	rcu_read_unlock_bh();
+-
+ 	return ret ? ret : copied;
+ }
+ 
 
 
