@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaANQwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:52:01 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44924 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662AbaANQv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:51:59 -0500
-Message-ID: <52D56B13.2050409@ti.com>
-Date: Tue, 14 Jan 2014 10:51:31 -0600
-From: "Anna, Suman" <s-anna@ti.com>
+	id S1751592AbaANQyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:54:17 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:25576 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaANQyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 11:54:14 -0500
+Message-ID: <52D56BB2.1050301@atmel.com>
+Date: Tue, 14 Jan 2014 17:54:10 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 7/7] hwspinlock/omap: enable build for AM33xx, AM43xx
- & DRA7xx
-References: <1389658764-39199-1-git-send-email-s-anna@ti.com> <1389658764-39199-8-git-send-email-s-anna@ti.com> <20140114131207.GB10818@saruman.home>
-In-Reply-To: <20140114131207.GB10818@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+CC: <b.brezillon@overkiz.com>, <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 00/12] Device Tree support for the at91sam9261ek
+References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+On 09/01/2014 13:31, Jean-Jacques Hiblot :
+> This patch set aims at bringing a basic device tree support for the sam9261.
+> It's mostly based on the sam9263 stuff.
 
-On 01/14/2014 07:12 AM, Felipe Balbi wrote:
-> On Mon, Jan 13, 2014 at 06:19:24PM -0600, Suman Anna wrote:
->> HwSpinlocks are supported on AM33xx, AM43xx and DRA7xx SoC
->> device families as well. The IPs are identical to that of
->> OMAP4/OMAP5, except for the number of locks.
->>
->> Add a depends on to the above family of SoCs to enable the
->> build support for OMAP hwspinlock driver for any of the above
->> SoC configs.
->>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
->> ---
->>   drivers/hwspinlock/Kconfig | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
->> index 70637d2..3612cb5 100644
->> --- a/drivers/hwspinlock/Kconfig
->> +++ b/drivers/hwspinlock/Kconfig
->> @@ -10,7 +10,7 @@ menu "Hardware Spinlock drivers"
->>
->>   config HWSPINLOCK_OMAP
->>   	tristate "OMAP Hardware Spinlock device"
->> -	depends on ARCH_OMAP4 || SOC_OMAP5
->> +	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_AM43XX
->
-> how about just using ARCH_OMAP2PLUS ?
+Nice! Thanks a lot for stepping up.
 
-We do not want the driver to build in OMAP2-only and/or OMAP3-only 
-configurations, on which the hwspinlock IP is not even present.
+One general comment though: I would like to have new AT91 SoC described
+in DT integrating mainline with Common Clock Framework implemented.
+I feel that it would make sense to directly convert sam9261 to CCF to
+avoid the pain of an intermediary DT description that would last only
+for a couple of kernel revisions.
 
-regards
-Suman
+> It introduces a new driver for the smc/ebi bus. It's used to configure the EBI
+> from the DT. I haven't documented its DT bindings yet. Timings can be provided
+> as raw values or nanoseconds.
 
+Thanks a lot for taking this SMC-as-a-driver task: it is very cool to
+have it!
+
+I will try to review your patches in the coming days... But Boris
+already did a good job at this ;-)
+
+> Change since V1:
+> * changed the DT representation to use address translation and separate the
+>   timings' configuration from the device properties by adding a "simple-bus"
+>   inetrmediate node.
+> * moved the smc driver from drivers/bus to drivers/memmory
+> * smc driver now accepts timings in nanoseconds as well as raw register values
+> * smc driver can clip the timings if they're out of bound and dump them to the
+>   console
+> * DM9000 timings are now described in nanosecs (for the virtue of example)
+> 
+> supported features:
+> * dbgu
+> * nand
+> * lcd
+> * ethernet
+> * leds
+> 
+> Jean-Jacques
+> 
+> Jean-Jacques Hiblot (12):
+>   at91: dt: Add at91sam9261 dt SoC support
+>   at91: dt: sam9261: Basic Device Tree support for the at91sam9261ek
+>   at91: dt: sam9261: Added support for the lcd display
+>   at91: smc: export sam9_smc_cs_read and sam9_smc_cs_configure.
+>   at91: smc: Increased the size of tdf_cycles in struct sam9_smc_config.
+>   at91: smc: Adds helper functions to validate and clip the smc timings.
+>   at91: dt: smc: Added smc bus driver
+>   at91: sam9261: Add a clock definition for the smc
+>   at91: dt: sam9261: Pinmux DT entries for the SMC/EBI interface
+>   at91: dt: sam9261: Add an entry in the DT for the SMC/EBI bus driver.
+>   at91: dt: sam9261: moved the NAND under the smc node
+>   at91: dt: sam9261: Added DM9000 in the device tree
+> 
+>  arch/arm/boot/dts/Makefile                     |   2 +
+>  arch/arm/boot/dts/at91sam9261.dtsi             | 639 +++++++++++++++++++++++++
+>  arch/arm/boot/dts/at91sam9261ek.dts            | 164 +++++++
+>  arch/arm/mach-at91/at91sam9261.c               |  17 +
+>  arch/arm/mach-at91/include/mach/at91sam9_smc.h |   6 +-
+>  arch/arm/mach-at91/sam9_smc.c                  |  81 +++-
+>  drivers/memory/Kconfig                         |  10 +
+>  drivers/memory/Makefile                        |   1 +
+>  drivers/memory/atmel-smc.c                     | 431 +++++++++++++++++
+>  9 files changed, 1348 insertions(+), 3 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/at91sam9261.dtsi
+>  create mode 100644 arch/arm/boot/dts/at91sam9261ek.dts
+>  create mode 100644 drivers/memory/atmel-smc.c
+> 
+
+
+-- 
+Nicolas Ferre
