@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaANHmk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:42:40 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:41300 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaANHmA (ORCPT
+	id S1753167AbaANHpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:45:10 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:62408 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456AbaANHpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:42:00 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <davem@davemloft.net>
-CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
-        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
-        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
-        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 05/10] decnet: use __dev_get_by_index instead of dev_get_by_index to find interface
-Date: Tue, 14 Jan 2014 15:41:04 +0800
-Message-ID: <1389685269-18600-6-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
-References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 14 Jan 2014 02:45:05 -0500
+From: Richard Weinberger <richard@nod.at>
+To: mingo@redhat.com, hpa@zytor.com
+Cc: x86@kernel.org, seiji.aguchi@hds.com, rientjes@google.com,
+        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, bp@alien8.de,
+        Richard Weinberger <richard@nod.at>
+Subject: [RESEND][PATCH] APIC: Read Error Status Register correctly
+Date: Tue, 14 Jan 2014 08:44:47 +0100
+Message-Id: <1389685487-20872-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chain we can identify that dn_cache_getroute() is
-protected under rtnl_lock. So if we use __dev_get_by_index() instead
-of dev_get_by_index() to find interface handlers in it, this would help
-us avoid to change interface reference counter.
+Currently we do a read, a dummy write and a final read to fetch the error code.
+The value from the final read is taken.
+This is not the recommended way and leads to corrupted/lost ESR values.
 
-rtnetlink_rcv()
-  rtnl_lock()
-    netlink_rcv_skb()
-      dn_cache_getroute()
-  rtnl_unlock()
+Intel(c) 64 and IA-32 Architectures Software Developer's Manual,
+Combined Volumes 1, 2ABC, 3ABC, Section 10.5.3 states:
+>>Before attempt to read from the ESR, software should first write to it.
+(The value written does not affect the values read subsequently;
+only zero may be written in x2APIC mode.) This write clears
+any previously logged errors and updates the ESR with any errors
+detected since the last write to the ESR.
+This write also rearms the APIC error interrupt triggering mechanism.<<
 
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
+This patch removes the first read such that we are conform with the manual.
+
+On my (very old) Pentium MMX SMP system this patch fixes the issue that
+APIC errors a) are not always reported and b) are reported with false
+error numbers.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- net/decnet/dn_route.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/x86/kernel/apic/apic.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
-index ad2efa5..22390e4 100644
---- a/net/decnet/dn_route.c
-+++ b/net/decnet/dn_route.c
-@@ -1666,12 +1666,12 @@ static int dn_cache_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh)
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index d278736..4ec1dd6 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1968,7 +1968,7 @@ __visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
+  */
+ static inline void __smp_error_interrupt(struct pt_regs *regs)
+ {
+-	u32 v0, v1;
++	u32 v;
+ 	u32 i = 0;
+ 	static const char * const error_interrupt_reason[] = {
+ 		"Send CS error",		/* APIC Error Bit 0 */
+@@ -1982,21 +1982,20 @@ static inline void __smp_error_interrupt(struct pt_regs *regs)
+ 	};
  
- 	if (fld.flowidn_iif) {
- 		struct net_device *dev;
--		if ((dev = dev_get_by_index(&init_net, fld.flowidn_iif)) == NULL) {
-+		dev = __dev_get_by_index(&init_net, fld.flowidn_iif);
-+		if (!dev) {
- 			kfree_skb(skb);
- 			return -ENODEV;
- 		}
- 		if (!dev->dn_ptr) {
--			dev_put(dev);
- 			kfree_skb(skb);
- 			return -ENODEV;
- 		}
-@@ -1693,8 +1693,6 @@ static int dn_cache_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh)
- 		err = dn_route_output_key((struct dst_entry **)&rt, &fld, 0);
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+-	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+-	v1 = apic_read(APIC_ESR);
++	v = apic_read(APIC_ESR);
+ 	ack_APIC_irq();
+ 	atomic_inc(&irq_err_count);
+ 
+-	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
+-		    smp_processor_id(), v0 , v1);
++	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x",
++		    smp_processor_id(), v);
+ 
+-	v1 = v1 & 0xff;
+-	while (v1) {
+-		if (v1 & 0x1)
++	v &= 0xff;
++	while (v) {
++		if (v & 0x1)
+ 			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
+ 		i++;
+-		v1 >>= 1;
++		v >>= 1;
  	}
  
--	if (skb->dev)
--		dev_put(skb->dev);
- 	skb->dev = NULL;
- 	if (err)
- 		goto out_free;
+ 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
 -- 
-1.7.9.5
+1.8.4.2
 
