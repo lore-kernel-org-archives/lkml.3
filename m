@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaANA2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:28:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54336 "EHLO
+	id S1754732AbaANAlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:41:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762AbaANA2Z (ORCPT
+	with ESMTP id S1753871AbaANA2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:25 -0500
+	Mon, 13 Jan 2014 19:28:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Golle <daniel.golle@gmail.com>,
-        Stefan Tomanek <stefan.tomanek@wertarbyte.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 15/77] inet: fix NULL pointer Oops in fib(6)_rule_suppress
-Date: Mon, 13 Jan 2014 16:27:36 -0800
-Message-Id: <20140114002752.931740206@linuxfoundation.org>
+Subject: [PATCH 3.12 16/77] net: unix: allow set_peek_off to fail
+Date: Mon, 13 Jan 2014 16:27:37 -0800
+Message-Id: <20140114002752.960640210@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,59 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit 673498b8ed4c4d4b7221c5309d891c5eac2b7528 ]
+[ Upstream commit 12663bfc97c8b3fdb292428105dd92d563164050 ]
 
-This changes ensures that the routing entry investigated by the suppress
-function actually does point to a device struct before following that pointer,
-fixing a possible kernel oops situation when verifying the interface group
-associated with a routing table entry.
+unix_dgram_recvmsg() will hold the readlock of the socket until recv
+is complete.
 
-According to Daniel Golle, this Oops can be triggered by a user process trying
-to establish an outgoing IPv6 connection while having no real IPv6 connectivity
-set up (only autoassigned link-local addresses).
+In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
+unix_dgram_recvmsg() will complete (which can take a while) without allowing
+us to break out of it, triggering a hung task spew.
 
-Fixes: 6ef94cfafba15 ("fib_rules: add route suppression based on ifgroup")
+Instead, allow set_peek_off to fail, this way userspace will not hang.
 
-Reported-by: Daniel Golle <daniel.golle@gmail.com>
-Tested-by: Daniel Golle <daniel.golle@gmail.com>
-Signed-off-by: Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/fib_rules.c  |    5 ++++-
- net/ipv6/fib6_rules.c |    6 +++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ include/linux/net.h |    2 +-
+ net/core/sock.c     |    2 +-
+ net/unix/af_unix.c  |    8 ++++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/fib_rules.c
-+++ b/net/ipv4/fib_rules.c
-@@ -104,7 +104,10 @@ errout:
- static bool fib4_rule_suppress(struct fib_rule *rule, struct fib_lookup_arg *arg)
- {
- 	struct fib_result *result = (struct fib_result *) arg->result;
--	struct net_device *dev = result->fi->fib_dev;
-+	struct net_device *dev = NULL;
-+
-+	if (result->fi)
-+		dev = result->fi->fib_dev;
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -180,7 +180,7 @@ struct proto_ops {
+ 				      int offset, size_t size, int flags);
+ 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
+ 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
+-	void		(*set_peek_off)(struct sock *sk, int val);
++	int		(*set_peek_off)(struct sock *sk, int val);
+ };
  
- 	/* do not accept result if the route does
- 	 * not meet the required prefix length
---- a/net/ipv6/fib6_rules.c
-+++ b/net/ipv6/fib6_rules.c
-@@ -122,7 +122,11 @@ out:
- static bool fib6_rule_suppress(struct fib_rule *rule, struct fib_lookup_arg *arg)
+ #define DECLARE_SOCKADDR(type, dst, src)	\
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -888,7 +888,7 @@ set_rcvbuf:
+ 
+ 	case SO_PEEK_OFF:
+ 		if (sock->ops->set_peek_off)
+-			sock->ops->set_peek_off(sk, val);
++			ret = sock->ops->set_peek_off(sk, val);
+ 		else
+ 			ret = -EOPNOTSUPP;
+ 		break;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -530,13 +530,17 @@ static int unix_seqpacket_sendmsg(struct
+ static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
+ 				  struct msghdr *, size_t, int);
+ 
+-static void unix_set_peek_off(struct sock *sk, int val)
++static int unix_set_peek_off(struct sock *sk, int val)
  {
- 	struct rt6_info *rt = (struct rt6_info *) arg->result;
--	struct net_device *dev = rt->rt6i_idev->dev;
-+	struct net_device *dev = NULL;
+ 	struct unix_sock *u = unix_sk(sk);
+ 
+-	mutex_lock(&u->readlock);
++	if (mutex_lock_interruptible(&u->readlock))
++		return -EINTR;
 +
-+	if (rt->rt6i_idev)
-+		dev = rt->rt6i_idev->dev;
+ 	sk->sk_peek_off = val;
+ 	mutex_unlock(&u->readlock);
 +
- 	/* do not accept result if the route does
- 	 * not meet the required prefix length
- 	 */
++	return 0;
+ }
+ 
+ 
 
 
