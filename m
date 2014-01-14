@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaANCTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 21:19:46 -0500
-Received: from smtprelay0165.hostedemail.com ([216.40.44.165]:56551 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751364AbaANCTn (ORCPT
+	id S1752265AbaANCZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:25:22 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33451 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaANCZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 21:19:43 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:4250:4321:5007:7652:8957:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: home00_8ea268770493f
-X-Filterd-Recvd-Size: 1898
-Message-ID: <1389665978.24849.27.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: ced1401: fix coding style in ced_ioc.c
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Pol Eyschen <poleyschen@gmail.com>, sachin.kamat@linaro.org, jack@suse.cz,
-        ufimtseva@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Pol Eyschen <poleyschen@hotmail.com>
-Date: Mon, 13 Jan 2014 18:19:38 -0800
-In-Reply-To: <20140113235650.GA23380@kroah.com>
-References: <1389642100-3601-1-git-send-email-poleyschen@gmail.com>
-	 <20140113235650.GA23380@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 13 Jan 2014 21:25:18 -0500
+Message-ID: <52D4A00D.8000702@codeaurora.org>
+Date: Mon, 13 Jan 2014 18:25:17 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH v4 02/15] clk: Allow drivers to pass in a regmap
+References: <1387847559-18330-1-git-send-email-sboyd@codeaurora.org> <1387847559-18330-3-git-send-email-sboyd@codeaurora.org> <20140109015158.7168.60274@quantum> <52CE055C.5030103@codeaurora.org> <20140110054424.7168.46289@quantum> <20140110070517.GE14405@codeaurora.org>
+In-Reply-To: <20140110070517.GE14405@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-01-13 at 15:56 -0800, Greg KH wrote:
-> On Mon, Jan 13, 2014 at 08:41:40PM +0100, Pol Eyschen wrote:
-[]
-> > diff --git a/drivers/staging/ced1401/ced_ioc.c b/drivers/staging/ced1401/ced_ioc.c
-[]
-> > @@ -41,7 +41,8 @@ static void FlushOutBuff(DEVICE_EXTENSION *pdx)
-> >  {
-> >  	dev_dbg(&pdx->interface->dev, "%s currentState=%d", __func__,
-> >  		pdx->sCurrentState);
-> > -	if (pdx->sCurrentState == U14ERR_TIME)	/* Do nothing if hardware in trouble */
-> > +	if (pdx->sCurrentState == U14ERR_TIME)
-> > +		/* Do nothing if hardware in trouble */
-> >  		return;
-> 
-> Please wrap stuff like this in { } to not confuse people.
+On 01/09/14 23:05, Stephen Boyd wrote:
+> It feels another key point is being missed though. The regmap
+> pointer and the enable_reg/enable_mask is embedded in clk_hw to
+> allow the same code to be used by different types of surrounding
+> structs. Each struct: clk_pll, clk_rcg, and clk_branch in this
+> series use the regmap interface to enable/disable the clock and
+> they can easily do so by passing something that's always
+> available from struct clk_hw (be it via a wrapper struct, private
+> data member, or addition of new fields to clk_hw). If the regmap
+> members move into each specific type of clock we can't just pass
+> a single pointer to the enable/disable regmap functions anymore.
+> This is the reason why I suggested a driver data pointer or
+> container struct so that everything regmap related is contained
+> within one type.
+>
 
-Yes please, or maybe put the comment on the return line like:
+Any thoughts?
 
-	if (pdx->sCurrentState == U14ERR_TIME)
-		return;			/* Do nothing if hardware in trouble */
-
-or above the test like:
-
-	/* Do nothing if hardware in trouble */
-	if (pdx->sCurrentState == U14ERR_TIME)
-		return;
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
