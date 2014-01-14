@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086AbaANAsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:48:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54307 "EHLO
+	id S1755123AbaANAsx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:48:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713AbaANA2T (ORCPT
+	with ESMTP id S1753607AbaANA2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:19 -0500
+	Mon, 13 Jan 2014 19:28:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Gao feng <gaofeng@cn.fujitsu.com>, Li RongQing <roy.qing.li@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, Frank Li <Frank.Li@freescale.com>,
+        Richard Cochran <richardcochran@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 27/77] ipv6: always set the new created dsts from in ip6_rt_copy
-Date: Mon, 13 Jan 2014 16:27:48 -0800
-Message-Id: <20140114002753.272926002@linuxfoundation.org>
+Subject: [PATCH 3.12 26/77] net: fec: fix potential use after free
+Date: Mon, 13 Jan 2014 16:27:47 -0800
+Message-Id: <20140114002753.245555212@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,40 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 24f5b855e17df7e355eacd6c4a12cc4d6a6c9ff0 ]
+[ Upstream commit 7a2a84518cfb263d2c4171b3d63671f88316adb2 ]
 
-ip6_rt_copy only sets dst.from if ort has flag RTF_ADDRCONF and RTF_DEFAULT.
-but the prefix routes which did get installed by hand locally can have an
-expiration, and no any flag combination which can ensure a potential from
-does never expire, so we should always set the new created dst's from.
+skb_tx_timestamp(skb) should be called _before_ TX completion
+has a chance to trigger, otherwise it is too late and we access
+freed memory.
 
-This also fixes the new created dst is always expired since the ort, which
-is created by RA, maybe has RTF_EXPIRES and RTF_ADDRCONF, but no RTF_DEFAULT.
-
-Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: de5fb0a05348 ("net: fec: put tx to napi poll function to fix dead lock")
+Cc: Frank Li <Frank.Li@freescale.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Acked-by: Richard Cochran <richardcochran@gmail.com>
+Acked-by: Frank Li <Frank.Li@freescale.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/ethernet/freescale/fec_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1910,9 +1910,7 @@ static struct rt6_info *ip6_rt_copy(stru
- 		else
- 			rt->rt6i_gateway = *dest;
- 		rt->rt6i_flags = ort->rt6i_flags;
--		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
--		    (RTF_DEFAULT | RTF_ADDRCONF))
--			rt6_set_from(rt, ort);
-+		rt6_set_from(rt, ort);
- 		rt->rt6i_metric = 0;
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -425,6 +425,8 @@ fec_enet_start_xmit(struct sk_buff *skb,
+ 	/* If this was the last BD in the ring, start at the beginning again. */
+ 	bdp = fec_enet_get_nextdesc(bdp, fep);
  
- #ifdef CONFIG_IPV6_SUBTREES
++	skb_tx_timestamp(skb);
++
+ 	fep->cur_tx = bdp;
+ 
+ 	if (fep->cur_tx == fep->dirty_tx)
+@@ -433,8 +435,6 @@ fec_enet_start_xmit(struct sk_buff *skb,
+ 	/* Trigger transmission start */
+ 	writel(0, fep->hwp + FEC_X_DES_ACTIVE);
+ 
+-	skb_tx_timestamp(skb);
+-
+ 	return NETDEV_TX_OK;
+ }
+ 
 
 
