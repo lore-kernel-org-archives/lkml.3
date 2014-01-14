@@ -1,145 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaANWk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 17:40:57 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64254 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751462AbaANWkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 17:40:53 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: gregkh@linuxfoundation.org, len.brown@intel.com, pavel@ucw.cz,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhuangzhi.li@intel.com
-Subject: Re: [PATCH] PM: Enable asynchronous noirq resume threads to save the resuming time
-Date: Tue, 14 Jan 2014 23:54:50 +0100
-Message-ID: <1746120.u7vbF1Vtmp@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1389683888.3650.78.camel@cliu38-desktop-build>
-References: <1389683888.3650.78.camel@cliu38-desktop-build>
+	id S1751687AbaANWpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 17:45:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253AbaANWpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 17:45:36 -0500
+Date: Tue, 14 Jan 2014 17:45:23 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: William Roberts <bill.c.roberts@gmail.com>
+Cc: linux-audit@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, sds@tycho.nsa.gov,
+        William Roberts <wroberts@tresys.com>
+Subject: Re: [RFC][PATCH 3/3] audit: Audit proc cmdline value
+Message-ID: <20140114224523.GF23577@madcap2.tricolour.ca>
+References: <1389022230-24664-1-git-send-email-wroberts@tresys.com>
+ <1389022230-24664-3-git-send-email-wroberts@tresys.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389022230-24664-3-git-send-email-wroberts@tresys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 14, 2014 03:18:08 PM Chuansheng Liu wrote:
-> 
-> Currently, the dpm_resume_noirq() is done synchronously, and for PCI devices
-> pci_pm_resume_noirq():
-> 
-> pci_pm_resume_noirq()
->  pci_pm_default_resume_early()
->   pci_power_up()
->    pci_raw_set_power_state()
-> Which set the device from D3hot to D0 mostly, for every device, there will
-> be one 10ms(pci_pm_d3_delay) to wait.
-> 
-> Hence normally dpm_resume_noirq() will cost > 100ms, which is bigger for mobile
-> platform.
+On 14/01/06, William Roberts wrote:
+> During an audit event, cache and print the value of the process's
+> cmdline value (proc/<pid>/cmdline). This is useful in situations
+> where processes are started via fork'd virtual machines where the
+> comm field is incorrect. Often times, setting the comm field still
+> is insufficient as the comm width is not very wide and most
+> virtual machine "package names" do not fit. Also, during execution,
+> many threads have their comm field set as well. By tying it back to
+> the global cmdline value for the process, audit records will be more
+> complete in systems with these properties. An example of where this
+> is useful and applicable is in the realm of Android. With Android,
+> their is no fork/exec for VM instances. The bare, preloaded Dalvik
+> VM listens for a fork and specialize request. When this request comes
+> in, the VM forks, and the loads the specific application (specializing).
+> This was done to take advantage of COW and to not require a load of
+> basic packages by the VM on very app spawn. When this spawn occurs,
+> the package name is set via setproctitle() and shows up in procfs.
+> Many of these package names are longer then 16 bytes, the historical
+> width of task->comm. Having the cmdline in the audit records will
+> couple the application back to the record directly. Also, on my
+> Debian development box, some audit records were more useful then
+> what was printed under comm.
 
-pci_pm_d3_delay usually is not 10 ms.  What is 10 ms is dev->d3_delay, but
-that also is not on every platform now.
+So...  What happenned to allocating only what you need instead of the
+full 4k buffer?  Your test results showed promise with only 64 or 128
+bytes allocated.  I recall seeing some discussion about a race between
+testing for the size needed and actually filling the buffer, but was
+hoping that would be worked on rather than reverting back to the full
+4k.
 
-That said the approach here makes sense, but I have two questions:
-
-1. On what systems has it been tested?
-2. What about suspend_late/resume_early?  If the _noirq things are to be executed
-   asynchronously, those should be too.
-
-Thanks!
-
-> Here implementing it with asynchronous way which will reduce much.
+> The cached cmdline is tied to the life-cycle of the audit_context
+> structure and is built on demand.
 > 
-> For example below, The 80% time is saved.
-> With synchronous way:
-> [ 1411.272218] PM: noirq resume of devices complete after 92.223 msecs
-> With asynchronous way:
-> [  110.616735] PM: noirq resume of devices complete after 10.544 msecs
+> Example denial prior to patch (Ubuntu):
+> CALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 key=(null)
 > 
-> Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
+> After Patches (Ubuntu):
+> type=SYSCALL msg=audit(1387828084.070:361): arch=c000003e syscall=82 success=yes exit=0 a0=4184bf a1=418547 a2=0 a3=0 items=0 ppid=1 pid=1329 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 ses=4294967295 tty=(none) comm="console-kit-dae" exe="/usr/sbin/console-kit-daemon" subj=system_u:system_r:consolekit_t:s0-s0:c0.c255 cmdline="/usr/lib/dbus-1.0/dbus-daemon-launch-helper" key=(null)
+> 
+> Example denial prior to patch (Android):
+> type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" subj=u:r:bluetooth:s0 key=(null)
+> 
+> After Patches (Android):
+> type=1300 msg=audit(248323.940:247): arch=40000028 syscall=54 per=840000 success=yes exit=0 a0=39 a1=540b a2=2 a3=750eecec items=0 ppid=224 pid=1858 auid=4294967295 uid=1002 gid=1002 euid=1002 suid=1002 fsuid=1002 egid=1002 sgid=1002 fsgid=1002 tty=(none) ses=4294967295 comm="bt_hc_worker" exe="/system/bin/app_process" cmdline="com.android.bluetooth" subj=u:r:bluetooth:s0 key=(null)
+> 
+> Signed-off-by: William Roberts <wroberts@tresys.com>
 > ---
->  drivers/base/power/main.c |   42 +++++++++++++++++++++++++++++++++---------
->  1 file changed, 33 insertions(+), 9 deletions(-)
+>  kernel/audit.h   |    1 +
+>  kernel/auditsc.c |   32 ++++++++++++++++++++++++++++++++
+>  2 files changed, 33 insertions(+)
 > 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index 1b41fca..1b9d774 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -505,6 +505,19 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
->  	return error;
+> diff --git a/kernel/audit.h b/kernel/audit.h
+> index b779642..bd6211f 100644
+> --- a/kernel/audit.h
+> +++ b/kernel/audit.h
+> @@ -202,6 +202,7 @@ struct audit_context {
+>  		} execve;
+>  	};
+>  	int fds[2];
+> +	char *cmdline;
+>  
+>  #if AUDIT_DEBUG
+>  	int		    put_count;
+> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> index 90594c9..a4c2003 100644
+> --- a/kernel/auditsc.c
+> +++ b/kernel/auditsc.c
+> @@ -842,6 +842,12 @@ static inline struct audit_context *audit_get_context(struct task_struct *tsk,
+>  	return context;
 >  }
 >  
-> +static bool is_async(struct device *dev);
-> +
-> +static void async_resume_noirq(void *data, async_cookie_t cookie)
+> +static inline void audit_cmdline_free(struct audit_context *context)
 > +{
-> +	struct device *dev = (struct device *)data;
-> +	int error;
-> +
-> +	error = device_resume_noirq(dev, pm_transition);
-> +	if (error)
-> +		pm_dev_err(dev, pm_transition, " noirq", error);
-> +	put_device(dev);
+> +	kfree(context->cmdline);
+> +	context->cmdline = NULL;
 > +}
 > +
->  /**
->   * dpm_resume_noirq - Execute "noirq resume" callbacks for all devices.
->   * @state: PM transition of the system being carried out.
-> @@ -514,29 +527,40 @@ static int device_resume_noirq(struct device *dev, pm_message_t state)
->   */
->  static void dpm_resume_noirq(pm_message_t state)
+>  static inline void audit_free_names(struct audit_context *context)
 >  {
-> +	struct device *dev;
->  	ktime_t starttime = ktime_get();
-> +	pm_transition = state;
+>  	struct audit_names *n, *next;
+> @@ -955,6 +961,7 @@ static inline void audit_free_context(struct audit_context *context)
+>  	audit_free_aux(context);
+>  	kfree(context->filterkey);
+>  	kfree(context->sockaddr);
+> +	audit_cmdline_free(context);
+>  	kfree(context);
+>  }
+>  
+> @@ -1271,6 +1278,30 @@ static void show_special(struct audit_context *context, int *call_panic)
+>  	audit_log_end(ab);
+>  }
+>  
+> +static void audit_log_cmdline(struct audit_buffer *ab, struct task_struct *tsk,
+> +			 struct audit_context *context)
+> +{
+> +	int res;
+> +	char *buf;
+> +	char *msg = "(null)";
+> +	audit_log_format(ab, " cmdline=");
 > +
-> +	list_for_each_entry(dev, &dpm_noirq_list, power.entry) {
-> +		if (is_async(dev)) {
-> +			get_device(dev);
-> +			async_schedule(async_resume_noirq, dev);
-> +		}
+> +	/* Not  cached */
+> +	if (!context->cmdline) {
+> +		buf = kmalloc(PATH_MAX, GFP_KERNEL);
+> +		if (!buf)
+> +			goto out;
+> +		res = get_cmdline(tsk, buf, PATH_MAX);
+> +		/* Ensure NULL terminated */
+> +		if (buf[res-1] != '\0')
+> +			buf[res-1] = '\0';
+> +		context->cmdline = buf;
 > +	}
+> +	msg = context->cmdline;
+> +out:
+> +	audit_log_untrustedstring(ab, msg);
+> +}
+> +
+>  static void audit_log_exit(struct audit_context *context, struct task_struct *tsk)
+>  {
+>  	int i, call_panic = 0;
+> @@ -1302,6 +1333,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+>  			 context->name_count);
 >  
->  	mutex_lock(&dpm_list_mtx);
->  	while (!list_empty(&dpm_noirq_list)) {
-> -		struct device *dev = to_device(dpm_noirq_list.next);
-> -		int error;
-> +		dev = to_device(dpm_noirq_list.next);
+>  	audit_log_task_info(ab, tsk);
+> +	audit_log_cmdline(ab, tsk, context);
+>  	audit_log_key(ab, context->filterkey);
+>  	audit_log_end(ab);
 >  
->  		get_device(dev);
->  		list_move_tail(&dev->power.entry, &dpm_late_early_list);
->  		mutex_unlock(&dpm_list_mtx);
->  
-> -		error = device_resume_noirq(dev, state);
-> -		if (error) {
-> -			suspend_stats.failed_resume_noirq++;
-> -			dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
-> -			dpm_save_failed_dev(dev_name(dev));
-> -			pm_dev_err(dev, state, " noirq", error);
-> +		if (!is_async(dev)) {
-> +			int error;
-> +			error = device_resume_noirq(dev, state);
-> +			if (error) {
-> +				suspend_stats.failed_resume_noirq++;
-> +				dpm_save_failed_step(SUSPEND_RESUME_NOIRQ);
-> +				dpm_save_failed_dev(dev_name(dev));
-> +				pm_dev_err(dev, state, " noirq", error);
-> +			}
->  		}
-> -
->  		mutex_lock(&dpm_list_mtx);
->  		put_device(dev);
->  	}
->  	mutex_unlock(&dpm_list_mtx);
-> +	async_synchronize_full();
->  	dpm_show_time(starttime, state, "noirq");
->  	resume_device_irqs();
->  	cpuidle_resume();
+> -- 
+> 1.7.9.5
 > 
+> --
+> Linux-audit mailing list
+> Linux-audit@redhat.com
+> https://www.redhat.com/mailman/listinfo/linux-audit
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
