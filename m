@@ -1,70 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaANVNb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:13:31 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:55352 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485AbaANVNZ (ORCPT
+	id S1751750AbaANVRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:17:42 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:43307 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbaANVRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:13:25 -0500
+	Tue, 14 Jan 2014 16:17:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <52D5A60C.7080800@ti.com>
-References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org>
-	<52D404DE.2020806@ti.com>
-	<CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com>
-	<52D55CE5.1060902@ti.com>
-	<CAA3XUr2cnF_rxMYvZfjBx22Sa8YE45o_qUU8GNoerQwhWqxhNQ@mail.gmail.com>
-	<CAGo_u6oKpRFnPAWaqr9NTNAJB+m56jiDgBUgvsiZpaQ-3SF2kw@mail.gmail.com>
-	<CAA3XUr1_cNuPmMU6Fs6c7Si2So0VFGcLyGJe+tS_R47BVKRXnw@mail.gmail.com>
-	<CAGo_u6p7ErrKOMy4Ljg3nehVpd=DOg3XDn6gZ1nrFE_OuOjsWg@mail.gmail.com>
-	<52D5A60C.7080800@ti.com>
-Date: Tue, 14 Jan 2014 15:13:24 -0600
-X-Google-Sender-Auth: VdzfayaoCc9197iMG2WJ2LLiJLg
-Message-ID: <CAGo_u6oGDK5s0SeE6Z7UFM6eYdgoy-E+Tj67+pBWP-wQ3r9=QA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
-From: Nishanth Menon <nm@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Patch Tracking <patches@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20140114211009.GA23999@fieldses.org>
+References: <1389277187-18211-1-git-send-email-jlayton@redhat.com>
+ <1389277187-18211-14-git-send-email-jlayton@redhat.com> <52CF05B5.5080700@amacapital.net>
+ <20140109194930.1692fbbe@tlielax.poochiereds.net> <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com>
+ <20140114192713.GA22262@fieldses.org> <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com>
+ <20140114211009.GA23999@fieldses.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 14 Jan 2014 13:17:20 -0800
+Message-ID: <CALCETrWhZ3OPznoNEQoXtBtd2BzFveYiJyHkDtOFLi9pvSk+vw@mail.gmail.com>
+Subject: Re: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jeff Layton <jlayton@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        nfs-ganesha-devel@lists.sourceforge.net,
+        samba-technical@lists.samba.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        drh@hwaci.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 3:03 PM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
->
->> ok.. some sort of Linaro thing about which I have no background about
->> - but dont really care in this context.
+On Tue, Jan 14, 2014 at 1:10 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Tue, Jan 14, 2014 at 12:29:17PM -0800, Andy Lutomirski wrote:
+>> [cc: drh, who I suspect is responsible for the most widespread
+>> userspace software that uses this stuff]
 >>
-> Nothing related Linaro. Its just that platforms are supporting ARM BE
-> mode and Linaro folks had working patches for Panda. So I suggested
-> to get them on the lists.
+>> On Tue, Jan 14, 2014 at 11:27 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
+>> > On Thu, Jan 09, 2014 at 04:58:59PM -0800, Andy Lutomirski wrote:
+>> >> On Thu, Jan 9, 2014 at 4:49 PM, Jeff Layton <jlayton@redhat.com> wrote:
+>> >> > On Thu, 09 Jan 2014 12:25:25 -0800
+>> >> > Andy Lutomirski <luto@amacapital.net> wrote:
+>> >> >> When I think of deadlocks caused by r/w locks (which these are), I think
+>> >> >> of two kinds.  First is what the current code tries to detect: two
+>> >> >> processes that are each waiting for each other.  I don't know whether
+>> >> >> POSIX enshrines the idea of detecting that, but I wouldn't be surprised,
+>> >> >> considering how awful the old POSIX locks are.
+>> > ...
+>> >> >> The sensible kind of detectable deadlock involves just one lock, and it
+>> >> >> happens when two processes both hold read locks and try to upgrade to
+>> >> >> write locks.  This should be efficiently detectable and makes upgrading
+>> >> >> locks safe(r).
+>> >
+>> > This also involves two processes waiting on each other, and the current
+>> > code should detect either case equally well.
+>> >
+>> > ...
+>> >> For this kind of deadlock detection, nothing global is needed -- I'm
+>> >> only talking about detecting deadlocks due to two tasks upgrading
+>> >> locks on the same file (with overlapping ranges) at the same time.
+>> >>
+>> >> This is actually useful for SQL-like things.  Imagine this scenario:
+>> >>
+>> >> Program 1:
+>> >>
+>> >> Open a file
+>> >> BEGIN;
+>> >> SELECT whatever;  -- acquires a read lock
+>> >>
+>> >> Program 2:
+>> >>
+>> >> Open the same file
+>> >> BEGIN;
+>> >> SELECT whatever;  -- acquires a read lock
+>> >>
+>> >> Program 1:
+>> >> UPDATE something;  -- upgrades to write
+>> >>
+>> >> Now program 1 is waiting for program 2 to release its lock.  But if
+>> >> program 2 tries to UPDATE, then it deadlocks.  A friendly MySQL
+>> >> implementation (which, sadly, does not include sqlite) will fail the
+>> >> abort the transaction instead.
+>> >
+>> > And then I suppose you'd need to get an exclusive lock when you retry,
+>> > to guarantee forward progress in the face of multiple processes retrying
+>> > at once.
+>>
+>> I don't think so -- as long as deadlock detection is 100% reliable and
+>> if you have writer priority,
+>
+> We don't have writer priority.  Depending on how it worked I'm not
+> convinced it would help.  E.g. consider the above but with 3 processes:
+>
+>         processes 1, 2, and 3 each get a whole-file read lock.
+>
+>         process 1 requests a write lock, blocks because it conflicts
+>         with read locks held by 2 and 3.
+>
+>         process 2 requests a write lock, gets -EDEADLK, unlocks and
+>         requests a new read lock.  That request succeeds because there
+>         is no conflicting lock.  (Note the lock manager had no
+>         opportunity to upgrade 1's lock here thanks to the conflict with
+>         3's lock.)
 
-I tend to think -> is this with OFF mode and CPUidle completely
-working? All context save and restore works with this? on HS and GP
-devices with BE mode builds? works on SDP4430,60 variations,
-considered reuse with AM43xx which could use parts of that logic?
+Writer priority here would detect that someone's waiting for write
+access and would cause new readers to block.
 
-I mean to indicate that terms like "works on panda" tends always to be relative.
+>
+>         process 3 requests a write lock, gets -EDEADLOCK, unlocks and
+>         requests a new read lock.
+>
+>         Etc.
+>
+>> then all that readers need to do is to
+>> drop and re-acquire the read lock.  (This property is critical to
+>> avoid livelocks in SQL.  I rely on it here: a deadlocked UPDATE just
+>> retries the entire transaction without any special exclusive locks.)
+>>
+>> >
+>> > I don't know, is this so useful?
+>> >
+>> >> It would be nice if the kernel
+>> >> supported this.
+>> >>
+>> >> Note that unlocking and then re-locking for write is incorrect -- it
+>> >> would allow program 2 to write inconsistent data.
+>> >>
+>> >> I think that implementing this could be as simple as having some way
+>> >> to check if a struct file_lock is currently trying to upgrade from
+>> >> read to write and, if you try to upgrade and end up waiting for such a
+>> >> lock, aborting.
+>> >
+>> > You have to be clear what you mean by "such a lock".  What you really
+>> > want to know is whether you'd be waiting on a lock that might be waiting
+>> > on a lock you hold.
+>>
+>> By "such a lock" I mean a read lock on the same file that's trying to
+>> upgrade to write.  I think that's the main (only?) interesting case.
+>> Checking for this has the nice property that you don't need to iterate
+>> and you don't care whom the holder of that lock is waiting for -- if
+>> it's upgrading and you overlap with it, you are certainly in the
+>> deadlock case.
+>
+> OK, I think.
+>
+>> > To a first approximation, the current works with a graph with tasks as
+>> > nodes and an arrow from node X to node Y if X is waiting on a lock held
+>> > by node Y.  And it follows arrows in that graph looking for cycles.
+>> >
+>> > And sure I guess it would be a bit nicer if you only bothered checking
+>> > for cycles that touch this one file.
+>> >
+>> > But I'd really rather avoid the complication of deadlock detection
+>> > unless somebody can make a really strong case that they need it.
+>>
+>> TBH, I suspect that the person you really want to ask is drh, who
+>> writes/maintains sqlite (cc'd).  sqlite has fancy locks built on top
+>> of fcntl locks.
+>
+> A quick check of the sqlite source shows some complaints about posix
+> locks in src/os.c.
+>
+> Looks like all he's asking for his for the lock owner to be the file
+> descriptor not the pid, and for locks not to be thrown away on first
+> close.  Those are the two things jlayton addresses.
+>
+> So yes I think it would be interesting to know whether some of the extra
+> layer of internal sqlite locking could have been chucked if it could
+> have been based on jlayton's locks.
 
-It is nice to see it as a proof of concept, but I'd hate to see some
-dead code lying around in kernel and folks blindly following suit and
-introducing macros for new assembly for a feature that in practice
-just one group of folks care about and creates additional burden for
-rest of folks trying to keep that functionality going as we jump from
-one "device tree" style churn to another "framework"? Not to mean that
-good features should be kept away.. but personally, I could not find
-convincing arguments in this case..
+FWIW, at least last time I checked, sqlite didn't implement deadlock
+detection (it uses timeouts instead).  That was one of my least
+favorite things about sqlite.
 
-Regards,
-Nishanth Menon
+With this feature in fcntl, I think that sqlite could add deadlock
+detection and a true blocking mode without changing the file/locking
+format, at least if it still works the way I remember it working.
+
+Anyway, I still don't think that this feature should be a prerequisite
+for the new lock types.
+
+--Andy
