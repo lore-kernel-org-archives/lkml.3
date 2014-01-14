@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaANNc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:32:28 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:49057 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaANNcZ (ORCPT
+	id S1751834AbaANNda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:33:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60777 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaANNd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:32:25 -0500
-Date: Tue, 14 Jan 2014 14:32:22 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 2/7] drivers/amba: don't check resource with
- devm_ioremap_resource
-Message-ID: <20140114133221.GA10936@ulmo.nvidia.com>
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
- <1389700739-3696-2-git-send-email-wsa@the-dreams.de>
+	Tue, 14 Jan 2014 08:33:27 -0500
+Date: Tue, 14 Jan 2014 14:33:13 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the tip
+ tree
+Message-ID: <20140114133313.GZ7572@laptop.programming.kicks-ass.net>
+References: <20140114155331.88d170d3c991b9465c23a537@canb.auug.org.au>
+ <20140114125153.GY7572@laptop.programming.kicks-ass.net>
+ <CAMuHMdUPJ7pu5J6om+j=Tm8xDXhXU3sD4k7ZP6b4Xu-tF+gK2w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389700739-3696-2-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAMuHMdUPJ7pu5J6om+j=Tm8xDXhXU3sD4k7ZP6b4Xu-tF+gK2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 14, 2014 at 02:17:55PM +0100, Geert Uytterhoeven wrote:
+> On Tue, Jan 14, 2014 at 1:51 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Jan 14, 2014 at 03:53:31PM +1100, Stephen Rothwell wrote:
+> >> Today's linux-next merge of the akpm-current tree got a conflict in
+> >> kernel/futex.c between commit a52b89ebb6d4 ("futexes: Increase hash table
+> >> size for better performance") from the tip tree and commit 61beee6c76e5
+> >> ("futex: switch to USER_DS for futex test") from the akpm-current tree.
+> >>
+> >> @@@ -2869,10 -2748,13 +2871,13 @@@
+> >>        * implementation, the non-functional ones will return
+> >>        * -ENOSYS.
+> >>        */
+> >> +     fs = get_fs();
+> >> +     set_fs(USER_DS);
+> >>       if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+> >>               futex_cmpxchg_enabled = 1;
+> >> +     set_fs(fs);
+> >>
+> >
+> > This seems terribly broken, the *futex_value*() ops should not need
+> > that; they are supposed to access userspace without any of that.
+> 
+> Why don't they need set_fs(USER_DS)?
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Why would they need it? These functions explicitly take a __user pointer
+and are expected to do whatever is needed to perform the operation. None
+of the other futex bits use USER_DS either.
 
-On Tue, Jan 14, 2014 at 12:58:53PM +0100, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
->=20
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->=20
-> Should go via subsystem tree
->=20
->  drivers/amba/tegra-ahb.c | 2 --
->  1 file changed, 2 deletions(-)
 
-Reviewed-by: Thierry Reding <treding@nvidia.com>
+Furthermore, from the Changelog of:
+e4f2dfbb5e92be4e46c0625f4f8eb101110f756f
 
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature
+"   This patch adds that support, but only for uniprocessor machines,
+    which is adequate for M68K.  For UP it's enough to disable preemption
+    to ensure mutual exclusion (futexes don't need to care about other
+    hardware agents), and the mandatory pagefault_disable() does just that.  "
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1TxkAAoJEN0jrNd/PrOhk5IP/09fJj/DbouEotGdo4OVW3b8
-oBPuIE0p4NblJsXc3PwxY8HzNlWmx1gZdi6c7A6uaMFH073/+cd4R/lP/U8MtCk0
-ErccCC3G0f4AtoiRg+Ibvdlk/p/bEdCNv1AevMF//dYS5XnQEpgEFhwm5UNr6g7t
-ANsw6XjFnueyDnj8y66xs7ayAOo5uKlu6r5kBre2p8ztD3yrXa0Lv75yozvtTYTj
-EAT4kJbuud4E/d4H1uaB+7i57cQz6ofyb04+jYUou0WkqdRc88cL6opmF/vQlO1x
-syOvYdy7uzvpuuB9lypImK57MMyN7Xi1ZNbLN/PeabsXV2YQiT6lmzDIFcLKCxXO
-JtOHIlJT+GDsTkYwLds9ASWc82LnfCes35QinAx4YCJhVGUgmTkc5KIb8wR0s6Wx
-T6WoOLv66AVRslk+z0qVfYQy8rrb5iJHbfB+IktaKNPBoecFkQPWb69ZBB2zKT2R
-emhBVfkWf5U25Zx+JsjD6+ZSiT6I4K2VUUTBg0CF396TFO6PMJ53ryBQlB7zUJIX
-WwKFgsdRTEXtsacKRC9rT2gEGZljyjNh4+DOlEbWt1QMGDxlTpprPfuKOMo+4k5u
-wY+3zhP1sO2kHezn3S8UkYcY+kI1ZWXBYmL+V2TJObkRUSgse/QfpfF+vOF1hz3p
-r47Ed6q9OuIEQJD8/iZv
-=uGTs
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
+It is wrong to rely on the fact that pagefault_disable() disables
+preemption. This is fact not true on -rt.
