@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941AbaANBBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:01:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54087 "EHLO
+	id S1755514AbaANBBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:01:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54079 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331AbaANA10 (ORCPT
+	with ESMTP id S1753315AbaANA1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:26 -0500
+	Mon, 13 Jan 2014 19:27:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.10 45/62] parisc: Ensure full cache coherency for kmap/kunmap
-Date: Mon, 13 Jan 2014 16:27:10 -0800
-Message-Id: <20140114002711.746210264@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, Frank Li <Frank.Li@freescale.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 25/62] net: fec: fix potential use after free
+Date: Mon, 13 Jan 2014 16:26:50 -0800
+Message-Id: <20140114002711.181624286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -28,151 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Eric Dumazet <edumazet@google.com>
 
-commit f8dae00684d678afa13041ef170cecfd1297ed40 upstream.
+[ Upstream commit 7a2a84518cfb263d2c4171b3d63671f88316adb2 ]
 
-Helge Deller noted a few weeks ago problems with the AIO support on
-parisc. This change is the result of numerous iterations on how best to
-deal with this problem.
+skb_tx_timestamp(skb) should be called _before_ TX completion
+has a chance to trigger, otherwise it is too late and we access
+freed memory.
 
-The solution adopted here is to provide full cache coherency in a
-uniform manner on all parisc systems. This involves calling
-flush_dcache_page() on kmap operations and flush_kernel_dcache_page() on
-kunmap operations. As a result, the copy_user_page() and
-clear_user_page() functions can be removed and the overall code is
-simpler.
-
-The change ensures that both userspace and kernel aliases to a mapped
-page are invalidated and flushed. This is necessary for the correct
-operation of PA8800 and PA8900 based systems which do not support
-inequivalent aliases.
-
-With this change, I have observed no cache related issues on c8000 and
-rp3440. It is now possible for example to do kernel builds with "-j64"
-on four way systems.
-
-On systems using XFS file systems, the patch recently posted by Mikulas
-Patocka to "fix crash using XFS on loopback" is needed to avoid a hang
-caused by an uninitialized lock passed to flush_dcache_page() in the
-page struct.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: de5fb0a05348 ("net: fec: put tx to napi poll function to fix dead lock")
+Cc: Frank Li <Frank.Li@freescale.com>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Acked-by: Richard Cochran <richardcochran@gmail.com>
+Acked-by: Frank Li <Frank.Li@freescale.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/parisc/include/asm/cacheflush.h |   12 ++++--------
- arch/parisc/include/asm/page.h       |    5 ++---
- arch/parisc/kernel/cache.c           |   35 -----------------------------------
- 3 files changed, 6 insertions(+), 46 deletions(-)
+ drivers/net/ethernet/freescale/fec_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/parisc/include/asm/cacheflush.h
-+++ b/arch/parisc/include/asm/cacheflush.h
-@@ -125,42 +125,38 @@ flush_anon_page(struct vm_area_struct *v
- void mark_rodata_ro(void);
- #endif
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -371,6 +371,8 @@ fec_enet_start_xmit(struct sk_buff *skb,
+ 	else
+ 		bdp = fec_enet_get_nextdesc(bdp, fep->bufdesc_ex);
  
--#ifdef CONFIG_PA8X00
--/* Only pa8800, pa8900 needs this */
++	skb_tx_timestamp(skb);
++
+ 	fep->cur_tx = bdp;
+ 
+ 	if (fep->cur_tx == fep->dirty_tx)
+@@ -379,8 +381,6 @@ fec_enet_start_xmit(struct sk_buff *skb,
+ 	/* Trigger transmission start */
+ 	writel(0, fep->hwp + FEC_X_DES_ACTIVE);
+ 
+-	skb_tx_timestamp(skb);
 -
- #include <asm/kmap_types.h>
- 
- #define ARCH_HAS_KMAP
- 
--void kunmap_parisc(void *addr);
--
- static inline void *kmap(struct page *page)
- {
- 	might_sleep();
-+	flush_dcache_page(page);
- 	return page_address(page);
+ 	return NETDEV_TX_OK;
  }
  
- static inline void kunmap(struct page *page)
- {
--	kunmap_parisc(page_address(page));
-+	flush_kernel_dcache_page_addr(page_address(page));
- }
- 
- static inline void *kmap_atomic(struct page *page)
- {
- 	pagefault_disable();
-+	flush_dcache_page(page);
- 	return page_address(page);
- }
- 
- static inline void __kunmap_atomic(void *addr)
- {
--	kunmap_parisc(addr);
-+	flush_kernel_dcache_page_addr(addr);
- 	pagefault_enable();
- }
- 
- #define kmap_atomic_prot(page, prot)	kmap_atomic(page)
- #define kmap_atomic_pfn(pfn)	kmap_atomic(pfn_to_page(pfn))
- #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
--#endif
- 
- #endif /* _PARISC_CACHEFLUSH_H */
- 
---- a/arch/parisc/include/asm/page.h
-+++ b/arch/parisc/include/asm/page.h
-@@ -28,9 +28,8 @@ struct page;
- 
- void clear_page_asm(void *page);
- void copy_page_asm(void *to, void *from);
--void clear_user_page(void *vto, unsigned long vaddr, struct page *pg);
--void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
--			   struct page *pg);
-+#define clear_user_page(vto, vaddr, page) clear_page_asm(vto)
-+#define copy_user_page(vto, vfrom, vaddr, page) copy_page_asm(vto, vfrom)
- 
- /* #define CONFIG_PARISC_TMPALIAS */
- 
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -388,41 +388,6 @@ void flush_kernel_dcache_page_addr(void
- }
- EXPORT_SYMBOL(flush_kernel_dcache_page_addr);
- 
--void clear_user_page(void *vto, unsigned long vaddr, struct page *page)
--{
--	clear_page_asm(vto);
--	if (!parisc_requires_coherency())
--		flush_kernel_dcache_page_asm(vto);
--}
--EXPORT_SYMBOL(clear_user_page);
--
--void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
--	struct page *pg)
--{
--	/* Copy using kernel mapping.  No coherency is needed
--	   (all in kmap/kunmap) on machines that don't support
--	   non-equivalent aliasing.  However, the `from' page
--	   needs to be flushed before it can be accessed through
--	   the kernel mapping. */
--	preempt_disable();
--	flush_dcache_page_asm(__pa(vfrom), vaddr);
--	preempt_enable();
--	copy_page_asm(vto, vfrom);
--	if (!parisc_requires_coherency())
--		flush_kernel_dcache_page_asm(vto);
--}
--EXPORT_SYMBOL(copy_user_page);
--
--#ifdef CONFIG_PA8X00
--
--void kunmap_parisc(void *addr)
--{
--	if (parisc_requires_coherency())
--		flush_kernel_dcache_page_addr(addr);
--}
--EXPORT_SYMBOL(kunmap_parisc);
--#endif
--
- void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
- {
- 	unsigned long flags;
 
 
