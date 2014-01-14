@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaANOOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:14:31 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:65335 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaANOOW (ORCPT
+	id S1751889AbaANOO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:14:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53502 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaANOOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:14:22 -0500
+	Tue, 14 Jan 2014 09:14:25 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Akinobu Mita <akinobu.mita@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
         x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH v2 3/5] intel-iommu: integrate DMA CMA
-Date: Tue, 14 Jan 2014 23:13:48 +0900
-Message-Id: <1389708830-5841-4-git-send-email-akinobu.mita@gmail.com>
+Subject: [PATCH v2 4/5] memblock: introduce memblock_alloc_range()
+Date: Tue, 14 Jan 2014 23:13:49 +0900
+Message-Id: <1389708830-5841-5-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
 References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
@@ -26,13 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the DMA Contiguous Memory Allocator for intel-iommu.
-This change enables dma_alloc_coherent() to allocate big contiguous
-memory.
-
-It is achieved in the same way as nommu_dma_ops currently does, i.e.
-trying to allocate memory by dma_alloc_from_contiguous() and alloc_pages()
-is used as a fallback.
+This introduces memblock_alloc_range() which allocates memblock from
+the specified range of physical address.  I would like to use this
+function to specify the location of CMA.
 
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -46,78 +42,75 @@ Cc: x86@kernel.org
 Cc: iommu@lists.linux-foundation.org
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 ---
-No change from the previous version
+New patch from this version
 
- drivers/iommu/intel-iommu.c | 32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+ include/linux/memblock.h |  2 ++
+ mm/memblock.c            | 27 ++++++++++++++++++++-------
+ 2 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index fd426ca..172c2b0 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3004,7 +3004,7 @@ static void *intel_alloc_coherent(struct device *hwdev, size_t size,
- 				  dma_addr_t *dma_handle, gfp_t flags,
- 				  struct dma_attrs *attrs)
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 77c60e5..95e0cfa 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -176,6 +176,8 @@ static inline bool memblock_bottom_up(void) { return false; }
+ #define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
+ #define MEMBLOCK_ALLOC_ACCESSIBLE	0
+ 
++phys_addr_t __init memblock_alloc_range(phys_addr_t size, phys_addr_t align,
++					phys_addr_t start, phys_addr_t end);
+ phys_addr_t memblock_alloc_base(phys_addr_t size, phys_addr_t align,
+ 				phys_addr_t max_addr);
+ phys_addr_t __memblock_alloc_base(phys_addr_t size, phys_addr_t align,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 53e477b..83b0542 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -864,25 +864,38 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+ }
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+ 
+-static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+-					phys_addr_t align, phys_addr_t max_addr,
+-					int nid)
++static phys_addr_t __init memblock_alloc_range_nid(phys_addr_t size,
++					phys_addr_t align, phys_addr_t start,
++					phys_addr_t end, int nid)
  {
--	void *vaddr;
-+	struct page *page = NULL;
- 	int order;
+ 	phys_addr_t found;
  
- 	size = PAGE_ALIGN(size);
-@@ -3019,17 +3019,31 @@ static void *intel_alloc_coherent(struct device *hwdev, size_t size,
- 			flags |= GFP_DMA32;
- 	}
+ 	if (WARN_ON(!align))
+ 		align = __alignof__(long long);
  
--	vaddr = (void *)__get_free_pages(flags, order);
--	if (!vaddr)
-+	if (!(flags & GFP_ATOMIC)) {
-+		unsigned int count = size >> PAGE_SHIFT;
-+
-+		page = dma_alloc_from_contiguous(hwdev, count, order);
-+		if (page && iommu_no_mapping(hwdev) &&
-+		    page_to_phys(page) + size > hwdev->coherent_dma_mask) {
-+			dma_release_from_contiguous(hwdev, page, count);
-+			page = NULL;
-+		}
-+	}
-+
-+	if (!page)
-+		page = alloc_pages(flags, order);
-+	if (!page)
- 		return NULL;
--	memset(vaddr, 0, size);
-+	memset(page_address(page), 0, size);
+-	/* align @size to avoid excessive fragmentation on reserved array */
+-	size = round_up(size, align);
+-
+-	found = memblock_find_in_range_node(0, max_addr, size, align, nid);
++	found = memblock_find_in_range_node(start, end, size, align, nid);
+ 	if (found && !memblock_reserve(found, size))
+ 		return found;
  
--	*dma_handle = __intel_map_single(hwdev, virt_to_bus(vaddr), size,
-+	*dma_handle = __intel_map_single(hwdev, page_to_phys(page), size,
- 					 DMA_BIDIRECTIONAL,
- 					 hwdev->coherent_dma_mask);
- 	if (*dma_handle)
--		return vaddr;
--	free_pages((unsigned long)vaddr, order);
-+		return page_address(page);
-+	if (!dma_release_from_contiguous(hwdev, page, size >> PAGE_SHIFT))
-+		__free_pages(page, order);
-+
- 	return NULL;
+ 	return 0;
  }
  
-@@ -3037,12 +3051,14 @@ static void intel_free_coherent(struct device *hwdev, size_t size, void *vaddr,
- 				dma_addr_t dma_handle, struct dma_attrs *attrs)
++phys_addr_t __init memblock_alloc_range(phys_addr_t size, phys_addr_t align,
++					phys_addr_t start, phys_addr_t end)
++{
++	return memblock_alloc_range_nid(size, align, start, end, MAX_NUMNODES);
++}
++
++static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
++					phys_addr_t align, phys_addr_t max_addr,
++					int nid)
++{
++	/* align @size to avoid excessive fragmentation on reserved array */
++	size = round_up(size, align);
++
++	return memblock_alloc_range_nid(size, align, 0, max_addr, nid);
++}
++
+ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
  {
- 	int order;
-+	struct page *page = virt_to_page(vaddr);
- 
- 	size = PAGE_ALIGN(size);
- 	order = get_order(size);
- 
- 	intel_unmap_page(hwdev, dma_handle, size, DMA_BIDIRECTIONAL, NULL);
--	free_pages((unsigned long)vaddr, order);
-+	if (!dma_release_from_contiguous(hwdev, page, size >> PAGE_SHIFT))
-+		__free_pages(page, order);
- }
- 
- static void intel_unmap_sg(struct device *hwdev, struct scatterlist *sglist,
+ 	return memblock_alloc_base_nid(size, align, MEMBLOCK_ALLOC_ACCESSIBLE, nid);
 -- 
 1.8.3.2
 
