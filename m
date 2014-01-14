@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011AbaANTak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:30:40 -0500
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:9528 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578AbaANTaj (ORCPT
+	id S1752046AbaANTbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:31:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32994 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559AbaANTbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:30:39 -0500
-X-AuditID: cbfec37c-b7f0d6d0000057bc-12-52d5905dc4fa
-Message-id: <52D5905B.1010103@samsung.com>
-Date: Tue, 14 Jan 2014 12:30:35 -0700
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH 3.10 00/62] 3.10.27-stable review
-References: <20140114002710.464561569@linuxfoundation.org>
-In-reply-to: <20140114002710.464561569@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.5]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9hP93YCVeDDNre2FjMWb+GzaJ58Xo2
-	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
-	pG+XwJWx6MYbxoLvnBVHbzUxNTB+Zu9i5OSQEDCR2PFyKRuELSZx4d56IJuLQ0hgGaPEoolb
-	GSGcXiaJrv9HWEGqhAQ2MErM6CsAsXkFtCQeL7jDCGKzCKhKLNxzDMxmE1CX+Px6BztEvZxE
-	05LVzCC2qECExKuzE1kgegUlfky+B2aLCARLrP26EGwZs8AKRonjL1+CnSQsYCpxe8sHFohB
-	VhIrJ/0FW8ApYC0x895JsBpmATOJRy3rmCFseYnNa94yQ9QrS/y5fIoJ4jUFiRsLl7FOYBSZ
-	hWT3LCTts5C0L2BkXsUoVlqcXFCclJ5aYaxXnJhbXJqXrpecn7uJERI1NTsY7321OcQowMGo
-	xMP7I/xqkBBrYllxZe4hRgkOZiURXvl6oBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGhM0Gzsc4
-	jHbvqaxr1Nz2mP28U8Dz7fGR/KZ/Tm2oevuxe2Z/1/m1yhuDHKvtcrs1pRlyuR7uP9YVbpl0
-	bi3bddH49TL3dRbt2GvXnbPi6LoA63NGf+s+3ZWPCS7cdf3QvDXifDOWFDXrx5fmmfcUWKUn
-	bDrZ8HG+tjNTkuX6rSn6VscfTahUYinOSDTUYi4qTgQAVKvHYngCAAA=
+	Tue, 14 Jan 2014 14:31:02 -0500
+Date: Tue, 14 Jan 2014 11:31:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [RFC] sysfs_rename_link() and its usage
+Message-ID: <20140114193139.GA3636@kroah.com>
+References: <20140114171740.GB1867@redhat.com>
+ <20140114182135.GA29296@kroah.com>
+ <20140114191208.GA9942@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114191208.GA9942@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 05:26 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.27 release.
-> There are 62 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jan 16 00:26:56 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.27-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Tue, Jan 14, 2014 at 08:12:08PM +0100, Veaceslav Falico wrote:
+> On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
+> >On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
+> >>Hi,
+> >>
+> >>I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
+> >>
+> >>Consider having two net_device *a, *b; which are registered normally.
+> >>Now, to create a link from /sys/class/net/a->name/linkname to b, one should
+> >>use:
+> >>
+> >>sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
+> >>
+> >>To remove it, even simpler:
+> >>
+> >>sysfs_remove_link(&(a->dev.kobj), linkname);
+> >>
+> >>This works like a charm. However, if I want to use (obviously, with the
+> >>symlink present):
+> >>
+> >>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
+> >
+> >You forgot the namespace option to this call, what kernel version are
+> >you using here?
+> 
+> It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
+> 3.13-rc6 with some networking patches on top of it.
+> 
+> And wrt namespace - there are two functions, one is sysfs_rename_link(),
+> which calls the second one - sysfs_rename_link_ns() with NULL namespace.
+> 
+> >
+> >>this fails with:
+> >>
+> >>"sysfs: ns invalid in 'a->name' for 'oldname'"
+> >
+> >Looks like the namespace for this link isn't valid.
+> 
+> Yep, though dunno why.
 
-Patch testing - passed
-Compile testing - passed
-Boot testing - passed
-dmesg regression testing - passed
+Are you testing this with network namespaces enabled?  Perhaps that is
+why, you need to specify the namespace of the link that you are
+changing.
 
-Test systems
+The fact that the bridge link works is odd to me, I would think that it
+too needs to specify the network namespace involved, but perhaps bridge
+objects aren't part of any specific network namespace?  I don't know the
+bridging code at all, sorry.
 
-Samsung Series 9 900X4C Intel Corei5 (3.4 and later)
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-Dell OptiPlex 790 Intel(R) Core(TM) i5-2400
+So try calling sysfs_rename_link_ns() and specify the namespace of the
+kobject you are changing, and see if that works or not.
 
-Detailed test status
+thanks,
 
-Patches applied cleanly
-
-dmesgs look good. No regressions compared to the previous dmesgs for 
-this release. dmesg emerg, crit, alert, err are clean. No regressions in 
-warn.
-
--- Shuah
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+greg k-h
