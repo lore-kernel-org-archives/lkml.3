@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaANPXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:23:15 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:2721 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaANPXN (ORCPT
+	id S1751747AbaANPYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:24:10 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:57012 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaANPYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:23:13 -0500
-Message-ID: <1389712628.1792.277.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] x86, acpi memory hotplug, add parameter to disable
- memory hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Linn Crosetto <linn@hp.com>,
-        Pekka Enberg <penberg@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Dave Young <dyoung@redhat.com>, linux-acpi@vger.kernel.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Tue, 14 Jan 2014 08:17:08 -0700
-In-Reply-To: <52D4A469.9090100@jp.fujitsu.com>
-References: <1389650161-13292-1-git-send-email-prarit@redhat.com>
-	  <CAHGf_=pX303E6VAhL+gApSQ1OsEQHqTuCN8ZSdD3E54YAcFQKA@mail.gmail.com>
-	  <52D47999.5080905@redhat.com> <52D48EC4.5070400@jp.fujitsu.com>
-	 <1389663689.1792.268.camel@misato.fc.hp.com>
-	 <52D4A469.9090100@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Jan 2014 10:24:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <1389620539.3720.157.camel@deadeye.wl.decadent.org.uk>
+References: <CACmBeS35RAEQ+t2vtYtFTKNT-VdQw20hURjTi193Jk8HG7UECA@mail.gmail.com>
+	<1389620539.3720.157.camel@deadeye.wl.decadent.org.uk>
+Date: Tue, 14 Jan 2014 16:24:06 +0100
+Message-ID: <CACmBeS1gTfdjwiCkHMViOnF6G2zjy3HSMm3NVq8Jiq5F22ynJA@mail.gmail.com>
+Subject: Re: build_skb() and data corruption
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: netdev <netdev@vger.kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        alexander.h.duyck@intel.com, Arnd Bergmann <arnd@arndb.de>,
+        Florian Fainelli <florian@openwrt.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-14 at 11:43 +0900, Yasuaki Ishimatsu wrote:
-> (2014/01/14 10:41), Toshi Kani wrote:
-> > On Tue, 2014-01-14 at 10:11 +0900, Yasuaki Ishimatsu wrote:
-> >   :
-> >>>> I think we need a knob manually enable mem-hotplug when specify memmap. But
-> >>>> it is another story.
-> >>>>
-> >>>> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> >>>
-> >>> As mentioned, self-NAK.  I have seen a system that I needed to specify
-> >>> memmap=exactmap & had hotplug memory.  I will only keep the acpi_no_memhotplug
-> >>> option in the next version of the patch.
-> >>
-> >>
-> >> Your following first patch is simply and makes sense.
-> >>
-> >> http://marc.info/?l=linux-acpi&m=138922019607796&w=2
-> >>
-> >
-> > In this option, it also requires changing kexec-tools to specify the new
-> > option for kdump.  It won't be simpler.
-> 
-> Hmm.
-> I use memm= boot option and hotplug memory for memory hot-remove.
-> At least, the patch cannot be accepted.
+Thanks for the replies, you led me to a new solution,
 
-Do you mean mem=nG option?  I am curious to know how memory hot-remove
-works in this case.  Don't acpi_memhotplug add all the memory ranges at
-boot, and defeat the mem=nG option?
+
+I now think build_skb() is not the right choice, my motivation for
+using it in the first place, that I thought it meant getting away with
+not copying memory.
+
+build_skb() is replaced by netdev_alloc_skb_ip_align() and memcpy()
+(derived from drivers/net/ethernet/realtek/r8169.c).
+
+Read errors are gone, even without syncing DMA. Is it a good idea to
+do it anyway, i.e. leave calls to dma_sync_single_* in?
+
+Also, without build_skb(), kmalloc memory can be used (frag_size > 0),
+memory is used more efficiently, at least half of a page times 64
+previously wasted.
+
+New code here:
+https://bitbucket.org/Kasreyn/linux-next/src/92f5aeb3b58f8d8dffd9178b6b5ff46217156caa/drivers/net/ethernet/moxa/moxart_ether.c#cl-424
+
 
 Thanks,
--Toshi
-
+Jonas
