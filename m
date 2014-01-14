@@ -1,149 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaANUHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 15:07:31 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33616 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548AbaANUH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 15:07:28 -0500
-Date: Wed, 15 Jan 2014 04:07:20 +0800
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-Message-ID: <20140114200720.GM4106@localhost.localdomain>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	Michal Hocko <mhocko@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-	linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>
-References: <52C5AA61.8060701@intel.com>
- <20140103033303.GB4106@localhost.localdomain>
- <52C6FED2.7070700@intel.com>
- <20140105003501.GC4106@localhost.localdomain>
- <20140106164604.GC27602@dhcp22.suse.cz>
- <20140108101611.GD27937@dhcp22.suse.cz>
- <20140110081744.GC9437@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140110081744.GC9437@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011420-7182-0000-0000-0000098DE301
+	id S1751906AbaANUHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 15:07:52 -0500
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:56696
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751861AbaANUHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 15:07:50 -0500
+Date: Tue, 14 Jan 2014 14:07:47 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Dave Hansen <dave@sr71.net>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] re-shrink 'struct page' when SLUB is on.
+In-Reply-To: <52D41F52.5020805@sr71.net>
+Message-ID: <alpine.DEB.2.10.1401141404190.19618@nuc>
+References: <20140103180147.6566F7C1@viggo.jf.intel.com> <20140103141816.20ef2a24c8adffae040e53dc@linux-foundation.org> <20140106043237.GE696@lge.com> <52D05D90.3060809@sr71.net> <20140110153913.844e84755256afd271371493@linux-foundation.org> <52D0854F.5060102@sr71.net>
+ <CAOJsxLE-oMpV2G-gxrhyv0Au1tPd87Ow57VD5CWFo41wF8F4Yw@mail.gmail.com> <alpine.DEB.2.10.1401111854580.6036@nuc> <20140113014408.GA25900@lge.com> <52D41F52.5020805@sr71.net>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 10, 2014 at 09:17:44AM +0100, Michal Hocko wrote:
-> On Fri 10-01-14 00:13:44, Andrew Morton wrote:
-> > On Fri, 10 Jan 2014 09:05:04 +0100 Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > > > --- a/mm/huge_memory.c
-> > > > > +++ b/mm/huge_memory.c
-> > > > > @@ -100,6 +100,7 @@ static struct khugepaged_scan khugepaged_scan = {
-> > > > >  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
-> > > > >  };
-> > > > >  
-> > > > > +extern int user_min_free_kbytes;
-> > > > >  
-> > > > 
-> > > > We don't add extern declarations to .c files.  How many other examples of 
-> > > > this can you find in mm/?
-> > > 
-> > > I have suggested this because general visibility is not needed.
-> > 
-> > It's best to use a common declaration which is seen by the definition
-> > site and all references, so everyone agrees on the variable's type. 
-> > Otherwise we could have "long foo;" in one file and "extern char foo;"
-> > in another and the compiler won't tell us.  I think the linker could
-> > tell us, but it doesn't, afaik.  Perhaps there's an option...
-> > 
-> > > But if
-> > > you think that it should then include/linux/mm.h sounds like a proper
-> > > place.
-> > 
-> > mm/internal.h might suit.
-> 
-> min_free_kbytes is in mm.h so I thought having them together would be
-> appropriate.
-> 
-
-This is the latest version which put user_min_free_kbytes in
-mm/internal.h. Please have a look. Thanks.
+One easy way to shrink struct page is to simply remove the feature. The
+patchset looked a bit complicated and does many other things.
 
 
->From 0d2583bea1f8ffa919e2cee3ee8ed08ec547284a Mon Sep 17 00:00:00 2001
-From: Han Pingtian <hanpt@linux.vnet.ibm.com>
-Date: Thu, 9 Jan 2014 15:24:26 +0800
-Subject: [PATCH] mm: show message when raising min_free_kbytes in THP
+Subject: slub: Remove struct page alignment restriction by dropping cmpxchg_double on struct page fields
 
-min_free_kbytes may be raised during THP's initialization. Sometimes,
-this will change the value being set by user. Showing message will
-clarify this confusion.
+Remove the logic that will do cmpxchg_doubles on struct page fields with
+the requirement of double word alignment. This allows struct page
+to shrink by 8 bytes.
 
-Only show this message when changing the value set by user according to
-Michal Hocko's suggestion.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Showing the old value of min_free_kbytes according to Dave Hansen's
-suggestion. This will give user the chance to restore old value of
-min_free_kbytes.
+Index: linux/include/linux/mm_types.h
+===================================================================
+--- linux.orig/include/linux/mm_types.h	2014-01-14 13:55:00.611838185 -0600
++++ linux/include/linux/mm_types.h	2014-01-14 13:55:00.601838496 -0600
+@@ -73,18 +73,12 @@ struct page {
+ 		};
 
-Signed-off-by: Han Pingtian <hanpt@linux.vnet.ibm.com>
----
- mm/huge_memory.c |    8 +++++++-
- mm/internal.h    |    1 +
- mm/page_alloc.c  |    2 +-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ 		union {
+-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-	defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+-			/* Used for cmpxchg_double in slub */
+-			unsigned long counters;
+-#else
+ 			/*
+ 			 * Keep _count separate from slub cmpxchg_double data.
+ 			 * As the rest of the double word is protected by
+ 			 * slab_lock but _count is not.
+ 			 */
+ 			unsigned counters;
+-#endif
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 7de1bf8..2ca526b8 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -130,8 +130,14 @@ static int set_recommended_min_free_kbytes(void)
- 			      (unsigned long) nr_free_buffer_pages() / 20);
- 	recommended_min <<= (PAGE_SHIFT-10);
- 
--	if (recommended_min > min_free_kbytes)
-+	if (recommended_min > min_free_kbytes) {
-+		if (user_min_free_kbytes >= 0)
-+			pr_info("raising min_free_kbytes from %d to %lu "
-+				"to help transparent hugepage allocations\n",
-+				min_free_kbytes, recommended_min);
+ 			struct {
+
+@@ -195,15 +189,7 @@ struct page {
+ #ifdef LAST_CPUPID_NOT_IN_PAGE_FLAGS
+ 	int _last_cpupid;
+ #endif
+-}
+-/*
+- * The struct page can be forced to be double word aligned so that atomic ops
+- * on double words work. The SLUB allocator can make use of such a feature.
+- */
+-#ifdef CONFIG_HAVE_ALIGNED_STRUCT_PAGE
+-	__aligned(2 * sizeof(unsigned long))
+-#endif
+-;
++};
+
+ struct page_frag {
+ 	struct page *page;
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c	2014-01-14 13:55:00.611838185 -0600
++++ linux/mm/slub.c	2014-01-14 14:03:31.025903976 -0600
+@@ -185,7 +185,6 @@ static inline bool kmem_cache_has_cpu_pa
+
+ /* Internal SLUB flags */
+ #define __OBJECT_POISON		0x80000000UL /* Poison object */
+-#define __CMPXCHG_DOUBLE	0x40000000UL /* Use cmpxchg_double */
+
+ #ifdef CONFIG_SMP
+ static struct notifier_block slab_notifier;
+@@ -362,34 +361,19 @@ static inline bool __cmpxchg_double_slab
+ 		const char *n)
+ {
+ 	VM_BUG_ON(!irqs_disabled());
+-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+-	if (s->flags & __CMPXCHG_DOUBLE) {
+-		if (cmpxchg_double(&page->freelist, &page->counters,
+-			freelist_old, counters_old,
+-			freelist_new, counters_new))
+-		return 1;
+-	} else
+-#endif
+-	{
+-		slab_lock(page);
+-		if (page->freelist == freelist_old &&
+-					page->counters == counters_old) {
+-			page->freelist = freelist_new;
+-			page->counters = counters_new;
+-			slab_unlock(page);
+-			return 1;
+-		}
 +
- 		min_free_kbytes = recommended_min;
-+	}
- 	setup_per_zone_wmarks();
++	slab_lock(page);
++	if (page->freelist == freelist_old &&
++				page->counters == counters_old) {
++		page->freelist = freelist_new;
++		page->counters = counters_new;
+ 		slab_unlock(page);
++		return 1;
+ 	}
+-
+-	cpu_relax();
+ 	stat(s, CMPXCHG_DOUBLE_FAIL);
+-
+ #ifdef SLUB_DEBUG_CMPXCHG
+ 	printk(KERN_INFO "%s %s: cmpxchg double redo ", n, s->name);
+ #endif
+-
  	return 0;
  }
-diff --git a/mm/internal.h b/mm/internal.h
-index 684f7aa..110d8da 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -101,6 +101,7 @@ extern void prep_compound_page(struct page *page, unsigned long order);
- #ifdef CONFIG_MEMORY_FAILURE
- extern bool is_free_buddy_page(struct page *page);
- #endif
-+extern int user_min_free_kbytes;
- 
- #if defined CONFIG_COMPACTION || defined CONFIG_CMA
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9ea62b2..a9dcfd8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -205,7 +205,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
- };
- 
- int min_free_kbytes = 1024;
--int user_min_free_kbytes;
-+int user_min_free_kbytes = -1;
- 
- static unsigned long __meminitdata nr_kernel_pages;
- static unsigned long __meminitdata nr_all_pages;
--- 
-1.7.7.6
+
+@@ -398,40 +382,14 @@ static inline bool cmpxchg_double_slab(s
+ 		void *freelist_new, unsigned long counters_new,
+ 		const char *n)
+ {
+-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+-	if (s->flags & __CMPXCHG_DOUBLE) {
+-		if (cmpxchg_double(&page->freelist, &page->counters,
+-			freelist_old, counters_old,
+-			freelist_new, counters_new))
+-		return 1;
+-	} else
+-#endif
+-	{
+-		unsigned long flags;
+-
+-		local_irq_save(flags);
+-		slab_lock(page);
+-		if (page->freelist == freelist_old &&
+-					page->counters == counters_old) {
+-			page->freelist = freelist_new;
+-			page->counters = counters_new;
+-			slab_unlock(page);
+-			local_irq_restore(flags);
+-			return 1;
+-		}
+-		slab_unlock(page);
+-		local_irq_restore(flags);
+-	}
+-
+-	cpu_relax();
+-	stat(s, CMPXCHG_DOUBLE_FAIL);
+-
+-#ifdef SLUB_DEBUG_CMPXCHG
+-	printk(KERN_INFO "%s %s: cmpxchg double redo ", n, s->name);
+-#endif
++	unsigned long flags;
++	int r;
+
+-	return 0;
++	local_irq_save(flags);
++	r = __cmpxchg_double_slab(s, page, freelist_old, counters_old,
++			freelist_new, counters_new, n);
++	local_irq_restore(flags);
++	return r;
+ }
+
+ #ifdef CONFIG_SLUB_DEBUG
+@@ -3078,13 +3036,6 @@ static int kmem_cache_open(struct kmem_c
+ 		}
+ 	}
+
+-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
+-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+-	if (system_has_cmpxchg_double() && (s->flags & SLAB_DEBUG_FLAGS) == 0)
+-		/* Enable fast mode */
+-		s->flags |= __CMPXCHG_DOUBLE;
+-#endif
+-
+ 	/*
+ 	 * The larger the object size is, the more pages we want on the partial
+ 	 * list to avoid pounding the page allocator excessively.
+@@ -4608,10 +4559,8 @@ static ssize_t sanity_checks_store(struc
+ 				const char *buf, size_t length)
+ {
+ 	s->flags &= ~SLAB_DEBUG_FREE;
+-	if (buf[0] == '1') {
+-		s->flags &= ~__CMPXCHG_DOUBLE;
++	if (buf[0] == '1')
+ 		s->flags |= SLAB_DEBUG_FREE;
+-	}
+ 	return length;
+ }
+ SLAB_ATTR(sanity_checks);
+@@ -4625,10 +4574,8 @@ static ssize_t trace_store(struct kmem_c
+ 							size_t length)
+ {
+ 	s->flags &= ~SLAB_TRACE;
+-	if (buf[0] == '1') {
+-		s->flags &= ~__CMPXCHG_DOUBLE;
++	if (buf[0] == '1')
+ 		s->flags |= SLAB_TRACE;
+-	}
+ 	return length;
+ }
+ SLAB_ATTR(trace);
+@@ -4645,10 +4592,8 @@ static ssize_t red_zone_store(struct kme
+ 		return -EBUSY;
+
+ 	s->flags &= ~SLAB_RED_ZONE;
+-	if (buf[0] == '1') {
+-		s->flags &= ~__CMPXCHG_DOUBLE;
++	if (buf[0] == '1')
+ 		s->flags |= SLAB_RED_ZONE;
+-	}
+ 	calculate_sizes(s, -1);
+ 	return length;
+ }
+@@ -4666,10 +4611,8 @@ static ssize_t poison_store(struct kmem_
+ 		return -EBUSY;
+
+ 	s->flags &= ~SLAB_POISON;
+-	if (buf[0] == '1') {
+-		s->flags &= ~__CMPXCHG_DOUBLE;
++	if (buf[0] == '1')
+ 		s->flags |= SLAB_POISON;
+-	}
+ 	calculate_sizes(s, -1);
+ 	return length;
+ }
+@@ -4687,10 +4630,9 @@ static ssize_t store_user_store(struct k
+ 		return -EBUSY;
+
+ 	s->flags &= ~SLAB_STORE_USER;
+-	if (buf[0] == '1') {
+-		s->flags &= ~__CMPXCHG_DOUBLE;
++	if (buf[0] == '1')
+ 		s->flags |= SLAB_STORE_USER;
+-	}
++
+ 	calculate_sizes(s, -1);
+ 	return length;
+ }
+Index: linux/arch/Kconfig
+===================================================================
+--- linux.orig/arch/Kconfig	2014-01-14 13:55:00.611838185 -0600
++++ linux/arch/Kconfig	2014-01-14 13:55:00.601838496 -0600
+@@ -289,14 +289,6 @@ config HAVE_RCU_TABLE_FREE
+ config ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	bool
+
+-config HAVE_ALIGNED_STRUCT_PAGE
+-	bool
+-	help
+-	  This makes sure that struct pages are double word aligned and that
+-	  e.g. the SLUB allocator can perform double word atomic operations
+-	  on a struct page for better performance. However selecting this
+-	  might increase the size of a struct page by a word.
+-
+ config HAVE_CMPXCHG_LOCAL
+ 	bool
+
+Index: linux/arch/s390/Kconfig
+===================================================================
+--- linux.orig/arch/s390/Kconfig	2014-01-14 13:55:00.611838185 -0600
++++ linux/arch/s390/Kconfig	2014-01-14 13:55:00.601838496 -0600
+@@ -102,7 +102,6 @@ config S390
+ 	select GENERIC_FIND_FIRST_BIT
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_TIME_VSYSCALL
+-	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+ 	select HAVE_ARCH_JUMP_LABEL if !MARCH_G5
+ 	select HAVE_ARCH_SECCOMP_FILTER
+ 	select HAVE_ARCH_TRACEHOOK
+Index: linux/arch/x86/Kconfig
+===================================================================
+--- linux.orig/arch/x86/Kconfig	2014-01-14 13:55:00.611838185 -0600
++++ linux/arch/x86/Kconfig	2014-01-14 13:55:00.601838496 -0600
+@@ -77,7 +77,6 @@ config X86
+ 	select HAVE_PERF_USER_STACK_DUMP
+ 	select HAVE_DEBUG_KMEMLEAK
+ 	select ANON_INODES
+-	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+ 	select HAVE_CMPXCHG_LOCAL
+ 	select HAVE_CMPXCHG_DOUBLE
+ 	select HAVE_ARCH_KMEMCHECK
 
