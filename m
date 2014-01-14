@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbaANGIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 01:08:46 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52792 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaANGIn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 01:08:43 -0500
-Subject: [PATCH] cpuidle/menu: Fail cpuidle_idle_call() if no idle state is
- acceptable
-To: deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, benh@kernel.crashing.org,
-        daniel.lezcano@linaro.org, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        tuukka.tikkanen@linaro.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Tue, 14 Jan 2014 11:35:16 +0530
-Message-ID: <20140114060516.6109.14901.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011406-3532-0000-0000-000004B83633
+	id S1752548AbaANGK3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 01:10:29 -0500
+Received: from ozlabs.org ([203.10.76.45]:51577 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751261AbaANGKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 01:10:24 -0500
+Date: Tue, 14 Jan 2014 17:10:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org, peterz@infradead.org,
+        netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the tip tree with the net-next tree
+Message-Id: <20140114171013.5578d644172095a6fed0eef1@canb.auug.org.au>
+In-Reply-To: <20140113.214841.1954373583033654604.davem@davemloft.net>
+References: <52D4C25F.8060804@zytor.com>
+	<20140113.211946.205101073261467184.davem@davemloft.net>
+	<20140114164420.d296fbcc4be3a5f126c86069@canb.auug.org.au>
+	<20140113.214841.1954373583033654604.davem@davemloft.net>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On PowerPC, in a particular test scenario, all the cpu idle states were disabled.
-Inspite of this it was observed that the idle state count of the shallowest
-idle state, snooze, was increasing.
+--Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is because the governor returns the idle state index as 0 even in
-scenarios when no idle state can be chosen. These scenarios could be when the
-latency requirement is 0 or as mentioned above when the user wants to disable
-certain cpu idle states at runtime. In the latter case, its possible that no
-cpu idle state is valid because the suitable states were disabled
-and the rest did not match the menu governor criteria to be chosen as the
-next idle state.
+Hi Dave,
 
-This patch adds the code to indicate that a valid cpu idle state could not be
-chosen by the menu governor and reports back to arch so that it can take some
-default action.
+On Mon, 13 Jan 2014 21:48:41 -0800 (PST) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> Net patch applied, thanks Stephen.
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
+Thanks.
 
- drivers/cpuidle/cpuidle.c        |    6 +++++-
- drivers/cpuidle/governors/menu.c |    7 ++++---
- 2 files changed, 9 insertions(+), 4 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index a55e68f..5bf06bb 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -131,8 +131,9 @@ int cpuidle_idle_call(void)
- 
- 	/* ask the governor for the next state */
- 	next_state = cpuidle_curr_governor->select(drv, dev);
-+
-+	dev->last_residency = 0;
- 	if (need_resched()) {
--		dev->last_residency = 0;
- 		/* give the governor an opportunity to reflect on the outcome */
- 		if (cpuidle_curr_governor->reflect)
- 			cpuidle_curr_governor->reflect(dev, next_state);
-@@ -140,6 +141,9 @@ int cpuidle_idle_call(void)
- 		return 0;
- 	}
- 
-+	if (next_state < 0)
-+		return -EINVAL;
-+
- 	trace_cpu_idle_rcuidle(next_state, dev->cpu);
- 
- 	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index cf7f2f0..6921543 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -283,6 +283,7 @@ again:
-  * menu_select - selects the next idle state to enter
-  * @drv: cpuidle driver containing state data
-  * @dev: the CPU
-+ * Returns -1 when no idle state is suitable
-  */
- static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- {
-@@ -292,17 +293,17 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	int multiplier;
- 	struct timespec t;
- 
--	if (data->needs_update) {
-+	if (data->last_state_idx >= 0 && data->needs_update) {
- 		menu_update(drv, dev);
- 		data->needs_update = 0;
- 	}
- 
--	data->last_state_idx = 0;
-+	data->last_state_idx = -1;
- 	data->exit_us = 0;
- 
- 	/* Special case when user has set very strict latency requirement */
- 	if (unlikely(latency_req == 0))
--		return 0;
-+		return data->last_state_idx;
- 
- 	/* determine the expected residency time, round up */
- 	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+--Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS1NTOAAoJEMDTa8Ir7ZwVbh0P/3Uny6jiMtBPs4qDMLwSMfu4
+Ku0hrMp7HcCCiAZ3bBduik69Hr/VtcObVSCql48/h9Mx7gl04eo8vz9RRtcvCP/f
+0Hv9gzijtliT2sSjqgaYSJqdXaHCW5v5ZrmCBnOvi13gXw/yC937/ACZ68/TCMxx
+O5oiMqbWhXGorDvjJl67sC7IrIjZFABP0DvjthKkSYVxc9BPrDSUNy4zSh6uVp3G
+1p5eeYYMk2OUXCC+17R92TExybUZ4IokwaRKwltH0IN+y1Fg3w3rb3XlbDyUnZ4H
+lsr+YuW2lqNupcghs95N9D76lRT3u8q0kwF8kpzu/XnHd11nbphYeaXV+O90utop
+8V8NvCz47Pg46So8Y5GQ4ooNmtqcTNP1w+zbqW3lOKpFtoql1Ji/GkHRaP0Utgog
+sfhMuwViXWCOiMIJjYfvalHb7k234DcPlDunzxahkDplUtyEtCdwnFyNgmZLzOGO
+gEPrtHILl5xrRiXwHXfmemTwWUjeDbu5qVH9AM63/ytqxu6QeBY1UmI0isM7er5j
+LCbmVdUsfhSaVLY774rlNlcEZLjk7XAHcyI08HwSl4l71KeW5ANWCrxIBbijfRsb
+nnFVXwnUzcWnfOvdXzYLLD2IyC6711S+L8T5+t9gAf5wyEzIHKnDwiYdffFVzU5F
+ceJFtKcGYvAt3s3SeWdP
+=Kh7T
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm--
