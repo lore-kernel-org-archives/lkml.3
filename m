@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaANA3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54499 "EHLO
+	id S1752146AbaANA3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:29:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947AbaANA3B (ORCPT
+	with ESMTP id S1754130AbaANA3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:01 -0500
+	Mon, 13 Jan 2014 19:29:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dawid Stawiarski <dawid.stawiarski@netart.pl>,
-        Phil Oester <kernel@linuxace.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.12 71/77] netfilter: fix wrong byte order in nf_ct_seqadj_set internal information
-Date: Mon, 13 Jan 2014 16:28:32 -0800
-Message-Id: <20140114002754.508017903@linuxfoundation.org>
+        Andrew Bresticker <abrestic@chromium.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: [PATCH 3.12 63/77] clk: exynos5250: fix sysmmu_mfc{l,r} gate clocks
+Date: Mon, 13 Jan 2014 16:28:24 -0800
+Message-Id: <20140114002754.288634176@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,38 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Oester <kernel@linuxace.com>
+From: Andrew Bresticker <abrestic@chromium.org>
 
-commit 23dfe136e2bf8d9ea1095704c535368a9bc721da upstream.
+commit 97c3557c3e0413efb1f021f582d1459760e22727 upstream.
 
-In commit 41d73ec053d2, sequence number adjustments were moved to a
-separate file. Unfortunately, the sequence numbers that are stored
-in the nf_ct_seqadj structure are expressed in host byte order. The
-necessary ntohl call was removed when the call to adjust_tcp_sequence
-was collapsed into nf_ct_seqadj_set. This broke the FTP NAT helper.
-Fix it by adding back the byte order conversions.
+The gate clocks for the MFC sysmmus appear to be flipped, i.e.
+GATE_IP_MFC[2] gates sysmmu_mfcl and GATE_IP_MFC[1] gates sysmmu_mfcr.
+Fix this so that the MFC will start up.
 
-Reported-by: Dawid Stawiarski <dawid.stawiarski@netart.pl>
-Signed-off-by: Phil Oester <kernel@linuxace.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Acked-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_seqadj.c |    4 ++--
+ drivers/clk/samsung/clk-exynos5250.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/netfilter/nf_conntrack_seqadj.c
-+++ b/net/netfilter/nf_conntrack_seqadj.c
-@@ -41,8 +41,8 @@ int nf_ct_seqadj_set(struct nf_conn *ct,
- 	spin_lock_bh(&ct->lock);
- 	this_way = &seqadj->seq[dir];
- 	if (this_way->offset_before == this_way->offset_after ||
--	    before(this_way->correction_pos, seq)) {
--		this_way->correction_pos = seq;
-+	    before(this_way->correction_pos, ntohl(seq))) {
-+		this_way->correction_pos = ntohl(seq);
- 		this_way->offset_before	 = this_way->offset_after;
- 		this_way->offset_after	+= off;
- 	}
+--- a/drivers/clk/samsung/clk-exynos5250.c
++++ b/drivers/clk/samsung/clk-exynos5250.c
+@@ -355,8 +355,8 @@ static struct samsung_gate_clock exynos5
+ 	GATE(smmu_gscl2, "smmu_gscl2", "aclk266", GATE_IP_GSCL, 9, 0, 0),
+ 	GATE(smmu_gscl3, "smmu_gscl3", "aclk266", GATE_IP_GSCL, 10, 0, 0),
+ 	GATE(mfc, "mfc", "aclk333", GATE_IP_MFC, 0, 0, 0),
+-	GATE(smmu_mfcl, "smmu_mfcl", "aclk333", GATE_IP_MFC, 1, 0, 0),
+-	GATE(smmu_mfcr, "smmu_mfcr", "aclk333", GATE_IP_MFC, 2, 0, 0),
++	GATE(smmu_mfcl, "smmu_mfcl", "aclk333", GATE_IP_MFC, 2, 0, 0),
++	GATE(smmu_mfcr, "smmu_mfcr", "aclk333", GATE_IP_MFC, 1, 0, 0),
+ 	GATE(rotator, "rotator", "aclk266", GATE_IP_GEN, 1, 0, 0),
+ 	GATE(jpeg, "jpeg", "aclk166", GATE_IP_GEN, 2, 0, 0),
+ 	GATE(mdma1, "mdma1", "aclk266", GATE_IP_GEN, 4, 0, 0),
 
 
