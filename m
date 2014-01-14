@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaANHKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:10:10 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:63890 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbaANHKE (ORCPT
+	id S1752140AbaANHMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:12:05 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:45814 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaANHMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:10:04 -0500
+	Tue, 14 Jan 2014 02:12:03 -0500
+Date: Tue, 14 Jan 2014 10:09:14 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH 6/7] zram: remove workqueue for freeing removed pending
+ slot
+Message-ID: <20140114070914.GB2322@swordfish>
+References: <1389611942-15544-1-git-send-email-minchan@kernel.org>
+ <1389611942-15544-7-git-send-email-minchan@kernel.org>
+ <20140113194111.GA2322@swordfish>
+ <20140113233848.GT1992@bbox>
 MIME-Version: 1.0
-In-Reply-To: <52D4CE4C.1030809@oracle.com>
-References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
-	<20140113233505.GS1992@bbox>
-	<52D4909B.7070107@oracle.com>
-	<20140114045022.GZ1992@bbox>
-	<20140114050528.GA1992@bbox>
-	<52D4CE4C.1030809@oracle.com>
-Date: Tue, 14 Jan 2014 15:10:03 +0800
-Message-ID: <CAFLCcBqk-X=32T5vY0432A_dq05TNzmYgt_vBxFmfT_Tcd39cA@mail.gmail.com>
-Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
-From: Cai Liu <liucai.lfn@gmail.com>
-To: Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>
-Cc: Cai Liu <cai.liu@samsung.com>, sjenning@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140113233848.GT1992@bbox>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014/1/14 Bob Liu <bob.liu@oracle.com>:
->
-> On 01/14/2014 01:05 PM, Minchan Kim wrote:
->> On Tue, Jan 14, 2014 at 01:50:22PM +0900, Minchan Kim wrote:
->>> Hello Bob,
->>>
->>> On Tue, Jan 14, 2014 at 09:19:23AM +0800, Bob Liu wrote:
->>>>
->>>> On 01/14/2014 07:35 AM, Minchan Kim wrote:
->>>>> Hello,
->>>>>
->>>>> On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
->>>>>> zswap can support multiple swapfiles. So we need to check
->>>>>> all zbud pool pages in zswap.
->>>>>
->>>>> True but this patch is rather costly that we should iterate
->>>>> zswap_tree[MAX_SWAPFILES] to check it. SIGH.
->>>>>
->>>>> How about defining zswap_tress as linked list instead of static
->>>>> array? Then, we could reduce unnecessary iteration too much.
->>>>>
->>>>
->>>> But if use linked list, it might not easy to access the tree like this:
->>>> struct zswap_tree *tree = zswap_trees[type];
->>>
->>> struct zswap_tree {
->>>     ..
->>>     ..
->>>     struct list_head list;
->>> }
->>>
->>> zswap_frontswap_init()
->>> {
->>>     ..
->>>     ..
->>>     zswap_trees[type] = tree;
->>>     list_add(&tree->list, &zswap_list);
->>> }
->>>
->>> get_zswap_pool_pages(void)
->>> {
->>>     struct zswap_tree *cur;
->>>     list_for_each_entry(cur, &zswap_list, list) {
->>>         pool_pages += zbud_get_pool_size(cur->pool);
->>>     }
->>>     return pool_pages;
->>> }
->
-> Okay, I see your point. Yes, it's much better.
-> Cai, Please make an new patch.
->
+Hello Minchan,
 
-Thanks for your review.
-I will re-send a patch.
+On (01/14/14 08:38), Minchan Kim wrote:
+> Hello Sergey,
+> 
+> On Mon, Jan 13, 2014 at 10:42:56PM +0300, Sergey Senozhatsky wrote:
+> > On (01/13/14 20:19), Minchan Kim wrote:
+> > 
+> > Hello Minchan,
+> > I think we need to down_write init_lock in zram_slot_free_notify(),
+> > and thus can avoid locking meta->tb_lock. otherwise, I think,
+> 
+> zram_slot_free_notify is atomic path so we couldn't hold mutex.
+> 
+> > there is a chance that zram_slot_free_notify() can race with
+> > device reset, e.g.
+> > 	
+> > 	zram_slot_free_notify()			zram_reset_device()
+> > 						down_write(&zram->init_lock);
+> > 	meta = zram->meta
+> > 						zram_meta_free(zram->meta);
+> > 						zram->meta = NULL;
+> > 	write_lock(&meta->tb_lock);
+> > 	[...]
+> > 	write_unlock(&meta->tb_lock);
+> > 						[..]
+> > 						up_write(&zram->init_lock);
+> > 
+> 
+> Nope. We couldn't reset active device by bdev->bd_holders check
+> logic in reset_store.
+> 
 
-Also, as weijie metioned in anonther mail. Should we add "all pool
-pages" count in zbud
-file. Then we can keep zswap module unchanged. I think this is
-reasonable, as in
-zswap we only just need to know total pages, not individual pool pages.
+true. sorry for the noise.
 
-Thanks
-
-> Thanks,
-> -Bob
->
->>>
->>>
->>>>
->>>> BTW: I'm still prefer to use dynamic pool size, instead of use
->>>> zswap_is_full(). AFAIR, Seth has a plan to replace the rbtree with radix
->>>> which will be more flexible to support this feature and page migration
->>>> as well.
->>>>
->>>>> Other question:
->>>>> Why do we need to update zswap_pool_pages too frequently?
->>>>> As I read the code, I think it's okay to update it only when user
->>>>> want to see it by debugfs and zswap_is_full is called.
->>>>> So could we optimize it out?
->>>>>
->>>>>>
->>>>>> Signed-off-by: Cai Liu <cai.liu@samsung.com>
->>>>
->>>> Reviewed-by: Bob Liu <bob.liu@oracle.com>
->>>
->>> Hmm, I really suprised you are okay in this code piece where we have
->>> unnecessary cost most of case(ie, most system has a swap device) in
->>> *mm* part.
->>>
->>> Anyway, I don't want to merge this patchset.
->>> If Andrew merge it and anybody doesn't do right work, I will send a patch.
->>> Cai, Could you redo a patch?
->>> I don't want to intercept your credit.
->>>
->>> Even, we could optimize to reduce the the number of call as I said in
->>> previous reply.
->>
->> You did it already. Please write it out in description.
->>
+	-ss
