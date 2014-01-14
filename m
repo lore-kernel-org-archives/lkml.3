@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980AbaANBOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:14:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53852 "EHLO
+	id S1755964AbaANBOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:14:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53849 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaANA0X (ORCPT
+	with ESMTP id S1752581AbaANA0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:23 -0500
+	Mon, 13 Jan 2014 19:26:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jakub Zawadzki <darkjames-ws@darkjames.pl>,
-        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 13/27] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
-Date: Mon, 13 Jan 2014 16:26:27 -0800
-Message-Id: <20140114002623.743802865@linuxfoundation.org>
+Subject: [PATCH 3.4 08/27] net: drop_monitor: fix the value of maxattr
+Date: Mon, 13 Jan 2014 16:26:22 -0800
+Message-Id: <20140114002623.596776577@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -30,88 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Changli Gao <xiaosuo@gmail.com>
 
-[ Upstream commit b1aac815c0891fe4a55a6b0b715910142227700f ]
+[ Upstream commit d323e92cc3f4edd943610557c9ea1bb4bb5056e8 ]
 
-Jakub reported while working with nlmon netlink sniffer that parts of
-the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
-That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
+maxattr in genl_family should be used to save the max attribute
+type, but not the max command type. Drop monitor doesn't support
+any attributes, so we should leave it as zero.
 
-In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
-memory through this. At least, in udp_dump_one(), we allocate a skb in ...
-
-  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
-
-... and then pass that to inet_sk_diag_fill() that puts the whole struct
-inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
-r->id.idiag_dst[0] and leave the rest untouched:
-
-  r->id.idiag_src[0] = inet->inet_rcv_saddr;
-  r->id.idiag_dst[0] = inet->inet_daddr;
-
-struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
-fully filled out in IPv6 case, but for IPv4 not.
-
-So just zero them out by using plain memset (for this little amount of
-bytes it's probably not worth the extra check for idiag_family == AF_INET).
-
-Similarly, fix also other places where we fill that out.
-
-Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/inet_diag.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ net/core/drop_monitor.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -110,6 +110,10 @@ int inet_sk_diag_fill(struct sock *sk, s
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -61,7 +61,6 @@ static struct genl_family net_drop_monit
+ 	.hdrsize        = 0,
+ 	.name           = "NET_DM",
+ 	.version        = 2,
+-	.maxattr        = NET_DM_CMD_MAX,
+ };
  
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = inet->inet_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
- 	r->id.idiag_dst[0] = inet->inet_daddr;
- 
-@@ -227,12 +231,19 @@ static int inet_twsk_diag_fill(struct in
- 
- 	r->idiag_family	      = tw->tw_family;
- 	r->idiag_retrans      = 0;
-+
- 	r->id.idiag_if	      = tw->tw_bound_dev_if;
- 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
-+
- 	r->id.idiag_sport     = tw->tw_sport;
- 	r->id.idiag_dport     = tw->tw_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
- 	r->id.idiag_dst[0]    = tw->tw_daddr;
-+
- 	r->idiag_state	      = tw->tw_substate;
- 	r->idiag_timer	      = 3;
- 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
-@@ -714,8 +725,13 @@ static int inet_diag_fill_req(struct sk_
- 
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = ireq->rmt_port;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = ireq->loc_addr;
- 	r->id.idiag_dst[0] = ireq->rmt_addr;
-+
- 	r->idiag_expires = jiffies_to_msecs(tmo);
- 	r->idiag_rqueue = 0;
- 	r->idiag_wqueue = 0;
+ static DEFINE_PER_CPU(struct per_cpu_dm_data, dm_cpu_data);
 
 
