@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaANPvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:51:42 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42179 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751342AbaANPvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:51:38 -0500
-Message-ID: <52D55CE5.1060902@ti.com>
-Date: Tue, 14 Jan 2014 09:51:01 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-CC: Tero Kristo <t-kristo@ti.com>, Patch Tracking <patches@linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linaro Kernel <linaro-kernel@lists.linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	id S1751976AbaANPwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:52:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:63260 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794AbaANPwJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 10:52:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Subject: Re: build_skb() and data corruption
+Date: Tue, 14 Jan 2014 16:51:34 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: netdev <netdev@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
-References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org>	<52D404DE.2020806@ti.com> <CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com>
-In-Reply-To: <CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        alexander.h.duyck@intel.com, Florian Fainelli <florian@openwrt.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+References: <CACmBeS35RAEQ+t2vtYtFTKNT-VdQw20hURjTi193Jk8HG7UECA@mail.gmail.com> <1389620539.3720.157.camel@deadeye.wl.decadent.org.uk> <CACmBeS1gTfdjwiCkHMViOnF6G2zjy3HSMm3NVq8Jiq5F22ynJA@mail.gmail.com>
+In-Reply-To: <CACmBeS1gTfdjwiCkHMViOnF6G2zjy3HSMm3NVq8Jiq5F22ynJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201401141651.34633.arnd@arndb.de>
+X-Provags-ID: V02:K0:cHPRVIx5O/ODy9uDc9Xb9kHRpXF4GW9Oy+NlzqXCCUf
+ PUVY1Vt3+gKFSz8YjvzVhk4ubpp5PiEQHOGhrMNFc/MMgwVNhu
+ b+7iAm6PuZj0KLAEi6IyyG+YvzUiWPDgZg7KJ/TTDHq2RyIVhs
+ CToYyRuZcsy+HXm4RhQuAv9HBuULUVZk5qrMYMl2UM3GHfzjcH
+ faPujo26CMh6Klaqt98ADAPnZA5tQw1GrA9RNqHlrJJImPz1EB
+ Jic0U39d4A0DVzBgh6xwHLpFCWiUwicntc3M4w5VVw/m8n8Yav
+ dxku+z3tvqAedgS5ZqdFBlSfhxxtfr9ldtXumbv5OCK9ARQIBT
+ 2vvZZFDYvEMS97of1Dzg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 05:14 AM, Taras Kondratiuk wrote:
-> On 13 January 2014 17:23, Nishanth Menon <nm@ti.com> wrote:
->> On 01/13/2014 09:03 AM, Taras Kondratiuk wrote:
->>> From: Victor Kamensky <victor.kamensky@linaro.org>
->>>
->>> Assembler functions defined in sleep44xx.S need to byteswap values
->>> after read / before write from h/w register if code compiled in big
->>> endian mode. Simple change to do 'rev x, x' before str instruction
->>> and after ldr instruction that deals with h/w registers.
->>>
->>> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
->>> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
->>> ---
->>> This is a part of RFC series [1].
->>> Based on v3.13-rc8.
->>>
->>> [1] http://www.spinics.net/lists/linux-omap/msg99927.html
->>>
->>>  arch/arm/mach-omap2/sleep44xx.S |   17 +++++++++++++++++
->>>  1 file changed, 17 insertions(+)
->>>
->>
->> OMAP4 is LE, and if there is a gcc flag for the same, is'nt it cleaner
->> to deal with it in Makefile rather than trying to make an assembly
->> meant only for LE by force building it for BE?
+On Tuesday 14 January 2014, Jonas Jensen wrote:
+> Thanks for the replies, you led me to a new solution,
 > 
-> Hi Nishanth
-> I'm not sure I got your point.
-> Do you propose to build this file as LE while the rest of kernel is BE?
 > 
-I dont see why I should deal with the BE macro for every code change
-we have in omap4,am335x assembly. The hardware is LE and wont change
-just coz you are building it for BE. So I dont get the rationale for
-changing the assembly here - yes, if the assembly can be maintained as
-LE only mode and the build handling be adequately handled in Makefile
-(similar to SMC handling), that would be the best.
+> I now think build_skb() is not the right choice, my motivation for
+> using it in the first place, that I thought it meant getting away with
+> not copying memory.
+> 
+> build_skb() is replaced by netdev_alloc_skb_ip_align() and memcpy()
+> (derived from drivers/net/ethernet/realtek/r8169.c).
+> 
+> Read errors are gone, even without syncing DMA. Is it a good idea to
+> do it anyway, i.e. leave calls to dma_sync_single_* in?
 
-is the idea of BE build meant to deal with having a single BE kernel
-build work for all platforms (including LE ones)?
+The calls to dma_sync_single_* in the moxart_rx() function are needed.
+The call to arm_dma_ops.sync_single_for_device() in
+moxart_mac_setup_desc_ring() is wrong, because the buffer is already
+owned by the device at that point (just after dma_map_single), and
+because you should use the official dma_* api rather than using
+the arm_dma_ops struct.
 
--- 
-Regards,
-Nishanth Menon
+	Arnd
