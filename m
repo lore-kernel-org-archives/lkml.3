@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaANK4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:56:39 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:54182 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaANK4e (ORCPT
+	id S1751942AbaANK4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:56:53 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54652 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915AbaANK4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:56:34 -0500
-Subject: [PATCH v1 6/6] pseries/cpuidle: smt-snooze-delay cleanup.
-To: linux-pm@vger.kernel.org, benh@kernel.crashing.org,
-        daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Date: Tue, 14 Jan 2014 16:26:38 +0530
-Message-ID: <20140114105633.3064.32212.stgit@deepthi.in.ibm.com>
-In-Reply-To: <20140114105525.3064.52013.stgit@deepthi.in.ibm.com>
-References: <20140114105525.3064.52013.stgit@deepthi.in.ibm.com>
-User-Agent: StGit/0.16
+	Tue, 14 Jan 2014 05:56:37 -0500
+Message-ID: <52D517DE.50009@dev.mellanox.co.il>
+Date: Tue, 14 Jan 2014 12:56:30 +0200
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
+        Or Gerlitz <ogerlitz@mellanox.com>
+Subject: Re: [PATCH 02/14] target: Add DIF CHECK_CONDITION ASC/ASCQ exception
+ cases
+References: <1389212157-14540-1-git-send-email-nab@daterainc.com>	 <1389212157-14540-3-git-send-email-nab@daterainc.com>	 <52CE7D3F.7030308@mellanox.com>	 <1389336816.5567.404.camel@haakon3.risingtidesystems.com>	 <52D4EADC.60300@dev.mellanox.co.il> <1389689607.5567.525.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1389689607.5567.525.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011410-5140-0000-0000-00000469E779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-smt-snooze-delay was designed to disable NAP state or delay the entry
-to the NAP state prior to adoption of cpuidle framework. This
-is per-cpu variable. With the coming of CPUIDLE framework,
-states can be disabled on per-cpu basis using the cpuidle/enable
-sysfs entry.
+On 1/14/2014 10:53 AM, Nicholas A. Bellinger wrote:
+> On Tue, 2014-01-14 at 09:44 +0200, Sagi Grimberg wrote:
+>> On 1/10/2014 8:53 AM, Nicholas A. Bellinger wrote:
+>>> On Thu, 2014-01-09 at 12:43 +0200, Sagi Grimberg wrote:
+>>>> On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
+>>>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>>>>>
+>>>>> This patch adds support for DIF related CHECK_CONDITION ASC/ASCQ
+>>>>> exception cases into transport_send_check_condition_and_sense().
+>>>>>
+>>>>> This includes:
+>>>>>
+>>>>>      LOGICAL BLOCK GUARD CHECK FAILED
+>>>>>      LOGICAL BLOCK APPLICATION TAG CHECK FAILED
+>>>>>      LOGICAL BLOCK REFERENCE TAG CHECK FAILED
+>>>>>
+>>>>> that used by DIF TYPE1 and TYPE3 failure cases.
+>>>>>
+>>>>> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+>>>>> Cc: Christoph Hellwig <hch@lst.de>
+>>>>> Cc: Hannes Reinecke <hare@suse.de>
+>>>>> Cc: Sagi Grimberg <sagig@mellanox.com>
+>>>>> Cc: Or Gerlitz <ogerlitz@mellanox.com>
+>>>>> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+>>>>> ---
+>>>>>     drivers/target/target_core_transport.c |   30 ++++++++++++++++++++++++++++++
+>>>>>     include/target/target_core_base.h      |    3 +++
+>>>>>     2 files changed, 33 insertions(+)
+>>>>>
+>>>>> diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+>>>>> index 91953da..707ee17 100644
+>>>>> --- a/drivers/target/target_core_transport.c
+>>>>> +++ b/drivers/target/target_core_transport.c
+>>>>> @@ -2648,6 +2648,36 @@ transport_send_check_condition_and_sense(struct se_cmd *cmd,
+>>>>>     		buffer[SPC_ASC_KEY_OFFSET] = 0x1d;
+>>>>>     		buffer[SPC_ASCQ_KEY_OFFSET] = 0x00;
+>>>>>     		break;
+>>>>> +	case TCM_LOGICAL_BLOCK_GUARD_CHECK_FAILED:
+>>>>> +		/* CURRENT ERROR */
+>>>>> +		buffer[0] = 0x70;
+>>>>> +		buffer[SPC_ADD_SENSE_LEN_OFFSET] = 10;
+>>>>> +		/* ILLEGAL REQUEST */
+>>>>> +		buffer[SPC_SENSE_KEY_OFFSET] = ILLEGAL_REQUEST;
+>>>>> +		/* LOGICAL BLOCK GUARD CHECK FAILED */
+>>>>> +		buffer[SPC_ASC_KEY_OFFSET] = 0x10;
+>>>>> +		buffer[SPC_ASCQ_KEY_OFFSET] = 0x01;
+>> Hey Nic,
+>>
+>> In my iSER patches I constructed the same sense buffer (call
+>> isert_pi_err_sense_buffer) and called isert_put_rsponse. So I should
+>> call this routine instead correct?
+> Yes, it should be OK to use this for generating CHECK_CONDITION from
+> fabric protection failures in isert_completion_rdma_write() code after
+> device->unreg_rdma_mem() has been called.
+>
+> --nab
+>
 
-Also, with the coming of cpuidle driver each state's target residency
-is per-driver unlike earlier which was per-device. Therefore,
-the per-cpu sysfs smt-snooze-delay which decides the target residency
-of the idle state on a particular cpu causes more confusion to the user
-as we cannot have different smt-snooze-delay (target residency)
-values for each cpu.
-
-In the current code, smt-snooze-delay functionality is completely broken.
-It makes sense to remove smt-snooze-delay from idle driver with the
-coming of cpuidle framework.
-However, sysfs files are retained as ppc64_util currently
-utilises it. Once we fix ppc64_util, propose to clean
-up the kernel code.
-
-Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/processor.h |    7 -------
- arch/powerpc/kernel/sysfs.c          |    2 --
- drivers/cpuidle/cpuidle-pseries.c    |   17 -----------------
- 3 files changed, 26 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-index fa98fdf..027fefd 100644
---- a/arch/powerpc/include/asm/processor.h
-+++ b/arch/powerpc/include/asm/processor.h
-@@ -444,13 +444,6 @@ enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
- 
- extern int powersave_nap;	/* set if nap mode can be used in idle loop */
- extern void power7_nap(void);
--
--#ifdef CONFIG_PSERIES_CPUIDLE
--extern void update_smt_snooze_delay(int cpu, int residency);
--#else
--static inline void update_smt_snooze_delay(int cpu, int residency) {}
--#endif
--
- extern void flush_instruction_cache(void);
- extern void hard_reset_now(void);
- extern void poweroff_now(void);
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index b4e6676..7f9e130 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -51,8 +51,6 @@ static ssize_t store_smt_snooze_delay(struct device *dev,
- 		return -EINVAL;
- 
- 	per_cpu(smt_snooze_delay, cpu->dev.id) = snooze;
--	update_smt_snooze_delay(cpu->dev.id, snooze);
--
- 	return count;
- }
- 
-diff --git a/drivers/cpuidle/cpuidle-pseries.c b/drivers/cpuidle/cpuidle-pseries.c
-index bb56091..7ab564a 100644
---- a/drivers/cpuidle/cpuidle-pseries.c
-+++ b/drivers/cpuidle/cpuidle-pseries.c
-@@ -162,23 +162,6 @@ static struct cpuidle_state shared_states[] = {
- 		.enter = &shared_cede_loop },
- };
- 
--void update_smt_snooze_delay(int cpu, int residency)
--{
--	struct cpuidle_driver *drv = cpuidle_get_driver();
--	struct cpuidle_device *dev = per_cpu(cpuidle_devices, cpu);
--
--	if (cpuidle_state_table != dedicated_states)
--		return;
--
--	if (residency < 0) {
--		/* Disable the Nap state on that cpu */
--		if (dev)
--			dev->states_usage[1].disable = 1;
--	} else
--		if (drv)
--			drv->states[1].target_residency = residency;
--}
--
- static int pseries_cpuidle_add_cpu_notifier(struct notifier_block *n,
- 			unsigned long action, void *hcpu)
- {
-
+Will do that.
