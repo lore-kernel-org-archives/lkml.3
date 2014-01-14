@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaANAUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:20:45 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:61794 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaANAUh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:20:37 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Russell King <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 1/3] arm: use subsys_initcall in non-modular pl320 IPC code
-Date: Mon, 13 Jan 2014 19:19:41 -0500
-Message-ID: <1389658783-9876-2-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389658783-9876-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1389658783-9876-1-git-send-email-paul.gortmaker@windriver.com>
+	id S1752608AbaANAU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:20:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33840 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621AbaANAUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:20:53 -0500
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
+CC: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Suman Anna <s-anna@ti.com>
+Subject: [PATCHv4 7/7] hwspinlock/omap: enable build for AM33xx, AM43xx & DRA7xx
+Date: Mon, 13 Jan 2014 18:19:24 -0600
+Message-ID: <1389658764-39199-8-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 1.8.4.3
+In-Reply-To: <1389658764-39199-1-git-send-email-s-anna@ti.com>
+References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The drivers/mailbox/pl320-ipc.o is dependent on config PL320_MBOX
-which is declared as a bool.  Hence the code is never going to be
-modular.  So using module_init as an alias for __initcall can be
-somewhat misleading.
+HwSpinlocks are supported on AM33xx, AM43xx and DRA7xx SoC
+device families as well. The IPs are identical to that of
+OMAP4/OMAP5, except for the number of locks.
 
-Fix this up now, so that we can relocate module_init from
-init.h into module.h in the future.  If we don't do this, we'd
-have to add module.h to obviously non-modular code, and that
-would be a worse thing.  Also add an inclusion of init.h, as
-that was previously implicit.
+Add a depends on to the above family of SoCs to enable the
+build support for OMAP hwspinlock driver for any of the above
+SoC configs.
 
-Note that direct use of __initcall is discouraged, vs. one of the
-priority categorized subgroups.  As __initcall gets mapped onto
-device_initcall, our use of subsys_initcall (which seems to make
-sense for IPC code) will thus change this registration from a
-level 6-device to a level 4-subsys (i.e. slightly earlier).
-However no impact of that small difference is expected.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- drivers/mailbox/pl320-ipc.c | 2 +-
+ drivers/hwspinlock/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
-index d873cbae2fbb..b2737a2df1d3 100644
---- a/drivers/mailbox/pl320-ipc.c
-+++ b/drivers/mailbox/pl320-ipc.c
-@@ -195,4 +195,4 @@ static int __init ipc_init(void)
- {
- 	return amba_driver_register(&pl320_driver);
- }
--module_init(ipc_init);
-+subsys_initcall(ipc_init);
+diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
+index 70637d2..3612cb5 100644
+--- a/drivers/hwspinlock/Kconfig
++++ b/drivers/hwspinlock/Kconfig
+@@ -10,7 +10,7 @@ menu "Hardware Spinlock drivers"
+ 
+ config HWSPINLOCK_OMAP
+ 	tristate "OMAP Hardware Spinlock device"
+-	depends on ARCH_OMAP4 || SOC_OMAP5
++	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_AM43XX
+ 	select HWSPINLOCK
+ 	help
+ 	  Say y here to support the OMAP Hardware Spinlock device (firstly
 -- 
-1.8.5.2
+1.8.4.3
 
