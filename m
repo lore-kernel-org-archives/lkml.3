@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaANHlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:41:42 -0500
-Received: from mail.windriver.com ([147.11.1.11]:47509 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaANHll (ORCPT
+	id S1752632AbaANHmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:32 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:41285 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaANHlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:41:41 -0500
+	Tue, 14 Jan 2014 02:41:52 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,55 +14,194 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next 00/10] use appropriate APIs to get interfaces
-Date: Tue, 14 Jan 2014 15:40:59 +0800
-Message-ID: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next 03/10] eql: use __dev_get_by_name instead of dev_get_by_name to find interface
+Date: Tue, 14 Jan 2014 15:41:02 +0800
+Message-ID: <1389685269-18600-4-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under rtnl_lock protection, we should use __dev_get_name/index()
-rather than dev_get_name()/index() to find interface handlers
-because the former interfaces can help us avoid to change interface
-reference counter.
+The following call chain indicates that eql_ioctl(), eql_enslave(),
+eql_emancipate(), eql_g_slave_cfg() and eql_s_slave_cfg() are
+protected under rtnl_lock. So if we use __dev_get_by_name() instead
+of dev_get_by_name() to find interface handlers in them, this would
+help us avoid to change interface reference counters.
 
-Ying Xue (10):
-  Drivers: Staging: cxt1e1: use __dev_get_name instead of dev_get_name
-    to find interfaces
-  bonding: use __dev_get_by_name instead of dev_get_by_name to find
-    interface
-  eql: use __dev_get_by_name instead of dev_get_by_name to find
-    interface
-  dcb: use __dev_get_by_name instead of dev_get_by_name to find
-    interface
-  decnet: use __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  vxlan: use __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  batman-adv: use __dev_get_by_index instead of dev_get_by_index to
-    find interface
-  caif: __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  can: use __dev_get_by_index instead of dev_get_by_index to find
-    interface
-  net: nl80211: __dev_get_by_index instead of dev_get_by_index to find
-    interface
+dev_ioctl()
+  rtnl_lock()
+    dev_ifsioc()
+      eql_ioctl()
+        eql_enslave()
+	eql_emancipate()
+	eql_g_slave_cfg()
+	eql_s_slave_cfg()
+  rtnl_unlock()
 
- drivers/net/bonding/bond_main.c |   49 +++++++++----------
- drivers/net/eql.c               |   95 ++++++++++++++++---------------------
- drivers/net/vxlan.c             |    3 +-
- drivers/staging/cxt1e1/linux.c  |   15 +++---
- net/batman-adv/hard-interface.c |    4 +-
- net/caif/chnl_net.c             |    3 +-
- net/can/gw.c                    |   15 ++----
- net/dcb/dcbnl.c                 |   15 ++----
- net/decnet/dn_route.c           |    6 +--
- net/wireless/nl80211.c          |  100 ++++++++++++++-------------------------
- 10 files changed, 123 insertions(+), 182 deletions(-)
+Additionally we also change their return values from -EINVAL to
+-ENODEV in case that interfaces are no found.
 
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+---
+ drivers/net/eql.c |   95 +++++++++++++++++++++++------------------------------
+ 1 file changed, 42 insertions(+), 53 deletions(-)
+
+diff --git a/drivers/net/eql.c b/drivers/net/eql.c
+index f219d38..7a79b60 100644
+--- a/drivers/net/eql.c
++++ b/drivers/net/eql.c
+@@ -395,6 +395,7 @@ static int __eql_insert_slave(slave_queue_t *queue, slave_t *slave)
+ 		if (duplicate_slave)
+ 			eql_kill_one_slave(queue, duplicate_slave);
+ 
++		dev_hold(slave->dev);
+ 		list_add(&slave->list, &queue->all_slaves);
+ 		queue->num_slaves++;
+ 		slave->dev->flags |= IFF_SLAVE;
+@@ -413,39 +414,35 @@ static int eql_enslave(struct net_device *master_dev, slaving_request_t __user *
+ 	if (copy_from_user(&srq, srqp, sizeof (slaving_request_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev  = dev_get_by_name(&init_net, srq.slave_name);
+-	if (slave_dev) {
+-		if ((master_dev->flags & IFF_UP) == IFF_UP) {
+-			/* slave is not a master & not already a slave: */
+-			if (!eql_is_master(slave_dev) &&
+-			    !eql_is_slave(slave_dev)) {
+-				slave_t *s = kmalloc(sizeof(*s), GFP_KERNEL);
+-				equalizer_t *eql = netdev_priv(master_dev);
+-				int ret;
+-
+-				if (!s) {
+-					dev_put(slave_dev);
+-					return -ENOMEM;
+-				}
+-
+-				memset(s, 0, sizeof(*s));
+-				s->dev = slave_dev;
+-				s->priority = srq.priority;
+-				s->priority_bps = srq.priority;
+-				s->priority_Bps = srq.priority / 8;
+-
+-				spin_lock_bh(&eql->queue.lock);
+-				ret = __eql_insert_slave(&eql->queue, s);
+-				if (ret) {
+-					dev_put(slave_dev);
+-					kfree(s);
+-				}
+-				spin_unlock_bh(&eql->queue.lock);
+-
+-				return ret;
+-			}
++	slave_dev = __dev_get_by_name(&init_net, srq.slave_name);
++	if (!slave_dev)
++		return -ENODEV;
++
++	if ((master_dev->flags & IFF_UP) == IFF_UP) {
++		/* slave is not a master & not already a slave: */
++		if (!eql_is_master(slave_dev) && !eql_is_slave(slave_dev)) {
++			slave_t *s = kmalloc(sizeof(*s), GFP_KERNEL);
++			equalizer_t *eql = netdev_priv(master_dev);
++			int ret;
++
++			if (!s)
++				return -ENOMEM;
++
++			memset(s, 0, sizeof(*s));
++			s->dev = slave_dev;
++			s->priority = srq.priority;
++			s->priority_bps = srq.priority;
++			s->priority_Bps = srq.priority / 8;
++
++			spin_lock_bh(&eql->queue.lock);
++			ret = __eql_insert_slave(&eql->queue, s);
++			if (ret)
++				kfree(s);
++
++			spin_unlock_bh(&eql->queue.lock);
++
++			return ret;
+ 		}
+-		dev_put(slave_dev);
+ 	}
+ 
+ 	return -EINVAL;
+@@ -461,24 +458,20 @@ static int eql_emancipate(struct net_device *master_dev, slaving_request_t __use
+ 	if (copy_from_user(&srq, srqp, sizeof (slaving_request_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev = dev_get_by_name(&init_net, srq.slave_name);
+-	ret = -EINVAL;
+-	if (slave_dev) {
+-		spin_lock_bh(&eql->queue.lock);
+-
+-		if (eql_is_slave(slave_dev)) {
+-			slave_t *slave = __eql_find_slave_dev(&eql->queue,
+-							      slave_dev);
++	slave_dev = __dev_get_by_name(&init_net, srq.slave_name);
++	if (!slave_dev)
++		return -ENODEV;
+ 
+-			if (slave) {
+-				eql_kill_one_slave(&eql->queue, slave);
+-				ret = 0;
+-			}
++	ret = -EINVAL;
++	spin_lock_bh(&eql->queue.lock);
++	if (eql_is_slave(slave_dev)) {
++		slave_t *slave = __eql_find_slave_dev(&eql->queue, slave_dev);
++		if (slave) {
++			eql_kill_one_slave(&eql->queue, slave);
++			ret = 0;
+ 		}
+-		dev_put(slave_dev);
+-
+-		spin_unlock_bh(&eql->queue.lock);
+ 	}
++	spin_unlock_bh(&eql->queue.lock);
+ 
+ 	return ret;
+ }
+@@ -494,7 +487,7 @@ static int eql_g_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	if (copy_from_user(&sc, scp, sizeof (slave_config_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev = dev_get_by_name(&init_net, sc.slave_name);
++	slave_dev = __dev_get_by_name(&init_net, sc.slave_name);
+ 	if (!slave_dev)
+ 		return -ENODEV;
+ 
+@@ -510,8 +503,6 @@ static int eql_g_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	}
+ 	spin_unlock_bh(&eql->queue.lock);
+ 
+-	dev_put(slave_dev);
+-
+ 	if (!ret && copy_to_user(scp, &sc, sizeof (slave_config_t)))
+ 		ret = -EFAULT;
+ 
+@@ -529,7 +520,7 @@ static int eql_s_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	if (copy_from_user(&sc, scp, sizeof (slave_config_t)))
+ 		return -EFAULT;
+ 
+-	slave_dev = dev_get_by_name(&init_net, sc.slave_name);
++	slave_dev = __dev_get_by_name(&init_net, sc.slave_name);
+ 	if (!slave_dev)
+ 		return -ENODEV;
+ 
+@@ -548,8 +539,6 @@ static int eql_s_slave_cfg(struct net_device *dev, slave_config_t __user *scp)
+ 	}
+ 	spin_unlock_bh(&eql->queue.lock);
+ 
+-	dev_put(slave_dev);
+-
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
