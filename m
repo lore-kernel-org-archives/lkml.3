@@ -1,70 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaANGK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 01:10:29 -0500
-Received: from ozlabs.org ([203.10.76.45]:51577 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261AbaANGKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 01:10:24 -0500
-Date: Tue, 14 Jan 2014 17:10:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org, peterz@infradead.org,
-        netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the tip tree with the net-next tree
-Message-Id: <20140114171013.5578d644172095a6fed0eef1@canb.auug.org.au>
-In-Reply-To: <20140113.214841.1954373583033654604.davem@davemloft.net>
-References: <52D4C25F.8060804@zytor.com>
-	<20140113.211946.205101073261467184.davem@davemloft.net>
-	<20140114164420.d296fbcc4be3a5f126c86069@canb.auug.org.au>
-	<20140113.214841.1954373583033654604.davem@davemloft.net>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm"
+	id S1751984AbaANGPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 01:15:47 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:47062 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbaANGPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 01:15:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <52D4CE4C.1030809@oracle.com>
+References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com>
+	<20140113233505.GS1992@bbox>
+	<52D4909B.7070107@oracle.com>
+	<20140114045022.GZ1992@bbox>
+	<20140114050528.GA1992@bbox>
+	<52D4CE4C.1030809@oracle.com>
+Date: Tue, 14 Jan 2014 14:15:44 +0800
+Message-ID: <CAL1ERfMYXuQ48BEi=5pFCbDjAJ75RRRmnUGEanhWpxYh9RgZOQ@mail.gmail.com>
+Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Bob Liu <bob.liu@oracle.com>
+Cc: Minchan Kim <minchan@kernel.org>, Cai Liu <cai.liu@samsung.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, liucai.lfn@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Dave,
-
-On Mon, 13 Jan 2014 21:48:41 -0800 (PST) David Miller <davem@davemloft.net>=
- wrote:
+On Tue, Jan 14, 2014 at 1:42 PM, Bob Liu <bob.liu@oracle.com> wrote:
 >
-> Net patch applied, thanks Stephen.
+> On 01/14/2014 01:05 PM, Minchan Kim wrote:
+>> On Tue, Jan 14, 2014 at 01:50:22PM +0900, Minchan Kim wrote:
+>>> Hello Bob,
+>>>
+>>> On Tue, Jan 14, 2014 at 09:19:23AM +0800, Bob Liu wrote:
+>>>>
+>>>> On 01/14/2014 07:35 AM, Minchan Kim wrote:
+>>>>> Hello,
+>>>>>
+>>>>> On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
+>>>>>> zswap can support multiple swapfiles. So we need to check
+>>>>>> all zbud pool pages in zswap.
+>>>>>
+>>>>> True but this patch is rather costly that we should iterate
+>>>>> zswap_tree[MAX_SWAPFILES] to check it. SIGH.
+>>>>>
+>>>>> How about defining zswap_tress as linked list instead of static
+>>>>> array? Then, we could reduce unnecessary iteration too much.
+>>>>>
+>>>>
+>>>> But if use linked list, it might not easy to access the tree like this:
+>>>> struct zswap_tree *tree = zswap_trees[type];
+>>>
+>>> struct zswap_tree {
+>>>     ..
+>>>     ..
+>>>     struct list_head list;
+>>> }
+>>>
+>>> zswap_frontswap_init()
+>>> {
+>>>     ..
+>>>     ..
+>>>     zswap_trees[type] = tree;
+>>>     list_add(&tree->list, &zswap_list);
+>>> }
+>>>
+>>> get_zswap_pool_pages(void)
+>>> {
+>>>     struct zswap_tree *cur;
+>>>     list_for_each_entry(cur, &zswap_list, list) {
+>>>         pool_pages += zbud_get_pool_size(cur->pool);
+>>>     }
+>>>     return pool_pages;
+>>> }
+>
+> Okay, I see your point. Yes, it's much better.
+> Cai, Please make an new patch.
 
-Thanks.
+This improved patch could reduce unnecessary iteration too much.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+But I still have a question: why do we need so many zbud pools?
+How about use only one global zbud pool for all zswap_tree?
+I do not test it, but I think it can improve the strore density.
 
---Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm
-Content-Type: application/pgp-signature
+Just for your reference, Thanks!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJS1NTOAAoJEMDTa8Ir7ZwVbh0P/3Uny6jiMtBPs4qDMLwSMfu4
-Ku0hrMp7HcCCiAZ3bBduik69Hr/VtcObVSCql48/h9Mx7gl04eo8vz9RRtcvCP/f
-0Hv9gzijtliT2sSjqgaYSJqdXaHCW5v5ZrmCBnOvi13gXw/yC937/ACZ68/TCMxx
-O5oiMqbWhXGorDvjJl67sC7IrIjZFABP0DvjthKkSYVxc9BPrDSUNy4zSh6uVp3G
-1p5eeYYMk2OUXCC+17R92TExybUZ4IokwaRKwltH0IN+y1Fg3w3rb3XlbDyUnZ4H
-lsr+YuW2lqNupcghs95N9D76lRT3u8q0kwF8kpzu/XnHd11nbphYeaXV+O90utop
-8V8NvCz47Pg46So8Y5GQ4ooNmtqcTNP1w+zbqW3lOKpFtoql1Ji/GkHRaP0Utgog
-sfhMuwViXWCOiMIJjYfvalHb7k234DcPlDunzxahkDplUtyEtCdwnFyNgmZLzOGO
-gEPrtHILl5xrRiXwHXfmemTwWUjeDbu5qVH9AM63/ytqxu6QeBY1UmI0isM7er5j
-LCbmVdUsfhSaVLY774rlNlcEZLjk7XAHcyI08HwSl4l71KeW5ANWCrxIBbijfRsb
-nnFVXwnUzcWnfOvdXzYLLD2IyC6711S+L8T5+t9gAf5wyEzIHKnDwiYdffFVzU5F
-ceJFtKcGYvAt3s3SeWdP
-=Kh7T
------END PGP SIGNATURE-----
-
---Signature=_Tue__14_Jan_2014_17_10_13_+1100_r7C46fEeaOl.ZhHm--
+> Thanks,
+> -Bob
+>
+>>>
+>>>
+>>>>
+>>>> BTW: I'm still prefer to use dynamic pool size, instead of use
+>>>> zswap_is_full(). AFAIR, Seth has a plan to replace the rbtree with radix
+>>>> which will be more flexible to support this feature and page migration
+>>>> as well.
+>>>>
+>>>>> Other question:
+>>>>> Why do we need to update zswap_pool_pages too frequently?
+>>>>> As I read the code, I think it's okay to update it only when user
+>>>>> want to see it by debugfs and zswap_is_full is called.
+>>>>> So could we optimize it out?
+>>>>>
+>>>>>>
+>>>>>> Signed-off-by: Cai Liu <cai.liu@samsung.com>
+>>>>
+>>>> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+>>>
+>>> Hmm, I really suprised you are okay in this code piece where we have
+>>> unnecessary cost most of case(ie, most system has a swap device) in
+>>> *mm* part.
+>>>
+>>> Anyway, I don't want to merge this patchset.
+>>> If Andrew merge it and anybody doesn't do right work, I will send a patch.
+>>> Cai, Could you redo a patch?
+>>> I don't want to intercept your credit.
+>>>
+>>> Even, we could optimize to reduce the the number of call as I said in
+>>> previous reply.
+>>
+>> You did it already. Please write it out in description.
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
