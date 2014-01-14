@@ -1,140 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaANT2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:28:53 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:44471 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaANT2t (ORCPT
+	id S1751995AbaANT3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:29:22 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:48924 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaANT3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:28:49 -0500
-X-IronPort-AV: E=Sophos;i="4.95,658,1384300800"; 
-   d="scan'208";a="90708278"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next] xen-netback: Rework rx_work_todo
-Date: Tue, 14 Jan 2014 19:28:39 +0000
-Message-ID: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 14 Jan 2014 14:29:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+In-Reply-To: <1389371417-379-7-git-send-email-roy.franz@linaro.org>
+References: <1389371417-379-1-git-send-email-roy.franz@linaro.org>
+	<1389371417-379-7-git-send-email-roy.franz@linaro.org>
+Date: Tue, 14 Jan 2014 13:29:17 -0600
+Message-ID: <CAL_JsqLDVBfYomiNpFRacku4pJ3TrFy4rKJKedGp+LPGQt4m0w@mail.gmail.com>
+Subject: Re: [PATCH V6 6/8] Add EFI stub for ARM
+From: Rob Herring <robherring2@gmail.com>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        matt.fleming@intel.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linaro Patches <patches@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Dave P Martin <dave.martin@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent patch to fix receive side flow control (11b57f) solved the spinning
-thread problem, however caused an another one. The receive side can stall, if:
-- xenvif_rx_action sets rx_queue_stopped to false
-- interrupt happens, and sets rx_event to true
-- then xenvif_kthread sets rx_event to false
+On Fri, Jan 10, 2014 at 10:30 AM, Roy Franz <roy.franz@linaro.org> wrote:
+> This patch adds EFI stub support for the ARM Linux kernel.  The EFI stub
+> operates similarly to the x86 stub: it is a shim between the EFI firmware
+> and the normal zImage entry point, and sets up the environment that the
+> zImage is expecting.  This includes loading the initrd (optionaly) and
+> device tree from the system partition based on the kernel command line.
+> The stub updates the device tree as necessary, adding entries for EFI
+> runtime services. The PE/COFF "MZ" header at offset 0 results in the
+> first instruction being an add that corrupts r5, which is not used by
+> the zImage interface.
+>
+> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+> Acked-by: Grant Likely <grant.likely@linaro.org>
+> ---
 
-Also, through rx_event a malicious guest can force the RX thread to spin. This
-patch ditch that two variable, and rework rx_work_todo. If the thread finds it
-can't fit more skb's into the ring, it saves the last slot estimation into
-rx_last_skb_slots, otherwise it's kept as 0. Then rx_work_todo will check if:
-- there is something to send to the ring
-- there is space for the topmost packet in the queue
+[snip]
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/common.h    |    6 +-----
- drivers/net/xen-netback/interface.c |    1 -
- drivers/net/xen-netback/netback.c   |   16 ++++++----------
- 3 files changed, 7 insertions(+), 16 deletions(-)
+> +       /* Look up the base of DRAM from the device tree. */
+> +       fdt = (void *)fdt_addr;
+> +       node = fdt_subnode_offset(fdt, 0, "memory");
+> +       region = fdt_getprop(fdt, node, "reg", NULL);
+> +       if (region) {
+> +               dram_base = fdt64_to_cpu(region->base);
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index 4c76bcb..ae413a2 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -143,11 +143,7 @@ struct xenvif {
- 	char rx_irq_name[IFNAMSIZ+4]; /* DEVNAME-rx */
- 	struct xen_netif_rx_back_ring rx;
- 	struct sk_buff_head rx_queue;
--	bool rx_queue_stopped;
--	/* Set when the RX interrupt is triggered by the frontend.
--	 * The worker thread may need to wake the queue.
--	 */
--	bool rx_event;
-+	RING_IDX rx_last_skb_slots;
- 
- 	/* This array is allocated seperately as it is large */
- 	struct gnttab_copy *grant_copy_op;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index b9de31e..7669d49 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -100,7 +100,6 @@ static irqreturn_t xenvif_rx_interrupt(int irq, void *dev_id)
- {
- 	struct xenvif *vif = dev_id;
- 
--	vif->rx_event = true;
- 	xenvif_kick_thread(vif);
- 
- 	return IRQ_HANDLED;
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 2738563..bb241d0 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -477,7 +477,6 @@ static void xenvif_rx_action(struct xenvif *vif)
- 	unsigned long offset;
- 	struct skb_cb_overlay *sco;
- 	bool need_to_notify = false;
--	bool ring_full = false;
- 
- 	struct netrx_pending_operations npo = {
- 		.copy  = vif->grant_copy_op,
-@@ -487,7 +486,7 @@ static void xenvif_rx_action(struct xenvif *vif)
- 	skb_queue_head_init(&rxq);
- 
- 	while ((skb = skb_dequeue(&vif->rx_queue)) != NULL) {
--		int max_slots_needed;
-+		RING_IDX max_slots_needed;
- 		int i;
- 
- 		/* We need a cheap worse case estimate for the number of
-@@ -510,9 +509,10 @@ static void xenvif_rx_action(struct xenvif *vif)
- 		if (!xenvif_rx_ring_slots_available(vif, max_slots_needed)) {
- 			skb_queue_head(&vif->rx_queue, skb);
- 			need_to_notify = true;
--			ring_full = true;
-+			vif->rx_last_skb_slots = max_slots_needed;
- 			break;
--		}
-+		} else
-+			vif->rx_last_skb_slots = 0;
- 
- 		sco = (struct skb_cb_overlay *)skb->cb;
- 		sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
-@@ -523,8 +523,6 @@ static void xenvif_rx_action(struct xenvif *vif)
- 
- 	BUG_ON(npo.meta_prod > ARRAY_SIZE(vif->meta));
- 
--	vif->rx_queue_stopped = !npo.copy_prod && ring_full;
--
- 	if (!npo.copy_prod)
- 		goto done;
- 
-@@ -1727,8 +1725,8 @@ static struct xen_netif_rx_response *make_rx_response(struct xenvif *vif,
- 
- static inline int rx_work_todo(struct xenvif *vif)
- {
--	return (!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) ||
--		vif->rx_event;
-+	return !skb_queue_empty(&vif->rx_queue) &&
-+	       xenvif_rx_ring_slots_available(vif, vif->rx_last_skb_slots);
- }
- 
- static inline int tx_work_todo(struct xenvif *vif)
-@@ -1814,8 +1812,6 @@ int xenvif_kthread(void *data)
- 		if (!skb_queue_empty(&vif->rx_queue))
- 			xenvif_rx_action(vif);
- 
--		vif->rx_event = false;
--
- 		if (skb_queue_empty(&vif->rx_queue) &&
- 		    netif_queue_stopped(vif->dev))
- 			xenvif_start_queue(vif);
+This will not work if the address is 32-bit size.
+
+> +       } else {
+> +               /* There is no way to get amount or addresses of physical
+> +                * memory installed using EFI calls.  If the device tree
+> +                * we read from disk doesn't have this, there is no way
+> +                * for us to construct this informaion.
+> +                */
+> +               pr_efi_err(sys_table, "No 'memory' node in device tree.\n");
+> +               goto fail_free_fdt;
+
+The current pc can't be used to determine the DRAM base like AUTO_ZRELADDR?
+
+Rob
