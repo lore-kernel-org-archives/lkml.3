@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460AbaANAcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:32:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54574 "EHLO
+	id S1754484AbaANAcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:32:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54569 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766AbaANA3P (ORCPT
+	with ESMTP id S1754156AbaANA3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:15 -0500
+	Mon, 13 Jan 2014 19:29:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>, Rajendra Nayak <rnayak@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.12 58/77] clk: clk-divider: fix divisor > 255 bug
-Date: Mon, 13 Jan 2014 16:28:19 -0800
-Message-Id: <20140114002754.147369432@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.12 67/77] ACPI / Battery: Add a _BIX quirk for NEC LZ750/LS
+Date: Mon, 13 Jan 2014 16:28:28 -0800
+Message-Id: <20140114002754.398199487@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,40 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 778037e1ccb75609846deca9e419449c1dc137fa upstream.
+commit a90b40385735af0d3031f98e97b439e8944a31b3 upstream.
 
-Commit 6d9252bd9a4bb (clk: Add support for power of two type dividers)
-merged in v3.6 added the _get_val function to convert a divisor value to
-a register field value depending on the flags. However it used the type
-u8 for the div field, causing divisors larger than 255 to be masked
-and the resultant clock rate to be too high.
+The AML method _BIX of NEC LZ750/LS returns a broken package which
+skips the first member "Revision" (ACPI 5.0, Table 10-234).
 
-E.g. in my case an 11bit divider was supposed to divide 24.576 MHz down
-to 32.768KHz. The divisor was correctly calculated as 750 (0x2ee). This
-was masked to 238 (0xee) resulting in a frequency of 103.26KHz.
+Add a quirk for this machine to skip member "Revision" during parsing
+the package returned by _BIX.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=67351
+Reported-and-tested-by: Francisco Castro <fcr@adinet.com.uy>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk-divider.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/battery.c |   21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -87,7 +87,7 @@ static unsigned int _get_table_val(const
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -68,6 +68,7 @@ MODULE_AUTHOR("Alexey Starikovskiy <asta
+ MODULE_DESCRIPTION("ACPI Battery Driver");
+ MODULE_LICENSE("GPL");
+ 
++static int battery_bix_broken_package;
+ static unsigned int cache_time = 1000;
+ module_param(cache_time, uint, 0644);
+ MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
+@@ -443,7 +444,12 @@ static int acpi_battery_get_info(struct
+ 		ACPI_EXCEPTION((AE_INFO, status, "Evaluating %s", name));
+ 		return -ENODEV;
+ 	}
+-	if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
++
++	if (battery_bix_broken_package)
++		result = extract_package(battery, buffer.pointer,
++				extended_info_offsets + 1,
++				ARRAY_SIZE(extended_info_offsets) - 1);
++	else if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
+ 		result = extract_package(battery, buffer.pointer,
+ 				extended_info_offsets,
+ 				ARRAY_SIZE(extended_info_offsets));
+@@ -1054,6 +1060,17 @@ static int battery_notify(struct notifie
  	return 0;
  }
  
--static unsigned int _get_val(struct clk_divider *divider, u8 div)
-+static unsigned int _get_val(struct clk_divider *divider, unsigned int div)
++static struct dmi_system_id bat_dmi_table[] = {
++	{
++		.ident = "NEC LZ750/LS",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "NEC"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "PC-LZ750LS"),
++		},
++	},
++	{},
++};
++
+ static int acpi_battery_add(struct acpi_device *device)
  {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
- 		return div;
+ 	int result = 0;
+@@ -1163,6 +1180,8 @@ static void __init acpi_battery_init_asy
+ 	if (!acpi_battery_dir)
+ 		return;
+ #endif
++	if (dmi_check_system(bat_dmi_table))
++		battery_bix_broken_package = 1;
+ 	if (acpi_bus_register_driver(&acpi_battery_driver) < 0) {
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+ 		acpi_unlock_battery_dir(acpi_battery_dir);
 
 
