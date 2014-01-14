@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992AbaANBPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:15:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53843 "EHLO
+	id S1756003AbaANBQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:16:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaANA0V (ORCPT
+	with ESMTP id S1752415AbaANA0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:21 -0500
+	Mon, 13 Jan 2014 19:26:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brett Ciphery <brett.ciphery@windriver.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 07/27] ipv6: dont count addrconf generated routes against gc limit
-Date: Mon, 13 Jan 2014 16:26:21 -0800
-Message-Id: <20140114002623.569582570@linuxfoundation.org>
+Subject: [PATCH 3.4 06/27] macvtap: signal truncated packets
+Date: Mon, 13 Jan 2014 16:26:20 -0800
+Message-Id: <20140114002623.541438650@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -30,46 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit a3300ef4bbb1f1e33ff0400e1e6cf7733d988f4f ]
+[ Upstream commit ce232ce01d61b184202bb185103d119820e1260c ]
 
-Brett Ciphery reported that new ipv6 addresses failed to get installed
-because the addrconf generated dsts where counted against the dst gc
-limit. We don't need to count those routes like we currently don't count
-administratively added routes.
+macvtap_put_user() never return a value grater than iov length, this in fact
+bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
+returning the size of packet plus the possible vlan header to let the trunca
+checking work.
 
-Because the max_addresses check enforces a limit on unbounded address
-generation first in case someone plays with router advertisments, we
-are still safe here.
-
-Reported-by: Brett Ciphery <brett.ciphery@windriver.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/macvtap.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2114,15 +2114,11 @@ struct rt6_info *addrconf_dst_alloc(stru
- {
- 	struct net *net = dev_net(idev->dev);
- 	struct rt6_info *rt = ip6_dst_alloc(&net->ipv6.ip6_dst_ops,
--					    net->loopback_dev, 0);
-+					    net->loopback_dev, DST_NOCOUNT);
- 	int err;
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -800,7 +800,7 @@ static ssize_t macvtap_put_user(struct m
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+-	int copied;
++	int copied, total;
  
--	if (!rt) {
--		if (net_ratelimit())
--			pr_warning("IPv6:  Maximum number of routes reached,"
--				   " consider increasing route/max_size.\n");
-+	if (!rt)
- 		return ERR_PTR(-ENOMEM);
--	}
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+@@ -815,7 +815,8 @@ static ssize_t macvtap_put_user(struct m
+ 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+ 	}
+-	copied = vnet_hdr_len;
++	total = copied = vnet_hdr_len;
++	total += skb->len;
  
- 	in6_dev_hold(idev);
+ 	if (!vlan_tx_tag_present(skb))
+ 		len = min_t(int, skb->len, len);
+@@ -830,6 +831,7 @@ static ssize_t macvtap_put_user(struct m
  
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 		len = min_t(int, skb->len + VLAN_HLEN, len);
++		total += VLAN_HLEN;
+ 
+ 		copy = min_t(int, vlan_offset, len);
+ 		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+@@ -847,10 +849,9 @@ static ssize_t macvtap_put_user(struct m
+ 	}
+ 
+ 	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+-	copied += len;
+ 
+ done:
+-	return ret ? ret : copied;
++	return ret ? ret : total;
+ }
+ 
+ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
+@@ -904,7 +905,7 @@ static ssize_t macvtap_aio_read(struct k
+ 	}
+ 
+ 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+-	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
++	ret = min_t(ssize_t, ret, len);
+ 	if (ret > 0)
+ 		iocb->ki_pos = ret;
+ out:
 
 
