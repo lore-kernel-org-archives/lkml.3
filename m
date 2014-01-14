@@ -1,78 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaANH4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:56:37 -0500
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:13452
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750999AbaANH4f convert rfc822-to-8bit (ORCPT
+	id S1751383AbaANIAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 03:00:09 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58788 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaANIAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:56:35 -0500
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "moinejf@free.fr" <moinejf@free.fr>,
-        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
-	asoc_simple_card_data for the simple card driver data
-Thread-Topic: [alsa-devel] [RFC][PATCH] ASoC: simple-card: Add
-	asoc_simple_card_data for the simple card driver data
-Thread-Index: AQHPEPZQHcGE1bEqj0q1mNvuGMgzF5qD2O6A
-Date: Tue, 14 Jan 2014 07:56:32 +0000
-Message-ID: <96cb876ff05c4062ab5a2c92fb7b3c41@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1389678282-1097-1-git-send-email-Li.Xiubo@freescale.com>
- <871u0bgiai.wl%kuninori.morimoto.gx@gmail.com>
-In-Reply-To: <871u0bgiai.wl%kuninori.morimoto.gx@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0091C8F1EB
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(679001)(689001)(51704005)(199002)(189002)(164054003)(79102001)(54356001)(53806001)(54316002)(50986001)(49866001)(46102001)(65816001)(47976001)(66066001)(63696002)(80976001)(19580405001)(19580395003)(47736001)(83322001)(51856001)(33646001)(92566001)(93136001)(81816001)(76796001)(76786001)(56776001)(76482001)(59766001)(77982001)(81686001)(76576001)(74876001)(87936001)(31966008)(4396001)(80022001)(81342001)(87266001)(56816005)(85306002)(224313003)(74662001)(69226001)(2656002)(83072002)(47446002)(224303002)(74316001)(90146001)(81542001)(85852003)(74706001)(74502001)(74366001)(15866825004)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;CLIP:123.151.195.49;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 14 Jan 2014 03:00:06 -0500
+Message-ID: <52D4EE93.3090300@linux.vnet.ibm.com>
+Date: Tue, 14 Jan 2014 13:30:19 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Preeti U Murthy <preeti@linux.vnet.ibm.com>, paulmck@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, benh@kernel.crashing.org,
+        daniel.lezcano@linaro.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, tuukka.tikkanen@linaro.org
+Subject: Re: [PATCH] cpuidle/menu: Fail cpuidle_idle_call() if no idle state
+ is acceptable
+References: <20140114060516.6109.14901.stgit@preeti.in.ibm.com> <52D4E07E.204@linux.vnet.ibm.com>
+In-Reply-To: <52D4E07E.204@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011408-5816-0000-0000-00000BC32989
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > Whether the dt is used or not, almost all the simple card information
-> > for the DAI link and sound card are initialized in the simple card driver.
-> >
-> > And for the platform caller, the snd_link and snd_card are of no use, so
-> > move them from struct asoc_simple_card_info to struct asoc_simple_card_data.
-> >
-> > And now only one DAI link is supported for simple card.
-> >
-> > Suggested-by: Jean-Francois Moine <moinejf@free.fr>
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > ---
+On 01/14/2014 12:30 PM, Srivatsa S. Bhat wrote:
+> On 01/14/2014 11:35 AM, Preeti U Murthy wrote:
+>> On PowerPC, in a particular test scenario, all the cpu idle states were disabled.
+>> Inspite of this it was observed that the idle state count of the shallowest
+>> idle state, snooze, was increasing.
+>>
+>> This is because the governor returns the idle state index as 0 even in
+>> scenarios when no idle state can be chosen. These scenarios could be when the
+>> latency requirement is 0 or as mentioned above when the user wants to disable
+>> certain cpu idle states at runtime. In the latter case, its possible that no
+>> cpu idle state is valid because the suitable states were disabled
+>> and the rest did not match the menu governor criteria to be chosen as the
+>> next idle state.
+>>
+>> This patch adds the code to indicate that a valid cpu idle state could not be
+>> chosen by the menu governor and reports back to arch so that it can take some
+>> default action.
+>>
 > 
-> This patch seems have many this kind of lines
->   -	info->xxx
->   +	sdata->info->xxx
+> That sounds fair enough. However, the "default" action of pseries idle loop
+> (pseries_lpar_idle()) surprises me. It enters Cede, which is _deeper_ than doing
+> a snooze! IOW, a user might "disable" cpuidle or set the PM_QOS_CPU_DMA_LATENCY
+> to 0 hoping to prevent the CPUs from going to deep idle states, but then the
+> machine would still end up going to Cede, even though that wont get reflected
+> in the idle state counts. IMHO that scenario needs some thought as well...
+
+It was the snooze loop earlier but later we changed it to cede in commit
+363edbe2614 powerpc: Default arch idle will cede the processor on
+pseries to address the following regressions:
+
+>>snippet from the patch.
+When adding cpuidle support to pSeries, we introduced two
+    regressions:
+
+      - The new cpuidle backend driver only works under hypervisors
+        supporting the "SLPLAR" option, which isn't the case of the
+        old POWER4 hypervisor and the HV "light" used on js2x blades
+
+      - The cpuidle driver registers fairly late, meaning that for
+        a significant portion of the boot process, we end up having
+        all threads spinning. This slows down the boot process and
+        increases the overall resource usage if the hypervisor has
+        shared processors.
+
+    This fixes both by implementing a "default" idle that will cede
+    to the hypervisor when possible, in a very simple way without
+    all the bells and whisles of cpuidle.
+
+Regards,
+Deepthi
+
+
+>> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>> ---
+>>
+>>  drivers/cpuidle/cpuidle.c        |    6 +++++-
+>>  drivers/cpuidle/governors/menu.c |    7 ++++---
+>>  2 files changed, 9 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>> index a55e68f..5bf06bb 100644
+>> --- a/drivers/cpuidle/cpuidle.c
+>> +++ b/drivers/cpuidle/cpuidle.c
+>> @@ -131,8 +131,9 @@ int cpuidle_idle_call(void)
+>>
+>>  	/* ask the governor for the next state */
+>>  	next_state = cpuidle_curr_governor->select(drv, dev);
+>> +
+>> +	dev->last_residency = 0;
+>>  	if (need_resched()) {
+>> -		dev->last_residency = 0;
+>>  		/* give the governor an opportunity to reflect on the outcome */
+>>  		if (cpuidle_curr_governor->reflect)
+>>  			cpuidle_curr_governor->reflect(dev, next_state);
 > 
-> But, how about add this line to each function ?
+> The comments on top of the .reflect() routines of the governors say that the
+> second parameter is the index of the actual state entered. But after this patch,
+> next_state can be negative, indicating an invalid index. So those comments need
+> to be updated accordingly.
 > 
->      struct asoc_simple_card_info *info = &sdata->info;
+>> @@ -140,6 +141,9 @@ int cpuidle_idle_call(void)
+>>  		return 0;
+>>  	}
+>>
+>> +	if (next_state < 0)
+>> +		return -EINVAL;
 > 
-> Patch will be more readable
->
-
-Yes, that's looks perfect.
-
-See the next version please.
-
-Thanks,
-
---
-Best Regards,
-Xiubo
-
+> The exit path above (due to need_resched) returns with irqs enabled, but the new
+> one you are adding (next_state < 0) returns with irqs disabled. This is correct,
+> because in the latter case, "idle" is still in progress and the arch will choose
+> a default handler to execute (unlike the former case where "idle" is over and
+> hence its time to enable interrupts).
+> 
+> IMHO it would be good to add comments around this code to explain this subtle
+> difference. We can never be too careful with these things... ;-)
+> 
+>> +
+>>  	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>>
+>>  	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+>> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+>> index cf7f2f0..6921543 100644
+>> --- a/drivers/cpuidle/governors/menu.c
+>> +++ b/drivers/cpuidle/governors/menu.c
+>> @@ -283,6 +283,7 @@ again:
+>>   * menu_select - selects the next idle state to enter
+>>   * @drv: cpuidle driver containing state data
+>>   * @dev: the CPU
+>> + * Returns -1 when no idle state is suitable
+>>   */
+>>  static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>>  {
+>> @@ -292,17 +293,17 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>>  	int multiplier;
+>>  	struct timespec t;
+>>
+>> -	if (data->needs_update) {
+>> +	if (data->last_state_idx >= 0 && data->needs_update) {
+>                ^^^^^
+> Doesn't hurt, but actually unnecessary, since ->needs_update is set to 1
+> only when index >= 0.
+> 
+>>  		menu_update(drv, dev);
+>>  		data->needs_update = 0;
+>>  	}
+>>
+>> -	data->last_state_idx = 0;
+>> +	data->last_state_idx = -1;
+>>  	data->exit_us = 0;
+>>
+>>  	/* Special case when user has set very strict latency requirement */
+>>  	if (unlikely(latency_req == 0))
+>> -		return 0;
+>> +		return data->last_state_idx;
+>>
+>>  	/* determine the expected residency time, round up */
+>>  	t = ktime_to_timespec(tick_nohz_get_sleep_length());
+>>
+> 
+> What about the ladder governor? I know its not used that much in practice,
+> but I think it would be good to update that as well, just to keep it
+> consistent.
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
 
