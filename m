@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaANVLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:11:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33751 "EHLO
+	id S1752012AbaANVM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:12:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659AbaANVLd (ORCPT
+	with ESMTP id S1751485AbaANVMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:11:33 -0500
-Date: Tue, 14 Jan 2014 13:12:10 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        ebiederm@xmission.com
-Subject: Re: [RFC] sysfs_rename_link() and its usage
-Message-ID: <20140114211210.GA28453@kroah.com>
-References: <20140114171740.GB1867@redhat.com>
- <20140114182135.GA29296@kroah.com>
- <20140114191208.GA9942@redhat.com>
- <20140114193139.GA3636@kroah.com>
- <20140114210610.GC9942@redhat.com>
+	Tue, 14 Jan 2014 16:12:55 -0500
+Date: Tue, 14 Jan 2014 13:13:33 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] hvc: ensure hvc_init is only ever called once in
+ hvc_console.c
+Message-ID: <20140114211333.GB28453@kroah.com>
+References: <1389733436-4661-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114210610.GC9942@redhat.com>
+In-Reply-To: <1389733436-4661-1-git-send-email-paul.gortmaker@windriver.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:06:10PM +0100, Veaceslav Falico wrote:
-> On Tue, Jan 14, 2014 at 11:31:39AM -0800, Greg KH wrote:
-> >On Tue, Jan 14, 2014 at 08:12:08PM +0100, Veaceslav Falico wrote:
-> >>On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
-> >>>On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
-> >>>>Hi,
-> >>>>
-> >>>>I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
-> >>>>
-> >>>>Consider having two net_device *a, *b; which are registered normally.
-> >>>>Now, to create a link from /sys/class/net/a->name/linkname to b, one should
-> >>>>use:
-> >>>>
-> >>>>sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
-> >>>>
-> >>>>To remove it, even simpler:
-> >>>>
-> >>>>sysfs_remove_link(&(a->dev.kobj), linkname);
-> >>>>
-> >>>>This works like a charm. However, if I want to use (obviously, with the
-> >>>>symlink present):
-> >>>>
-> >>>>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
-> >>>
-> >>>You forgot the namespace option to this call, what kernel version are
-> >>>you using here?
-> >>
-> >>It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
-> >>3.13-rc6 with some networking patches on top of it.
-> >>
-> >>And wrt namespace - there are two functions, one is sysfs_rename_link(),
-> >>which calls the second one - sysfs_rename_link_ns() with NULL namespace.
-> >>
-> >>>
-> >>>>this fails with:
-> >>>>
-> >>>>"sysfs: ns invalid in 'a->name' for 'oldname'"
-> >>>
-> >>>Looks like the namespace for this link isn't valid.
-> >>
-> >>Yep, though dunno why.
-> >
-> >Are you testing this with network namespaces enabled?  Perhaps that is
-> >why, you need to specify the namespace of the link that you are
-> >changing.
-> >
-> >The fact that the bridge link works is odd to me, I would think that it
-> >too needs to specify the network namespace involved, but perhaps bridge
-> >objects aren't part of any specific network namespace?  I don't know the
-> >bridging code at all, sorry.
+On Tue, Jan 14, 2014 at 04:03:37PM -0500, Paul Gortmaker wrote:
+> Commit 3e6c6f630a5282df8f3393a59f10eb9c56536d23 ("Delay creation of
+> khcvd thread") moved the call of hvc_init from being a device_initcall
+> into hvc_alloc, and used a non-null hvc_driver as indication of whether
+> hvc_init had already been called.
 > 
-> Yep, might be it, will test soon and come back with the results.
+> The problem with this is that hvc_driver is only assigned a value
+> at the bottom of hvc_init, and so there is a window where multiple
+> hvc_alloc calls can be in progress at the same time and hence try
+> and call hvc_init multiple times.  Previously the use of device_init
+> guaranteed that hvc_init was only called once.
 > 
-> What still bugs me, though, is the logic - why is it possible to remove/add
-> without specifying namespace, while it fails to rename it? Maybe the rename
-> function should do a better job at detecting the namespace?
+> This manifests itself as sporadic instances of two hvc_init calls
+> racing each other, and with the loser of the race getting -EBUSY
+> from tty_register_driver() and hence that virtual console fails:
+> 
+>     Couldn't register hvc console driver
+>     virtio-ports vport0p1: error -16 allocating hvc for port
+> 
+> Here we add an atomic_t to guarantee we'll never run hvc_init twice.
+> 
+> Cc: stable@vger.kernel.org  # v2.6.24+
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Fixes: 3e6c6f630a52 ("Delay creation of khcvd thread")
+> Reported-by: Jim Somerville <Jim.Somerville@windriver.com>
+> Tested-by: Jim Somerville <Jim.Somerville@windriver.com>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+> 
+> [Greg: I realize tty-next is closed; given that this is an ancient
+>  bug, I don't see any real urgency here, so feel free to queue it
+>  whenever/whereever is most convenient - assuming it is an OK fix.]
 
-Yes, maybe it should, patches are always gladly welcome :)
-
-thanks,
+Looks ok, I'll queue it up after 3.14-rc1 is out, thanks.
 
 greg k-h
