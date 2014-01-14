@@ -1,46 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931AbaANLDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 06:03:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57750 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaANLDX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 06:03:23 -0500
-Date: Tue, 14 Jan 2014 12:03:07 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel J Blueman <daniel@numascale.com>
-Cc: Waiman Long <waiman.long@hp.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, rth@twiddle.net,
-        ink@jurassic.park.msu.ru, mattst88@gmail.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
-Message-ID: <20140114110307.GW7572@laptop.programming.kicks-ass.net>
-References: <52D353C8.4000000@numascale.com>
- <52D4172E.6030706@hp.com>
- <52D4A0C7.5070601@numascale.com>
+	id S1751980AbaANLDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 06:03:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbaANLDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 06:03:41 -0500
+Message-ID: <52D5195A.3040001@redhat.com>
+Date: Tue, 14 Jan 2014 12:02:50 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D4A0C7.5070601@numascale.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] zram: do not pass rw argument to __zram_make_request()
+References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com> <1389692260-4421-3-git-send-email-sergey.senozhatsky@gmail.com>
+In-Reply-To: <1389692260-4421-3-git-send-email-sergey.senozhatsky@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:28:23AM +0800, Daniel J Blueman wrote:
-> >Peter,
-> >
-> >I found out that the build failure was caused by the fact that the
-> >__native_word() macro (used internally by compiletime_assert_atomic())
-> >allows only a size of 4 or 8 for x86-64. The data type that I used is a
-> >byte. Is there a reason why byte and short are not considered native?
+On 01/14/2014 10:37 AM, Sergey Senozhatsky wrote:
+> Do not pass rw argument down the __zram_make_request() -> zram_bvec_rw()
+> chain, decode it in zram_bvec_rw() instead. Besides, this is the place
+> where we distinguish READ (+READ AHEAD) and WRITE bio data directions, so
+> account zram RW stats here, instead of __zram_make_request(). This also
+> allows to account a real number of zram READ/WRITE operations, not just
+> requests (single RW request may cause a number of zram RW ops with separate
+> locking, compression/decompression, etc).
 > 
-> It seems likely it was implemented like that since there was no existing
-> need; long can be relied on as the largest native type, so this should
-> suffice and works here:
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  drivers/block/zram/zram_drv.c | 33 +++++++++++++++------------------
+>  1 file changed, 15 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index c323e05..2a7682c 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -533,14 +533,21 @@ out:
+>  }
+>  
+>  static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> -			int offset, struct bio *bio, int rw)
+> +			int offset, struct bio *bio)
+>  {
+>  	int ret;
+> +	int rw = bio_data_dir(bio);
+>  
+> -	if (rw == READ)
+> +	if (rw == READA)
+> +		rw = READ;
 
-There's Alphas that cannot actually atomically adres a byte; I do not
-konw if Linux cares about them, but if it does, we cannot in fact rely
-on this in generic primitives like this.
+This could never happen: bio_data_dir() can only return READ or WRITE.
+
+Jerome
+
+> +
+> +	if (rw == READ) {
+> +		atomic64_inc(&zram->stats.num_reads);
+>  		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+> -	else
+> +	} else {
+> +		atomic64_inc(&zram->stats.num_writes);
+>  		ret = zram_bvec_write(zram, bvec, index, offset);
+> +	}
+>  
+>  	return ret;
+>  }
+> @@ -670,22 +677,13 @@ out:
+>  	return ret;
+>  }
+>  
+> -static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+> +static void __zram_make_request(struct zram *zram, struct bio *bio)
+>  {
+>  	int offset;
+>  	u32 index;
+>  	struct bio_vec bvec;
+>  	struct bvec_iter iter;
+>  
+> -	switch (rw) {
+> -	case READ:
+> -		atomic64_inc(&zram->stats.num_reads);
+> -		break;
+> -	case WRITE:
+> -		atomic64_inc(&zram->stats.num_writes);
+> -		break;
+> -	}
+> -
+>  	index = bio->bi_iter.bi_sector >> SECTORS_PER_PAGE_SHIFT;
+>  	offset = (bio->bi_iter.bi_sector &
+>  		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
+> @@ -704,16 +702,15 @@ static void __zram_make_request(struct zram *zram, struct bio *bio, int rw)
+>  			bv.bv_len = max_transfer_size;
+>  			bv.bv_offset = bvec.bv_offset;
+>  
+> -			if (zram_bvec_rw(zram, &bv, index, offset, bio, rw) < 0)
+> +			if (zram_bvec_rw(zram, &bv, index, offset, bio) < 0)
+>  				goto out;
+>  
+>  			bv.bv_len = bvec.bv_len - max_transfer_size;
+>  			bv.bv_offset += max_transfer_size;
+> -			if (zram_bvec_rw(zram, &bv, index+1, 0, bio, rw) < 0)
+> +			if (zram_bvec_rw(zram, &bv, index + 1, 0, bio) < 0)
+>  				goto out;
+>  		} else
+> -			if (zram_bvec_rw(zram, &bvec, index, offset, bio, rw)
+> -			    < 0)
+> +			if (zram_bvec_rw(zram, &bvec, index, offset, bio) < 0)
+>  				goto out;
+>  
+>  		update_position(&index, &offset, &bvec);
+> @@ -743,7 +740,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+>  		goto error;
+>  	}
+>  
+> -	__zram_make_request(zram, bio, bio_data_dir(bio));
+> +	__zram_make_request(zram, bio);
+>  	up_read(&zram->init_lock);
+>  
+>  	return;
+> 
+
