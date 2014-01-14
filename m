@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaANA14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:27:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54148 "EHLO
+	id S1754671AbaANAxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:53:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290AbaANA1l (ORCPT
+	with ESMTP id S1753287AbaANA1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:41 -0500
+	Mon, 13 Jan 2014 19:27:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Dalton <mwdalton@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 3.10 32/62] virtio_net: dont leak memory or block when too many frags
-Date: Mon, 13 Jan 2014 16:26:57 -0800
-Message-Id: <20140114002711.379826555@linuxfoundation.org>
+        Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: [PATCH 3.10 62/62] sched: Guarantee new group-entities always have weight
+Date: Mon, 13 Jan 2014 16:27:27 -0800
+Message-Id: <20140114002712.241349227@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,38 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Paul Turner <pjt@google.com>
 
-We leak an skb when there are too many frags,
-we also stop processing the packet in the middle,
-the result is almost sure to be loss of networking.
+commit 0ac9b1c21874d2490331233b3242085f8151e166 upstream.
 
-Reported-by: Michael Dalton <mwdalton@google.com>
-Acked-by: Michael Dalton <mwdalton@google.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Currently, group entity load-weights are initialized to zero. This
+admits some races with respect to the first time they are re-weighted in
+earlty use. ( Let g[x] denote the se for "g" on cpu "x". )
+
+Suppose that we have root->a and that a enters a throttled state,
+immediately followed by a[0]->t1 (the only task running on cpu[0])
+blocking:
+
+  put_prev_task(group_cfs_rq(a[0]), t1)
+  put_prev_entity(..., t1)
+  check_cfs_rq_runtime(group_cfs_rq(a[0]))
+  throttle_cfs_rq(group_cfs_rq(a[0]))
+
+Then, before unthrottling occurs, let a[0]->b[0]->t2 wake for the first
+time:
+
+  enqueue_task_fair(rq[0], t2)
+  enqueue_entity(group_cfs_rq(b[0]), t2)
+  enqueue_entity_load_avg(group_cfs_rq(b[0]), t2)
+  account_entity_enqueue(group_cfs_ra(b[0]), t2)
+  update_cfs_shares(group_cfs_rq(b[0]))
+  < skipped because b is part of a throttled hierarchy >
+  enqueue_entity(group_cfs_rq(a[0]), b[0])
+  ...
+
+We now have b[0] enqueued, yet group_cfs_rq(a[0])->load.weight == 0
+which violates invariants in several code-paths. Eliminate the
+possibility of this by initializing group entity weight.
+
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20131016181627.22647.47543.stgit@sword-of-the-dawn.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/net/virtio_net.c |    3 ++-
+ kernel/sched/fair.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -341,7 +341,7 @@ static struct sk_buff *receive_mergeable
- 		if (i >= MAX_SKB_FRAGS) {
- 			pr_debug("%s: packet too long\n", skb->dev->name);
- 			skb->dev->stats.rx_length_errors++;
--			return NULL;
-+			goto err_frags;
- 		}
- 		page = virtqueue_get_buf(rq->vq, &len);
- 		if (!page) {
-@@ -362,6 +362,7 @@ static struct sk_buff *receive_mergeable
- err_skb:
- 	give_pages(rq, page);
- 	while (--num_buf) {
-+err_frags:
- 		buf = virtqueue_get_buf(rq->vq, &len);
- 		if (unlikely(!buf)) {
- 			pr_debug("%s: rx error: %d buffers missing\n",
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6091,7 +6091,8 @@ void init_tg_cfs_entry(struct task_group
+ 		se->cfs_rq = parent->my_q;
+ 
+ 	se->my_q = cfs_rq;
+-	update_load_set(&se->load, 0);
++	/* guarantee group entities always have weight */
++	update_load_set(&se->load, NICE_0_LOAD);
+ 	se->parent = parent;
+ }
+ 
 
 
