@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182AbaANCLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 21:11:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46865 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbaANCLM (ORCPT
+	id S1752108AbaANCTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 21:19:46 -0500
+Received: from smtprelay0165.hostedemail.com ([216.40.44.165]:56551 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751364AbaANCTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 21:11:12 -0500
-Message-ID: <52D49CD5.20805@oracle.com>
-Date: Mon, 13 Jan 2014 21:11:33 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Olaf Hering <olaf@aepfle.de>
-CC: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, david.vrabel@citrix.com
-Subject: Re: [PATCH] xen-blkfront: remove type check from blkfront_setup_discard
-References: <1389371301-29532-1-git-send-email-olaf@aepfle.de> <52D036FC.6000308@oracle.com> <20140110213746.GA933@aepfle.de> <52D073F0.5020400@oracle.com> <20140113093032.GA13919@aepfle.de> <52D3FD67.2060708@oracle.com> <20140113230740.GA23544@aepfle.de>
-In-Reply-To: <20140113230740.GA23544@aepfle.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 13 Jan 2014 21:19:43 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:4250:4321:5007:7652:8957:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13019:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: home00_8ea268770493f
+X-Filterd-Recvd-Size: 1898
+Message-ID: <1389665978.24849.27.camel@joe-AO722>
+Subject: Re: [PATCH] Staging: ced1401: fix coding style in ced_ioc.c
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Pol Eyschen <poleyschen@gmail.com>, sachin.kamat@linaro.org, jack@suse.cz,
+        ufimtseva@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Pol Eyschen <poleyschen@hotmail.com>
+Date: Mon, 13 Jan 2014 18:19:38 -0800
+In-Reply-To: <20140113235650.GA23380@kroah.com>
+References: <1389642100-3601-1-git-send-email-poleyschen@gmail.com>
+	 <20140113235650.GA23380@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 06:07 PM, Olaf Hering wrote:
-> On Mon, Jan 13, Boris Ostrovsky wrote:
->
->> On 01/13/2014 04:30 AM, Olaf Hering wrote:
->>>> Similarly, if xenbug_gather("discard-secure") fails, I think the code will
->>>> assume that secure discard has not been requested. I don't know what
->>>> security implications this will have but it sounds bad to me.
->>> There are no security implications, if the backend does not advertise it
->>> then its not present.
->> Right. But my questions was what if the backend does advertise it and wants
->> the frontent to use it but xenbus_gather() in the frontend fails. Do we want
->> to silently continue without discard-secure? Is this safe?
-> The frontend can not know that the backend advertised discard-secure
-> because the frontend just failed to read the property which indicates
-> discard-secure should be enabled.
+On Mon, 2014-01-13 at 15:56 -0800, Greg KH wrote:
+> On Mon, Jan 13, 2014 at 08:41:40PM +0100, Pol Eyschen wrote:
+[]
+> > diff --git a/drivers/staging/ced1401/ced_ioc.c b/drivers/staging/ced1401/ced_ioc.c
+[]
+> > @@ -41,7 +41,8 @@ static void FlushOutBuff(DEVICE_EXTENSION *pdx)
+> >  {
+> >  	dev_dbg(&pdx->interface->dev, "%s currentState=%d", __func__,
+> >  		pdx->sCurrentState);
+> > -	if (pdx->sCurrentState == U14ERR_TIME)	/* Do nothing if hardware in trouble */
+> > +	if (pdx->sCurrentState == U14ERR_TIME)
+> > +		/* Do nothing if hardware in trouble */
+> >  		return;
+> 
+> Please wrap stuff like this in { } to not confuse people.
 
-And is it OK for the frontend not to know about this?
+Yes please, or maybe put the comment on the return line like:
 
-I don't understand what the use model for this feature is. Is it just 
-that the backend advertises its capability and it's up to the frontend 
-to use it or not -or- is it that the user/admin created the storage with 
-expectations that it will be used in "secure" manner.
+	if (pdx->sCurrentState == U14ERR_TIME)
+		return;			/* Do nothing if hardware in trouble */
 
-I think if it's the former then losing information about storage 
-features is OK but if it's the latter then I am not so sure.
+or above the test like:
 
-Or perhaps it's neither of these two and I am completely missing the 
-point of this feature.
+	/* Do nothing if hardware in trouble */
+	if (pdx->sCurrentState == U14ERR_TIME)
+		return;
 
--boris
+
 
