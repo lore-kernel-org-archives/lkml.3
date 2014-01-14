@@ -1,81 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaANTPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:15:00 -0500
-Received: from mout.gmx.net ([212.227.15.18]:56206 "EHLO mout.gmx.net"
+	id S1752076AbaANTPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:15:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27284 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaANTO5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:14:57 -0500
-From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
-To: llvmlinux@lists.linuxfoundation.org
-Cc: David Woodhouse <David.Woodhouse@intel.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [llvmlinux] [PATCH 3/4] x86: Allow building 16-bit code with -m16 with toolchains that support it
-Date: Tue, 14 Jan 2014 20:14:53 +0100
-Message-ID: <3418146.9929lmqnex@aragorn.auenland.lan>
-User-Agent: KMail/4.12 (Linux/3.11.6-4-desktop; KDE/4.12.0; x86_64; ; )
-In-Reply-To: <1389180083-23249-3-git-send-email-David.Woodhouse@intel.com>
-References: <1389180083-23249-1-git-send-email-David.Woodhouse@intel.com> <1389180083-23249-3-git-send-email-David.Woodhouse@intel.com>
+	id S1751891AbaANTPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:15:06 -0500
+Date: Tue, 14 Jan 2014 20:12:08 +0100
+From: Veaceslav Falico <vfalico@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [RFC] sysfs_rename_link() and its usage
+Message-ID: <20140114191208.GA9942@redhat.com>
+References: <20140114171740.GB1867@redhat.com>
+ <20140114182135.GA29296@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V03:K0:94fFS4xrbb7hbH7az2zXDSIagGNkmrtFc1JeKRiSY6yqiQvkDS4
- BaA5ff0d7rr7DsySIxTvN/PZHVqU26CXy+XaBHVt0mnacmrGgXCmoa8yDTuOx2MrkPfa95P
- DqfB3WnOohV9tEQ5anBgwaHC3GGz2Td0W/zOVagAe6Mskcw6BXuzgMaD6tsmEpHycDOuo3Z
- BcJ62i3uFJ7gR4J2aJfwA==
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20140114182135.GA29296@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Tue, Jan 14, 2014 at 10:21:35AM -0800, Greg KH wrote:
+>On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
+>> Hi,
+>>
+>> I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
+>>
+>> Consider having two net_device *a, *b; which are registered normally.
+>> Now, to create a link from /sys/class/net/a->name/linkname to b, one should
+>> use:
+>>
+>> sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
+>>
+>> To remove it, even simpler:
+>>
+>> sysfs_remove_link(&(a->dev.kobj), linkname);
+>>
+>> This works like a charm. However, if I want to use (obviously, with the
+>> symlink present):
+>>
+>> sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
+>
+>You forgot the namespace option to this call, what kernel version are
+>you using here?
 
-what version of clang did you use btw ?
+It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
+3.13-rc6 with some networking patches on top of it.
 
--- 
+And wrt namespace - there are two functions, one is sysfs_rename_link(),
+which calls the second one - sysfs_rename_link_ns() with NULL namespace.
 
-Dipl.-Ing.
-Jan-Simon Möller
+>
+>> this fails with:
+>>
+>> "sysfs: ns invalid in 'a->name' for 'oldname'"
+>
+>Looks like the namespace for this link isn't valid.
 
-jansimon.moeller@gmx.de
-Am Mittwoch, 8. Januar 2014, 11:21:22 schrieb David Woodhouse:
-> I have this working with LLVM/Clang, and a PR is filed for GCC because
-> the current hacks we have to do to *try* to ensure that .code16gcc is
-> the first thing in the asm output are horrid.
-> 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
->  arch/x86/Makefile | 15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index ef19271..60fc67d 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -13,14 +13,21 @@ endif
-> 
->  # How to compile the 16-bit code.  Note we always compile for -march=i386;
->  # that way we can complain to the user if the CPU is insufficient.
-> -REALMODE_CFLAGS	:= -m32 -g -Os -D__KERNEL__ -DDISABLE_BRANCH_PROFILING \
-> +#
-> +# We really want GCC to have a -m16 option like clang, so that we don't
-> +# have to play these evil and unreliable tricks to ensure that our
-> +# asm(".code16gcc") is first in the asm output. http://gcc.gnu.org/PR59672
-> +CODE16GCC_CFLAGS := -m32 -include $(srctree)/arch/x86/boot/code16gcc.h \
-> +		    $(call cc-option, -fno-toplevel-reorder,\
-> +		      $(call cc-option, -fno-unit-at-a-time))
-> +M16_CFLAGS	 := -m16
-> +
-> +REALMODE_CFLAGS	:= -g -Os -D__KERNEL__ -DDISABLE_BRANCH_PROFILING \
-> +		   $(call cc-option, $(M16_CFLAGS), $(CODE16GCC_CFLAGS)) \
->  		   -Wall -Wstrict-prototypes -march=i386 -mregparm=3 \
-> -		   -include $(srctree)/arch/x86/boot/code16gcc.h \
->  		   -fno-strict-aliasing -fomit-frame-pointer -fno-pic \
->  		   -mno-mmx -mno-sse \
->  		   $(call cc-option, -ffreestanding) \
-> -		   $(call cc-option, -fno-toplevel-reorder,\
-> -		   $(call cc-option, -fno-unit-at-a-time)) \
->  		   $(call cc-option, -fno-stack-protector) \
->  		   $(call cc-option, -mpreferred-stack-boundary=2)
->  export REALMODE_CFLAGS
+Yep, though dunno why.
 
+>
+>> in
+>>
+>>  608 struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
+>> ...
+>>  615         if (!!sysfs_ns_type(parent_sd) != !!ns) {
+>>  616                 WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
+>>  617                         sysfs_ns_type(parent_sd) ? "required" : "invalid",
+>>  618                         parent_sd->s_name, name);
+>>  619                 return NULL;
+>>  620         }
+>>
+>> Code path:
+>> warn_slowpath_fmt+0x46/0x50
+>> sysfs_get_dirent_ns+0x30/0x80
+>> sysfs_find_dirent+0x84/0x110
+>> sysfs_get_dirent_ns+0x3e/0x80
+>> sysfs_rename_link_ns+0x54/0xd0
+>>
+>> I have no idea what this code means. Is there any reason for it to
+>> fail (i.e. am I doing something wrong?) or I've hit a bug?
+>
+>What exactly are you trying to do here?  Care to provide a pointer to
+>your code somewhere?
+
+I've tried to handle the network device renames, ended up doing it with
+sysfs_remove/add_link() calls. Patches:
+
+http://patchwork.ozlabs.org/patch/310798/
+http://patchwork.ozlabs.org/patch/310796/
+
+If an upper device (say, vlan, bonding, bridge etc.) enslaves another
+device, symlinks are created (given bridge0 and eth0):
+
+/sys/class/net/eth0/upper_bridge0 -> ../bridge0
+/sys/class/net/bridge0/lower_eth0 -> ../eth0
+
+However, in case someone renames eth0/bridge0, these symlinks should also
+be renamed, and sysfs_rename_link() should fit great here. But it fails.
+
+>
+>> I've tested the only user of it (bridge) - and it works fine, however it's
+>> not using its own net_device's kobject but rather its own dir.
+>
+>The driver core also uses this function, and it works there, so I'd
+>blame your code :)
+
+Yeah, I'd also like to blame it, I'm afraid of touching anything
+sysfs-related :).
+
+>
+>thanks,
+>
+>greg k-h
