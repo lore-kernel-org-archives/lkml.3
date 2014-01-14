@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaANVen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:34:43 -0500
-Received: from elasmtp-spurfowl.atl.sa.earthlink.net ([209.86.89.66]:55361
-	"EHLO elasmtp-spurfowl.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751503AbaANVek (ORCPT
+	id S1751905AbaANViC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:38:02 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:54646 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaANVh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:34:40 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=fUjje2xUsGb7G0KZTF/etUVU75cTGXR9dGHTUEATpaUlZc2ouvWv8KSxdi3LKu8i;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-index:Content-language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Andy Lutomirski'" <luto@amacapital.net>
-Cc: "'J. Bruce Fields'" <bfields@fieldses.org>,
-        "'Jeff Layton'" <jlayton@redhat.com>,
-        "'Linux FS Devel'" <linux-fsdevel@vger.kernel.org>,
-        <nfs-ganesha-devel@lists.sourceforge.net>,
-        <samba-technical@lists.samba.org>, <linux-kernel@vger.kernel.org>,
-        "'Richard Hipp'" <drh@hwaci.com>
-References: <1389277187-18211-1-git-send-email-jlayton@redhat.com> <1389277187-18211-14-git-send-email-jlayton@redhat.com> <52CF05B5.5080700@amacapital.net> <20140109194930.1692fbbe@tlielax.poochiereds.net> <CALCETrXp-G2t9Lfd+tbyzWtXeBw+vLHWE4M7-297HQzyFDVU_g@mail.gmail.com> <20140114192713.GA22262@fieldses.org> <CALCETrWmOu-RVXNYmL--RMaiOiOMYVv5qd1+jfY0j8GZHh0rWg@mail.gmail.com> <20140114211009.GA23999@fieldses.org> <039101cf116e$56c2de80$04489b80$@mindspring.com> <CALCETrWRWnbiX+fpeXmn7ZKVvCpb+h99R01o8jchmx4=fgb0QA@mail.gmail.com> <CALCETrVRe2koQAwEiR7p10LqSi4durr9s6uo-1iv_aG-ZNGSkg@mail.gmail.com>
-In-Reply-To: <CALCETrVRe2koQAwEiR7p10LqSi4durr9s6uo-1iv_aG-ZNGSkg@mail.gmail.com>
-Subject: RE: [PATCH v5 13/14] locks: skip deadlock detection on FL_FILE_PVT locks
-Date: Tue, 14 Jan 2014 13:34:25 -0800
-Message-ID: <039201cf1170$668909a0$339b1ce0$@mindspring.com>
+	Tue, 14 Jan 2014 16:37:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-index: AQIxplNl3UwPk1McdlqVXO1PIZQSjgHxuHtVAik7TMsCB4kX9QHuwxiHAZAhYMwCAjlpFgHwcRUpAfMzOL0A2pM5hQEgQAERmTOCygA=
-Content-language: en-us
-X-Antivirus: avast! (VPS 140114-1, 01/14/2014), Outbound message
-X-Antivirus-Status: Clean
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4dc8c791b94e4d6357566b75ab51ca5d6c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+In-Reply-To: <20140113060102.GO23525@S2101-09.ap.freescale.net>
+References: <1389321592-33220-1-git-send-email-john.tobias.ph@gmail.com>
+	<20140113032043.GF23525@S2101-09.ap.freescale.net>
+	<CACUGKYMx_o6TLsvMxK3Gb+cmOUCX3Toj+6MeJmo=ahfyc=vXCA@mail.gmail.com>
+	<20140113060102.GO23525@S2101-09.ap.freescale.net>
+Date: Tue, 14 Jan 2014 13:37:57 -0800
+Message-ID: <CACUGKYMT1FHjpP+Yx7wKo5SXGGm3C3R6Z4tag0J1bczyg9Z8mQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] ARM: imx: add select on ARCH_MXC for cpufreq support
+From: John Tobias <john.tobias.ph@gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: rjw@rjwysocki.net, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "<kernel@pengutronix.de>" <kernel@pengutronix.de>,
+        "<linux@arm.linux.org.uk>" <linux@arm.linux.org.uk>,
+        "<linux-arm-kernel@lists.infradead.org>" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Fabio Estevam <festevam@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> [grr, gmail -- I didn't actually intend to send that.]
-> 
-> On Tue, Jan 14, 2014 at 1:24 PM, Andy Lutomirski <luto@amacapital.net>
-> wrote:
-> > On Tue, Jan 14, 2014 at 1:19 PM, Frank Filz <ffilzlnx@mindspring.com>
-> wrote:
-> >>>       process 2 requests a write lock, gets -EDEADLK, unlocks and
-> >>>       requests a new read lock.  That request succeeds because there
-> >>>       is no conflicting lock.  (Note the lock manager had no
-> >>>       opportunity to upgrade 1's lock here thanks to the conflict with
-> >>>       3's lock.)
-> >>
-> >> As I understand write lock priority, process 2 requesting a new read
-> >> lock would block, once there is a write lock waiter, no further read
-> >> locks would be granted that would conflict with that waiting write
-lock.
-> >
-> > ...which reminds me -- if anyone implements writer priority, please
-> > make it optional (either w/ a writer-priority-ignoring read lock or a
-> > non-priority-granting write lock).  I have an application for which
-> > writer priority would be really annoying.
-> >
-> > Even better: Have read-lock-and-wait-for-pending-writers be an explicit
-> new operation.
-> >
-> > (Writer priority a
-> 
-> Writer priority can introduce new deadlocks.  Suppose that a reader
-(holding
-> a read lock) starts a subprocess that takes a new read lock and waits for
-that
-> subprocess.  Throw an unrelated process in that tries to take a write lock
-and
-> you have an instant deadlock.
+I made a mistake. The HAVE_IMX_ANATOP doesn't require to move up. It
+should be ARCH_HAS_OPP.
 
-Hmm, that's an interesting one.
 
-With the new private locks, you could avoid that, because you can pass the
-read lock you already hold to that sub-process, such that the sub-process
-doesn't have to get it's own lock on the record in question.
 
-Frank
-
+On Sun, Jan 12, 2014 at 10:01 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Sun, Jan 12, 2014 at 08:54:18PM -0800, John Tobias wrote:
+>> I tested leaving the HAVE_IMX_ANATOP under SOC_IMX6Q and SOC_IMX6SL.
+>> The iMX6Q cpufreq driver won't show up in menu config / gconfig and
+>> that's the reason why I added it.
+>
+> I tested the following changes against my for-next branch, and I can see
+> iMX6Q cpufreq driver in menuconfig.  Note, the
+> drivers/cpufreq/Kconfig.arm change is on cpufreq tree, so I have to make
+> the change locally for the testing.
+>
+> Shawn
+>
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index 1e70150..7071468 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -1,5 +1,7 @@
+>  config ARCH_MXC
+>         bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 ||
+> ARCH_MULTI_V6_V7
+> +       select ARCH_HAS_CPUFREQ
+> +       select ARCH_HAS_OPP
+>         select ARCH_REQUIRE_GPIOLIB
+>         select ARM_CPU_SUSPEND if PM
+>         select ARM_PATCH_PHYS_VIRT
+> @@ -12,6 +14,7 @@ config ARCH_MXC
+>         select MIGHT_HAVE_CACHE_L2X0 if ARCH_MULTI_V6_V7
+>         select MULTI_IRQ_HANDLER
+>         select PINCTRL
+> +       select PM_OPP if PM
+>         select SOC_BUS
+>         select SPARSE_IRQ
+>         select USE_OF
+> @@ -787,8 +790,6 @@ config      SOC_IMX53
+>
+>  config SOC_IMX6Q
+>         bool "i.MX6 Quad/DualLite support"
+> -       select ARCH_HAS_CPUFREQ
+> -       select ARCH_HAS_OPP
+>         select ARM_ERRATA_754322
+>         select ARM_ERRATA_764369 if SMP
+>         select ARM_ERRATA_775420
+> @@ -808,7 +809,6 @@ config SOC_IMX6Q
+>         select PL310_ERRATA_588369 if CACHE_PL310
+>         select PL310_ERRATA_727915 if CACHE_PL310
+>         select PL310_ERRATA_769419 if CACHE_PL310
+> -       select PM_OPP if PM
+>
+>         help
+>           This enables support for Freescale i.MX6 Quad processor.
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index ce52ed9..21e069e 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -80,7 +80,7 @@ config ARM_HIGHBANK_CPUFREQ
+>
+>  config ARM_IMX6Q_CPUFREQ
+>         tristate "Freescale i.MX6Q cpufreq support"
+> -       depends on SOC_IMX6Q
+> +       depends on ARCH_MXC
+>         depends on REGULATOR_ANATOP
+>         help
+>           This adds cpufreq driver support for Freescale i.MX6Q SOC.
+>
+>
