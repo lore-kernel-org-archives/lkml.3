@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaANQhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 11:37:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52458 "EHLO
+	id S1752071AbaANQhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 11:37:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52492 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669AbaANQhY (ORCPT
+	with ESMTP id S1751794AbaANQht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 11:37:24 -0500
-Date: Tue, 14 Jan 2014 08:36:39 -0800
+	Tue, 14 Jan 2014 11:37:49 -0500
+Date: Tue, 14 Jan 2014 08:36:59 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-epgcv7kjq8ll2udqfken92pz@git.kernel.org>
+Message-ID: <tip-396bnfvmlxrsj3o2tk47b8t1@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
@@ -21,9 +21,8 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist:
-  Send the errno in the signal when workload fails
-Git-Commit-ID: f33cbe72e6166b97d6fa2400cb00a885b47999d7
+Subject: [tip:perf/core] perf record: Remove old evsel_list usage
+Git-Commit-ID: 3e2be2da8f76ef5b2e8e59c3dc8acd24640b4af4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,30 +31,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:36:46 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 08:37:06 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f33cbe72e6166b97d6fa2400cb00a885b47999d7
-Gitweb:     http://git.kernel.org/tip/f33cbe72e6166b97d6fa2400cb00a885b47999d7
+Commit-ID:  3e2be2da8f76ef5b2e8e59c3dc8acd24640b4af4
+Gitweb:     http://git.kernel.org/tip/3e2be2da8f76ef5b2e8e59c3dc8acd24640b4af4
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 2 Jan 2014 15:11:25 -0300
+AuthorDate: Fri, 3 Jan 2014 15:03:26 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Mon, 13 Jan 2014 10:06:21 -0300
 
-perf evlist: Send the errno in the signal when workload fails
+perf record: Remove old evsel_list usage
 
-When a tool uses perf_evlist__start_workload and the supplied workload
-fails (e.g.: its binary wasn't found), perror was being used to print
-the error reason.
-
-This is undesirable, as the caller may be a GUI, when it wants to have
-total control of the error reporting process.
-
-So move to using sigaction(SA_SIGINFO) + siginfo_t->sa_value->sival_int
-to communicate to the caller the errno and let it print it using the UI
-of its choosing.
+To be consistent with other places, use just 'evlist' for the evsel list
+variable, and since we have it in 'struct record', use it directly from
+there.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -66,171 +58,179 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-epgcv7kjq8ll2udqfken92pz@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-396bnfvmlxrsj3o2tk47b8t1@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c | 39 +++++++++++++++++++++++++++++++++++++--
- tools/perf/builtin-stat.c   | 21 +++++++++++++++------
- tools/perf/util/evlist.c    | 11 ++++++++---
- 3 files changed, 60 insertions(+), 11 deletions(-)
+ tools/perf/builtin-record.c | 43 +++++++++++++++++++------------------------
+ 1 file changed, 19 insertions(+), 24 deletions(-)
 
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 6ec0cbc..f987d38 100644
+index ea7c306..6dcb8aa 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -341,6 +341,22 @@ static void record__init_features(struct record *rec)
- 		perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
- }
+@@ -324,7 +324,6 @@ out:
  
-+static volatile int workload_exec_errno;
-+
-+/*
-+ * perf_evlist__prepare_workload will send a SIGUSR1
-+ * if the fork fails, since we asked by setting its
-+ * want_signal to true.
-+ */
-+static void workload_exec_failed_signal(int signo, siginfo_t *info,
-+					void *ucontext __maybe_unused)
-+{
-+	workload_exec_errno = info->si_value.sival_int;
-+	done = 1;
-+	signr = signo;
-+	child_finished = 1;
-+}
-+
- static int __cmd_record(struct record *rec, int argc, const char **argv)
+ static void record__init_features(struct record *rec)
  {
- 	int err;
-@@ -359,7 +375,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 	on_exit(record__sig_exit, rec);
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGINT, sig_handler);
--	signal(SIGUSR1, sig_handler);
- 	signal(SIGTERM, sig_handler);
+-	struct perf_evlist *evsel_list = rec->evlist;
+ 	struct perf_session *session = rec->session;
+ 	int feat;
  
- 	session = perf_session__new(file, false, NULL);
-@@ -492,8 +507,20 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+@@ -334,7 +333,7 @@ static void record__init_features(struct record *rec)
+ 	if (rec->no_buildid)
+ 		perf_header__clear_feat(&session->header, HEADER_BUILD_ID);
+ 
+-	if (!have_tracepoints(&evsel_list->entries))
++	if (!have_tracepoints(&rec->evlist->entries))
+ 		perf_header__clear_feat(&session->header, HEADER_TRACING_DATA);
+ 
+ 	if (!rec->opts.branch_stack)
+@@ -365,7 +364,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 	struct machine *machine;
+ 	struct perf_tool *tool = &rec->tool;
+ 	struct record_opts *opts = &rec->opts;
+-	struct perf_evlist *evsel_list = rec->evlist;
+ 	struct perf_data_file *file = &rec->file;
+ 	struct perf_session *session;
+ 	bool disabled = false;
+@@ -388,7 +386,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 	record__init_features(rec);
+ 
+ 	if (forks) {
+-		err = perf_evlist__prepare_workload(evsel_list, &opts->target,
++		err = perf_evlist__prepare_workload(rec->evlist, &opts->target,
+ 						    argv, file->is_pipe,
+ 						    workload_exec_failed_signal);
+ 		if (err < 0) {
+@@ -402,7 +400,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		goto out_delete_session;
+ 	}
+ 
+-	if (!evsel_list->nr_groups)
++	if (!rec->evlist->nr_groups)
+ 		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
+ 
+ 	/*
+@@ -415,7 +413,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		if (err < 0)
+ 			goto out_delete_session;
+ 	} else {
+-		err = perf_session__write_header(session, evsel_list,
++		err = perf_session__write_header(session, rec->evlist,
+ 						 file->fd, false);
+ 		if (err < 0)
+ 			goto out_delete_session;
+@@ -439,7 +437,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 			goto out_delete_session;
+ 		}
+ 
+-		if (have_tracepoints(&evsel_list->entries)) {
++		if (have_tracepoints(&rec->evlist->entries)) {
+ 			/*
+ 			 * FIXME err <= 0 here actually means that
+ 			 * there were no tracepoints so its not really
+@@ -448,7 +446,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 			 * return this more properly and also
+ 			 * propagate errors that now are calling die()
+ 			 */
+-			err = perf_event__synthesize_tracing_data(tool, file->fd, evsel_list,
++			err = perf_event__synthesize_tracing_data(tool, file->fd, rec->evlist,
+ 								  process_synthesized_event);
+ 			if (err <= 0) {
+ 				pr_err("Couldn't record tracing data.\n");
+@@ -480,7 +478,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 					 perf_event__synthesize_guest_os, tool);
+ 	}
+ 
+-	err = __machine__synthesize_threads(machine, tool, &opts->target, evsel_list->threads,
++	err = __machine__synthesize_threads(machine, tool, &opts->target, rec->evlist->threads,
+ 					    process_synthesized_event, opts->sample_address);
+ 	if (err != 0)
+ 		goto out_delete_session;
+@@ -502,13 +500,13 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 	 * so don't spoil it by prematurely enabling them.
+ 	 */
+ 	if (!target__none(&opts->target))
+-		perf_evlist__enable(evsel_list);
++		perf_evlist__enable(rec->evlist);
+ 
  	/*
  	 * Let the child rip
  	 */
--	if (forks)
-+	if (forks) {
-+		struct sigaction act = {
-+			.sa_flags     = SA_SIGINFO,
-+			.sa_sigaction = workload_exec_failed_signal,
-+		};
-+		/*
-+		 * perf_evlist__prepare_workload will, after we call
-+		 * perf_evlist__start_Workload, send a SIGUSR1 if the exec call
-+		 * fails, that we will catch in workload_signal to flip
-+		 * workload_exec_errno.
-+ 		 */
-+		sigaction(SIGUSR1, &act, NULL);
- 		perf_evlist__start_workload(evsel_list);
-+	}
+ 	if (forks)
+-		perf_evlist__start_workload(evsel_list);
++		perf_evlist__start_workload(rec->evlist);
  
  	for (;;) {
  		int hits = rec->samples;
-@@ -521,6 +548,14 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+@@ -521,7 +519,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		if (hits == rec->samples) {
+ 			if (done)
+ 				break;
+-			err = poll(evsel_list->pollfd, evsel_list->nr_fds, -1);
++			err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
+ 			waking++;
+ 		}
+ 
+@@ -531,7 +529,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		 * disable events in this case.
+ 		 */
+ 		if (done && !disabled && !target__none(&opts->target)) {
+-			perf_evlist__disable(evsel_list);
++			perf_evlist__disable(rec->evlist);
+ 			disabled = true;
  		}
  	}
- 
-+	if (forks && workload_exec_errno) {
-+		char msg[512];
-+		const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
-+		pr_err("Workload failed: %s\n", emsg);
-+		err = -1;
-+		goto out_delete_session;
-+	}
-+
- 	if (quiet || signr == SIGUSR1)
- 		return 0;
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 1c76c7a..9d0d52d 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -58,6 +58,7 @@
- #include "util/thread.h"
- #include "util/thread_map.h"
- 
-+#include <signal.h>
- #include <stdlib.h>
- #include <sys/prctl.h>
- #include <locale.h>
-@@ -509,16 +510,17 @@ static void handle_initial_delay(void)
- 	}
- }
- 
--static volatile bool workload_exec_failed;
-+static volatile int workload_exec_errno;
- 
- /*
-  * perf_evlist__prepare_workload will send a SIGUSR1
-  * if the fork fails, since we asked by setting its
-  * want_signal to true.
-  */
--static void workload_exec_failed_signal(int signo __maybe_unused)
-+static void workload_exec_failed_signal(int signo __maybe_unused, siginfo_t *info,
-+					void *ucontext __maybe_unused)
+@@ -901,16 +899,13 @@ const struct option record_options[] = {
+ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
  {
--	workload_exec_failed = true;
-+	workload_exec_errno = info->si_value.sival_int;
- }
+ 	int err = -ENOMEM;
+-	struct perf_evlist *evsel_list;
+ 	struct record *rec = &record;
+ 	char errbuf[BUFSIZ];
  
- static int __run_perf_stat(int argc, const char **argv)
-@@ -596,13 +598,17 @@ static int __run_perf_stat(int argc, const char **argv)
- 	clock_gettime(CLOCK_MONOTONIC, &ref_time);
+-	evsel_list = perf_evlist__new();
+-	if (evsel_list == NULL)
++	rec->evlist = perf_evlist__new();
++	if (rec->evlist == NULL)
+ 		return -ENOMEM;
  
- 	if (forks) {
-+		struct sigaction act = {
-+			.sa_flags     = SA_SIGINFO,
-+			.sa_sigaction = workload_exec_failed_signal,
-+		};
- 		/*
- 		 * perf_evlist__prepare_workload will, after we call
- 		 * perf_evlist__start_Workload, send a SIGUSR1 if the exec call
- 		 * fails, that we will catch in workload_signal to flip
--		 * workload_exec_failed.
-+		 * workload_exec_errno.
-  		 */
--		signal(SIGUSR1, workload_exec_failed_signal);
-+		sigaction(SIGUSR1, &act, NULL);
+-	rec->evlist = evsel_list;
+-
+ 	argc = parse_options(argc, argv, record_options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (!argc && target__none(&rec->opts.target))
+@@ -937,8 +932,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (rec->no_buildid_cache || rec->no_buildid)
+ 		disable_buildid_cache();
  
- 		perf_evlist__start_workload(evsel_list);
- 		handle_initial_delay();
-@@ -615,8 +621,11 @@ static int __run_perf_stat(int argc, const char **argv)
- 		}
- 		wait(&status);
- 
--		if (workload_exec_failed)
-+		if (workload_exec_errno) {
-+			const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
-+			pr_err("Workload failed: %s\n", emsg);
- 			return -1;
-+		}
- 
- 		if (WIFSIGNALED(status))
- 			psignal(WTERMSIG(status), argv[0]);
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b08a7ec..4a30c87 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1073,9 +1073,14 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
- 
- 		execvp(argv[0], (char **)argv);
- 
--		perror(argv[0]);
--		if (want_signal)
--			kill(getppid(), SIGUSR1);
-+		if (want_signal) {
-+			union sigval val;
-+
-+			val.sival_int = errno;
-+			if (sigqueue(getppid(), SIGUSR1, val))
-+				perror(argv[0]);
-+		} else
-+			perror(argv[0]);
- 		exit(-1);
+-	if (evsel_list->nr_entries == 0 &&
+-	    perf_evlist__add_default(evsel_list) < 0) {
++	if (rec->evlist->nr_entries == 0 &&
++	    perf_evlist__add_default(rec->evlist) < 0) {
+ 		pr_err("Not enough memory for event selector list\n");
+ 		goto out_symbol_exit;
+ 	}
+@@ -964,7 +959,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
  	}
  
+ 	err = -ENOMEM;
+-	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
++	if (perf_evlist__create_maps(rec->evlist, &rec->opts.target) < 0)
+ 		usage_with_options(record_usage, record_options);
+ 
+ 	if (record_opts__config(&rec->opts)) {
+@@ -974,10 +969,10 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	err = __cmd_record(&record, argc, argv);
+ 
+-	perf_evlist__munmap(evsel_list);
+-	perf_evlist__close(evsel_list);
++	perf_evlist__munmap(rec->evlist);
++	perf_evlist__close(rec->evlist);
+ out_free_fd:
+-	perf_evlist__delete_maps(evsel_list);
++	perf_evlist__delete_maps(rec->evlist);
+ out_symbol_exit:
+ 	symbol__exit();
+ 	return err;
