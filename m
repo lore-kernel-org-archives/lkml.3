@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaANA3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:29:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54446 "EHLO
+	id S1753676AbaANAd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:33:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaANA2t (ORCPT
+	with ESMTP id S1753951AbaANA3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:49 -0500
+	Mon, 13 Jan 2014 19:29:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brett Ciphery <brett.ciphery@windriver.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.12 13/77] ipv6: dont count addrconf generated routes against gc limit
-Date: Mon, 13 Jan 2014 16:27:34 -0800
-Message-Id: <20140114002752.876578569@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 3.12 65/77] mfd: rtsx_pcr: Disable interrupts before cancelling delayed works
+Date: Mon, 13 Jan 2014 16:28:26 -0800
+Message-Id: <20140114002754.343247501@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,44 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[ Upstream commit a3300ef4bbb1f1e33ff0400e1e6cf7733d988f4f ]
+commit 73beb63d290f961c299526852884846b0d868840 upstream.
 
-Brett Ciphery reported that new ipv6 addresses failed to get installed
-because the addrconf generated dsts where counted against the dst gc
-limit. We don't need to count those routes like we currently don't count
-administratively added routes.
+This fixes a kernel panic when resuming from suspend to RAM.
+Without this fix an interrupt hits after the delayed work is canceled
+and thus requeues it. So we end up freeing an armed timer.
 
-Because the max_addresses check enforces a limit on unbounded address
-generation first in case someone plays with router advertisments, we
-are still safe here.
-
-Reported-by: Brett Ciphery <brett.ciphery@windriver.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2171,12 +2171,10 @@ struct rt6_info *addrconf_dst_alloc(stru
- 				    bool anycast)
- {
- 	struct net *net = dev_net(idev->dev);
--	struct rt6_info *rt = ip6_dst_alloc(net, net->loopback_dev, 0, NULL);
--
--	if (!rt) {
--		net_warn_ratelimited("Maximum number of routes reached, consider increasing route/max_size\n");
-+	struct rt6_info *rt = ip6_dst_alloc(net, net->loopback_dev,
-+					    DST_NOCOUNT, NULL);
-+	if (!rt)
- 		return ERR_PTR(-ENOMEM);
--	}
+---
+ drivers/mfd/rtsx_pcr.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1230,8 +1230,14 @@ static void rtsx_pci_remove(struct pci_d
  
- 	in6_dev_hold(idev);
+ 	pcr->remove_pci = true;
+ 
+-	cancel_delayed_work(&pcr->carddet_work);
+-	cancel_delayed_work(&pcr->idle_work);
++	/* Disable interrupts at the pcr level */
++	spin_lock_irq(&pcr->lock);
++	rtsx_pci_writel(pcr, RTSX_BIER, 0);
++	pcr->bier = 0;
++	spin_unlock_irq(&pcr->lock);
++
++	cancel_delayed_work_sync(&pcr->carddet_work);
++	cancel_delayed_work_sync(&pcr->idle_work);
+ 
+ 	mfd_remove_devices(&pcidev->dev);
  
 
 
