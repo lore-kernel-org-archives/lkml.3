@@ -1,56 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaANAS5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:18:57 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57642 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaANASy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:18:54 -0500
-X-AuditID: 9c930197-b7c20ae000001031-67-52d4826bbae9
-Date: Tue, 14 Jan 2014 09:19:35 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH 4/7] zram: use atomic operation for stat
-Message-ID: <20140114001935.GW1992@bbox>
-References: <1389611942-15544-1-git-send-email-minchan@kernel.org>
- <1389611942-15544-5-git-send-email-minchan@kernel.org>
- <20140113155814.07ab74c8f77179fc770a8e5f@linux-foundation.org>
+	id S1752178AbaANAUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:20:01 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33804 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621AbaANAT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:19:59 -0500
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
+CC: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Suman Anna <s-anna@ti.com>
+Subject: [PATCHv4 0/7] omap hwspinlock dt support
+Date: Mon, 13 Jan 2014 18:19:17 -0600
+Message-ID: <1389658764-39199-1-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 1.8.4.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140113155814.07ab74c8f77179fc770a8e5f@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 03:58:14PM -0800, Andrew Morton wrote:
-> On Mon, 13 Jan 2014 20:18:59 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > Some of fields in zram->stats are protected by zram->lock which
-> > is rather coarse-grained so let's use atomic operation without
-> > explict locking.
-> 
-> Confused.  The patch didn't remove any locking, so it made the code
-> slower.
+Hi,
 
-True but it could make remove dependency of zram->lock for 32bit stat
-so further patches can remove messy code and enhance write performance.
-So, it's preparing patch for further step.
-Should I rewrite the description to explain this?
+This is an updated series mainly addressing Mark Rutland's comments
+about hwlock specifier being always one-cell. The series adds the
+support for #hwlock-cells property and adds a simple default OF
+translate function.
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The DTS patches from previous series have already been merged, and
+needs this property to be added. This is handled in a separate series
+that only deals with OMAP hwspinlock DTS patches.
+
+The series, along with the DTS patches, is tested on top of v3.13-rc8
+plus Tero's v13 clock DT series and Tony's 3.14 staged branches. The
+validation on OMAP5, DRA7, AM437 requires Tero's series with couple of
+additional base patches for AM43xx. AM43xx functionality needs a hwmod
+fix [1] for creating the associated omap_device as well.
+
+The validation logs on all the applicable OMAP SoCs are at:
+  OMAP4 - http://paste2.org/YJ7ZwG80
+  OMAP5 - http://paste2.org/c6vO96b9
+  DRA7  - http://paste2.org/tHvxN439
+  AM33x - http://paste2.org/AjCv0U4t
+  AM43x - http://paste2.org/2AKIPa55
+
+The kernel with the test patches plus the various pulled in branches
+is here for reference (not for merging)
+https://github.com/sumananna/omap-kernel/commits/hwspinlock/3.13-rc8-v4-test
+
+[1] http://marc.info/?l=linux-omap&m=138939747524820&w=2
+
+Changes new in v4:
+- The DT bindings are split into separate patches, and updated to
+  add comments about #hwlock-cells (Patches 1 & 2)
+- Fixed a registration issue with repeated module installation and
+  removal. (Patch 3)
+- Added a new OF helper to support #hwlock-cells in addition to the
+  previous OF functions (Patch 4). The OMAP adaptation patch is
+  updated to use the default translate function (Patch 5)
+- Updated hwspinlock documentation to adjust for the structure
+  changes and the new api additions. (Patches 3, 4)
+- Added build support for AM335x, AM43xx and DRA7xx (Patch 7)
+- The AM335/AM43x fix patch is unchanged (Patch 6)
+
+v3:
+- Removed the DT property hwlock-base-id and associated OF helper
+- Added changes in core to support requesting a specific hwlock using
+  phandle + args approach
+- Revised both the common and OMAP DT bindings document
+http://marc.info/?l=linux-omap&m=138143992932197&w=2
+
+v2:
+- Added a new common DT binding documentation and OF helpers.
+- Revised OMAP DT parse support to use the new OF helper (Patch2)
+- OMAP5 hwspinlock support including the hwmod entry and DT node
+- Add AM335x support to OMAP hwspinlock driver, including a fix
+  needed in driver given that AM335 spinlock module requires s/w wakeup
+- AM335 DT node for spinlock, and a hwmod change to enable smart-idle
+  for AM335.
+- OMAP4 DT node patch is unchanged
+http://marc.info/?l=linux-omap&m=137944644112727&w=2
+
+v1:
+- Add DT parse support to OMAP hwspinlock driver
+- Add OMAP4 DT node and bindings information
+http://marc.info/?l=linux-omap&m=137823082308009&w=2
+
+Suman Anna (7):
+  Documentation: dt: add common bindings for hwspinlock
+  Documentation: dt: add the omap hwspinlock bindings document
+  hwspinlock/core: maintain a list of registered hwspinlock banks
+  hwspinlock/core: add common OF helpers
+  hwspinlock/omap: add support for dt nodes
+  hwspinlock/omap: enable module before reading SYSSTATUS register
+  hwspinlock/omap: enable build for AM33xx, AM43xx & DRA7xx
+
+ .../devicetree/bindings/hwlock/hwlock.txt          |  52 +++++++
+ .../devicetree/bindings/hwlock/omap-hwspinlock.txt |  24 ++++
+ Documentation/hwspinlock.txt                       |  36 ++++-
+ MAINTAINERS                                        |   1 -
+ arch/arm/mach-omap2/Makefile                       |   3 -
+ arch/arm/mach-omap2/hwspinlock.c                   |  60 --------
+ drivers/hwspinlock/Kconfig                         |   2 +-
+ drivers/hwspinlock/hwspinlock_core.c               | 159 ++++++++++++++++++++-
+ drivers/hwspinlock/hwspinlock_internal.h           |   6 +
+ drivers/hwspinlock/omap_hwspinlock.c               |  39 +++--
+ include/linux/hwspinlock.h                         |  20 ++-
+ 11 files changed, 321 insertions(+), 81 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+ create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+ delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
 
 -- 
-Kind regards,
-Minchan Kim
+1.8.4.3
+
