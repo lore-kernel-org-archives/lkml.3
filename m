@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaANHnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 02:43:10 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45107 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaANHnG (ORCPT
+	id S1752926AbaANHm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 02:42:56 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:41309 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270AbaANHmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 02:43:06 -0500
-Message-ID: <52D4E93C.3050503@linux.vnet.ibm.com>
-Date: Tue, 14 Jan 2014 13:07:32 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 14 Jan 2014 02:42:10 -0500
+From: Ying Xue <ying.xue@windriver.com>
+To: <davem@davemloft.net>
+CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
+        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
+        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
+        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next 09/10] can: use __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Tue, 14 Jan 2014 15:41:08 +0800
+Message-ID: <1389685269-18600-10-git-send-email-ying.xue@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
+References: <1389685269-18600-1-git-send-email-ying.xue@windriver.com>
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: deepthi@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, benh@kernel.crashing.org,
-        daniel.lezcano@linaro.org, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, tuukka.tikkanen@linaro.org
-Subject: Re: [PATCH] cpuidle/menu: Fail cpuidle_idle_call() if no idle state
- is acceptable
-References: <20140114060516.6109.14901.stgit@preeti.in.ibm.com> <52D4E07E.204@linux.vnet.ibm.com>
-In-Reply-To: <52D4E07E.204@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011407-5490-0000-0000-000004C774CC
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 12:30 PM, Srivatsa S. Bhat wrote:
-> On 01/14/2014 11:35 AM, Preeti U Murthy wrote:
->> On PowerPC, in a particular test scenario, all the cpu idle states were disabled.
->> Inspite of this it was observed that the idle state count of the shallowest
->> idle state, snooze, was increasing.
->>
->> This is because the governor returns the idle state index as 0 even in
->> scenarios when no idle state can be chosen. These scenarios could be when the
->> latency requirement is 0 or as mentioned above when the user wants to disable
->> certain cpu idle states at runtime. In the latter case, its possible that no
->> cpu idle state is valid because the suitable states were disabled
->> and the rest did not match the menu governor criteria to be chosen as the
->> next idle state.
->>
->> This patch adds the code to indicate that a valid cpu idle state could not be
->> chosen by the menu governor and reports back to arch so that it can take some
->> default action.
->>
-> 
-> That sounds fair enough. However, the "default" action of pseries idle loop
-> (pseries_lpar_idle()) surprises me. It enters Cede, which is _deeper_ than doing
-> a snooze! IOW, a user might "disable" cpuidle or set the PM_QOS_CPU_DMA_LATENCY
-> to 0 hoping to prevent the CPUs from going to deep idle states, but then the
-> machine would still end up going to Cede, even though that wont get reflected
-> in the idle state counts. IMHO that scenario needs some thought as well...
-> 
+As cgw_create_job() is always under rtnl_lock protection,
+__dev_get_by_index() instead of dev_get_by_index() should be used to
+find interface handler in it having us avoid to change interface
+reference counter.
 
-I checked the git history and found that the default idle was changed (on purpose)
-to cede the processor, in order to speed up booting.. Hmm..
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+---
+ net/can/gw.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-commit 363edbe2614aa90df706c0f19ccfa2a6c06af0be
-Author: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date:   Fri Sep 6 00:25:06 2013 +0530
-
-    powerpc: Default arch idle could cede processor on pseries
-
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/net/can/gw.c b/net/can/gw.c
+index 88c8a39..ac31891 100644
+--- a/net/can/gw.c
++++ b/net/can/gw.c
+@@ -839,21 +839,21 @@ static int cgw_create_job(struct sk_buff *skb,  struct nlmsghdr *nlh)
+ 	if (!gwj->ccgw.src_idx || !gwj->ccgw.dst_idx)
+ 		goto out;
+ 
+-	gwj->src.dev = dev_get_by_index(&init_net, gwj->ccgw.src_idx);
++	gwj->src.dev = __dev_get_by_index(&init_net, gwj->ccgw.src_idx);
+ 
+ 	if (!gwj->src.dev)
+ 		goto out;
+ 
+ 	if (gwj->src.dev->type != ARPHRD_CAN)
+-		goto put_src_out;
++		goto out;
+ 
+-	gwj->dst.dev = dev_get_by_index(&init_net, gwj->ccgw.dst_idx);
++	gwj->dst.dev = __dev_get_by_index(&init_net, gwj->ccgw.dst_idx);
+ 
+ 	if (!gwj->dst.dev)
+-		goto put_src_out;
++		goto out;
+ 
+ 	if (gwj->dst.dev->type != ARPHRD_CAN)
+-		goto put_src_dst_out;
++		goto out;
+ 
+ 	gwj->limit_hops = limhops;
+ 
+@@ -862,11 +862,6 @@ static int cgw_create_job(struct sk_buff *skb,  struct nlmsghdr *nlh)
+ 	err = cgw_register_filter(gwj);
+ 	if (!err)
+ 		hlist_add_head_rcu(&gwj->list, &cgw_list);
+-
+-put_src_dst_out:
+-	dev_put(gwj->dst.dev);
+-put_src_out:
+-	dev_put(gwj->src.dev);
+ out:
+ 	if (err)
+ 		kmem_cache_free(cgw_cache, gwj);
+-- 
+1.7.9.5
 
