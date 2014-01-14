@@ -1,110 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaANNMY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:12:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33569 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaANNMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:12:22 -0500
-Date: Tue, 14 Jan 2014 07:10:52 -0600
+	id S1751662AbaANNNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:13:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51522 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342AbaANNNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 08:13:38 -0500
+Date: Tue, 14 Jan 2014 07:12:08 -0600
 From: Felipe Balbi <balbi@ti.com>
 To: Suman Anna <s-anna@ti.com>
 CC: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
         Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4 6/7] hwspinlock/omap: enable module before reading
- SYSSTATUS register
-Message-ID: <20140114131052.GA10818@saruman.home>
+Subject: Re: [PATCHv4 7/7] hwspinlock/omap: enable build for AM33xx, AM43xx &
+ DRA7xx
+Message-ID: <20140114131207.GB10818@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
- <1389658764-39199-7-git-send-email-s-anna@ti.com>
+ <1389658764-39199-8-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
+	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
 Content-Disposition: inline
-In-Reply-To: <1389658764-39199-7-git-send-email-s-anna@ti.com>
+In-Reply-To: <1389658764-39199-8-git-send-email-s-anna@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---YiEDa0DAkWCtVeE4
+--tjCHc7DPkfUGtrlw
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 13, 2014 at 06:19:23PM -0600, Suman Anna wrote:
-> The number of hwspinlocks are determined based on the value read
-> from the IP block's SYSSTATUS register. However, the module may
-> not be enabled and clocked, and the read may result in a bus error.
+On Mon, Jan 13, 2014 at 06:19:24PM -0600, Suman Anna wrote:
+> HwSpinlocks are supported on AM33xx, AM43xx and DRA7xx SoC
+> device families as well. The IPs are identical to that of
+> OMAP4/OMAP5, except for the number of locks.
 >=20
-> This particular issue is seen rather easily on AM33XX, since the
-> module wakeup is software controlled, and it is disabled out of
-> reset. Make sure the module is enabled and clocked before reading
-> the SYSSTATUS register.
+> Add a depends on to the above family of SoCs to enable the
+> build support for OMAP hwspinlock driver for any of the above
+> SoC configs.
 >=20
 > Signed-off-by: Suman Anna <s-anna@ti.com>
 > ---
->  drivers/hwspinlock/omap_hwspinlock.c | 21 ++++++++++++++-------
->  1 file changed, 14 insertions(+), 7 deletions(-)
+>  drivers/hwspinlock/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >=20
-> diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/om=
-ap_hwspinlock.c
-> index 9f56fb2..194886e 100644
-> --- a/drivers/hwspinlock/omap_hwspinlock.c
-> +++ b/drivers/hwspinlock/omap_hwspinlock.c
-> @@ -101,10 +101,23 @@ static int omap_hwspinlock_probe(struct platform_de=
-vice *pdev)
->  	if (!io_base)
->  		return -ENOMEM;
+> diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
+> index 70637d2..3612cb5 100644
+> --- a/drivers/hwspinlock/Kconfig
+> +++ b/drivers/hwspinlock/Kconfig
+> @@ -10,7 +10,7 @@ menu "Hardware Spinlock drivers"
 > =20
-> +	/*
-> +	 * make sure the module is enabled and clocked before reading
-> +	 * the module SYSSTATUS register
-> +	 */
-> +	pm_runtime_enable(&pdev->dev);
-> +	pm_runtime_get_sync(&pdev->dev);
-> +
->  	/* Determine number of locks */
->  	i =3D readl(io_base + SYSSTATUS_OFFSET);
->  	i >>=3D SPINLOCK_NUMLOCKS_BIT_OFFSET;
-> =20
-> +	/*
-> +	 * runtime PM will make sure the clock of this module is
-> +	 * enabled again iff at least one lock is requested
-> +	 */
-> +	pm_runtime_put(&pdev->dev);
+>  config HWSPINLOCK_OMAP
+>  	tristate "OMAP Hardware Spinlock device"
+> -	depends on ARCH_OMAP4 || SOC_OMAP5
+> +	depends on ARCH_OMAP4 || SOC_OMAP5 || SOC_DRA7XX || SOC_AM33XX || SOC_A=
+M43XX
 
-there is a small race here (which was already present previously) where
-you could return from probe() in a failure case before your PM runtime
-put request then you would disable pm_runtime while the device was still
-alive.
+how about just using ARCH_OMAP2PLUS ?
 
 --=20
 balbi
 
---YiEDa0DAkWCtVeE4
+--tjCHc7DPkfUGtrlw
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJS1TdcAAoJEIaOsuA1yqREaNYQAJlfWXJcytjYawQAp8EcTsMz
-jRAWiYJPlbMu65QWwqPu5KsjcUqCBQX/IOINCHoZkA8L4TtZI+BQGg345uhWqnkC
-gMND6DmH8vQeo1uTYU1R8+s6MquFAV9IjUwRAtAMuV2miu1aDQkIAY0b04qWiMgt
-o9jqpT/HWKL+H9yiWLawEj9JRJc8hcD2u/IlO6LLXwPdC7ABO1S/7ngOPq04WsJX
-lCHuMMo28/9x7Qoi/mu+kMG+UnLGb4uWGRkjxVsQ3Jf1px8INi1wtYHJLrGiE4PG
-5Lh8nN5CsZVkl8ZtqGKATkV9cYspWVd0ouMY4M1XYLolCjaAylFKs4XR2hvoDG/g
-ios0bmhlz1qQEyXhyLx1zCxRzSCQcxrtc3SKkf+bOcVUAR07gakQ8fsygyVG64Pq
-W7noIe2Z/3vg4Bf28bLuvXf9grsFv4yaFtqzNsKNZgbr6lJqgxu1s7rxYEQr4plF
-O111Ywq38z7ZsaRBZ0NHV5UaI4s1L7CNTb7M10gmBehdrEBLrXxpXSJyse7aeCjz
-CxjHD9Ib5hYEOMzLIzX0Ttey06hFppQWXdlUnpE1O4ctV6noitv6Gig2ieLfxl4P
-4QSawl2d1z6QtBZQDN42iYy5YqIJWziBpb4BMBJ+657n7Ob235JEVtm3T86nhzSf
-10aNevJvsHpuF7+Dk7nF
-=kjbG
+iQIcBAEBAgAGBQJS1TenAAoJEIaOsuA1yqRE+VgQALE9r2Dqeir+0xEAU6E1BRpv
+lLFxrhyN0hiTfJ92MsMeu3XSobXZZwQgsCWyc+vsIUm6CiE7sE8rd/J6FPGO8zaN
+z33lMBWM+xjfdt7ePuJk6xE/Z9gXtvUUI5K3KTROq0mVEzWD4cOKfxZNoE9/z+lp
+WIzHUVD+zO7xpVJI2daNpwKj7lUdUpVEcpEve9IHUITEjqhZzPwXpR8l3laXV7Bd
+3ta+qWCOOH1fP0QQfhp62fHZeX/a3cVkieUWGNjTfmvqQ3ofkpWPfNB4p2LBluwN
+pYAkA8fw2PRdnNSRMkXbgT6Dj2UBdPwZLoupetLGqJ/LwSO2h+szvjdXPZuyasiH
+ZrmI67wh2lwlCGPw/e7E+XAq+UkmiTE4XTzeavpeolfH2MVq6ApPxJMKGsbPUtmf
+w+VXY2RsPu+cNPu2UfWuMKVjHkOe0NWc6C0p99xKncvh7W2WeseuMlrLaxHWU75P
+slWzq7o9tWNB1EdmOvQjIJvNkv+loWOCV/olylopQxy/wrCjmDHeee74ZDhY9qRa
+cH7FpGKW2Ul3TO6aKcREjgfN/x8myD2pdBQzSm+0d6GKXYORxCucCIY9lXAKQM/6
+HGdxYOPxG+rb2Etp0luHBWy091cq9R+blLygd7XEjJQGVbhv9ZGXsVgaZRmtH8sJ
+R0NKHjHSafswgdTVzrm6
+=hMUH
 -----END PGP SIGNATURE-----
 
---YiEDa0DAkWCtVeE4--
+--tjCHc7DPkfUGtrlw--
