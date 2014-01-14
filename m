@@ -1,267 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbaANXjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:39:14 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:45568 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaANXjL (ORCPT
+	id S1752116AbaANXma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:42:30 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:2451 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751599AbaANXm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:39:11 -0500
+	Tue, 14 Jan 2014 18:42:26 -0500
+Date: Tue, 14 Jan 2014 15:44:03 -0800
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: Josh Cartwright <joshc@codeaurora.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH v4 4/6] spmi: pmic_arb: add support for interrupt handling
+Message-ID: <20140114234402.GD23276@sonymobile.com>
+References: <cover.1389738151.git.joshc@codeaurora.org>
+ <0f3e257f098d5f1ec6e9f09ba4dbf055291f2d83.1389738151.git.joshc@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20131216221229.3393.6171.stgit@bling.home>
-References: <20131216221229.3393.6171.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 14 Jan 2014 16:38:50 -0700
-Message-ID: <CAErSpo5zmU6qQgrBpbXbJjbQDgAOtJ=KMurDK-P_EcdSFJcLuQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: Add "try" reset interfaces
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <0f3e257f098d5f1ec6e9f09ba4dbf055291f2d83.1389738151.git.joshc@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 16, 2013 at 3:14 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> When doing a function/slot/bus reset PCI grabs the device_lock for
-> each device to block things like suspend and driver probes, which is
-> all well and good, but call paths exist where this lock may already be
-> held.  This creates an opportunity for deadlock.  For instance, vfio
-> allows userspace to issue resets so long as it owns the device(s).
-> If a driver unbind .remove callback races with userspace issuing a
-> reset, we have a deadlock as userspace gets stuck waiting on
-> device_lock while another thread has device_lock and waits for .remove
-> to complete.  To resolve this, we can make a version of the reset
-> interfaces which use trylock.  With this, we can safely attempt a
-> reset and return error to userspace if there is contention.
->
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-
-Applied to pci/reset for v3.14, thanks!
-
+On Tue, Jan 14, 2014 at 07:41:38PM +0100, Josh Cartwright wrote:
+> The Qualcomm PMIC Arbiter, in addition to being a basic SPMI controller,
+> also implements interrupt handling for slave devices.  Note, this is
+> outside the scope of SPMI, as SPMI leaves interrupt handling completely
+> unspecified.
+> 
+> Extend the driver to provide a irq_chip implementation and chained irq
+> handling which allows for these interrupts to be used.
+> 
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 > ---
->  drivers/pci/pci.c   |  155 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h |    3 +
->  2 files changed, 158 insertions(+)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 33120d1..de6416f 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3445,6 +3445,18 @@ static void pci_dev_lock(struct pci_dev *dev)
->         device_lock(&dev->dev);
+>  drivers/spmi/spmi-pmic-arb.c | 393 ++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 391 insertions(+), 2 deletions(-)
+> 
+
+Yay! Good to see this series.
+
+> diff --git a/drivers/spmi/spmi-pmic-arb.c b/drivers/spmi/spmi-pmic-arb.c
+> index 16083cd..32bed54 100644
+> --- a/drivers/spmi/spmi-pmic-arb.c
+> +++ b/drivers/spmi/spmi-pmic-arb.c
+> @@ -13,6 +13,9 @@
+>  #include <linux/err.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+> +#include <linux/irqchip/chained_irq.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/irq.h>
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+> @@ -103,6 +106,14 @@ enum pmic_arb_cmd_op_code {
+>   * @cnfg:              address of the PMIC Arbiter configuration registers.
+>   * @lock:              lock to synchronize accesses.
+>   * @channel:           which channel to use for accesses.
+> + * @irq:               PMIC ARB interrupt.
+> + * @ee:                        the current Execution Environment
+> + * @min_apid:          minimum APID (used for bounding IRQ search)
+> + * @max_apid:          maximum APID
+> + * @mapping_table:     in-memory copy of PPID -> APID mapping table.
+> + * @domain:            irq domain object for PMIC IRQ domain
+> + * @spmic:             SPMI controller object
+> + * @apid_to_ppid:      cached mapping from APID to PPID
+>   */
+>  struct spmi_pmic_arb_dev {
+>         void __iomem            *base;
+> @@ -110,6 +121,14 @@ struct spmi_pmic_arb_dev {
+>         void __iomem            *cnfg;
+>         spinlock_t              lock;
+>         u8                      channel;
+> +       unsigned int            irq;
+> +       u8                      ee;
+> +       u8                      min_apid;
+> +       u8                      max_apid;
+> +       u32                     mapping_table[SPMI_MAPPING_TABLE_LEN];
+> +       struct irq_domain       *domain;
+> +       struct spmi_controller  *spmic;
+> +       u16                     apid_to_ppid[256];
+>  };
+> 
+>  static inline u32 pmic_arb_base_read(struct spmi_pmic_arb_dev *dev, u32 offset)
+> @@ -314,12 +333,333 @@ static int pmic_arb_write_cmd(struct spmi_controller *ctrl, u8 opc, u8 sid,
+>         return rc;
 >  }
->
-> +/* Return 1 on successful lock, 0 on contention */
-> +static int pci_dev_trylock(struct pci_dev *dev)
-> +{
-> +       if (pci_cfg_access_trylock(dev)) {
-> +               if (device_trylock(&dev->dev))
-> +                       return 1;
-> +               pci_cfg_access_unlock(dev);
-> +       }
+> 
+> +enum qpnpint_regs {
+> +       QPNPINT_REG_RT_STS              = 0x10,
+> +       QPNPINT_REG_SET_TYPE            = 0x11,
+> +       QPNPINT_REG_POLARITY_HIGH       = 0x12,
+> +       QPNPINT_REG_POLARITY_LOW        = 0x13,
+> +       QPNPINT_REG_LATCHED_CLR         = 0x14,
+> +       QPNPINT_REG_EN_SET              = 0x15,
+> +       QPNPINT_REG_EN_CLR              = 0x16,
+> +       QPNPINT_REG_LATCHED_STS         = 0x18,
+> +};
 > +
-> +       return 0;
-> +}
+> +struct spmi_pmic_arb_qpnpint_type {
+> +       u8 type; /* 1 -> edge */
+> +       u8 polarity_high;
+> +       u8 polarity_low;
+> +} __packed;
 > +
->  static void pci_dev_unlock(struct pci_dev *dev)
->  {
->         device_unlock(&dev->dev);
-> @@ -3588,6 +3600,34 @@ int pci_reset_function(struct pci_dev *dev)
->  }
->  EXPORT_SYMBOL_GPL(pci_reset_function);
->
-> +/**
-> + * pci_try_reset_function - quiesce and reset a PCI device function
-> + * @dev: PCI device to reset
-> + *
-> + * Same as above, except return -EAGAIN if unable to lock device.
-> + */
-> +int pci_try_reset_function(struct pci_dev *dev)
-> +{
-> +       int rc;
-> +
-> +       rc = pci_dev_reset(dev, 1);
-> +       if (rc)
-> +               return rc;
-> +
-> +       pci_dev_save_and_disable(dev);
-> +
-> +       if (pci_dev_trylock(dev)) {
-> +               rc = __pci_dev_reset(dev, 0);
-> +               pci_dev_unlock(dev);
-> +       } else
-> +               rc = -EAGAIN;
-> +
-> +       pci_dev_restore(dev);
-> +
-> +       return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_try_reset_function);
-> +
->  /* Lock devices from the top of the tree down */
->  static void pci_bus_lock(struct pci_bus *bus)
->  {
-> @@ -3612,6 +3652,32 @@ static void pci_bus_unlock(struct pci_bus *bus)
->         }
->  }
->
-> +/* Return 1 on successful lock, 0 on contention */
-> +static int pci_bus_trylock(struct pci_bus *bus)
-> +{
-> +       struct pci_dev *dev;
-> +
-> +       list_for_each_entry(dev, &bus->devices, bus_list) {
-> +               if (!pci_dev_trylock(dev))
-> +                       goto unlock;
-> +               if (dev->subordinate) {
-> +                       if (!pci_bus_trylock(dev->subordinate)) {
-> +                               pci_dev_unlock(dev);
-> +                               goto unlock;
-> +                       }
-> +               }
-> +       }
-> +       return 1;
-> +
-> +unlock:
-> +       list_for_each_entry_continue_reverse(dev, &bus->devices, bus_list) {
-> +               if (dev->subordinate)
-> +                       pci_bus_unlock(dev->subordinate);
-> +               pci_dev_unlock(dev);
-> +       }
-> +       return 0;
-> +}
-> +
->  /* Lock devices from the top of the tree down */
->  static void pci_slot_lock(struct pci_slot *slot)
->  {
-> @@ -3640,6 +3706,37 @@ static void pci_slot_unlock(struct pci_slot *slot)
->         }
->  }
->
-> +/* Return 1 on successful lock, 0 on contention */
-> +static int pci_slot_trylock(struct pci_slot *slot)
-> +{
-> +       struct pci_dev *dev;
-> +
-> +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
-> +               if (!dev->slot || dev->slot != slot)
-> +                       continue;
-> +               if (!pci_dev_trylock(dev))
-> +                       goto unlock;
-> +               if (dev->subordinate) {
-> +                       if (!pci_bus_trylock(dev->subordinate)) {
-> +                               pci_dev_unlock(dev);
-> +                               goto unlock;
-> +                       }
-> +               }
-> +       }
-> +       return 1;
-> +
-> +unlock:
-> +       list_for_each_entry_continue_reverse(dev,
-> +                                            &slot->bus->devices, bus_list) {
-> +               if (!dev->slot || dev->slot != slot)
-> +                       continue;
-> +               if (dev->subordinate)
-> +                       pci_bus_unlock(dev->subordinate);
-> +               pci_dev_unlock(dev);
-> +       }
-> +       return 0;
-> +}
-> +
->  /* Save and disable devices from the top of the tree down */
->  static void pci_bus_save_and_disable(struct pci_bus *bus)
->  {
-> @@ -3763,6 +3860,35 @@ int pci_reset_slot(struct pci_slot *slot)
->  }
->  EXPORT_SYMBOL_GPL(pci_reset_slot);
->
-> +/**
-> + * pci_try_reset_slot - Try to reset a PCI slot
-> + * @slot: PCI slot to reset
-> + *
-> + * Same as above except return -EAGAIN if the slot cannot be locked
-> + */
-> +int pci_try_reset_slot(struct pci_slot *slot)
-> +{
-> +       int rc;
-> +
-> +       rc = pci_slot_reset(slot, 1);
-> +       if (rc)
-> +               return rc;
-> +
-> +       pci_slot_save_and_disable(slot);
-> +
-> +       if (pci_slot_trylock(slot)) {
-> +               might_sleep();
-> +               rc = pci_reset_hotplug_slot(slot->hotplug, 0);
-> +               pci_slot_unlock(slot);
-> +       } else
-> +               rc = -EAGAIN;
-> +
-> +       pci_slot_restore(slot);
-> +
-> +       return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_try_reset_slot);
-> +
->  static int pci_bus_reset(struct pci_bus *bus, int probe)
->  {
->         if (!bus->self)
-> @@ -3822,6 +3948,35 @@ int pci_reset_bus(struct pci_bus *bus)
->  EXPORT_SYMBOL_GPL(pci_reset_bus);
->
->  /**
-> + * pci_try_reset_bus - Try to reset a PCI bus
-> + * @bus: top level PCI bus to reset
-> + *
-> + * Same as above except return -EAGAIN if the bus cannot be locked
-> + */
-> +int pci_try_reset_bus(struct pci_bus *bus)
-> +{
-> +       int rc;
-> +
-> +       rc = pci_bus_reset(bus, 1);
-> +       if (rc)
-> +               return rc;
-> +
-> +       pci_bus_save_and_disable(bus);
-> +
-> +       if (pci_bus_trylock(bus)) {
-> +               might_sleep();
-> +               pci_reset_bridge_secondary_bus(bus->self);
-> +               pci_bus_unlock(bus);
-> +       } else
-> +               rc = -EAGAIN;
-> +
-> +       pci_bus_restore(bus);
-> +
-> +       return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(pci_try_reset_bus);
-> +
-> +/**
->   * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
->   * @dev: PCI device to query
->   *
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 1084a15..34629df 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -951,10 +951,13 @@ int pcie_get_minimum_link(struct pci_dev *dev, enum pci_bus_speed *speed,
->  int __pci_reset_function(struct pci_dev *dev);
->  int __pci_reset_function_locked(struct pci_dev *dev);
->  int pci_reset_function(struct pci_dev *dev);
-> +int pci_try_reset_function(struct pci_dev *dev);
->  int pci_probe_reset_slot(struct pci_slot *slot);
->  int pci_reset_slot(struct pci_slot *slot);
-> +int pci_try_reset_slot(struct pci_slot *slot);
->  int pci_probe_reset_bus(struct pci_bus *bus);
->  int pci_reset_bus(struct pci_bus *bus);
-> +int pci_try_reset_bus(struct pci_bus *bus);
->  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
->  void pci_update_resource(struct pci_dev *dev, int resno);
->  int __must_check pci_assign_resource(struct pci_dev *dev, int i);
->
+
+While the rest of this driver uses 'pmic' or 'spmi_pmic', this patch
+adds 'qpnpint'.  Can we please just leave the software fabricated name
+'qpnp' out of any changes, as it isn't in any hardware spec?  Perhaps
+'pmic_int' or something along those lines?
+
+> +/* Simplified accessor functions for irqchip callbacks */
+> +static void qpnpint_spmi_write(struct irq_data *d, u8 reg, void *buf,
+> +                              size_t len)
+[...]
+
+-Courtney
