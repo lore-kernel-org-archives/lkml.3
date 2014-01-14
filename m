@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaANMBc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 07:01:32 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46379 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaANMBa (ORCPT
+	id S1752104AbaANMCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 07:02:47 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:47704 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaANMCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 07:01:30 -0500
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: m.chehab@samsung.com, gregkh@linuxfoundation.org,
-        monamagarwal123@gmail.com, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Staging: media: Fix quoted string split across line in as102_fe.c
-Date: Tue, 14 Jan 2014 17:31:14 +0530
-Message-Id: <1389700875-7582-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 14 Jan 2014 07:02:45 -0500
+Message-ID: <52D52761.1000303@codethink.co.uk>
+Date: Tue, 14 Jan 2014 12:02:41 +0000
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: linux-kernel@lists.codethink.co.uk, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] power: clock_ops.c: check return of clk_enable()
+ in pm_clk_resume()
+References: <1389445540-21426-1-git-send-email-ben.dooks@codethink.co.uk> <1389445540-21426-2-git-send-email-ben.dooks@codethink.co.uk> <1438385.ppqm7XWTt3@vostro.rjw.lan>
+In-Reply-To: <1438385.ppqm7XWTt3@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl issues in
-as102/as102_fe.c
-WARNING: quoted string split across lines 
+On 13/01/14 19:55, Rafael J. Wysocki wrote:
+> On Saturday, January 11, 2014 01:05:39 PM Ben Dooks wrote:
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
----
- drivers/staging/media/as102/as102_fe.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+>> @@ -262,8 +263,9 @@ int pm_clk_resume(struct device *dev)
+>>
+>>   	list_for_each_entry(ce, &psd->clock_list, node) {
+>>   		if (ce->status < PCE_STATUS_ERROR) {
+>> -			clk_enable(ce->clk);
+>> -			ce->status = PCE_STATUS_ENABLED;
+>> +			ret = clk_enable(ce->clk);
+>> +			if (ret == 0)
+>
+> Can you please use if (!ret) here?
+>
+> And analogously in patch [3/3]?
 
-diff --git a/drivers/staging/media/as102/as102_fe.c b/drivers/staging/media/as102/as102_fe.c
-index 9ce8c9d..dc367d1 100644
---- a/drivers/staging/media/as102/as102_fe.c
-+++ b/drivers/staging/media/as102/as102_fe.c
-@@ -151,8 +151,8 @@ static int as102_fe_read_status(struct dvb_frontend *fe, fe_status_t *status)
- 		if (as10x_cmd_get_demod_stats(&dev->bus_adap,
- 			(struct as10x_demod_stats *) &dev->demod_stats) < 0) {
- 			memset(&dev->demod_stats, 0, sizeof(dev->demod_stats));
--			dprintk(debug, "as10x_cmd_get_demod_stats failed "
--				"(probably not tuned)\n");
-+			dprintk(debug,
-+				"as10x_cmd_get_demod_stats failed (probably not tuned)\n");
- 		} else {
- 			dprintk(debug,
- 				"demod status: fc: 0x%08x, bad fc: 0x%08x, "
-@@ -581,8 +581,8 @@ static void as102_fe_copy_tune_parameters(struct as10x_tune_args *tune_args,
- 			   as102_fe_get_code_rate(params->code_rate_LP);
- 		}
+I will fix and re-send today, thanks.
 
--		dprintk(debug, "\thierarchy: 0x%02x  "
--				"selected: %s  code_rate_%s: 0x%02x\n",
-+		dprintk(debug,
-+			"\thierarchy: 0x%02x  selected: %s  code_rate_%s: 0x%02x\n",
- 			tune_args->hierarchy,
- 			tune_args->hier_select == HIER_HIGH_PRIORITY ?
- 			"HP" : "LP",
+
 -- 
-1.7.9.5
-
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
