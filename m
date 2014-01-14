@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaANBJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:09:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53950 "EHLO
+	id S1755268AbaANBJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:09:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53958 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107AbaANA0z (ORCPT
+	with ESMTP id S1753110AbaANA04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:55 -0500
+	Mon, 13 Jan 2014 19:26:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Andrey Vagin <avagin@openvz.org>, Jason Wang <jasowang@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Salam Noureddine <noureddine@aristanetworks.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/62] virtio: delete napi structures from netdev before releasing memory
-Date: Mon, 13 Jan 2014 16:26:37 -0800
-Message-Id: <20140114002710.810322145@linuxfoundation.org>
+Subject: [PATCH 3.10 13/62] packet: fix send path when running with proto == 0
+Date: Mon, 13 Jan 2014 16:26:38 -0800
+Message-Id: <20140114002710.837685142@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -31,80 +31,206 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit d4fb84eefe5164f6a6ea51d0a9e26280c661a0dd ]
+[ Upstream commit 66e56cd46b93ef407c60adcac62cf33b06119d50 ]
 
-free_netdev calls netif_napi_del too, but it's too late, because napi
-structures are placed on vi->rq. netif_napi_add() is called from
-virtnet_alloc_queues.
+Commit e40526cb20b5 introduced a cached dev pointer, that gets
+hooked into register_prot_hook(), __unregister_prot_hook() to
+update the device used for the send path.
 
-general protection fault: 0000 [#1] SMP
-Dumping ftrace buffer:
-   (ftrace buffer empty)
-Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
-CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
-RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
-RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
-RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
-RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
-RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
-R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
-FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
-Stack:
- ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
- ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
- ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
-Call Trace:
- [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
- [<ffffffff8156499b>] free_netdev+0x8b/0x110
- [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
- [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
- [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
- [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
- [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
- [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
- [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
- [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
- [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
- [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
- [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
-Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
-RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
- RSP <ffff8800379e1dd0>
----[ end trace d5931cd3f87c9763 ]---
+We need to fix this up, as otherwise this will not work with
+sockets created with protocol = 0, plus with sll_protocol = 0
+passed via sockaddr_ll when doing the bind.
 
-Fixes: 986a4f4d452d (virtio_net: multiqueue support)
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+So instead, assign the pointer directly. The compiler can inline
+these helper functions automagically.
+
+While at it, also assume the cached dev fast-path as likely(),
+and document this variant of socket creation as it seems it is
+not widely used (seems not even the author of TX_RING was aware
+of that in his reference example [1]). Tested with reproducer
+from e40526cb20b5.
+
+ [1] http://wiki.ipxwarzone.com/index.php5?title=Linux_packet_mmap#Example
+
+Fixes: e40526cb20b5 ("packet: fix use after free race in send path when dev is released")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Salam Noureddine <noureddine@aristanetworks.com>
+Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ Documentation/networking/packet_mmap.txt |   10 ++++
+ net/packet/af_packet.c                   |   65 +++++++++++++++++++------------
+ 2 files changed, 50 insertions(+), 25 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1285,6 +1285,11 @@ static void virtnet_config_changed(struc
+--- a/Documentation/networking/packet_mmap.txt
++++ b/Documentation/networking/packet_mmap.txt
+@@ -123,6 +123,16 @@ Transmission process is similar to captu
+ [shutdown]  close() --------> destruction of the transmission socket and
+                               deallocation of all associated resources.
  
- static void virtnet_free_queues(struct virtnet_info *vi)
- {
-+	int i;
++Socket creation and destruction is also straight forward, and is done
++the same way as in capturing described in the previous paragraph:
 +
-+	for (i = 0; i < vi->max_queue_pairs; i++)
-+		netif_napi_del(&vi->rq[i].napi);
++ int fd = socket(PF_PACKET, mode, 0);
 +
- 	kfree(vi->rq);
- 	kfree(vi->sq);
++The protocol can optionally be 0 in case we only want to transmit
++via this socket, which avoids an expensive call to packet_rcv().
++In this case, you also need to bind(2) the TX_RING with sll_protocol = 0
++set. Otherwise, htons(ETH_P_ALL) or any other protocol, for example.
++
+ Binding the socket to your network interface is mandatory (with zero copy) to
+ know the header size of frames used in the circular buffer.
+ 
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -237,6 +237,30 @@ struct packet_skb_cb {
+ static void __fanout_unlink(struct sock *sk, struct packet_sock *po);
+ static void __fanout_link(struct sock *sk, struct packet_sock *po);
+ 
++static struct net_device *packet_cached_dev_get(struct packet_sock *po)
++{
++	struct net_device *dev;
++
++	rcu_read_lock();
++	dev = rcu_dereference(po->cached_dev);
++	if (likely(dev))
++		dev_hold(dev);
++	rcu_read_unlock();
++
++	return dev;
++}
++
++static void packet_cached_dev_assign(struct packet_sock *po,
++				     struct net_device *dev)
++{
++	rcu_assign_pointer(po->cached_dev, dev);
++}
++
++static void packet_cached_dev_reset(struct packet_sock *po)
++{
++	RCU_INIT_POINTER(po->cached_dev, NULL);
++}
++
+ /* register_prot_hook must be invoked with the po->bind_lock held,
+  * or from a context in which asynchronous accesses to the packet
+  * socket is not possible (packet_create()).
+@@ -246,12 +270,10 @@ static void register_prot_hook(struct so
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	if (!po->running) {
+-		if (po->fanout) {
++		if (po->fanout)
+ 			__fanout_link(sk, po);
+-		} else {
++		else
+ 			dev_add_pack(&po->prot_hook);
+-			rcu_assign_pointer(po->cached_dev, po->prot_hook.dev);
+-		}
+ 
+ 		sock_hold(sk);
+ 		po->running = 1;
+@@ -270,12 +292,11 @@ static void __unregister_prot_hook(struc
+ 	struct packet_sock *po = pkt_sk(sk);
+ 
+ 	po->running = 0;
+-	if (po->fanout) {
++
++	if (po->fanout)
+ 		__fanout_unlink(sk, po);
+-	} else {
++	else
+ 		__dev_remove_pack(&po->prot_hook);
+-		RCU_INIT_POINTER(po->cached_dev, NULL);
+-	}
+ 
+ 	__sock_put(sk);
+ 
+@@ -2048,19 +2069,6 @@ static int tpacket_fill_skb(struct packe
+ 	return tp_len;
  }
+ 
+-static struct net_device *packet_cached_dev_get(struct packet_sock *po)
+-{
+-	struct net_device *dev;
+-
+-	rcu_read_lock();
+-	dev = rcu_dereference(po->cached_dev);
+-	if (dev)
+-		dev_hold(dev);
+-	rcu_read_unlock();
+-
+-	return dev;
+-}
+-
+ static int tpacket_snd(struct packet_sock *po, struct msghdr *msg)
+ {
+ 	struct sk_buff *skb;
+@@ -2077,7 +2085,7 @@ static int tpacket_snd(struct packet_soc
+ 
+ 	mutex_lock(&po->pg_vec_lock);
+ 
+-	if (saddr == NULL) {
++	if (likely(saddr == NULL)) {
+ 		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+@@ -2231,7 +2239,7 @@ static int packet_snd(struct socket *soc
+ 	 *	Get and verify the address.
+ 	 */
+ 
+-	if (saddr == NULL) {
++	if (likely(saddr == NULL)) {
+ 		dev	= packet_cached_dev_get(po);
+ 		proto	= po->num;
+ 		addr	= NULL;
+@@ -2440,6 +2448,8 @@ static int packet_release(struct socket
+ 
+ 	spin_lock(&po->bind_lock);
+ 	unregister_prot_hook(sk, false);
++	packet_cached_dev_reset(po);
++
+ 	if (po->prot_hook.dev) {
+ 		dev_put(po->prot_hook.dev);
+ 		po->prot_hook.dev = NULL;
+@@ -2495,14 +2505,17 @@ static int packet_do_bind(struct sock *s
+ 
+ 	spin_lock(&po->bind_lock);
+ 	unregister_prot_hook(sk, true);
++
+ 	po->num = protocol;
+ 	po->prot_hook.type = protocol;
+ 	if (po->prot_hook.dev)
+ 		dev_put(po->prot_hook.dev);
+-	po->prot_hook.dev = dev;
+ 
++	po->prot_hook.dev = dev;
+ 	po->ifindex = dev ? dev->ifindex : 0;
+ 
++	packet_cached_dev_assign(po, dev);
++
+ 	if (protocol == 0)
+ 		goto out_unlock;
+ 
+@@ -2615,7 +2628,8 @@ static int packet_create(struct net *net
+ 	po = pkt_sk(sk);
+ 	sk->sk_family = PF_PACKET;
+ 	po->num = proto;
+-	RCU_INIT_POINTER(po->cached_dev, NULL);
++
++	packet_cached_dev_reset(po);
+ 
+ 	sk->sk_destruct = packet_sock_destruct;
+ 	sk_refcnt_debug_inc(sk);
+@@ -3369,6 +3383,7 @@ static int packet_notifier(struct notifi
+ 						sk->sk_error_report(sk);
+ 				}
+ 				if (msg == NETDEV_UNREGISTER) {
++					packet_cached_dev_reset(po);
+ 					po->ifindex = -1;
+ 					if (po->prot_hook.dev)
+ 						dev_put(po->prot_hook.dev);
 
 
