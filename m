@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaANSrw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:47:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:55142 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751458AbaANSru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:47:50 -0500
-Message-ID: <52D58647.4010208@zytor.com>
-Date: Tue, 14 Jan 2014 10:47:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751834AbaANSsu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:48:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55173 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751AbaANSss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:48:48 -0500
+Date: Tue, 14 Jan 2014 10:48:26 -0800
+From: tip-bot for Wei Yongjun <tipbot@zytor.com>
+Message-ID: <tip-19259943f0954dcd1817f94776376bf51c6a46d5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, yongjun_wei@trendmicro.com.cn,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, yongjun_wei@trendmicro.com.cn,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <CAPgLHd-Fjx1RybjWFAu1vHRfTvhWwMLL3x46BouC5uNxHPjy1A@mail.gmail.com>
+References: <CAPgLHd-Fjx1RybjWFAu1vHRfTvhWwMLL3x46BouC5uNxHPjy1A@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/kaslr] x86, kaslr: Remove unused including <linux/
+ version.h>
+Git-Commit-ID: 19259943f0954dcd1817f94776376bf51c6a46d5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, Fengguang Wu <fengguang.wu@intel.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [x86, kaslr] BUG: kernel boot hang
-References: <20140114133125.GB26942@localhost> <CAGXu5jKqx6JYBhHf08ru9B62RdD1A_WX7on64Cw-v1wYKT2jnQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jKqx6JYBhHf08ru9B62RdD1A_WX7on64Cw-v1wYKT2jnQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 10:48:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 10:26 AM, Kees Cook wrote:
->>
->> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
->> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
->> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
->> [    0.000000] BRK [0x07886000, 0x07886fff] PGTABLE
->> [    0.000000] BRK [0x07887000, 0x07887fff] PGTABLE
->> [    0.000000] BRK [0x07888000, 0x07888fff] PGTABLE
->> PANIC: early exception 0e rip 10:ffffffff86204c6e error 0 cr2 ffffffff81972b28
->> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc4-00008-g6e6a493 #614
->> PANIC: early exception 0e rip 10:ffffffff86204f22 error 0 cr2 ffffffff81972b28
-> 
-> I will try to reproduce this, but it's not clear to me what is causing
-> the failure. The generated config doesn't look insane to me, so I'm
-> not sure what's happening here. Is QEMU doing something unexpected
-> with the ordering of where things go for its boot loader?
-> 
+Commit-ID:  19259943f0954dcd1817f94776376bf51c6a46d5
+Gitweb:     http://git.kernel.org/tip/19259943f0954dcd1817f94776376bf51c6a46d5
+Author:     Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+AuthorDate: Sat, 7 Dec 2013 21:02:36 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 14 Jan 2014 10:45:56 -0800
 
-It used to, but I fixed it up a long time ago and now it is really bog
-standard.
+x86, kaslr: Remove unused including <linux/version.h>
 
-More likely it just happens to trigger a corner condition, which is
-actually a good thing... much easier to debug in a simulator.
+Remove including <linux/version.h> that don't need it.
 
-	-hpa
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Link: http://lkml.kernel.org/r/CAPgLHd-Fjx1RybjWFAu1vHRfTvhWwMLL3x46BouC5uNxHPjy1A@mail.gmail.com
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/boot/compressed/aslr.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index 84be175..90a21f4 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -10,7 +10,6 @@
+ #include <linux/uts.h>
+ #include <linux/utsname.h>
+ #include <generated/utsrelease.h>
+-#include <linux/version.h>
+ 
+ /* Simplified build-specific string for starting entropy. */
+ static const char build_str[] = UTS_RELEASE " (" LINUX_COMPILE_BY "@"
