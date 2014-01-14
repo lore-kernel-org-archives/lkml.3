@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaANBDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:03:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54031 "EHLO
+	id S1755562AbaANBDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:03:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249AbaANA1M (ORCPT
+	with ESMTP id S1751760AbaANA1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:27:12 -0500
+	Mon, 13 Jan 2014 19:27:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 08/62] macvtap: Do not double-count received packets
-Date: Mon, 13 Jan 2014 16:26:33 -0800
-Message-Id: <20140114002710.700830159@linuxfoundation.org>
+Subject: [PATCH 3.10 09/62] macvtap: update file current position
+Date: Mon, 13 Jan 2014 16:26:34 -0800
+Message-Id: <20140114002710.730686210@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -31,48 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-[ Upstream commit 006da7b07bc4d3a7ffabad17cf639eec6849c9dc ]
+[ Upstream commit e6ebc7f16ca1434a334647aa56399c546be4e64b ]
 
-Currently macvlan will count received packets after calling each
-vlans receive handler.   Macvtap attempts to count the packet
-yet again when the user reads the packet from the tap socket.
-This code doesn't do this consistently either.  Remove the
-counting from macvtap and let only macvlan count received
-packets.
-
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/net/macvtap.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 --- a/drivers/net/macvtap.c
 +++ b/drivers/net/macvtap.c
-@@ -797,7 +797,6 @@ static ssize_t macvtap_put_user(struct m
- 				const struct sk_buff *skb,
- 				const struct iovec *iv, int len)
- {
--	struct macvlan_dev *vlan;
- 	int ret;
- 	int vnet_hdr_len = 0;
- 	int vlan_offset = 0;
-@@ -851,12 +850,6 @@ static ssize_t macvtap_put_user(struct m
- 	copied += len;
+@@ -903,6 +903,8 @@ static ssize_t macvtap_aio_read(struct k
  
- done:
--	rcu_read_lock_bh();
--	vlan = rcu_dereference_bh(q->vlan);
--	if (vlan)
--		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
--	rcu_read_unlock_bh();
--
- 	return ret ? ret : copied;
+ 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
++	if (ret > 0)
++		iocb->ki_pos = ret;
+ out:
+ 	return ret;
  }
- 
 
 
