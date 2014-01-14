@@ -1,199 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaANOP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:15:28 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40248 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaANOOT (ORCPT
+	id S1751980AbaANOPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:15:38 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37070 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaANOPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:14:19 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH v2 2/5] x86: enable DMA CMA with swiotlb
-Date: Tue, 14 Jan 2014 23:13:47 +0900
-Message-Id: <1389708830-5841-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
-References: <1389708830-5841-1-git-send-email-akinobu.mita@gmail.com>
+	Tue, 14 Jan 2014 09:15:32 -0500
+Date: Tue, 14 Jan 2014 14:15:23 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: rogerable@realtek.com, Samuel Ortiz <sameo@linux.intel.com>,
+        Alex Dubov <oakad@yahoo.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn,
+        Chris Ball <cjb@laptop.org>, Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: Re: [PATCH 1/3] mfd: Add realtek USB card reader driver
+Message-ID: <20140114141523.GC11820@lee--X1>
+References: <1389685656-880-1-git-send-email-rogerable@realtek.com>
+ <1389685656-880-2-git-send-email-rogerable@realtek.com>
+ <20140114130409.GB11820@lee--X1>
+ <20140114134634.GM7444@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140114134634.GM7444@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DMA Contiguous Memory Allocator support on x86 is disabled when
-swiotlb config option is enabled.  So DMA CMA is always disabled on
-x86_64 because swiotlb is always enabled.  This attempts to support
-for DMA CMA with enabling swiotlb config option.
+> [ Sorry, I am coming down with the flu today so I'm doing dorky things
+>   like reviewing review comments.  I'm not sure how coherent I am.  ]
 
-The contiguous memory allocator on x86 is integrated in the function
-dma_generic_alloc_coherent() which is .alloc callback in nommu_dma_ops
-for dma_alloc_coherent().
+Always welcome.
 
-x86_swiotlb_alloc_coherent() which is .alloc callback in swiotlb_dma_ops
-tries to allocate with dma_generic_alloc_coherent() firstly and then
-swiotlb_alloc_coherent() is called as a fallback.
+NB: I did this review in double-quick time, which may account for some
+of the weird thought processes (or lack there of).
 
-The main part of supporting DMA CMA with swiotlb is that changing
-x86_swiotlb_free_coherent() which is .free callback in swiotlb_dma_ops
-for dma_free_coherent() so that it can distinguish memory allocated by
-dma_generic_alloc_coherent() from one allocated by swiotlb_alloc_coherent()
-and release it with dma_generic_free_coherent() which can handle contiguous
-memory.  This change requires making is_swiotlb_buffer() global function.
+> > > +static void rtsx_usb_sg_timed_out(unsigned long data)
+> > > +{
+> > > +	struct rtsx_ucr *ucr = (struct rtsx_ucr *)data;
+> > 
+> > What's going to happen when your device runs 64bit?
+> > 
+> 
+> I'm not sure I understand what you mean here.  On linux sizeof(long) is
+> always the same as sizeof(void *).
 
-This also needs to change .free callback in the dma_map_ops for amd_gart
-and sta2x11, because these dma_ops are also using
-dma_generic_alloc_coherent().
+I had an odd moment where I thought we'd need long long for 64bit.
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org
-Cc: iommu@lists.linux-foundation.org
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
-No change from the previous version
+Nevermind.
 
- arch/x86/Kconfig               | 2 +-
- arch/x86/include/asm/swiotlb.h | 7 +++++++
- arch/x86/kernel/amd_gart_64.c  | 2 +-
- arch/x86/kernel/pci-swiotlb.c  | 9 ++++++---
- arch/x86/pci/sta2x11-fixup.c   | 6 ++----
- include/linux/swiotlb.h        | 2 ++
- lib/swiotlb.c                  | 2 +-
- 7 files changed, 20 insertions(+), 10 deletions(-)
+> > > +	if (cmd_len > IOBUF_SIZE)
+> > > +		return -EINVAL;
+> > > +
+> > > +	if (cmd_len % 4)
+> > > +		cmd_len += (4 - cmd_len % 4);
+> > 
+> > Please document in a comment.
+> 
+> There is a kernel macro for this:
+> 
+> 	cmd_len = ALIGN(cmd_len, 4);
+> 
+> 	if (cmd_len > IOBUF_SIZE)
+> 		return -EINVAL;
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0952ecd..1b6275d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -40,7 +40,7 @@ config X86
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_FRAME_POINTERS
- 	select HAVE_DMA_ATTRS
--	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
-+	select HAVE_DMA_CONTIGUOUS
- 	select HAVE_KRETPROBES
- 	select HAVE_OPTPROBES
- 	select HAVE_KPROBES_ON_FTRACE
-diff --git a/arch/x86/include/asm/swiotlb.h b/arch/x86/include/asm/swiotlb.h
-index 977f176..ab05d73 100644
---- a/arch/x86/include/asm/swiotlb.h
-+++ b/arch/x86/include/asm/swiotlb.h
-@@ -29,4 +29,11 @@ static inline void pci_swiotlb_late_init(void)
- 
- static inline void dma_mark_clean(void *addr, size_t size) {}
- 
-+extern void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-+					dma_addr_t *dma_handle, gfp_t flags,
-+					struct dma_attrs *attrs);
-+extern void x86_swiotlb_free_coherent(struct device *dev, size_t size,
-+					void *vaddr, dma_addr_t dma_addr,
-+					struct dma_attrs *attrs);
-+
- #endif /* _ASM_X86_SWIOTLB_H */
-diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
-index b574b29..8e3842f 100644
---- a/arch/x86/kernel/amd_gart_64.c
-+++ b/arch/x86/kernel/amd_gart_64.c
-@@ -512,7 +512,7 @@ gart_free_coherent(struct device *dev, size_t size, void *vaddr,
- 		   dma_addr_t dma_addr, struct dma_attrs *attrs)
- {
- 	gart_unmap_page(dev, dma_addr, size, DMA_BIDIRECTIONAL, NULL);
--	free_pages((unsigned long)vaddr, get_order(size));
-+	dma_generic_free_coherent(dev, size, vaddr, dma_addr, attrs);
- }
- 
- static int gart_mapping_error(struct device *dev, dma_addr_t dma_addr)
-diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-index 6c483ba..77dd0ad 100644
---- a/arch/x86/kernel/pci-swiotlb.c
-+++ b/arch/x86/kernel/pci-swiotlb.c
-@@ -14,7 +14,7 @@
- #include <asm/iommu_table.h>
- int swiotlb __read_mostly;
- 
--static void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-+void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 					dma_addr_t *dma_handle, gfp_t flags,
- 					struct dma_attrs *attrs)
- {
-@@ -28,11 +28,14 @@ static void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	return swiotlb_alloc_coherent(hwdev, size, dma_handle, flags);
- }
- 
--static void x86_swiotlb_free_coherent(struct device *dev, size_t size,
-+void x86_swiotlb_free_coherent(struct device *dev, size_t size,
- 				      void *vaddr, dma_addr_t dma_addr,
- 				      struct dma_attrs *attrs)
- {
--	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
-+	if (is_swiotlb_buffer(dma_to_phys(dev, dma_addr)))
-+		swiotlb_free_coherent(dev, size, vaddr, dma_addr);
-+	else
-+		dma_generic_free_coherent(dev, size, vaddr, dma_addr, attrs);
- }
- 
- static struct dma_map_ops swiotlb_dma_ops = {
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index 9d8a509..5ceda85 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -173,9 +173,7 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- {
- 	void *vaddr;
- 
--	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags, attrs);
--	if (!vaddr)
--		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags);
-+	vaddr = x86_swiotlb_alloc_coherent(dev, size, dma_handle, flags, attrs);
- 	*dma_handle = p2a(*dma_handle, to_pci_dev(dev));
- 	return vaddr;
- }
-@@ -183,7 +181,7 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
- static struct dma_map_ops sta2x11_dma_ops = {
- 	.alloc = sta2x11_swiotlb_alloc_coherent,
--	.free = swiotlb_free_coherent,
-+	.free = x86_swiotlb_free_coherent,
- 	.map_page = swiotlb_map_page,
- 	.unmap_page = swiotlb_unmap_page,
- 	.map_sg = swiotlb_map_sg_attrs,
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index a5ffd32..e7a018e 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -116,4 +116,6 @@ static inline void swiotlb_free(void) { }
- #endif
- 
- extern void swiotlb_print_info(void);
-+extern int is_swiotlb_buffer(phys_addr_t paddr);
-+
- #endif /* __LINUX_SWIOTLB_H */
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index fe978e0..6e4a798 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -369,7 +369,7 @@ void __init swiotlb_free(void)
- 	io_tlb_nslabs = 0;
- }
- 
--static int is_swiotlb_buffer(phys_addr_t paddr)
-+int is_swiotlb_buffer(phys_addr_t paddr)
- {
- 	return paddr >= io_tlb_start && paddr < io_tlb_end;
- }
+I had a feeling this was the intention, hence why I was asking for a
+comment. But yes, if all this is doing is alignment then the kernel
+macro is preferred.
+
+> > > +
+> > > +
+> > 
+> > Extra '/n'
+> > 
+> 
+> It weirds me out when you mix up '\n' and /n'.
+
+Typos happen on occasion...
+
+> > > +int rtsx_usb_ep0_write_register(struct rtsx_ucr *ucr, u16 addr,
+> > > +		u8 mask, u8 data)
+> > > +{
+> > > +	u16 value = 0, index = 0;
+> > > +
+> > > +	value |= 0x03 << 14;
+> > > +	value |= addr & 0x3FFF;
+> > > +	value = ((value << 8) & 0xFF00) | ((value >> 8) & 0x00FF);
+> > > +	index |= (u16)mask;
+> > > +	index |= (u16)data << 8;
+> > 
+> > Lots of random numbers here, please #define for clarity and ease of
+> > reading.
+> > 
+> 
+> The only really random number is the 0x03, but yeah, it would help if
+> that we a define.
+
+See ---^
+
+As I say, I just glossed over the code, thus didn't spend the time to
+work out the arithmetic. Now I do, most of it is pretty self
+explanatory. I would also like to see the SHIFT #defined, although
+this may become superfluous once the 0x03 is clarified.
+
+> 	addr |= 0x03 << 14;
+> 
+> 	value = __swab16(addr);
+> 	index = mask | (data << 8);
+
+This is 100% better/clearer.
+
+> > > +
+> > > +	dev_dbg(&intf->dev,
+> > > +		": Realtek USB Card Reader found at bus %03d address %03d\n",
+> > > +		 usb_dev->bus->busnum, usb_dev->devnum);
+> > > +
+> > > +	ucr = kzalloc(sizeof(struct rtsx_ucr), GFP_KERNEL);
+> > 
+> > s/struct rtsx_ucr/*ucr/
+> > 
+> > Any reason for not using managed resources?
+> > 
+> Roger, he means the devm_kzalloc().
+
+That I do.
+
 -- 
-1.8.3.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
