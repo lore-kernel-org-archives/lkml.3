@@ -1,159 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756AbaANRJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 12:09:22 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:38480 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666AbaANRJT (ORCPT
+	id S1751826AbaANRJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 12:09:36 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36485 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaANRJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 12:09:19 -0500
-Message-ID: <52D56F3E.2070304@atmel.com>
-Date: Tue, 14 Jan 2014 18:09:18 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 14 Jan 2014 12:09:32 -0500
+Date: Tue, 14 Jan 2014 18:09:29 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <ak@linux.jf.intel.com>
+Subject: Re: [PATCH RFC v2 0/4] perf: IRQ-bound performance events
+Message-ID: <20140114170925.GA12115@localhost.localdomain>
+References: <cover.1388858996.git.agordeev@redhat.com>
+ <20140113155034.GA10355@localhost.localdomain>
+ <20140114160751.GC6873@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-CC: <b.brezillon@overkiz.com>, <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 03/12] at91: dt: sam9261: Added support for the lcd
- display
-References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com> <1389270709-32662-4-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1389270709-32662-4-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114160751.GC6873@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/01/2014 13:31, Jean-Jacques Hiblot :
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-> ---
->  arch/arm/boot/dts/at91sam9261.dtsi  | 37 ++++++++++++++++++++++++++++++++++++-
->  arch/arm/boot/dts/at91sam9261ek.dts | 31 +++++++++++++++++++++++++++++++
->  arch/arm/mach-at91/at91sam9261.c    |  1 +
->  3 files changed, 68 insertions(+), 1 deletion(-)
+On Tue, Jan 14, 2014 at 05:07:52PM +0100, Alexander Gordeev wrote:
+> On Mon, Jan 13, 2014 at 04:50:37PM +0100, Frederic Weisbecker wrote:
+> > On Sat, Jan 04, 2014 at 07:22:32PM +0100, Alexander Gordeev wrote:
+> > > Hello,
+> > > 
+> > > This is version 2 of RFC "perf: IRQ-bound performance events". That is an
+> > > introduction of IRQ-bound performance events - ones that only count in a
+> > > context of a hardware interrupt handler. Ingo suggested to extend this
+> > > functionality to softirq and threaded handlers as well:
+> > 
+> > Hi Alexander,
+> > 
+> > I still strongly think we should use toggle events to achieve that:
+> > https://lkml.org/lkml/2013/9/25/227
 > 
-> diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
-> index 773c3d6..cd219b9 100644
-> --- a/arch/arm/boot/dts/at91sam9261.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9261.dtsi
-> @@ -290,7 +290,33 @@
->  						atmel,pins = <AT91_PIOC 24 AT91_PERIPH_B AT91_PINCTRL_NONE>;
->  					};
->  				};
-> -
-> +				fb {
-> +					pinctrl_fb: fb-0 {
-> +						atmel,pins =
-> +							<AT91_PIOB 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB1 periph A */
-
-Ditto: remove comments.
-
-> +							 AT91_PIOB 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB2 periph A */
-> +							 AT91_PIOB 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB3 periph A */
-> +							 AT91_PIOB 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB7 periph A */
-> +							 AT91_PIOB 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB8 periph A */
-> +							 AT91_PIOB 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB9 periph A */
-> +							 AT91_PIOB 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB10 periph A */
-> +							 AT91_PIOB 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB11 periph A */
-> +							 AT91_PIOB 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB12 periph A */
-> +							 AT91_PIOB 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB15 periph A */
-> +							 AT91_PIOB 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB16 periph A */
-> +							 AT91_PIOB 17 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB17 periph A */
-> +							 AT91_PIOB 18 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB18 periph A */
-> +							 AT91_PIOB 19 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB19 periph A */
-> +							 AT91_PIOB 20 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB20 periph A */
-> +							 AT91_PIOB 23 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB23 periph B */
-> +							 AT91_PIOB 24 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB24 periph B */
-> +							 AT91_PIOB 25 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB25 periph B */
-> +							 AT91_PIOB 26 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB26 periph B */
-> +							 AT91_PIOB 27 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB27 periph B */
-> +							 AT91_PIOB 28 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PB28 periph B */
-> +							 >;
-> +					};
-> +				};
->  				pioA: gpio@fffff400 {
->  					compatible = "atmel,at91rm9200-gpio";
->  					reg = <0xfffff400 0x200>;
-> @@ -436,6 +462,15 @@
->  			};
->  		};
->  
-> +		fb0: fb@0x00600000 {
-> +			compatible = "atmel,at91sam9261-lcdc";
-> +			reg = <0x00600000 0x1000>;
-> +			interrupts = <21 IRQ_TYPE_LEVEL_HIGH 3>;
-> +			pinctrl-names = "default";
-> +			pinctrl-0 = <&pinctrl_fb>;
-> +			status = "disabled";
-> +		};
-> +
->  		nand0: nand@40000000 {
->  			compatible = "atmel,at91rm9200-nand";
->  			#address-cells = <1>;
-> diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
-> index f3d22a9..03c05fc 100644
-> --- a/arch/arm/boot/dts/at91sam9261ek.dts
-> +++ b/arch/arm/boot/dts/at91sam9261ek.dts
-> @@ -52,6 +52,37 @@
->  				reg = <0x0 0x20000>;
->  			};
->  		};
-> +
-> +		fb0: fb@0x00600000 {
-> +			display = <&display0>;
-> +			status = "okay";
-
-Nitpicking: Status is usually the last entry of a node (just before
-sub-nodes): it is good to follow this habit.
-
-> +			atmel,power-control-gpio = <&pioA 12 GPIO_ACTIVE_LOW>;
-> +			display0: display {
-> +				bits-per-pixel = <16>;
-> +				atmel,lcdcon-backlight;
-> +				atmel,dmacon = <0x1>;
-> +				atmel,lcdcon2 = <0x80008002>;
-> +				atmel,guard-time = <1>;
-> +				atmel,lcd-wiring-mode = "BRG";
-> +
-> +				display-timings {
-> +					native-mode = <&timing0>;
-> +					timing0: timing0 {
-> +						clock-frequency = <4965000>;
-> +						hactive = <240>;
-> +						vactive = <320>;
-> +						hback-porch = <1>;
-> +						hfront-porch = <33>;
-> +						vback-porch = <1>;
-> +						vfront-porch = <0>;
-> +						hsync-len = <5>;
-> +						vsync-len = <1>;
-> +						hsync-active = <1>;
-> +						vsync-active = <1>;
-> +					};
-> +				};
-> +			};
-> +		};
->  	};
->  
->  	leds {
-> diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-> index 200d17a..a67bfe6 100644
-> --- a/arch/arm/mach-at91/at91sam9261.c
-> +++ b/arch/arm/mach-at91/at91sam9261.c
-> @@ -197,6 +197,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
->  	/* more tc lookup table for DT entries */
->  	CLKDEV_CON_DEV_ID("t0_clk", "fffa0000.timer", &tc0_clk),
->  	CLKDEV_CON_DEV_ID("hclk", "500000.ohci", &ohci_clk),
-> +	CLKDEV_CON_DEV_ID("hclk", "600000.fb", &hck1),
->  	CLKDEV_CON_DEV_ID("spi_clk", "fffc8000.spi", &spi0_clk),
->  	CLKDEV_CON_DEV_ID("spi_clk", "fffcc000.spi", &spi1_clk),
->  	CLKDEV_CON_DEV_ID("mci_clk", "fffa8000.mmc", &mmc_clk),
+> Hi Frederic,
 > 
+> The toggle events would not allow counting per-action in hardware interrupt
+> context. The design I propose provisions any possible combination of actions/
+> IRQs.
 
+I think we could define one event per handler by using tracepoint filters.
 
--- 
-Nicolas Ferre
+> 
+> I.e. if we had few drivers on IRQn and few drivers on IRQm we could assign
+> an event to let's say ISR0, ISR2 on IRQn and ISR1 on IRQm.
+
+Yeah that should be possible with tracepoints as well.
+
+> Moreover, given that hardware context handlers are running with local
+> interrupts disabled and therefore an IRQ-bound event could be enabled/
+> disabled only from a single handler at a time - we just need to allocate
+> a single hardware counter for any possible combination.
+
+Hmm I don't get what you mean here. Why tracepoint defined event don't work in this scenario?
+
+> 
+> I think it would be ideal if the two approaches could be converged somehow,
+> but I just do not know how at the moment. I believe the next step is to
+> measure the overhead Andi mentioned. That well might be a showstopper for
+> either or both approaches.
+> 
+> By contrast with the hardware context, the toggle events seem to able
+> monitoring softirq in its current form.
+> 
+> As of the threaded context handlers, I have not come up with the idea how to
+> make it yet, but it does not seem the toggle events are able eigher.
+
+A per task event should do the trick for threaded irqs profiling.
+
+Thanks.
