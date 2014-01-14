@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaANRRW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 12:17:22 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48694 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaANRRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 12:17:19 -0500
+	id S1751812AbaANRUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 12:20:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12900 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367AbaANRUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 12:20:40 -0500
+Date: Tue, 14 Jan 2014 18:17:40 +0100
+From: Veaceslav Falico <vfalico@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, gregkh@linuxfoundation.org, ebiederm@xmission.com
+Subject: [RFC] sysfs_rename_link() and its usage
+Message-ID: <20140114171740.GB1867@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOMwXhMtc44SpA5yoGBP38muMqPMi3EkxeAKh3V5c_H=3qoXhw@mail.gmail.com>
-References: <1387814889-16670-1-git-send-email-lpapp@kde.org>
-	<1387814889-16670-4-git-send-email-lpapp@kde.org>
-	<CACRpkdbAPYs=48RXr6r5kqkYj2V9GitRMT2BRKkn4_gT77wUEg@mail.gmail.com>
-	<CAOMwXhNcmbk92TsNTGVQdfWrbVycVW++-+46+8onDZ5xPCD-Jw@mail.gmail.com>
-	<CACRpkdbih0xQWqnuouhuiRCzYmou++76ex5zC1nh=iBQWJ9otA@mail.gmail.com>
-	<CAOMwXhMtc44SpA5yoGBP38muMqPMi3EkxeAKh3V5c_H=3qoXhw@mail.gmail.com>
-Date: Tue, 14 Jan 2014 17:17:18 +0000
-X-Google-Sender-Auth: BTXewU4USb1o5-AnwzqzccgXkn0
-Message-ID: <CAOMwXhNBNa4EKe8rVTtQeAwXGGwFaRu9az+4yHARdH1PnPW1yQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] gpio: MAX6650/6651 support
-From: Laszlo Papp <lpapp@kde.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Even the gpio functionality itself? So, to clarify my question above,
-> I thought it would be something like this:
->
-> - gpio
->           \
->            ---
->               \
-> - alarm ----- pinctrol
->               /
->          ----
-> - etc /
->
-> So, pinctrl on top of them, and only this high layer would be moved to
-> pinctrl. Perhaps, I should check existing drivers and the pinctrl
-> before asking this... Will have a look very soon.
+Hi,
 
-I have just had a quick look and I am now worried.... It seems that
-the pinctrl system was not as mature in 3.2 that I need to support as
-these days... The short term task of mine is to get it working for
-that release, and trying to upstream all this is an additional
-bonus....
+I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
 
-Hence, my question is: would it be acceptable to leave the gpio
-functionality clearly separate and keep the pinctrl functionality on
-top of it?
+Consider having two net_device *a, *b; which are registered normally.
+Now, to create a link from /sys/class/net/a->name/linkname to b, one should
+use:
 
-Failing that, is it somehow possible to get this functionality nicely
-working with both versions? I am trying to do my best, but even I have
-the limits. The definite target is 3.2.1 for us as of now. If it
-cannot be nicely done without maintaining two relatively different
-drivers until our update, I am afraid I would need to skip the
-upstream now due to the lack of appropriate position.
+sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
 
-I would appreciate any suggestion about it. The pinctrl system was
-introduced in 3.1 if I am not mistaken, and 3.2 has lotta less drivers
-around, etc... Not quite sure about the core foundation though.
+To remove it, even simpler:
+
+sysfs_remove_link(&(a->dev.kobj), linkname);
+
+This works like a charm. However, if I want to use (obviously, with the
+symlink present):
+
+sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
+
+this fails with:
+
+"sysfs: ns invalid in 'a->name' for 'oldname'"
+
+in
+
+  608 struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
+...
+  615         if (!!sysfs_ns_type(parent_sd) != !!ns) {
+  616                 WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
+  617                         sysfs_ns_type(parent_sd) ? "required" : "invalid",
+  618                         parent_sd->s_name, name);
+  619                 return NULL;
+  620         }
+
+Code path:
+warn_slowpath_fmt+0x46/0x50
+sysfs_get_dirent_ns+0x30/0x80
+sysfs_find_dirent+0x84/0x110
+sysfs_get_dirent_ns+0x3e/0x80
+sysfs_rename_link_ns+0x54/0xd0
+
+I have no idea what this code means. Is there any reason for it to
+fail (i.e. am I doing something wrong?) or I've hit a bug?
+
+I've tested the only user of it (bridge) - and it works fine, however it's
+not using its own net_device's kobject but rather its own dir.
+
+Thank you!
