@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaANTJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:09:39 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:40851 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaANTJh (ORCPT
+	id S1752146AbaANTKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:10:17 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:62707 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832AbaANTHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:09:37 -0500
-Message-ID: <52D58B6A.5070103@hp.com>
-Date: Tue, 14 Jan 2014 14:09:30 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Richard Henderson <rth@twiddle.net>
-CC: Matt Turner <mattst88@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Daniel J Blueman <daniel@numascale.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
-References: <52D353C8.4000000@numascale.com> <52D4172E.6030706@hp.com> <52D4A0C7.5070601@numascale.com> <20140114110307.GW7572@laptop.programming.kicks-ass.net> <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com> <52D57B60.9020209@twiddle.net>
-In-Reply-To: <52D57B60.9020209@twiddle.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 14 Jan 2014 14:07:20 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: nfs-ganesha-devel@lists.sourceforge.net, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 10/14] locks: make /proc/locks show IS_FILE_PVT locks with a P suffix
+Date: Tue, 14 Jan 2014 14:06:50 -0500
+Message-Id: <1389726414-30990-11-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389726414-30990-1-git-send-email-jlayton@redhat.com>
+References: <1389726414-30990-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 01:01 PM, Richard Henderson wrote:
-> On 01/14/2014 09:08 AM, Matt Turner wrote:
->> On Tue, Jan 14, 2014 at 3:03 AM, Peter Zijlstra<peterz@infradead.org>  wrote:
->>> On Tue, Jan 14, 2014 at 10:28:23AM +0800, Daniel J Blueman wrote:
->>>>> Peter,
->>>>>
->>>>> I found out that the build failure was caused by the fact that the
->>>>> __native_word() macro (used internally by compiletime_assert_atomic())
->>>>> allows only a size of 4 or 8 for x86-64. The data type that I used is a
->>>>> byte. Is there a reason why byte and short are not considered native?
->>>> It seems likely it was implemented like that since there was no existing
->>>> need; long can be relied on as the largest native type, so this should
->>>> suffice and works here:
->>> There's Alphas that cannot actually atomically adres a byte; I do not
->>> konw if Linux cares about them, but if it does, we cannot in fact rely
->>> on this in generic primitives like this.
->> That's right, and thanks for the heads-up. Alpha can only address 4
->> and 8 bytes atomically. (LDL_L, LDQ_L, STL_C, STQ_C).
->>
->> The Byte-Word extension in EV56 doesn't add new atomics, so in fact no
->> Alphas can address<  4 bytes atomically.
->>
-> Emulated with aligned 4 byte atomics, and masking.  The same is true for arm,
-> ppc, mips which, depending on cpu, also lack<  4 byte atomics.
->
+In a later patch, we'll be adding a new type of lock that's owned by
+the struct file instead of the files_struct. Those sorts of locks
+will be flagged with a new IS_FILE_PVT flag.
 
-I would like to know if the action of writing out a byte (e.g. *byte = 
-0) is atomic in those architectures or is emulated by a 
-compiler-generated software read-modify-write.
+Add a "P" suffix to the POSIX lock output in /proc/locks for locks that
+have FL_FILE_PVT set to distinguish them from "classic" POSIX locks.
 
--Longman
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c         | 9 +++++++--
+ include/linux/fs.h | 1 +
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 4d4e790..f1b9b14 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -135,6 +135,7 @@
+ #define IS_POSIX(fl)	(fl->fl_flags & FL_POSIX)
+ #define IS_FLOCK(fl)	(fl->fl_flags & FL_FLOCK)
+ #define IS_LEASE(fl)	(fl->fl_flags & (FL_LEASE|FL_DELEG))
++#define IS_FILE_PVT(fl)	(fl->fl_flags & FL_FILE_PVT)
+ 
+ static bool lease_breaking(struct file_lock *fl)
+ {
+@@ -2313,8 +2314,12 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
+ 
+ 	seq_printf(f, "%lld:%s ", id, pfx);
+ 	if (IS_POSIX(fl)) {
+-		seq_printf(f, "%6s %s ",
+-			     (fl->fl_flags & FL_ACCESS) ? "ACCESS" : "POSIX ",
++		if (fl->fl_flags & FL_ACCESS)
++			seq_printf(f, "ACCESS");
++		else
++			seq_printf(f, "POSIX%c", IS_FILE_PVT(fl) ? 'P' : ' ');
++
++		seq_printf(f, " %s ",
+ 			     (inode == NULL) ? "*NOINODE*" :
+ 			     mandatory_lock(inode) ? "MANDATORY" : "ADVISORY ");
+ 	} else if (IS_FLOCK(fl)) {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 51974e0..639a3b7 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -888,6 +888,7 @@ static inline int file_check_writeable(struct file *filp)
+ #define FL_SLEEP	128	/* A blocking lock */
+ #define FL_DOWNGRADE_PENDING	256 /* Lease is being downgraded */
+ #define FL_UNLOCK_PENDING	512 /* Lease is being broken */
++#define FL_FILE_PVT	1024	/* lock is private to the file */
+ 
+ /*
+  * Special return value from posix_lock_file() and vfs_lock_file() for
+-- 
+1.8.4.2
+
