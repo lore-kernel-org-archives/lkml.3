@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaANVM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 16:12:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33830 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485AbaANVMz (ORCPT
+	id S1752146AbaANVNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 16:13:31 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55352 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485AbaANVNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 16:12:55 -0500
-Date: Tue, 14 Jan 2014 13:13:33 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] hvc: ensure hvc_init is only ever called once in
- hvc_console.c
-Message-ID: <20140114211333.GB28453@kroah.com>
-References: <1389733436-4661-1-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 14 Jan 2014 16:13:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389733436-4661-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <52D5A60C.7080800@ti.com>
+References: <1389625399-24087-1-git-send-email-taras.kondratiuk@linaro.org>
+	<52D404DE.2020806@ti.com>
+	<CAArO44samX_uMeC93w4DBbC+yskEmrvVt_i-5VV_seatM56ypw@mail.gmail.com>
+	<52D55CE5.1060902@ti.com>
+	<CAA3XUr2cnF_rxMYvZfjBx22Sa8YE45o_qUU8GNoerQwhWqxhNQ@mail.gmail.com>
+	<CAGo_u6oKpRFnPAWaqr9NTNAJB+m56jiDgBUgvsiZpaQ-3SF2kw@mail.gmail.com>
+	<CAA3XUr1_cNuPmMU6Fs6c7Si2So0VFGcLyGJe+tS_R47BVKRXnw@mail.gmail.com>
+	<CAGo_u6p7ErrKOMy4Ljg3nehVpd=DOg3XDn6gZ1nrFE_OuOjsWg@mail.gmail.com>
+	<52D5A60C.7080800@ti.com>
+Date: Tue, 14 Jan 2014 15:13:24 -0600
+X-Google-Sender-Auth: VdzfayaoCc9197iMG2WJ2LLiJLg
+Message-ID: <CAGo_u6oGDK5s0SeE6Z7UFM6eYdgoy-E+Tj67+pBWP-wQ3r9=QA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP4: sleep: byteswap data for big-endian
+From: Nishanth Menon <nm@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Linaro Kernel <linaro-kernel@lists.linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Patch Tracking <patches@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Taras Kondratiuk <taras.kondratiuk@linaro.org>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 04:03:37PM -0500, Paul Gortmaker wrote:
-> Commit 3e6c6f630a5282df8f3393a59f10eb9c56536d23 ("Delay creation of
-> khcvd thread") moved the call of hvc_init from being a device_initcall
-> into hvc_alloc, and used a non-null hvc_driver as indication of whether
-> hvc_init had already been called.
-> 
-> The problem with this is that hvc_driver is only assigned a value
-> at the bottom of hvc_init, and so there is a window where multiple
-> hvc_alloc calls can be in progress at the same time and hence try
-> and call hvc_init multiple times.  Previously the use of device_init
-> guaranteed that hvc_init was only called once.
-> 
-> This manifests itself as sporadic instances of two hvc_init calls
-> racing each other, and with the loser of the race getting -EBUSY
-> from tty_register_driver() and hence that virtual console fails:
-> 
->     Couldn't register hvc console driver
->     virtio-ports vport0p1: error -16 allocating hvc for port
-> 
-> Here we add an atomic_t to guarantee we'll never run hvc_init twice.
-> 
-> Cc: stable@vger.kernel.org  # v2.6.24+
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Fixes: 3e6c6f630a52 ("Delay creation of khcvd thread")
-> Reported-by: Jim Somerville <Jim.Somerville@windriver.com>
-> Tested-by: Jim Somerville <Jim.Somerville@windriver.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
-> 
-> [Greg: I realize tty-next is closed; given that this is an ancient
->  bug, I don't see any real urgency here, so feel free to queue it
->  whenever/whereever is most convenient - assuming it is an OK fix.]
+On Tue, Jan 14, 2014 at 3:03 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+>
+>> ok.. some sort of Linaro thing about which I have no background about
+>> - but dont really care in this context.
+>>
+> Nothing related Linaro. Its just that platforms are supporting ARM BE
+> mode and Linaro folks had working patches for Panda. So I suggested
+> to get them on the lists.
 
-Looks ok, I'll queue it up after 3.14-rc1 is out, thanks.
+I tend to think -> is this with OFF mode and CPUidle completely
+working? All context save and restore works with this? on HS and GP
+devices with BE mode builds? works on SDP4430,60 variations,
+considered reuse with AM43xx which could use parts of that logic?
 
-greg k-h
+I mean to indicate that terms like "works on panda" tends always to be relative.
+
+It is nice to see it as a proof of concept, but I'd hate to see some
+dead code lying around in kernel and folks blindly following suit and
+introducing macros for new assembly for a feature that in practice
+just one group of folks care about and creates additional burden for
+rest of folks trying to keep that functionality going as we jump from
+one "device tree" style churn to another "framework"? Not to mean that
+good features should be kept away.. but personally, I could not find
+convincing arguments in this case..
+
+Regards,
+Nishanth Menon
