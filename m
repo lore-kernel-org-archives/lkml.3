@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaANPQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 10:16:37 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:61331 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594AbaANPQe (ORCPT
+	id S1751848AbaANPRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 10:17:08 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:50660 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735AbaANPRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 10:16:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ravi Patel <rapatel@apm.com>
-Subject: Re: [PATCH V2 0/4] misc: xgene: Add support for APM X-Gene SoC Queue Manager/Traffic Manager
-Date: Tue, 14 Jan 2014 16:15:55 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>, Loc Ho <lho@apm.com>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jon Masters <jcm@redhat.com>, "patches@apm.com" <patches@apm.com>,
-        Keyur Chudgar <kchudgar@apm.com>
-References: <1387594651-25771-1-git-send-email-rapatel@apm.com> <201401122219.11593.arnd@arndb.de> <CAN1v_Pt9rOGn8zmf+u7MR6-GJPDPswBbuhXu6i=MJVa2mwqNtw@mail.gmail.com>
-In-Reply-To: <CAN1v_Pt9rOGn8zmf+u7MR6-GJPDPswBbuhXu6i=MJVa2mwqNtw@mail.gmail.com>
+	Tue, 14 Jan 2014 10:17:07 -0500
+X-IronPort-AV: E=Sophos;i="4.95,658,1384300800"; 
+   d="scan'208";a="90585596"
+Message-ID: <52D554F0.9000409@citrix.com>
+Date: Tue, 14 Jan 2014 15:17:04 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Olaf Hering <olaf@aepfle.de>
+CC: David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <boris.ostrovsky@oracle.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>, <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH v2] xen-blkfront: remove type check from blkfront_setup_discard
+References: <1389608052-7139-1-git-send-email-olaf@aepfle.de>	<52D3DAEE0200007800112FD4@nat28.tlf.novell.com>	<20140113120131.GA15623@aepfle.de>	<52D3EB5F02000078001130B5@nat28.tlf.novell.com>	<1389618054.13654.57.camel@kazak.uk.xensource.com>	<52D3F535020000780011311B@nat28.tlf.novell.com>	<52D3EE14.3080609@citrix.com> <20140114145328.GA12888@aepfle.de>
+In-Reply-To: <20140114145328.GA12888@aepfle.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201401141615.55820.arnd@arndb.de>
-X-Provags-ID: V02:K0:591DyV4yzdLbdasq4doxUStWJpyz1aG6O6rSiYzagH7
- vk95olo2JCYMUCEFZmjETzkOKIXafs3eAlfZwX1fsjugoZMHm1
- 3wnyvg268TyZJY3FP9reYBE1E9QgAAy5PIHTRsPzFKhADu3zPL
- y6yV0Qa/FD9ADXrvQ/cZD8ATn9Gnj13imJyABBFPDFzS01vUWo
- xB8tY2Y+ZfEoyXKb2XASGDJO0luOU22EUaOMHmoZCqUrTkwIl3
- aXs7H/UZr/0m5jJOkJ0F2aiG/Vz+bpd4TyTolhNeRKT9EY3Psu
- 9ET2eq9qMnJ6HM29gW9x/yzvZcvTB8aKZNvO/t9lnF60U9xIBe
- COysgS1LQIuKxqMZJe54=
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 13 January 2014, Ravi Patel wrote:
-> > Examples for local resource management (I had to think about this
-> > a long time, but probably some of these are wrong) would be
-> > * balancing between multiple non-busmaster devices connected to
-> >   a dma-engine
-> > * distributing incoming ethernet data to the available CPUs based on
-> >   a flow classifier in the MAC, e.g. by IOV MAC address, VLAN tag
-> >   or even individual TCP connection depending on the NIC's capabilities.
-> > * 802.1p flow control for incoming ethernet data based on the amount
-> >   of data queued up between the MAC and the driver
-> > * interrupt mitigation for both inbound data and outbound completion,
-> >   by delaying the IRQ to the OS until multiple messages have arrived
-> >   or a queue specific amount of time has passed.
-> > * controlling the amount of outbound buffer space per flow to minimize
-> >   buffer-bloat between an ethernet driver and the NIC hardware.
-> > * reordering data from outbound flows based on priority.
-> >
-> > This is basically my current interpretation, I hope I got at least
-> > some of it right this time ;-)
+On 14/01/14 14:53, Olaf Hering wrote:
+> On Mon, Jan 13, David Vrabel wrote:
 > 
-> You have got them right. Although we have taken Ethernet examples here,
-> most of the local resource management apply to other slave devices also.
+>> Can we have a patch to blkif.h that clarifies this?
+> 
+> What about this change?
+> 
+> diff --git a/xen/include/public/io/blkif.h b/xen/include/public/io/blkif.h
+> index 84eb7fd..56e2faa 100644
+> --- a/xen/include/public/io/blkif.h
+> +++ b/xen/include/public/io/blkif.h
+> @@ -194,6 +194,7 @@
+>   * discard-secure
+>   *      Values:         0/1 (boolean)
+>   *      Default Value:  0
+> + *      Notes:          10
+>   *
+>   *      A value of "1" indicates that the backend can process BLKIF_OP_DISCARD
+>   *      requests with the BLKIF_DISCARD_SECURE flag set.
+> @@ -323,9 +324,10 @@
+>   *     For full interoperability, block front and backends should publish
+>   *     identical ring parameters, adjusted for unit differences, to the
+>   *     XenStore nodes used in both schemes.
+> - * (4) Devices that support discard functionality may internally allocate
+> - *     space (discardable extents) in units that are larger than the
+> - *     exported logical block size.
+> + * (4) Devices that support discard functionality may internally allocate space
+> + *     (discardable extents) in units that are larger than the exported logical
+> + *     block size. The properties discard-granularity and discard-alignment may
+> + *     be present if the backing device has such requirments.
 
-I'm very suprised I got all those right, it seems it's a quite sophisticated
-piece of hardware then. I guess most other slave devices only use a subset
-of the capabilities that ethernet wants.
+Clarify that both discard-granularity and discard-alignment must be
+present if non-sector-sized granularity is required. e.g.,
 
-Now that I have a better understanding of what the driver is good for and
-how it's used, let's have a look at how we can make it fit into the Linux
-driver APIs and the DT bindings. We don't have anything exactly like this
-yet, but I think the "mailbox" framework is a close enough match that we
-can fit it in there, with some extensions. This framework is still in the
-process of being created (so far there is only a TI OMAP specific driver,
-and one for pl320), and I've not seen any mailboxes that support IRQ
-mitigation or multiple software interfaces per hardware mailbox, but those
-should be easy enough to add.
+"If the backing device has such discardable extents the backend must
+provide both discard-granularity and discard-alignment."
 
-For the DT binding, I would suggest using something along the lines of
-what we have for clocks, pinctrl and dmaengine. OMAP doesn't use this
-(yet), but now would be a good time to standardize it. The QMTM node
-should define a "#mailbox-cells" property that indicates how many
-32-bit cells a qmtm needs to describe the connection between the
-controller and the slave. My best guess is that this would be hardcoded
-to <3>, using two cells for a 64-bit FIFO bus address, and a 32-bit cell
-for the slave-id signal number. All other parameters that you have in
-the big table in the qmtm driver at the moment can then get moved into
-the slave drivers, as they are constant per type of slave. This will
-simplify the QMTM driver.
+You find it useful to add these recommendations:
 
-In the slave, you should have a "mailboxes" property with a phandle
-to the qmtm followed by the three cells to identify the actual
-queue. If it's possible that a device uses more than one rx and
-one tx queue, we also need a "mailbox-names" property to identify
-the individual queues.
+"Backends supporting discard should include discard-granularity and
+discard-alignment even if it supports discarding individual sectors.
+Frontends should assume discard-aligment == 0 and discard-granularity ==
+sector size if these keys are missing."
 
-For the in-kernel interfaces, we should probably start a conversation
-with the owners of the mailbox drivers to get a common API, for now
-I'd suggest you just leave it as it is, and only adapt for the new
-binding.
+>   * (5) The discard-alignment parameter allows a physical device to be
+>   *     partitioned into virtual devices that do not necessarily begin or
+>   *     end on a discardable extent boundary.
+> @@ -344,6 +346,8 @@
+>   *     grants that can be persistently mapped in the frontend driver, but
+>   *     due to the frontent driver implementation it should never be bigger
+>   *     than RING_SIZE * BLKIF_MAX_SEGMENTS_PER_REQUEST.
+> + *(10) The discard-secure property may be present and will be set to 1 if the
+> + *     backing device supports secure discard.
+>   */
 
-	Arnd
+David
