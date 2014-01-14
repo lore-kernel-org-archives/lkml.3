@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaANTh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 14:37:58 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:46635 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751274AbaANThz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 14:37:55 -0500
-Date: Tue, 14 Jan 2014 13:38:01 -0600
-From: Alex Thorlton <athorlton@sgi.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] mm: thp: Add per-mm_struct flag to control THP
-Message-ID: <20140114193801.GV10649@sgi.com>
-References: <1389383718-46031-1-git-send-email-athorlton@sgi.com>
- <20140110202310.GB1421@node.dhcp.inet.fi>
- <20140110220155.GD3066@sgi.com>
- <20140110221010.GP31570@twins.programming.kicks-ass.net>
- <20140110223909.GA8666@sgi.com>
- <20140114154457.GD4963@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140114154457.GD4963@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751826AbaANTji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 14:39:38 -0500
+Received: from nm12-vm7.bullet.mail.gq1.yahoo.com ([98.136.218.206]:36726 "EHLO
+	nm12-vm7.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751616AbaANTjg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 14:39:36 -0500
+X-Yahoo-Newman-Id: 127610.53910.bm@smtp215.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: q46JbK8VM1mATfynfBgPXs2L8pejLrWkVvqYkxaRktU_VMz
+ sSN9KmZ.0w1zCEI9SyOV4pLqLeDH_AZMueFN2P0SWuozES0Q6tVkMCCrDitC
+ DiEz5wehOwQOhLgOdQeLXJnodg5BNSuA_EDJNC3iyothBcQ7mpDl6MoQLyA.
+ lH1iHDw6PUxW56QxdOO2vjSbnCt08pd_Pc30Hyp3Reeukpx7HDxwyKnrADRN
+ pzAZvSz6bmayl4zNLyD.L1dXNc4mBKTSMnSmHVV_DeMemZ.gSyzyIuwPZViV
+ FX5Q1QxVTTzZAIfw59Y9IBAZRHd8JpD07IGwkWrRmnsCinLR_jfFY2FzZzqZ
+ xNG2FPPREULZIpyptS9R9MKzizwNqann_OYExMQqldNcTPWT5_V1ahX07yK0
+ VU7rqOTCXVUQvRBAuok6Z3kbvVus6h_t6KQU2PNyBfQaoSKa_RrCx06HuT90
+ zC1LID6Hn8tidgPmzhhJlM4yNYzZvdquSW.NiY8s1g8zmQyy1o7c9G1DkhxY
+ DKlHTqgoHagELAwFsSA0-
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [63.250.193.228])
+        by smtp215.mail.gq1.yahoo.com with SMTP; 14 Jan 2014 11:39:35 -0800 PST
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH v2] Staging: comedi: convert while loop to timeout in ni_mio_common.c.
+Date: Tue, 14 Jan 2014 13:38:46 -0600
+Message-Id: <1389728326-23387-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 03:44:57PM +0000, Mel Gorman wrote:
-> On Fri, Jan 10, 2014 at 04:39:09PM -0600, Alex Thorlton wrote:
-> > On Fri, Jan 10, 2014 at 11:10:10PM +0100, Peter Zijlstra wrote:
-> > > We already have the information to determine if a page is shared across
-> > > nodes, Mel even had some prototype code to do splits under those
-> > > conditions.
-> > 
-> > I'm aware that we can determine if pages are shared across nodes, but I
-> > thought that Mel's code to split pages under these conditions had some
-> > performance issues.  I know I've seen the code that Mel wrote to do
-> > this, but I can't seem to dig it up right now.  Could you point me to
-> > it?
-> > 
-> 
-> It was a lot of revisions ago! The git branches no longer exist but the
-> diff from the monolithic patches is below. The baseline was v3.10 and
-> this will no longer apply but you'll see the two places where I added a
-> split_huge_page and prevented khugepaged collapsing them again. 
+This patch to ni_mio_common.c changes a while loop to a timeout for
+loop, which is preferred.
 
-Thanks, Mel.  I remember seeing this code a while back when we were
-discussing THP/locality issues.
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+---
 
-> At the time, the performance with it applied was much worse but it was a
-> 10 minute patch as a distraction. There was a range of basic problems that
-> had to be tackled before there was any point looking at splitting THP due
-> to locality. I did not pursue it further and have not revisited it since.
+I know Mr. Abbott mentioned that he wouldn't expect clean-up patches to have to deal with this sort of thing, but I thought I'd at least give the timeout thing a try.  Feel free to disregard this and take v1 of this patch instead if you would just like the simple clean-up.  That being said, I used 10000 iterations at the suggestion of Mr. Abbott, and a short delay as well.  Let me know if these values seem incorrect.  Also, at some (but not all) locations in this file that currently use timeouts, contain a check for i == timeout, with a call to either printk or comedi_error if the operation actually times out.  Would something like that be required here?
 
-So, in your opinion, is this something we should look into further
-before moving towards the per-mm switch that I propose here?  I
-personally think that it will be tough to get this to perform as well as
-a method that totally disables THP when requested, or a method that
-tries to prevent THPs from being handed out in certain situations, since
-we'll be doing the work of both making and splitting a THP in the case
-where remote accesses are made to the page.
+Sorry for all of the questions, but I'm sort of new around here and I'd like to help out with more than just clean-ups and this seemed like a good opportunity to at least try!
 
-I also think there could be some issues with over-zealously splitting
-pages, since it sounds like we can only determine if an access is from a
-remote node.  We don't have a good way of determining how many accesses
-are remote vs. local, or how many separate nodes are accessing a page.
+2: Changed from simple clean-up to swapping a timeout in for a while loop.
 
-For example, I can see this being a problem if we have a large
-multi-node system, where only two nodes are accessing a THP.  We might
-end up splitting that THP, but if relatively few remote nodes are
-accessing it, it may not be worth the time.  The split only seems
-worthwhile to me if the majority of accesses are remote, which sounds
-like it would be hard to determine.
+ drivers/staging/comedi/drivers/ni_mio_common.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-One thing we could possibly do would be to add some structures to do a
-bit of accounting work into the mm_struct or some other appropriate
-location, then we could keep track of how many distinct remote nodes are
-accessing a THP and decide to split based on that.  However, there's
-still the overhead to creating/splitting the THP, and the extra
-space/time needed to do the proper accounting work may be
-counterproductive (if this is even possible, I'm just thinking out loud
-here).
+diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+index 457b884..05cd5ed 100644
+--- a/drivers/staging/comedi/drivers/ni_mio_common.c
++++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+@@ -687,12 +687,19 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
+ {
+ 	const struct ni_board_struct *board = comedi_board(dev);
+ 	struct ni_private *devpriv = dev->private;
++	static const int timeout = 10000;
++	int i;
+ 
+ 	if (board->reg_type == ni_reg_6143) {
+ 		/*  Flush the 6143 data FIFO */
+ 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
+ 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
+-		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
++		/*  Wait for complete */
++		for (i = 0; i < timeout; i++) {
++			if(!(ni_readl(AIFIFO_Status_6143) & 0x10))
++				break;
++			udelay(1);
++		}
+ 	} else {
+ 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
+ 		if (board->reg_type == ni_reg_625x) {
+-- 
+1.8.4.2
 
-- Alex
