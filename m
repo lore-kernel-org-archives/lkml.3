@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaANO7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:59:06 -0500
-Received: from eu1sys200aog125.obsmtp.com ([207.126.144.159]:55945 "EHLO
-	eu1sys200aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751812AbaANO6i (ORCPT
+	id S1751797AbaANO6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:58:35 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:59278 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751342AbaANO63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:58:38 -0500
+	Tue, 14 Jan 2014 09:58:29 -0500
 From: <srinivas.kandagatla@st.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -16,9 +16,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Russell King <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <srinivas.kandagatla@st.com>
-Subject: [PATCH v1 5/5] ARM:STi: STiH415: Add interrupt support for pin controller
-Date: Tue, 14 Jan 2014 14:52:33 +0000
-Message-ID: <1389711153-21171-1-git-send-email-srinivas.kandagatla@st.com>
+Subject: [PATCH v1 3/5] pinctrl: st: Add software edge trigger interrupt support.
+Date: Tue, 14 Jan 2014 14:52:21 +0000
+Message-ID: <1389711141-21090-1-git-send-email-srinivas.kandagatla@st.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1389711077-20949-1-git-send-email-srinivas.kandagatla@st.com>
 References: <1389711077-20949-1-git-send-email-srinivas.kandagatla@st.com>
@@ -31,291 +31,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-This patch adds interrupt support for STiH415 pin controllers.
+ST pin controller does not have hardware support for detecting edge
+triggered interrupts, It only has level triggering support.
+This patch attempts to fake up edge triggers from hw level trigger
+support in software. With this facility now the gpios can be easily used
+for keypads, otherwise it would be difficult for drivers like keypads to
+work with level trigger interrupts.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 ---
- arch/arm/boot/dts/stih415-pinctrl.dtsi |   75 ++++++++++++++++++++++++++++++++
- 1 files changed, 75 insertions(+), 0 deletions(-)
+ drivers/pinctrl/pinctrl-st.c |   66 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 64 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-index a9324fa..21b3b53 100644
---- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-@@ -7,6 +7,7 @@
-  * publishhed by the Free Software Foundation.
-  */
- #include "st-pincfg.h"
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
- / {
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 03c0cfd..7d2780e 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -271,6 +271,24 @@ struct st_pctl_group {
+ 	struct st_pinconf	*pin_conf;
+ };
  
- 	aliases {
-@@ -45,35 +46,49 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih415-sbc-pinctrl";
- 			st,syscfg	= <&syscfg_sbc>;
-+			reg 		= <0xfe61f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 180 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges 		= <0 0xfe610000 0x5000>;
++#define ST_IRQ_EDGE_CONF_BITS_PER_PIN	4
++#define ST_IRQ_EDGE_MASK		0xf
++#define ST_IRQ_EDGE_FALLING		BIT(0)
++#define ST_IRQ_EDGE_RISING		BIT(1)
++#define ST_IRQ_EDGE_BOTH		(BIT(0) | BIT(1))
++
++#define ST_IRQ_RISING_EDGE_CONF(pin) \
++	(ST_IRQ_EDGE_RISING << (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN))
++
++#define ST_IRQ_FALLING_EDGE_CONF(pin) \
++	(ST_IRQ_EDGE_FALLING << (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN))
++
++#define ST_IRQ_BOTH_EDGE_CONF(pin) \
++	(ST_IRQ_EDGE_BOTH << (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN))
++
++#define ST_IRQ_EDGE_CONF(conf, pin) \
++	(conf >> (pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN) & ST_IRQ_EDGE_MASK)
++
+ struct st_gpio_bank {
+ 	struct gpio_chip		gpio_chip;
+ 	struct pinctrl_gpio_range	range;
+@@ -278,6 +296,8 @@ struct st_gpio_bank {
+ 	struct st_pio_control		pc;
+ 	struct	irq_domain		*domain;
+ 	int				gpio_irq;
++	unsigned long			irq_edge_conf;
++	spinlock_t                      lock;
+ };
  
- 			PIO0: gpio@fe610000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO0";
- 			};
- 			PIO1: gpio@fe611000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO1";
- 			};
- 			PIO2: gpio@fe612000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO2";
- 			};
- 			PIO3: gpio@fe613000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO3";
- 			};
- 			PIO4: gpio@fe614000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO4";
- 			};
-@@ -169,53 +184,73 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih415-front-pinctrl";
- 			st,syscfg	= <&syscfg_front>;
-+			reg 		= <0xfee0f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 181 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfee00000 0x8000>;
+ struct st_pinctrl {
+@@ -1241,20 +1261,40 @@ static void st_gpio_irq_enable(struct irq_data *d)
+ static int st_gpio_irq_set_type(struct irq_data *d, unsigned type)
+ {
+ 	struct st_gpio_bank *bank = irq_data_get_irq_chip_data(d);
++	unsigned long flags;
+ 	int comp, pin = d->hwirq;
+ 	u32 val;
++	u32 pin_edge_conf = 0;
  
- 			PIO5: gpio@fee00000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO5";
- 			};
- 			PIO6: gpio@fee01000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO6";
- 			};
- 			PIO7: gpio@fee02000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO7";
- 			};
- 			PIO8: gpio@fee03000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO8";
- 			};
- 			PIO9: gpio@fee04000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO9";
- 			};
- 			PIO10: gpio@fee05000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x5000 0x100>;
- 				st,bank-name	= "PIO10";
- 			};
- 			PIO11: gpio@fee06000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x6000 0x100>;
- 				st,bank-name	= "PIO11";
- 			};
- 			PIO12: gpio@fee07000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x7000 0x100>;
- 				st,bank-name	= "PIO12";
- 			};
-@@ -244,41 +279,57 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih415-rear-pinctrl";
- 			st,syscfg	= <&syscfg_rear>;
-+			reg 		= <0xfe82f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 182 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfe820000 0x8000>;
+ 	switch (type) {
+ 	case IRQ_TYPE_LEVEL_HIGH:
+ 		comp = 0;
+ 		break;
++	case IRQ_TYPE_EDGE_FALLING:
++		comp = 0;
++		pin_edge_conf = ST_IRQ_FALLING_EDGE_CONF(pin);
++		break;
+ 	case IRQ_TYPE_LEVEL_LOW:
+ 		comp = 1;
+ 		break;
++	case IRQ_TYPE_EDGE_RISING:
++		comp = 1;
++		pin_edge_conf = ST_IRQ_RISING_EDGE_CONF(pin);
++		break;
++	case IRQ_TYPE_EDGE_BOTH:
++		comp = st_gpio_get(&bank->gpio_chip, pin);
++		pin_edge_conf = ST_IRQ_BOTH_EDGE_CONF(pin);
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
  
- 			PIO13: gpio@fe820000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO13";
- 			};
- 			PIO14: gpio@fe821000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO14";
- 			};
- 			PIO15: gpio@fe822000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO15";
- 			};
- 			PIO16: gpio@fe823000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO16";
- 			};
- 			PIO17: gpio@fe824000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO17";
- 			};
- 			PIO18: gpio@fe825000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x5000 0x100>;
- 				st,bank-name	= "PIO18";
- 			};
-@@ -329,23 +380,33 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih415-left-pinctrl";
- 			st,syscfg	= <&syscfg_left>;
-+			reg 		= <0xfd6bf080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfd6b0000 0x3000>;
++	spin_lock_irqsave(&bank->lock, flags);
++	bank->irq_edge_conf &=  ~(ST_IRQ_EDGE_MASK << (
++				pin * ST_IRQ_EDGE_CONF_BITS_PER_PIN));
++	bank->irq_edge_conf |= pin_edge_conf;
++	spin_unlock_irqrestore(&bank->lock, flags);
++
+ 	val = readl(bank->base + REG_PIO_PCOMP);
+ 	val &= ~BIT(pin);
+ 	val |= (comp << pin);
+@@ -1266,7 +1306,12 @@ static int st_gpio_irq_set_type(struct irq_data *d, unsigned type)
+ static void __gpio_irq_handler(struct st_gpio_bank *bank)
+ {
+ 	unsigned long port_in, port_mask, port_comp, port_active;
+-	int n;
++	unsigned long bank_edge_mask, flags;
++	int n, val, pin_edge_cfg;
++
++	spin_lock_irqsave(&bank->lock, flags);
++	bank_edge_mask = bank->irq_edge_conf;
++	spin_unlock_irqrestore(&bank->lock, flags);
  
- 			PIO100: gpio@fd6b0000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO100";
- 			};
- 			PIO101: gpio@fd6b1000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO101";
- 			};
- 			PIO102: gpio@fd6b2000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO102";
- 			};
-@@ -356,35 +417,49 @@
- 			#size-cells	= <1>;
- 			compatible	= "st,stih415-right-pinctrl";
- 			st,syscfg	= <&syscfg_right>;
-+			reg 		= <0xfd33f080 0x4>;
-+			reg-names	= "irqmux";
-+			interrupts 	= <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupts-names = "irqmux";
- 			ranges		= <0 0xfd330000 0x5000>;
+ 	port_in = readl(bank->base + REG_PIO_PIN);
+ 	port_comp = readl(bank->base + REG_PIO_PCOMP);
+@@ -1275,6 +1320,22 @@ static void __gpio_irq_handler(struct st_gpio_bank *bank)
+ 	port_active = (port_in ^ port_comp) & port_mask;
  
- 			PIO103: gpio@fd330000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0 0x100>;
- 				st,bank-name	= "PIO103";
- 			};
- 			PIO104: gpio@fd331000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x1000 0x100>;
- 				st,bank-name	= "PIO104";
- 			};
- 			PIO105: gpio@fd332000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x2000 0x100>;
- 				st,bank-name	= "PIO105";
- 			};
- 			PIO106: gpio@fd333000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x3000 0x100>;
- 				st,bank-name	= "PIO106";
- 			};
- 			PIO107: gpio@fd334000 {
- 				gpio-controller;
- 				#gpio-cells	= <1>;
-+				interrupt-controller;
-+				#interrupt-cells = <2>;
- 				reg		= <0x4000 0x100>;
- 				st,bank-name	= "PIO107";
- 			};
+ 	for_each_set_bit(n, &port_active, BITS_PER_LONG) {
++		/* check if we are detecting fake edges ... */
++		pin_edge_cfg = ST_IRQ_EDGE_CONF(bank_edge_mask, n);
++
++		if (pin_edge_cfg) {
++			/* edge detection. */
++			val = st_gpio_get(&bank->gpio_chip, n);
++			if (val)
++				writel(BIT(n), bank->base + REG_PIO_SET_PCOMP);
++			else
++				writel(BIT(n), bank->base + REG_PIO_CLR_PCOMP);
++
++			if (pin_edge_cfg != ST_IRQ_EDGE_BOTH &&
++				!((pin_edge_cfg & ST_IRQ_EDGE_FALLING) ^ val))
++					continue;
++		}
++
+ 		generic_handle_irq(irq_find_mapping(bank->domain, n));
+ 	}
+ }
+@@ -1334,7 +1395,7 @@ static int st_gpio_irq_domain_map(struct irq_domain *h,
+ 	struct st_gpio_bank *bank = h->host_data;
+ 
+ 	irq_set_chip(virq, &st_gpio_irqchip);
+-	irq_set_handler(virq, handle_level_irq);
++	irq_set_handler(virq, handle_simple_irq);
+ 	set_irq_flags(virq, IRQF_VALID);
+ 	irq_set_chip_data(virq, bank);
+ 
+@@ -1392,6 +1453,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
+ 	bank->gpio_chip.base = bank_num * ST_GPIO_PINS_PER_BANK;
+ 	bank->gpio_chip.ngpio = ST_GPIO_PINS_PER_BANK;
+ 	bank->gpio_chip.of_node = np;
++	spin_lock_init(&bank->lock);
+ 
+ 	of_property_read_string(np, "st,bank-name", &range->name);
+ 	bank->gpio_chip.label = range->name;
 -- 
 1.7.6.5
 
