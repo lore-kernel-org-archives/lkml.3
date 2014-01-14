@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaANA0k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:26:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53880 "EHLO
+	id S1755878AbaANBKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:10:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560AbaANA01 (ORCPT
+	with ESMTP id S1752658AbaANA0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:27 -0500
+	Mon, 13 Jan 2014 19:26:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Segall <bsegall@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        pjt@google.com, Ingo Molnar <mingo@kernel.org>,
-        Chris J Arges <chris.j.arges@canonical.com>
-Subject: [PATCH 3.4 25/27] sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
-Date: Mon, 13 Jan 2014 16:26:39 -0800
-Message-Id: <20140114002624.092562582@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 12/27] net: unix: allow bind to fail on mutex lock
+Date: Mon, 13 Jan 2014 16:26:26 -0800
+Message-Id: <20140114002623.715420222@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
 References: <20140114002623.356220317@linuxfoundation.org>
@@ -30,57 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Segall <bsegall@google.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit db06e78cc13d70f10877e0557becc88ab3ad2be8 upstream.
+[ Upstream commit 37ab4fa7844a044dc21fde45e2a0fc2f3c3b6490 ]
 
-hrtimer_expires_remaining does not take internal hrtimer locks and thus
-must be guarded against concurrent __hrtimer_start_range_ns (but
-returning HRTIMER_RESTART is safe). Use cfs_b->lock to make it safe.
+This is similar to the set_peek_off patch where calling bind while the
+socket is stuck in unix_dgram_recvmsg() will block and cause a hung task
+spew after a while.
 
-Signed-off-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: pjt@google.com
-Link: http://lkml.kernel.org/r/20131016181617.22647.73829.stgit@sword-of-the-dawn.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
+This is also the last place that did a straightforward mutex_lock(), so
+there shouldn't be any more of these patches.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/sched/fair.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ net/unix/af_unix.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1831,7 +1831,13 @@ static const u64 min_bandwidth_expiratio
- /* how long we wait to gather additional slack before distributing */
- static const u64 cfs_bandwidth_slack_period = 5 * NSEC_PER_MSEC;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -712,7 +712,9 @@ static int unix_autobind(struct socket *
+ 	int err;
+ 	unsigned int retries = 0;
  
--/* are we near the end of the current quota period? */
-+/*
-+ * Are we near the end of the current quota period?
-+ *
-+ * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
-+ * hrtimer base being cleared by __hrtimer_start_range_ns. In the case of
-+ * migrate_hrtimers, base is never cleared, so we are fine.
-+ */
- static int runtime_refresh_within(struct cfs_bandwidth *cfs_b, u64 min_expire)
- {
- 	struct hrtimer *refresh_timer = &cfs_b->period_timer;
-@@ -1907,10 +1913,12 @@ static void do_sched_cfs_slack_timer(str
- 	u64 expires;
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		return err;
  
- 	/* confirm we're still not at a refresh boundary */
--	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration))
-+	raw_spin_lock(&cfs_b->lock);
-+	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration)) {
-+		raw_spin_unlock(&cfs_b->lock);
- 		return;
-+	}
+ 	err = 0;
+ 	if (u->addr)
+@@ -845,7 +847,9 @@ static int unix_bind(struct socket *sock
+ 		goto out;
+ 	addr_len = err;
  
--	raw_spin_lock(&cfs_b->lock);
- 	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
- 		runtime = cfs_b->runtime;
- 		cfs_b->runtime = 0;
+-	mutex_lock(&u->readlock);
++	err = mutex_lock_interruptible(&u->readlock);
++	if (err)
++		goto out;
+ 
+ 	err = -EINVAL;
+ 	if (u->addr)
 
 
