@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaANSTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:19:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54483 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472AbaANSTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:19:00 -0500
-Message-ID: <52D57F75.7060308@zytor.com>
-Date: Tue, 14 Jan 2014 10:18:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751855AbaANSVB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:21:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60684 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaANSU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:20:57 -0500
+Date: Tue, 14 Jan 2014 10:21:35 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ebiederm@xmission.com
+Subject: Re: [RFC] sysfs_rename_link() and its usage
+Message-ID: <20140114182135.GA29296@kroah.com>
+References: <20140114171740.GB1867@redhat.com>
 MIME-Version: 1.0
-To: Dave Young <dyoung@redhat.com>, Arjan van de Ven <arjan@linux.intel.com>
-CC: Borislav Petkov <bp@alien8.de>, Linux EFI <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Toshi Kani <toshi.kani@hp.com>
-Subject: Re: [PATCH 1/4] x86, ptdump: Add the functionality to dump an arbitrary
- pagetable
-References: <1389473370-1940-1-git-send-email-bp@alien8.de> <1389473370-1940-2-git-send-email-bp@alien8.de> <20140113053240.GA11237@dhcp-16-126.nay.redhat.com> <20140113101822.GA5388@pd.tnic> <20140113122320.GA1900@darkstar.nay.redhat.com> <52D3FCAA.7070004@linux.intel.com> <20140114014003.GB4327@dhcp-16-126.nay.redhat.com>
-In-Reply-To: <20140114014003.GB4327@dhcp-16-126.nay.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114171740.GB1867@redhat.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2014 05:40 PM, Dave Young wrote:
-> On 01/13/14 at 06:48am, Arjan van de Ven wrote:
->> On 1/13/2014 4:23 AM, Dave Young wrote:
->>>>
->>>>> How about do not limit to only if (pgd) case, instead do something
->>>>> like below: set dump_to_dmesg as a module parameter
->>>>
->>>> X86_PTDUMP is not a module.
->>>
->>> Hmm, I just see the module macros in the code, since it's a bool Kconfig
->>> I think the dump_pagetables.c need a cleanup,
->>> remove the #include <linux/module.h> and below lines:
->>> MODULE_LICENSE("GPL");
->>> MODULE_AUTHOR("Arjan van de Ven <arjan@linux.intel.com>");
->>> MODULE_DESCRIPTION("Kernel debugging helper that dumps pagetables");
->>
->> personally I consider it good form to always have this kind of information in .c files,
->> regardless of the KConfig side of thing...
+On Tue, Jan 14, 2014 at 06:17:40PM +0100, Veaceslav Falico wrote:
+> Hi,
 > 
-> I agree it's good to add these infomation, but they can be added in comment.
-> IMHO it will be better in that way.
+> I'm hitting a strange issue and/or I'm completely lost in sysfs internals.
 > 
+> Consider having two net_device *a, *b; which are registered normally.
+> Now, to create a link from /sys/class/net/a->name/linkname to b, one should
+> use:
+> 
+> sysfs_create_link(&(a->dev.kobj), &(b->dev.kobj), linkname);
+> 
+> To remove it, even simpler:
+> 
+> sysfs_remove_link(&(a->dev.kobj), linkname);
+> 
+> This works like a charm. However, if I want to use (obviously, with the
+> symlink present):
+> 
+> sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
 
-Why the [Finnish] do you feel that information needs to be in a
-different form because it is (currently!) not available as a module?
+You forgot the namespace option to this call, what kernel version are
+you using here?
 
-	-hpa
+> this fails with:
+> 
+> "sysfs: ns invalid in 'a->name' for 'oldname'"
 
+Looks like the namespace for this link isn't valid.
 
+> in
+> 
+>  608 struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
+> ...
+>  615         if (!!sysfs_ns_type(parent_sd) != !!ns) {
+>  616                 WARN(1, KERN_WARNING "sysfs: ns %s in '%s' for '%s'\n",
+>  617                         sysfs_ns_type(parent_sd) ? "required" : "invalid",
+>  618                         parent_sd->s_name, name);
+>  619                 return NULL;
+>  620         }
+> 
+> Code path:
+> warn_slowpath_fmt+0x46/0x50
+> sysfs_get_dirent_ns+0x30/0x80
+> sysfs_find_dirent+0x84/0x110
+> sysfs_get_dirent_ns+0x3e/0x80
+> sysfs_rename_link_ns+0x54/0xd0
+> 
+> I have no idea what this code means. Is there any reason for it to
+> fail (i.e. am I doing something wrong?) or I've hit a bug?
+
+What exactly are you trying to do here?  Care to provide a pointer to
+your code somewhere?
+
+> I've tested the only user of it (bridge) - and it works fine, however it's
+> not using its own net_device's kobject but rather its own dir.
+
+The driver core also uses this function, and it works there, so I'd
+blame your code :)
+
+thanks,
+
+greg k-h
