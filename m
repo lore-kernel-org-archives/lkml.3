@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaANAzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:55:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54169 "EHLO
+	id S1754223AbaANA4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:56:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495AbaANA1s (ORCPT
+	with ESMTP id S1753488AbaANA1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 13 Jan 2014 19:27:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 55/62] intel_pstate: Add X86_FEATURE_APERFMPERF to cpu match parameters.
-Date: Mon, 13 Jan 2014 16:27:20 -0800
-Message-Id: <20140114002712.027849359@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 54/62] mac80211: move "bufferable MMPDU" check to fix AP mode scan
+Date: Mon, 13 Jan 2014 16:27:19 -0800
+Message-Id: <20140114002712.000491278@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002710.464561569@linuxfoundation.org>
 References: <20140114002710.464561569@linuxfoundation.org>
@@ -29,36 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 6cbd7ee10e2842a3d1f9b60abede1c8f3d1f1130 upstream.
+commit 277d916fc2e959c3f106904116bb4f7b1148d47a upstream.
 
-KVM environments do not support APERF/MPERF MSRs. intel_pstate cannot
-operate without these registers.
+The check needs to apply to both multicast and unicast packets,
+otherwise probe requests on AP mode scans are sent through the multicast
+buffer queue, which adds long delays (often longer than the scanning
+interval).
 
-The previous validity checks in intel_pstate_msrs_not_valid() are
-insufficent in nested KVMs.
-
-References: https://bugzilla.redhat.com/show_bug.cgi?id=1046317
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/mac80211/tx.c |   23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -516,7 +516,8 @@ static void intel_pstate_timer_func(unsi
- }
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -447,7 +447,6 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ {
+ 	struct sta_info *sta = tx->sta;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+ 	struct ieee80211_local *local = tx->local;
  
- #define ICPU(model, policy) \
--	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_ANY, (unsigned long)&policy }
-+	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_APERFMPERF,\
-+			(unsigned long)&policy }
+ 	if (unlikely(!sta))
+@@ -458,15 +457,6 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
+ 		int ac = skb_get_queue_mapping(tx->skb);
  
- static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
- 	ICPU(0x2a, default_policy),
+-		/* only deauth, disassoc and action are bufferable MMPDUs */
+-		if (ieee80211_is_mgmt(hdr->frame_control) &&
+-		    !ieee80211_is_deauth(hdr->frame_control) &&
+-		    !ieee80211_is_disassoc(hdr->frame_control) &&
+-		    !ieee80211_is_action(hdr->frame_control)) {
+-			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
+-			return TX_CONTINUE;
+-		}
+-
+ 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+@@ -509,9 +499,22 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ static ieee80211_tx_result debug_noinline
+ ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+ {
++	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
++	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
++
+ 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
+ 		return TX_CONTINUE;
+ 
++	/* only deauth, disassoc and action are bufferable MMPDUs */
++	if (ieee80211_is_mgmt(hdr->frame_control) &&
++	    !ieee80211_is_deauth(hdr->frame_control) &&
++	    !ieee80211_is_disassoc(hdr->frame_control) &&
++	    !ieee80211_is_action(hdr->frame_control)) {
++		if (tx->flags & IEEE80211_TX_UNICAST)
++			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
++		return TX_CONTINUE;
++	}
++
+ 	if (tx->flags & IEEE80211_TX_UNICAST)
+ 		return ieee80211_tx_h_unicast_ps_buf(tx);
+ 	else
 
 
