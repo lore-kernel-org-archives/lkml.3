@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaANBRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 20:17:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53807 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaANA0O (ORCPT
+	id S1752146AbaANBTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 20:19:43 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35030 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaANBTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:26:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nat Gurumoorthy <natg@google.com>, Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 10/27] tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
-Date: Mon, 13 Jan 2014 16:26:24 -0800
-Message-Id: <20140114002623.658000760@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002623.356220317@linuxfoundation.org>
-References: <20140114002623.356220317@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Mon, 13 Jan 2014 20:19:39 -0500
+Message-ID: <52D4909B.7070107@oracle.com>
+Date: Tue, 14 Jan 2014 09:19:23 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Minchan Kim <minchan@kernel.org>
+CC: Cai Liu <cai.liu@samsung.com>, sjenning@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, liucai.lfn@gmail.com
+Subject: Re: [PATCH] mm/zswap: Check all pool pages instead of one pool pages
+References: <000101cf0ea0$f4e7c560$deb75020$@samsung.com> <20140113233505.GS1992@bbox>
+In-Reply-To: <20140113233505.GS1992@bbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On 01/14/2014 07:35 AM, Minchan Kim wrote:
+> Hello,
+> 
+> On Sat, Jan 11, 2014 at 03:43:07PM +0800, Cai Liu wrote:
+>> zswap can support multiple swapfiles. So we need to check
+>> all zbud pool pages in zswap.
+> 
+> True but this patch is rather costly that we should iterate
+> zswap_tree[MAX_SWAPFILES] to check it. SIGH.
+> 
+> How about defining zswap_tress as linked list instead of static
+> array? Then, we could reduce unnecessary iteration too much.
+> 
 
-From: Nat Gurumoorthy <natg@google.com>
+But if use linked list, it might not easy to access the tree like this:
+struct zswap_tree *tree = zswap_trees[type];
 
-[ Upstream commit 388d3335575f4c056dcf7138a30f1454e2145cd8 ]
+BTW: I'm still prefer to use dynamic pool size, instead of use
+zswap_is_full(). AFAIR, Seth has a plan to replace the rbtree with radix
+which will be more flexible to support this feature and page migration
+as well.
 
-The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
-uninitialized. From power on reset this register may have garbage in it. The
-Register Base Address register defines the device local address of a
-register. The data pointed to by this location is read or written using
-the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
-garbage any read or write of Register Data Register (PCI 128) will cause the
-PCI bus to lock up. The TCO watchdog will fire and bring down the system.
+> Other question:
+> Why do we need to update zswap_pool_pages too frequently?
+> As I read the code, I think it's okay to update it only when user
+> want to see it by debugfs and zswap_is_full is called.
+> So could we optimize it out?
+> 
+>>
+>> Signed-off-by: Cai Liu <cai.liu@samsung.com>
 
-Signed-off-by: Nat Gurumoorthy <natg@google.com>
-Acked-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |    3 +++
- 1 file changed, 3 insertions(+)
+Reviewed-by: Bob Liu <bob.liu@oracle.com>
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -14671,6 +14671,9 @@ static int __devinit tg3_get_invariants(
- 	/* Clear this out for sanity. */
- 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
- 
-+	/* Clear TG3PCI_REG_BASE_ADDR to prevent hangs. */
-+	tw32(TG3PCI_REG_BASE_ADDR, 0);
-+
- 	pci_read_config_dword(tp->pdev, TG3PCI_PCISTATE,
- 			      &pci_state_reg);
- 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
-
-
+>> ---
+>>  mm/zswap.c |   18 +++++++++++++++---
+>>  1 file changed, 15 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/mm/zswap.c b/mm/zswap.c
+>> index d93afa6..2438344 100644
+>> --- a/mm/zswap.c
+>> +++ b/mm/zswap.c
+>> @@ -291,7 +291,6 @@ static void zswap_free_entry(struct zswap_tree *tree,
+>>  	zbud_free(tree->pool, entry->handle);
+>>  	zswap_entry_cache_free(entry);
+>>  	atomic_dec(&zswap_stored_pages);
+>> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+>>  }
+>>  
+>>  /* caller must hold the tree lock */
+>> @@ -405,10 +404,24 @@ cleanup:
+>>  /*********************************
+>>  * helpers
+>>  **********************************/
+>> +static u64 get_zswap_pool_pages(void)
+>> +{
+>> +	int i;
+>> +	u64 pool_pages = 0;
+>> +
+>> +	for (i = 0; i < MAX_SWAPFILES; i++) {
+>> +		if (zswap_trees[i])
+>> +			pool_pages += zbud_get_pool_size(zswap_trees[i]->pool);
+>> +	}
+>> +	zswap_pool_pages = pool_pages;
+>> +
+>> +	return pool_pages;
+>> +}
+>> +
+>>  static bool zswap_is_full(void)
+>>  {
+>>  	return (totalram_pages * zswap_max_pool_percent / 100 <
+>> -		zswap_pool_pages);
+>> +		get_zswap_pool_pages());
+>>  }
+>>  
+>>  /*********************************
+>> @@ -716,7 +729,6 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+>>  
+>>  	/* update stats */
+>>  	atomic_inc(&zswap_stored_pages);
+>> -	zswap_pool_pages = zbud_get_pool_size(tree->pool);
+>>  
+>>  	return 0;
+>>  
+>> -- 
+>> 1.7.10.4
+-- 
+Regards,
+-Bob
