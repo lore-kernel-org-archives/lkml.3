@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634AbaANSiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:38:51 -0500
-Received: from sauhun.de ([89.238.76.85]:48352 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751472AbaANSis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:38:48 -0500
-Date: Tue, 14 Jan 2014 19:38:45 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c: i2c-core: fix coding style issues in i2c-core.c
-Message-ID: <20140114183845.GD10340@katana>
-References: <525C0CDB.6020305@gmail.com>
+	id S1751662AbaANSnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:43:10 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:49906 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485AbaANSnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:43:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Feng Kan <fkan@apm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH V2 1/6] Documentation: add dts binding for X-Gene reboot dts node.
+Date: Tue, 14 Jan 2014 19:42:37 +0100
+Message-ID: <12661649.81PZ6nxnIe@wuerfel>
+User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <CAL85gmD+34VKSHsGXWTbQ2w3razo_cKukfe=dSQJi+x-Zfvtpw@mail.gmail.com>
+References: <1389135041-16062-1-git-send-email-fkan@apm.com> <201401140706.13406.arnd@arndb.de> <CAL85gmD+34VKSHsGXWTbQ2w3razo_cKukfe=dSQJi+x-Zfvtpw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GyRA7555PLgSTuth"
-Content-Disposition: inline
-In-Reply-To: <525C0CDB.6020305@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:KC42ho7/Q1UxaWXigOEabVNhdlZkjem5Sez3YW4ukAa
+ BDPomCUSeclpCGfPq5+lQXsQuswR+dlMdfR4rerjPIZIeo7Xap
+ 0Lz3TUlgvCblFgqYejPKZdDLguRnymigfTQ4ItIfGFHLCb0wKU
+ 3z3DqxA8kZosQ+yso2nocw2DRzXmCLVjws/45AHRMcGxdIFjXI
+ 7EvDdkAWg7wA/S3TP0mt3BR2FYogmlocjrorcXxOrewJ50aO6C
+ Bwo/15hVDVbcuYLBBwQnzILpZqy6WqRB+1a8cqimM82QSsFFQr
+ k3LceIqrGwB3JVfIjW7DoQNPdY1rULYuE9l+1CVS9+jZlFQ921
+ fXjSoXPlXnS4J2iKeoAQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 14 January 2014 10:35:33 Feng Kan wrote:
+> On Mon, Jan 13, 2014 at 10:06 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 14 January 2014, Feng Kan wrote:
+> >>
+> >> >
+> >> > Is this related to the standard ARM SCU that manages multiprocessor
+> >> > systems, or a different unit that uses the same name?
+> >>
+> >> FKAN: You mean the snoop control unit in ARM. This is different from
+> >> that, the main function of this unit is clk control.
+> >
+> > Hmm, if it's *mainly* used for clocks, you may actually just want to
+> > have a driver in drivers/clk for it that also performs a few of the
+> > other things on the side.
+> >
+> 
+> FKAN: there among other thing, reset controls, fuse id's and deep sleep
+> resume registers... I like your idea of using syscon, we can have a node
+> for SCU and then the specific driver to parse out the needed chunk to use.
 
---GyRA7555PLgSTuth
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, sounds good.
 
-
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1737,9 +1737,9 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
->  		for (ret = 0; ret < num; ret++) {
->  			dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, len=%d%s\n",
->  				ret,
-> -				((msgs[ret].flags & I2C_M_RD) ? 'R' : 'W'),
-> +				msgs[ret].flags & I2C_M_RD ? 'R' : 'W',
->  				msgs[ret].addr, msgs[ret].len,
-> -				(msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
-> +				msgs[ret].flags & I2C_M_RECV_LEN ? "+" : "");
-
-Don't spend time changing too much here like the paranthesis. It will
-probably be removed soon in favour of the tracing approach.
-
-> @@ -2120,7 +2120,8 @@ EXPORT_SYMBOL(i2c_smbus_read_byte);
->  s32 i2c_smbus_write_byte(const struct i2c_client *client, u8 value)
->  {
->  	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-> -				I2C_SMBUS_WRITE, value, I2C_SMBUS_BYTE, NULL);
-> +			      I2C_SMBUS_WRITE, value,
-> +			      I2C_SMBUS_BYTE, NULL);
-
-Not worth the change IMO. Just drop this patch.
-
-
---GyRA7555PLgSTuth
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1YQ1AAoJEBQN5MwUoCm2cWUP/iPQ/gtly2Xlct1tCpcpehdR
-6BURkU26U5+BKU4dmJUoBkgt3ipC6lvID8mKyV2/pFipv0n8yTjnllP4W/6eckTU
-y2F9craZizBgLE2XQVT4LDtUBuf9AqoI4ynjLIePHVU35WmwkBJ+rjTJ/C+tU2pQ
-kFQxWrAthhtxiyPWFO+0kQyu3KB82T8fpxXnHIlKk35bRhV9elmUZk5UDcwR7c3v
-1UhyK5ELfj/ANAmZqb2T8SefTMM84HVyfrUYt02To0uERZShMKGuhwaHA5dktz+N
-h9P+QAFO5+ksGQdCLiLeFSSIsx/wFMaeh5pO8nS6Ie25+/JPFRfoQb3KyGQ2DZDo
-lUuD1A+c+/it6O6jiwjz1VjiCvqLSvaVeCYw7EdSLpGbu6JO1+mUciTk/+QLOPqC
-33evlEyvxm7ntyZVy/Bf2/0/Wmv0o1BGGJ/4CTBxU2l2HKyJrGtEM8hwQg6vQXwr
-FW7FxShTYWZEVHhNLJpanjRU+LnFrQOfBbzhkp7mfZBvwTCKKm2qHSwYR0DBtgji
-SubgrGxHshRsxJOlytW+10e3abgYs/wKZZeSTpBLnvGeaBCYnUTHLtJOq2V/Srmn
-Bg/ue1p2r+oi1P9426cArbxk2nDRQn+rvKyEPQ4P4DImROjYAAsmHN6A8+XQNJST
-L6dNMjA8g/OSqSx3Y6Pk
-=N2k1
------END PGP SIGNATURE-----
-
---GyRA7555PLgSTuth--
+	Arnd
