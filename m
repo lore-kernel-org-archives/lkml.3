@@ -1,66 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaANJqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 04:46:07 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:39609 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751599AbaANJqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 04:46:02 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'walt'" <w41ter@gmail.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-Thread-Topic: [PATCH 3.12 033/118] usb: xhci: Link TRB must not occur within
- a USB payload burst [NEW HARDWARE]
-Thread-Index: AQHPELhlWPjDYPI+s0G+DC1zL1oFlJqD+AZQ
-Date: Tue, 14 Jan 2014 09:43:57 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D45B08A@AcuExch.aculab.com>
-References: <20140109235045.GA17660@xanatos> <52D4791B.3030309@gmail.com>
-In-Reply-To: <52D4791B.3030309@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1751492AbaANJwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 04:52:38 -0500
+Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:46761
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750999AbaANJwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 04:52:34 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] ASoC: add snd_soc_of_parse_audio_simple_widgets for DeviceTree
+Date: Tue, 14 Jan 2014 16:54:24 +0800
+Message-ID: <1389689664-24980-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0E9kEfN031586
 
-From: walt
-> On 01/09/2014 03:50 PM, Sarah Sharp wrote:
-> 
-> >>> On Tue, Jan 07, 2014 at 03:57:00PM -0800, walt wrote:
-> >>
-> >> I've wondered if my xhci problems might be caused by hardware quirks, and
-> >> wondering why I seem to be the only one who has this problem.
-> >>
-> >> Maybe I could "take one for the team" by buying new hardware toys that I
-> >> don't really need but I could use to test the xhci driver?  (I do enjoy
-> >> buying new toys, necessary, or, um, maybe not :)
-> >
-> > It would be appreciated if you could see if your device causes other
-> > host controllers to fail.  Who am I to keep a geek from new toys? ;)
-> 
-> Sarah, I just fixed my xhci bug for US$19.99 :)
-> 
-> #lspci | tail -1
-> 04:00.0 USB controller: NEC Corporation uPD720200 USB 3.0 Host Controller (rev 03)
+This patch adds snd_soc_of_parse_audio_simple_widgets() and supports
+below style of widgets name on DT.
 
-Do you know which version of the xhci spec it conforms to?
-(Will probably be 0.96 or 1.00).
+"wname-prefix[ individual name]"
+"wname-prefix" includes: "Mic", "Line", "Hp", "Spk"...
 
-Of course, ASMedia will probably change the silicon they are using without
-changing anything on the packaging.
+For instance:
+	simple-audio-widgets =
+	        "Mic Jack", "Line In Jack",
+	        "Hp Jack", "Spk Ext",
+	        "Line Out Jack";
 
-	David
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ include/sound/soc.h  |  2 ++
+ sound/soc/soc-core.c | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
+
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 03ce45b..b2b5900 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -1172,6 +1172,8 @@ void snd_soc_util_exit(void);
+ 
+ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
+ 			       const char *propname);
++int snd_soc_of_parse_audio_simple_widgets(struct snd_soc_card *card,
++					  const char *propname);
+ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 				   const char *propname);
+ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 3a128f0..36cadd3 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4417,6 +4417,68 @@ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_of_parse_card_name);
+ 
++static struct snd_soc_dapm_widget simple_widgets[] = {
++	SND_SOC_DAPM_MIC("Mic", NULL),
++	SND_SOC_DAPM_LINE("Line", NULL),
++	SND_SOC_DAPM_HP("Hp", NULL),
++	SND_SOC_DAPM_SPK("Spk", NULL),
++};
++
++int snd_soc_of_parse_audio_simple_widgets(struct snd_soc_card *card,
++					  const char *propname)
++{
++	struct device_node *np = card->dev->of_node;
++	struct snd_soc_dapm_widget *widgets;
++	const char *wname;
++	int i, j, cnt, ret;
++
++	cnt = of_property_count_strings(np, propname);
++	if (cnt <= 0) {
++		dev_err(card->dev,
++			"ASoC: Property '%s' does not exist or "
++			"length is zero\n", propname);
++		return -EINVAL;
++	}
++
++	widgets = devm_kcalloc(card->dev, cnt, sizeof(*widgets), GFP_KERNEL);
++	if (!widgets) {
++		dev_err(card->dev,
++			"ASoC: Could not allocate DAPM widgets table\n");
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < cnt; i++) {
++		ret = of_property_read_string_index(np, propname, i, &wname);
++		if (ret) {
++			dev_err(card->dev,
++				"ASoC: Property '%s' index %d could not be read: %d\n",
++				propname, i, ret);
++			return -EINVAL;
++		}
++
++		for (j = 0; j < ARRAY_SIZE(simple_widgets); j++) {
++			if (!strncmp(wname, simple_widgets[j].name,
++					strlen(simple_widgets[j].name))) {
++				widgets[i] = simple_widgets[j];
++				break;
++			}
++		}
++
++		if (j >= ARRAY_SIZE(simple_widgets)) {
++			dev_err(card->dev,
++				"ASoC: DAPM widget : '%s' is not supported\n",
++				wname);
++			return -EINVAL;
++		}
++	}
++
++	card->dapm_widgets = widgets;
++	card->num_dapm_widgets = cnt;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_of_parse_audio_simple_widgets);
++
+ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 				   const char *propname)
+ {
+-- 
+1.8.4
+
+
