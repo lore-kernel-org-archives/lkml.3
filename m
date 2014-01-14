@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaANOQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 09:16:54 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:61470 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaANOQv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 09:16:51 -0500
+	id S1752012AbaANORE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 09:17:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38052 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751990AbaANOQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 09:16:59 -0500
+Date: Tue, 14 Jan 2014 08:15:53 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 5/7] drivers/usb/dwc3: don't check resource with
+ devm_ioremap_resource
+Message-ID: <20140114141553.GC15785@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
+ <1389700739-3696-5-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-In-Reply-To: <20140114134525.GA29558@localhost>
-References: <20140114134525.GA29558@localhost>
-Date: Tue, 14 Jan 2014 15:16:49 +0100
-Message-ID: <CANq1E4QPXyU0iW3jNz7SJvQFxW5KjJ0EwGeDiv3LDFE4m8oMzg@mail.gmail.com>
-Subject: Re: [drm] BUG: spinlock lockup suspected on CPU#0, swapper/0/1
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dave Airlie <airlied@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0vzXIDBeUiKkjNJl"
+Content-Disposition: inline
+In-Reply-To: <1389700739-3696-5-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--0vzXIDBeUiKkjNJl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 14, 2014 at 2:45 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Hi David,
->
-> I'm not sure if this is a good bisect because the errors are noisy,
-> however it's good to inform you of this possibility.
->
-> First bad commit may be a3483353c ("drm: check for !kdev in drm_unplug_minor()")
+On Tue, Jan 14, 2014 at 12:58:56PM +0100, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+>=20
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+>=20
+> Should go via subsystem tree
 
-To be honest, I doubt that it's somehow related to this commit. We
-replace "!device_is_registered(minor->kdev)" with a "!minor->kdev".
-Both of these expressions have no side-effects (especially the latter
-one) and they only evaluate to true during DRM unplugging. Having said
-that, your log also contains this:
+too late for v3.14, I'll merge this for v3.15.
 
-[   12.058502] [drm] Initialized drm 1.1.0 20060810
-[   12.059918] [drm] radeon kernel modesetting enabled.
-[   12.061791] [drm:cirrus_vram_init] *ERROR* can't reserve VRAM
-[   12.063409] cirrus 0000:00:02.0: Fatal error during GPU init: -6
-[   12.064914] Trying to free nonexistent resource <00000000febf0000-000000=
-00febf0fff>
+--=20
+balbi
 
-The DRM cirrus driver fails to load and given the error message I
-suspect the error-path is not clean. Dave Airlie should know more
-about cirrus, but I really think this is related to cirrus not
-correctly cleaning up it's resources. Dave, any ideas? Disbling
-CONFIG_CIRRUS should be a good workaround, in case anyone cares.
+--0vzXIDBeUiKkjNJl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The commit in question highly reduces the required stack-space during
-DRM unload (which includes the cirrus error-path) so I think the
-bisect was alright, but the commit is not the actual culprit. It just
-reveals some stack-corruption, I guess.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Thanks
-David
+iQIcBAEBAgAGBQJS1UaZAAoJEIaOsuA1yqREiUQP/iFrJMNula/ahJS4P+C6d6Kk
+ZbtbWqM2pnK0qld127ZGl6haqtBURGio9sQhbz5Lggj4ha8flslyc3em8opd/2El
+b6wDQuiLEkAlIVW8Il+PAJsuCI5u/c8IEnuOSKLAxS4i8RmYTu929t4ikE/Q0VJW
+wV5b8GjU2pqavCQhUSenB0EY+C7kmUE60+G6I3xTCnhnAJURgwaIB66UWv+JAyGK
+CcRVb+giefRqu0VFUjPe8qLY1Eorgc74ZoLXaXkksUJvephRAq1hIIUc5JXXNNQT
+Z/LaQx4ernsDiXQI7GJ+ONNhIBvgFLvbEsixviPEb55k+hxmOML9evMPvrxZ/J+X
+plD2sk6GNcNPD4k8EiJ5wI9zvvHUAaqg+fAj2Gc0hhVO00k1QoVv7ukJn4RpWYRZ
+mOBW7c8axfu/tB3lo10WDAl1ICZ0gh9i3Cv9OZ/Ongt6MN42AvsUuhU3Gpgq3P4J
+CWVCacSTdEAOE3GrO1PdnO+oufQeeP/j935fRdpYt1cbg8QwYW5+yUNFEY9TaUHm
+CB0ol7nidPn1P0Ss4CV/1UgWcl0FIqhaQ+YRyffIk+GuAwMOttHKxv8TkO0aMzUv
+PTtQiGzVyBLK0EMetXSu9kbX8p5Dp28Cks8+bvlAo676SOW+rJVBdhV28cYQaG7y
+fxcoxyUoZG13b5y8Oi4C
+=JAMQ
+-----END PGP SIGNATURE-----
+
+--0vzXIDBeUiKkjNJl--
