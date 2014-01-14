@@ -1,289 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaANSDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:03:45 -0500
-Received: from mga14.intel.com ([143.182.124.37]:21807 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537AbaANSBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:01:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,658,1384329600"; 
-   d="scan'208";a="458691543"
-Subject: [RFC][PATCH 5/9] mm: rearrange struct page
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        penberg@kernel.org, cl@linux-foundation.org,
-        Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 14 Jan 2014 10:00:55 -0800
-References: <20140114180042.C1C33F78@viggo.jf.intel.com>
-In-Reply-To: <20140114180042.C1C33F78@viggo.jf.intel.com>
-Message-Id: <20140114180055.21691733@viggo.jf.intel.com>
+	id S1751918AbaANSBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:01:14 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:60982 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaANSBK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:01:10 -0500
+Message-ID: <52D57B60.9020209@twiddle.net>
+Date: Tue, 14 Jan 2014 10:01:04 -0800
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Matt Turner <mattst88@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Daniel J Blueman <daniel@numascale.com>, Waiman Long <waiman.long@hp.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+References: <52D353C8.4000000@numascale.com> <52D4172E.6030706@hp.com> <52D4A0C7.5070601@numascale.com> <20140114110307.GW7572@laptop.programming.kicks-ass.net> <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com>
+In-Reply-To: <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/14/2014 09:08 AM, Matt Turner wrote:
+> On Tue, Jan 14, 2014 at 3:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, Jan 14, 2014 at 10:28:23AM +0800, Daniel J Blueman wrote:
+>>>> Peter,
+>>>>
+>>>> I found out that the build failure was caused by the fact that the
+>>>> __native_word() macro (used internally by compiletime_assert_atomic())
+>>>> allows only a size of 4 or 8 for x86-64. The data type that I used is a
+>>>> byte. Is there a reason why byte and short are not considered native?
+>>>
+>>> It seems likely it was implemented like that since there was no existing
+>>> need; long can be relied on as the largest native type, so this should
+>>> suffice and works here:
+>>
+>> There's Alphas that cannot actually atomically adres a byte; I do not
+>> konw if Linux cares about them, but if it does, we cannot in fact rely
+>> on this in generic primitives like this.
+> 
+> That's right, and thanks for the heads-up. Alpha can only address 4
+> and 8 bytes atomically. (LDL_L, LDQ_L, STL_C, STQ_C).
+> 
+> The Byte-Word extension in EV56 doesn't add new atomics, so in fact no
+> Alphas can address < 4 bytes atomically.
+> 
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Emulated with aligned 4 byte atomics, and masking.  The same is true for arm,
+ppc, mips which, depending on cpu, also lack < 4 byte atomics.
 
-To make the layout of 'struct page' look nicer, I broke
-up a few of the unions.  But, this has a cost: things that
-were guaranteed to line up before might not any more.  To make up
-for that, some BUILD_BUG_ON()s are added to manually check for
-the alignment dependencies.
 
-This makes it *MUCH* more clear how the first few fields of
-'struct page' get used by the slab allocators.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/include/linux/mm_types.h |   99 ++++++++++++++++++++++-----------------------
- b/mm/slab.c                |    6 +-
- b/mm/slab_common.c         |   17 +++++++
- b/mm/slob.c                |   25 +++++------
- 4 files changed, 83 insertions(+), 64 deletions(-)
-
-diff -puN include/linux/mm_types.h~rearrange-struct-page include/linux/mm_types.h
---- a/include/linux/mm_types.h~rearrange-struct-page	2014-01-14 09:57:57.429681606 -0800
-+++ b/include/linux/mm_types.h	2014-01-14 09:57:57.437681965 -0800
-@@ -46,26 +46,59 @@ struct page {
- 	unsigned long flags;		/* Atomic flags, some possibly
- 					 * updated asynchronously */
- 	union {
--		struct address_space *mapping;	/* If low bit clear, points to
--						 * inode address_space, or NULL.
--						 * If page mapped as anonymous
--						 * memory, low bit is set, and
--						 * it points to anon_vma object:
--						 * see PAGE_MAPPING_ANON below.
--						 */
--		void *s_mem;			/* slab first object */
--	};
--
--	/* Second double word */
--	struct {
--		union {
-+		struct /* the normal uses */ {
- 			pgoff_t index;		/* Our offset within mapping. */
--			void *freelist;		/* sl[aou]b first free object */
-+			/*
-+			 * mapping: If low bit clear, points to
-+			 * inode address_space, or NULL.  If page
-+			 * mapped as anonymous memory, low bit is
-+			 * set, and it points to anon_vma object:
-+			 * see PAGE_MAPPING_ANON below.
-+			 */
-+			struct address_space *mapping;
-+			/*
-+			 * Count of ptes mapped in mms, to show when page
-+			 * is mapped & limit reverse map searches.
-+			 *
-+			 * Used also for tail pages refcounting instead
-+			 * of _count. Tail pages cannot be mapped and
-+			 * keeping the tail page _count zero at all times
-+			 * guarantees get_page_unless_zero() will never
-+			 * succeed on tail pages.
-+			 */
-+			atomic_t _mapcount;
-+			atomic_t _count;
-+		}; /* end of the "normal" use */
-+
-+		struct { /* SLUB */
-+			void *unused;
-+			void *freelist;
-+			unsigned inuse:16;
-+			unsigned objects:15;
-+			unsigned frozen:1;
-+			atomic_t dontuse_slub_count;
- 		};
--
--		union {
-+		struct { /* SLAB */
-+			void *s_mem;
-+			void *slab_freelist;
-+			unsigned int active;
-+			atomic_t dontuse_slab_count;
-+		};
-+		struct { /* SLOB */
-+			void *slob_unused;
-+			void *slob_freelist;
-+			unsigned int units;
-+			atomic_t dontuse_slob_count;
-+		};
-+		/*
-+		 * This is here to help the slub code deal with
-+		 * its inuse/objects/frozen bitfields as a single
-+		 * blob.
-+		 */
-+		struct { /* slub helpers */
-+			void *slubhelp_unused;
-+			void *slubhelp_freelist;
- #if defined(CONFIG_SLUB_ATTEMPT_CMPXCHG_DOUBLE)
--			/* Used for cmpxchg_double in slub */
- 			unsigned long counters;
- #else
- 			/*
-@@ -75,38 +108,6 @@ struct page {
- 			 */
- 			unsigned counters;
- #endif
--
--			struct {
--
--				union {
--					/*
--					 * Count of ptes mapped in
--					 * mms, to show when page is
--					 * mapped & limit reverse map
--					 * searches.
--					 *
--					 * Used also for tail pages
--					 * refcounting instead of
--					 * _count. Tail pages cannot
--					 * be mapped and keeping the
--					 * tail page _count zero at
--					 * all times guarantees
--					 * get_page_unless_zero() will
--					 * never succeed on tail
--					 * pages.
--					 */
--					atomic_t _mapcount;
--
--					struct { /* SLUB */
--						unsigned inuse:16;
--						unsigned objects:15;
--						unsigned frozen:1;
--					};
--					int units;	/* SLOB */
--				};
--				atomic_t _count;		/* Usage count, see below. */
--			};
--			unsigned int active;	/* SLAB */
- 		};
- 	};
- 
-diff -puN mm/slab.c~rearrange-struct-page mm/slab.c
---- a/mm/slab.c~rearrange-struct-page	2014-01-14 09:57:57.431681696 -0800
-+++ b/mm/slab.c	2014-01-14 09:57:57.439682054 -0800
-@@ -1955,7 +1955,7 @@ static void slab_destroy(struct kmem_cac
- {
- 	void *freelist;
- 
--	freelist = page->freelist;
-+	freelist = page->slab_freelist;
- 	slab_destroy_debugcheck(cachep, page);
- 	if (unlikely(cachep->flags & SLAB_DESTROY_BY_RCU)) {
- 		struct rcu_head *head;
-@@ -2543,7 +2543,7 @@ static void *alloc_slabmgmt(struct kmem_
- 
- static inline unsigned int *slab_freelist(struct page *page)
- {
--	return (unsigned int *)(page->freelist);
-+	return (unsigned int *)(page->slab_freelist);
- }
- 
- static void cache_init_objs(struct kmem_cache *cachep,
-@@ -2648,7 +2648,7 @@ static void slab_map_pages(struct kmem_c
- 			   void *freelist)
- {
- 	page->slab_cache = cache;
--	page->freelist = freelist;
-+	page->slab_freelist = freelist;
- }
- 
- /*
-diff -puN mm/slab_common.c~rearrange-struct-page mm/slab_common.c
---- a/mm/slab_common.c~rearrange-struct-page	2014-01-14 09:57:57.432681741 -0800
-+++ b/mm/slab_common.c	2014-01-14 09:57:57.440682099 -0800
-@@ -676,3 +676,20 @@ static int __init slab_proc_init(void)
- }
- module_init(slab_proc_init);
- #endif /* CONFIG_SLABINFO */
-+#define SLAB_PAGE_CHECK(field1, field2)        \
-+	BUILD_BUG_ON(offsetof(struct page, field1) !=   \
-+		     offsetof(struct page, field2))
-+/*
-+ * To make the layout of 'struct page' look nicer, we've broken
-+ * up a few of the unions.  Folks declaring their own use of the
-+ * first few fields need to make sure that their use does not
-+ * interfere with page->_count.  This ensures that the individual
-+ * users' use actually lines up with the real ->_count.
-+ */
-+void slab_build_checks(void)
-+{
-+	SLAB_PAGE_CHECK(_count, dontuse_slab_count);
-+	SLAB_PAGE_CHECK(_count, dontuse_slub_count);
-+	SLAB_PAGE_CHECK(_count, dontuse_slob_count);
-+}
-+
-diff -puN mm/slob.c~rearrange-struct-page mm/slob.c
---- a/mm/slob.c~rearrange-struct-page	2014-01-14 09:57:57.434681830 -0800
-+++ b/mm/slob.c	2014-01-14 09:57:57.440682099 -0800
-@@ -219,7 +219,8 @@ static void *slob_page_alloc(struct page
- 	slob_t *prev, *cur, *aligned = NULL;
- 	int delta = 0, units = SLOB_UNITS(size);
- 
--	for (prev = NULL, cur = sp->freelist; ; prev = cur, cur = slob_next(cur)) {
-+	for (prev = NULL, cur = sp->slob_freelist; ;
-+	     prev = cur,  cur = slob_next(cur)) {
- 		slobidx_t avail = slob_units(cur);
- 
- 		if (align) {
-@@ -243,12 +244,12 @@ static void *slob_page_alloc(struct page
- 				if (prev)
- 					set_slob(prev, slob_units(prev), next);
- 				else
--					sp->freelist = next;
-+					sp->slob_freelist = next;
- 			} else { /* fragment */
- 				if (prev)
- 					set_slob(prev, slob_units(prev), cur + units);
- 				else
--					sp->freelist = cur + units;
-+					sp->slob_freelist = cur + units;
- 				set_slob(cur + units, avail - units, next);
- 			}
- 
-@@ -321,7 +322,7 @@ static void *slob_alloc(size_t size, gfp
- 
- 		spin_lock_irqsave(&slob_lock, flags);
- 		sp->units = SLOB_UNITS(PAGE_SIZE);
--		sp->freelist = b;
-+		sp->slob_freelist = b;
- 		INIT_LIST_HEAD(&sp->lru);
- 		set_slob(b, SLOB_UNITS(PAGE_SIZE), b + SLOB_UNITS(PAGE_SIZE));
- 		set_slob_page_free(sp, slob_list);
-@@ -368,7 +369,7 @@ static void slob_free(void *block, int s
- 	if (!slob_page_free(sp)) {
- 		/* This slob page is about to become partially free. Easy! */
- 		sp->units = units;
--		sp->freelist = b;
-+		sp->slob_freelist = b;
- 		set_slob(b, units,
- 			(void *)((unsigned long)(b +
- 					SLOB_UNITS(PAGE_SIZE)) & PAGE_MASK));
-@@ -388,15 +389,15 @@ static void slob_free(void *block, int s
- 	 */
- 	sp->units += units;
- 
--	if (b < (slob_t *)sp->freelist) {
--		if (b + units == sp->freelist) {
--			units += slob_units(sp->freelist);
--			sp->freelist = slob_next(sp->freelist);
-+	if (b < (slob_t *)sp->slob_freelist) {
-+		if (b + units == sp->slob_freelist) {
-+			units += slob_units(sp->slob_freelist);
-+			sp->slob_freelist = slob_next(sp->slob_freelist);
- 		}
--		set_slob(b, units, sp->freelist);
--		sp->freelist = b;
-+		set_slob(b, units, sp->slob_freelist);
-+		sp->slob_freelist = b;
- 	} else {
--		prev = sp->freelist;
-+		prev = sp->slob_freelist;
- 		next = slob_next(prev);
- 		while (b > next) {
- 			prev = next;
-_
+r~
