@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaANN2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:28:03 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:54954 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751329AbaANN2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:28:00 -0500
-Message-ID: <52D53B52.1030201@sgi.com>
-Date: Tue, 14 Jan 2014 05:27:46 -0800
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1751673AbaANNaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:30:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54428 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751329AbaANNaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 08:30:06 -0500
+Date: Tue, 14 Jan 2014 14:30:05 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: iteration skip memcgs not yet fully
+ initialized
+Message-ID: <20140114133005.GC32227@dhcp22.suse.cz>
+References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
+ <alpine.LSU.2.11.1401131752360.2229@eggly.anvils>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@redhat.com>, Jason Wessel <jason.wessel@windriver.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, Russ Anderson <rja@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] PATCH: UV/NMI Fix tip/bot/kbuild test robot problems
-References: <20140114042407.913800664@asylum.americas.sgi.com> <20140114042408.283595833@asylum.americas.sgi.com> <20140114110021.GV7572@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140114110021.GV7572@laptop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1401131752360.2229@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 13-01-14 17:54:04, Hugh Dickins wrote:
+> It is surprising that the mem_cgroup iterator can return memcgs which
+> have not yet been fully initialized.  By accident (or trial and error?)
+> this appears not to present an actual problem; but it may be better to
+> prevent such surprises, by skipping memcgs not yet online.
 
+My understanding was that !online cgroups are not visible for the
+iterator. it is css_online that has to be called before they are made
+visible.
 
-On 1/14/2014 3:00 AM, Peter Zijlstra wrote:
-> On Mon, Jan 13, 2014 at 10:24:09PM -0600, Mike Travis wrote:
->> Fix some problems found by the kbuild test robot.
->>
->> Signed-off-by: Mike Travis <travis@sgi.com>
->> Reviewed-by: Hedi Berriche <hedi@sgi.com>
+Tejun?
+ 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+> Decide for yourself whether to take this or not.  I spent quite a while
+> digging into a mysterious "trying to register non-static key" issue from
+> lockdep, which originated from the iterator returning a vmalloc'ed memcg
+> a moment before the res_counter_init()s had done their spin_lock_init()s.
+> But the backtrace was an odd one of our own mis-devising, not a charge or
+> reclaim or stats trace, so probably it's never been a problem for vanilla.
 > 
-> In general it is best to actually mention the issues the patch cures,
-> otherwise review is impossible, /me stares hard at Hedi.
+>  mm/memcontrol.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
 > 
+> --- mmotm/mm/memcontrol.c	2014-01-10 18:25:02.236448954 -0800
+> +++ linux/mm/memcontrol.c	2014-01-12 22:21:10.700570471 -0800
+> @@ -1119,10 +1119,8 @@ skip_node:
+>  	 * protected by css_get and the tree walk is rcu safe.
+>  	 */
+>  	if (next_css) {
+> -		struct mem_cgroup *mem = mem_cgroup_from_css(next_css);
+> -
+> -		if (css_tryget(&mem->css))
+> -			return mem;
+> +		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
+> +			return mem_cgroup_from_css(next_css);
+>  		else {
+>  			prev_css = next_css;
+>  			goto skip_node;
 
-I can send an updated patch if required?  The issues were
-pretty trivial so I didn't think more info than the patch
-itself was needed.
-
-Hopefully I don't get a lot more in the future (this was my
-first time), should I include the actual tipbot messages?
-
-Thanks.
-
+-- 
+Michal Hocko
+SUSE Labs
