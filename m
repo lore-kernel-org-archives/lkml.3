@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaANXbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 18:31:50 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:36604 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaANXbo (ORCPT
+	id S1752161AbaANXeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 18:34:44 -0500
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:46167 "HELO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751573AbaANXem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 18:31:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <52D5C6F2.7090607@linux.intel.com>
-References: <20140114133125.GB26942@localhost>
-	<CAGXu5j+uBnEJ2qddoec0Y2z3=yzAYwKE_GjMRhXzc4XRw_Se_g@mail.gmail.com>
-	<52D5C6F2.7090607@linux.intel.com>
-Date: Tue, 14 Jan 2014 15:31:43 -0800
-X-Google-Sender-Auth: oVucMqrmlGwFU5fL4cL0aUnraFA
-Message-ID: <CAGXu5jJLarLeYef0eEfEuVS4pDJf_3my-5BV1O6RX+LP7=hUag@mail.gmail.com>
-Subject: Re: [x86, kaslr] BUG: kernel boot hang
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 14 Jan 2014 18:34:42 -0500
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>
+Cc: linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: [RFC PATCH V2 0/4] APM X-Gene PCIe controller
+Date: Tue, 14 Jan 2014 15:34:14 -0800
+Message-Id: <1389742458-7693-1-git-send-email-tinamdar@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 3:23 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 01/14/2014 02:33 PM, Kees Cook wrote:
->>
->> Can you tell me how the initrd for quantal-core-x86_64.cgz was built
->> in the qemu instances you're using? It seems like all the failures
->> point to a problem with how kASLR is interacting with the initrd.
->>
->
-> If kASLR somehow causes the kernel to collide with the initrd that would
-> be problem...
+This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+cards.
 
-Agreed, but I can't reproduce this yet. The initrd is on the list of
-areas that get avoided, so the fundamental design isn't broken, but
-clearly something is busted.
+X-Gene PCIe controller driver has depedency on the pcie arch support for
+arm64. The arm64 pcie arch support is not yet part of mainline Linux kernel
+and approach for arch support is under discussion with arm64 maintainers.
+The reference patch can be found here --> https://lkml.org/lkml/2013/10/23/244
 
-How long has tip:x86/kaslr been sitting in linux-next? If this is some
-interaction between kaslr and something else, perhaps merge order just
-happens to be pointing at kaslr?
+If someone wishes to test PCIe on X-Gene, arch support patch must be applied
+before the patches in this patch set.
 
-Regardless, all my tests so far against next-20140114 and an initramfs
-haven't seen corruption (using the given .config). I don't have the
-same initrd, though, so I'm hoping getting that will trigger the
-glitch.
+changes since V1:
+1. added PCI domain support
+2. reading cpu and pci addresses from device tree to configure regions.
+3. got rid of unnecessary wrappers for readl and writel.
+4. got rid of endpoint configuration code.
+5. added 'dma-ranges' property support to read inbound region configuration.
+6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
+7. dropped 'clock-names' property from bindings
+8. added comments whereever requested.
 
--Kees
+Tanmay Inamdar (4):
+  pci: APM X-Gene PCIe controller driver
+  arm64:dts: APM X-Gene PCIe device tree nodes
+  dt-bindings: pci: xgene pcie device tree bindings
+  MAINTAINERS: entry for APM X-Gene PCIe host driver
+
+ .../devicetree/bindings/pci/xgene-pcie.txt         |   45 +
+ MAINTAINERS                                        |    7 +
+ arch/arm64/boot/dts/apm-mustang.dts                |    4 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |  144 +++
+ drivers/pci/host/Kconfig                           |   10 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pci-xgene.c                       |  934 ++++++++++++++++++++
+ 7 files changed, 1145 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/xgene-pcie.txt
+ create mode 100644 drivers/pci/host/pci-xgene.c
 
 -- 
-Kees Cook
-Chrome OS Security
+1.7.9.5
+
