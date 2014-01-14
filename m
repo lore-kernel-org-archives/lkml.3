@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaANAcK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:32:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54569 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156AbaANA3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:29:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.12 67/77] ACPI / Battery: Add a _BIX quirk for NEC LZ750/LS
-Date: Mon, 13 Jan 2014 16:28:28 -0800
-Message-Id: <20140114002754.398199487@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
-In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
-References: <20140114002752.497010554@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1754493AbaANAcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:32:20 -0500
+Received: from mga14.intel.com ([143.182.124.37]:9123 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752018AbaANAcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 13 Jan 2014 19:32:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,656,1384329600"; 
+   d="scan'208";a="458230223"
+From: "Allan, Bruce W" <bruce.w.allan@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: RE: bug in sscanf()?
+Thread-Topic: bug in sscanf()?
+Thread-Index: Ac8NbKAkgHr1INwXQ8WF2Iu0CYn2gwDjdKaAAAHXLYAAELY/wA==
+Date: Tue, 14 Jan 2014 00:32:13 +0000
+Message-ID: <804857E1F29AAC47BF68C404FC60A18465432C9C@ORSMSX105.amr.corp.intel.com>
+References: <804857E1F29AAC47BF68C404FC60A1846542A6B2@ORSMSX105.amr.corp.intel.com>
+	<20140113233006.GP10323@ZenIV.linux.org.uk>
+ <CA+55aFy_V8ze2CPmHY0Ga-K-DX_SATVu-Tb=_nKq_1Rb5WqaUQ@mail.gmail.com>
+In-Reply-To: <CA+55aFy_V8ze2CPmHY0Ga-K-DX_SATVu-Tb=_nKq_1Rb5WqaUQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0E0WN9b027917
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> -----Original Message-----
+> From: linus971@gmail.com [mailto:linus971@gmail.com] On Behalf Of Linus
+> Torvalds
+> Sent: Monday, January 13, 2014 4:23 PM
+> To: Al Viro
+> Cc: Allan, Bruce W; linux-kernel@vger.kernel.org; Jan Beulich; Alexey
+> Dobriyan
+> Subject: Re: bug in sscanf()?
+> 
+> On Tue, Jan 14, 2014 at 6:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Comments?
+> 
+> Do we have actual users of this? Because I'd almost be inclined to say
+> "we just don't support field widths on sscanf() and will warn" unless
+> there are users.
+> 
+> We've done that before. The kernel has various limited functions. See
+> the whole snprint() issue with %n, which we decided that supporting
+> the full semantics was actually a big mistake and we actively
+> *removed* code that had been misguidedly added just because people
+> thought we should do everything a standard user library does..
+> 
+> Limiting our problem space is a *good* thing, not a bad thing.
+> 
+> If it's possible, of course, and we don't have nasty users.
+> 
+>            Linus
 
-------------------
+I was hoping to use sscanf() in this way for a driver I'm working on to support
+Thunderbolt device authentication, but if it's too much to ask for I could probably
+work around this.
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+Bruce.
 
-commit a90b40385735af0d3031f98e97b439e8944a31b3 upstream.
-
-The AML method _BIX of NEC LZ750/LS returns a broken package which
-skips the first member "Revision" (ACPI 5.0, Table 10-234).
-
-Add a quirk for this machine to skip member "Revision" during parsing
-the package returned by _BIX.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=67351
-Reported-and-tested-by: Francisco Castro <fcr@adinet.com.uy>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/acpi/battery.c |   21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
-
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -68,6 +68,7 @@ MODULE_AUTHOR("Alexey Starikovskiy <asta
- MODULE_DESCRIPTION("ACPI Battery Driver");
- MODULE_LICENSE("GPL");
- 
-+static int battery_bix_broken_package;
- static unsigned int cache_time = 1000;
- module_param(cache_time, uint, 0644);
- MODULE_PARM_DESC(cache_time, "cache time in milliseconds");
-@@ -443,7 +444,12 @@ static int acpi_battery_get_info(struct
- 		ACPI_EXCEPTION((AE_INFO, status, "Evaluating %s", name));
- 		return -ENODEV;
- 	}
--	if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
-+
-+	if (battery_bix_broken_package)
-+		result = extract_package(battery, buffer.pointer,
-+				extended_info_offsets + 1,
-+				ARRAY_SIZE(extended_info_offsets) - 1);
-+	else if (test_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags))
- 		result = extract_package(battery, buffer.pointer,
- 				extended_info_offsets,
- 				ARRAY_SIZE(extended_info_offsets));
-@@ -1054,6 +1060,17 @@ static int battery_notify(struct notifie
- 	return 0;
- }
- 
-+static struct dmi_system_id bat_dmi_table[] = {
-+	{
-+		.ident = "NEC LZ750/LS",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "NEC"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "PC-LZ750LS"),
-+		},
-+	},
-+	{},
-+};
-+
- static int acpi_battery_add(struct acpi_device *device)
- {
- 	int result = 0;
-@@ -1163,6 +1180,8 @@ static void __init acpi_battery_init_asy
- 	if (!acpi_battery_dir)
- 		return;
- #endif
-+	if (dmi_check_system(bat_dmi_table))
-+		battery_bix_broken_package = 1;
- 	if (acpi_bus_register_driver(&acpi_battery_driver) < 0) {
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 		acpi_unlock_battery_dir(acpi_battery_dir);
-
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
