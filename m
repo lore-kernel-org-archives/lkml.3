@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaANNRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 08:17:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52300 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318AbaANNRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 08:17:51 -0500
-Date: Tue, 14 Jan 2014 14:17:31 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 10/28] perf report: Cache cumulative callchains
-Message-ID: <20140114131731.GC5520@krava.brq.redhat.com>
-References: <1389170793-21926-1-git-send-email-namhyung@kernel.org>
- <1389170793-21926-11-git-send-email-namhyung@kernel.org>
- <20140109180627.GC11793@krava.brq.redhat.com>
- <871u0bbfnd.fsf@sejong.aot.lge.com>
+	id S1751729AbaANNSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 08:18:01 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:40864 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733AbaANNRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 08:17:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871u0bbfnd.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140114125153.GY7572@laptop.programming.kicks-ass.net>
+References: <20140114155331.88d170d3c991b9465c23a537@canb.auug.org.au>
+	<20140114125153.GY7572@laptop.programming.kicks-ass.net>
+Date: Tue, 14 Jan 2014 14:17:55 +0100
+X-Google-Sender-Auth: -kJqBQzm8M5hTulzUFff3VhHfsk
+Message-ID: <CAMuHMdUPJ7pu5J6om+j=Tm8xDXhXU3sD4k7ZP6b4Xu-tF+gK2w@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the tip tree
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 08:55:50AM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> Thanks for reminding me. :)
-> 
-> On Thu, 9 Jan 2014 19:06:28 +0100, Jiri Olsa wrote:
-> > On Wed, Jan 08, 2014 at 05:46:15PM +0900, Namhyung Kim wrote:
-> 
-> [SNIP]
-> >> +	/*
-> >> +	 * Check if there's duplicate entries in the callchain.
-> >> +	 * It's possible that it has cycles or recursive calls.
-> >> +	 */
-> >> +	for (i = 0; i < iter->curr; i++) {
-> >> +		if (hist_entry__cmp(he_cache[i], &he_tmp) == 0)
-> >
-> > we need here:
-> > 			iter->he = he_cache[i];
-> >
-> >> +			return 0;
-> >> +	}
-> >
-> > otherwise iter->he and al are not in sync and 
-> > hist_entry__inc_addr_samples fails in hist_iter_cb
-> 
-> Right.  But the point of the he_cache is to skip duplicate entries.  So
-> I'd like to change it like setting it to NULL and check it before the
-> callback function:
-> 
-> 	while (iter->next_entry(iter, al)) {
-> 		err = iter->add_next_entry(iter, al);
->                 if (err)
-> 			break;
-> 
-> 		if (iter->he && iter->add_entry_cb) {
-> 			err = iter->add_entry_cb(iter, al, ...);
-> 			if (err)
-> 				break;
-> 		}
->         }
-> 
-> What do you think?
+On Tue, Jan 14, 2014 at 1:51 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jan 14, 2014 at 03:53:31PM +1100, Stephen Rothwell wrote:
+>> Today's linux-next merge of the akpm-current tree got a conflict in
+>> kernel/futex.c between commit a52b89ebb6d4 ("futexes: Increase hash table
+>> size for better performance") from the tip tree and commit 61beee6c76e5
+>> ("futex: switch to USER_DS for futex test") from the akpm-current tree.
+>>
+>> @@@ -2869,10 -2748,13 +2871,13 @@@
+>>        * implementation, the non-functional ones will return
+>>        * -ENOSYS.
+>>        */
+>> +     fs = get_fs();
+>> +     set_fs(USER_DS);
+>>       if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+>>               futex_cmpxchg_enabled = 1;
+>> +     set_fs(fs);
+>>
+>
+> This seems terribly broken, the *futex_value*() ops should not need
+> that; they are supposed to access userspace without any of that.
 
-yep, better ;-) I saw you sent v6.. I'll check that
+Why don't they need set_fs(USER_DS)?
 
-jirka
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
