@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752AbaANSpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 13:45:55 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46924 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaANSpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 13:45:54 -0500
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Wei Ni <wni@nvidia.com>, Eduardo Valentin <eduardo.valentin@ti.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] thermal: fix default governor assignment
-Date: Tue, 14 Jan 2014 14:45:37 -0400
-Message-ID: <1389725137-16147-1-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+	id S1751672AbaANSrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 13:47:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55142 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751458AbaANSru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 13:47:50 -0500
+Message-ID: <52D58647.4010208@zytor.com>
+Date: Tue, 14 Jan 2014 10:47:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Kees Cook <keescook@chromium.org>, Fengguang Wu <fengguang.wu@intel.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [x86, kaslr] BUG: kernel boot hang
+References: <20140114133125.GB26942@localhost> <CAGXu5jKqx6JYBhHf08ru9B62RdD1A_WX7on64Cw-v1wYKT2jnQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jKqx6JYBhHf08ru9B62RdD1A_WX7on64Cw-v1wYKT2jnQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When registering a thermal zone, passing an invalid
-.governor_name via struct thermal_zone_params may
-create a thermal zone without a governor, when it
-is supposed to be the default governor.
+On 01/14/2014 10:26 AM, Kees Cook wrote:
+>>
+>> [    0.000000] Base memory trampoline at [ffff880000099000] 99000 size 24576
+>> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+>> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+>> [    0.000000] BRK [0x07886000, 0x07886fff] PGTABLE
+>> [    0.000000] BRK [0x07887000, 0x07887fff] PGTABLE
+>> [    0.000000] BRK [0x07888000, 0x07888fff] PGTABLE
+>> PANIC: early exception 0e rip 10:ffffffff86204c6e error 0 cr2 ffffffff81972b28
+>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0-rc4-00008-g6e6a493 #614
+>> PANIC: early exception 0e rip 10:ffffffff86204f22 error 0 cr2 ffffffff81972b28
+> 
+> I will try to reproduce this, but it's not clear to me what is causing
+> the failure. The generated config doesn't look insane to me, so I'm
+> not sure what's happening here. Is QEMU doing something unexpected
+> with the ordering of where things go for its boot loader?
+> 
 
-This patch fixes this issue by assigning the
-default governor, whenever the zone has a governor
-set to NULL.
+It used to, but I fixed it up a long time ago and now it is really bog
+standard.
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Reported-by: Wei Ni <wni@nvidia.com>
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
----
- drivers/thermal/thermal_core.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+More likely it just happens to trigger a corner condition, which is
+actually a good thing... much easier to debug in a simulator.
 
-diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-index a621e90..967d980 100644
---- a/drivers/thermal/thermal_core.c
-+++ b/drivers/thermal/thermal_core.c
-@@ -89,7 +89,7 @@ int thermal_register_governor(struct thermal_governor *governor)
- 	list_for_each_entry(pos, &thermal_tz_list, node) {
- 		if (pos->governor)
- 			continue;
--		if (pos->tzp)
-+		if (pos->tzp && pos->tzp->governor_name)
- 			name = pos->tzp->governor_name;
- 		else
- 			name = DEFAULT_THERMAL_GOVERNOR;
-@@ -1527,9 +1527,10 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
- 	/* Update 'this' zone's governor information */
- 	mutex_lock(&thermal_governor_lock);
- 
--	if (tz->tzp)
-+	if (tz->tzp && tz->tzp->governor_name)
- 		tz->governor = __find_governor(tz->tzp->governor_name);
--	else
-+
-+	if (!tz->governor)
- 		tz->governor = __find_governor(DEFAULT_THERMAL_GOVERNOR);
- 
- 	mutex_unlock(&thermal_governor_lock);
--- 
-1.8.2.1.342.gfa7285d
+	-hpa
+
 
