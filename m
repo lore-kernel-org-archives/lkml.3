@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaANAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 13 Jan 2014 19:39:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54450 "EHLO
+	id S1754662AbaANAjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 13 Jan 2014 19:39:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbaANA2u (ORCPT
+	with ESMTP id S1753926AbaANA2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 13 Jan 2014 19:28:50 -0500
+	Mon, 13 Jan 2014 19:28:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Capper <steve.capper@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.12 50/77] ARM: 7923/1: mm: fix dcache flush logic for compound high pages
-Date: Mon, 13 Jan 2014 16:28:11 -0800
-Message-Id: <20140114002753.928774450@linuxfoundation.org>
+        Fan Du <fan.du@windriver.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.12 17/77] vxlan: release rt when found circular route
+Date: Mon, 13 Jan 2014 16:27:38 -0800
+Message-Id: <20140114002752.989605355@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.5.1.163.gd7aced9
 In-Reply-To: <20140114002752.497010554@linuxfoundation.org>
 References: <20140114002752.497010554@linuxfoundation.org>
@@ -30,50 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Capper <steve.capper@linaro.org>
+From: Fan Du <fan.du@windriver.com>
 
-commit 2a7cfcbc0553365d75716f69ee7b704cac7c9248 upstream.
+[ Upstream commit fffc15a5012e9052d3b236efc56840841a125416 ]
 
-When given a compound high page, __flush_dcache_page will only flush
-the first page of the compound page repeatedly rather than the entire
-set of constituent pages.
+Otherwise causing dst memory leakage.
+Have Checked all other type tunnel device transmit implementation,
+no such things happens anymore.
 
-This error was introduced by:
-   0b19f93 ARM: mm: Add support for flushing HugeTLB pages.
-
-This patch corrects the logic such that all constituent pages are now
-flushed.
-
-Signed-off-by: Steve Capper <steve.capper@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Fan Du <fan.du@windriver.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/mm/flush.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/vxlan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/flush.c
-+++ b/arch/arm/mm/flush.c
-@@ -175,16 +175,16 @@ void __flush_dcache_page(struct address_
- 		unsigned long i;
- 		if (cache_is_vipt_nonaliasing()) {
- 			for (i = 0; i < (1 << compound_order(page)); i++) {
--				void *addr = kmap_atomic(page);
-+				void *addr = kmap_atomic(page + i);
- 				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
- 				kunmap_atomic(addr);
- 			}
- 		} else {
- 			for (i = 0; i < (1 << compound_order(page)); i++) {
--				void *addr = kmap_high_get(page);
-+				void *addr = kmap_high_get(page + i);
- 				if (addr) {
- 					__cpuc_flush_dcache_area(addr, PAGE_SIZE);
--					kunmap_high(page);
-+					kunmap_high(page + i);
- 				}
- 			}
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1672,7 +1672,7 @@ static void vxlan_xmit_one(struct sk_buf
+ 			netdev_dbg(dev, "circular route to %pI4\n",
+ 				   &dst->sin.sin_addr.s_addr);
+ 			dev->stats.collisions++;
+-			goto tx_error;
++			goto rt_tx_error;
  		}
+ 
+ 		/* Bypass encapsulation if the destination is local */
 
 
