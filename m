@@ -1,43 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaANKG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 05:06:58 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:56012 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaANKG4 (ORCPT
+	id S1751630AbaANKLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 05:11:48 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:42797 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751354AbaANKLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 05:06:56 -0500
-From: Unai Uribarri <unaiur@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Unai Uribarri <unaiur@gmail.com>
-Subject: [PATCH] toshiba_acpi: Support RFKILL hotkey scancode
-Date: Tue, 14 Jan 2014 11:06:47 +0100
-Message-Id: <1389694007-8342-1-git-send-email-unaiur@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 14 Jan 2014 05:11:44 -0500
+Message-ID: <52D50C02.3040708@st.com>
+Date: Tue, 14 Jan 2014 10:05:54 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: <srinivas.kandagatla@st.com>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        David Miller <davem@davemloft.net>
+Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 0/9]net: stmmac PM related fixes.
+References: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1384774256-10039-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This scancode is used in new 2013 models like Satellite P75-A7200.
+Hi Dave/Peppe,
+Do you have any plans to take this series?
 
-Signed-off-by: Unai Uribarri <unaiur@gmail.com>
----
- drivers/platform/x86/toshiba_acpi.c |    1 +
- 1 file changed, 1 insertion(+)
+Peppe already Acked these series.
 
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 7fce391..5d23ca2 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -151,6 +151,7 @@ static const struct acpi_device_id toshiba_device_ids[] = {
- MODULE_DEVICE_TABLE(acpi, toshiba_device_ids);
- 
- static const struct key_entry toshiba_acpi_keymap[] = {
-+	{ KE_KEY, 0x9e, { KEY_RFKILL } },
- 	{ KE_KEY, 0x101, { KEY_MUTE } },
- 	{ KE_KEY, 0x102, { KEY_ZOOMOUT } },
- 	{ KE_KEY, 0x103, { KEY_ZOOMIN } },
--- 
-1.7.9.5
+Please let me know if you want me to rebase these patches to a
+particular branch.
+
+Thanks,
+srini
+
+On 18/11/13 11:30, srinivas.kandagatla@st.com wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> 
+> Hi Peppe,
+> 
+> During PM_SUSPEND_FREEZE testing, I have noticed that PM support in STMMAC is
+> partly broken. I had to re-arrange the code to do PM correctly. There were lot
+> of things I did not like personally and some bits did not work in the first
+> place. I thought this is the nice opportunity to clean the mess up.
+> 
+> Here is what I did:
+>  any
+> 1> Test PM suspend freeeze via pm_test
+> It did not work for following reasons.
+>  - If the power to gmac is removed when it enters in low power state.
+> stmmac_resume could not cope up with such behaviour, it was expecting the ip
+> register contents to be still same as before entering low power, This
+> assumption is wrong. So I started to add some code to do Hardware
+> initialization, thats when I started to re-arrange the code. stmmac_open
+> contains both resource and memory allocations and hardware initialization. I
+> had to separate these two things in two different functions.
+> 
+> These two patches do that
+>   net: stmmac: move dma allocation to new function
+>   net: stmmac: move hardware setup for stmmac_open to new function
+> 
+> And rest of the other patches are fixing the loose ends, things like mdio
+> reset, which might be necessary in cases likes hibernation(I did not test).
+> 
+> In hibernation cases the driver was just unregistering with subsystems and
+> releasing resources which I did not like and its not necessary to do this as
+> part of PM. So using the same stmmac_suspend/resume made more sense for
+> hibernation cases than using stmmac_open/release.
+> Also fixed a NULL pointer dereference bug too.
+> 
+> 2> Test WOL via PM_SUSPEND_FREEZE
+> Did get an wakeup interrupt, but could not wakeup a freeze system.
+> So I had to add pm_wakeup_event to the driver.
+> net: stmmac: notify the PM core of a wakeup event. patch.
+> 
+> Also few patches like 
+>   net: stmmac: make stmmac_mdio_reset non-static
+>   net: stmmac: restore pinstate in pm resume.
+> helps the resume function to reset the phy and put back the pins in default
+> state.
+> 
+> Comments?
+> 
+> Thanks,
+> srini
+> 
+> Srinivas Kandagatla (9):
+>   net: stmmac: support max-speed device tree property
+>   net: stmmac: mdio: remove reset gpio free
+>   net: stmmac: move dma allocation to new function
+>   net: stmmac: move hardware setup for stmmac_open to new function
+>   net: stmmac: make stmmac_mdio_reset non-static
+>   net: stmmac: fix power mangement suspend-resume case
+>   net: stmmac: use suspend functions for hibernation
+>   net: stmmac: restore pinstate in pm resume.
+>   net: stmmac: notify the PM core of a wakeup event.
+> 
+>  drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    4 +-
+>  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |  360 ++++++++++----------
+>  drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c  |    3 +-
+>  .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   51 +--
+>  include/linux/stmmac.h                             |    1 +
+>  5 files changed, 209 insertions(+), 210 deletions(-)
+> 
 
