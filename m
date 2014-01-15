@@ -1,90 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222AbaAOSvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:51:15 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54864 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135AbaAOSvK (ORCPT
+	id S1753234AbaAOSvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:51:36 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49388 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaAOSrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:51:10 -0500
-Date: Wed, 15 Jan 2014 18:50:55 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, lgirdwood@gmail.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Message-ID: <20140115185055.GK15567@sirena.org.uk>
-References: <20140115191831.5965d17e@armhf>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/sFzBD2UPiMqxCFT"
-Content-Disposition: inline
-In-Reply-To: <20140115191831.5965d17e@armhf>
-X-Cookie: Marriage is the sole cause of divorce.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Problems with simple-card
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 15 Jan 2014 13:47:40 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCH v5 06/14] clk: qcom: Add support for branches/gate clocks
+Date: Wed, 15 Jan 2014 10:47:26 -0800
+Message-Id: <1389811654-21397-7-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
+In-Reply-To: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>
+References: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/qcom/Makefile     |   1 +
+ drivers/clk/qcom/clk-branch.c | 159 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/qcom/clk-branch.h |  56 +++++++++++++++
+ 3 files changed, 216 insertions(+)
+ create mode 100644 drivers/clk/qcom/clk-branch.c
+ create mode 100644 drivers/clk/qcom/clk-branch.h
 
---/sFzBD2UPiMqxCFT
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
+index 5d0a6e0ac01f..1b4f75f58031 100644
+--- a/drivers/clk/qcom/Makefile
++++ b/drivers/clk/qcom/Makefile
+@@ -4,3 +4,4 @@ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-regmap.o
+ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-pll.o
+ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-rcg.o
+ clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-rcg2.o
++clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-branch.o
+diff --git a/drivers/clk/qcom/clk-branch.c b/drivers/clk/qcom/clk-branch.c
+new file mode 100644
+index 000000000000..6b4d2bcb1a53
+--- /dev/null
++++ b/drivers/clk/qcom/clk-branch.c
+@@ -0,0 +1,159 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/clk-provider.h>
++#include <linux/regmap.h>
++
++#include "clk-branch.h"
++
++static bool clk_branch_in_hwcg_mode(const struct clk_branch *br)
++{
++	u32 val;
++
++	if (!br->hwcg_reg)
++		return 0;
++
++	regmap_read(br->clkr.regmap, br->hwcg_reg, &val);
++
++	return !!(val & BIT(br->hwcg_bit));
++}
++
++static bool clk_branch_check_halt(const struct clk_branch *br, bool enabling)
++{
++	bool invert = (br->halt_check == BRANCH_HALT_ENABLE);
++	u32 val;
++
++	regmap_read(br->clkr.regmap, br->halt_reg, &val);
++
++	val &= BIT(br->halt_bit);
++	if (invert)
++		val = !val;
++
++	return !!val == !enabling;
++}
++
++#define BRANCH_CLK_OFF			BIT(31)
++#define BRANCH_NOC_FSM_STATUS_SHIFT	28
++#define BRANCH_NOC_FSM_STATUS_MASK	0x7
++#define BRANCH_NOC_FSM_STATUS_ON	(0x2 << BRANCH_NOC_FSM_STATUS_SHIFT)
++
++static bool clk_branch2_check_halt(const struct clk_branch *br, bool enabling)
++{
++	u32 val;
++	u32 mask;
++
++	mask = BRANCH_NOC_FSM_STATUS_MASK << BRANCH_NOC_FSM_STATUS_SHIFT;
++	mask |= BRANCH_CLK_OFF;
++
++	regmap_read(br->clkr.regmap, br->halt_reg, &val);
++
++	if (enabling) {
++		val &= mask;
++		return (val & BRANCH_CLK_OFF) == 0 ||
++			val == BRANCH_NOC_FSM_STATUS_ON;
++	} else {
++		return val & BRANCH_CLK_OFF;
++	}
++}
++
++static int clk_branch_wait(const struct clk_branch *br, bool enabling,
++		bool (check_halt)(const struct clk_branch *, bool))
++{
++	bool voted = br->halt_check & BRANCH_VOTED;
++	const char *name = __clk_get_name(br->clkr.hw.clk);
++
++	/* Skip checking halt bit if the clock is in hardware gated mode */
++	if (clk_branch_in_hwcg_mode(br))
++		return 0;
++
++	if (br->halt_check == BRANCH_HALT_DELAY || (!enabling && voted)) {
++		udelay(10);
++	} else if (br->halt_check == BRANCH_HALT_ENABLE ||
++		   br->halt_check == BRANCH_HALT ||
++		   (enabling && voted)) {
++		int count = 200;
++
++		while (count-- > 0) {
++			if (check_halt(br, enabling))
++				return 0;
++			udelay(1);
++		}
++		WARN(1, "%s status stuck at 'o%s'", name,
++				enabling ? "ff" : "n");
++		return -EBUSY;
++	}
++	return 0;
++}
++
++static int clk_branch_toggle(struct clk_hw *hw, bool en,
++		bool (check_halt)(const struct clk_branch *, bool))
++{
++	struct clk_branch *br = to_clk_branch(hw);
++	int ret;
++
++	if (en) {
++		ret = clk_enable_regmap(hw);
++		if (ret)
++			return ret;
++	} else {
++		clk_disable_regmap(hw);
++	}
++
++	return clk_branch_wait(br, en, check_halt);
++}
++
++static int clk_branch_enable(struct clk_hw *hw)
++{
++	return clk_branch_toggle(hw, true, clk_branch_check_halt);
++}
++
++static void clk_branch_disable(struct clk_hw *hw)
++{
++	clk_branch_toggle(hw, false, clk_branch_check_halt);
++}
++
++const struct clk_ops clk_branch_ops = {
++	.enable = clk_branch_enable,
++	.disable = clk_branch_disable,
++	.is_enabled = clk_is_enabled_regmap,
++};
++EXPORT_SYMBOL_GPL(clk_branch_ops);
++
++static int clk_branch2_enable(struct clk_hw *hw)
++{
++	return clk_branch_toggle(hw, true, clk_branch2_check_halt);
++}
++
++static void clk_branch2_disable(struct clk_hw *hw)
++{
++	clk_branch_toggle(hw, false, clk_branch2_check_halt);
++}
++
++const struct clk_ops clk_branch2_ops = {
++	.enable = clk_branch2_enable,
++	.disable = clk_branch2_disable,
++	.is_enabled = clk_is_enabled_regmap,
++};
++EXPORT_SYMBOL_GPL(clk_branch2_ops);
++
++const struct clk_ops clk_branch_simple_ops = {
++	.enable = clk_enable_regmap,
++	.disable = clk_disable_regmap,
++	.is_enabled = clk_is_enabled_regmap,
++};
++EXPORT_SYMBOL_GPL(clk_branch_simple_ops);
+diff --git a/drivers/clk/qcom/clk-branch.h b/drivers/clk/qcom/clk-branch.h
+new file mode 100644
+index 000000000000..284df3f3c55f
+--- /dev/null
++++ b/drivers/clk/qcom/clk-branch.h
+@@ -0,0 +1,56 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __QCOM_CLK_BRANCH_H__
++#define __QCOM_CLK_BRANCH_H__
++
++#include <linux/clk-provider.h>
++
++#include "clk-regmap.h"
++
++/**
++ * struct clk_branch - gating clock with status bit and dynamic hardware gating
++ *
++ * @hwcg_reg: dynamic hardware clock gating register
++ * @hwcg_bit: ORed with @hwcg_reg to enable dynamic hardware clock gating
++ * @halt_reg: halt register
++ * @halt_bit: ANDed with @halt_reg to test for clock halted
++ * @halt_check: type of halt checking to perform
++ * @clkr: handle between common and hardware-specific interfaces
++ *
++ * Clock which can gate its output.
++ */
++struct clk_branch {
++	u32	hwcg_reg;
++	u32	halt_reg;
++	u8	hwcg_bit;
++	u8	halt_bit;
++	u8	halt_check;
++#define BRANCH_VOTED			BIT(7) /* Delay on disable */
++#define BRANCH_HALT			0 /* pol: 1 = halt */
++#define BRANCH_HALT_VOTED		(BRANCH_HALT | BRANCH_VOTED)
++#define BRANCH_HALT_ENABLE		1 /* pol: 0 = halt */
++#define BRANCH_HALT_ENABLE_VOTED	(BRANCH_HALT_ENABLE | BRANCH_VOTED)
++#define BRANCH_HALT_DELAY		2 /* No bit to check; just delay */
++
++	struct clk_regmap clkr;
++};
++
++extern const struct clk_ops clk_branch_ops;
++extern const struct clk_ops clk_branch2_ops;
++extern const struct clk_ops clk_branch_simple_ops;
++
++#define to_clk_branch(_hw) \
++	container_of(to_clk_regmap(_hw), struct clk_branch, clkr)
++
++#endif
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-On Wed, Jan 15, 2014 at 07:18:31PM +0100, Jean-Francois Moine wrote:
-> Xiubo,
-
-Adding Morimoto-san.
-
-> I did a mistake in the v1 of my 'ASoC: simple-card: simplify code': I
-> did not initialize the pointer to the asoc_simple_card_dai_init()
-> function when DT. Then, I fixed that, and the simple card does not work
-> for me.
->=20
-> First, without any 'format' in the DT, I get a fmt for each CPU / CODEC
-> DAI: SND_SOC_DAIFMT_CBS_CFS is always set. Well, some code is executed
-> for nothing, but this is not critical.
->=20
-> The main problem is about sysclk: when there is no clock in the DT,
-> you get the clock of the CPU or CODEC DAI. In my system, two clocks
-> are declared in the controller CPU DAI, but there is no .set_sysclk
-> pointer. So, snd_soc_dai_set_sysclk() returns -EINVAL and the card is
-> not created.
->=20
-> As I don't know why you need these fmt and sysclk, may you have a
-> look at these problems?
->=20
-> --=20
-> Ken ar c'henta=F1	|	      ** Breizh ha Linux atav! **
-> Jef		|		http://moinejf.free.fr/
->=20
-
---/sFzBD2UPiMqxCFT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1tiMAAoJELSic+t+oim9k3YQAI7DXXd58bvI2m3PM9j2RUQv
-emCPuJmDNb+HajVqWCZfz3x5KvvRs/d5ac9NTP4LklUymYsDjyaBXlhE6sq64z3Q
-mjkyG/S77T0+uBf4cH2NUDjCtyMGco3592kCKkN+cEltfbj0kX4QU7ntMPfZMxOI
-Ykh8n0QUl9HeN+beixJd2gXsSCZ1RBgOoMgO4uHhLpT0Jn4z8kXmVHqCSCbrnje0
-5o7z7T5cMsYWMR6l5H99zLjQkjlhffxChcMa3pX/FngGllypRz5wULwyMA/LW1qH
-nHkVo+boPKedLaJkfypPaU8RqGYi6WPIDxi0BOcY46eUl448zzgA8AEvVZR5xBKJ
-MTDgPZ3d+pDCGmB5WWlPMytvelALQ9YW3AeJMtLuGFiX92cZXNGm/Zr+Vyy1DWCn
-JKCyL4196rxzpqLBXcQ0BlPjrU4V/a/bphHWGfzdENaHGIKJOImYERw8/816z5aT
-7xYtcsIwuM+n+xZtUSwa9qjETd3L060qUOcjMegDNlOaPEPnqC3t0PXxFGWH1djV
-gg9V356QJ9xp6oKQvXRM7mJo4/cPmEn1mpZkuoEIbUy/9bJ6Vr/z3x7iom/n1PKk
-zC4N1EawxxGUiEC5/UzFIPfOW+9z/UzofAu4R/zxVjGm5zMVB0D/w8qceNt1p+p5
-sb5g8BZIuf35LaE+YpA9
-=TrGu
------END PGP SIGNATURE-----
-
---/sFzBD2UPiMqxCFT--
