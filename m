@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaAOAMO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:12:14 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6019 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038AbaAOAMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:12:10 -0500
-Date: Tue, 14 Jan 2014 16:13:45 -0800
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Subject: Re: [PATCH v4 5/6] spmi: document the PMIC arbiter SPMI bindings
-Message-ID: <20140115001344.GE23276@sonymobile.com>
-References: <cover.1389738151.git.joshc@codeaurora.org>
- <6dbb1c77001542e093d3af09ea976d402ed24d17.1389738151.git.joshc@codeaurora.org>
+	id S1751957AbaAOAQc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:16:32 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21912 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751730AbaAOAQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 19:16:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="466749182"
+Date: Tue, 14 Jan 2014 16:21:21 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for
+ pdata error code
+Message-ID: <20140115002121.GC18183@psi-dev26.jf.intel.com>
+References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
+ <20131220084953.GB21133@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6dbb1c77001542e093d3af09ea976d402ed24d17.1389738151.git.joshc@codeaurora.org>
+In-Reply-To: <20131220084953.GB21133@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 07:41:39PM +0100, Josh Cartwright wrote:
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  .../bindings/spmi/qcom,spmi-pmic-arb.txt           | 46 ++++++++++++++++++++++
->  1 file changed, 46 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
+Hi Ingo,
+
+On Fri, Dec 20, 2013 at 09:49:53AM +0100, Ingo Molnar wrote:
 > 
-> diff --git a/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt b/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
-> new file mode 100644
-> index 0000000..9e50cb3
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
-> @@ -0,0 +1,46 @@
-> +Qualcomm SPMI Controller (PMIC Arbiter)
-> +
-> +The SPMI PMIC Arbiter is found on the Snapdragon 800 Series.  It is an SPMI
-> +controller with wrapping arbitration logic to allow for multiple on-chip
-> +devices to control a single SPMI master.
-> +
-> +The PMIC Arbiter can also act as an interrupt controller, providing interrupts
-> +to slave devices.
-> +
-> +See spmi.txt for the generic SPMI controller binding requirements for child
-> +nodes.
-> +
-> +Required properties:
-> +- compatible : should be "qcom,spmi-pmic-arb".
-> +- reg-names  : should be "core", "intr", "cnfg"
-> +- reg : register specifiers, must contain 3 entries, in the follow order:
-> +     core registers, interrupt controller registers, configuration registers
+> * David Cohen <david.a.cohen@linux.intel.com> wrote:
+> 
+> > Prevent sfi_handle_*_dev() to register device in case
+> > intel_mid_sfi_get_pdata() failed to execute.
+> > 
+> > Since 'NULL' is a valid return value, this patch makes
+> > sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
+> 
+> Is this bug triggering in practice? If not then please say so in the 
+> changelog. If yes then is this patch desired for v3.13 merging and 
+> also please fix the changelog to conform to the standard changelog 
+> style:
+> 
+>  - first describe the symptoms of the bug - how does a user notice?
+> 
+>  - then describe how the code behaves today and how that is causing
+>    the bug
+> 
+>  - and then only describe how it's fixed.
+> 
+> The first item is the most important one - while developers 
+> (naturally) tend to concentrate on the least important point, the last 
+> one.
 
-As far as I can tell, patch 3/6 doesn't require these to be in any
-order, as it uses 'reg-names' to fetch the values. Perhaps the
-following:
+Thanks for the feedback :)
+This new patch set was done in reply to your comment:
+https://lkml.org/lkml/2013/12/20/517
 
-reg-names : must contain:
-	"core" - core registers
-	"intr" - interrupt controller registers
-	"cnfg" - configuration registers
-reg : A list of address + size pairs for the regs listed in reg-names
+Br, David Cohen
 
-> +- #address-cells : must be set to 2
-> +- #size-cells : must be set to 0
-> +- qcom,ee : indicates the active Execution Environment identifier (0-5)
-> +- qcom,channel : which of the PMIC Arb provided channels to use for accesses (0-5)
-
-These two are new.... Is it expected that they should be required?
-
-> +- interrupt-controller : indicates the PMIC arbiter is an interrupt controller
-
-Although it's probably fairly understood that this is a boolean, it
-wouldn't hurt to mention that here.  It might also be worth referencing
-devicetree/binding/interrupt-controller/interrupts.txt in your opening
-blurb.
-
-> +- #interrupt-cells = <4>:  interrupts are specified as a 4-tuple:
-
-Nitpick: This '= <X>' differs from the above 'must be set to X' format.
-
-> +    cell 1: slave ID for the requested interrupt (0-15)
-> +    cell 2: peripheral ID for requested interrupt (0-255)
-> +    cell 3: the requested peripheral interrupt (0-7)
-> +    cell 4: interrupt flags indicating level-sense information, as defined in
-> +            dt-bindings/interrupt-controller/irq.h
-[...]
-
--Courtney
+> 
+> Thanks,
+> 
+> 	Ingo
