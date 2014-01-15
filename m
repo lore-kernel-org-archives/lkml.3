@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaAOUa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:30:59 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:46598 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618AbaAOUa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:30:56 -0500
-Date: Wed, 15 Jan 2014 15:30:47 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 1/3] memcg: notify userspace about OOM only when and action
- is due
-Message-ID: <20140115203047.GK6963@cmpxchg.org>
-References: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
- <1389798068-19885-2-git-send-email-mhocko@suse.cz>
- <20140115175655.GJ6963@cmpxchg.org>
- <20140115190015.GA22196@dhcp22.suse.cz>
+	id S1751932AbaAOUdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:33:04 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35944 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaAOUdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 15:33:00 -0500
+X-Originating-IP: 173.246.103.110
+Date: Wed, 15 Jan 2014 12:32:45 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 2/4] timers: Reduce __run_timers()
+ latency for empty list
+Message-ID: <20140115203245.GB11147@jtriplet-mobl1>
+References: <20140115051939.GA31164@linux.vnet.ibm.com>
+ <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20140115173858.GC14473@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115190015.GA22196@dhcp22.suse.cz>
+In-Reply-To: <20140115173858.GC14473@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 08:00:15PM +0100, Michal Hocko wrote:
-> On Wed 15-01-14 12:56:55, Johannes Weiner wrote:
-> > On Wed, Jan 15, 2014 at 04:01:06PM +0100, Michal Hocko wrote:
-> > > Userspace is currently notified about OOM condition after reclaim
-> > > fails to uncharge any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
-> > > This usually means that the memcg is really in troubles and an
-> > > OOM action (either done by userspace or kernel) has to be taken.
-> > > The kernel OOM killer however bails out and doesn't kill anything
-> > > if it sees an already dying/exiting task in a good hope a memory
-> > > will be released and the OOM situation will be resolved.
-> > > 
-> > > Therefore it makes sense to notify userspace only after really all
-> > > measures have been taken and an userspace action is required or
-> > > the kernel kills a task.
-> > > 
-> > > This patch is based on idea by David Rientjes to not notify
-> > > userspace when the current task is killed or in a late exiting.
-> > > The original patch, however, didn't handle in kernel oom killer
-> > > back offs which is implemtented by this patch.
-> > > 
-> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > 
-> > OOM is a temporary state because any task can exit at a time that is
-> > not under our control and outside our knowledge.  That's why the OOM
-> > situation is defined by failing an allocation after a certain number
-> > of reclaim and charge attempts.
-> > 
-> > As of right now, the OOM sampling window is MEM_CGROUP_RECLAIM_RETRIES
-> > loops of charge attempts and reclaim.  If a racing task is exiting and
-> > releasing memory during that window, the charge will succeed fine.  If
-> > the sampling window is too short in practice, it will have to be
-> > extended, preferrably through increasing MEM_CGROUP_RECLAIM_RETRIES.
+On Wed, Jan 15, 2014 at 06:38:58PM +0100, Oleg Nesterov wrote:
+> forgot to mention...
 > 
-> The patch doesn't try to address the above race because that one is
-> unfixable. I hope that is clear.
+> On 01/14, Paul E. McKenney wrote:
+> >
+> > +static bool catchup_timer_jiffies(struct tvec_base *base)
+> > +{
+> > +#ifdef CONFIG_NO_HZ_FULL
+> > +	if (!base->all_timers) {
+> > +		base->timer_jiffies = jiffies;
+> > +		return 1;
+> > +	}
+> > +#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> > +	return 0;
+> > +}
 > 
-> It just tries to reduce burden on the userspace oom notification
-> consumers and given them a simple semantic. Notification comes only if
-> an action will be necessary (either kernel kills something or user space
-> is expected).
+> Do we really want ifdef?
+> 
+> This check is cheap, and !CONFIG_NO_HZ_FULL case looks a bit
+> strange because we still update ->all_timers for no reason.
 
-I.e. turn the OOM notification into an OOM kill event notification.
+There's an easy way to improve this: instead of using an ifdef, put
+"IS_ENABLED(CONFIG_NO_HZ_FULL) && " in the if condition.
 
-> E.g. consider a handler which tries to clean up after kernel handled
-> OOM and killed something. If the kernel could back off and refrain
-> from killing anything after the norification already fired up then the
-> userspace has no practical way to detect that (except for checking the
-> kernel log to search for OOM messages which might get suppressed due to
-> rate limitting etc.. Nothing I would call optimal).
-> Or do you think that such a use case doesn't make much sense and it is
-> an abuse of the notification interface?
-
-I'm not sure what such a cleanup would be doing, a real life usecase
-would be useful when we are about to change notification semantics.
-I've heard "taking down the remaining tasks of the job" before, but
-that would be better solved by having the OOM killer operate on
-cgroups as single entities instead of taking out individual tasks.
-
-On the other hand, I can see how people use the OOM notification to
-monitor system/cgroup health.  David argued that vmpressure "critical"
-would be the same thing.  But first of all, this is not an argument to
-change semantics of an established interface.  And secondly, it only
-tells you that reclaim is struggling, it doesn't give you the point of
-failure (the OOM condition), regardless of what the docs claim.
-
-So, please, if you need a new interface, make a clear case for it and
-then we can discuss if it's the right way to go.  We do the same for
-every other user interface, whether it's a syscall, an ioctl, a procfs
-file etc.  Just taking something existing that is close enough and
-skewing the semantics in your favor like this is not okay.
+- Josh Triplett
