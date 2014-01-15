@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaAOVx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:53:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40648 "EHLO
+	id S1752298AbaAOVxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:53:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40740 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409AbaAOVxV (ORCPT
+	with ESMTP id S1752933AbaAOVxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:53:21 -0500
+	Wed, 15 Jan 2014 16:53:42 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Mathy Vanhoef <vanhoefm@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 002/166] selinux: look for IPsec labels on both inbound and outbound packets
-Date: Wed, 15 Jan 2014 13:50:16 -0800
-Message-Id: <1389822780-4729-3-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 126/166] ath9k_htc: properly set MAC address and BSSID mask
+Date: Wed, 15 Jan 2014 13:52:20 -0800
+Message-Id: <1389822780-4729-127-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,143 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Mathy Vanhoef <vanhoefm@gmail.com>
 
-commit 817eff718dca4e54d5721211ddde0914428fbb7c upstream.
+commit 657eb17d87852c42b55c4b06d5425baa08b2ddb3 upstream.
 
-Previously selinux_skb_peerlbl_sid() would only check for labeled
-IPsec security labels on inbound packets, this patch enables it to
-check both inbound and outbound traffic for labeled IPsec security
-labels.
+Pick the MAC address of the first virtual interface as the new hardware MAC
+address. Set BSSID mask according to this MAC address. This fixes CVE-2013-4579.
 
-Reported-by: Janak Desai <Janak.Desai@gtri.gatech.edu>
-[ Paul: backported to 3.4 kernel ]
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Mathy Vanhoef <vanhoefm@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/selinux/hooks.c        |  2 +-
- security/selinux/include/xfrm.h |  9 +++----
- security/selinux/xfrm.c         | 53 ++++++++++++++++++++++++++++++++---------
- 3 files changed, 48 insertions(+), 16 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c | 25 +++++++++++++++++--------
+ drivers/net/wireless/ath/ath9k/main.c         |  5 +++--
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index a3d77ec..1fd031b 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3699,7 +3699,7 @@ static int selinux_skb_peerlbl_sid(struct sk_buff *skb, u16 family, u32 *sid)
- 	u32 nlbl_sid;
- 	u32 nlbl_type;
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_main.c b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+index 2f34993..112116b 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
+@@ -145,21 +145,26 @@ static void ath9k_htc_bssid_iter(void *data, u8 *mac, struct ieee80211_vif *vif)
+ 	struct ath9k_vif_iter_data *iter_data = data;
+ 	int i;
  
--	selinux_skb_xfrm_sid(skb, &xfrm_sid);
-+	selinux_xfrm_skb_sid(skb, &xfrm_sid);
- 	selinux_netlbl_skbuff_getsid(skb, family, &nlbl_type, &nlbl_sid);
- 
- 	err = security_net_peersid_resolve(nlbl_sid, nlbl_type, xfrm_sid, sid);
-diff --git a/security/selinux/include/xfrm.h b/security/selinux/include/xfrm.h
-index 65f67cb..3ffdadc 100644
---- a/security/selinux/include/xfrm.h
-+++ b/security/selinux/include/xfrm.h
-@@ -47,6 +47,7 @@ int selinux_xfrm_sock_rcv_skb(u32 sid, struct sk_buff *skb,
- int selinux_xfrm_postroute_last(u32 isec_sid, struct sk_buff *skb,
- 			struct common_audit_data *ad, u8 proto);
- int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall);
-+int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid);
- 
- static inline void selinux_xfrm_notify_policyload(void)
- {
-@@ -80,12 +81,12 @@ static inline int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int
- static inline void selinux_xfrm_notify_policyload(void)
- {
- }
--#endif
- 
--static inline void selinux_skb_xfrm_sid(struct sk_buff *skb, u32 *sid)
-+static inline int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
- {
--	int err = selinux_xfrm_decode_session(skb, sid, 0);
--	BUG_ON(err);
-+	*sid = SECSID_NULL;
-+	return 0;
- }
-+#endif
- 
- #endif /* _SELINUX_XFRM_H_ */
-diff --git a/security/selinux/xfrm.c b/security/selinux/xfrm.c
-index 8ab2951..1552b91 100644
---- a/security/selinux/xfrm.c
-+++ b/security/selinux/xfrm.c
-@@ -152,21 +152,13 @@ int selinux_xfrm_state_pol_flow_match(struct xfrm_state *x, struct xfrm_policy *
- 	return rc;
- }
- 
--/*
-- * LSM hook implementation that checks and/or returns the xfrm sid for the
-- * incoming packet.
-- */
--
--int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
-+static int selinux_xfrm_skb_sid_ingress(struct sk_buff *skb,
-+					u32 *sid, int ckall)
- {
--	struct sec_path *sp;
-+	struct sec_path *sp = skb->sp;
- 
- 	*sid = SECSID_NULL;
- 
--	if (skb == NULL)
--		return 0;
--
--	sp = skb->sp;
- 	if (sp) {
- 		int i, sid_set = 0;
- 
-@@ -190,6 +182,45 @@ int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
- 	return 0;
- }
- 
-+static u32 selinux_xfrm_skb_sid_egress(struct sk_buff *skb)
-+{
-+	struct dst_entry *dst = skb_dst(skb);
-+	struct xfrm_state *x;
-+
-+	if (dst == NULL)
-+		return SECSID_NULL;
-+	x = dst->xfrm;
-+	if (x == NULL || !selinux_authorizable_xfrm(x))
-+		return SECSID_NULL;
-+
-+	return x->security->ctx_sid;
-+}
-+
-+/*
-+ * LSM hook implementation that checks and/or returns the xfrm sid for the
-+ * incoming packet.
-+ */
-+
-+int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
-+{
-+	if (skb == NULL) {
-+		*sid = SECSID_NULL;
-+		return 0;
+-	for (i = 0; i < ETH_ALEN; i++)
+-		iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
++	if (iter_data->hw_macaddr != NULL) {
++		for (i = 0; i < ETH_ALEN; i++)
++			iter_data->mask[i] &= ~(iter_data->hw_macaddr[i] ^ mac[i]);
++	} else {
++		iter_data->hw_macaddr = mac;
 +	}
-+	return selinux_xfrm_skb_sid_ingress(skb, sid, ckall);
-+}
+ }
+ 
+-static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
++static void ath9k_htc_set_mac_bssid_mask(struct ath9k_htc_priv *priv,
+ 				     struct ieee80211_vif *vif)
+ {
+ 	struct ath_common *common = ath9k_hw_common(priv->ah);
+ 	struct ath9k_vif_iter_data iter_data;
+ 
+ 	/*
+-	 * Use the hardware MAC address as reference, the hardware uses it
+-	 * together with the BSSID mask when matching addresses.
++	 * Pick the MAC address of the first interface as the new hardware
++	 * MAC address. The hardware will use it together with the BSSID mask
++	 * when matching addresses.
+ 	 */
+-	iter_data.hw_macaddr = common->macaddr;
++	iter_data.hw_macaddr = NULL;
+ 	memset(&iter_data.mask, 0xff, ETH_ALEN);
+ 
+ 	if (vif)
+@@ -171,6 +176,10 @@ static void ath9k_htc_set_bssid_mask(struct ath9k_htc_priv *priv,
+ 		ath9k_htc_bssid_iter, &iter_data);
+ 
+ 	memcpy(common->bssidmask, iter_data.mask, ETH_ALEN);
 +
-+int selinux_xfrm_skb_sid(struct sk_buff *skb, u32 *sid)
-+{
-+	int rc;
++	if (iter_data.hw_macaddr)
++		memcpy(common->macaddr, iter_data.hw_macaddr, ETH_ALEN);
 +
-+	rc = selinux_xfrm_skb_sid_ingress(skb, sid, 0);
-+	if (rc == 0 && *sid == SECSID_NULL)
-+		*sid = selinux_xfrm_skb_sid_egress(skb);
-+
-+	return rc;
-+}
-+
- /*
-  * Security blob allocation for xfrm_policy and xfrm_state
-  * CTX does not have a meaningful value on input
+ 	ath_hw_setbssidmask(common);
+ }
+ 
+@@ -1076,7 +1085,7 @@ static int ath9k_htc_add_interface(struct ieee80211_hw *hw,
+ 		goto out;
+ 	}
+ 
+-	ath9k_htc_set_bssid_mask(priv, vif);
++	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ 
+ 	priv->vif_slot |= (1 << avp->index);
+ 	priv->nvifs++;
+@@ -1139,7 +1148,7 @@ static void ath9k_htc_remove_interface(struct ieee80211_hw *hw,
+ 
+ 	ath9k_htc_set_opmode(priv);
+ 
+-	ath9k_htc_set_bssid_mask(priv, vif);
++	ath9k_htc_set_mac_bssid_mask(priv, vif);
+ 
+ 	/*
+ 	 * Stop ANI only if there are no associated station interfaces.
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index e0eb87b..667319b 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -886,8 +886,9 @@ void ath9k_calculate_iter_data(struct ieee80211_hw *hw,
+ 	struct ath_common *common = ath9k_hw_common(ah);
+ 
+ 	/*
+-	 * Use the hardware MAC address as reference, the hardware uses it
+-	 * together with the BSSID mask when matching addresses.
++	 * Pick the MAC address of the first interface as the new hardware
++	 * MAC address. The hardware will use it together with the BSSID mask
++	 * when matching addresses.
+ 	 */
+ 	memset(iter_data, 0, sizeof(*iter_data));
+ 	iter_data->hw_macaddr = common->macaddr;
 -- 
 1.8.3.2
 
