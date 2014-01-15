@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaAOXi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 18:38:58 -0500
-Received: from mail.pdval.gob.ve ([200.11.139.253]:49834 "EHLO
-	mail.pdval.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaAOXiy convert rfc822-to-8bit (ORCPT
+	id S1753177AbaAOXjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:39:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52466 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013AbaAOXjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:38:54 -0500
-X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 18:38:53 EST
-Date: Wed, 15 Jan 2014 19:04:12 -0430 (VET)
-From: "Dr. Joe Miller" <coord_falcon@pdval.gob.ve>
-Reply-To: "dr.joemiller-ubs@hotmail.com" <dr.joemiller-ubs@hotmail.com>
-Message-ID: <32674762.363034.1389828852761.JavaMail.root@pdval.gob.ve>
-Subject: Von Dr. Joe Miller,
+	Wed, 15 Jan 2014 18:39:10 -0500
+Message-ID: <52D71C1D.3020609@infradead.org>
+Date: Wed, 15 Jan 2014 15:39:09 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.206.1.1]
-X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
-To: undisclosed-recipients:;
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        netfilter-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 15 (netfilter: nft_reject)
+References: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au>
+In-Reply-To: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/14/2014 11:55 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> This tree fails (more than usual) the powerpc allyesconfig build.
+> 
+> Changes since 20140114:
+> 
 
-Von Dr. Joe Miller,
+on x86_64:
+# CONFIG_IPV6 is not enabled.
 
-
-Ich erwarte, dass mein Brief an Sie in guter Gesundheit und Ihre schönsten Stimmung heute treffen, mein Name ist Dr. Joe Miller, Assistant Manager UBS Investment Bank London Branch. Ich beschloss, eine vertrauliche Zusammenarbeit mit Ihnen bei der Ausführung der Transaktion beschrieben hier unter-für unsere beiden gegenseitigen Nutzen suchen und fordere Sie auf, halten es eine streng geheime wegen der Art der Transaktion. Während der Prüfung der Konten in unserer Bank, entdeckte ich einen herrenlosen Fonds Summe von £ 15.000,000.00 GBP (fünfzehn Millionen Great British Pounds Sterlings) in einem Konto, das zu einem unserer ausländischen Kunden spät ( mr.   Hock Miller) gehört einer Amerikanische Wissenschaftler und Ingenieur, der leider sein Leben verlor und Familie in einem tödlichen Autounfall.
-
-
-Nachdem man durch seine Personalakte in meiner Bank, entdeckte ich, dass er ohne spezifische Erbe zu diesen Mitteln gestorben. Ich gerne suche Ihre Zustimmung an Sie als nächsten Angehörigen / Erben des Verstorbenen zu präsentieren, so dass die Erlöse aus diesem Konto bei £ 15 Millionen Britische Pfund Sterling geschätzt wird Ihnen als Begünstigter freigegeben werden, was in prozentuale Verhältnis 60 geteilt werden % für mich und 40% für Sie sind. Alles, was ich verlangen, ist Ihre größter aufrichtige Zusammenarbeit, Vertrauen und höchste Vertraulichkeit, um dieses Projekt erfolgreich zu erreichen. Ich habe sorgfältig die Modalitäten für die Durchführung dieser Transaktion unter einer legitimen Anordnung, um Sie von einer Verletzung des Gesetzes sowohl in Ihrem Land und hier in England, wenn der Fonds wird auf Ihr Bankkonto überwiesen schützen gearbeitet. Nach Ihrer Prüfung und Annahme dieses Angebots, bitte senden Sie mir die folgenden Informationen sofort.
-
-
-- Ihr vollständiger Name,
-- Ihr Ansprechpartner Adresse
-- Ihr direkter Handynummer.
-- Ihr Geburtsdatum
-
-
-
-So kann ich Ihre Daten an unsere Bank Datenbank zu senden, um in das Banksystem scheint, dass Sie den Namen nächsten Angehörigen / Erben Nutznießer des Fonds sind, und dann werde ich Ihre Kommunikation mit UBS Investment Bank führen zur sofortigen Freilassung und Übergabe der finanzieren, dann warte ich auf Ihre sofortige Antwort auf meine private E-Mail: dr.joemiller-ubs@hotmail.com,so können wir die Transaktion sofort beginnen.
+warning: (NF_TABLES_INET) selects NF_TABLES_IPV6 which has unmet direct dependencies (NET && INET && IPV6 && NETFILTER && NF_TABLES)
+...
+ERROR: "ip6_dst_hoplimit" [net/netfilter/nft_reject.ko] undefined!
+ERROR: "ip6_route_output" [net/netfilter/nft_reject.ko] undefined!
+ERROR: "nf_ip6_checksum" [net/netfilter/nft_reject.ko] undefined!
 
 
 
-Vielen Dank im Wertschätzung und Vorfreude auf Ihre dringende Antwort.
-
-
-
-Mit freundlichen Grüßen,
-
-Dr. Joe Miller
-Assistant Manager UBS Investment Bank.
-E-mail: dr.joemiller-ubs@hotmail.com
-
-
-
+-- 
+~Randy
