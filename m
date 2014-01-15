@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaAOU5D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:57:03 -0500
-Received: from mail-gg0-f180.google.com ([209.85.161.180]:56283 "EHLO
-	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaAOU47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:56:59 -0500
-Date: Wed, 15 Jan 2014 12:56:54 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: atomlin@redhat.com
-cc: linux-kernel@vger.kernel.org, mingo@kernel.org, oleg@redhat.com,
-        riel@redhat.com, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH v3 2/2] hung_task: Display every hung task warning
-In-Reply-To: <1389803231-16092-3-git-send-email-atomlin@redhat.com>
-Message-ID: <alpine.DEB.2.02.1401151252100.10727@chino.kir.corp.google.com>
-References: <1389803231-16092-1-git-send-email-atomlin@redhat.com> <1389803231-16092-3-git-send-email-atomlin@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752056AbaAOU56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:57:58 -0500
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751883AbaAOU5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 15:57:55 -0500
+From: Richard Weinberger <richard@nod.at>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: Tree for Jan 15 (um, rcu)
+Date: Wed, 15 Jan 2014 21:57:49 +0100
+Message-ID: <1481134.LAgAS757c0@sandpuppy>
+User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
+In-Reply-To: <20140116075025.7b7ec09805b5f90c75a36dd2@canb.auug.org.au>
+References: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au> <2114717.uibXxy8kL0@sandpuppy> <20140116075025.7b7ec09805b5f90c75a36dd2@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014, atomlin@redhat.com wrote:
+Hi Stephen,
 
-> From: Aaron Tomlin <atomlin@redhat.com>
+Am Donnerstag, 16. Januar 2014, 07:50:25 schrieb Stephen Rothwell:
+> Hi Richard,
 > 
-> When khungtaskd detects hung tasks, it prints out
-> backtraces from a number of those tasks. Sometimes
-> the information on why things are stuck is hidden
-> in those backtraces. Limiting the number of
-> backtraces being printed out can result in the user
-> not seeing the information necessary to debug the
-> issue. This patch introduces an option to print an
-> unlimited number of backtraces when khungtaskd
-> detects hung tasks.
+> On Wed, 15 Jan 2014 20:39:03 +0100 Richard Weinberger <richard@nod.at> 
+wrote:
+> > Stephen, can you please add my UML tree to -next?
+> > It contains already the fix.
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git next
 > 
-> While ULONG_MAX is practically "inf", this patch
-> takes it one step further.  Note: The maximum is
-> now 2^31-1 (INT_MAX) which should hopefully be
-> sufficient.
-> 
+> Sure, added from today.  As long as it only contains stuff for v3.14 ...
 
-This rationale is someone cryptic, it seems what you're doing is allowing 
-the sysctl to be set to -1 that will never limit the number of warnings 
-and to do that you need a signed value so you converted ulong to int.
+Yep, only stuff for 3.14.
 
-> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-> ---
->  include/linux/sched/sysctl.h | 2 +-
->  kernel/hung_task.c           | 6 ++++--
->  kernel/sysctl.c              | 5 +++--
->  3 files changed, 8 insertions(+), 5 deletions(-)
+> > Please note there is a trivial merge conflict in
+> > arch/um/include/asm/Kbuild.
+> Yeah, what Geert said.  If you can fix this, then fine, but a single
+> conflict is not so bad.
+
+I can update my tree if it saves you time. No problem...
+
+> Thanks for adding your subsystem tree as a participant of linux-next.  As
+> you may know, this is not a judgment of your code.  The purpose of
+> linux-next is for integration testing and to lower the impact of
+> conflicts between subsystems in the next merge window.
 > 
-> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-> index 41467f8..eb3c72d7 100644
-> --- a/include/linux/sched/sysctl.h
-> +++ b/include/linux/sched/sysctl.h
-> @@ -5,7 +5,7 @@
->  extern int	     sysctl_hung_task_check_count;
->  extern unsigned int  sysctl_hung_task_panic;
->  extern unsigned long sysctl_hung_task_timeout_secs;
-> -extern unsigned long sysctl_hung_task_warnings;
-> +extern int sysctl_hung_task_warnings;
->  extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
->  					 void __user *buffer,
->  					 size_t *lenp, loff_t *ppos);
-> diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-> index 9328b80..0b9c169 100644
-> --- a/kernel/hung_task.c
-> +++ b/kernel/hung_task.c
-> @@ -37,7 +37,7 @@ int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
->   */
->  unsigned long __read_mostly sysctl_hung_task_timeout_secs = CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
->  
-> -unsigned long __read_mostly sysctl_hung_task_warnings = 10;
-> +int __read_mostly sysctl_hung_task_warnings = 10;
->  
->  static int __read_mostly did_panic;
->  
-> @@ -98,7 +98,9 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
->  
->  	if (!sysctl_hung_task_warnings)
->  		return;
-> -	sysctl_hung_task_warnings--;
-> +
-> +	if (sysctl_hung_task_warnings > 0)
-> +		sysctl_hung_task_warnings--;
->  
->  	/*
->  	 * Ok, the task did not get scheduled for more than 2 minutes,
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index dd531a6..b50cd13 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -985,9 +985,10 @@ static struct ctl_table kern_table[] = {
->  	{
->  		.procname	= "hung_task_warnings",
->  		.data		= &sysctl_hung_task_warnings,
-> -		.maxlen		= sizeof(unsigned long),
-> +		.maxlen		= sizeof(int),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_doulongvec_minmax,
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.extra1		= &neg_one,
->  	},
->  #endif
->  #ifdef CONFIG_COMPAT
+> You will need to ensure that the patches/commits in your tree/series have
+> been:
+>      * submitted under GPL v2 (or later) and include the Contributor's
+> 	Signed-off-by,
+>      * posted to the relevant mailing list,
+>      * reviewed by you (or another maintainer of your subsystem tree),
+>      * successfully unit tested, and
+>      * destined for the current or next Linux merge window.
+> 
+> Basically, this should be just what you would send to Linus (or ask him
+> to fetch).  It is allowed to be rebased if you deem it necessary.
 
-hung_task_warnings isn't documented in the source, so how is anybody 
-supposed to know that -1 is an acceptable value and what it's special case 
-allows?
+Thanks,
+//richard
