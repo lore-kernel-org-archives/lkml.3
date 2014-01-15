@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaAOOpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:45:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774AbaAOOpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:45:33 -0500
-Date: Wed, 15 Jan 2014 15:44:42 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, namhyung@kernel.org, mingo@kernel.org,
-        dsahern@gmail.com, fweisbec@gmail.com, adrian.hunter@intel.com,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/6] perf, tools: Add --branch-history option to report v2
-Message-ID: <20140115144442.GA14966@krava.redhat.com>
-References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
- <1389661461-18996-4-git-send-email-andi@firstfloor.org>
+	id S1752186AbaAOOrg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:47:36 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:49470 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaAOOrc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:47:32 -0500
+Date: Wed, 15 Jan 2014 14:47:21 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fcr@adinet.com.uy, l@dorileo.org, "Zheng, Lv" <lv.zheng@intel.com>,
+        robert.moore@intel.com
+Subject: Re: [PATCH V2] ACPI/Battery: Add a _BIX quirk for NEC LZ750/LS
+Message-ID: <20140115144720.GA23218@srcf.ucam.org>
+References: <1389019837-13619-1-git-send-email-tianyu.lan@intel.com>
+ <5255063.SeYbBZqxVQ@vostro.rjw.lan>
+ <20140114212406.GA25438@srcf.ucam.org>
+ <4100200.O09E65sAKi@vostro.rjw.lan>
+ <52D69E57.5020208@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389661461-18996-4-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D69E57.5020208@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 13, 2014 at 05:04:18PM -0800, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add a --branch-history option to perf report that changes all
-> the settings necessary for using the branches in callstacks.
-> 
-> This is just a short cut to make this nicer to use, it does
-> not enable any functionality by itself.
-> 
-> v2: Change sort order. Rename option to --branch-history to
-> be less confusing.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
+On Wed, Jan 15, 2014 at 10:42:31PM +0800, Lan Tianyu wrote:
+> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+> index fbf1ace..e98fa83 100644
+> --- a/drivers/acpi/battery.c
+> +++ b/drivers/acpi/battery.c
+> @@ -770,7 +770,7 @@ static int acpi_battery_add(struct acpi_device *device)
+>         device->driver_data = battery;
+>         mutex_init(&battery->lock);
+>         mutex_init(&battery->sysfs_lock);
+> -       if (acpi_has_method(battery->device->handle, "_BIX"))
+> +       if (acpi_evaluate_object(device->handle, "_BIX", NULL, &buffer);)
+>                 set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
 
-SNIP
+Doesn't acpi_evaluate_object() return 0 on success? I think:
 
-> @@ -729,7 +739,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
->  	struct perf_session *session;
->  	struct stat st;
->  	bool has_br_stack = false;
-> -	int branch_mode = -1;
-> +	int branch_mode = -1, branch_call_mode = -1;
->  	int ret = -1;
->  	char callchain_default_opt[] = "fractal,0.5,callee";
->  	const char * const report_usage[] = {
-> @@ -838,7 +848,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
->  	OPT_BOOLEAN(0, "group", &symbol_conf.event_group,
->  		    "Show event group information together"),
->  	OPT_CALLBACK_NOOPT('b', "branch-stack", &branch_mode, "",
-> -		    "use branch records for histogram filling", parse_branch_mode),
-> +		    "use branch records for per branch histogram filling", parse_branch_mode),
-> +	OPT_CALLBACK_NOOPT(0, "branch-history", &branch_call_mode, "",
-> +		    "add last branch records to call history",
-> +		    parse_branch_call_mode),
->  	OPT_STRING(0, "objdump", &objdump_path, "path",
->  		   "objdump binary to use for disassembly and annotations"),
->  	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
-> @@ -886,8 +899,16 @@ repeat:
->  	has_br_stack = perf_header__has_feat(&session->header,
->  					     HEADER_BRANCH_STACK);
->  
-> -	if (branch_mode == -1 && has_br_stack)
-> +	if (branch_mode == -1 && has_br_stack && branch_call_mode == -1)
->  		sort__mode = SORT_MODE__BRANCH;
-> +	if (branch_call_mode != -1) {
-> +		callchain_param.branch_callstack = 1;
-> +		callchain_param.key = CCKEY_ADDRESS;
-> +		symbol_conf.use_callchain = true;
-> +		callchain_register_param(&callchain_param);
-> +		if (sort_order == default_sort_order)
-> +			sort_order = "srcline,symbol,dso";
-> +	}
+if (ACPI_SUCESS(acpi_evaluate_object(device->handle, "_BIX", NULL, 
+&buffer))
 
-this sort of settings needs to be in for the previous patch,
-to make the following command work:
+But maybe we should check for existence first and give an FW_BUG message 
+to indicate an invalid _BIX?
 
-  $ perf report --call-graph=fractal,0.5,callee,function,branch
-
-will just set symbol_conf.use_callchain, but the sorting stays
-as SORT_MODE__BRANCH.. and callchains are invisible
-
-as you said in the changelog, this should be 'short cut to make this nicer to use',
-but it's actually currently the only way..
-
-jirka
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
