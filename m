@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaAOSDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:03:43 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:43396 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752638AbaAOSDj (ORCPT
+	id S1752679AbaAOSIu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:08:50 -0500
+Received: from relay.parallels.com ([195.214.232.42]:52714 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaAOSIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:03:39 -0500
-Message-ID: <52D6CD70.20706@mellanox.com>
-Date: Wed, 15 Jan 2014 20:03:28 +0200
-From: sagi grimberg <sagig@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 13:08:47 -0500
+Date: Wed, 15 Jan 2014 22:08:44 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Florian Westphal <fw@strlen.de>
+CC: Andrey Vagin <avagin@openvz.org>, <netfilter-devel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, <netfilter@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <vvs@openvz.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Vasiliy Averin <vvs@parallels.com>
+Subject: Re: [PATCH] [RFC] netfilter: nf_conntrack: don't relase a conntrack
+ with non-zero refcnt
+Message-ID: <20140115180844.GA3605@paralelels.com>
+References: <1389710201.31367.255.camel@edumazet-glaptop2.roam.corp.google.com>
+ <1389720948-7883-1-git-send-email-avagin@openvz.org>
+ <20140114185329.GB28205@breakpoint.cc>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: [PATCH 00/14] target: Initial support for DIF Type1+Type3 emulation
-References: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-In-Reply-To: <1389212157-14540-1-git-send-email-nab@daterainc.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.0.13.1]
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <20140114185329.GB28205@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [10.24.24.209]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/8/2014 10:36 PM, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
->
-> Hi MKP & SCSI folks,
->
-> This series contains initial support for target mode DIF Type1+Type3
-> emulation within target core, RAMDISK_MCP device backend, and tcm_loop
-> fabric driver.
->
-> DIF emulation is enabled via a new 'pi_prot_type' device attribute
-> within configfs, which is set after initial device configuration and
-> before target fabric LUN export occurs.
->
-> The DIF read/write verify emulation has been made generic enough so
-> it can be used by other backend drivers (eg: FILEIO), as well as
-> DIF v2 in the near future.  Also note that the majority of the logic
-> has been groked from existing scsi_debug.c code.
->
-> The current plan is to enable basic support for emulated backends with
-> tcm_loop for v3.14 code, and then move onto IBLOCK backend support
-> (that requires BLOCK layer changes)
+On Tue, Jan 14, 2014 at 07:53:29PM +0100, Florian Westphal wrote:
+> Andrey Vagin <avagin@openvz.org> wrote:
+> > ----
+> > Eric and Florian, could you look at this patch. When you say,
+> > that it looks good, I will ask the user to validate it.
+> > I can't reorder these actions, because it's reproduced on a real host
+> > with real users. Thanks.
+> > ----
+> > 
+> > nf_conntrack_free can't be called for a conntract with non-zero ref-counter,
+> > because it can race with nf_conntrack_find_get().
+> 
+> Indeed.
+> 
+> > A conntrack slab is created with SLAB_DESTROY_BY_RCU. Non-zero
+> > ref-conunter says that this conntrack is used now. So when we release a
+> > conntrack with non-zero counter, we break this assumption.
+> > 
+> > CPU1                                    CPU2
+> > ____nf_conntrack_find()
+> >                                         nf_ct_put()
+> >                                          destroy_conntrack()
+> >                                         ...
+> >                                         init_conntrack
+> >                                          __nf_conntrack_alloc (set use = 1)
+> > atomic_inc_not_zero(&ct->use) (use = 2)
+> >                                          if (!l4proto->new(ct, skb, dataoff, timeouts))
+> >                                           nf_conntrack_free(ct); (use = 2 !!!)
+> >                                         ...
+> 
+> Yes, I think this sequence is possible; we must not use nf_conntrack_free here.
+> 
+> > -	/* We overload first tuple to link into unconfirmed or dying list.*/
+> > -	BUG_ON(hlist_nulls_unhashed(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode));
+> > -	hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+> > +	if (!hlist_nulls_unhashed(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode))
+> > +		hlist_nulls_del_rcu(&ct->tuplehash[IP_CT_DIR_ORIGINAL].hnnode);
+> 
+> This is the only thing that I don't like about this patch.  Currently
+> all the conntracks in the system are always put on a list before they're
+> supposed to be visible/handled via refcnt system (unconfirmed, hash, or
+> dying list).
+> 
+> I think it would be nice if we could keep it that way.
+> If everything fails we could proably intoduce a 'larval' dummy list
+> similar to the one used by template conntracks?
 
-Hey Nic,
-Can you please elaborate on what BLOCK layer changes are required?
-I didn't spot any misses from Looking at 
-Documentation/block/data-integrity.txt.
+I'm not sure, that this is required. Could you elaborate when this can
+be useful?
 
-Am I missing something?
+Now I see only overhead, because we need to take the nf_conntrack_lock
+lock to add conntrack in a list.
 
-Sagi.
+Thanks,
+Andrey
