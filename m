@@ -1,352 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaAOSAC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:00:02 -0500
-Received: from mailout.micron.com ([137.201.242.129]:59252 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbaAOR77 (ORCPT
+	id S1752972AbaAOSA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:00:28 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44924 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990AbaAOSAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:59:59 -0500
-Message-ID: <52D6D021.3010603@micron.com>
-Date: Wed, 15 Jan 2014 10:14:57 -0800
-From: Sam Bradshaw <sbradshaw@micron.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	Wed, 15 Jan 2014 13:00:25 -0500
+Message-ID: <52D6CCD4.5080104@infradead.org>
+Date: Wed, 15 Jan 2014 10:00:52 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: <axboe@kernel.dk>
-CC: "Asai Thambi Samymuthu Pattrayasamy (asamymuthupa)" 
-	<asamymuthupa@micron.com>,
-        <sbradshaw@micron.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mtip32xx: Make SGL container per-command to eliminate high
- order dma allocation
-Content-Type: text/plain; charset="ISO-8859-1"
+To: mark.doffman@codethink.co.uk
+CC: ceph-devel@vger.kernel.org, Rob Taylor <rob.taylor@codethink.co.uk>,
+        sage@inktank.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] Documentation: Document the cephroot functionality
+References: <cover.1389806186.git.mark.doffman@codethink.co.uk> <29b3bd9700e23df2aee095df8c34a15a62f57d27.1389806186.git.mark.doffman@codethink.co.uk>
+In-Reply-To: <29b3bd9700e23df2aee095df8c34a15a62f57d27.1389806186.git.mark.doffman@codethink.co.uk>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20436.000
-X-TM-AS-Result: No--10.556600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mtip32xx driver makes a high order dma memory allocation to store a command
-index table, some dedicated buffers, and a command header & SGL blob.  This 
-allocation can fail with a surprise insert under low & fragmented memory conditions.
+On 01/15/2014 09:26 AM, mark.doffman@codethink.co.uk wrote:
+> From: Rob Taylor <rob.taylor@codethink.co.uk>
+>
+> Document using the cephfs as a root device, its purpose,
+> functionality and use.
+>
+> Signed-off-by: Mark Doffman <mark.doffman@codethink.co.uk>
+> Signed-off-by: Rob Taylor <rob.taylor@codethink.co.uk>
+> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+> ---
+>   Documentation/filesystems/{ => ceph}/ceph.txt |  0
+>   Documentation/filesystems/ceph/cephroot.txt   | 86 +++++++++++++++++++++++++++
+>   2 files changed, 86 insertions(+)
+>   rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
+>   create mode 100644 Documentation/filesystems/ceph/cephroot.txt
+>
+> diff --git a/Documentation/filesystems/ceph.txt b/Documentation/filesystems/ceph/ceph.txt
+> similarity index 100%
+> rename from Documentation/filesystems/ceph.txt
+> rename to Documentation/filesystems/ceph/ceph.txt
+> diff --git a/Documentation/filesystems/ceph/cephroot.txt b/Documentation/filesystems/ceph/cephroot.txt
+> new file mode 100644
+> index 0000000..deda4f0
+> --- /dev/null
+> +++ b/Documentation/filesystems/ceph/cephroot.txt
+> @@ -0,0 +1,86 @@
+> +Mounting the root filesystem via Ceph (cephroot)
+> +===============================================
+> +
+> +Written 2013 by Rob Taylor <rob.taylor@codethink.co.uk>
+> +
+> +derived from nfsroot.txt:
+> +
+> +Written 1996 by Gero Kuhlmann <gero@gkminix.han.de>
+> +Updated 1997 by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
+> +Updated 2006 by Nico Schottelius <nico-kernel-nfsroot@schottelius.org>
+> +Updated 2006 by Horms <horms@verge.net.au>
+> +
+> +
+> +
+> +In order to use a diskless system, such as an X-terminal or printer server
+> +for example, it is necessary for the root filesystem to be present on a
+> +non-disk device. This may be an initramfs (see Documentation/filesystems/
+> +ramfs-rootfs-initramfs.txt), a ramdisk (see Documentation/initrd.txt), a
+> +filesystem mounted via NFS or a filesystem mounted via Ceph. The following
+> +text describes on how to use Ceph for the root filesystem.
+> +
+> +For the rest of this text 'client' means the diskless system, and 'server'
+> +means the Ceph server.
+> +
+> +
+> +1.) Enabling cephroot capabilities
+> +    -----------------------------
+> +
+> +In order to use cephroot, CEPH_FS needs to be selected as
+> +built-in during configuration. Once this has been selected, the cephroot
+> +option will become available, which should also be selected.
+> +
+> +In the networking options, kernel level autoconfiguration can be selected,
+> +along with the types of autoconfiguration to support. Selecting all of
+> +DHCP, BOOTP and RARP is safe.
+> +
+> +
+> +2.) Kernel command line
+> +    -------------------
+> +
+> +When the kernel has been loaded by a boot loader (see below) it needs to be
+> +told what root fs device to use. And in the case of cephroot, where to find
 
-This patch breaks these regions up into separate low order allocations and increases
-the maximum number of segments a single command SGL can have.  We wanted to allow at
-least 256 segments for 1 MB direct IO.  Since the command header occupies the first
-0x80 bytes of the SGL blob, that meant we needed two 4k pages to contain the header 
-and SGL.  The two pages allow up to 504 SGL segments.
+                                use, and
 
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
----
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 050c712..ae46bfd 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -41,10 +41,31 @@
- #include "mtip32xx.h"
- 
- #define HW_CMD_SLOT_SZ		(MTIP_MAX_COMMAND_SLOTS * 32)
--#define HW_CMD_TBL_SZ		(AHCI_CMD_TBL_HDR_SZ + (MTIP_MAX_SG * 16))
--#define HW_CMD_TBL_AR_SZ	(HW_CMD_TBL_SZ * MTIP_MAX_COMMAND_SLOTS)
--#define HW_PORT_PRIV_DMA_SZ \
--		(HW_CMD_SLOT_SZ + HW_CMD_TBL_AR_SZ + AHCI_RX_FIS_SZ)
-+
-+/* DMA region containing RX Fis, Identify, RLE10, and SMART buffers */
-+#define AHCI_RX_FIS_SZ          0x100
-+#define AHCI_RX_FIS_OFFSET      0x0
-+#define AHCI_IDFY_SZ            ATA_SECT_SIZE
-+#define AHCI_IDFY_OFFSET        0x400
-+#define AHCI_SECTBUF_SZ         ATA_SECT_SIZE
-+#define AHCI_SECTBUF_OFFSET     0x800
-+#define AHCI_SMARTBUF_SZ        ATA_SECT_SIZE
-+#define AHCI_SMARTBUF_OFFSET    0xC00
-+/* 0x100 + 0x200 + 0x200 + 0x200 is smaller than 4k but we pad it out */
-+#define BLOCK_DMA_ALLOC_SZ      4096
-+
-+/* DMA region containing command table (should be 8192 bytes) */
-+#define AHCI_CMD_SLOT_SZ        sizeof(struct mtip_cmd_hdr)
-+#define AHCI_CMD_TBL_SZ         (MTIP_MAX_COMMAND_SLOTS * AHCI_CMD_SLOT_SZ)
-+#define AHCI_CMD_TBL_OFFSET     0x0
-+
-+/* DMA region per command (contains header and SGL) */
-+#define AHCI_CMD_TBL_HDR_SZ     0x80
-+#define AHCI_CMD_TBL_HDR_OFFSET 0x0
-+#define AHCI_CMD_TBL_SGL_SZ     (MTIP_MAX_SG * sizeof(struct mtip_cmd_sg))
-+#define AHCI_CMD_TBL_SGL_OFFSET AHCI_CMD_TBL_HDR_SZ
-+#define CMD_DMA_ALLOC_SZ        (AHCI_CMD_TBL_SGL_SZ + AHCI_CMD_TBL_HDR_SZ)
-+
- 
- #define HOST_CAP_NZDMA		(1 << 19)
- #define HOST_HSORG		0xFC
-@@ -3313,6 +3334,118 @@ st_out:
- }
- 
- /*
-+ * DMA region teardown
-+ *
-+ * @dd Pointer to driver_data structure
-+ *
-+ * return value
-+ *      None
-+ */
-+static void mtip_dma_free(struct driver_data *dd)
-+{
-+	int i;
-+	struct mtip_port *port = dd->port;
-+
-+	if (port->block1)
-+		dmam_free_coherent(&dd->pdev->dev, BLOCK_DMA_ALLOC_SZ,
-+					port->block1, port->block1_dma);
-+
-+	if (port->command_list) {
-+		dmam_free_coherent(&dd->pdev->dev, AHCI_CMD_TBL_SZ,
-+				port->command_list, port->command_list_dma);
-+	}
-+
-+	for (i = 0; i < MTIP_MAX_COMMAND_SLOTS; i++) {
-+		if (port->commands[i].command)
-+			dmam_free_coherent(&dd->pdev->dev, CMD_DMA_ALLOC_SZ,
-+				port->commands[i].command,
-+				port->commands[i].command_dma);
-+	}
-+}
-+
-+/*
-+ * DMA region setup
-+ *
-+ * @dd Pointer to driver_data structure
-+ *
-+ * return value
-+ *      -ENOMEM Not enough free DMA region space to initialize driver
-+ */
-+static int mtip_dma_alloc(struct driver_data *dd)
-+{
-+	struct mtip_port *port = dd->port;
-+	int i, rv = 0;
-+	u32 host_cap_64 = readl(dd->mmio + HOST_CAP) & HOST_CAP_64;
-+
-+	/* Allocate dma memory for RX Fis, Identify, and Sector Bufffer */
-+	port->block1 =
-+		dmam_alloc_coherent(&dd->pdev->dev, BLOCK_DMA_ALLOC_SZ,
-+					&port->block1_dma, GFP_KERNEL);
-+	if (!port->block1)
-+		return -ENOMEM;
-+	memset(port->block1, 0, BLOCK_DMA_ALLOC_SZ);
-+
-+	/* Allocate dma memory for command list */
-+	port->command_list =
-+		dmam_alloc_coherent(&dd->pdev->dev, AHCI_CMD_TBL_SZ,
-+					&port->command_list_dma, GFP_KERNEL);
-+	if (!port->command_list) {
-+		dmam_free_coherent(&dd->pdev->dev, BLOCK_DMA_ALLOC_SZ,
-+					port->block1, port->block1_dma);
-+		port->block1 = NULL;
-+		port->block1_dma = 0;
-+		return -ENOMEM;
-+	}
-+	memset(port->command_list, 0, AHCI_CMD_TBL_SZ);
-+
-+	/* Setup all pointers into first DMA region */
-+	port->rxfis         = port->block1 + AHCI_RX_FIS_OFFSET;
-+	port->rxfis_dma     = port->block1_dma + AHCI_RX_FIS_OFFSET;
-+	port->identify      = port->block1 + AHCI_IDFY_OFFSET;
-+	port->identify_dma  = port->block1_dma + AHCI_IDFY_OFFSET;
-+	port->log_buf       = port->block1 + AHCI_SECTBUF_OFFSET;
-+	port->log_buf_dma   = port->block1_dma + AHCI_SECTBUF_OFFSET;
-+	port->smart_buf     = port->block1 + AHCI_SMARTBUF_OFFSET;
-+	port->smart_buf_dma = port->block1_dma + AHCI_SMARTBUF_OFFSET;
-+
-+	/* Setup per command SGL DMA region */
-+
-+	/* Point the command headers at the command tables */
-+	for (i = 0; i < MTIP_MAX_COMMAND_SLOTS; i++) {
-+		port->commands[i].command =
-+			dmam_alloc_coherent(&dd->pdev->dev, CMD_DMA_ALLOC_SZ,
-+				&port->commands[i].command_dma, GFP_KERNEL);
-+		if (!port->commands[i].command) {
-+			rv = -ENOMEM;
-+			mtip_dma_free(dd);
-+			return rv;
-+		}
-+		memset(port->commands[i].command, 0, CMD_DMA_ALLOC_SZ);
-+
-+		port->commands[i].command_header = port->command_list +
-+					(sizeof(struct mtip_cmd_hdr) * i);
-+		port->commands[i].command_header_dma =
-+					dd->port->command_list_dma +
-+					(sizeof(struct mtip_cmd_hdr) * i);
-+
-+		if (host_cap_64)
-+			port->commands[i].command_header->ctbau =
-+				__force_bit2int cpu_to_le32(
-+				(port->commands[i].command_dma >> 16) >> 16);
-+
-+		port->commands[i].command_header->ctba =
-+				__force_bit2int cpu_to_le32(
-+				port->commands[i].command_dma & 0xFFFFFFFF);
-+
-+		sg_init_table(port->commands[i].sg, MTIP_MAX_SG);
-+
-+		/* Mark command as currently inactive */
-+		atomic_set(&dd->port->commands[i].active, 0);
-+	}
-+	return 0;
-+}
-+
-+/*
-  * Called once for each card.
-  *
-  * @dd Pointer to the driver data structure.
-@@ -3370,83 +3503,10 @@ static int mtip_hw_init(struct driver_data *dd)
- 	dd->port->mmio	= dd->mmio + PORT_OFFSET;
- 	dd->port->dd	= dd;
- 
--	/* Allocate memory for the command list. */
--	dd->port->command_list =
--		dmam_alloc_coherent(&dd->pdev->dev,
--			HW_PORT_PRIV_DMA_SZ + (ATA_SECT_SIZE * 4),
--			&dd->port->command_list_dma,
--			GFP_KERNEL);
--	if (!dd->port->command_list) {
--		dev_err(&dd->pdev->dev,
--			"Memory allocation: command list\n");
--		rv = -ENOMEM;
-+	/* DMA allocations */
-+	rv = mtip_dma_alloc(dd);
-+	if (rv < 0)
- 		goto out1;
--	}
--
--	/* Clear the memory we have allocated. */
--	memset(dd->port->command_list,
--		0,
--		HW_PORT_PRIV_DMA_SZ + (ATA_SECT_SIZE * 4));
--
--	/* Setup the addresse of the RX FIS. */
--	dd->port->rxfis	    = dd->port->command_list + HW_CMD_SLOT_SZ;
--	dd->port->rxfis_dma = dd->port->command_list_dma + HW_CMD_SLOT_SZ;
--
--	/* Setup the address of the command tables. */
--	dd->port->command_table	  = dd->port->rxfis + AHCI_RX_FIS_SZ;
--	dd->port->command_tbl_dma = dd->port->rxfis_dma + AHCI_RX_FIS_SZ;
--
--	/* Setup the address of the identify data. */
--	dd->port->identify     = dd->port->command_table +
--					HW_CMD_TBL_AR_SZ;
--	dd->port->identify_dma = dd->port->command_tbl_dma +
--					HW_CMD_TBL_AR_SZ;
--
--	/* Setup the address of the sector buffer - for some non-ncq cmds */
--	dd->port->sector_buffer	= (void *) dd->port->identify + ATA_SECT_SIZE;
--	dd->port->sector_buffer_dma = dd->port->identify_dma + ATA_SECT_SIZE;
--
--	/* Setup the address of the log buf - for read log command */
--	dd->port->log_buf = (void *)dd->port->sector_buffer  + ATA_SECT_SIZE;
--	dd->port->log_buf_dma = dd->port->sector_buffer_dma + ATA_SECT_SIZE;
--
--	/* Setup the address of the smart buf - for smart read data command */
--	dd->port->smart_buf = (void *)dd->port->log_buf  + ATA_SECT_SIZE;
--	dd->port->smart_buf_dma = dd->port->log_buf_dma + ATA_SECT_SIZE;
--
--
--	/* Point the command headers at the command tables. */
--	for (i = 0; i < num_command_slots; i++) {
--		dd->port->commands[i].command_header =
--					dd->port->command_list +
--					(sizeof(struct mtip_cmd_hdr) * i);
--		dd->port->commands[i].command_header_dma =
--					dd->port->command_list_dma +
--					(sizeof(struct mtip_cmd_hdr) * i);
--
--		dd->port->commands[i].command =
--			dd->port->command_table + (HW_CMD_TBL_SZ * i);
--		dd->port->commands[i].command_dma =
--			dd->port->command_tbl_dma + (HW_CMD_TBL_SZ * i);
--
--		if (readl(dd->mmio + HOST_CAP) & HOST_CAP_64)
--			dd->port->commands[i].command_header->ctbau =
--			__force_bit2int cpu_to_le32(
--			(dd->port->commands[i].command_dma >> 16) >> 16);
--		dd->port->commands[i].command_header->ctba =
--			__force_bit2int cpu_to_le32(
--			dd->port->commands[i].command_dma & 0xFFFFFFFF);
--
--		/*
--		 * If this is not done, a bug is reported by the stock
--		 * FC11 i386. Due to the fact that it has lots of kernel
--		 * debugging enabled.
--		 */
--		sg_init_table(dd->port->commands[i].sg, MTIP_MAX_SG);
--
--		/* Mark all commands as currently inactive.*/
--		atomic_set(&dd->port->commands[i].active, 0);
--	}
- 
- 	/* Setup the pointers to the extended s_active and CI registers. */
- 	for (i = 0; i < dd->slot_groups; i++) {
-@@ -3594,12 +3654,8 @@ out3:
- 
- out2:
- 	mtip_deinit_port(dd->port);
-+	mtip_dma_free(dd);
- 
--	/* Free the command/command header memory. */
--	dmam_free_coherent(&dd->pdev->dev,
--				HW_PORT_PRIV_DMA_SZ + (ATA_SECT_SIZE * 4),
--				dd->port->command_list,
--				dd->port->command_list_dma);
- out1:
- 	/* Free the memory allocated for the for structure. */
- 	kfree(dd->port);
-@@ -3641,11 +3697,9 @@ static int mtip_hw_exit(struct driver_data *dd)
- 	irq_set_affinity_hint(dd->pdev->irq, NULL);
- 	devm_free_irq(&dd->pdev->dev, dd->pdev->irq, dd);
- 
--	/* Free the command/command header memory. */
--	dmam_free_coherent(&dd->pdev->dev,
--			HW_PORT_PRIV_DMA_SZ + (ATA_SECT_SIZE * 4),
--			dd->port->command_list,
--			dd->port->command_list_dma);
-+	/* Free dma regions */
-+	mtip_dma_free(dd);
-+
- 	/* Free the memory allocated for the for structure. */
- 	kfree(dd->port);
- 	dd->port = NULL;
-diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
-index 9be7a15..bda35d9 100644
---- a/drivers/block/mtip32xx/mtip32xx.h
-+++ b/drivers/block/mtip32xx/mtip32xx.h
-@@ -69,7 +69,7 @@
-  * Maximum number of scatter gather entries
-  * a single command may have.
-  */
--#define MTIP_MAX_SG		128
-+#define MTIP_MAX_SG		504
- 
- /*
-  * Maximum number of slot groups (Command Issue & s_active registers)
-@@ -391,15 +391,13 @@ struct mtip_port {
- 	 */
- 	dma_addr_t rxfis_dma;
- 	/*
--	 * Pointer to the beginning of the command table memory as used
--	 * by the driver.
-+	 * Pointer to the DMA region for RX Fis, Identify, RLE10, and SMART
- 	 */
--	void *command_table;
-+	void *block1;
- 	/*
--	 * Pointer to the beginning of the command table memory as used
--	 * by the DMA.
-+	 * DMA address of region for RX Fis, Identify, RLE10, and SMART
- 	 */
--	dma_addr_t command_tbl_dma;
-+	dma_addr_t block1_dma;
- 	/*
- 	 * Pointer to the beginning of the identify data memory as used
- 	 * by the driver.
+> +both the server and the name of the directory on the server to mount as root.
+> +This can be established using the following kernel command line parameters:
+> +
+> +root=/dev/ceph
+> +
+> +This is necessary to enable the pseudo-Ceph-device. Note that it's not a
+> +real device but just a synonym to tell the kernel to use Ceph instead of
+> +a real device.
+> +
+> +If cephroot is not specified, it is expected that that a valid mount will be
+
+drop duplicate:                                 that
+
+> +found via DHCP option 17, Root Path [1]
+> +
+> +cephroot=<monaddrs>:/[<subdir>],<ceph-opts>
+> +
+> +  <monaddrs>    Monitor addresses separated by commas. Each takes the form
+> +		host[:port]. If the port is not specified, the Ceph default
+> +		of 6789 is assumed.
+> +
+> +  <subdir>	A subdirectory subdir may be specified if a subset of the file
+> +		system is to be mounted
+
+		                mounted.
+		
+> +
+> +  <ceph-opts>	Standard Ceph options. All options are separated by commas.
+> +		See Documentation/filesystems/ceph/ceph.txt for options and
+> +		their defaults.
+> +
+> +4.) References
+> +    ----------
+> +
+> +[1] http://tools.ietf.org/html/rfc2132
+> +
+> +5.) Credits
+> +    -------
+> +
+> +  cephroot was derived from nfsroot by Rob Taylor <rob.taylor@codethink.co.uk>
+> +  and Mark Doffman <mark.doffman@codethink.co.uk>
+> +
+> +  The nfsroot code in the kernel and the RARP support have been written
+> +  by Gero Kuhlmann <gero@gkminix.han.de>.
+> +
+> +  The rest of the IP layer autoconfiguration code has been written
+> +  by Martin Mares <mj@atrey.karlin.mff.cuni.cz>.
+> +
+> +  In order to write the initial version of nfsroot I would like to thank
+> +  Jens-Uwe Mager <jum@anubis.han.de> for his help.
+>
+
+
+-- 
+~Randy
