@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaAOOYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:24:15 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:34625 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735AbaAOOYN (ORCPT
+	id S1752143AbaAOOZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:25:35 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:51599 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751664AbaAOOZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:24:13 -0500
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org
-Cc: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Alex Shi <alex.shi@linaro.org>
-Subject: [RFC PATCH] sched: select_idle_sibling macro optimize
-Date: Wed, 15 Jan 2014 22:23:28 +0800
-Message-Id: <1389795808-32013-1-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 15 Jan 2014 09:25:34 -0500
+Date: Wed, 15 Jan 2014 09:25:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 01/17] tools lib traceevent: Add state member to struct
+ trace_seq
+Message-ID: <20140115092532.56d9ad44@gandalf.local.home>
+In-Reply-To: <20140115141519.GB16016@ghostprotocols.net>
+References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
+	<1389750340-15965-2-git-send-email-namhyung@kernel.org>
+	<20140114210058.6b75c47a@gandalf.local.home>
+	<87k3e29cxz.fsf@sejong.aot.lge.com>
+	<20140114215655.666d7480@gandalf.local.home>
+	<87fvopalbb.fsf@sejong.aot.lge.com>
+	<20140115141519.GB16016@ghostprotocols.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the sd domain just has one group, then we must be caught the
-	i == target later, and then goes to deeper level domain.
-So just skip this domain checking to save some instructions.
+On Wed, 15 Jan 2014 11:15:19 -0300
+Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- kernel/sched/fair.c | 5 +++++
- 1 file changed, 5 insertions(+)
+> Em Wed, Jan 15, 2014 at 02:03:20PM +0900, Namhyung Kim escreveu:
+> > On Tue, 14 Jan 2014 21:56:55 -0500, Steven Rostedt wrote:
+> > > On Wed, 15 Jan 2014 11:49:28 +0900
+> > > Namhyung Kim <namhyung@kernel.org> wrote:
+> > >> Oh, it looks better.  But I'd like to TRACE_SEQ_CHECK() as is for some
+> > >> cases.  How about this?
+> > >
+> > > Looks good to me.
+> > >
+> > > Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> > >
+> > > I'll try to look at the rest of the patches tomorrow.
+> 
+> Hi Steven, can I keep your ackd-by?
+>  
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c7395d9..3265fbc 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4196,6 +4196,11 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	sd = rcu_dereference(per_cpu(sd_llc, target));
- 	for_each_lower_domain(sd) {
- 		sg = sd->groups;
-+
-+		/* skip single group domain */
-+		if (sg == sg->next)
-+			continue;
-+
- 		do {
- 			if (!cpumask_intersects(sched_group_cpus(sg),
- 						tsk_cpus_allowed(p)))
--- 
-1.8.1.2
+Yep.
+
+-- Steve
 
