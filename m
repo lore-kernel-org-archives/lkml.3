@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023AbaAODrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 22:47:11 -0500
-Received: from mga02.intel.com ([134.134.136.20]:41871 "EHLO mga02.intel.com"
+	id S1751369AbaAODxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 22:53:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:38188 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308AbaAODrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 22:47:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,660,1384329600"; 
-   d="scan'208";a="438995632"
-From: "Brown, Aaron F" <aaron.f.brown@intel.com>
-To: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-CC: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "ethan.kernel@gmail.com" <ethan.kernel@gmail.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 v2] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and
- cleanup const 63
-Thread-Topic: [PATCH 1/2 v2] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and
- cleanup const 63
-Thread-Index: AQHPEaRhaapK9cvKwkyRlUDF4zwoyA==
-Date: Wed, 15 Jan 2014 03:46:32 +0000
-Message-ID: <309B89C4C689E141A5FF6A0C5FB2118B7312CEE1@ORSMSX101.amr.corp.intel.com>
-References: <1387901568-1762-1-git-send-email-ethan.kernel@gmail.com>
- <1388134966.2183.144.camel@jtkirshe-mobl>
-In-Reply-To: <1388134966.2183.144.camel@jtkirshe-mobl>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1750928AbaAODxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 22:53:07 -0500
+Date: Wed, 15 Jan 2014 14:52:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: linux-next: build failure after merge of the device-mapper tree
+Message-Id: <20140115145259.2961c5623f17b20afd5f04c6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__15_Jan_2014_14_52_59_+1100_Fus456Tttw_.52p5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0F3lGLU005990
 
-On Fri, 2013-12-27 at 01:02 -0800, Jeff Kirsher wrote:
-> On Wed, 2013-12-25 at 00:12 +0800, Ethan Zhao wrote:
-> > Because ixgbe driver limit the max number of VF functions could be
-> > enabled
-> > to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the
-> > const 63
-> > in code.
-> > 
-> > v2: fix a typo.
-> > 
-> > Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
-> > ---
-> >  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 4 ++--
-> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 5 +++--
-> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h | 5 +++++
-> >  3 files changed, 10 insertions(+), 4 deletions(-)
-> 
-> Added to my queue, thanks Ethan!
+--Signature=_Wed__15_Jan_2014_14_52_59_+1100_Fus456Tttw_.52p5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Ethan,
+Hi all,
 
-Did Jeff contact you about this failing to compile?  I'm currently
-providing vacation covering for him and we found this was failing to
-compile just before he left.  We captured the failure in our notes for
-this but there is no comment on if you were contacted or not.
+After merging the device-mapper tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Regardless, when I apply this patch (with or without 2-2) we get the
-following error on a compilation attempt: Here's the error:
---------------------------------------------------------
-Here's the error:
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function
-"ixgbe_sw_init":
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\357"
-in program
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\274"
-in program
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\215"
-in program
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: expected ")"
-before numeric constant
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function
-"ixgbe_probe":
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\357"
-in program
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\274"
-in program
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\215"
-in program
-drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: expected ")"
-before numeric constant
-make[5]: *** [drivers/net/ethernet/intel/ixgbe/ixgbe_main.o] Error 1
-make[5]: *** Waiting for unfinished jobs....
-make[4]: *** [drivers/net/ethernet/intel/ixgbe] Error 2
-make[4]: *** Waiting for unfinished jobs....
-make[3]: *** [drivers/net/ethernet/intel] Error 2
-make[2]: *** [drivers/net/ethernet] Error 2
-make[1]: *** [drivers/net] Error 2
-make: *** [drivers] Error 2
---------------------------------------------------------
+ERROR: ".dm_bufio_get_device_size" [drivers/md/dm-snapshot.ko] undefined!
+ERROR: ".dm_bufio_release" [drivers/md/dm-snapshot.ko] undefined!
+ERROR: ".dm_bufio_client_destroy" [drivers/md/dm-snapshot.ko] undefined!
+ERROR: ".dm_bufio_prefetch" [drivers/md/dm-snapshot.ko] undefined!
+ERROR: ".dm_bufio_set_minimum_buffers" [drivers/md/dm-snapshot.ko] undefine=
+d!
+ERROR: ".dm_bufio_forget" [drivers/md/dm-snapshot.ko] undefined!
+ERROR: ".dm_bufio_client_create" [drivers/md/dm-snapshot.ko] undefined!
+ERROR: ".dm_bufio_read" [drivers/md/dm-snapshot.ko] undefined!
 
-Thanks,
-Aaron
+Presumably caused by commit b41bf7440bcf ("dm snapshot: use dm-bufio").
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I have used the device-mapper tree from next-20140114 for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__15_Jan_2014_14_52_59_+1100_Fus456Tttw_.52p5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS1gYgAAoJEMDTa8Ir7ZwVRxIQAIYvIPZ1y9TgHZ6Uc1B3cwOm
+N9/EW7unywA66I6oPCEU9aQetsvw77DCTt5A1HaX0Ae9jJjOYe/YMzUAnXMkwNyu
+j+vUjQXnB/vYS+F4H42d450RzKQqN/pu+pF388zBCxRPrZaH2rff3skFCLk3999n
+p0l24/lX6TAhKVCJkolQVymQj1Obxel07RMcPuq0VxbQm4OBT03cEvWVm0EVHHfD
+3pcOWvLBfCsziu8ipvfpjWHhHJ2nCw+c/Bqfld26wq+fS6d/SKVgGmAEwxaub6o/
+OXoMazgyiXqjdhGnDC/0LPZu9sjYQm7PjSlpeWu9QrTTZ6ieHL7U0Cy8o14IGyhh
+wLEa9An8IwdBh0vzLtX7PDwIXoTFiNjt4vpL7MBZ2YFL6Br+7Yprw0uk8CRa0cUY
+beoe/FeP6gMM24OIa1gy5osvQH79ShXTA2YS3PyeT5rkWrmNGmJ3W6V3vcagPr7t
+d9XAX1+ToaoL4QQvFA7HX8nIJ210sMbfmc01nXpxoZZhrFWMLYiPhSgp/5cfm11P
+jvuU5ai6/Ulae16Ld/4OEnTX9e6I/qYIDcd4c6AF5dt+zZRh/N9QwLe6/Qf3l7Mp
+qxT6Uqkzf0u9sJDtBeIT14MZ3LcUePL1vGDwd7FKouziINfoAkyTUXDojYbKJzcm
+IcMEduVXN+Y27JfeWmwX
+=IApA
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Jan_2014_14_52_59_+1100_Fus456Tttw_.52p5--
