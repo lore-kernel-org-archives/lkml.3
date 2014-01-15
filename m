@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaAOQVU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:21:20 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:14991 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751932AbaAOQVS (ORCPT
+	id S1752483AbaAOQVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:21:46 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:42082 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458AbaAOQVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:21:18 -0500
-Date: Wed, 15 Jan 2014 11:21:16 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 08/17] tools lib traceevent: Unregister handler when
- function plugin unloaded
-Message-ID: <20140115112116.21fe7f31@gandalf.local.home>
-In-Reply-To: <1389750340-15965-9-git-send-email-namhyung@kernel.org>
-References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
-	<1389750340-15965-9-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 15 Jan 2014 11:21:41 -0500
+Message-ID: <52D6B591.3070707@infradead.org>
+Date: Wed, 15 Jan 2014 08:21:37 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: linux-next: Tree for Jan 15 (um, rcu)
+References: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au>
+In-Reply-To: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 10:45:31 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
-
-> The function handler should be unregistered when the plugin unloaded
-> otherwise it'll try to access invalid memory.
+On 01/14/2014 11:55 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-
-> ---
->  tools/lib/traceevent/plugin_function.c | 3 +++
->  1 file changed, 3 insertions(+)
+> This tree fails (more than usual) the powerpc allyesconfig build.
 > 
-> diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-> index 39461485f9a7..80ba4ff1fe84 100644
-> --- a/tools/lib/traceevent/plugin_function.c
-> +++ b/tools/lib/traceevent/plugin_function.c
-> @@ -148,6 +148,9 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
->  {
->  	int i, x;
->  
-> +	pevent_unregister_event_handler(pevent, -1, "ftrace", "function",
-> +					function_handler, NULL);
-> +
->  	for (i = 0; i <= cpus; i++) {
->  		for (x = 0; x < fstack[i].size && fstack[i].stack[x]; x++)
->  			free(fstack[i].stack[x]);
+> Changes since 20140114:
+> 
 
+on i386 and/or x86_64 defconfigs:
+
+  CC      arch/um/kernel/asm-offsets.s
+In file included from include/linux/sched.h:43:0,
+                 from arch/x86/um/shared/sysdep/kernel-offsets.h:2,
+                 from arch/um/kernel/asm-offsets.c:1:
+include/linux/rculist.h: In function '__list_add_rcu':
+include/linux/rculist.h:54:2: error: implicit declaration of function 'smp_store_release' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[2]: *** [arch/um/kernel/asm-offsets.s] Error 1
+
+
+-- 
+~Randy
