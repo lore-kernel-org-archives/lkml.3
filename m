@@ -1,166 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaAOVZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:25:14 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:63216 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbaAOVZJ (ORCPT
+	id S1752168AbaAOV0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:26:23 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:44551 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaAOV0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:25:09 -0500
-Date: Wed, 15 Jan 2014 13:24:34 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
-In-Reply-To: <20140115121728.GJ8782@dhcp22.suse.cz>
-Message-ID: <alpine.LSU.2.11.1401151241280.9004@eggly.anvils>
-References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils> <alpine.LSU.2.11.1401131751080.2229@eggly.anvils> <20140114132727.GB32227@dhcp22.suse.cz> <20140114142610.GF32227@dhcp22.suse.cz> <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
- <20140115095829.GI8782@dhcp22.suse.cz> <20140115121728.GJ8782@dhcp22.suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 15 Jan 2014 16:26:21 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] drivers/tty/hvc: don't use module_init in non-modular hyp. console code
+Date: Wed, 15 Jan 2014 16:24:38 -0500
+Message-ID: <1389821078-24948-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014, Michal Hocko wrote:
-> On Wed 15-01-14 10:58:29, Michal Hocko wrote:
-> > On Tue 14-01-14 12:42:28, Hugh Dickins wrote:
-> > > On Tue, 14 Jan 2014, Michal Hocko wrote:
-> [...]
-> > > > Ouch. And thinking about this shows that out_css_put is broken as well
-> > > > for subtree walks (those that do not start at root_mem_cgroup level). We
-> > > > need something like the the snippet bellow.
-> > > 
-> > > It's the out_css_put precedent that I was following in not incrementing
-> > > for the root.  I think that's been discussed in the past, and rightly or
-> > > wrongly we've concluded that the caller of mem_cgroup_iter() always has
-> > > some hold on the root, which makes it safe to skip get/put on it here.
-> > > No doubt one of those many short cuts to avoid memcg overhead when
-> > > there's no memcg other than the root_mem_cgroup.
-> > 
-> > That might be true but I guess it makes sense to get rid of some subtle
-> > assumptions. Especially now that we have an effective per-cpu ref.
-> > counting for css.
-> 
-> OK, I finally found some time to think about this some more and it seems
-> that the issue you have reported and the above issue are in fact
-> identical. css reference counting optimization in fact also prevent from
-> the endless loop you are seeing here because we simply didn't call
-> css_tryget on the root...
+The HVC_OPAL/RTAS/UDBG options are all bool, and hence their support
+is either present or absent.  It will never be modular, so using
+module_init as an alias for __initcall is rather misleading.
 
-Wow.  I don't see them as the same issue, but yes, one fix for both.
-I completely missed that: so we've been leaking a "struct mem_cgroup"
-and its attached stuff, for any memcg on which reclaim or other iteration
-had been done, from v3.10 onwards?
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
-Or am I confused and overstating it?  I'd have sworn I've checked for
-memcg leaks myself after doing tests, and not realized this; but now I
-put in a count of those allocated, yes, I see it going up and up (with
-my half-fix in to proceed beyond the hang) without your fix, but staying
-steady with your fix in (which also gets around my hang).
+Note that direct use of __initcall is discouraged, vs. one
+of the priority categorized subgroups.  As __initcall gets
+mapped onto device_initcall, our use of device_initcall
+directly in this change means that the runtime impact is
+zero -- it will remain at level 6 in initcall ordering.
 
-> 
-> Therefore I guess we should reintroduce the optimization. What do you
+Also the __exitcall functions have been outright deleted since
+they are only ever of interest to UML, and UML will never be
+using any of this code.
 
-It's not a question of reintroducing an optimization, but of either
-fixing the broken end of the optimization, or ripping the other end out.
-At this point I'm for simply fixing what we know is broken; then later
-one of us audit the other iterators to check the original assumption
-behind the optimization is still valid (that callers of mem_cgroup_iter
-have some kind of hold on the root they call it for).
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Ah.  But perhaps the unfreeable memcg has been protecting us from
-nasties which can now emerge.  Hmm: I like your fix, but it's not
-something to rush into mainline and stable immediately.  We'll have
-to give it some exposure first.
+diff --git a/drivers/tty/hvc/hvc_opal.c b/drivers/tty/hvc/hvc_opal.c
+index 6496872e2e47..b01659bd4f7c 100644
+--- a/drivers/tty/hvc/hvc_opal.c
++++ b/drivers/tty/hvc/hvc_opal.c
+@@ -255,13 +255,7 @@ static int __init hvc_opal_init(void)
+ 	/* Register as a vio device to receive callbacks */
+ 	return platform_driver_register(&hvc_opal_driver);
+ }
+-module_init(hvc_opal_init);
+-
+-static void __exit hvc_opal_exit(void)
+-{
+-	platform_driver_unregister(&hvc_opal_driver);
+-}
+-module_exit(hvc_opal_exit);
++device_initcall(hvc_opal_init);
+ 
+ static void udbg_opal_putc(char c)
+ {
+diff --git a/drivers/tty/hvc/hvc_rtas.c b/drivers/tty/hvc/hvc_rtas.c
+index 0069bb86ba49..08c87920b74a 100644
+--- a/drivers/tty/hvc/hvc_rtas.c
++++ b/drivers/tty/hvc/hvc_rtas.c
+@@ -102,17 +102,7 @@ static int __init hvc_rtas_init(void)
+ 
+ 	return 0;
+ }
+-module_init(hvc_rtas_init);
+-
+-/* This will tear down the tty portion of the driver */
+-static void __exit hvc_rtas_exit(void)
+-{
+-	/* Really the fun isn't over until the worker thread breaks down and
+-	 * the tty cleans up */
+-	if (hvc_rtas_dev)
+-		hvc_remove(hvc_rtas_dev);
+-}
+-module_exit(hvc_rtas_exit);
++device_initcall(hvc_rtas_init);
+ 
+ /* This will happen prior to module init.  There is no tty at this time? */
+ static int __init hvc_rtas_console_init(void)
+diff --git a/drivers/tty/hvc/hvc_udbg.c b/drivers/tty/hvc/hvc_udbg.c
+index 72228276fe31..9cf573d06a29 100644
+--- a/drivers/tty/hvc/hvc_udbg.c
++++ b/drivers/tty/hvc/hvc_udbg.c
+@@ -80,14 +80,7 @@ static int __init hvc_udbg_init(void)
+ 
+ 	return 0;
+ }
+-module_init(hvc_udbg_init);
+-
+-static void __exit hvc_udbg_exit(void)
+-{
+-	if (hvc_udbg_dev)
+-		hvc_remove(hvc_udbg_dev);
+-}
+-module_exit(hvc_udbg_exit);
++device_initcall(hvc_udbg_init);
+ 
+ static int __init hvc_udbg_console_init(void)
+ {
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 636c9baad7a5..2dc2831840ca 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -561,18 +561,7 @@ static int __init xen_hvc_init(void)
+ #endif
+ 	return r;
+ }
+-
+-static void __exit xen_hvc_fini(void)
+-{
+-	struct xencons_info *entry, *next;
+-
+-	if (list_empty(&xenconsoles))
+-			return;
+-
+-	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
+-		xen_console_remove(entry);
+-	}
+-}
++device_initcall(xen_hvc_init);
+ 
+ static int xen_cons_init(void)
+ {
+@@ -598,10 +587,6 @@ static int xen_cons_init(void)
+ 	hvc_instantiate(HVC_COOKIE, 0, ops);
+ 	return 0;
+ }
+-
+-
+-module_init(xen_hvc_init);
+-module_exit(xen_hvc_fini);
+ console_initcall(xen_cons_init);
+ 
+ #ifdef CONFIG_EARLY_PRINTK
+-- 
+1.8.5.2
 
-And given the confusion, and progressive little modifications in
-just these few lines of code, I wonder if it won't be easier for
-stable to combine the CSS_ONLINE one into this to make a single
-patch.  It is a separate issue, but similar, and now it's clear
-that it's what you intended originally, I don't think it would be
-inappropriate to make a single patch correcting those few lines,
-with log comment listing the three issues.
-
-
-> think about the following? This is on top of the current mmotm but it
-> certainly needs backporting to the stable kernels.
-> ---
-> From 560924e86059947ab9418732cb329ad149dd8f6a Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Wed, 15 Jan 2014 11:52:09 +0100
-> Subject: [PATCH] memcg: fix css reference leak from mem_cgroup_iter
-> 
-> 19f39402864e (memcg: simplify mem_cgroup_iter) has introduced a css
-> refrence leak (thus memory leak) because mem_cgroup_iter makes sure it
-> doesn't put a css reference on the root of the tree walk. The mentioned
-> commit however dropped the root check when the css reference is taken
-> while it keept the css_put optimization fora the root in place.
-> 
-> This means that css_put is not called and so css along with mem_cgroup
-> and other cgroup internal object tied by css lifetime are never freed.
-> 
-> Fix the issue by reintroducing root check in __mem_cgroup_iter_next.
-> 
-> This patch also fixes issue reported by Hugh Dickins when
-> mem_cgroup_iter might end up in an endless loop because a group which is
-> under hard limit reclaim is removed in parallel with iteration.
-> __mem_cgroup_iter_next would always return NULL because css_tryget on
-> the root (reclaimed memcg) would fail and there are no other memcg in
-> the hierarchy. prev == NULL in mem_cgroup_iter would prevent break out
-> from the root and so the while (!memcg) loop would never terminate.
-> as css_tryget is no longer called for the root of the tree walk this
-> doesn't happen anymore.
-> 
-> Cc: stable@vger.kernel.org # 3.10+
-> Reported-and-debugged-by: Hugh Dickins <hughd@google.com>
-
-Definitely not debugged by me!  Debugged and understood by you.
-
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index f016d26adfd3..dd3974c9f08d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1078,7 +1078,8 @@ skip_node:
->  	 * protected by css_get and the tree walk is rcu safe.
->  	 */
->  	if (next_css) {
-> -		if ((next_css->flags & CSS_ONLINE) && css_tryget(next_css))
-> +		if ((next_css->flags & CSS_ONLINE) &&
-> +				(next_css == root || css_tryget(next_css)))
-
-Not quite: next_css points to one thing and root to another.
->  			return mem_cgroup_from_css(next_css);
->  		else {
->  			prev_css = next_css;
-> -- 
-
-This is how I've re-written that block, and started testing on it;
-the unnecessary "else {" part was looking increasingly ugly to me
-(though let loose on it, I might change it all around more...)
-
-	if (next_css) {
-		if ((next_css->flags & CSS_ONLINE) &&
-		    (next_css == &root->css || css_tryget(next_css)))
-			return mem_cgroup_from_css(next_css);
-		prev_css = next_css;
-		goto skip_node;
-	}
-
-Sorry for being so slow to respond, by the way: for a couple of hours
-I couldn't test at all, and thought I was going mad - one day I send
-you that "cg" script, the next day it starts to break, it couldn't
-"mkdir -p /cg/cg", claiming it already existed, wha???  Turns out the
-fix for that has gone into yesterday's mmotm (though I've not had time
-to move on to that yet): uninitialized ret in memcg_propagate_kmem().
-
-Hugh
