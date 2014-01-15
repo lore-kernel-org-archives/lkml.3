@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaAOQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:43:09 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:47882 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaAOQnH (ORCPT
+	id S1752618AbaAOQoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:44:18 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:42927 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480AbaAOQoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:43:07 -0500
-Message-ID: <52D6BA99.6020409@linaro.org>
-Date: Wed, 15 Jan 2014 11:43:05 -0500
+	Wed, 15 Jan 2014 11:44:15 -0500
+Message-ID: <52D6BADC.2040607@linaro.org>
+Date: Wed, 15 Jan 2014 11:44:12 -0500
 From: David Long <dave.long@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
@@ -25,102 +25,52 @@ CC: linux-arm-kernel@lists.infradead.org,
         Paul Mackerras <paulus@samba.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 02/16] ARM: move shared uprobe/kprobe definitions into
- new include file
-References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>  <1387166930-13182-3-git-send-email-dave.long@linaro.org> <1387543568.3404.36.camel@linaro1.home>
-In-Reply-To: <1387543568.3404.36.camel@linaro1.home>
+Subject: Re: [PATCH v4 07/16] ARM: Remove use of struct kprobe from generic
+ probes code
+References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>  <1387166930-13182-8-git-send-email-dave.long@linaro.org> <1387547729.3404.50.camel@linaro1.home>
+In-Reply-To: <1387547729.3404.50.camel@linaro1.home>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/13 07:46, Jon Medhurst (Tixy) wrote:
+On 12/20/13 08:55, Jon Medhurst (Tixy) wrote:
 > On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
 >> From: "David A. Long" <dave.long@linaro.org>
 >>
->> Separate the kprobe-only definitions from the definitions needed by
->> both kprobes and uprobes.
+>> Change the generic ARM probes code to pass in the opcode and architecture-specific
+>> structure separately instead of using struct kprobe, so we do not pollute
+>> code being used only for uprobes or other non-kprobes instruction
+>> interpretation.
 >>
 >> Signed-off-by: David A. Long <dave.long@linaro.org>
 >> ---
->>   arch/arm/include/asm/kprobes.h | 15 +--------------
->>   arch/arm/include/asm/probes.h  | 18 ++++++++++++++++++
->>   2 files changed, 19 insertions(+), 14 deletions(-)
->>   create mode 100644 arch/arm/include/asm/probes.h
->>
->> diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
->> index f82ec22..30fc11b 100644
->> --- a/arch/arm/include/asm/kprobes.h
->> +++ b/arch/arm/include/asm/kprobes.h
->> @@ -28,21 +28,8 @@
->>   #define kretprobe_blacklist_size	0
->>
->>   typedef u32 kprobe_opcode_t;
->> -
->>   struct kprobe;
->> -typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
->> -typedef unsigned long (kprobe_check_cc)(unsigned long);
->> -typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
->> -typedef void (kprobe_insn_fn_t)(void);
->> -
->> -/* Architecture specific copy of original instruction. */
->> -struct arch_specific_insn {
->> -	kprobe_opcode_t			*insn;
->> -	kprobe_insn_handler_t		*insn_handler;
->> -	kprobe_check_cc			*insn_check_cc;
->> -	kprobe_insn_singlestep_t	*insn_singlestep;
->> -	kprobe_insn_fn_t		*insn_fn;
->> -};
->> +#include <asm/probes.h>
->>
->>   struct prev_kprobe {
->>   	struct kprobe *kp;
->> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
->> new file mode 100644
->> index 0000000..21da148
->> --- /dev/null
->> +++ b/arch/arm/include/asm/probes.h
->> @@ -0,0 +1,18 @@
+>>   arch/arm/include/asm/probes.h    |   9 +-
+>>   arch/arm/kernel/kprobes-arm.c    |  77 ++++++-------
+>>   arch/arm/kernel/kprobes-common.c |  42 ++++---
+>>   arch/arm/kernel/kprobes-thumb.c  | 239 +++++++++++++++++++--------------------
+>>   arch/arm/kernel/kprobes.c        |   2 +-
+>>   arch/arm/kernel/kprobes.h        |   2 +-
+>>   arch/arm/kernel/probes-arm.c     |  33 +++---
+>>   arch/arm/kernel/probes-arm.h     |  29 ++---
+>>   arch/arm/kernel/probes-thumb.c   |  18 ++-
+>>   arch/arm/kernel/probes-thumb.h   |  51 ---------
+>>   arch/arm/kernel/probes.c         |  14 ++-
+>>   arch/arm/kernel/probes.h         |   8 +-
+>>   12 files changed, 246 insertions(+), 278 deletions(-)
 >
-> This new file doesn't have any copyright/license notice, I suggest you
-> copy the one from kprobes.h and include a note to say this new files
-> contents were copied, e.g. start it like...
+> Looks OK to me, though it looks like this patch includes some header
+> file cleanups that should have been part of the previous patch? I.e. all
+> the changes to probes-thumb.h and probes-arm.h. And also the
+> re-application of 'static' to functions in kprobes-thumb.c and
+> kprobes-arm.c.
 >
-> /*
->   * arch/arm/include/asm/probes.h
->   *
->   * Original contents copied from arch/arm/include/asm/kprobes.h
->   * which contains the following notice...
->   *
->   * Copyright (C) 2006, 2007 Motorola Inc.
->   *
->   * This program is free software; you can redistribute it and/or modify
-> [...]
+> I'm not sure it's worth the hassle of trying to unpick those changes
+> though, it doesn't impact the end result or bisect-bility.
 >
 
-Fixed.
-
->> +#ifndef _ASM_PROBES_H
->> +#define _ASM_PROBES_H
->> +
->> +typedef void (kprobe_insn_handler_t)(struct kprobe *, struct pt_regs *);
->> +typedef unsigned long (kprobe_check_cc)(unsigned long);
->> +typedef void (kprobe_insn_singlestep_t)(struct kprobe *, struct pt_regs *);
->> +typedef void (kprobe_insn_fn_t)(void);
->> +
->> +/* Architecture specific copy of original instruction. */
->> +struct arch_specific_insn {
->> +	kprobe_opcode_t			*insn;
->> +	kprobe_insn_handler_t		*insn_handler;
->> +	kprobe_check_cc			*insn_check_cc;
->> +	kprobe_insn_singlestep_t	*insn_singlestep;
->> +	kprobe_insn_fn_t		*insn_fn;
->> +};
->> +
->> +#endif
->
+I moved the changes around as suggested.
 
 -dl
-
 
