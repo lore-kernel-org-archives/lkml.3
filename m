@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaAOWeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:34:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40850 "EHLO
+	id S1754382AbaAOWej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:34:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40846 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaAOV4N (ORCPT
+	with ESMTP id S1753082AbaAOV4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:56:13 -0500
+	Wed, 15 Jan 2014 16:56:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rob Herring <robh@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 123/166] Revert "of/address: Handle #address-cells > 2 specially"
-Date: Wed, 15 Jan 2014 13:52:17 -0800
-Message-Id: <1389822780-4729-124-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 119/166] drm/radeon: fix render backend setup for SI and CIK
+Date: Wed, 15 Jan 2014 13:52:13 -0800
+Message-Id: <1389822780-4729-120-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,120 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <robh@kernel.org>
+From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
 
-commit 13fcca8f25f4e9ce7f55da9cd353bb743236e212 upstream.
+commit 9fadb352ed73edd7801a280b552d33a6040c8721 upstream.
 
-This reverts commit e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7.
+Only the render backends of the first shader engine were enabled. The others
+were erroneously disabled. Enabling the other render backends improves
+performance a lot.
 
-Nikita Yushchenko reports:
-While trying to make freescale p2020ds and  mpc8572ds boards working
-with mainline kernel, I faced that commit e38c0a1f (Handle
+Unigine Sanctuary on Bonaire:
+  Before: 15 fps
+  After:  90 fps
 
-Both these boards have uli1575 chip.
-Corresponding part in device tree is something like
+Judging from the fan noise, the GPU was also underclocked when the other
+render backends were disabled, resulting in horrible performance. The fan is
+a lot noisy under load now.
 
-                uli1575@0 {
-                        reg = <0x0 0x0 0x0 0x0 0x0>;
-                        #size-cells = <2>;
-                        #address-cells = <3>;
-                        ranges = <0x2000000 0x0 0x80000000
-                                  0x2000000 0x0 0x80000000
-                                  0x0 0x20000000
-
-                                  0x1000000 0x0 0x0
-                                  0x1000000 0x0 0x0
-                                  0x0 0x10000>;
-                        isa@1e {
-...
-
-I.e. it has #address-cells = <3>
-
-With commit e38c0a1f reverted, devices under uli1575 are registered
-correctly, e.g. for rtc
-
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 01000000 00000000 00000070
-OF: parent bus is default (na=2, ns=2) on /
-OF: walking ranges...
-OF: PCI map, cp=0, s=10000, da=70
-OF: parent translation for: 00000000 ffc10000
-OF: with offset: 70
-OF: one level translation: 00000000 ffc10070
-OF: reached root node
-
-With commit e38c0a1f in place, address translation fails:
-
-OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
-OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
-OF: translating address: 00000001 00000070
-OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
-OF: walking ranges...
-OF: ISA map, cp=0, s=1000, da=70
-OF: parent translation for: 01000000 00000000 00000000
-OF: with offset: 70
-OF: one level translation: 00000000 00000000 00000070
-OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
-OF: walking ranges...
-OF: default map, cp=a0000000, s=20000000, da=70
-OF: default map, cp=0, s=10000, da=70
-OF: not found !
-
-Thierry Reding confirmed this commit was not needed after all:
-"We ended up merging a different address representation for Tegra PCIe
-and I've confirmed that reverting this commit doesn't cause any obvious
-regressions. I think all other drivers in drivers/pci/host ended up
-copying what we did on Tegra, so I wouldn't expect any other breakage
-either."
-
-There doesn't appear to be a simple way to support both behaviours, so
-reverting this as nothing should be depending on the new behaviour.
-
-Signed-off-by: Rob Herring <robh@kernel.org>
+Signed-off-by: Marek Olšák <marek.olsak@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ kamal: backport to 3.8 (SI only; no CIK in 3.8) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/of/address.c | 8 --------
- 1 file changed, 8 deletions(-)
+ drivers/gpu/drm/radeon/si.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index 0125524..fb2a4e8 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -69,14 +69,6 @@ static u64 of_bus_default_map(__be32 *addr, const __be32 *range,
- 		 (unsigned long long)cp, (unsigned long long)s,
- 		 (unsigned long long)da);
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index ff9a680..0746272 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -1456,7 +1456,7 @@ static void si_setup_spi(struct radeon_device *rdev,
+ }
  
--	/*
--	 * If the number of address cells is larger than 2 we assume the
--	 * mapping doesn't specify a physical address. Rather, the address
--	 * specifies an identifier that must match exactly.
--	 */
--	if (na > 2 && memcmp(range, addr, na * 4) != 0)
--		return OF_BAD_ADDR;
--
- 	if (da < cp || da >= (cp + s))
- 		return OF_BAD_ADDR;
- 	return da - cp;
+ static u32 si_get_rb_disabled(struct radeon_device *rdev,
+-			      u32 max_rb_num, u32 se_num,
++			      u32 max_rb_num_per_se,
+ 			      u32 sh_per_se)
+ {
+ 	u32 data, mask;
+@@ -1470,14 +1470,14 @@ static u32 si_get_rb_disabled(struct radeon_device *rdev,
+ 
+ 	data >>= BACKEND_DISABLE_SHIFT;
+ 
+-	mask = si_create_bitmask(max_rb_num / se_num / sh_per_se);
++	mask = si_create_bitmask(max_rb_num_per_se / sh_per_se);
+ 
+ 	return data & mask;
+ }
+ 
+ static void si_setup_rb(struct radeon_device *rdev,
+ 			u32 se_num, u32 sh_per_se,
+-			u32 max_rb_num)
++			u32 max_rb_num_per_se)
+ {
+ 	int i, j;
+ 	u32 data, mask;
+@@ -1487,14 +1487,14 @@ static void si_setup_rb(struct radeon_device *rdev,
+ 	for (i = 0; i < se_num; i++) {
+ 		for (j = 0; j < sh_per_se; j++) {
+ 			si_select_se_sh(rdev, i, j);
+-			data = si_get_rb_disabled(rdev, max_rb_num, se_num, sh_per_se);
++			data = si_get_rb_disabled(rdev, max_rb_num_per_se, sh_per_se);
+ 			disabled_rbs |= data << ((i * sh_per_se + j) * TAHITI_RB_BITMAP_WIDTH_PER_SH);
+ 		}
+ 	}
+ 	si_select_se_sh(rdev, 0xffffffff, 0xffffffff);
+ 
+ 	mask = 1;
+-	for (i = 0; i < max_rb_num; i++) {
++	for (i = 0; i < max_rb_num_per_se * se_num; i++) {
+ 		if (!(disabled_rbs & mask))
+ 			enabled_rbs |= mask;
+ 		mask <<= 1;
 -- 
 1.8.3.2
 
