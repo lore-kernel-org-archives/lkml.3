@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaAOP2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:28:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259AbaAOP2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:28:35 -0500
-From: Jerome Marchand <jmarchan@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: [PATCH] powerpc: mm: fix mmap errno when MAP_FIXED is set and mapping exceeds the allowed address space
-Date: Wed, 15 Jan 2014 16:27:11 +0100
-Message-Id: <1389799631-3418-1-git-send-email-jmarchan@redhat.com>
+	id S1752246AbaAOP3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:29:17 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:24996 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752013AbaAOP3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:29:12 -0500
+Message-Id: <20140115152805.592972467@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 15 Jan 2014 10:28:05 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 0/2] ktest: A couple of updates
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Posix, if MAP_FIXED is specified mmap shall set ENOMEM if
-the requested mapping exceeds the allowed range for address space of
-the process. The generic code set it right, but the specific powerpc
-slice_get_unmapped_area() function currently returns -EINVAL in that
-case.
-This patch corrects it.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-ktest.git
+for-next
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- arch/powerpc/mm/slice.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Head SHA1: c75d22d9c675c4c77d87ff36de6e5023f14724ef
 
-diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
-index 7ce9cf3..b0c75cc 100644
---- a/arch/powerpc/mm/slice.c
-+++ b/arch/powerpc/mm/slice.c
-@@ -408,7 +408,7 @@ unsigned long slice_get_unmapped_area(unsigned long addr, unsigned long len,
- 	if (fixed && (addr & ((1ul << pshift) - 1)))
- 		return -EINVAL;
- 	if (fixed && addr > (mm->task_size - len))
--		return -EINVAL;
-+		return -ENOMEM;
- 
- 	/* If hint, make sure it matches our alignment restrictions */
- 	if (!fixed && addr) {
--- 
-1.7.7.6
 
+Steven Rostedt (Red Hat) (2):
+      ktest: Add special variable ${KERNEL_VERSION}
+      ktest: Add eval '=~' command to modify variables in config file
+
+----
+ tools/testing/ktest/ktest.pl | 129 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 100 insertions(+), 29 deletions(-)
