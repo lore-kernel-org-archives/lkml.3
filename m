@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaAONwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:52:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61805 "EHLO mga09.intel.com"
+	id S1751904AbaAON7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:59:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48971 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664AbaAONwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:52:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,663,1384329600"; 
-   d="scan'208";a="439224207"
-Message-ID: <52D69291.8080003@linux.intel.com>
-Date: Wed, 15 Jan 2014 05:52:17 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751037AbaAON7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 08:59:33 -0500
+Date: Wed, 15 Jan 2014 14:59:30 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Victor Porton <porton@narod.ru>
+Cc: linux-kernel@vger.kernel.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: Notifying on empty cgroup
+Message-ID: <20140115135930.GK8782@dhcp22.suse.cz>
+References: <135711389759165@web22h.yandex.ru>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        aravind.gopalakrishnan@amd.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, cpu, amd: Add workaround for family 16h,
- erratum 793
-References: <20140114230711.GS29865@pd.tnic> <tip-3b56496865f9f7d9bcb2f93b44c63f274f08e3b6@git.kernel.org> <52D5DC51.9010606@zytor.com> <20140115062817.GA11869@gmail.com> <20140115133619.GA32051@pd.tnic>
-In-Reply-To: <20140115133619.GA32051@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <135711389759165@web22h.yandex.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 05:36 AM, Borislav Petkov wrote:
->>
->> msr_read() would essentially map to rdmsr_safe(). Each method has a
->> return value that can be checked for failure.
+[CCing cgroups mailing list]
+On Wed 15-01-14 06:12:45, Victor Porton wrote:
+> I want to write software which needs to receive a signal when the cgroup 
+> created by it becomes empty. (After this the empty cgroup should be deleted 
+> just not to clutter the memory.)
 > 
-> I'm not sure we want to use the _safe() variants by default as it would
-> generate the exception tables even in cases where they're clearly not
-> needed.
+> If the kernel does not support such notifications, it should be improved. 
+> This functionality is crucial for some kinds of software.
 > 
+> There is /sys/fs/cgroup/systemd/release_agent but I don't understand how to 
+> use it. I don't understand why we would need it at all.
 
-It would be particularly silly if what you end up with is in effect to
-wrap msr_read/write() in a BUG_ON(), which is the effect of the current
-(trapping) form.  There is something to be said for hard errors.
+"1.4 What does notify_on_release do ?" in
+Documentation/cgroups/cgroups.txt the kernel source doesn't help?
 
-	-hpa
+> Starting a binary on emptying a cgroup with the purpose to notify an other 
+> binary looks like a big overkill.
 
+the binary can do rmdir which is what you want, no?
 
+> Also my program should work in userspace without the need to use
+> release_agent which can be accessed only by root.
+
+The release_agent is global for all groups so the program doesn't have
+to care.
+
+> Note that my work is related with sandboxing software (running a program in 
+> closed environment, so that it would be unable for example to remove user's 
+> files).
+> 
+> See also
+> http://portonsoft.wordpress.com/2014/01/11/toward-robust-linux-sandbox/
+> 
+> -- 
+> Victor Porton - http://portonvictor.org
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Michal Hocko
+SUSE Labs
