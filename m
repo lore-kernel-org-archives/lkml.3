@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaAOO74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:59:56 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:25828 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaAOO7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:59:53 -0500
-X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
-   d="scan'208";a="90985818"
-Date: Wed, 15 Jan 2014 14:59:51 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next] xen-netback: Rework rx_work_todo
-Message-ID: <20140115145951.GP5698@zion.uk.xensource.com>
-References: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com>
- <20140115103707.GI5698@zion.uk.xensource.com>
- <52D67536.4030106@citrix.com>
- <20140115144519.GO5698@zion.uk.xensource.com>
- <52D6A0B9.2030204@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <52D6A0B9.2030204@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA1
+	id S1752225AbaAOPBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:01:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50817 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751962AbaAOPBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:01:17 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: <linux-mm@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH 0/3] memcg OOM notifications and PF_EXITING checks
+Date: Wed, 15 Jan 2014 16:01:05 +0100
+Message-Id: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 02:52:41PM +0000, Zoltan Kiss wrote:
-> On 15/01/14 14:45, Wei Liu wrote:
-> >>>>The recent patch to fix receive side flow control (11b57f) solved the spinning
-> >>>>> >>thread problem, however caused an another one. The receive side can stall, if:
-> >>>>> >>- xenvif_rx_action sets rx_queue_stopped to false
-> >>>>> >>- interrupt happens, and sets rx_event to true
-> >>>>> >>- then xenvif_kthread sets rx_event to false
-> >>>>> >>
-> >>>> >
-> >>>> >If you mean "rx_work_todo" returns false.
-> >>>> >
-> >>>> >In this case
-> >>>> >
-> >>>> >(!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) || vif->rx_event;
-> >>>> >
-> >>>> >can still be true, can't it?
-> >>>Sorry, I should wrote rx_queue_stopped to true
-> >>>
-> >In this case, if rx_queue_stopped is true, then we're expecting frontend
-> >to notify us, right?
-> >
-> >rx_queue_stopped is set to true if we cannot make any progress to queue
-> >packet into the ring. In that situation we can expect frontend will send
-> >notification to backend after it goes through the backlog in the ring.
-> >That means rx_event is set to true, and rx_work_todo is true again. So
-> >the ring is actually not stalled in this case as well. Did I miss
-> >something?
-> >
-> 
-> Yes, we expect the guest to notify us, and it does, and we set
-> rx_event to true (see second point), but then the thread set it to
-> false (see third point). Talking with Paul, another solution could
-> be to set rx_event false before calling xenvif_rx_action. But using
-> rx_last_skb_slots makes it quicker for the thread to see if it
-> doesn't have to do anything.
-> 
+Hi,
+this is an attempt to restart discussions regarding memcg OOM
+notifications and break out conditions.
 
-OK, this is a better explaination. So actually there's no bug in the
-original implementation and your patch is sort of an improvement.
+"memcg: do not hang on OOM when killed by userspace OOM access to memory
+reserves" which was a first patch in the series was already merged to -mm
+tree (http://www.ozlabs.org/~akpm/mmotm/broken-out/memcg-do-not-hang-on-oom-when-killed-by-userspace-oom-access-to-memory-reserves.patch)
+but it didn't see ack from neither David nor Johannes. I would be happy
+if we agreed on that one as well.
 
-Could you send a new version of this patch with relevant information in
-commit message? Talking to people offline is faster, but I would like to
-have public discussion and relevant information archived in a searchable
-form. Thanks.
+The first patch in this series implements and extends an idea proposed
+by David to not notify userspace when the OOM killer might back out and
+prevent from killing. Johannes was not fond of the idea because this
+changes userspace interface in a subtle way because somebody might be
+relying on notifications as a signal that the memcg is getting into
+troubles. It has been argued that there are memory thresholds and
+vmpressure notifications for such an use case.
 
-Wei.
+I am in favor to make change the notification and draw the line when to
+notify to "kernel or userspace has to perform an action". It makes sense
+to me, it is still racy though. Something might have exiting millisecond
+after notification fired but it at least is consistent.
 
-> Zoli
+The second patch is trivial and it removes PF_EXITING check for the
+current in mem_cgroup_out_of_memory because it is no longer needed when
+we have the check in the charging path.
+
+The last patch is just an attempt and might be totally wrong. I've
+noticed that we are not checking for the killed tasks in
+mem_cgroup_out_of_memory which might break usecases where a task was
+killed by vmpressure or thresholds handlers but the killed task cannot
+terminate in time. We should rather not kill something else.
+
