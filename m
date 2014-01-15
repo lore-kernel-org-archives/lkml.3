@@ -1,62 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013AbaAOS0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:26:47 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:46568 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549AbaAOS0n (ORCPT
+	id S1753033AbaAOS1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:27:23 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:49637 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549AbaAOS1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:26:43 -0500
+	Wed, 15 Jan 2014 13:27:21 -0500
+Date: Wed, 15 Jan 2014 19:27:17 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] timer fix
+Message-ID: <20140115182717.GA23169@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140115181955.GA5715@fieldses.org>
-References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
- <1389219015-10980-6-git-send-email-miklos@szeredi.hu> <20140115181955.GA5715@fieldses.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 15 Jan 2014 10:26:23 -0800
-Message-ID: <CALCETrVRfz0Ha-0Dr6X=6De9K6HACzcfryjEk633zAKjYxg6wg@mail.gmail.com>
-Subject: Re: [PATCH 05/11] vfs: add RENAME_NOREPLACE flag
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
-        Jan Kara <jack@suse.cz>, "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 10:19 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Wed, Jan 08, 2014 at 11:10:09PM +0100, Miklos Szeredi wrote:
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> If this flag is specified and the target of the rename exists then the
->> rename syscall fails with EEXIST.
->
-> Why is this useful?
+Linus,
 
-The trivial answer: to eliminate the race condition from 'mv -i'.
+Please pull the latest timers-urgent-for-linus git tree from:
 
-Another answer: there's a common pattern to atomically create a file
-with contents: open a temporary file, write to it, optionally fsync
-it, close it, then link(2) it to the final name, then unlink the
-temporary file.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-The reason to use link(2) is because it won't silently clobber the destination.
+   # HEAD: e59da0aedb573a347fa501fa63d3ff5055aa1bc7 Merge branch 'clockevents/3.13-fixes' of git://git.linaro.org/people/daniel.lezcano/linux into timers/urgent
 
-This is annoying:
- - It requires an extra system call that shouldn't be necessary.
- - It doesn't work on (IMO sensible) filesystems that don't support
-hard links (e.g. vfat).
- - It's not atomic -- there's an intermediate state where both files exist.
- - It's ugly.
+It contains a crash fix for the ARM Cadence TTC clock driver.
 
-The new rename flag will make this totally sensible.
+ Thanks,
 
-To be fair, on new enough kernels, you can also use O_TMPFILE and
-linkat to achieve the same thing even more cleanly.
+	Ingo
 
---Andy
+------------------>
+Soren Brinkmann (1):
+      clocksource: cadence_ttc: Fix mutex taken inside interrupt context
+
+
+ drivers/clocksource/cadence_ttc_timer.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
+index b2bb3a4b..a92350b 100644
+--- a/drivers/clocksource/cadence_ttc_timer.c
++++ b/drivers/clocksource/cadence_ttc_timer.c
+@@ -67,11 +67,13 @@
+  * struct ttc_timer - This definition defines local timer structure
+  *
+  * @base_addr:	Base address of timer
++ * @freq:	Timer input clock frequency
+  * @clk:	Associated clock source
+  * @clk_rate_change_nb	Notifier block for clock rate changes
+  */
+ struct ttc_timer {
+ 	void __iomem *base_addr;
++	unsigned long freq;
+ 	struct clk *clk;
+ 	struct notifier_block clk_rate_change_nb;
+ };
+@@ -196,9 +198,8 @@ static void ttc_set_mode(enum clock_event_mode mode,
+ 
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+-		ttc_set_interval(timer,
+-				DIV_ROUND_CLOSEST(clk_get_rate(ttce->ttc.clk),
+-					PRESCALE * HZ));
++		ttc_set_interval(timer, DIV_ROUND_CLOSEST(ttce->ttc.freq,
++						PRESCALE * HZ));
+ 		break;
+ 	case CLOCK_EVT_MODE_ONESHOT:
+ 	case CLOCK_EVT_MODE_UNUSED:
+@@ -273,6 +274,8 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 		return;
+ 	}
+ 
++	ttccs->ttc.freq = clk_get_rate(ttccs->ttc.clk);
++
+ 	ttccs->ttc.clk_rate_change_nb.notifier_call =
+ 		ttc_rate_change_clocksource_cb;
+ 	ttccs->ttc.clk_rate_change_nb.next = NULL;
+@@ -298,16 +301,14 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
+ 	__raw_writel(CNT_CNTRL_RESET,
+ 		     ttccs->ttc.base_addr + TTC_CNT_CNTRL_OFFSET);
+ 
+-	err = clocksource_register_hz(&ttccs->cs,
+-			clk_get_rate(ttccs->ttc.clk) / PRESCALE);
++	err = clocksource_register_hz(&ttccs->cs, ttccs->ttc.freq / PRESCALE);
+ 	if (WARN_ON(err)) {
+ 		kfree(ttccs);
+ 		return;
+ 	}
+ 
+ 	ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
+-	setup_sched_clock(ttc_sched_clock_read, 16,
+-			clk_get_rate(ttccs->ttc.clk) / PRESCALE);
++	setup_sched_clock(ttc_sched_clock_read, 16, ttccs->ttc.freq / PRESCALE);
+ }
+ 
+ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+@@ -334,6 +335,9 @@ static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
+ 				ndata->new_rate / PRESCALE);
+ 		local_irq_restore(flags);
+ 
++		/* update cached frequency */
++		ttc->freq = ndata->new_rate;
++
+ 		/* fall through */
+ 	}
+ 	case PRE_RATE_CHANGE:
+@@ -367,6 +371,7 @@ static void __init ttc_setup_clockevent(struct clk *clk,
+ 	if (clk_notifier_register(ttcce->ttc.clk,
+ 				&ttcce->ttc.clk_rate_change_nb))
+ 		pr_warn("Unable to register clock notifier.\n");
++	ttcce->ttc.freq = clk_get_rate(ttcce->ttc.clk);
+ 
+ 	ttcce->ttc.base_addr = base;
+ 	ttcce->ce.name = "ttc_clockevent";
+@@ -396,7 +401,7 @@ static void __init ttc_setup_clockevent(struct clk *clk,
+ 	}
+ 
+ 	clockevents_config_and_register(&ttcce->ce,
+-			clk_get_rate(ttcce->ttc.clk) / PRESCALE, 1, 0xfffe);
++			ttcce->ttc.freq / PRESCALE, 1, 0xfffe);
+ }
+ 
+ /**
