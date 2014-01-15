@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaAOMYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 07:24:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:27679 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010AbaAOMYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 07:24:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,662,1384329600"; 
-   d="scan'208";a="459170920"
-Date: Wed, 15 Jan 2014 20:24:01 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [x86, kaslr] PANIC: early exception 0e rip 10:ffffffff8ae04c6e
- error 0 cr2 ffffffff81972b28
-Message-ID: <20140115122401.GB18065@localhost>
-References: <20140115121201.GA16953@localhost>
+	id S1751953AbaAOMY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 07:24:59 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:37553 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaAOMY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 07:24:57 -0500
+Date: Wed, 15 Jan 2014 13:24:52 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, raistlin@linux.it,
+        juri.lelli@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+Message-ID: <20140115122452.GA18311@gmail.com>
+References: <52D64676.4040000@linaro.org>
+ <20140115120418.GD31570@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115121201.GA16953@localhost>
+In-Reply-To: <20140115120418.GD31570@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees,
 
-This script can reproduce the problem. Please modify the -initrd line
-before use.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Usage:
-        ./kvm-0day.sh vmlinuz-3.12.0-rc4-00008-g6e6a493
+> On Wed, Jan 15, 2014 at 09:27:34AM +0100, Daniel Lezcano wrote:
+> > 
+> > Hi all,
+> > 
+> > I use the tip/sched/core branch.
+> > 
+> > After git pulling yesterday, my host is unresponsive after booting the OS.
+> > 
+> >  * It boots normally
+> >  * It sends info to the console
+> >  * The graphics does not work
+> >  * The terminals show the prompt, I can enter the username but after
+> > pressing enter, it does not give the password prompt
+> >  * sysrq works more or less, I can't get the process stack but it receives
+> > the command
+> > 
+> > It is like no new process can be created.
+> > 
+> > I have a dual Xeon processor E5325 (2 x 4 cores).
+> > 
+> > After git bisecting, the following patch seems to introduce the bug.
+> > 
+> > commit d50dde5a10f305253cbc3855307f608f8a3c5f73
+> 
+> OK, so my headless WSM-EP boots just fine. Obviously it cannot confirm
+> if graphics works, but I can ssh in and work on it without bother.
+> 
+> I can even log in on the serial console without problems.
+> 
+> I tried both tip/master and tip/sched/core.
 
-#!/bin/bash
+I too booted various sytems and have yet to notice similar oddity.
 
-kernel=$1
+Thanks,
 
-kvm=(
-	qemu-system-x86_64 -cpu kvm64 -enable-kvm
-	-kernel $kernel
-	-initrd /kernel-tests/initrd/yocto-minimal-x86_64.cgz
-	# -initrd /kernel-tests/initrd/yocto-minimal-i386.cgz
-	# -initrd /kernel-tests/initrd/quantal-core-i386.cgz
-	# -initrd /kernel-tests/initrd/quantal-core-x86_64.cgz
-	-smp 2
-	-m 256M
-	-net nic,vlan=0,macaddr=00:00:00:00:00:00,model=virtio
-	-net user,vlan=0
-	-net nic,vlan=1,model=e1000
-	-net user,vlan=1
-	-boot order=nc
-	-no-reboot
-	-watchdog i6300esb
-	-serial stdio
-	-display none
-	-monitor null
-)
-
-append=(
-	debug
-	sched_debug
-	apic=debug
-	ignore_loglevel
-	# dyndbg=\"func kobject_release +p\"
-	sysrq_always_enabled
-	panic=10
-	prompt_ramdisk=0
-	earlyprintk=ttyS0,115200
-	console=ttyS0,115200
-	console=tty0
-	vga=normal
-	root=/dev/ram0
-	rw
-)
-
-"${kvm[@]}" --append "${append[*]}"
+	Ingo
