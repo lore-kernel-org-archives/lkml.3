@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaAOCw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:52:58 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:42253 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaAOCw4 (ORCPT
+	id S1752161AbaAOCxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:53:24 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:54597 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882AbaAOCxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:52:56 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: broonie@kernel.org
-Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] regulator: pfuze100-regulator: Fix some checkpatch complaints
-Date: Wed, 15 Jan 2014 00:52:45 -0200
-Message-Id: <1389754365-31863-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 14 Jan 2014 21:53:21 -0500
+Date: Tue, 14 Jan 2014 18:53:19 -0800 (PST)
+Message-Id: <20140114.185319.701097353751396242.davem@davemloft.net>
+To: ying.xue@windriver.com
+Cc: vfalico@redhat.com, john.r.fastabend@intel.com, stephen@networkplumber.org,
+        antonio@meshcoding.com, dmitry.tarnyagin@lockless.no,
+        socketcan@hartkopp.net, johannes@sipsolutions.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next v2 00/10] use appropriate APIs to get
+ interfaces
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+References: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Ying Xue <ying.xue@windriver.com>
+Date: Wed, 15 Jan 2014 10:23:35 +0800
 
-Fix the following checkpatch error and warning:
+> Under rtnl_lock protection, we should use __dev_get_name/index()
+> rather than dev_get_name()/index() to find interface handlers
+> because the former interfaces can help us avoid to change interface
+> reference counter.
+> 
+> v2 changes:
+>  - Change return value of nl80211_set_wiphy() to 0 in patch #10
+>    by johannes's suggestion.
+>  - Add 'Acked-by' into several patches which were acknowledged by
+>    corresponding maintainers.
 
-ERROR: switch and case should be at the same indent
-#311: FILE: drivers/regulator/pfuze100-regulator.c:311:
-+	switch (value & 0x0f) {
-[...]
-+		case 0x8:
-[...]
-+		case 0x0:
-[...]
-+		default:
-
-WARNING: line over 80 characters
-#312: FILE: drivers/regulator/pfuze100-regulator.c:312:
-+		/* Freescale misprogrammed 1-3% of parts prior to week 8 of 2013 as ID=8 */
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/regulator/pfuze100-regulator.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index 0c511ae..ac01ad2 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -309,14 +309,17 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
- 		return ret;
- 
- 	switch (value & 0x0f) {
--		/* Freescale misprogrammed 1-3% of parts prior to week 8 of 2013 as ID=8 */
--		case 0x8:
--			dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
--		case 0x0:
--			break;
--		default:
--			dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
--			return -ENODEV;
-+	/*
-+	 * Freescale misprogrammed 1-3% of parts prior to week 8 of 2013
-+	 * as ID=8
-+	 */
-+	case 0x8:
-+		dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
-+	case 0x0:
-+		break;
-+	default:
-+		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
-+		return -ENODEV;
- 	}
- 
- 	ret = regmap_read(pfuze_chip->regmap, PFUZE100_REVID, &value);
--- 
-1.8.1.2
-
+This looks fine, series applied, thanks.
