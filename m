@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548AbaAOV5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:57:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40983 "EHLO
+	id S1754018AbaAOW0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:26:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41018 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753494AbaAOV53 (ORCPT
+	with ESMTP id S1753551AbaAOV5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:29 -0500
+	Wed, 15 Jan 2014 16:57:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: =?UTF-8?q?Luk=C3=A1=C5=A1=20Czerner?= <lczerner@redhat.com>,
+        Eryu Guan <guaneryu@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 132/166] ARM: fix "bad mode in ... handler" message for undefined instructions
-Date: Wed, 15 Jan 2014 13:52:26 -0800
-Message-Id: <1389822780-4729-133-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 101/166] ext4: check for overlapping extents in ext4_valid_extent_entries()
+Date: Wed, 15 Jan 2014 13:51:55 -0800
+Message-Id: <1389822780-4729-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +31,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Eryu Guan <guaneryu@gmail.com>
 
-commit 29c350bf28da333e41e30497b649fe335712a2ab upstream.
+commit 5946d089379a35dda0e531710b48fca05446a196 upstream.
 
-The array was missing the final entry for the undefined instruction
-exception handler; this commit adds it.
+A corrupted ext4 may have out of order leaf extents, i.e.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+extent: lblk 0--1023, len 1024, pblk 9217, flags: LEAF UNINIT
+extent: lblk 1000--2047, len 1024, pblk 10241, flags: LEAF UNINIT
+             ^^^^ overlap with previous extent
+
+Reading such extent could hit BUG_ON() in ext4_es_cache_extent().
+
+	BUG_ON(end < lblk);
+
+The problem is that __read_extent_tree_block() tries to cache holes as
+well but assumes 'lblk' is greater than 'prev' and passes underflowed
+length to ext4_es_cache_extent(). Fix it by checking for overlapping
+extents in ext4_valid_extent_entries().
+
+I hit this when fuzz testing ext4, and am able to reproduce it by
+modifying the on-disk extent by hand.
+
+Also add the check for (ee_block + len - 1) in ext4_valid_extent() to
+make sure the value is not overflow.
+
+Ran xfstests on patched ext4 and no regression.
+
+Cc: Lukáš Czerner <lczerner@redhat.com>
+Signed-off-by: Eryu Guan <guaneryu@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/kernel/traps.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/ext4/extents.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 1392beb..cb49efe 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -37,7 +37,13 @@
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index c3db941..8b5c264 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -363,8 +363,10 @@ static int ext4_valid_extent(struct inode *inode, struct ext4_extent *ext)
+ {
+ 	ext4_fsblk_t block = ext4_ext_pblock(ext);
+ 	int len = ext4_ext_get_actual_len(ext);
++	ext4_lblk_t lblock = le32_to_cpu(ext->ee_block);
++	ext4_lblk_t last = lblock + len - 1;
  
- #include "signal.h"
- 
--static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
-+static const char *handler[]= {
-+	"prefetch abort",
-+	"data abort",
-+	"address exception",
-+	"interrupt",
-+	"undefined instruction",
-+};
- 
- void *vectors_page;
- 
+-	if (len == 0)
++	if (lblock > last)
+ 		return 0;
+ 	return ext4_data_block_valid(EXT4_SB(inode->i_sb), block, len);
+ }
+@@ -390,11 +392,26 @@ static int ext4_valid_extent_entries(struct inode *inode,
+ 	if (depth == 0) {
+ 		/* leaf entries */
+ 		struct ext4_extent *ext = EXT_FIRST_EXTENT(eh);
++		struct ext4_super_block *es = EXT4_SB(inode->i_sb)->s_es;
++		ext4_fsblk_t pblock = 0;
++		ext4_lblk_t lblock = 0;
++		ext4_lblk_t prev = 0;
++		int len = 0;
+ 		while (entries) {
+ 			if (!ext4_valid_extent(inode, ext))
+ 				return 0;
++
++			/* Check for overlapping extents */
++			lblock = le32_to_cpu(ext->ee_block);
++			len = ext4_ext_get_actual_len(ext);
++			if ((lblock <= prev) && prev) {
++				pblock = ext4_ext_pblock(ext);
++				es->s_last_error_block = cpu_to_le64(pblock);
++				return 0;
++			}
+ 			ext++;
+ 			entries--;
++			prev = lblock + len - 1;
+ 		}
+ 	} else {
+ 		struct ext4_extent_idx *ext_idx = EXT_FIRST_INDEX(eh);
 -- 
 1.8.3.2
 
