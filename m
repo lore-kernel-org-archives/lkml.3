@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaAOV6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:58:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41122 "EHLO
+	id S1754827AbaAOWS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:18:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41168 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767AbaAOV6e (ORCPT
+	with ESMTP id S1753738AbaAOV6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:34 -0500
+	Wed, 15 Jan 2014 16:58:49 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Len Brown <len.brown@intel.com>, Oleg Nesterov <oleg@redhat.com>,
+        kbuild test robot <fengguang.wu@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 060/166] drm/i915: Hold mutex across i915_gem_release
-Date: Wed, 15 Jan 2014 13:51:14 -0800
-Message-Id: <1389822780-4729-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 107/166] libata, freezer: avoid block device removal while system is frozen
+Date: Wed, 15 Jan 2014 13:52:01 -0800
+Message-Id: <1389822780-4729-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,57 +32,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Tejun Heo <tj@kernel.org>
 
-commit 0d1430a3f4b7cfd8779b78740a4182321f3ca7f3 upstream.
+commit 85fbd722ad0f5d64d1ad15888cd1eb2188bfb557 upstream.
 
-Inorder to serialise the closing of the file descriptor and its
-subsequent release of client requests with i915_gem_free_request(), we
-need to hold the struct_mutex in i915_gem_release(). Failing to do so
-has the potential to trigger an OOPS, later with a use-after-free.
+Freezable kthreads and workqueues are fundamentally problematic in
+that they effectively introduce a big kernel lock widely used in the
+kernel and have already been the culprit of several deadlock
+scenarios.  This is the latest occurrence.
 
-Testcase: igt/gem_close_race
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70874
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71029
-Reported-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+During resume, libata rescans all the ports and revalidates all
+pre-existing devices.  If it determines that a device has gone
+missing, the device is removed from the system which involves
+invalidating block device and flushing bdi while holding driver core
+layer locks.  Unfortunately, this can race with the rest of device
+resume.  Because freezable kthreads and workqueues are thawed after
+device resume is complete and block device removal depends on
+freezable workqueues and kthreads (e.g. bdi_wq, jbd2) to make
+progress, this can lead to deadlock - block device removal can't
+proceed because kthreads are frozen and kthreads can't be thawed
+because device resume is blocked behind block device removal.
+
+839a8e8660b6 ("writeback: replace custom worker pool implementation
+with unbound workqueue") made this particular deadlock scenario more
+visible but the underlying problem has always been there - the
+original forker task and jbd2 are freezable too.  In fact, this is
+highly likely just one of many possible deadlock scenarios given that
+freezer behaves as a big kernel lock and we don't have any debug
+mechanism around it.
+
+I believe the right thing to do is getting rid of freezable kthreads
+and workqueues.  This is something fundamentally broken.  For now,
+implement a funny workaround in libata - just avoid doing block device
+hot[un]plug while the system is frozen.  Kernel engineering at its
+finest.  :(
+
+v2: Add EXPORT_SYMBOL_GPL(pm_freezing) for cases where libata is built
+    as a module.
+
+v3: Comment updated and polling interval changed to 10ms as suggested
+    by Rafael.
+
+v4: Add #ifdef CONFIG_FREEZER around the hack as pm_freezing is not
+    defined when FREEZER is not configured thus breaking build.
+    Reported by kbuild test robot.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Tomaž Šolc <tomaz.solc@tablix.org>
+Reviewed-by: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=62801
+Link: http://lkml.kernel.org/r/20131213174932.GA27070@htj.dyndns.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_dma.c         | 2 ++
- drivers/gpu/drm/i915/i915_gem_context.c | 2 --
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-scsi.c | 21 +++++++++++++++++++++
+ kernel/freezer.c          |  6 ++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index ef781e7..92896bf 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1794,8 +1794,10 @@ void i915_driver_lastclose(struct drm_device * dev)
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index f677e94..2b628d6 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3851,6 +3851,27 @@ void ata_scsi_hotplug(struct work_struct *work)
+ 		return;
+ 	}
  
- void i915_driver_preclose(struct drm_device * dev, struct drm_file *file_priv)
- {
-+	mutex_lock(&dev->struct_mutex);
- 	i915_gem_context_close(dev, file_priv);
- 	i915_gem_release(dev, file_priv);
-+	mutex_unlock(&dev->struct_mutex);
- }
++	/*
++	 * XXX - UGLY HACK
++	 *
++	 * The block layer suspend/resume path is fundamentally broken due
++	 * to freezable kthreads and workqueue and may deadlock if a block
++	 * device gets removed while resume is in progress.  I don't know
++	 * what the solution is short of removing freezable kthreads and
++	 * workqueues altogether.
++	 *
++	 * The following is an ugly hack to avoid kicking off device
++	 * removal while freezer is active.  This is a joke but does avoid
++	 * this particular deadlock scenario.
++	 *
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=62801
++	 * http://marc.info/?l=linux-kernel&m=138695698516487
++	 */
++#ifdef CONFIG_FREEZER
++	while (pm_freezing)
++		msleep(10);
++#endif
++
+ 	DPRINTK("ENTER\n");
+ 	mutex_lock(&ap->scsi_scan_mutex);
  
- void i915_driver_postclose(struct drm_device *dev, struct drm_file *file)
-diff --git a/drivers/gpu/drm/i915/i915_gem_context.c b/drivers/gpu/drm/i915/i915_gem_context.c
-index a80bba9..e75cac6 100644
---- a/drivers/gpu/drm/i915/i915_gem_context.c
-+++ b/drivers/gpu/drm/i915/i915_gem_context.c
-@@ -310,10 +310,8 @@ void i915_gem_context_close(struct drm_device *dev, struct drm_file *file)
- {
- 	struct drm_i915_file_private *file_priv = file->driver_priv;
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index c38893b..7875851 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -19,6 +19,12 @@ EXPORT_SYMBOL(system_freezing_cnt);
+ bool pm_freezing;
+ bool pm_nosig_freezing;
  
--	mutex_lock(&dev->struct_mutex);
- 	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
- 	idr_destroy(&file_priv->context_idr);
--	mutex_unlock(&dev->struct_mutex);
- }
++/*
++ * Temporary export for the deadlock workaround in ata_scsi_hotplug().
++ * Remove once the hack becomes unnecessary.
++ */
++EXPORT_SYMBOL_GPL(pm_freezing);
++
+ /* protects freezing and frozen transitions */
+ static DEFINE_SPINLOCK(freezer_lock);
  
- static struct i915_hw_context *
 -- 
 1.8.3.2
 
