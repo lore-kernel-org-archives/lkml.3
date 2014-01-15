@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaAOWOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:14:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41255 "EHLO
+	id S1753977AbaAOV7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:59:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41227 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984AbaAOV7X (ORCPT
+	with ESMTP id S1753944AbaAOV7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:59:23 -0500
+	Wed, 15 Jan 2014 16:59:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 036/166] dm thin: switch to read-only mode if metadata space is exhausted
-Date: Wed, 15 Jan 2014 13:50:50 -0800
-Message-Id: <1389822780-4729-37-git-send-email-kamal@canonical.com>
+Cc: Nat Gurumoorthy <natg@google.com>, "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 150/166] tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
+Date: Wed, 15 Jan 2014 13:52:44 -0800
+Message-Id: <1389822780-4729-151-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -26,85 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Nat Gurumoorthy <natg@google.com>
 
-commit 4a02b34e0cf1d0d0dd3737702841da4bf615a50a upstream.
+[ Upstream commit 388d3335575f4c056dcf7138a30f1454e2145cd8 ]
 
-Switch the thin pool to read-only mode in alloc_data_block() if
-dm_pool_alloc_data_block() fails because the pool's metadata space is
-exhausted.
+The new tg3 driver leaves REG_BASE_ADDR (PCI config offset 120)
+uninitialized. From power on reset this register may have garbage in it. The
+Register Base Address register defines the device local address of a
+register. The data pointed to by this location is read or written using
+the Register Data register (PCI config offset 128). When REG_BASE_ADDR has
+garbage any read or write of Register Data Register (PCI 128) will cause the
+PCI bus to lock up. The TCO watchdog will fire and bring down the system.
 
-Differentiate between data and metadata space in messages about no
-free space available.
-
-This issue was noticed with the device-mapper-test-suite using:
-dmtest run --suite thin-provisioning -n /exhausting_metadata_space_causes_fail_mode/
-
-The quantity of errors logged in this case must be reduced.
-
-before patch:
-
-device-mapper: thin: 253:4: reached low water mark for metadata device: sending event.
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: space map common: dm_tm_shadow_block() failed
-<snip ... these repeat for a _very_ long while ... >
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: thin: 253:4: commit failed: error = -28
-device-mapper: thin: 253:4: switching pool to read-only mode
-
-after patch:
-
-device-mapper: thin: 253:4: reached low water mark for metadata device: sending event.
-device-mapper: space map metadata: unable to allocate new metadata block
-device-mapper: thin: 253:4: no free metadata space available.
-device-mapper: thin: 253:4: switching pool to read-only mode
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Nat Gurumoorthy <natg@google.com>
+Acked-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-thin.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index a3d00dd..c29e967 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -878,7 +878,7 @@ static int alloc_data_block(struct thin_c *tc, dm_block_t *result)
- 			 * doing all this checking and return -ENOSPC.
- 			 */
- 			if (!free_blocks) {
--				DMWARN("%s: no free space available.",
-+				DMWARN("%s: no free data space available.",
- 				       dm_device_name(pool->pool_md));
- 				spin_lock_irqsave(&pool->lock, flags);
- 				pool->no_free_space = 1;
-@@ -889,8 +889,16 @@ static int alloc_data_block(struct thin_c *tc, dm_block_t *result)
- 	}
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 3149f5b..b8aecd4 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -15589,6 +15589,9 @@ static int tg3_get_invariants(struct tg3 *tp, const struct pci_device_id *ent)
+ 	/* Clear this out for sanity. */
+ 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
  
- 	r = dm_pool_alloc_data_block(pool->pmd, result);
--	if (r)
-+	if (r) {
-+		if (r == -ENOSPC &&
-+		    !dm_pool_get_free_metadata_block_count(pool->pmd, &free_blocks) &&
-+		    !free_blocks) {
-+			DMWARN("%s: no free metadata space available.",
-+			       dm_device_name(pool->pool_md));
-+			set_pool_mode(pool, PM_READ_ONLY);
-+		}
- 		return r;
-+	}
- 
- 	return 0;
- }
++	/* Clear TG3PCI_REG_BASE_ADDR to prevent hangs. */
++	tw32(TG3PCI_REG_BASE_ADDR, 0);
++
+ 	pci_read_config_dword(tp->pdev, TG3PCI_PCISTATE,
+ 			      &pci_state_reg);
+ 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
 -- 
 1.8.3.2
 
