@@ -1,85 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaAOPJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:09:41 -0500
-Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:55072 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751783AbaAOPJh (ORCPT
+	id S1752271AbaAOPLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:11:20 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:19180 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928AbaAOPLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:09:37 -0500
-Message-ID: <52D6A48D.4080302@overkiz.com>
-Date: Wed, 15 Jan 2014 16:09:01 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 10:11:16 -0500
+Message-ID: <52D6A4FB.7060305@hp.com>
+Date: Wed, 15 Jan 2014 10:10:51 -0500
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <20140108183418.GA12358@obsidianresearch.com> <52CDA032.3010804@overkiz.com> <20140108191339.GB12358@obsidianresearch.com> <52CE5F82.6070802@overkiz.com> <20140109173505.GB8899@obsidianresearch.com>
-In-Reply-To: <20140109173505.GB8899@obsidianresearch.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 11857414870855940330
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Jason Low <jason.low2@hp.com>
+CC: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
+        aswin@hp.com, scott.norton@hp.com
+Subject: Re: [RFC 2/3] mutex: Modify the way optimistic spinners are queued
+References: <1389745990-7069-1-git-send-email-jason.low2@hp.com> <1389745990-7069-3-git-send-email-jason.low2@hp.com>
+In-Reply-To: <1389745990-7069-3-git-send-email-jason.low2@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jason,
-
-On 09/01/2014 18:35, Jason Gunthorpe wrote:
-> On Thu, Jan 09, 2014 at 09:36:18AM +0100, boris brezillon wrote:
+On 01/14/2014 07:33 PM, Jason Low wrote:
+> This patch is needed for patch 3, but should also be beneficial in general.
 >
->>> You might want to check if you can boil down the DT timings from the
->>> huge list to just an ONFI mode number..
->> Sure, but the sunxi driver needs at least 19 of them...
-> So does mvebu's NAND driver..
+> The mutex->spin_mlock was introduced in order to ensure that only 1 thread
+> loops on lock->owner field at a time to reduce cache line contention. When
+> lock->owner is NULL and the lock->count is still not 1, the spinner(s) will
+> continually release and obtain the lock->spin_mlock. This can generate
+> quite a bit of overhead/contention, and also might just delay the spinner
+> from getting the lock.
 >
-> What I ment was you could have a
+> This patch modifies the way optimistic spinners are queued by queuing before
+> entering the optimistic spinning loop as oppose to acquiring before every
+> call to mutex_spin_on_owner(). So in situations where the spinner requires
+> extra spins before obtaining the lock, then there will only be 1 spinner
+> trying to get the lock and it will avoid the overhead from unnecessarily
+> unlocking and locking the spin_mlock.
 >
->    onfi,nand-timing-mode = 0
+> Signed-off-by: Jason Low<jason.low2@hp.com>
+> ---
+>   kernel/locking/mutex.c |   13 ++++++++-----
+>   1 files changed, 8 insertions(+), 5 deletions(-)
 >
-> in the DT. Each of the modes defines all ~19 parameters, higher modes
-> are faster.
+> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+> index 85c6be1..b500cc7 100644
+> --- a/kernel/locking/mutex.c
+> +++ b/kernel/locking/mutex.c
+> @@ -419,6 +419,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>   	struct mutex_waiter waiter;
+>   	unsigned long flags;
+>   	int ret;
+> +	struct mspin_node node;
 >
-> Pick a mode value that fits all the parameters of the connected
-> non-ONFI flash.
+>   	preempt_disable();
+>   	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+> @@ -449,9 +450,9 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>   	if (!mutex_can_spin_on_owner(lock))
+>   		goto slowpath;
 >
-> This would be instead of defining each parameter
-> individually.. Provide some helpers to convert from a onfi mode number
-> to all the onfi defined timing parameters so that drivers can
-> configure the HW..
-
-Are you suggesting we should provide a function that converts these
-modes into a nand_timings struct, or just use the timing modes and
-let the NAND controller drivers configure its IP accordingly ?
-
-I found the ONFI timing tables in this document:
-
-www.*onfi*.org/~/media/*ONFI*/specs/*onfi*_3_1_spec.pdf‎ (chapter 4.16).
-
-I suppose my nand_timings struct should use the names described
-page 110-111 (at least if we decide to use nand_timings and not
-nand_timing_modes), right ?
-
-Best Regards,
-
-Boris
-
+> +	mspin_lock(MLOCK(lock),&node);
+>   	for (;;) {
+>   		struct task_struct *owner;
+> -		struct mspin_node  node;
 >
-> Jason
+>   		if (use_ww_ctx&&  ww_ctx->acquired>  0) {
+>   			struct ww_mutex *ww;
+> @@ -465,15 +466,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>   			 * As such, when deadlock detection needs to be
+>   			 * performed the optimistic spinning cannot be done.
+>   			 */
+> -			if (ACCESS_ONCE(ww->ctx))
+> +			if (ACCESS_ONCE(ww->ctx)) {
+> +				mspin_unlock(MLOCK(lock),&node);
+>   				goto slowpath;
+> +			}
+>   		}
+>
+>   		/*
+>   		 * If there's an owner, wait for it to either
+>   		 * release the lock or go to sleep.
+>   		 */
+> -		mspin_lock(MLOCK(lock),&node);
+>   		owner = ACCESS_ONCE(lock->owner);
+>   		if (owner&&  !mutex_spin_on_owner(lock, owner)) {
+>   			mspin_unlock(MLOCK(lock),&node);
+> @@ -495,7 +497,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>   			preempt_enable();
+>   			return 0;
+>   		}
+> -		mspin_unlock(MLOCK(lock),&node);
+>
+>   		/*
+>   		 * When there's no owner, we might have preempted between the
+> @@ -503,8 +504,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>   		 * we're an RT task that will live-lock because we won't let
+>   		 * the owner complete.
+>   		 */
+> -		if (!owner&&  (need_resched() || rt_task(task)))
+> +		if (!owner&&  (need_resched() || rt_task(task))) {
+> +			mspin_unlock(MLOCK(lock),&node);
+>   			goto slowpath;
+> +		}
+>
+>   		/*
+>   		 * The cpu_relax() call is a compiler barrier which forces
+
+Maybe you can consider restructure the code as follows to reduce the 
+number of mspin_unlock() call sites:
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index 4dd6e4c..0a78a0c 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -416,6 +416,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
+unsigned
+         struct mutex_waiter waiter;
+         unsigned long flags;
+         int ret;
++       struct mspin_node  node;
+
+         preempt_disable();
+         mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+@@ -446,9 +447,9 @@ __mutex_lock_common(struct mutex *lock, long state, 
+unsigned
+         if (!mutex_can_spin_on_owner(lock))
+                 goto slowpath;
+
++       mspin_lock(MLOCK(lock), &node);
+         for (;;) {
+                 struct task_struct *owner;
+-               struct mspin_node  node;
+
+                 if (use_ww_ctx && ww_ctx->acquired > 0) {
+                         struct ww_mutex *ww;
+@@ -463,19 +464,16 @@ __mutex_lock_common(struct mutex *lock, long 
+state, unsign
+                          * performed the optimistic spinning cannot be 
+done.
+                          */
+                         if (ACCESS_ONCE(ww->ctx))
+-                               goto slowpath;
++                               break;
+                 }
+
+                 /*
+                  * If there's an owner, wait for it to either
+                  * release the lock or go to sleep.
+                  */
+-               mspin_lock(MLOCK(lock), &node);
+                 owner = ACCESS_ONCE(lock->owner);
+-               if (owner && !mutex_spin_on_owner(lock, owner)) {
+-                       mspin_unlock(MLOCK(lock), &node);
+-                       goto slowpath;
+-               }
++               if (owner && !mutex_spin_on_owner(lock, owner))
++                       break;
+
+                 if ((atomic_read(&lock->count) == 1) &&
+                     (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+@@ -492,7 +490,6 @@ __mutex_lock_common(struct mutex *lock, long state, 
+unsigned
+                         preempt_enable();
+                         return 0;
+                 }
+-               mspin_unlock(MLOCK(lock), &node);
+
+                 /*
+                  * When there's no owner, we might have preempted 
+between the
+@@ -501,7 +498,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
+unsigned
+                  * the owner complete.
+                  */
+                 if (!owner && (need_resched() || rt_task(task)))
+-                       goto slowpath;
++                       break;
+
+                 /*
+                  * The cpu_relax() call is a compiler barrier which forces
+@@ -511,6 +508,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
+unsigned
+                  */
+                 arch_mutex_cpu_relax();
+         }
++       mspin_unlock(MLOCK(lock), &node);
+  slowpath:
+  #endif
+         spin_lock_mutex(&lock->wait_lock, flags);
+
 
