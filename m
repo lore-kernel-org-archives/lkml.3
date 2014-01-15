@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaAOKic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:38:32 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33259 "EHLO
+	id S1751814AbaAOKkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:40:13 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33300 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbaAOKi3 (ORCPT
+	with ESMTP id S1751046AbaAOKkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:38:29 -0500
-Date: Wed, 15 Jan 2014 11:38:08 +0100
+	Wed, 15 Jan 2014 05:40:10 -0500
+Date: Wed, 15 Jan 2014 11:39:49 +0100
 From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
-Message-ID: <20140115103808.GY31570@twins.programming.kicks-ass.net>
-References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, raistlin@linux.it,
+        juri.lelli@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+Message-ID: <20140115103949.GZ31570@twins.programming.kicks-ass.net>
+References: <52D64676.4040000@linaro.org>
+ <20140115092245.GA15190@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
+In-Reply-To: <20140115092245.GA15190@gmail.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 02:57:36PM +0530, Viresh Kumar wrote:
-> Hi Again,
+On Wed, Jan 15, 2014 at 10:22:45AM +0100, Ingo Molnar wrote:
+> 3)
 > 
-> I am now successful in isolating a CPU completely using CPUsets,
-> NO_HZ_FULL and CPU hotplug..
+> On ARM:
 > 
-> My setup and requirements for those who weren't following the
-> earlier mails:
+> -#define __NR_syscalls  (380)
+> +#define __NR_syscalls  (384)
 > 
-> For networking machines it is required to run data plane threads on
-> some CPUs (i.e. one thread per CPU) and these CPUs shouldn't be
-> interrupted by kernel at all.
+> but:
 > 
-> Earlier I tried CPUSets with NO_HZ by creating two groups with
-> load_balancing disabled between them and manually tried to move
-> all tasks out to CPU0 group. But even then there were interruptions
-> which were continuously coming on CPU1 (which I am trying to
-> isolate). These were some workqueue events, some timers (like
-> prandom), timer overflow events (As NO_HZ_FULL pushes hrtimer
-> to long ahead in future, 450 seconds, rather than disabling them
-> completely, and these hardware timers were overflowing their
-> counters after 90 seconds on Samsung Exynos board).
+>  #define __NR_finit_module              (__NR_SYSCALL_BASE+379)
+> +#define __NR_sched_setattr             (__NR_SYSCALL_BASE+380)
+> +#define __NR_sched_getattr             (__NR_SYSCALL_BASE+381)
+>  
+>  /*
 > 
-> So after creating CPUsets I hotunplugged CPU1 and added it back
-> immediately. This moved all these interruptions away and now
-> CPU1 is running my single thread ("stress") for ever.
 > 
-> Now my question is: Is there anything particularly wrong about using
-> hotplugging here ? Will that lead to a disaster :)
+> Why is the syscall table increased by 4, while we only add 2 new 
+> syscalls?
 
-Nah, its just ugly and we should fix it. You need to be careful to not
-place tasks in a cpuset you're going to unplug though, that'll give
-funny results.
+arch/arm/kernel/entry-common.S:.ifne NR_syscalls - __NR_syscalls
+arch/arm/kernel/calls.S:.equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
 
-
+Totally confusing, I know.
