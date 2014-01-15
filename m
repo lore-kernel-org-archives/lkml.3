@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaAOWej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:34:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40846 "EHLO
+	id S1755246AbaAOWfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:35:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40815 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082AbaAOV4L (ORCPT
+	with ESMTP id S1752793AbaAOVyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:56:11 -0500
+	Wed, 15 Jan 2014 16:54:36 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 119/166] drm/radeon: fix render backend setup for SI and CIK
-Date: Wed, 15 Jan 2014 13:52:13 -0800
-Message-Id: <1389822780-4729-120-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 121/166] tg3: Expand 4g_overflow_test workaround to skb fragments of any size.
+Date: Wed, 15 Jan 2014 13:52:15 -0800
+Message-Id: <1389822780-4729-122-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,77 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <marek.olsak@amd.com>
+From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 9fadb352ed73edd7801a280b552d33a6040c8721 upstream.
+commit 375679104ab3ccfd18dcbd7ba503734fb9a2c63a upstream.
 
-Only the render backends of the first shader engine were enabled. The others
-were erroneously disabled. Enabling the other render backends improves
-performance a lot.
+The current driver assumes that an skb fragment can only be upto jumbo
+size. Presumably this was a fast-path optimization. This assumption is
+no longer true as fragments can be upto 32k.
 
-Unigine Sanctuary on Bonaire:
-  Before: 15 fps
-  After:  90 fps
+v2: Remove unnecessary parantheses per Eric Dumazet.
 
-Judging from the fan noise, the GPU was also underclocked when the other
-render backends were disabled, resulting in horrible performance. The fan is
-a lot noisy under load now.
-
-Signed-off-by: Marek Olšák <marek.olsak@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ kamal: backport to 3.8 (SI only; no CIK in 3.8) ]
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/si.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index ff9a680..0746272 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -1456,7 +1456,7 @@ static void si_setup_spi(struct radeon_device *rdev,
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 79096af..3149f5b 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -7030,7 +7030,7 @@ static inline int tg3_4g_overflow_test(dma_addr_t mapping, int len)
+ {
+ 	u32 base = (u32) mapping & 0xffffffff;
+ 
+-	return (base > 0xffffdcc0) && (base + len + 8 < base);
++	return base + len + 8 < base;
  }
  
- static u32 si_get_rb_disabled(struct radeon_device *rdev,
--			      u32 max_rb_num, u32 se_num,
-+			      u32 max_rb_num_per_se,
- 			      u32 sh_per_se)
- {
- 	u32 data, mask;
-@@ -1470,14 +1470,14 @@ static u32 si_get_rb_disabled(struct radeon_device *rdev,
- 
- 	data >>= BACKEND_DISABLE_SHIFT;
- 
--	mask = si_create_bitmask(max_rb_num / se_num / sh_per_se);
-+	mask = si_create_bitmask(max_rb_num_per_se / sh_per_se);
- 
- 	return data & mask;
- }
- 
- static void si_setup_rb(struct radeon_device *rdev,
- 			u32 se_num, u32 sh_per_se,
--			u32 max_rb_num)
-+			u32 max_rb_num_per_se)
- {
- 	int i, j;
- 	u32 data, mask;
-@@ -1487,14 +1487,14 @@ static void si_setup_rb(struct radeon_device *rdev,
- 	for (i = 0; i < se_num; i++) {
- 		for (j = 0; j < sh_per_se; j++) {
- 			si_select_se_sh(rdev, i, j);
--			data = si_get_rb_disabled(rdev, max_rb_num, se_num, sh_per_se);
-+			data = si_get_rb_disabled(rdev, max_rb_num_per_se, sh_per_se);
- 			disabled_rbs |= data << ((i * sh_per_se + j) * TAHITI_RB_BITMAP_WIDTH_PER_SH);
- 		}
- 	}
- 	si_select_se_sh(rdev, 0xffffffff, 0xffffffff);
- 
- 	mask = 1;
--	for (i = 0; i < max_rb_num; i++) {
-+	for (i = 0; i < max_rb_num_per_se * se_num; i++) {
- 		if (!(disabled_rbs & mask))
- 			enabled_rbs |= mask;
- 		mask <<= 1;
+ /* Test for DMA addresses > 40-bit */
 -- 
 1.8.3.2
 
