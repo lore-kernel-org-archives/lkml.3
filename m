@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaAOAIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:08:47 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51278 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaAOAIp (ORCPT
+	id S1752105AbaAOAKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:10:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35060 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaAOAJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:08:45 -0500
-Date: Wed, 15 Jan 2014 00:08:32 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: linux-mmc@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] mmc: add Toshiba PCI SD controller driver
-Message-ID: <20140115000832.56c62878@alan.etchedpixels.co.uk>
-In-Reply-To: <201401142238.21879.linux@rainbow-software.org>
-References: <201401142238.21879.linux@rainbow-software.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Tue, 14 Jan 2014 19:09:59 -0500
+Date: Tue, 14 Jan 2014 16:09:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: atomlin@redhat.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, oleg@redhat.com,
+        riel@redhat.com
+Subject: Re: [RFC PATCH v2 0/2] hung_task: Display every hung task warning
+Message-Id: <20140114160957.949dc28b1d766598792c2ba8@linux-foundation.org>
+In-Reply-To: <1389742918-32598-1-git-send-email-atomlin@redhat.com>
+References: <1389742918-32598-1-git-send-email-atomlin@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,37 +24,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 14 Jan 2014 23:41:56 +0000 atomlin@redhat.com wrote:
 
-> +	pr_debug("Command IRQ complete %d %d %x\n", cmd->opcode, cmd->error,
-> +	    cmd->flags);
+> The khungtaskd thread limits how many hung task warnings it displays
+> at a time, when a timeout occurs. This patch allows that limit to be
+> set to "unlimited", by setting hung_task_warnings to -1, which will
+> cause khungtaskd to display information about all hung tasks.
 
-dev_dbg... (and a few other places)
-
-
-> +/* Set MMC clock / power.
-> + * Note: This controller uses a simple divider scheme therefore it cannot run
-> + * SD/MMC cards at full speed (24/20MHz). HCLK (=33MHz PCI clock?) is too high
-> + * and the next slowest is 16MHz (div=2).
-> + */
-> +static void toshsd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-
-This has some very long delays with interrupts off from the
-spin_lock_irqsave. I guess thats hardly #1 priority though nor a killer.
-
-
-> +	/* reset */
-> +	toshsd_writew(host, SD_SOFTWARERESET, 0); /* assert */
-> +	mdelay(2);
-> +	toshsd_writew(host, SD_SOFTWARERESET, 1); /* deassert */
-> +	mdelay(2);
-
-This doesn't do quite what you might think - if the device is mmio mapped
-then the write can be posted so the mdelay(2) may not be 2mS. I guess if
-the old driver didn't do it then it was already plenty long enough...
-
-
-> +	base = pci_resource_start(pdev, 0);
-> +	dev_info(&pdev->dev, "MMIO %pa, IRQ %d\n", &base, pdev->irq);
-
-dbg
+The changelog provides no reason why you think this change should be
+made.  This is awkward, because it means that nobody has any reason
+to apply the patch!
 
