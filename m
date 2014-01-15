@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923AbaAOWWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:22:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41089 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753721AbaAOV6Z (ORCPT
+	id S1754945AbaAOWWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:22:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59429 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928AbaAOWWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:25 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Rafael Aquini <aquini@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 095/166] mm/compaction: respect ignore_skip_hint in update_pageblock_skip
-Date: Wed, 15 Jan 2014 13:51:49 -0800
-Message-Id: <1389822780-4729-96-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Wed, 15 Jan 2014 17:22:48 -0500
+Date: Wed, 15 Jan 2014 23:22:41 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH v2 tip/core/timers] Crude timer-wheel latency hacks
+In-Reply-To: <20140115051939.GA31164@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1401152316500.4207@ionos.tec.linutronix.de>
+References: <20140115051939.GA31164@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.16 -stable review patch.  If anyone has any objections, please let me know.
+Paul,
 
-------------------
+On Tue, 14 Jan 2014, Paul E. McKenney wrote:
+> The following three patches provide some crude timer-wheel latency
+> patches.  I understand that a more comprehensive solution is in progress,
+> but in the meantime, these patches work well in cases where a given
+> CPU has either zero or one timers pending, which is a common case for
+> NO_HZ_FULL kernels.  So, on the off-chance that this is helpful to
+> someone, the individual patches are as follows:
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+so far that makes sense, though I'd rather like to redesign the whole
+timer wheel mess than adding more duct tape to it. I can't dig into
+the details right now as I'm dead tired and about to leave for a
+funeral. i'll have a detailed look at this at the weekend.
 
-commit 6815bf3f233e0b10c99a758497d5d236063b010b upstream.
+Thanks,
 
-update_pageblock_skip() only fits to compaction which tries to isolate
-by pageblock unit.  If isolate_migratepages_range() is called by CMA, it
-try to isolate regardless of pageblock unit and it don't reference
-get_pageblock_skip() by ignore_skip_hint.  We should also respect it on
-update_pageblock_skip() to prevent from setting the wrong information.
+	tglx
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rafael Aquini <aquini@redhat.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- mm/compaction.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index c62bd06..2a17e96 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -133,6 +133,10 @@ static void update_pageblock_skip(struct compact_control *cc,
- 			bool migrate_scanner)
- {
- 	struct zone *zone = cc->zone;
-+
-+	if (cc->ignore_skip_hint)
-+		return;
-+
- 	if (!page)
- 		return;
- 
--- 
-1.8.3.2
 
