@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323AbaAOQdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:33:13 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.221]:65492 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaAOQdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:33:11 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWi/zfN1cLnBYfssVY9SQsClBrtp5eFYXU7YfNKMAfocpEeot7SjdQ==
-X-RZG-CLASS-ID: mo00
-Date: Wed, 15 Jan 2014 17:33:04 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Message-ID: <20140115163304.GA31066@aepfle.de>
-References: <1389728116-21337-1-git-send-email-kys@microsoft.com>
+	id S1752438AbaAOQfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:35:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751776AbaAOQfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 11:35:10 -0500
+Date: Wed, 15 Jan 2014 11:34:27 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
+Cc: "Ken'ichi Ohmichi" <oomichi@mxs.nes.nec.co.jp>
+Subject: [PATCH] Add /sys/kernel/vmcoreinfo ABI documentation
+Message-ID: <20140115163427.GA3180@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1389728116-21337-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.22.rev6346 (2013-10-29)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, K. Y. Srinivasan wrote:
+/sys/kernel/vmcoreinfo was introduced long back but there is no ABI
+documentation. This patch adds the documentation.
 
-> +static int hv_start_fcopy(struct hv_start_fcopy *smsg)
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-kernel-vmcoreinfo |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-> +	if (access((char *)smsg->path_name, F_OK)) {
-> +		if (smsg->copy_flags & CREATE_PATH) {
-> +			if (mkdir((char *)smsg->path_name, 0755)) {
-
-KY,
-
-I guess this needs a loop over every path compoment to implement
-'mkdir -p', if the "-CreateFullPath" option is used?
-
-Hopefully "-DestinationPath" is an arbitrary string and does not require
-some sort of C: prefix. ;-)
-
-
-Olaf
+Index: linux-2.6/Documentation/ABI/testing/sysfs-kernel-vmcoreinfo
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-2.6/Documentation/ABI/testing/sysfs-kernel-vmcoreinfo	2014-01-15 11:30:22.402206445 -0500
+@@ -0,0 +1,14 @@
++What:		/sys/kernel/vmcoreinfo
++Date:		October 2007
++KernelVersion:	2.6.24
++Contact:	Ken'ichi Ohmichi <oomichi@mxs.nes.nec.co.jp>
++		Kexec Mailing List <kexec@lists.infradead.org>
++		Vivek Goyal <vgoyal@redhat.com>
++Description
++		Shows physical address and size of vmcoreinfo ELF note.
++		First value contains physical address of note in hex and
++		second value contains the size of note in hex. This ELF
++		note info is parsed by second kernel and exported to user
++		space as part of ELF note in /proc/vmcore file. This note
++		contains various information like struct size, symbol
++		values, page size etc.
