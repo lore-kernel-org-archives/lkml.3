@@ -1,202 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaAOXZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 18:25:30 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:56700 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444AbaAOXZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:25:24 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tejun Heo <tj@kernel.org>
-Cc: Veaceslav Falico <vfalico@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-References: <20140114171740.GB1867@redhat.com>
-	<20140114182135.GA29296@kroah.com> <20140114191208.GA9942@redhat.com>
-	<20140114193139.GA3636@kroah.com> <20140114210610.GC9942@redhat.com>
-	<87iotmc9ic.fsf@xmission.com> <20140115141618.GD7950@htj.dyndns.org>
-Date: Wed, 15 Jan 2014 15:25:16 -0800
-In-Reply-To: <20140115141618.GD7950@htj.dyndns.org> (Tejun Heo's message of
-	"Wed, 15 Jan 2014 09:16:18 -0500")
-Message-ID: <87fvoo25gj.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752853AbaAOXb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:31:57 -0500
+Received: from fieldses.org ([174.143.236.118]:49651 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000AbaAOXbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 18:31:52 -0500
+Date: Wed, 15 Jan 2014 18:31:50 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: [PATCH 05/11] vfs: add RENAME_NOREPLACE flag
+Message-ID: <20140115233149.GA9457@fieldses.org>
+References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+ <1389219015-10980-6-git-send-email-miklos@szeredi.hu>
+ <20140115181955.GA5715@fieldses.org>
+ <CAJfpeguPj-P3tYx8w7-Sqma0K8SSbRxEQdGhTGMs=FtVRC8QSg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+Yio8aK8AkndiWeQd0QZoz/mSZvb1ujOQ=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4752]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC] sysfs_rename_link() and its usage
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpeguPj-P3tYx8w7-Sqma0K8SSbRxEQdGhTGMs=FtVRC8QSg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Wed, Jan 15, 2014 at 07:35:04PM +0100, Miklos Szeredi wrote:
+> On Wed, Jan 15, 2014 at 7:19 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Wed, Jan 08, 2014 at 11:10:09PM +0100, Miklos Szeredi wrote:
+> >> From: Miklos Szeredi <mszeredi@suse.cz>
+> >>
+> >> If this flag is specified and the target of the rename exists then the
+> >> rename syscall fails with EEXIST.
+> >
+> > Why is this useful?
+> >
+> > (I'm sure it is, it'd just be useful to have the reasons recorded
+> > someplace.)
+> >
+> >> The VFS does the existence checking, so it is trivial to enable for most
+> >> local filesystems.  This patch only enables it in ext4.
+> >>
+> >> For network filesystems the VFS check is not enough as there may be a race
+> >> between a remote create and the rename, so these filesystems need to handle
+> >> this flag in their ->rename() implementations to ensure atomicity.
+> >
+> > Till that's done this should probably result in -EOPNOTSUPP on those
+> > filesystems?
+> >
+> > I think this would need new protocol in the NFS case.
+> 
+> Yes, it needs to be enabled on a case-by-case basis.
 
-> Hey, Veaceslav, Eric.
->
-> On Tue, Jan 14, 2014 at 05:35:23PM -0800, Eric W. Biederman wrote:
->> >>> >>This works like a charm. However, if I want to use (obviously, with the
->> >>> >>symlink present):
->> >>> >>
->> >>> >>sysfs_rename_link(&(a->dev.kobj), &(b->dev.kobj), oldname, newname);
->> >>> >
->> >>> >You forgot the namespace option to this call, what kernel version are
->> >>> >you using here?
->> >>>
->> >>> It's git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next ,
->> >>> 3.13-rc6 with some networking patches on top of it.
->
-> Does this work on 3.12?  How about Greg's driver-core-next?  Do you
-> have a minimal test case that I can use to reproduce the issue?
->
->> sysfs_rename_link was originally written to infer figure everything out
->> based on the target device.  Because symlinks only make sense being in
->> the same namespace of their devices.  Tejun broke the inference and now
->> you are having hard time using the code.
->
-> I wouldn't be surprised if I broke it but
->
->> The commit that broke things was:
->> 
->> commit 4b30ee58ee64c64f59fd876e4afa6ed82caef3a4
->> Author: Tejun Heo <tj@kernel.org>
->> Date:   Wed Sep 11 22:29:06 2013 -0400
->> 
->>     sysfs: remove ktype->namespace() invocations in symlink code
->
-> I'm not so sure about the above commit.  The warning is from rename
-> failing to locate the existing node while the above patch updates the
-> target ns to rename to.  The old_ns part stays the same before and
-> after the commit.
+Oh, right, I missed all those
 
-So passing a NULL namespace when a node already has a namespace will
-cause that warning.
+	if (flags)
+		return -EOPNOTSUPP;
 
-I'm not quite certain about the bridge code.  It should be in a network
-namespace but at first glance I am not seeing that.
+added with "vfs: add renameat2 syscall".  Apologies.
 
-However what is most definitely broken is the usablitily of
-sysfs_rename_link.  Renaming symlinks used to just do the right thing,
-and figure out all of the namespace bits and not making the callers
-worry about it.  Now there are new callers that can't figure out how to
-call the function.  That is a huge usability breakage, and the commit I
-singled out is definitely one of them.
+> Only enabled for
+> ext4 now, but trivial to do for most fs.
 
-> Veaceslav, please confirm whether the issue is reproducible w/ v3.12.
+Got it, thanks!
 
-Anyway since a symlink living in a different namespace from it's target
-is just nonsense this (only compile tested) patch should fix the issue,
-and make sysfs_rename_link usable for people without a masters degree in
-sysfs again.
-
-Eric
-
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 67b180d855b2..0c9377a5bb89 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1825,9 +1825,8 @@ int device_rename(struct device *dev, const char *new_name)
- 	}
- 
- 	if (dev->class) {
--		error = sysfs_rename_link_ns(&dev->class->p->subsys.kobj,
--					     kobj, old_device_name,
--					     new_name, kobject_namespace(kobj));
-+		error = sysfs_rename_link(&dev->class->p->subsys.kobj,
-+					  kobj, old_device_name, new_name);
- 		if (error)
- 			goto out;
- 	}
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 3ae3f1bf1a09..651444a9d1c5 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -194,12 +194,10 @@ EXPORT_SYMBOL_GPL(sysfs_remove_link);
-  *	@targ:	object we're pointing to.
-  *	@old:	previous name of the symlink.
-  *	@new:	new name of the symlink.
-- *	@new_ns: new namespace of the symlink.
-- *
-  *	A helper function for the common rename symlink idiom.
-  */
--int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
--			 const char *old, const char *new, const void *new_ns)
-+int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
-+		      const char *old, const char *new)
- {
- 	struct sysfs_dirent *parent_sd, *sd = NULL;
- 	const void *old_ns = NULL;
-@@ -224,13 +222,13 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
- 	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
- 		goto out;
- 
--	result = sysfs_rename(sd, parent_sd, new, new_ns);
-+	result = sysfs_rename(sd, parent_sd, new, kobject_namespace(targ));
- 
- out:
- 	sysfs_put(sd);
- 	return result;
- }
--EXPORT_SYMBOL_GPL(sysfs_rename_link_ns);
-+EXPORT_SYMBOL_GPL(sysfs_rename_link);
- 
- static int sysfs_get_target_path(struct sysfs_dirent *parent_sd,
- 				 struct sysfs_dirent *target_sd, char *path)
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 6695040a0317..093d99244290 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -213,9 +213,8 @@ int __must_check sysfs_create_link_nowarn(struct kobject *kobj,
- 					  const char *name);
- void sysfs_remove_link(struct kobject *kobj, const char *name);
- 
--int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
--			 const char *old_name, const char *new_name,
--			 const void *new_ns);
-+int sysfs_rename_link(struct kobject *kobj, struct kobject *target,
-+		      const char *old_name, const char *new_name);
- 
- void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
- 			const char *name);
-@@ -341,9 +340,8 @@ static inline void sysfs_remove_link(struct kobject *kobj, const char *name)
- {
- }
- 
--static inline int sysfs_rename_link_ns(struct kobject *k, struct kobject *t,
--				       const char *old_name,
--				       const char *new_name, const void *ns)
-+static inline int sysfs_rename_link(struct kobject *k, struct kobject *t,
-+				    const char *old_name, const char *new_name)
- {
- 	return 0;
- }
-@@ -455,12 +453,6 @@ static inline void sysfs_remove_file(struct kobject *kobj,
- 	return sysfs_remove_file_ns(kobj, attr, NULL);
- }
- 
--static inline int sysfs_rename_link(struct kobject *kobj, struct kobject *target,
--				    const char *old_name, const char *new_name)
--{
--	return sysfs_rename_link_ns(kobj, target, old_name, new_name, NULL);
--}
--
- static inline struct sysfs_dirent *
- sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
- {
-
+--b.
