@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaAOUdB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:33:01 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:25758 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751046AbaAOUc6 (ORCPT
+	id S1752101AbaAOUdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:33:42 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48480 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613AbaAOUdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:32:58 -0500
-Date: Wed, 15 Jan 2014 15:32:54 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 13/17] tools lib traceevent: Unregister handler when
- mac80211 plugin unloaded
-Message-ID: <20140115153254.637204d3@gandalf.local.home>
-In-Reply-To: <1389750340-15965-14-git-send-email-namhyung@kernel.org>
-References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
-	<1389750340-15965-14-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Wed, 15 Jan 2014 15:33:36 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 03/13] perf tools: Fix build error due to zfree() cast
+Date: Wed, 15 Jan 2014 17:33:01 -0300
+Message-Id: <1389817991-8145-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1389817991-8145-1-git-send-email-acme@infradead.org>
+References: <1389817991-8145-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 10:45:36 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+From: Namhyung Kim <namhyung@kernel.org>
 
-> The event handler should be unregistered when the plugin unloaded
-> otherwise it'll try to access invalid memory.
-> 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+It failed to build perf on my ubuntu 10.04 box (gcc 4.4.3):
 
-For PATCH 10-13,
+    CC       util/strlist.o
+  cc1: warnings being treated as errors
+  util/strlist.c: In function ‘str_node__delete’:
+  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
+    CC       util/strfilter.o
+  make: *** [util/strlist.o] Error 1
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+    CC       util/srcline.o
+  cc1: warnings being treated as errors
+  util/srcline.c: In function ‘addr2line_init’:
+  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/srcline.c: In function ‘addr2line_cleanup’:
+  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
+  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
+  make: *** [util/srcline.o] Error 1
 
--- Steve
+It seems it only allows to remove 'const' qualifier.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1389276479-9047-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/srcline.c | 4 ++--
+ tools/perf/util/strlist.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 7e67879ebd25..f3e4bc5fe5d2 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -129,7 +129,7 @@ static struct a2l_data *addr2line_init(const char *path)
+ 
+ out:
+ 	if (a2l) {
+-		zfree((void **)&a2l->input);
++		zfree((char **)&a2l->input);
+ 		free(a2l);
+ 	}
+ 	bfd_close(abfd);
+@@ -140,7 +140,7 @@ static void addr2line_cleanup(struct a2l_data *a2l)
+ {
+ 	if (a2l->abfd)
+ 		bfd_close(a2l->abfd);
+-	zfree((void **)&a2l->input);
++	zfree((char **)&a2l->input);
+ 	zfree(&a2l->syms);
+ 	free(a2l);
+ }
+diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
+index 61a90bf24b4d..71f9d102b96f 100644
+--- a/tools/perf/util/strlist.c
++++ b/tools/perf/util/strlist.c
+@@ -39,7 +39,7 @@ out_delete:
+ static void str_node__delete(struct str_node *snode, bool dupstr)
+ {
+ 	if (dupstr)
+-		zfree((void **)&snode->s);
++		zfree((char **)&snode->s);
+ 	free(snode);
+ }
+ 
+-- 
+1.8.1.4
+
