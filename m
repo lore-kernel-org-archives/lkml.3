@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaAOCRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:17:01 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:44317 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaAOCQ7 (ORCPT
+	id S1752018AbaAOCS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:18:28 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:43344 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAOCSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:16:59 -0500
+	Tue, 14 Jan 2014 21:18:25 -0500
+X-AuditID: 9c93016f-b7b1aae000000f15-6b-52d5efefe3cb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 3/5] perf report: Add --percentage option
+References: <1389674599-28227-1-git-send-email-namhyung@kernel.org>
+	<1389674599-28227-4-git-send-email-namhyung@kernel.org>
+	<87zjmy2ryj.fsf@tassilo.jf.intel.com>
+	<20140114212555.GE29798@ghostprotocols.net>
+Date: Wed, 15 Jan 2014 11:18:23 +0900
+In-Reply-To: <20140114212555.GE29798@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Tue, 14 Jan 2014 18:25:55 -0300")
+Message-ID: <87ob3e9eds.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAFECyb9jx4NA0v_qNgrto4qG3KV3fBOpGh839Mnvbjody4xwYA@mail.gmail.com>
-References: <1389371417-379-1-git-send-email-roy.franz@linaro.org>
-	<1389371417-379-7-git-send-email-roy.franz@linaro.org>
-	<CAKv+Gu9OfieNhvj07tQv+ucQomZhDVDxwdV3Z9Tm+HaHE8HG-Q@mail.gmail.com>
-	<CAFECyb9jx4NA0v_qNgrto4qG3KV3fBOpGh839Mnvbjody4xwYA@mail.gmail.com>
-Date: Tue, 14 Jan 2014 18:16:58 -0800
-Message-ID: <CAFECyb9jbVHjM7--tRgbjfS9_MaAAvOhR3qXEKPKS6eW23V9Kg@mail.gmail.com>
-Subject: Re: [PATCH V6 6/8] Add EFI stub for ARM
-From: Roy Franz <roy.franz@linaro.org>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Patch Tracking <patches@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Dave Martin <dave.martin@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 5:47 PM, Roy Franz <roy.franz@linaro.org> wrote:
-> On Tue, Jan 14, 2014 at 1:05 AM, Ard Biesheuvel
-> <ard.biesheuvel@linaro.org> wrote:
->> On 10 January 2014 17:30, Roy Franz <roy.franz@linaro.org> wrote:
->>> This patch adds EFI stub support for the ARM Linux kernel.  The EFI stub
->>> operates similarly to the x86 stub: it is a shim between the EFI firmware
->>> and the normal zImage entry point, and sets up the environment that the
->>> zImage is expecting.  This includes loading the initrd (optionaly) and
->>> device tree from the system partition based on the kernel command line.
->>> The stub updates the device tree as necessary, adding entries for EFI
->>> runtime services. The PE/COFF "MZ" header at offset 0 results in the
->>> first instruction being an add that corrupts r5, which is not used by
->>> the zImage interface.
->>>
->>> Signed-off-by: Roy Franz <roy.franz@linaro.org>
->>> Acked-by: Grant Likely <grant.likely@linaro.org>
->>> ---
->>
->> [...]
->>
->>> diff --git a/arch/arm/boot/compressed/efi-header.S b/arch/arm/boot/compressed/efi-header.S
->>> new file mode 100644
->>> index 0000000..dbb7101
->>> --- /dev/null
->>> +++ b/arch/arm/boot/compressed/efi-header.S
->>> @@ -0,0 +1,117 @@
->>> +@ Copyright (C) 2013 Linaro Ltd;  <roy.franz@linaro.org>
->>> +@
->>> +@ This file contains the PE/COFF header that is part of the
->>> +@ EFI stub.
->>> +@
->>> +
->>> +       .org    0x3c
->>> +       @
->>> +       @ The PE header can be anywhere in the file, but for
->>> +       @ simplicity we keep it together with the MSDOS header
->>> +       @ The offset to the PE/COFF header needs to be at offset
->>> +       @ 0x3C in the MSDOS header.
->>> +       @ The only 2 fields of the MSDOS header that are used are this
->>> +       @ PE/COFF offset, and the "MZ" bytes at offset 0x0.
->>> +       @
->>> +       .long   pe_header                       @ Offset to the PE header.
->>> +
->>> +      .align 3
->>> +pe_header:
->>> +       .ascii  "PE"
->>> +       .short  0
->>> +
->>> +coff_header:
->>> +       .short  0x01c2                          @ ARM or Thumb
->>
->> Could you explain why you are using 0x1c2 (Thumb) here and not 0x1c0 (ARM) ?
->>
->> Cheers,
->> Ard.
+On Tue, 14 Jan 2014 18:25:55 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Jan 14, 2014 at 01:07:00PM -0800, Andi Kleen escreveu:
+>> Namhyung Kim <namhyung@kernel.org> writes:
+>> >  
+>> > +--percentage::
+>> > +	Determine how to display the overhead percentage of filtered
+>> > entries.
+>> 
+>> This should describe also what a "filtered entry" exactly is. It's not clear
+>> even to me.
 >
-> Nope.  It should be 0x1c0.
->
-> Roy
+> Yeah, the text should give some context, mentioning the "Zoom"
+> operations that can be done in the TUI (DSO, thread, etc) that allows
+> applying what he is calling "filters".`
 
-OK, now I resolved the nagging feeling that I had already fixed
-this...   Right now, the EDK2 UEFI implementation
-requires the machine type for ARM to be "0x1c2".  I don't think that
-this is correct, but correcting this in EDK2 slipped through
-the cracks, but is now back on my todo list.
+Ah, okay.
 
-I think that for now we should leave this as 0x1c2 so that the
-unpatched EDK2 builds will boot it, and some time after EDK2 is
-updated
-this can be changed.  I'll work on a patch for EDK2 and get the
-discussion going on that list to resolve this in EDK2.
+How about this:
 
 
-Roy
+-c::
+--comms=::
+	Only consider symbols in these comms. CSV that understands
+	file://filename entries.  This option will affect the percentage of
+	overhead column.  See --percentage for more info.
+-d::
+--dsos=::
+	Only consider symbols in these dsos. CSV that understands
+	file://filename entries.  This option will affect the percentage of
+	overhead column.  See --percentage for more info.
+-S::
+--symbols=::
+	Only consider these symbols. CSV that understands
+	file://filename entries.  This option will affect the percentage of
+	overhead column.  See --percentage for more info.
+
+--percentage::
+	Determine how to display the overhead percentage of filtered entries.
+	Filters can be applied by --comms, --dsos and/or --symbols options and
+	Zoom operations on the TUI (thread, dso, etc).
+
+	"relative" means it's relative to filtered entries only so that the
+	sum of shown entries will be always 100%.  "absolute" means it retains
+	original value before and after the filter applied.
+
+
+Thanks,
+Namhyung
