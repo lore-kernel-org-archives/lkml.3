@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751980AbaAOIMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 03:12:54 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:60164 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaAOIMv (ORCPT
+	id S1752005AbaAOINM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 03:13:12 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:54277 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857AbaAOINJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 03:12:51 -0500
-Subject: [PATCH V5 4/8] powernv/cpuidle: Add context management for Fast
- Sleep
+	Wed, 15 Jan 2014 03:13:09 -0500
+Subject: [PATCH V5 5/8] powermgt: Add OPAL call to resync timebase on wakeup
 To: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
         agraf@suse.de, paul.gortmaker@windriver.com, paulus@samba.org,
         mingo@kernel.org, mikey@neuling.org, shangw@linux.vnet.ibm.com,
@@ -22,8 +21,8 @@ To: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
         schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Wed, 15 Jan 2014 13:39:11 +0530
-Message-ID: <20140115080911.20446.74665.stgit@preeti.in.ibm.com>
+Date: Wed, 15 Jan 2014 13:39:29 +0530
+Message-ID: <20140115080929.20446.31990.stgit@preeti.in.ibm.com>
 In-Reply-To: <20140115080555.20446.27238.stgit@preeti.in.ibm.com>
 References: <20140115080555.20446.27238.stgit@preeti.in.ibm.com>
 User-Agent: StGit/0.16-38-g167d
@@ -32,158 +31,115 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011508-6688-0000-0000-00000588FD5E
+x-cbid: 14011508-0928-0000-0000-0000056AE920
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-Before adding Fast-Sleep into the cpuidle framework, some low level
-support needs to be added to enable it. This includes saving and
-restoring of certain registers at entry and exit time of this state
-respectively just like we do in the NAP idle state.
+During "Fast-sleep" and deeper power savings state, decrementer and
+timebase could be stopped making it out of sync with rest
+of the cores in the system.
+
+Add a firmware call to request platform to resync timebase
+using low level platform methods.
 
 Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-[Changelog modified by Preeti U. Murthy <preeti@linux.vnet.ibm.com>]
 Signed-off-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
 ---
 
- arch/powerpc/include/asm/processor.h |    1 +
- arch/powerpc/kernel/exceptions-64s.S |   10 ++++-
- arch/powerpc/kernel/idle_power7.S    |   63 ++++++++++++++++++++++++----------
- 3 files changed, 53 insertions(+), 21 deletions(-)
+ arch/powerpc/include/asm/opal.h                |    2 ++
+ arch/powerpc/kernel/exceptions-64s.S           |    2 +-
+ arch/powerpc/kernel/idle_power7.S              |   27 ++++++++++++++++++++++++
+ arch/powerpc/platforms/powernv/opal-wrappers.S |    1 +
+ 4 files changed, 31 insertions(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-index 027fefd..22e547a 100644
---- a/arch/powerpc/include/asm/processor.h
-+++ b/arch/powerpc/include/asm/processor.h
-@@ -444,6 +444,7 @@ enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
+diff --git a/arch/powerpc/include/asm/opal.h b/arch/powerpc/include/asm/opal.h
+index 033c06b..a662d06 100644
+--- a/arch/powerpc/include/asm/opal.h
++++ b/arch/powerpc/include/asm/opal.h
+@@ -132,6 +132,7 @@ extern int opal_enter_rtas(struct rtas_args *args,
+ #define OPAL_FLASH_VALIDATE			76
+ #define OPAL_FLASH_MANAGE			77
+ #define OPAL_FLASH_UPDATE			78
++#define OPAL_RESYNC_TIMEBASE			79
  
- extern int powersave_nap;	/* set if nap mode can be used in idle loop */
- extern void power7_nap(void);
-+extern void power7_sleep(void);
- extern void flush_instruction_cache(void);
- extern void hard_reset_now(void);
- extern void poweroff_now(void);
+ #ifndef __ASSEMBLY__
+ 
+@@ -763,6 +764,7 @@ extern void opal_flash_init(void);
+ extern int opal_machine_check(struct pt_regs *regs);
+ 
+ extern void opal_shutdown(void);
++extern int opal_resync_timebase(void);
+ 
+ extern void opal_lpc_init(void);
+ 
 diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
-index 9f905e4..b8139fb 100644
+index b8139fb..91e6417 100644
 --- a/arch/powerpc/kernel/exceptions-64s.S
 +++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -121,9 +121,10 @@ BEGIN_FTR_SECTION
- 	cmpwi	cr1,r13,2
- 	/* Total loss of HV state is fatal, we could try to use the
- 	 * PIR to locate a PACA, then use an emergency stack etc...
--	 * but for now, let's just stay stuck here
-+	 * OPAL v3 based powernv platforms have new idle states
-+	 * which fall in this catagory.
- 	 */
--	bgt	cr1,.
-+	bgt	cr1,8f
- 	GET_PACA(r13)
+@@ -145,7 +145,7 @@ BEGIN_FTR_SECTION
  
- #ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
-@@ -141,6 +142,11 @@ BEGIN_FTR_SECTION
- 	beq	cr1,2f
- 	b	.power7_wakeup_noloss
- 2:	b	.power7_wakeup_loss
-+
-+	/* Fast Sleep wakeup on PowerNV */
-+8:	GET_PACA(r13)
-+	b 	.power7_wakeup_loss
-+
+ 	/* Fast Sleep wakeup on PowerNV */
+ 8:	GET_PACA(r13)
+-	b 	.power7_wakeup_loss
++	b 	.power7_wakeup_tb_loss
+ 
  9:
  END_FTR_SECTION_IFSET(CPU_FTR_HVMODE | CPU_FTR_ARCH_206)
- #endif /* CONFIG_PPC_P7_NAP */
 diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
-index 847e40e..e4bbca2 100644
+index e4bbca2..34c71e8 100644
 --- a/arch/powerpc/kernel/idle_power7.S
 +++ b/arch/powerpc/kernel/idle_power7.S
-@@ -20,17 +20,27 @@
+@@ -17,6 +17,7 @@
+ #include <asm/ppc-opcode.h>
+ #include <asm/hw_irq.h>
+ #include <asm/kvm_book3s_asm.h>
++#include <asm/opal.h>
  
  #undef DEBUG
  
--	.text
-+/* Idle state entry routines */
+@@ -124,6 +125,32 @@ _GLOBAL(power7_sleep)
+ 	b	power7_powersave_common
+ 	/* No return */
  
--_GLOBAL(power7_idle)
--	/* Now check if user or arch enabled NAP mode */
--	LOAD_REG_ADDRBASE(r3,powersave_nap)
--	lwz	r4,ADDROFF(powersave_nap)(r3)
--	cmpwi	0,r4,0
--	beqlr
--	/* fall through */
-+#define	IDLE_STATE_ENTER_SEQ(IDLE_INST)				\
-+	/* Magic NAP/SLEEP/WINKLE mode enter sequence */	\
-+	std	r0,0(r1);					\
-+	ptesync;						\
-+	ld	r0,0(r1);					\
-+1:	cmp	cr0,r0,r0;					\
-+	bne	1b;						\
-+	IDLE_INST;						\
-+	b	.
- 
--_GLOBAL(power7_nap)
-+	.text
++_GLOBAL(power7_wakeup_tb_loss)
++	ld	r2,PACATOC(r13);
++	ld	r1,PACAR1(r13)
 +
-+/*
-+ * Pass requested state in r3:
-+ * 	0 - nap
-+ * 	1 - sleep
-+ */
-+_GLOBAL(power7_powersave_common)
-+	/* Use r3 to pass state nap/sleep/winkle */
- 	/* NAP is a state loss, we create a regs frame on the
- 	 * stack, fill it up with the state we care about and
- 	 * stick a pointer to it in PACAR1. We really only
-@@ -79,8 +89,8 @@ _GLOBAL(power7_nap)
- 	/* Continue saving state */
- 	SAVE_GPR(2, r1)
- 	SAVE_NVGPRS(r1)
--	mfcr	r3
--	std	r3,_CCR(r1)
-+	mfcr	r4
-+	std	r4,_CCR(r1)
- 	std	r9,_MSR(r1)
- 	std	r1,PACAR1(r13)
- 
-@@ -89,15 +99,30 @@ _GLOBAL(power7_nap)
- 	li	r4,KVM_HWTHREAD_IN_NAP
- 	stb	r4,HSTATE_HWTHREAD_STATE(r13)
- #endif
-+	cmpwi	cr0,r3,1
-+	beq	2f
-+	IDLE_STATE_ENTER_SEQ(PPC_NAP)
-+	/* No return */
-+2:	IDLE_STATE_ENTER_SEQ(PPC_SLEEP)
-+	/* No return */
- 
--	/* Magic NAP mode enter sequence */
--	std	r0,0(r1)
--	ptesync
--	ld	r0,0(r1)
--1:	cmp	cr0,r0,r0
--	bne	1b
--	PPC_NAP
--	b	.
-+_GLOBAL(power7_idle)
-+	/* Now check if user or arch enabled NAP mode */
-+	LOAD_REG_ADDRBASE(r3,powersave_nap)
-+	lwz	r4,ADDROFF(powersave_nap)(r3)
-+	cmpwi	0,r4,0
-+	beqlr
-+	/* fall through */
++	/* Time base re-sync */
++	li	r0,OPAL_RESYNC_TIMEBASE
++	LOAD_REG_ADDR(r11,opal);
++	ld	r12,8(r11);
++	ld	r2,0(r11);
++	mtctr	r12
++	bctrl
 +
-+_GLOBAL(power7_nap)
-+	li	r3,0
-+	b	power7_powersave_common
-+	/* No return */
++	/* TODO: Check r3 for failure */
 +
-+_GLOBAL(power7_sleep)
-+	li	r3,1
-+	b	power7_powersave_common
-+	/* No return */
- 
++	REST_NVGPRS(r1)
++	REST_GPR(2, r1)
++	ld	r3,_CCR(r1)
++	ld	r4,_MSR(r1)
++	ld	r5,_NIP(r1)
++	addi	r1,r1,INT_FRAME_SIZE
++	mtcr	r3
++	mfspr	r3,SPRN_SRR1		/* Return SRR1 */
++	mtspr	SPRN_SRR1,r4
++	mtspr	SPRN_SRR0,r5
++	rfid
++
  _GLOBAL(power7_wakeup_loss)
  	ld	r1,PACAR1(r13)
+ 	REST_NVGPRS(r1)
+diff --git a/arch/powerpc/platforms/powernv/opal-wrappers.S b/arch/powerpc/platforms/powernv/opal-wrappers.S
+index e780650..ddfe95a 100644
+--- a/arch/powerpc/platforms/powernv/opal-wrappers.S
++++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
+@@ -126,3 +126,4 @@ OPAL_CALL(opal_return_cpu,			OPAL_RETURN_CPU);
+ OPAL_CALL(opal_validate_flash,			OPAL_FLASH_VALIDATE);
+ OPAL_CALL(opal_manage_flash,			OPAL_FLASH_MANAGE);
+ OPAL_CALL(opal_update_flash,			OPAL_FLASH_UPDATE);
++OPAL_CALL(opal_resync_timebase,			OPAL_RESYNC_TIMEBASE);
 
