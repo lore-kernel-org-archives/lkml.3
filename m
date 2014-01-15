@@ -1,70 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaAOV4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:56:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40907 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334AbaAOV4t (ORCPT
+	id S1753390AbaAOV5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:57:07 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:18095 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542AbaAOV5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:56:49 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>, Rajendra Nayak <rnayak@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 136/166] clk: clk-divider: fix divisor > 255 bug
-Date: Wed, 15 Jan 2014 13:52:30 -0800
-Message-Id: <1389822780-4729-137-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Wed, 15 Jan 2014 16:57:01 -0500
+Message-ID: <1389822660.1792.349.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
+ hotplug [v4]
+From: Toshi Kani <toshi.kani@hp.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
+        kosaki.motohiro@gmail.com, dyoung@redhat.com,
+        Vivek Goyal <vgoyal@redhat.com>, Len Brown <lenb@kernel.org>
+Date: Wed, 15 Jan 2014 14:51:00 -0700
+In-Reply-To: <1389789284-10622-1-git-send-email-prarit@redhat.com>
+References: <alpine.DEB.2.02.1401141642020.3375@chino.kir.corp.google.com>
+	 <1389789284-10622-1-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.16 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2014-01-15 at 07:34 -0500, Prarit Bhargava wrote:
+> When booting a kexec/kdump kernel on a system that has specific memory hotplug
+> regions the boot will fail with warnings like:
+> 
+> [    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
+> [    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+> 3.10.0-65.el7.x86_64 #1
+> [    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
+> QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+> [    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
+> ffff8800341bd950
+> [    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
+> 00000000000084d0
+> [    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
+> 0000000000000200
+> [    2.989821] Call Trace:
+> [    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+> [    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+> [    3.004817]  [<ffffffff815b87ee>] ?
+> __alloc_pages_direct_compact+0xac/0x196
+> [    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+> [    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+> [    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+> [    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+> [    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+> [    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+> [    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+> [    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+> [    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+> [    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+> [    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+> [    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
+> [    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+> [    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+> [    3.181956] Mem-Info:
+> [    3.184490] Node 0 DMA per-cpu:
+> [    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
+> [    3.193353] Node 0 DMA32 per-cpu:
+> [    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
+> [    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
+> [    3.202410]  active_file:0 inactive_file:0 isolated_file:0
+> [    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+> [    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
+> [    3.202410]  free_cma:0
+> 
+> because the system has run out of memory at boot time.  This occurs
+> because of the following sequence in the boot:
+> 
+> Main kernel boots and sets E820 map.  The second kernel is booted with a
+> map generated by the kdump service using memmap= and memmap=exactmap.
+> These parameters are added to the kernel parameters of the kexec/kdump
+> kernel.   The kexec/kdump kernel has limited memory resources so as not
+> to severely impact the main kernel.
 
-------------------
+These parameters are only added to kdump kernel.  kexec fast reboot (if
+that's what you mean by kexec kernel) does not use them.
 
-From: James Hogan <james.hogan@imgtec.com>
+> The system then panics and the kdump/kexec kernel boots (which is a
+> completely new kernel boot).  During this boot ACPI is initialized and the
+> kernel (as can be seen above) traverses the ACPI namespace and finds an
+> entry for a memory device to be hotadded.
+> 
+> ie)
+> 
+> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+> 
+> At this point the kernel adds page table information and the the kexec/kdump
+> kernel runs out of memory.
+> 
+> This can also be reproduced by using the memmap=exactmap and mem=X
+> parameters on the main kernel and booting.
+> 
+> This patchset resolves the problem by adding a kernel parameter,
+> acpi_no_memhotplug, to disable ACPI memory hotplug.
+> 
+> [v2]: changed acpi_no_memhotplug to bool
+> [v3]: cleaned up Documentation/kernel-parameters.txt
+> [v4]: add __initdata to acpi_no_memhotplug
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: kosaki.motohiro@gmail.com
+> Cc: dyoung@redhat.com
+> Cc: linux-acpi@vger.kernel.org
+> Cc: kexec@lists.infradead.org
+> ---
+>  Documentation/kernel-parameters.txt |    3 +++
+>  drivers/acpi/acpi_memhotplug.c      |   12 ++++++++++++
+>  2 files changed, 15 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index b9e9bd8..ea93f75 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -343,6 +343,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			no: ACPI OperationRegions are not marked as reserved,
+>  			no further checks are performed.
+>  
+> +	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kexec
+> +			   and kdump kernels.
 
-commit 778037e1ccb75609846deca9e419449c1dc137fa upstream.
+Please remove "kexec".  Otherwise,
 
-Commit 6d9252bd9a4bb (clk: Add support for power of two type dividers)
-merged in v3.6 added the _get_val function to convert a divisor value to
-a register field value depending on the flags. However it used the type
-u8 for the div field, causing divisors larger than 255 to be masked
-and the resultant clock rate to be too high.
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-E.g. in my case an 11bit divider was supposed to divide 24.576 MHz down
-to 32.768KHz. The divisor was correctly calculated as 750 (0x2ee). This
-was masked to 238 (0xee) resulting in a frequency of 103.26KHz.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Rajendra Nayak <rnayak@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/clk/clk-divider.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index a9204c6..f253ce1 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -87,7 +87,7 @@ static unsigned int _get_table_val(const struct clk_div_table *table,
- 	return 0;
- }
- 
--static unsigned int _get_val(struct clk_divider *divider, u8 div)
-+static unsigned int _get_val(struct clk_divider *divider, unsigned int div)
- {
- 	if (divider->flags & CLK_DIVIDER_ONE_BASED)
- 		return div;
--- 
-1.8.3.2
+Thanks,
+-Toshi
 
