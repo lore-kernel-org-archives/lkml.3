@@ -1,136 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaAOPyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:54:08 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:41829 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754AbaAOPyF convert rfc822-to-8bit (ORCPT
+	id S1752580AbaAOPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:55:26 -0500
+Received: from relay.parallels.com ([195.214.232.42]:36110 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864AbaAOPzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:54:05 -0500
-Date: Wed, 15 Jan 2014 16:52:00 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>, lgirdwood@gmail.com
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        kuninori.morimoto.gx@renesas.com, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH v2 8/8] ASoC: simple-card: simplify code
-Message-ID: <20140115165200.5f4e6077@armhf>
-In-Reply-To: <20140115113551.0eb13409@armhf>
-References: <20140115113551.0eb13409@armhf>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Wed, 15 Jan 2014 10:55:25 -0500
+Message-ID: <52D6AF5F.2040102@parallels.com>
+Date: Wed, 15 Jan 2014 19:55:11 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on memory
+References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com> <20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org> <52D4E5F2.5080205@parallels.com> <20140114141453.374bd18e5290876177140085@linux-foundation.org> <52D64B27.30604@parallels.com> <20140115012541.ad302526.akpm@linux-foundation.org>
+In-Reply-To: <20140115012541.ad302526.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the pointer to the private data structure to 'priv' to avoid confusion with the platform data pointer.
+On 01/15/2014 01:25 PM, Andrew Morton wrote:
+> On Wed, 15 Jan 2014 12:47:35 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+>
+>> On 01/15/2014 02:14 AM, Andrew Morton wrote:
+>>> On Tue, 14 Jan 2014 11:23:30 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+>>>
+>>>> On 01/14/2014 03:05 AM, Andrew Morton wrote:
+>>>>> That being said, I think I'll schedule this patch as-is for 3.14.  Can
+>>>>> you please take a look at implementing the simpler approach, send me
+>>>>> something for 3.15-rc1?
+>>>> IMHO the simpler approach (Glauber's patch) is not suitable as is,
+>>>> because it, in fact, neglects the notion of batch_size when doing low
+>>>> prio scans, because it calls ->scan() for < batch_size objects even if
+>>>> the slab has >= batch_size objects while AFAIU it should accumulate a
+>>>> sufficient number of objects to scan in nr_deferred instead.
+>>> Well.  If you mean that when nr-objects=large and batch_size=32 and
+>>> total_scan=33, the patched code will scan 32 objects and then 1 object
+>>> then yes, that should be fixed.
+>> I mean if nr_objects=large and batch_size=32 and shrink_slab() is called
+>> 8 times with total_scan=4, we can either call ->scan() 8 times with
+>> nr_to_scan=4 (Glauber's patch) or call it only once with nr_to_scan=32
+>> (that's how it works now). Frankly, after a bit of thinking I am
+>> starting to doubt that this can affect performance at all provided the
+>> shrinker is implemented in a sane way, because as you've mentioned
+>> shrink_slab() is already a slow path. It seems I misunderstood the
+>> purpose of batch_size initially: I though we need it to limit the number
+>> of calls to ->scan(), but now I guess the only purpose of it is limiting
+>> the number of objects scanned in one pass to avoid latency issues.
+> Actually, the intent of batching is to limit the number of calls to
+> ->scan().  At least, that was the intent when I wrote it!  This is a
+> good principle and we should keep doing it.  If we're going to send the
+> CPU away to tread on a pile of cold cachelines, we should make sure
+> that it does a good amount of work while it's there.
+>
+>> But
+>> then another question arises - why do you think the behavior you
+>> described above (scanning 32 and then 1 object if total_scan=33,
+>> batch_size=32) is bad?
+> Yes, it's a bit inefficient but it won't be too bad.  What would be bad
+> would be to scan a very small number of objects and then to advance to
+> the next shrinker.
+>
+>> In other words why can't we make the scan loop
+>> look like this:
+>>
+>>     while (total_scan > 0) {
+>>         unsigned long ret;
+>>         unsigned long nr_to_scan = min(total_scan, batch_size);
+>>
+>>         shrinkctl->nr_to_scan = nr_to_scan;
+>>         ret = shrinker->scan_objects(shrinker, shrinkctl);
+>>         if (ret == SHRINK_STOP)
+>>             break;
+>>         freed += ret;
+>>
+>>         count_vm_events(SLABS_SCANNED, nr_to_scan);
+>>         total_scan -= nr_to_scan;
+>>
+>>         cond_resched();
+>>     }
+>
+> Well, if we come in here with total_scan=1 then we defeat the original
+> intent of the batching, don't we?  We end up doing a lot of work just
+> to scan one object.  So perhaps add something like
+>
+> 	if (total_scan < batch_size && max_pass > batch_size)
+> 		skip the while loop
+>
+> If we do this, total_scan will be accumulated into nr_deferred, up to
+> the point where the threshold is exceeded, yes?
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- sound/soc/generic/simple-card.c     | 32 +++++++++++-----------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+Yes, but only if the shrinker has > batch_size objects to scan,
+otherwise (max_pass < batch_size) we will proceed to the while loop and
+call ->scan() even if total_scan = 1. I mean if batch_size = 32,
+max_pass = 31 and total_scan = 1 (low memory pressure), we will call
+->scan() 31 times scanning only 1 object during each pass, which is not
+good.
 
-diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
-index 0f11c28..6443c87 100644
---- a/sound/soc/generic/simple-card.c
-+++ b/sound/soc/generic/simple-card.c
-@@ -47,18 +47,18 @@ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
+> All the arithmetic in there hurts my brain and I don't know what values
+> total_scan typically ends up with.
+>
+> btw. all that trickery with delta and lru_pages desperately needs
+> documenting.  What the heck is it intended to do??
+>
+>
+>
+> We could avoid the "scan 32 then scan just 1" issue with something like
+>
+> 	if (total_scan > batch_size)
+> 		total_scan %= batch_size;
+>
+> before the loop.  But I expect the effects of that will be unmeasurable
+> - on average the number of objects which are scanned in the final pass
+> of the loop will be batch_size/2, yes?  That's still a decent amount.
+
+Let me try to summarize. We want to scan batch_size objects in one pass,
+not more (to keep latency low) and not less (to avoid cpu cache
+pollution due to too frequent calls); if the calculated value of
+nr_to_scan is less than the batch_size we should accumulate it in
+nr_deferred instead of calling ->scan() and add nr_deferred to
+nr_to_scan on the next pass, i.e. in pseudo-code:
+
+    /* calculate current nr_to_scan */
+    max_pass = shrinker->count();
+    delta = max_pass * nr_user_pages_scanned / nr_user_pages;
+
+    /* add nr_deferred */
+    total_scan = delta + nr_deferred;
+
+    while (total_scan >= batch_size) {
+        shrinker->scan(batch_size);
+        total_scan -= batch_size;
+    }
+
+    /* save the remainder to nr_deferred  */
+    nr_deferred = total_scan;
+
+That would work, but if max_pass is < batch_size, it would not scan the
+objects immediately even if prio is high (we want to scan all objects).
+For example, dropping caches would not work on the first attempt - the
+user would have to call it batch_size / max_pass times. This could be
+fixed by making the code proceed to ->scan() not only if total_scan is
+>= batch_size, but also if max_pass is < batch_size and total_scan is >=
+max_pass, i.e.
+
+    while (total_scan >= batch_size ||
+            (max_pass < batch_size && total_scan >= max_pass)) ...
+
+which is equivalent to
+
+    while (total_scan >= batch_size ||
+                total_scan >= max_pass) ...
+
+The latter is the loop condition from the current patch, i.e. this patch
+would make the trick if shrink_slab() followed the pseudo-code above. In
+real life, it does not actually - we have to bias total_scan before the
+while loop in order to avoid dropping fs meta caches on light memory
+pressure due to a large number being built in nr_deferred:
+
+    if (delta < max_pass / 4)
+        total_scan = min(total_scan, max_pass / 2);
+
+    while (total_scan >= batch_size) ...
+
+With this biasing, it is impossible to achieve the ideal behavior I've
+described above, because we will never accumulate max_pass objects in
+nr_deferred if memory pressure is low. So, if applied to the real code,
+this patch takes on a slightly different sense, which I tried to reflect
+in the comment to the code: it will call ->scan() with nr_to_scan <
+batch_size only if:
+
+1) max_pass < batch_size && total_scan >= max_pass
+
+and
+
+2) we're tight on memory, i.e. the current delta is high (otherwise
+total_scan will be biased as max_pass / 2 and condition 1 won't be
+satisfied).
+
+>From our discussion it seems condition 2 is not necessary at all, but it
+follows directly from the biasing rule. So I propose to tweak the
+biasing a bit so that total_scan won't be lowered < batch_size:
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index eea668d..78ddd5e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -267,7 +267,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
+struct shrinker *shrinker,
+      * a large delta change is calculated directly.
+      */
+     if (delta < max_pass / 4)
+-        total_scan = min(total_scan, max_pass / 2);
++        total_scan = min(total_scan, max(max_pass / 2, batch_size));
  
- static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
- {
--	struct simple_card_data *info =
-+	struct simple_card_data *priv =
- 				snd_soc_card_get_drvdata(rtd->card);
- 	struct snd_soc_dai *codec = rtd->codec_dai;
- 	struct snd_soc_dai *cpu = rtd->cpu_dai;
--	unsigned int daifmt = info->daifmt;
-+	unsigned int daifmt = priv->daifmt;
- 	int ret;
+     /*
+      * Avoid risking looping forever due to too large nr value:
+@@ -281,7 +281,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
+struct shrinker *shrinker,
+                 nr_pages_scanned, lru_pages,
+                 max_pass, delta, total_scan);
  
--	ret = __asoc_simple_card_dai_init(codec, &info->codec_dai, daifmt);
-+	ret = __asoc_simple_card_dai_init(codec, &priv->codec_dai, daifmt);
- 	if (ret < 0)
- 		return ret;
+-    while (total_scan >= batch_size) {
++    while (total_scan >= batch_size || total_scan >= max_pass) {
+         unsigned long ret;
  
--	ret = __asoc_simple_card_dai_init(cpu, &info->cpu_dai, daifmt);
-+	ret = __asoc_simple_card_dai_init(cpu, &priv->cpu_dai, daifmt);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -129,21 +129,21 @@ parse_error:
- }
- 
- static int asoc_simple_card_parse_of(struct device_node *node,
--				     struct simple_card_data *info,
-+				     struct simple_card_data *priv,
- 				     struct device *dev)
- {
--	struct snd_soc_dai_link *dai_link = info->snd_card.dai_link;
-+	struct snd_soc_dai_link *dai_link = priv->snd_card.dai_link;
- 	struct device_node *np;
- 	char *name;
- 	int ret;
- 
- 	/* get CPU/CODEC common format via simple-audio-card,format */
--	info->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
-+	priv->daifmt = snd_soc_of_parse_daifmt(node, "simple-audio-card,") &
- 		(SND_SOC_DAIFMT_FORMAT_MASK | SND_SOC_DAIFMT_INV_MASK);
- 
- 	/* DAPM routes */
- 	if (of_property_read_bool(node, "simple-audio-card,routing")) {
--		ret = snd_soc_of_parse_audio_routing(&info->snd_card,
-+		ret = snd_soc_of_parse_audio_routing(&priv->snd_card,
- 					"simple-audio-card,routing");
- 		if (ret)
- 			return ret;
-@@ -154,7 +154,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
- 	np = of_get_child_by_name(node, "simple-audio-card,cpu");
- 	if (np)
- 		ret = asoc_simple_card_sub_parse_of(np,
--						  &info->cpu_dai,
-+						  &priv->cpu_dai,
- 						  &dai_link->cpu_of_node,
- 						  &dai_link->cpu_dai_name);
- 	if (ret < 0)
-@@ -165,7 +165,7 @@ static int asoc_simple_card_parse_of(struct device_node *node,
- 	np = of_get_child_by_name(node, "simple-audio-card,codec");
- 	if (np)
- 		ret = asoc_simple_card_sub_parse_of(np,
--						  &info->codec_dai,
-+						  &priv->codec_dai,
- 						  &dai_link->codec_of_node,
- 						  &dai_link->codec_dai_name);
- 	if (ret < 0)
-@@ -181,22 +181,22 @@ static int asoc_simple_card_parse_of(struct device_node *node,
- 			    GFP_KERNEL);
- 	sprintf(name, "%s-%s", dai_link->cpu_dai_name,
- 				dai_link->codec_dai_name);
--	info->snd_card.name = name;
-+	priv->snd_card.name = name;
- 	dai_link->name = dai_link->stream_name = name;
- 
- 	/* simple-card assumes platform == cpu */
- 	dai_link->platform_of_node = dai_link->cpu_of_node;
- 
- 	dev_dbg(dev, "card-name : %s\n", name);
--	dev_dbg(dev, "platform : %04x\n", info->daifmt);
-+	dev_dbg(dev, "platform : %04x\n", priv->daifmt);
- 	dev_dbg(dev, "cpu : %s / %04x / %d\n",
- 		dai_link->cpu_dai_name,
--		info->cpu_dai.fmt,
--		info->cpu_dai.sysclk);
-+		priv->cpu_dai.fmt,
-+		priv->cpu_dai.sysclk);
- 	dev_dbg(dev, "codec : %s / %04x / %d\n",
- 		dai_link->codec_dai_name,
--		info->codec_dai.fmt,
--		info->codec_dai.sysclk);
-+		priv->codec_dai.fmt,
-+		priv->codec_dai.sysclk);
- 
- 	return 0;
- }
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+         shrinkctl->nr_to_scan = batch_size;
+
+The first hunk guarantees that total_scan will always accumulate at
+least batch_size objects no matter how small max_pass is. That means
+that when max_pass is < batch_size we will eventually get >= max_pass
+objects to scan and shrink the slab to 0 as we need. What do you think
+about that?
+
+Thanks.
