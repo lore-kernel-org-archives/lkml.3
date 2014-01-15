@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaAOV6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:58:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41059 "EHLO
+	id S1753737AbaAOV61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:58:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41082 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668AbaAOV6P (ORCPT
+	with ESMTP id S1753717AbaAOV6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:15 -0500
+	Wed, 15 Jan 2014 16:58:23 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
+Cc: Dmitry Kunilov <dmitry.kunilov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 061/166] ASoC: tegra: fix uninitialized variables in set_fmt
-Date: Wed, 15 Jan 2014 13:51:15 -0800
-Message-Id: <1389822780-4729-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 063/166] usb: serial: zte_ev: move support for ZTE AC2726 from zte_ev back to option
+Date: Wed, 15 Jan 2014 13:51:17 -0800
+Message-Id: <1389822780-4729-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,108 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Dmitry Kunilov <dmitry.kunilov@gmail.com>
 
-commit 241bf43321a10815225f477bba96a42285a2da73 upstream.
+commit 52d0dc7597c89b2ab779f3dcb9b9bf0800dd9218 upstream.
 
-In tegra*_i2s_set_fmt(), in the (fmt == SND_SOC_DAIFMT_CBM_CFM) case,
-"val" is never assigned to, but left uninitialized. The other case does
-initialized it. Fix this by initializing val at the start of the
-function, and only ever ORing into it.
+ZTE AC2726 EVDO modem drops ppp connection every minute when driven by
+zte_ev but works fine when driven by option. Move the support for AC2726
+back to option driver.
 
-Update the handling of "mask" so it works the same way for consistency.
-
-Update tegra20_spdif.c to use the same code-style for consistency, even
-though it doesn't happen to suffer from the same problem at present.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Reviewed-by: Thierry Reding <treding@nvidia.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Fixes: 0f163546a772 ("ASoC: tegra: use regmap more directly")
+Signed-off-by: Dmitry Kunilov <dmitry.kunilov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/tegra/tegra20_i2s.c   |  6 +++---
- sound/soc/tegra/tegra20_spdif.c | 10 +++++-----
- sound/soc/tegra/tegra30_i2s.c   |  6 +++---
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/usb/serial/option.c | 2 ++
+ drivers/usb/serial/zte_ev.c | 3 +--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/tegra/tegra20_i2s.c b/sound/soc/tegra/tegra20_i2s.c
-index caa772d..57227e0 100644
---- a/sound/soc/tegra/tegra20_i2s.c
-+++ b/sound/soc/tegra/tegra20_i2s.c
-@@ -73,7 +73,7 @@ static int tegra20_i2s_set_fmt(struct snd_soc_dai *dai,
- 				unsigned int fmt)
- {
- 	struct tegra20_i2s *i2s = snd_soc_dai_get_drvdata(dai);
--	unsigned int mask, val;
-+	unsigned int mask = 0, val = 0;
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index a03c30e..3c1e5e3 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -251,6 +251,7 @@ static void option_instat_callback(struct urb *urb);
+ #define ZTE_PRODUCT_MF628			0x0015
+ #define ZTE_PRODUCT_MF626			0x0031
+ #define ZTE_PRODUCT_MC2718			0xffe8
++#define ZTE_PRODUCT_AC2726			0xfff1
  
- 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
- 	case SND_SOC_DAIFMT_NB_NF:
-@@ -82,10 +82,10 @@ static int tegra20_i2s_set_fmt(struct snd_soc_dai *dai,
- 		return -EINVAL;
- 	}
+ #define BENQ_VENDOR_ID				0x04a5
+ #define BENQ_PRODUCT_H10			0x4068
+@@ -1453,6 +1454,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
  
--	mask = TEGRA20_I2S_CTRL_MASTER_ENABLE;
-+	mask |= TEGRA20_I2S_CTRL_MASTER_ENABLE;
- 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
- 	case SND_SOC_DAIFMT_CBS_CFS:
--		val = TEGRA20_I2S_CTRL_MASTER_ENABLE;
-+		val |= TEGRA20_I2S_CTRL_MASTER_ENABLE;
- 		break;
- 	case SND_SOC_DAIFMT_CBM_CFM:
- 		break;
-diff --git a/sound/soc/tegra/tegra20_spdif.c b/sound/soc/tegra/tegra20_spdif.c
-index 04771d1..0f751e1 100644
---- a/sound/soc/tegra/tegra20_spdif.c
-+++ b/sound/soc/tegra/tegra20_spdif.c
-@@ -66,15 +66,15 @@ static int tegra20_spdif_hw_params(struct snd_pcm_substream *substream,
- {
- 	struct device *dev = dai->dev;
- 	struct tegra20_spdif *spdif = snd_soc_dai_get_drvdata(dai);
--	unsigned int mask, val;
-+	unsigned int mask = 0, val = 0;
- 	int ret, spdifclock;
- 
--	mask = TEGRA20_SPDIF_CTRL_PACK |
--	       TEGRA20_SPDIF_CTRL_BIT_MODE_MASK;
-+	mask |= TEGRA20_SPDIF_CTRL_PACK |
-+		TEGRA20_SPDIF_CTRL_BIT_MODE_MASK;
- 	switch (params_format(params)) {
- 	case SNDRV_PCM_FORMAT_S16_LE:
--		val = TEGRA20_SPDIF_CTRL_PACK |
--		      TEGRA20_SPDIF_CTRL_BIT_MODE_16BIT;
-+		val |= TEGRA20_SPDIF_CTRL_PACK |
-+		       TEGRA20_SPDIF_CTRL_BIT_MODE_16BIT;
- 		break;
- 	default:
- 		return -EINVAL;
-diff --git a/sound/soc/tegra/tegra30_i2s.c b/sound/soc/tegra/tegra30_i2s.c
-index 6b64f5b..df9224d 100644
---- a/sound/soc/tegra/tegra30_i2s.c
-+++ b/sound/soc/tegra/tegra30_i2s.c
-@@ -116,7 +116,7 @@ static int tegra30_i2s_set_fmt(struct snd_soc_dai *dai,
- 				unsigned int fmt)
- {
- 	struct tegra30_i2s *i2s = snd_soc_dai_get_drvdata(dai);
--	unsigned int mask, val;
-+	unsigned int mask = 0, val = 0;
- 
- 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
- 	case SND_SOC_DAIFMT_NB_NF:
-@@ -125,10 +125,10 @@ static int tegra30_i2s_set_fmt(struct snd_soc_dai *dai,
- 		return -EINVAL;
- 	}
- 
--	mask = TEGRA30_I2S_CTRL_MASTER_ENABLE;
-+	mask |= TEGRA30_I2S_CTRL_MASTER_ENABLE;
- 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
- 	case SND_SOC_DAIFMT_CBS_CFS:
--		val = TEGRA30_I2S_CTRL_MASTER_ENABLE;
-+		val |= TEGRA30_I2S_CTRL_MASTER_ENABLE;
- 		break;
- 	case SND_SOC_DAIFMT_CBM_CFM:
- 		break;
+ 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
+ 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
+diff --git a/drivers/usb/serial/zte_ev.c b/drivers/usb/serial/zte_ev.c
+index fca4c75..eae2c87 100644
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -281,8 +281,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+ 	{ USB_DEVICE(0x19d2, 0xfffc) },
+ 	{ USB_DEVICE(0x19d2, 0xfffb) },
+-	/* AC2726, AC8710_V3 */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfff1, 0xff, 0xff, 0xff) },
++	/* AC8710_V3 */
+ 	{ USB_DEVICE(0x19d2, 0xfff6) },
+ 	{ USB_DEVICE(0x19d2, 0xfff7) },
+ 	{ USB_DEVICE(0x19d2, 0xfff8) },
 -- 
 1.8.3.2
 
