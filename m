@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaAOAXP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:23:15 -0500
-Received: from nm28-vm3.bullet.mail.gq1.yahoo.com ([98.136.216.162]:22992 "EHLO
-	nm28-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750918AbaAOAXM (ORCPT
+	id S1751954AbaAOAZK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:25:10 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:44391 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAOAZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:23:12 -0500
-X-Yahoo-Newman-Id: 290395.18084.bm@smtp208.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: DUzO2UUVM1m8J05RFYxwmPXFV8hySs3dt59J4O54nnt4bT9
- FJWR2rPtgkG_rm2mEJYAe0F4vs3GQ5gjoaSi815RGRaHTPzLhfJIMdVRlQMz
- wdwox53mRYqJhWl5sM9LtWCEBV4lMEv6JNGADqmIeQ4EnlecUnp65PGMjEL.
- 6dMw7pgrrGR7aI8C92c9s6kk9t.pdq6CVXonWUZ_yiOE7BnXnHBw7pcEk2FU
- 2ntOYuf11SJUE6zLkeTf_nPgntvkAqj7r4qtay6VAex72OegpDrqvKL0Omwb
- OFZDEPeQYQCUKIyoHdtGzGOXAeQDxiQwUr35GwLNDscrRv2ASvGzno6Qo.KD
- eJeL4RihMizCPFOknXdY7e65kPGH_zmbEjWbuTovBqlWOJHbHBrz24B0woAb
- 56HLatIxwkVzY8KPkxVpy8lpZ_Sq0jhf6E7q178Gj58tBEVK2N7s9l7g0JBx
- ZAW9XnML26ntb4GA9ZcPmO3R5wvZVAbthdVJlsgAymPAXuPmG7.fSzwqKxaL
- Ue42ur0D8XjMw23d4crVvCgtoX45i6BplATyy
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [63.250.193.228])
-        by smtp208.mail.gq1.yahoo.com with SMTP; 14 Jan 2014 16:23:11 -0800 PST
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH v4] Staging: comedi: convert while loop to timeout in ni_mio_common.c
-Date: Tue, 14 Jan 2014 18:23:05 -0600
-Message-Id: <1389745385-27146-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+	Tue, 14 Jan 2014 19:25:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <20140114234443.GY10038@linux.vnet.ibm.com>
+References: <52D353C8.4000000@numascale.com>
+	<52D4172E.6030706@hp.com>
+	<52D4A0C7.5070601@numascale.com>
+	<20140114110307.GW7572@laptop.programming.kicks-ass.net>
+	<CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com>
+	<52D57B60.9020209@twiddle.net>
+	<20140114234443.GY10038@linux.vnet.ibm.com>
+Date: Wed, 15 Jan 2014 07:25:04 +0700
+X-Google-Sender-Auth: TWvxYOGf2PO8-r_gBvdHsT1bffo
+Message-ID: <CA+55aFyF2Vg785qO52fJLV7rsi6bMtGFhxsAvJ7354EBrcESCA@mail.gmail.com>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Richard Henderson <rth@twiddle.net>, Matt Turner <mattst88@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch for ni_mio_common.c changes out a while loop for a timeout,
-which is preferred.
+On Wed, Jan 15, 2014 at 6:44 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> Which means that Alpha should be able to similarly emulate 1-byte and
+> 2-byte atomics, correct?
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
----
+Not reasonably, no.
 
-OK, here's another go at it.  Hopefully everything looks more correct
-this time.  Greg, I've followed the pattern you gave me, and I really
-appreciate all of the tips!  As always, just let me know if there are
-still things that need adjusting (especially length of timeout, udelay,
-etc.).
+The ldl/stc implementation on early alpha was so broken as to be
+unusable. It's not actually done in the cache, it WENT OUT ON THE BUS.
+We're talking 70's style "external lock signal" kind of things like
+the 8086 did for locked cycles before the advent of caches, the kind
+that nobody sane has done for a long long time.
 
-Thanks,
-Chase Southwood
+So realistically, you absolutely do not want to use those things to
+emulate atomic byte/word accesses. The whole point of "load_acquire()"
+and "store_release()" is that it's supposed to be cheaper than a
+locked access, and can be done with just a barrier instruction or a
+special instruction flag.
 
-2: Changed from simple clean-up to swapping a timeout in for a while loop.
+If you just want to do a store release, on alpha you'd want to
+implement that as a full memory barrier followed by a store. It
+doesn't get the advantage of a real release consistency model, but at
+least it's not doing an external bus access. But you can only do that
+store as a 4-byte or 8-byte store.on the older alphas (byte and word
+stores work on newer ones).
 
-3: Removed extra counter variable, and added error checking.
+Of course, it's entirely possible that nobody cares..
 
-4: No longer using counter variable, using jiffies instead.
-
- drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index 457b884..882b249 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
- {
- 	const struct ni_board_struct *board = comedi_board(dev);
- 	struct ni_private *devpriv = dev->private;
-+	unsigned long timeout;
- 
- 	if (board->reg_type == ni_reg_6143) {
- 		/*  Flush the 6143 data FIFO */
- 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
- 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
--		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
-+		/*  Wait for complete */
-+		timeout = jiffies + msec_to_jiffies(100);
-+		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
-+			if (time_after(jiffies, timeout)) {
-+				comedi_error(dev, "FIFO flush timeout.");
-+				break;
-+			}
-+			udelay(1);
-+		}
- 	} else {
- 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
- 		if (board->reg_type == ni_reg_625x) {
--- 
-1.8.4.2
-
+             Linus
