@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaAOBt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:49:29 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64925 "EHLO
+	id S1752497AbaAOBts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:49:48 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43403 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaAOBpo (ORCPT
+	with ESMTP id S1751664AbaAOBpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:45:44 -0500
-X-AuditID: 9c930197-b7b7cae000000e34-54-52d5e846a846
+	Tue, 14 Jan 2014 20:45:43 -0500
+X-AuditID: 9c930197-b7b7cae000000e34-4c-52d5e8454fab
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 05/17] tools lib traceevent: Make plugin unload function receive pevent
-Date: Wed, 15 Jan 2014 10:45:28 +0900
-Message-Id: <1389750340-15965-6-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 04/17] tools lib traceevent: Get rid of die() finally!!
+Date: Wed, 15 Jan 2014 10:45:27 +0900
+Message-Id: <1389750340-15965-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
 References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
@@ -26,99 +26,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PEVENT_PLUGIN_UNLOADER function might need some cleanup using
-pevent like unregister some handlers.  So pass pevent as argument.
+Now all of its users were gone. :)
 
-Cc: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/event-parse.h     | 7 ++++---
- tools/lib/traceevent/event-plugin.c    | 4 ++--
- tools/lib/traceevent/plugin_function.c | 2 +-
- tools/perf/util/trace-event.c          | 2 +-
- 4 files changed, 8 insertions(+), 7 deletions(-)
+ tools/lib/traceevent/event-utils.h |  4 ----
+ tools/lib/traceevent/parse-utils.c | 44 --------------------------------------
+ 2 files changed, 48 deletions(-)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 3c890cb28db7..a3beca56cb35 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -105,7 +105,7 @@ typedef int (*pevent_event_handler_func)(struct trace_seq *s,
- 					 void *context);
+diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
+index e76c9acb92cd..d1dc2170e402 100644
+--- a/tools/lib/traceevent/event-utils.h
++++ b/tools/lib/traceevent/event-utils.h
+@@ -23,18 +23,14 @@
+ #include <ctype.h>
  
- typedef int (*pevent_plugin_load_func)(struct pevent *pevent);
--typedef int (*pevent_plugin_unload_func)(void);
-+typedef int (*pevent_plugin_unload_func)(struct pevent *pevent);
+ /* Can be overridden */
+-void die(const char *fmt, ...);
+-void *malloc_or_die(unsigned int size);
+ void warning(const char *fmt, ...);
+ void pr_stat(const char *fmt, ...);
+ void vpr_stat(const char *fmt, va_list ap);
  
- struct plugin_option {
- 	struct plugin_option		*next;
-@@ -130,7 +130,7 @@ struct plugin_option {
-  * PEVENT_PLUGIN_UNLOADER:  (optional)
-  *   The function called just before unloading
-  *
-- *   int PEVENT_PLUGIN_UNLOADER(void)
-+ *   int PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
-  *
-  * PEVENT_PLUGIN_OPTIONS:  (optional)
-  *   Plugin options that can be set before loading
-@@ -411,7 +411,8 @@ enum pevent_errno {
- struct plugin_list;
+ /* Always available */
+-void __die(const char *fmt, ...);
+ void __warning(const char *fmt, ...);
+ void __pr_stat(const char *fmt, ...);
  
- struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
--void traceevent_unload_plugins(struct plugin_list *plugin_list);
-+void traceevent_unload_plugins(struct plugin_list *plugin_list,
-+			       struct pevent *pevent);
+-void __vdie(const char *fmt, ...);
+ void __vwarning(const char *fmt, ...);
+ void __vpr_stat(const char *fmt, ...);
  
- struct cmdline;
- struct cmdline_list;
-diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
-index 125f5676bcb5..0c8bf6780e4d 100644
---- a/tools/lib/traceevent/event-plugin.c
-+++ b/tools/lib/traceevent/event-plugin.c
-@@ -197,7 +197,7 @@ traceevent_load_plugins(struct pevent *pevent)
- }
+diff --git a/tools/lib/traceevent/parse-utils.c b/tools/lib/traceevent/parse-utils.c
+index bba701cf10e6..eda07fa31dca 100644
+--- a/tools/lib/traceevent/parse-utils.c
++++ b/tools/lib/traceevent/parse-utils.c
+@@ -25,40 +25,6 @@
  
- void
--traceevent_unload_plugins(struct plugin_list *plugin_list)
-+traceevent_unload_plugins(struct plugin_list *plugin_list, struct pevent *pevent)
+ #define __weak __attribute__((weak))
+ 
+-void __vdie(const char *fmt, va_list ap)
+-{
+-	int ret = errno;
+-
+-	if (errno)
+-		perror("trace-cmd");
+-	else
+-		ret = -1;
+-
+-	fprintf(stderr, "  ");
+-	vfprintf(stderr, fmt, ap);
+-
+-	fprintf(stderr, "\n");
+-	exit(ret);
+-}
+-
+-void __die(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	__vdie(fmt, ap);
+-	va_end(ap);
+-}
+-
+-void __weak die(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	__vdie(fmt, ap);
+-	va_end(ap);
+-}
+-
+ void __vwarning(const char *fmt, va_list ap)
  {
- 	pevent_plugin_unload_func func;
- 	struct plugin_list *list;
-@@ -207,7 +207,7 @@ traceevent_unload_plugins(struct plugin_list *plugin_list)
- 		plugin_list = list->next;
- 		func = dlsym(list->handle, PEVENT_PLUGIN_UNLOADER_NAME);
- 		if (func)
--			func();
-+			func(pevent);
- 		dlclose(list->handle);
- 		free(list->name);
- 		free(list);
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index aad92ad5e96f..39461485f9a7 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -144,7 +144,7 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
- 	return 0;
+ 	if (errno)
+@@ -117,13 +83,3 @@ void __weak pr_stat(const char *fmt, ...)
+ 	__vpr_stat(fmt, ap);
+ 	va_end(ap);
  }
- 
--void PEVENT_PLUGIN_UNLOADER(void)
-+void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
- {
- 	int i, x;
- 
-diff --git a/tools/perf/util/trace-event.c b/tools/perf/util/trace-event.c
-index d9f5f6137ab3..6322d37164c5 100644
---- a/tools/perf/util/trace-event.c
-+++ b/tools/perf/util/trace-event.c
-@@ -34,8 +34,8 @@ int trace_event__init(struct trace_event *t)
- 
- void trace_event__cleanup(struct trace_event *t)
- {
-+	traceevent_unload_plugins(t->plugin_list, t->pevent);
- 	pevent_free(t->pevent);
--	traceevent_unload_plugins(t->plugin_list);
- }
- 
- static struct event_format*
+-
+-void __weak *malloc_or_die(unsigned int size)
+-{
+-	void *data;
+-
+-	data = malloc(size);
+-	if (!data)
+-		die("malloc");
+-	return data;
+-}
 -- 
 1.7.11.7
 
