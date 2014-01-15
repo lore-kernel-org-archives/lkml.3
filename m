@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbaAOO1n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:27:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752297AbaAOO1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:27:40 -0500
-Date: Wed, 15 Jan 2014 09:27:27 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Gaurav Jain <gjain@fb.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Message-ID: <20140115142727.GJ25953@redhat.com>
-References: <20140113165441.GB25953@redhat.com>
- <CEFB09CC.2CAAA%gjain@fb.com>
+	id S1752076AbaAOO24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:28:56 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:50697 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaAOO2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:28:53 -0500
+Message-ID: <52D69AFA.1060308@linaro.org>
+Date: Wed, 15 Jan 2014 22:28:10 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CEFB09CC.2CAAA%gjain@fb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org> <52D61DA0.8050206@linux.vnet.ibm.com> <52D62E96.6030301@linaro.org> <52D6412D.8050000@linux.vnet.ibm.com>
+In-Reply-To: <52D6412D.8050000@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 08:48:23PM +0000, Gaurav Jain wrote:
-> On 1/13/14, 11:54 AM, "Don Zickus" <dzickus@redhat.com> wrote:
+On 01/15/2014 04:05 PM, Michael wang wrote:
+> On 01/15/2014 02:45 PM, Alex Shi wrote:
+> [snip]
+>>
+>> yes, to save your scenario, we need to know the next timer for idle cpu,
+>> but that is not enough, interrupt is totally unpredictable. So, I'd
+>> rather bear the coarse method now.
+>>>
+>>> So what about just check 'ts->tick_stopped' and record one ticking idle
+>>> cpu? the cost could be lower than time comparison, we could reduce the
+>>> risk may be...(well, not so risky since the logical only works when
+>>> system is relaxing with several cpu idle)
+>>
+>> first, nohz full also stop tick. second, tick_stopped can not reflect
+>> the interrupt. when the idle cpu was interrupted, it's waken, then be a
+>> good candidate for task running.
 > 
-> >On Sat, Jan 11, 2014 at 08:32:14PM -0800, Gaurav Jain wrote:
-> >> Anon records usually do not have the 'execname' entry. However if they
-> >>are on
-> >> the heap, the execname shows up as '[heap]'. The fix considers any
-> >>executable
-> >> entries in the map that do not have a name or are on the heap as anon
-> >>records
-> >> and sets the name to '//anon'.
-> >> 
-> >> This fixes JIT profiling for records on the heap.
-> >
-> >I guess I don't understand the need for this fix.  It seems breaking out
-> >//anon vs. [heap] would be useful.  Your patch is saying otherwise.  Can
-> >give a description of the problem you are trying to solve?
-> 
-> Thank you for looking at the patch.
-> 
-> We generate a perf map file which includes certain JIT¹ed functions that
-> show up as [heap] entries. As a result, I included the executable heap
-> entries as anon pages so that it would be handled in
-> util/map.c:map__new(). The alternative would be to handle heap entries in
-> map__new() directly, however I wasn¹t sure if this would break something
-> as it seems that heap and stack entries are expected to fail all
-> map__find_* functions. Thus I considered executable heap entries as
-> //anon, but perhaps there is a better way.
+> IMHO, if we have to do gamble here, we better choose the cheaper bet,
+> unless we could prove this 'coarse method' have more higher chance for
+> BINGO than just check 'tick_stopped'...
 
-Thanks for the improved problem description.   I see it led to a better
-patch. :-)  That is why it is generally a good idea to describe the
-problem you are trying to solve to see if others have a better solution.
+Tick stopped on a nohz full CPU, but the cpu still had a task running...
+> 
+> BTW, may be the logical should be in the select_idle_sibling()?
 
-Cheers,
-Don
+both of functions need to be considered.
+> 
+> Regards,
+> Michael Wang
+> 
+>>
+> 
 
-> 
-> >Also style issue below..
-> >
-> >> 
-> >> Signed-off-by: Gaurav Jain <gjain@fb.com>
-> >> Cc: Ingo Molnar <mingo@kernel.org>
-> >> Cc: Jiri Olsa <jolsa@redhat.com>
-> >> Cc: Paul Mackerras <paulus@samba.org>
-> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >> Cc: Don Zickus <dzickus@redhat.com>
-> >> Cc: Arun Sharma <asharma@fb.com>
-> >> ---
-> >>  tools/perf/util/event.c | 5 ++---
-> >>  1 file changed, 2 insertions(+), 3 deletions(-)
-> >> 
-> >> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> >> index bb788c1..ae9c55b 100644
-> >> --- a/tools/perf/util/event.c
-> >> +++ b/tools/perf/util/event.c
-> >> @@ -224,10 +224,9 @@ static int
-> >>perf_event__synthesize_mmap_events(struct perf_tool *tool,
-> >>  				continue;
-> >>  
-> >>  			event->header.misc |= PERF_RECORD_MISC_MMAP_DATA;
-> >> -		}
-> >> -
-> >> -		if (!strcmp(execname, ""))
-> >> +		} if (!strcmp(execname, "") || !strcmp(execname, "[heap]")) {
-> >
-> >The '} if' part should seperate the 'if' on to its own line (unless you
-> >meant an 'else' in there).
-> 
-> Bah yes, I intended 'else if'. I apologize for that. Does the fact that I
-> filtered anon entries to only those marked as executable break the
-> existing behavior?
-> 
-> Thanks,
-> 
-> Gaurav
-> 
+
+-- 
+Thanks
+    Alex
