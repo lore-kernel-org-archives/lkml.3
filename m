@@ -1,143 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaAOJ6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:58:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43410 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaAOJ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:58:32 -0500
-Date: Wed, 15 Jan 2014 10:58:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
-Message-ID: <20140115095829.GI8782@dhcp22.suse.cz>
-References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
- <alpine.LSU.2.11.1401131751080.2229@eggly.anvils>
- <20140114132727.GB32227@dhcp22.suse.cz>
- <20140114142610.GF32227@dhcp22.suse.cz>
- <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
+	id S1751989AbaAOKA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:00:26 -0500
+Received: from 19.mo3.mail-out.ovh.net ([178.32.98.231]:33483 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751848AbaAOKAT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 05:00:19 -0500
+X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 05:00:18 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52D65880.10301@atmel.com>
+References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com>
+	<1389270709-32662-7-git-send-email-jjhiblot@traphandler.com>
+	<52D65880.10301@atmel.com>
+Date: Wed, 15 Jan 2014 10:54:45 +0100
+Message-ID: <CACh+v5Pi-ZF5orDWheX9C3MpUcU56oDio_O8s6sR3Snb9QmTZQ@mail.gmail.com>
+Subject: Re: [PATCH v2 06/12] at91: smc: Adds helper functions to validate and
+ clip the smc timings.
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        boris brezillon <b.brezillon@overkiz.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 6550204184489121816
+X-Ovh-Remote: 209.85.192.174 (mail-pd0-f174.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 14-01-14 12:42:28, Hugh Dickins wrote:
-> On Tue, 14 Jan 2014, Michal Hocko wrote:
-> > On Tue 14-01-14 14:27:27, Michal Hocko wrote:
-> > > On Mon 13-01-14 17:52:30, Hugh Dickins wrote:
-> > > > On one home machine I can easily reproduce (by rmdir of memcgdir during
-> > > > reclaim) multiple processes stuck looping forever in mem_cgroup_iter():
-> > > > __mem_cgroup_iter_next() keeps selecting the memcg being destroyed, fails
-> > > > to tryget it, returns NULL to mem_cgroup_iter(), which goes around again.
-> > > 
-> > > So you had a single memcg (without any children) and a limit-reclaim
-> > > on it when you removed it, right?
-> > 
-> > Hmm, thinking about this once more how can this happen? There must be a
-> > task to trigger the limit reclaim so the cgroup cannot go away (or is
-> > this somehow related to kmem accounting?). Only if the taks was migrated
-> > after the reclaim was initiated but before we started iterating?
-> 
-> Yes, I believe that's how it comes about (but no kmem accounting:
-> it's configured in but I'm not setting limits).
+2014/1/15 Nicolas Ferre <nicolas.ferre@atmel.com>:
+> On 09/01/2014 13:31, Jean-Jacques Hiblot :
+>> This patchs implememnts 2 functions to help with the configuration of a
+>> chip-select's timing:
+>> * sam9_smc_check_cs_configuration : checks that the values would fit in the
+>>   registers.
+>> * sam9_smc_clip_cs_configuration : clip the values to their maximum.
+>>
+>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>> ---
+>>  arch/arm/mach-at91/include/mach/at91sam9_smc.h |  2 +
+>>  arch/arm/mach-at91/sam9_smc.c                  | 77 ++++++++++++++++++++++++++
+>>  2 files changed, 79 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-at91/include/mach/at91sam9_smc.h b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
+>> index c3e29311..615ac56 100644
+>> --- a/arch/arm/mach-at91/include/mach/at91sam9_smc.h
+>> +++ b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
+>> @@ -47,6 +47,8 @@ extern void sam9_smc_read_mode(int id, int cs, struct sam9_smc_config *config);
+>>  extern void sam9_smc_write_mode(int id, int cs, struct sam9_smc_config *config);
+>>  extern void sam9_smc_cs_read(void __iomem *, struct sam9_smc_config *config);
+>>  extern void sam9_smc_cs_configure(void __iomem *, struct sam9_smc_config *cfg);
+>> +extern int sam9_smc_check_cs_configuration(struct sam9_smc_config *config);
+>> +extern void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config);
+>>  #endif
+>>
+>>  #define AT91_SMC_SETUP               0x00                            /* Setup Register for CS n */
+>> diff --git a/arch/arm/mach-at91/sam9_smc.c b/arch/arm/mach-at91/sam9_smc.c
+>> index d7a6156..fe3c492 100644
+>> --- a/arch/arm/mach-at91/sam9_smc.c
+>> +++ b/arch/arm/mach-at91/sam9_smc.c
+>> @@ -23,6 +23,83 @@
+>>
+>>  static void __iomem *smc_base_addr[2];
+>>
+>> +static int count_trailing_zeroes(u32 x)
+>
+> Don't we have something generic for this?
+>
+> Check include/asm-generic/bitops/count_zeros.h
 
-OK, then it makes more sense now.
+I wonder how I could have missed this one :o)
 
-> The "cg" script I run for testing appended below.  Normally I just run
-> it as "cg 2" to set up two memcgs, then my dual-tmpfs-kbuild script runs
-> one kbuild on tmpfs in cg 1, and another kbuild on ext4 on loop on tmpfs
-> in cg 2, mainly to test swapping.  But for this bug I run it as "cg m",
-> to repeatedly create new memcg, move running tasks from old to new, and
-> remove old.
+>
+>> +{
+>> +     int ret = 0;
+>> +     if (!(x & 0xFFFF)) {
+>> +             ret += 16;
+>> +             x = x >> 16;
+>> +     }
+>> +     if (!(x & 0xFF)) {
+>> +             ret += 8;
+>> +             x = x >> 8;
+>> +     }
+>> +     if (!(x & 0xF)) {
+>> +             ret += 4;
+>> +             x = x >> 4;
+>> +     }
+>> +     if (!(x & 0x3)) {
+>> +             ret += 2;
+>> +             x = x >> 2;
+>> +     }
+>> +     if (!(x & 0x1)) {
+>> +             ret += 1;
+>> +             x = x >> 1;
+>> +     }
+>> +     if (!(x & 0x1))
+>> +             ret += 1;
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +
+>> +#define __CHECK_CFG(config, x, y)  do {\
+>> +     if (x##_(config->y) > x) {\
+>> +             pr_debug("error: %s (0x%x) is out of range\n", #y,\
+>> +                     config->y >> count_trailing_zeroes(x));\
+>> +             return -EINVAL;\
+>> +             } \
+>> +     } while (0)
+>
+> I do not like the use of macro for this. You can convert them to
+> functions and it would increase readability. I am pretty confident that
+> gcc will optimize it so that is won't impact performance.
 
-thanks I will play with it.
+It's not a matter of performance. I wanted to use the stringification
+for the debug message.
 
-> Sometimes I'm doing swapoff and swapon in the background too, but
-> that's not needed to see this bug.  And although we're accustomed to
-> move_charge_at_immigrate being a beast, for this bug it's much quicker
-> to have that turned off.
-
-yes, that makes sense becuase the task doesn't take its memory with it
-and the reclaim contains even without any task in the group.
-
-> (Until a couple of months ago, I was working in /cg/1 and /cg/2; but
-> have now pushed down a level to /cg/cg/1 and /cg/cg/2 after realizing
-> that working at the root would miss some important issues - in particular
-> the mem_cgroup_reparent_charges wrong-usage hang; but in fact I have
-> *never* caught that here, just know that it still exists from some
-> Google watchdog dumps, but we've still not identified the cause -
-> seen even without MEMCG_SWAP and with Hannes's extra reparent_charges.)
-
-Interesting. There is another user seeing hangs with the reparent
-workaround as well. I still didn't get to his test case because of other
-interal work that is due.
-
-> > I am confused now and have to rush shortly so I will think about it
-> > tomorrow some more.
-> 
-> Thanks, yes, I knew it's one you'd want to think about first: no rush.
-> 
-> > 
-> > > This is nasty because __mem_cgroup_iter_next will try to skip it but
-> > > there is nothing else so it returns NULL. We update iter->generation++
-> > > but that doesn't help us as prev = NULL as this is the first iteration
-> > > so
-> > > 		if (prev && reclaim->generation != iter->generation)
-> > > 
-> > > break out will not help us.
-> > 
-> > > You patch will surely help I am just not sure it is the right thing to
-> > > do. Let me think about this.
-> > 
-> > The patch is actually not correct after all. You are returning root
-> > memcg without taking a reference. So there is a risk that memcg will
-> > disappear. Although, it is true that the race with removal is not that
-> > probable because mem_cgroup_css_offline (resp. css_free) will see some
-> > pages on LRUs and they will reclaim as well.
-> > 
-> > Ouch. And thinking about this shows that out_css_put is broken as well
-> > for subtree walks (those that do not start at root_mem_cgroup level). We
-> > need something like the the snippet bellow.
-> 
-> It's the out_css_put precedent that I was following in not incrementing
-> for the root.  I think that's been discussed in the past, and rightly or
-> wrongly we've concluded that the caller of mem_cgroup_iter() always has
-> some hold on the root, which makes it safe to skip get/put on it here.
-> No doubt one of those many short cuts to avoid memcg overhead when
-> there's no memcg other than the root_mem_cgroup.
-
-That might be true but I guess it makes sense to get rid of some subtle
-assumptions. Especially now that we have an effective per-cpu ref.
-counting for css.
-
-> I've not given enough thought to whether that is still a good assumption.
-> The try_charge route does a css_tryget, and that will be the hold on the
-> root in the reclaim case, won't it?
-
-Yes, that is what I realized when looked at the code yesterday and tried
-to handle by the snippet. I will post it as a separate patch.
-
-> And its css_tryget succeeding does not guarantee that a css_tryget a
-> moment later will also succeed, which is what happens in this bug.
-
-Once the tryget succeeds then we get the memcg so another tryget won't
-be needed. Or am I missing something? What I tried to tell is that you
-should do css_get(root) in your escape path.
-
-> But I have not attempted to audit other uses of mem_cgroup_iter() and
-> for_each_mem_cgroup_tree().  I've not hit any problems from them, but
-> may not have exercised those paths at all.  And the question of
-> whether there's a good hold on the root is a separate issue, really.
-> 
-> Hugh
-[...]
--- 
-Michal Hocko
-SUSE Labs
+>
+>> +int sam9_smc_check_cs_configuration(struct sam9_smc_config *config)
+>> +{
+>> +     __CHECK_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
+>> +     __CHECK_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
+>> +     __CHECK_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
+>> +     __CHECK_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
+>> +     __CHECK_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
+>> +     __CHECK_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
+>> +     __CHECK_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
+>> +     __CHECK_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
+>> +     __CHECK_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
+>> +     __CHECK_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
+>> +     __CHECK_CFG(config, AT91_SMC_TDF, tdf_cycles);
+>> +     return 0;
+>> +}
+>> +
+>> +#define __CLIP_CFG(config, x, y)  do {\
+>> +     if (x##_(config->y) > x) {\
+>> +             config->y = x >> count_trailing_zeroes(x);\
+>> +             pr_debug("clipping %s to %d\n", #y, config->y);\
+>> +             } \
+>> +     } while (0)
+>
+> Ditto.
+>
+>> +
+>> +void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config)
+>> +{
+>> +     __CLIP_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
+>> +     __CLIP_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
+>> +     __CLIP_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
+>> +     __CLIP_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
+>> +     __CLIP_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
+>> +     __CLIP_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
+>> +     __CLIP_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
+>> +     __CLIP_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
+>> +     __CLIP_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
+>> +     __CLIP_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
+>> +     __CLIP_CFG(config, AT91_SMC_TDF, tdf_cycles);
+>> +
+>> +}
+>> +
+>>  static void sam9_smc_cs_write_mode(void __iomem *base,
+>>                                       struct sam9_smc_config *config)
+>>  {
+>>
+>
+>
+> --
+> Nicolas Ferre
