@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaAOLAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 06:00:45 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33753 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaAOLAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 06:00:42 -0500
-Date: Wed, 15 Jan 2014 12:00:18 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, raistlin@linux.it,
-        juri.lelli@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-Message-ID: <20140115110018.GA31570@twins.programming.kicks-ass.net>
-References: <52D64676.4040000@linaro.org>
- <20140115092245.GA15190@gmail.com>
+	id S1751754AbaAOLCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 06:02:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046AbaAOLCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 06:02:20 -0500
+Message-ID: <52D66AB2.6090601@redhat.com>
+Date: Wed, 15 Jan 2014 12:02:10 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130923 Thunderbird/17.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140115092245.GA15190@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: vfio: silence GCC warning
+References: <1389313726.2039.9.camel@x220>
+In-Reply-To: <1389313726.2039.9.camel@x220>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 10:22:45AM +0100, Ingo Molnar wrote:
-> 1)
+Il 10/01/2014 01:28, Paul Bolle ha scritto:
+> Building vfio.o triggers a GCC warning (when building for 32 bits x86):
+>     arch/x86/kvm/../../../virt/kvm/vfio.c: In function 'kvm_vfio_set_group':
+>     arch/x86/kvm/../../../virt/kvm/vfio.c:104:22: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+>       void __user *argp = (void __user *)arg;
+>                           ^
 > 
-> There's this change to __setscheduler():
+> Silence this warning by casting arg to unsigned long.
 > 
-> -__setscheduler(struct rq *rq, struct task_struct *p, int policy, int prio)
-> +/* Actually do priority change: must hold pi & rq lock. */
-> +static void __setscheduler(struct rq *rq, struct task_struct *p,
-> +                          const struct sched_attr *attr)
->  {
-> +       int policy = attr->sched_policy;
-> +
->         p->policy = policy;
-> -       p->rt_priority = prio;
-> +
-> +       if (rt_policy(policy))
-> +               p->rt_priority = attr->sched_priority;
-> +       else
-> +               p->static_prio = NICE_TO_PRIO(attr->sched_nice);
-> +
+> argp's current type, "void __user *", is always casted to "int32_t
+> __user *". So its type might as well be changed to "int32_t __user *".
 > 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Compile tested on both 32 and 64 bits x86. I've no KVM capable hardware
+> that is already running v3.13-rc* at hand. Besides, I wouldn't know how
+> to test the codepaths I'm changing here.
 > 
-> doesnt this change keep p->rt_priority uninitialized in the 
-> normalize_task() case?
+>  virt/kvm/vfio.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> I.e. rt_priority should still be set unconditionally. In the 
-> SCHED_NORMAL case that will be a zero initialization.
+> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+> index ca4260e..b4f9507 100644
+> --- a/virt/kvm/vfio.c
+> +++ b/virt/kvm/vfio.c
+> @@ -101,14 +101,14 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
+>  	struct kvm_vfio *kv = dev->private;
+>  	struct vfio_group *vfio_group;
+>  	struct kvm_vfio_group *kvg;
+> -	void __user *argp = (void __user *)arg;
+> +	int32_t __user *argp = (int32_t __user *)(unsigned long)arg;
+>  	struct fd f;
+>  	int32_t fd;
+>  	int ret;
+>  
+>  	switch (attr) {
+>  	case KVM_DEV_VFIO_GROUP_ADD:
+> -		if (get_user(fd, (int32_t __user *)argp))
+> +		if (get_user(fd, argp))
+>  			return -EFAULT;
+>  
+>  		f = fdget(fd);
+> @@ -148,7 +148,7 @@ static int kvm_vfio_set_group(struct kvm_device *dev, long attr, u64 arg)
+>  		return 0;
+>  
+>  	case KVM_DEV_VFIO_GROUP_DEL:
+> -		if (get_user(fd, (int32_t __user *)argp))
+> +		if (get_user(fd, argp))
+>  			return -EFAULT;
+>  
+>  		f = fdget(fd);
+> 
 
-But why? SCHED_NORMAL doesn't care about rt_priority afaict. And once it
-gets priority boosted we'll set the rt_priority again to whatever is
-propagated from the pi-chain.
+Applied to kvm/queue, thanks.
 
-> 2)
-> 
-> It's not clear why this change to __setscheduler() was done:
-> 
->         /*
->          * Allow unprivileged RT tasks to decrease priority:
->          */
->         if (user && !capable(CAP_SYS_NICE)) {
-> +               if (fair_policy(policy)) {
-> +                       if (!can_nice(p, attr->sched_nice))
-> +                               return -EPERM;
-> +               }
-> +
->                 if (rt_policy(policy)) {o
-
-Bah, I'm pretty sure I wrote that :/ And I can't for the life of me
-remember why I did that. Complete fail there.
+Paolo
