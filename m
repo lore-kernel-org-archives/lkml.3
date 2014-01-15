@@ -1,99 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaAOFIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:08:14 -0500
-Received: from mail-gg0-f181.google.com ([209.85.161.181]:33004 "EHLO
-	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaAOFIM (ORCPT
+	id S1751647AbaAOFIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:08:49 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:52015 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaAOFIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:08:12 -0500
-Date: Tue, 14 Jan 2014 21:08:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v3 4/5] slab: introduce byte sized index for the freelist
- of a slab
-In-Reply-To: <1385974183-31423-5-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.02.1401142107570.7751@chino.kir.corp.google.com>
-References: <1385974183-31423-1-git-send-email-iamjoonsoo.kim@lge.com> <1385974183-31423-5-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 15 Jan 2014 00:08:47 -0500
+X-AuditID: 9c93017d-b7b51ae000000e33-04-52d617dddd67
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH/RFC] perf ui/tui: Show column header in hist browser
+Date: Wed, 15 Jan 2014 14:08:45 +0900
+Message-Id: <1389762525-1795-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Dec 2013, Joonsoo Kim wrote:
+Add a line for showing column headers like --stdio.
 
-> Currently, the freelist of a slab consist of unsigned int sized indexes.
-> Since most of slabs have less number of objects than 256, large sized
-> indexes is needless. For example, consider the minimum kmalloc slab. It's
-> object size is 32 byte and it would consist of one page, so 256 indexes
-> through byte sized index are enough to contain all possible indexes.
-> 
-> There can be some slabs whose object size is 8 byte. We cannot handle
-> this case with byte sized index, so we need to restrict minimum
-> object size. Since these slabs are not major, wasted memory from these
-> slabs would be negligible.
-> 
-> Some architectures' page size isn't 4096 bytes and rather larger than
-> 4096 bytes (One example is 64KB page size on PPC or IA64) so that
-> byte sized index doesn't fit to them. In this case, we will use
-> two bytes sized index.
-> 
-> Below is some number for this patch.
-> 
-> * Before *
-> kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0
-> kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0
-> kmalloc-192         1016   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0
-> kmalloc-96           560    620    128   31    1 : tunables  120   60    0 : slabdata     20     20      0
-> kmalloc-64          2148   2280     64   60    1 : tunables  120   60    0 : slabdata     38     38      0
-> kmalloc-128          647    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-> kmalloc-32         11360  11413     32  113    1 : tunables  120   60    0 : slabdata    101    101      0
-> kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0
-> 
-> * After *
-> kmalloc-512          521    648    512    8    1 : tunables   54   27    0 : slabdata     81     81      0
-> kmalloc-256          208    208    256   16    1 : tunables  120   60    0 : slabdata     13     13      0
-> kmalloc-192         1029   1029    192   21    1 : tunables  120   60    0 : slabdata     49     49      0
-> kmalloc-96           529    589    128   31    1 : tunables  120   60    0 : slabdata     19     19      0
-> kmalloc-64          2142   2142     64   63    1 : tunables  120   60    0 : slabdata     34     34      0
-> kmalloc-128          660    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-> kmalloc-32         11716  11780     32  124    1 : tunables  120   60    0 : slabdata     95     95      0
-> kmem_cache           197    210    192   21    1 : tunables  120   60    0 : slabdata     10     10      0
-> 
-> kmem_caches consisting of objects less than or equal to 256 byte have
-> one or more objects than before. In the case of kmalloc-32, we have 11 more
-> objects, so 352 bytes (11 * 32) are saved and this is roughly 9% saving of
-> memory. Of couse, this percentage decreases as the number of objects
-> in a slab decreases.
-> 
-> Here are the performance results on my 4 cpus machine.
-> 
-> * Before *
-> 
->  Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-> 
->        229,945,138 cache-misses                                                  ( +-  0.23% )
-> 
->       11.627897174 seconds time elapsed                                          ( +-  0.14% )
-> 
-> * After *
-> 
->  Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-> 
->        218,640,472 cache-misses                                                  ( +-  0.42% )
-> 
->       11.504999837 seconds time elapsed                                          ( +-  0.21% )
-> 
-> cache-misses are reduced by this patchset, roughly 5%.
-> And elapsed times are improved by 1%.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/browser.c        |  4 +--
+ tools/perf/ui/browsers/hists.c | 55 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+), 2 deletions(-)
 
-Acked-by: David Rientjes <rientjes@google.com>
+diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
+index d11541d4d7d7..441470ba8d2c 100644
+--- a/tools/perf/ui/browser.c
++++ b/tools/perf/ui/browser.c
+@@ -278,8 +278,8 @@ void ui_browser__hide(struct ui_browser *browser)
+ static void ui_browser__scrollbar_set(struct ui_browser *browser)
+ {
+ 	int height = browser->height, h = 0, pct = 0,
+-	    col = browser->width,
+-	    row = browser->y - 1;
++	    col = browser->width, row = 0;
++
+ 
+ 	if (browser->nr_entries > 1) {
+ 		pct = ((browser->index * (browser->height - 1)) /
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index e0ab399d431d..5b94de48f23c 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -25,6 +25,7 @@ struct hist_browser {
+ 	struct map_symbol   *selection;
+ 	int		     print_seq;
+ 	bool		     show_dso;
++	bool		     show_column_header;
+ 	float		     min_pcnt;
+ 	u64		     nr_pcnt_entries;
+ };
+@@ -312,6 +313,57 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
+ 
+ static void hist_browser__update_pcnt_entries(struct hist_browser *hb);
+ 
++static void hist_browser__column_header(struct hist_browser *browser)
++{
++	struct perf_hpp_fmt *fmt;
++	struct sort_entry *se;
++	struct hists *hists = browser->hists;
++	bool show = browser->show_column_header;
++	unsigned int width;
++
++	pthread_mutex_lock(&ui__lock);
++
++	if (!show)
++		goto out;
++
++	ui_browser__gotorc(&browser->b, 0, 0);
++
++	perf_hpp__for_each_format(fmt) {
++		char buf[128];
++		struct perf_hpp hpp = {
++			.buf	= buf,
++			.size	= sizeof(buf),
++			.ptr	= hists_to_evsel(hists),
++		};
++
++		width = fmt->width(fmt, &hpp);
++		fmt->header(fmt, &hpp);
++
++		slsmg_printf(" %-*s", width, hpp.buf);
++	}
++
++	list_for_each_entry(se, &hist_entry__sort_list, list) {
++		if (se->elide)
++			continue;
++
++		width = strlen(se->se_header);
++		if (!hists__new_col_len(hists, se->se_width_idx, width))
++			width = hists__col_len(hists, se->se_width_idx);
++
++		slsmg_printf("  %-*s", width, se->se_header);
++	}
++
++	/*
++	 * We just called ui_browser__refresh_dimensions().
++	 * Update it to honor a new column header line.
++	 */
++	browser->b.y++;
++	browser->b.height--;
++
++out:
++	pthread_mutex_unlock(&ui__lock);
++}
++
+ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			     struct hist_browser_timer *hbt)
+ {
+@@ -331,6 +383,8 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			     "Press '?' for help on key bindings") < 0)
+ 		return -1;
+ 
++	hist_browser__column_header(browser);
++
+ 	while (1) {
+ 		key = ui_browser__run(&browser->b, delay_secs);
+ 
+@@ -1198,6 +1252,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 		browser->b.refresh = hist_browser__refresh;
+ 		browser->b.seek = ui_browser__hists_seek;
+ 		browser->b.use_navkeypressed = true;
++		browser->show_column_header = true;
+ 	}
+ 
+ 	return browser;
+-- 
+1.7.11.7
+
