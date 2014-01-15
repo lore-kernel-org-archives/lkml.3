@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807AbaAOWSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:18:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41179 "EHLO
+	id S1754608AbaAOWSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:18:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41174 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaAOV6v (ORCPT
+	with ESMTP id S1753853AbaAOV6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:51 -0500
+	Wed, 15 Jan 2014 16:58:50 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 099/166] ext4: call ext4_error_inode() if jbd2_journal_dirty_metadata() fails
-Date: Wed, 15 Jan 2014 13:51:53 -0800
-Message-Id: <1389822780-4729-100-git-send-email-kamal@canonical.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Daniel Vetter <daniel@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 059/166] drm/i915: Do not clobber config status after a forced restore of hw state
+Date: Wed, 15 Jan 2014 13:51:13 -0800
+Message-Id: <1389822780-4729-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -26,52 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit ae1495b12df1897d4f42842a7aa7276d920f6290 upstream.
+commit edd5b13313551d6b04acfb90d3db58ed3cf3c814 upstream.
 
-While it's true that errors can only happen if there is a bug in
-jbd2_journal_dirty_metadata(), if a bug does happen, we need to halt
-the kernel or remount the file system read-only in order to avoid
-further data loss.  The ext4_journal_abort_handle() function doesn't
-do any of this, and while it's likely that this call (since it doesn't
-adjust refcounts) will likely result in the file system eventually
-deadlocking since the current transaction will never be able to close,
-it's much cleaner to call let ext4's error handling system deal with
-this situation.
+We call intel_modeset_setup_hw_state() along two paths, driver
+load/resume and after a lid event notification. During initialisation of
+the driver, it is imperative that we reset the config state. This
+correctly sets up the initial connector statuses and prepares the
+hardware for a thorough probing. However, during a lid event, we only
+want to undo the damage caused by the bios by resetting our last known
+mode. In this cirumstance, we do not want to clobber our desired state.
 
-There's a separate bug here which is that if certain jbd2 errors
-errors occur and file system is mounted errors=continue, the file
-system will probably eventually end grind to a halt as described
-above.  But things have been this way in a long time, and usually when
-we have these sorts of errors it's pretty much a disaster --- and
-that's why the jbd2 layer aggressively retries memory allocations,
-which is the most likely cause of these jbd2 errors.
+In order to try and keep sanity between the config state and our own
+tracking, do the drm_mode_config_reset() first along the load/resume
+paths before reading out the hw state and apply any definite known
+corrections.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
-[ kamal: backport to 3.8 (print available struct members only) ]
+v2: "As discussed on irc I don't think we should force the connector
+state to anything here: Imo connector->status should reflect what we
+believe to be the true output connection state, whereas connector->encoder
+reflects whether this connector is wired up to a pipe. And since we no
+longer reject modeset on disconnected connectors and never nuked the pipe
+if the connector gets disconnected there's no reason for that - such policy
+is userspace's job.
+
+This regression has been introduced in
+
+commit 2e9388923e83bc4e2726f170a984621f1d582e77
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Thu Oct 11 20:08:24 2012 +0200
+
+    drm/i915/crt: explicitly set up HOTPLUG_BITS on resume"
+so sayeth Daniel.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel@ffwll.ch>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/ext4_jbd2.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/i915/i915_drv.c      | 1 +
+ drivers/gpu/drm/i915/intel_display.c | 3 +--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
-index 6d7abb1..ee73a81 100644
---- a/fs/ext4/ext4_jbd2.c
-+++ b/fs/ext4/ext4_jbd2.c
-@@ -113,6 +113,11 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
- 		if (WARN_ON_ONCE(err)) {
- 			ext4_journal_abort_handle(where, line, __func__, bh,
- 						  handle, err);
-+			ext4_error_inode(inode, where, line,
-+					 bh->b_blocknr,
-+					 "journal_dirty_metadata failed: "
-+					 "credits %u, errcode %d",
-+					 handle->h_buffer_credits, err);
- 		}
- 	} else {
- 		if (inode)
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index a749aca..bfa8910 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -590,6 +590,7 @@ static int __i915_drm_thaw(struct drm_device *dev)
+ 		mutex_unlock(&dev->struct_mutex);
+ 
+ 		intel_modeset_init_hw(dev);
++		drm_mode_config_reset(dev);
+ 		intel_modeset_setup_hw_state(dev, false);
+ 		drm_irq_install(dev);
+ 	}
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 82fcb37..5b769a7 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9357,8 +9357,6 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
+ 	}
+ 
+ 	intel_modeset_check_state(dev);
+-
+-	drm_mode_config_reset(dev);
+ }
+ 
+ void intel_modeset_gem_init(struct drm_device *dev)
+@@ -9367,6 +9365,7 @@ void intel_modeset_gem_init(struct drm_device *dev)
+ 
+ 	intel_setup_overlay(dev);
+ 
++	drm_mode_config_reset(dev);
+ 	intel_modeset_setup_hw_state(dev, false);
+ }
+ 
 -- 
 1.8.3.2
 
