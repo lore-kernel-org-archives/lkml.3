@@ -1,131 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaAOUeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:34:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48526 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364AbaAOUd5 (ORCPT
+	id S1752487AbaAOUeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:34:07 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55312 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452AbaAOUeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:33:57 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mark Rutland <mark.rutland@arm.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/13] perf/core improvements and fixes
-Date: Wed, 15 Jan 2014 17:32:58 -0300
-Message-Id: <1389817991-8145-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
+	Wed, 15 Jan 2014 15:34:04 -0500
+X-Originating-IP: 173.246.103.110
+Date: Wed, 15 Jan 2014 12:33:55 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 2/4] timers: Reduce __run_timers()
+ latency for empty list
+Message-ID: <20140115203354.GC11147@jtriplet-mobl1>
+References: <20140115051939.GA31164@linux.vnet.ibm.com>
+ <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+On Tue, Jan 14, 2014 at 09:20:46PM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> The __run_timers() function currently steps through the list one jiffy at
+> a time in order to update the timer wheel.  However, if the timer wheel
+> is empty, no adjustment is needed other than updating ->timer_jiffies.
+> In this case, which is likely to be common for NO_HZ_FULL kernels, the
+> kernel currently incurs a large latency for no good reason.  This commit
+> therefore short-circuits this case.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/timer.c | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/kernel/timer.c b/kernel/timer.c
+> index 2245b7374c3d..295837e5e011 100644
+> --- a/kernel/timer.c
+> +++ b/kernel/timer.c
+> @@ -338,6 +338,17 @@ void set_timer_slack(struct timer_list *timer, int slack_hz)
+>  }
+>  EXPORT_SYMBOL_GPL(set_timer_slack);
+>  
+> +static bool catchup_timer_jiffies(struct tvec_base *base)
+> +{
+> +#ifdef CONFIG_NO_HZ_FULL
+> +	if (!base->all_timers) {
+> +		base->timer_jiffies = jiffies;
+> +		return 1;
+> +	}
+> +#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> +	return 0;
+> +}
 
-Hi Ingo,
+In a function with return type "bool", please use true/false, not 1/0.
 
-	Please consider pulling,
+Please also document the semantic of the return value.
 
-- Arnaldo
-
-The following changes since commit 197749981e539c1eb5863f417de6dd4e2c02b76c:
-
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-01-14 17:25:12 +0100)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to 0e9e79a13ab9d56b86db6538305babc23b1445cc:
-
-  tools lib traceevent: fix pointer-integer size mismatch (2014-01-15 17:04:38 -0300)
-
-----------------------------------------------------------------
-Changes in user visible interfaces:
-
-. Rename 'record's --no-delay option to --no-buffering, better reflecting its
-  purpose and freeing up '--delay' to take the place of '--initial-delay', so that
-  'record' and 'stat' are consistent.
-
-Refactorings:
-
-. Get rid of die() and friends (good riddance!) in libtraceevent (Namhyung Kim)
-
-Developer stuff:
-
-. Fix cross build problems related to pkgconfig and CROSS_COMPILE not being
-  propagated to the feature tests, leading to features being tested in the
-  host and then being enabled on the target. (Mark Rutland)
-
-. Fix pointer-integer size mismatch in some libtraceevent plugins (Mark Rutland)
-
-. Fix build error due to zfree() cast (Namhyung Kim)
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf record: Rename --no-delay to --no-buffering
-      perf record: Rename --initial-delay to --delay
-
-Mark Rutland (2):
-      perf: tools: Fix cross building
-      tools lib traceevent: fix pointer-integer size mismatch
-
-Namhyung Kim (9):
-      perf tools: Fix build error due to zfree() cast
-      tools lib traceevent: Add state member to struct trace_seq
-      tools lib traceevent: Check return value of realloc()
-      tools lib traceevent: Get rid of malloc_or_die() in trace_seq_init()
-      tools lib traceevent: Get rid of die() finally!!
-      tools lib traceevent: Make plugin unload function receive pevent
-      perf tools: Remove symbol_conf.use_callchain check
-      perf tools: Factor out sample__resolve_callchain()
-      perf hists: Convert hist entry functions to use struct he_stat
-
- tools/lib/traceevent/Makefile             |  2 +-
- tools/lib/traceevent/event-parse.h        | 14 +++++--
- tools/lib/traceevent/event-plugin.c       |  4 +-
- tools/lib/traceevent/event-utils.h        |  4 --
- tools/lib/traceevent/parse-utils.c        | 44 --------------------
- tools/lib/traceevent/plugin_cfg80211.c    |  2 +-
- tools/lib/traceevent/plugin_function.c    |  2 +-
- tools/lib/traceevent/plugin_scsi.c        |  2 +-
- tools/lib/traceevent/trace-seq.c          | 67 ++++++++++++++++++++++++-------
- tools/perf/Documentation/perf-record.txt  |  6 +--
- tools/perf/Makefile.perf                  |  1 +
- tools/perf/builtin-record.c               |  4 +-
- tools/perf/builtin-report.c               | 24 ++---------
- tools/perf/builtin-top.c                  | 22 ++++------
- tools/perf/builtin-trace.c                |  2 +-
- tools/perf/config/Makefile                |  6 +--
- tools/perf/config/feature-checks/Makefile |  9 +++--
- tools/perf/perf.h                         |  2 +-
- tools/perf/tests/open-syscall-tp-fields.c |  8 ++--
- tools/perf/tests/perf-record.c            |  6 +--
- tools/perf/util/callchain.c               | 23 +++++++++++
- tools/perf/util/callchain.h               |  6 +++
- tools/perf/util/evsel.c                   |  2 +-
- tools/perf/util/hist.c                    | 22 +++++-----
- tools/perf/util/machine.c                 |  2 -
- tools/perf/util/srcline.c                 |  4 +-
- tools/perf/util/strlist.c                 |  2 +-
- tools/perf/util/trace-event.c             |  2 +-
- 28 files changed, 147 insertions(+), 147 deletions(-)
+- Josh Triplett
