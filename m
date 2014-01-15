@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaAOSv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:51:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49378 "EHLO
+	id S1753258AbaAOSv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:51:56 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:49372 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326AbaAOSrj (ORCPT
+	with ESMTP id S1752127AbaAOSri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:47:39 -0500
+	Wed, 15 Jan 2014 13:47:38 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Saravana Kannan <skannan@codeaurora.org>
-Subject: [PATCH v5 03/14] clk: qcom: Add a regmap type clock struct
-Date: Wed, 15 Jan 2014 10:47:23 -0800
-Message-Id: <1389811654-21397-4-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v5 02/14] clk: Add set_rate_and_parent() op
+Date: Wed, 15 Jan 2014 10:47:22 -0800
+Message-Id: <1389811654-21397-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
 In-Reply-To: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>
 References: <1389811654-21397-1-git-send-email-sboyd@codeaurora.org>
@@ -22,241 +22,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a clock type that associates a regmap pointer and some
-enable/disable bits with a clk_hw struct. This will be the struct
-that a hw specific implementation wraps if it wants to use the
-regmap helper functions.
+Some of Qualcomm's clocks can change their parent and rate at the
+same time with a single register write. Add support for this
+hardware to the common clock framework by adding a new
+set_rate_and_parent() op. When the clock framework determines
+that both the parent and the rate are going to change during
+clk_set_rate() it will call the .set_rate_and_parent() op if
+available and fall back to calling .set_parent() followed by
+.set_rate() otherwise.
 
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clk/Kconfig           |   2 +
- drivers/clk/Makefile          |   1 +
- drivers/clk/qcom/Kconfig      |   5 ++
- drivers/clk/qcom/Makefile     |   3 ++
- drivers/clk/qcom/clk-regmap.c | 114 ++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/qcom/clk-regmap.h |  45 +++++++++++++++++
- 6 files changed, 170 insertions(+)
- create mode 100644 drivers/clk/qcom/Kconfig
- create mode 100644 drivers/clk/qcom/Makefile
- create mode 100644 drivers/clk/qcom/clk-regmap.c
- create mode 100644 drivers/clk/qcom/clk-regmap.h
+ Documentation/clk.txt        |  3 ++
+ drivers/clk/clk.c            | 78 +++++++++++++++++++++++++++++++++-----------
+ include/linux/clk-provider.h | 15 +++++++++
+ 3 files changed, 77 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 5c51115081b3..afd2a45bba82 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -107,6 +107,8 @@ config COMMON_CLK_KEYSTONE
-           Supports clock drivers for Keystone based SOCs. These SOCs have local
- 	  a power sleep control module that gate the clock to the IPs and PLLs.
+diff --git a/Documentation/clk.txt b/Documentation/clk.txt
+index 3aeb5c440442..79700eab821d 100644
+--- a/Documentation/clk.txt
++++ b/Documentation/clk.txt
+@@ -77,6 +77,9 @@ the operations defined in clk.h:
+ 		int		(*set_parent)(struct clk_hw *hw, u8 index);
+ 		u8		(*get_parent)(struct clk_hw *hw);
+ 		int		(*set_rate)(struct clk_hw *hw, unsigned long);
++		int		(*set_rate_and_parent)(struct clk_hw *hw,
++					    unsigned long rate,
++					    unsigned long parent_rate, u8 index);
+ 		void		(*init)(struct clk_hw *hw);
+ 	};
  
-+source "drivers/clk/qcom/Kconfig"
-+
- endmenu
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 9ad7b71b641f..0b27b543dacf 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1129,10 +1129,9 @@ static void clk_reparent(struct clk *clk, struct clk *new_parent)
+ 	clk->parent = new_parent;
+ }
  
- source "drivers/clk/mvebu/Kconfig"
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 7a10bc9a23e7..088b517245cd 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
- obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
- obj-$(CONFIG_COMMON_CLK_VERSATILE) += versatile/
- obj-$(CONFIG_ARCH_SIRF)		+= clk-prima2.o
-+obj-$(CONFIG_COMMON_CLK_QCOM)	+= qcom/
- obj-$(CONFIG_PLAT_ORION)	+= mvebu/
- ifeq ($(CONFIG_COMMON_CLK), y)
- obj-$(CONFIG_ARCH_MMP)		+= mmp/
-diff --git a/drivers/clk/qcom/Kconfig b/drivers/clk/qcom/Kconfig
-new file mode 100644
-index 000000000000..73a8c8fb547f
---- /dev/null
-+++ b/drivers/clk/qcom/Kconfig
-@@ -0,0 +1,5 @@
-+config COMMON_CLK_QCOM
-+	tristate "Support for Qualcomm's clock controllers"
-+	depends on OF
-+	select REGMAP_MMIO
-+
-diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
-new file mode 100644
-index 000000000000..f9faa8fa9392
---- /dev/null
-+++ b/drivers/clk/qcom/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_COMMON_CLK_QCOM) += clk-qcom.o
-+
-+clk-qcom-$(CONFIG_COMMON_CLK_QCOM) += clk-regmap.o
-diff --git a/drivers/clk/qcom/clk-regmap.c b/drivers/clk/qcom/clk-regmap.c
-new file mode 100644
-index 000000000000..a58ba39a900c
---- /dev/null
-+++ b/drivers/clk/qcom/clk-regmap.c
-@@ -0,0 +1,114 @@
-+/*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/clk-provider.h>
-+#include <linux/regmap.h>
-+#include <linux/export.h>
-+
-+#include "clk-regmap.h"
-+
-+/**
-+ * clk_is_enabled_regmap - standard is_enabled() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_regmap and then use
-+ * this as their is_enabled operation, saving some code.
-+ */
-+int clk_is_enabled_regmap(struct clk_hw *hw)
-+{
-+	struct clk_regmap *rclk = to_clk_regmap(hw);
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(rclk->regmap, rclk->enable_reg, &val);
-+	if (ret != 0)
-+		return ret;
-+
-+	if (rclk->enable_is_inverted)
-+		return (val & rclk->enable_mask) == 0;
-+	else
-+		return (val & rclk->enable_mask) != 0;
+-static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
++static struct clk *__clk_set_parent_before(struct clk *clk, struct clk *parent)
+ {
+ 	unsigned long flags;
+-	int ret = 0;
+ 	struct clk *old_parent = clk->parent;
+ 
+ 	/*
+@@ -1163,6 +1162,34 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
+ 	clk_reparent(clk, parent);
+ 	clk_enable_unlock(flags);
+ 
++	return old_parent;
 +}
-+EXPORT_SYMBOL_GPL(clk_is_enabled_regmap);
 +
-+/**
-+ * clk_enable_regmap - standard enable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_regmap and then use
-+ * this as their enable() operation, saving some code.
-+ */
-+int clk_enable_regmap(struct clk_hw *hw)
++static void __clk_set_parent_after(struct clk *clk, struct clk *parent,
++		struct clk *old_parent)
 +{
-+	struct clk_regmap *rclk = to_clk_regmap(hw);
-+	unsigned int val;
++	/*
++	 * Finish the migration of prepare state and undo the changes done
++	 * for preventing a race with clk_enable().
++	 */
++	if (clk->prepare_count) {
++		clk_disable(clk);
++		clk_disable(old_parent);
++		__clk_unprepare(old_parent);
++	}
 +
-+	if (rclk->enable_is_inverted)
-+		val = 0;
-+	else
-+		val = rclk->enable_mask;
-+
-+	return regmap_update_bits(rclk->regmap, rclk->enable_reg,
-+				  rclk->enable_mask, val);
++	/* update debugfs with new clk tree topology */
++	clk_debug_reparent(clk, parent);
 +}
-+EXPORT_SYMBOL_GPL(clk_enable_regmap);
 +
-+/**
-+ * clk_disable_regmap - standard disable() for regmap users
-+ *
-+ * @hw: clk to operate on
-+ *
-+ * Clocks that use regmap for their register I/O can set the
-+ * enable_reg and enable_mask fields in their struct clk_regmap and then use
-+ * this as their disable() operation, saving some code.
-+ */
-+void clk_disable_regmap(struct clk_hw *hw)
++static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
 +{
-+	struct clk_regmap *rclk = to_clk_regmap(hw);
-+	unsigned int val;
++	unsigned long flags;
++	int ret = 0;
++	struct clk *old_parent;
 +
-+	if (rclk->enable_is_inverted)
-+		val = rclk->enable_mask;
-+	else
-+		val = 0;
++	old_parent = __clk_set_parent_before(clk, parent);
 +
-+	regmap_update_bits(rclk->regmap, rclk->enable_reg, rclk->enable_mask,
-+			   val);
-+}
-+EXPORT_SYMBOL_GPL(clk_disable_regmap);
+ 	/* change clock input source */
+ 	if (parent && clk->ops->set_parent)
+ 		ret = clk->ops->set_parent(clk->hw, p_index);
+@@ -1180,18 +1207,8 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
+ 		return ret;
+ 	}
+ 
+-	/*
+-	 * Finish the migration of prepare state and undo the changes done
+-	 * for preventing a race with clk_enable().
+-	 */
+-	if (clk->prepare_count) {
+-		clk_disable(clk);
+-		clk_disable(old_parent);
+-		__clk_unprepare(old_parent);
+-	}
++	__clk_set_parent_after(clk, parent, old_parent);
+ 
+-	/* update debugfs with new clk tree topology */
+-	clk_debug_reparent(clk, parent);
+ 	return 0;
+ }
+ 
+@@ -1376,17 +1393,32 @@ static void clk_change_rate(struct clk *clk)
+ 	struct clk *child;
+ 	unsigned long old_rate;
+ 	unsigned long best_parent_rate = 0;
++	bool skip_set_rate = false;
++	struct clk *old_parent;
+ 
+ 	old_rate = clk->rate;
+ 
+-	/* set parent */
+-	if (clk->new_parent && clk->new_parent != clk->parent)
+-		__clk_set_parent(clk, clk->new_parent, clk->new_parent_index);
+-
+-	if (clk->parent)
++	if (clk->new_parent)
++		best_parent_rate = clk->new_parent->rate;
++	else if (clk->parent)
+ 		best_parent_rate = clk->parent->rate;
+ 
+-	if (clk->ops->set_rate)
++	if (clk->new_parent && clk->new_parent != clk->parent) {
++		old_parent = __clk_set_parent_before(clk, clk->new_parent);
 +
-+/**
-+ * devm_clk_register_regmap - register a clk_regmap clock
++		if (clk->ops->set_rate_and_parent) {
++			skip_set_rate = true;
++			clk->ops->set_rate_and_parent(clk->hw, clk->new_rate,
++					best_parent_rate,
++					clk->new_parent_index);
++		} else if (clk->ops->set_parent) {
++			clk->ops->set_parent(clk->hw, clk->new_parent_index);
++		}
++
++		__clk_set_parent_after(clk, clk->new_parent, old_parent);
++	}
++
++	if (!skip_set_rate && clk->ops->set_rate)
+ 		clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
+ 
+ 	if (clk->ops->recalc_rate)
+@@ -1678,6 +1710,14 @@ int __clk_init(struct device *dev, struct clk *clk)
+ 		goto out;
+ 	}
+ 
++	if (clk->ops->set_rate_and_parent &&
++			!(clk->ops->set_parent && clk->ops->set_rate)) {
++		pr_warn("%s: %s must implement .set_parent & .set_rate\n",
++				__func__, clk->name);
++		ret = -EINVAL;
++		goto out;
++	}
++
+ 	/* throw a WARN if any entries in parent_names are NULL */
+ 	for (i = 0; i < clk->num_parents; i++)
+ 		WARN(!clk->parent_names[i],
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7e59253b8603..a944222a43df 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -108,6 +108,18 @@ struct clk_hw;
+  *		which is likely helpful for most .set_rate implementation.
+  *		Returns 0 on success, -EERROR otherwise.
+  *
++ * @set_rate_and_parent: Change the rate and the parent of this clock. The
++ *		requested rate is specified by the second argument, which
++ *		should typically be the return of .round_rate call.  The
++ *		third argument gives the parent rate which is likely helpful
++ *		for most .set_rate_and_parent implementation. The fourth
++ *		argument gives the parent index. This callback is optional (and
++ *		unnecessary) for clocks with 0 or 1 parents as well as
++ *		for clocks that can tolerate switching the rate and the parent
++ *		separately via calls to .set_parent and .set_rate.
++ *		Returns 0 on success, -EERROR otherwise.
 + *
-+ * @rclk: clk to operate on
 + *
-+ * Clocks that use regmap for their register I/O should register their
-+ * clk_regmap struct via this function so that the regmap is initialized
-+ * and so that the clock is registered with the common clock framework.
-+ */
-+struct clk *devm_clk_register_regmap(struct device *dev,
-+				     struct clk_regmap *rclk)
-+{
-+	if (dev && dev_get_regmap(dev, NULL))
-+		rclk->regmap = dev_get_regmap(dev, NULL);
-+	else if (dev && dev->parent)
-+		rclk->regmap = dev_get_regmap(dev->parent, NULL);
-+
-+	return devm_clk_register(dev, &rclk->hw);
-+}
-+EXPORT_SYMBOL_GPL(devm_clk_register_regmap);
-diff --git a/drivers/clk/qcom/clk-regmap.h b/drivers/clk/qcom/clk-regmap.h
-new file mode 100644
-index 000000000000..491a63d537df
---- /dev/null
-+++ b/drivers/clk/qcom/clk-regmap.h
-@@ -0,0 +1,45 @@
-+/*
-+ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __QCOM_CLK_REGMAP_H__
-+#define __QCOM_CLK_REGMAP_H__
-+
-+#include <linux/clk-provider.h>
-+
-+struct regmap;
-+
-+/**
-+ * struct clk_regmap - regmap supporting clock
-+ * @hw:		handle between common and hardware-specific interfaces
-+ * @regmap:	regmap to use for regmap helpers and/or by providers
-+ * @enable_reg: register when using regmap enable/disable ops
-+ * @enable_mask: mask when using regmap enable/disable ops
-+ * @enable_is_inverted: flag to indicate set enable_mask bits to disable
-+ *                      when using clock_enable_regmap and friends APIs.
-+ */
-+struct clk_regmap {
-+	struct clk_hw hw;
-+	struct regmap *regmap;
-+	unsigned int enable_reg;
-+	unsigned int enable_mask;
-+	bool enable_is_inverted;
-+};
-+#define to_clk_regmap(_hw) container_of(_hw, struct clk_regmap, hw)
-+
-+int clk_is_enabled_regmap(struct clk_hw *hw);
-+int clk_enable_regmap(struct clk_hw *hw);
-+void clk_disable_regmap(struct clk_hw *hw);
-+struct clk *
-+devm_clk_register_regmap(struct device *dev, struct clk_regmap *rclk);
-+
-+#endif
+  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
+  * implementations to split any work between atomic (enable) and sleepable
+  * (prepare) contexts.  If enabling a clock requires code that might sleep,
+@@ -139,6 +151,9 @@ struct clk_ops {
+ 	u8		(*get_parent)(struct clk_hw *hw);
+ 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
+ 				    unsigned long);
++	int		(*set_rate_and_parent)(struct clk_hw *hw,
++				    unsigned long rate,
++				    unsigned long parent_rate, u8 index);
+ 	void		(*init)(struct clk_hw *hw);
+ };
+ 
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
