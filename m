@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaAOWSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:18:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41174 "EHLO
+	id S1753845AbaAOV6s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:58:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41122 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaAOV6u (ORCPT
+	with ESMTP id S1753767AbaAOV6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:50 -0500
+	Wed, 15 Jan 2014 16:58:34 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Daniel Vetter <daniel@ffwll.ch>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 059/166] drm/i915: Do not clobber config status after a forced restore of hw state
-Date: Wed, 15 Jan 2014 13:51:13 -0800
-Message-Id: <1389822780-4729-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 060/166] drm/i915: Hold mutex across i915_gem_release
+Date: Wed, 15 Jan 2014 13:51:14 -0800
+Message-Id: <1389822780-4729-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -31,82 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit edd5b13313551d6b04acfb90d3db58ed3cf3c814 upstream.
+commit 0d1430a3f4b7cfd8779b78740a4182321f3ca7f3 upstream.
 
-We call intel_modeset_setup_hw_state() along two paths, driver
-load/resume and after a lid event notification. During initialisation of
-the driver, it is imperative that we reset the config state. This
-correctly sets up the initial connector statuses and prepares the
-hardware for a thorough probing. However, during a lid event, we only
-want to undo the damage caused by the bios by resetting our last known
-mode. In this cirumstance, we do not want to clobber our desired state.
+Inorder to serialise the closing of the file descriptor and its
+subsequent release of client requests with i915_gem_free_request(), we
+need to hold the struct_mutex in i915_gem_release(). Failing to do so
+has the potential to trigger an OOPS, later with a use-after-free.
 
-In order to try and keep sanity between the config state and our own
-tracking, do the drm_mode_config_reset() first along the load/resume
-paths before reading out the hw state and apply any definite known
-corrections.
-
-v2: "As discussed on irc I don't think we should force the connector
-state to anything here: Imo connector->status should reflect what we
-believe to be the true output connection state, whereas connector->encoder
-reflects whether this connector is wired up to a pipe. And since we no
-longer reject modeset on disconnected connectors and never nuked the pipe
-if the connector gets disconnected there's no reason for that - such policy
-is userspace's job.
-
-This regression has been introduced in
-
-commit 2e9388923e83bc4e2726f170a984621f1d582e77
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Oct 11 20:08:24 2012 +0200
-
-    drm/i915/crt: explicitly set up HOTPLUG_BITS on resume"
-so sayeth Daniel.
-
+Testcase: igt/gem_close_race
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=70874
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71029
+Reported-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Daniel Vetter <daniel@ffwll.ch>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_drv.c      | 1 +
- drivers/gpu/drm/i915/intel_display.c | 3 +--
+ drivers/gpu/drm/i915/i915_dma.c         | 2 ++
+ drivers/gpu/drm/i915/i915_gem_context.c | 2 --
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index a749aca..bfa8910 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -590,6 +590,7 @@ static int __i915_drm_thaw(struct drm_device *dev)
- 		mutex_unlock(&dev->struct_mutex);
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index ef781e7..92896bf 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1794,8 +1794,10 @@ void i915_driver_lastclose(struct drm_device * dev)
  
- 		intel_modeset_init_hw(dev);
-+		drm_mode_config_reset(dev);
- 		intel_modeset_setup_hw_state(dev, false);
- 		drm_irq_install(dev);
- 	}
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 82fcb37..5b769a7 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9357,8 +9357,6 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
- 	}
- 
- 	intel_modeset_check_state(dev);
--
--	drm_mode_config_reset(dev);
+ void i915_driver_preclose(struct drm_device * dev, struct drm_file *file_priv)
+ {
++	mutex_lock(&dev->struct_mutex);
+ 	i915_gem_context_close(dev, file_priv);
+ 	i915_gem_release(dev, file_priv);
++	mutex_unlock(&dev->struct_mutex);
  }
  
- void intel_modeset_gem_init(struct drm_device *dev)
-@@ -9367,6 +9365,7 @@ void intel_modeset_gem_init(struct drm_device *dev)
+ void i915_driver_postclose(struct drm_device *dev, struct drm_file *file)
+diff --git a/drivers/gpu/drm/i915/i915_gem_context.c b/drivers/gpu/drm/i915/i915_gem_context.c
+index a80bba9..e75cac6 100644
+--- a/drivers/gpu/drm/i915/i915_gem_context.c
++++ b/drivers/gpu/drm/i915/i915_gem_context.c
+@@ -310,10 +310,8 @@ void i915_gem_context_close(struct drm_device *dev, struct drm_file *file)
+ {
+ 	struct drm_i915_file_private *file_priv = file->driver_priv;
  
- 	intel_setup_overlay(dev);
- 
-+	drm_mode_config_reset(dev);
- 	intel_modeset_setup_hw_state(dev, false);
+-	mutex_lock(&dev->struct_mutex);
+ 	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
+ 	idr_destroy(&file_priv->context_idr);
+-	mutex_unlock(&dev->struct_mutex);
  }
  
+ static struct i915_hw_context *
 -- 
 1.8.3.2
 
