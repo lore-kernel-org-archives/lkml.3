@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaAORzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:55:45 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:44884 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644AbaAORzj (ORCPT
+	id S1753001AbaAOR6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:58:35 -0500
+Received: from nbl-ex10-fe01.nebula.fi ([188.117.32.121]:42961 "EHLO
+	ex10.nebula.fi" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752979AbaAOR6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:55:39 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 2/7] ARM: perf_event: Assign pdev pointer earlier for CPU PMUs
-Date: Wed, 15 Jan 2014 09:55:30 -0800
-Message-Id: <1389808535-23852-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.5.2.228.g8f9f19c
-In-Reply-To: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
-References: <1389808535-23852-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 15 Jan 2014 12:58:31 -0500
+Date: Wed, 15 Jan 2014 19:58:28 +0200
+From: Rakesh Pandit <rakesh@tuxera.com>
+To: <viro@zeniv.linux.org.uk>
+CC: <ebiederm@xmission.com>, <keescook@chromium.org>, <rakesh@tuxera.com>,
+        <serge.hallyn@canonical.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] befs: iget_locked() doesn't return an ERR_PTR
+Message-ID: <20140115175828.GA3514@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [194.100.106.164]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We want to inspect the of_node that the pdev is pointing to in
-the Krait CPU specific PMU initialization function. Assign it
-earlier so that we don't crash with a NULL pointer dereference.
+Also fix befs_iget return value if iget_locked fails.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Rakesh Pandit <rakesh@tuxera.com>
 ---
- arch/arm/kernel/perf_event_cpu.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/befs/linuxvfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
-index 6efd8aab15df..68d02ca0ca1b 100644
---- a/arch/arm/kernel/perf_event_cpu.c
-+++ b/arch/arm/kernel/perf_event_cpu.c
-@@ -311,6 +311,9 @@ static int cpu_pmu_device_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index daa15d6..845d2d6 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -324,8 +324,8 @@ static struct inode *befs_iget(struct super_block *sb, unsigned long ino)
+ 	befs_debug(sb, "---> befs_read_inode() " "inode = %lu", ino);
  
-+	cpu_pmu = pmu;
-+	cpu_pmu->plat_device = pdev;
-+
- 	if (node && (of_id = of_match_node(cpu_pmu_of_device_ids, pdev->dev.of_node))) {
- 		init_fn = of_id->data;
- 		ret = init_fn(pmu);
-@@ -323,8 +326,6 @@ static int cpu_pmu_device_probe(struct platform_device *pdev)
- 		goto out_free;
- 	}
- 
--	cpu_pmu = pmu;
--	cpu_pmu->plat_device = pdev;
- 	cpu_pmu_init(cpu_pmu);
- 	ret = armpmu_register(cpu_pmu, PERF_TYPE_RAW);
+ 	inode = iget_locked(sb, ino);
+-	if (IS_ERR(inode))
+-		return inode;
++	if (!inode)
++		return ERR_PTR(-ENOMEM);
+ 	if (!(inode->i_state & I_NEW))
+ 		return inode;
  
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+1.7.11.7
