@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaAOKb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:31:57 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:65071 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaAOKbx (ORCPT
+	id S1751475AbaAOKeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:34:14 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58532 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751010AbaAOKeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:31:53 -0500
-X-Originating-IP: 108.223.40.66
-Message-ID: <52D66396.5050104@roeck-us.net>
-Date: Wed, 15 Jan 2014 02:31:50 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 05:34:11 -0500
+Date: Wed, 15 Jan 2014 10:33:37 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/7] ARM: perf_event: Support percpu irqs for the CPU PMU
+Message-ID: <20140115103337.GB15422@mudshark.cambridge.arm.com>
+References: <1389221984-10973-1-git-send-email-sboyd@codeaurora.org>
+ <1389221984-10973-3-git-send-email-sboyd@codeaurora.org>
+ <20140109104943.GB17838@mudshark.cambridge.arm.com>
+ <52CEF5C9.1010701@codeaurora.org>
+ <20140110105813.GB10455@mudshark.cambridge.arm.com>
+ <20140110193657.GG14405@codeaurora.org>
+ <20140113115213.GE1189@mudshark.cambridge.arm.com>
+ <52D5A4D1.9030403@codeaurora.org>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-mm@kvack.org, linux-bcache@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>, sparclinux@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-References: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52D5A4D1.9030403@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 01:33 AM, Geert Uytterhoeven wrote:
-> {,set}page_address() are macros if WANT_PAGE_VIRTUAL.
-> If !WANT_PAGE_VIRTUAL, they're plain C functions.
->
-> If someone calls them with a void *, this pointer is auto-converted to
-> struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
-> architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc):
->
-> drivers/md/bcache/bset.c: In function ‘__btree_sort’:
-> drivers/md/bcache/bset.c:1190: warning: dereferencing ‘void *’ pointer
-> drivers/md/bcache/bset.c:1190: error: request for member ‘virtual’ in something not a structure or union
->
-> Convert them to static inline functions to fix this. There are already
-> plenty of  users of struct page members inside <linux/mm.h>, so there's no
-> reason to keep them as macros.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Hi Stephen,
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+On Tue, Jan 14, 2014 at 08:57:53PM +0000, Stephen Boyd wrote:
+> On 01/13/14 03:52, Will Deacon wrote:
+> > I also don't think that's the right solution, based on the above. It's
+> > actually pretty hard to work out what's the right thing to do here...
+> 
+> Yes it doesn't seem like the right solution.
+> 
+> >
+> > We *could* have a per-cpu pointer to the cpu_pmu_pointer, but then we'd
+> > need to update the IRQ handlers, including things like the CCI PMU which
+> > really doesn't care about per-cpu stuff. So after all this, the shim we have
+> > around the IRQ handler for the U8500 SPI workarounds might be the right
+> > thing after all -- it allows us to consolidate the conversion of a pcpu
+> > pointer into the relevant instance (actually any instance, since they'd all
+> > point at the same thing) for the current CPU.
+> >
+> > What do you think to having that shim throw away the second level pcpu
+> > pointer in the case of a PPI? (probably means we need to revisit that
+> > renaming again).
+> 
+> Ok I think I understand what you're getting at. We pass a per-cpu
+> pointer to the cpu_pmu pointer as the dev_id argument to the PPI irq
+> handler, and then we check to see if the irq is per-cpu inside the
+> armpmu_dispatch_irq() function and throw away the second level of
+> pointer, i.e.
+> 
+> static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
+> {
+>         struct arm_pmu *armpmu;
+>         struct platform_device *plat_device;
+>         struct arm_pmu_platdata *plat;
+> 
+>         if (irq_is_percpu(irq))
+>                 dev = *(struct arm_pmu_cpu **)dev;
+>         armpmu = dev;
+>         plat_device = armpmu->plat_device;
+>         plat = dev_get_platdata(&plat_device->dev);
+> 
+>         if (plat && plat->handle_irq)
+>                 return plat->handle_irq(irq, dev, armpmu->handle_irq);
+>         else
+>                 return armpmu->handle_irq(irq, dev);
+> }
 
-That also fixes the problem seen in stable-queue for 3.10 and 3.12,
-so it may be a better fix for the problem seen there than the patch
-provided by Michael.
+Yup, that's what I was trying to explain (badly). Thanks.
 
-Guenter
+> We still need to make a per-cpu variable to hold the pointer, and assign
+> it during cpu_pmu_init like this patch does. Hopefully that is ok.
 
+I think that's ok. The percpu code in genirq requires a pcpu token (for good
+reason) and the irq handler needs to get at the pmu structure. The
+alternative is adding pointers from something like the pmu_hw_events to the
+arm_pmu, but I think that's more ugly.
+
+Will
