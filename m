@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066AbaAOK2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:28:21 -0500
-Received: from gate.crashing.org ([63.228.1.57]:54977 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920AbaAOK2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:28:18 -0500
-Message-ID: <1389781680.6933.88.camel@pasglop>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 15 Jan 2014 21:28:00 +1100
-In-Reply-To: <CA+55aFyfY5kEezwx8-jhgdgOX+EG__v3QRZmGnGstDpUP-UVWQ@mail.gmail.com>
-References: <1389762075.6933.76.camel@pasglop>
-	 <CA+55aFyfY5kEezwx8-jhgdgOX+EG__v3QRZmGnGstDpUP-UVWQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752114AbaAOK3o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:29:44 -0500
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:49576 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaAOK3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 05:29:41 -0500
+Date: Wed, 15 Jan 2014 11:30:32 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
+        jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
+Subject: Re: [PATCH 04/11] vfs: add renameat2 syscall
+Message-ID: <20140115103032.GD24171@tucsk.piliscsaba.szeredi.hu>
+References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+ <1389219015-10980-5-git-send-email-miklos@szeredi.hu>
+ <201401150711.AHB52169.VMSFFLtHQFOOOJ@I-love.SAKURA.ne.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201401150711.AHB52169.VMSFFLtHQFOOOJ@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-15 at 15:05 +0700, Linus Torvalds wrote:
-> On Wed, Jan 15, 2014 at 12:01 PM, Benjamin Herrenschmidt
-> <benh@kernel.crashing.org> wrote:
-> >
-> > My original intend was to put it in powerpc-next and then shoot it to
-> > stable, but it got a tad annoying (due to churn it needs to be applied
-> > at least on rc4 or later while my next is at rc1 and clean that way), so
-> > I put it in the merge branch.
+On Wed, Jan 15, 2014 at 07:11:16AM +0900, Tetsuo Handa wrote:
+> Miklos Szeredi wrote:
+> > +
+> > +	if (flags)
+> > +		return -EOPNOTSUPP;
+> > +
 > 
-> Quite frankly, I'll prefer to not merge it now, and then 3.13 will get
-> it from stable, when it does things like this.
+> If (at least for now) only ext4 interprets renameat2() flags,
+> I think adding a new member to "struct inode_operations" and
+> check it like
 > 
-> Partly because it fixes a power-only bug, but potentially changes
-> non-power behavior. If it was all in arch/powerpc, I wouldn't mind.
+> 	if (!old_dir->i_op->swapname)
+> 		return -EOPNOTSUPP;
+> 
+> or
 
-Right, I wasn't too comfortable either. I'll resend the pull request
-after the merge window is open.
+This is not just about swapname, but other rename variants too (non-overwriting
+rename is also included in the patchset).
 
-Cheers,
-Ben.
+> 
+> 	if (!(old_dir->i_op->supported_features & flags))
+> 		return -EOPNOTSUPP;
 
->                Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Or rather old_dir->i_sb->s_type->fs_flags.  We access it due to
+FS_RENAME_DOES_D_MOVE anyway.
 
+I like this variant, because now filesystems need to explicitly add a flag to
+*enable* the functionality and not a check to disable it.
 
+Objections?
+
+Thanks,
+Miklos
