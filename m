@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaAORUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:20:08 -0500
-Received: from mo4.mail-out.ovh.net ([178.32.228.4]:39336 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaAORUG (ORCPT
+	id S1752717AbaAORUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:20:35 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35629 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752179AbaAORUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:20:06 -0500
-Message-ID: <52D6BF45.80407@overkiz.com>
-Date: Wed, 15 Jan 2014 18:03:01 +0100
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 12:20:30 -0500
+Date: Wed, 15 Jan 2014 17:19:54 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Marc Carino <marc.ceeeee@gmail.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 3/7] ARM: do CPU-specific init for Broadcom Brahma15
+ cores
+Message-ID: <20140115171953.GB28782@mudshark.cambridge.arm.com>
+References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com>
+ <1389743333-16741-4-git-send-email-marc.ceeeee@gmail.com>
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
-References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <20140108183418.GA12358@obsidianresearch.com> <52CDA032.3010804@overkiz.com> <20140108191339.GB12358@obsidianresearch.com> <52CE5F82.6070802@overkiz.com> <20140109173505.GB8899@obsidianresearch.com> <52D6A48D.4080302@overkiz.com>
-In-Reply-To: <52D6A48D.4080302@overkiz.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 13782422236713482474
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389743333-16741-4-git-send-email-marc.ceeeee@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/2014 16:09, boris brezillon wrote:
-> Hello Jason,
->
-> On 09/01/2014 18:35, Jason Gunthorpe wrote:
->> On Thu, Jan 09, 2014 at 09:36:18AM +0100, boris brezillon wrote:
->>
->>>> You might want to check if you can boil down the DT timings from the
->>>> huge list to just an ONFI mode number..
->>> Sure, but the sunxi driver needs at least 19 of them...
->> So does mvebu's NAND driver..
->>
->> What I ment was you could have a
->>
->>    onfi,nand-timing-mode = 0
->>
->> in the DT. Each of the modes defines all ~19 parameters, higher modes
->> are faster.
->>
->> Pick a mode value that fits all the parameters of the connected
->> non-ONFI flash.
->>
->> This would be instead of defining each parameter
->> individually.. Provide some helpers to convert from a onfi mode number
->> to all the onfi defined timing parameters so that drivers can
->> configure the HW..
->
-> Are you suggesting we should provide a function that converts these
-> modes into a nand_timings struct, or just use the timing modes and
-> let the NAND controller drivers configure its IP accordingly ?
->
-> I found the ONFI timing tables in this document:
->
-> www.*onfi*.org/~/media/*ONFI*/specs/*onfi*_3_1_spec.pdf‎ (chapter 4.16).
->
-> I suppose my nand_timings struct should use the names described
-> page 110-111 (at least if we decide to use nand_timings and not
-> nand_timing_modes), right ?
+On Tue, Jan 14, 2014 at 11:48:49PM +0000, Marc Carino wrote:
+> Perform any CPU-specific initialization required on the
+> Broadcom Brahma-15 core.
+> 
+> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+>  arch/arm/mm/proc-v7.S |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> index bd17819..98ea423 100644
+> --- a/arch/arm/mm/proc-v7.S
+> +++ b/arch/arm/mm/proc-v7.S
+> @@ -193,6 +193,7 @@ __v7_cr7mp_setup:
+>  	b	1f
+>  __v7_ca7mp_setup:
+>  __v7_ca15mp_setup:
+> +__v7_b15mp_setup:
+>  	mov	r10, #0
+>  1:
+>  #ifdef CONFIG_SMP
+> @@ -494,6 +495,16 @@ __v7_ca15mp_proc_info:
+>  	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
+>  
+>  	/*
+> +	 * Broadcom Corporation Brahma-B15 processor.
+> +	 */
+> +	.type	__v7_b15mp_proc_info, #object
+> +__v7_b15mp_proc_info:
+> +	.long	0x420f00f0
+> +	.long	0xff0ffff0
+> +	__v7_proc __v7_b15mp_setup, hwcaps = HWCAP_IDIV
 
-After taking a closer look at this document, the only parameter 
-available in my
-nand_timings struct that is not defined in the standard is tR_max (data 
-transfer
-from cell to register).
+You only need to specify HWCAP_IDIV if you screwed up your idregs (namely
+CPUID_EXT_ISAR0). Do you actually need this for your core?
 
-And the ONFI standard defines 4 more timings:
-- tCEA_max
-- tCEH_min
-- tFEAT_max
-- tITC_max
-
-
-
->
-> Best Regards,
->
-> Boris
->
->>
->> Jason
->
-
+Will
