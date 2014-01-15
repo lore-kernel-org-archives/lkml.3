@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019AbaAOWRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:17:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41198 "EHLO
+	id S1754794AbaAOWRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:17:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885AbaAOV67 (ORCPT
+	with ESMTP id S1753877AbaAOV64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:59 -0500
+	Wed, 15 Jan 2014 16:58:56 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 155/166] hamradio/yam: fix info leak in ioctl
-Date: Wed, 15 Jan 2014 13:52:49 -0800
-Message-Id: <1389822780-4729-156-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 151/166] netvsc: don't flush peers notifying work during setting mtu
+Date: Wed, 15 Jan 2014 13:52:45 -0800
+Message-Id: <1389822780-4729-152-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,33 +30,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 8e3fbf870481eb53b2d3a322d1fc395ad8b367ed ]
+[ Upstream commit 50dc875f2e6e2e04aed3b3033eb0ac99192d6d02 ]
 
-The yam_ioctl() code fails to initialise the cmd field
-of the struct yamdrv_ioctl_cfg. Add an explicit memset(0)
-before filling the structure to avoid the 4-byte info leak.
+There's a possible deadlock if we flush the peers notifying work during setting
+mtu:
 
-Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
+[   22.991149] ======================================================
+[   22.991173] [ INFO: possible circular locking dependency detected ]
+[   22.991198] 3.10.0-54.0.1.el7.x86_64.debug #1 Not tainted
+[   22.991219] -------------------------------------------------------
+[   22.991243] ip/974 is trying to acquire lock:
+[   22.991261]  ((&(&net_device_ctx->dwork)->work)){+.+.+.}, at: [<ffffffff8108af95>] flush_work+0x5/0x2e0
+[   22.991307]
+but task is already holding lock:
+[   22.991330]  (rtnl_mutex){+.+.+.}, at: [<ffffffff81539deb>] rtnetlink_rcv+0x1b/0x40
+[   22.991367]
+which lock already depends on the new lock.
+
+[   22.991398]
+the existing dependency chain (in reverse order) is:
+[   22.991426]
+-> #1 (rtnl_mutex){+.+.+.}:
+[   22.991449]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
+[   22.991477]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
+[   22.991501]        [<ffffffff81673659>] mutex_lock_nested+0x89/0x4f0
+[   22.991529]        [<ffffffff815392b7>] rtnl_lock+0x17/0x20
+[   22.991552]        [<ffffffff815230b2>] netdev_notify_peers+0x12/0x30
+[   22.991579]        [<ffffffffa0340212>] netvsc_send_garp+0x22/0x30 [hv_netvsc]
+[   22.991610]        [<ffffffff8108d251>] process_one_work+0x211/0x6e0
+[   22.991637]        [<ffffffff8108d83b>] worker_thread+0x11b/0x3a0
+[   22.991663]        [<ffffffff81095e5d>] kthread+0xed/0x100
+[   22.991686]        [<ffffffff81681c6c>] ret_from_fork+0x7c/0xb0
+[   22.991715]
+-> #0 ((&(&net_device_ctx->dwork)->work)){+.+.+.}:
+[   22.991715]        [<ffffffff810de817>] check_prevs_add+0x967/0x970
+[   22.991715]        [<ffffffff810dfdd9>] __lock_acquire+0xb19/0x1260
+[   22.991715]        [<ffffffff810e0d12>] lock_acquire+0xa2/0x1f0
+[   22.991715]        [<ffffffff8108afde>] flush_work+0x4e/0x2e0
+[   22.991715]        [<ffffffff8108e1b5>] __cancel_work_timer+0x95/0x130
+[   22.991715]        [<ffffffff8108e303>] cancel_delayed_work_sync+0x13/0x20
+[   22.991715]        [<ffffffffa03404e4>] netvsc_change_mtu+0x84/0x200 [hv_netvsc]
+[   22.991715]        [<ffffffff815233d4>] dev_set_mtu+0x34/0x80
+[   22.991715]        [<ffffffff8153bc2a>] do_setlink+0x23a/0xa00
+[   22.991715]        [<ffffffff8153d054>] rtnl_newlink+0x394/0x5e0
+[   22.991715]        [<ffffffff81539eac>] rtnetlink_rcv_msg+0x9c/0x260
+[   22.991715]        [<ffffffff8155cdd9>] netlink_rcv_skb+0xa9/0xc0
+[   22.991715]        [<ffffffff81539dfa>] rtnetlink_rcv+0x2a/0x40
+[   22.991715]        [<ffffffff8155c41d>] netlink_unicast+0xdd/0x190
+[   22.991715]        [<ffffffff8155c807>] netlink_sendmsg+0x337/0x750
+[   22.991715]        [<ffffffff8150d219>] sock_sendmsg+0x99/0xd0
+[   22.991715]        [<ffffffff8150d63e>] ___sys_sendmsg+0x39e/0x3b0
+[   22.991715]        [<ffffffff8150eba2>] __sys_sendmsg+0x42/0x80
+[   22.991715]        [<ffffffff8150ebf2>] SyS_sendmsg+0x12/0x20
+[   22.991715]        [<ffffffff81681d19>] system_call_fastpath+0x16/0x1b
+
+This is because we hold the rtnl_lock() before ndo_change_mtu() and try to flush
+the work in netvsc_change_mtu(), in the mean time, netdev_notify_peers() may be
+called from worker and also trying to hold the rtnl_lock. This will lead the
+flush won't succeed forever. Solve this by not canceling and flushing the work,
+this is safe because the transmission done by NETDEV_NOTIFY_PEERS was
+synchronized with the netif_tx_disable() called by netvsc_change_mtu().
+
+Reported-by: Yaju Cao <yacao@redhat.com>
+Tested-by: Yaju Cao <yacao@redhat.com>
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/hamradio/yam.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/hyperv/netvsc_drv.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
-index c6645f1..ab378e0 100644
---- a/drivers/net/hamradio/yam.c
-+++ b/drivers/net/hamradio/yam.c
-@@ -1058,6 +1058,7 @@ static int yam_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		break;
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 8264f0e..d573483 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -327,7 +327,6 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
+ 		return -EINVAL;
  
- 	case SIOCYAMGCFG:
-+		memset(&yi, 0, sizeof(yi));
- 		yi.cfg.mask = 0xffffffff;
- 		yi.cfg.iobase = yp->iobase;
- 		yi.cfg.irq = yp->irq;
+ 	nvdev->start_remove = true;
+-	cancel_delayed_work_sync(&ndevctx->dwork);
+ 	cancel_work_sync(&ndevctx->work);
+ 	netif_tx_disable(ndev);
+ 	rndis_filter_device_remove(hdev);
 -- 
 1.8.3.2
 
