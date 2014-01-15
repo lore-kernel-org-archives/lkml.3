@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaAOWmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:42:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40689 "EHLO
+	id S1755466AbaAOWmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:42:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40673 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaAOVxW (ORCPT
+	with ESMTP id S1752753AbaAOVxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:53:22 -0500
+	Wed, 15 Jan 2014 16:53:21 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 008/166] usb: musb: only cancel work if it is initialized
-Date: Wed, 15 Jan 2014 13:50:22 -0800
-Message-Id: <1389822780-4729-9-git-send-email-kamal@canonical.com>
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 005/166] mac80211: fix scheduled scan rtnl deadlock
+Date: Wed, 15 Jan 2014 13:50:19 -0800
+Message-Id: <1389822780-4729-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,95 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 66fadea5b79c07154126bb0db375be915f611246 upstream.
+commit 18db594a1005d908d995a2fc8f5a7bf4286fdca0 upstream.
 
-Since commit c5340bd14 ("usb: musb: cancel work on removal") the workqueue
-is cancelled but then if we bail out before the workqueue is setup we
-get this:
+When changing cfg80211 to use RTNL locking, this caused a
+deadlock in mac80211 as it calls cfg80211_sched_scan_stopped()
+from a work item that's on a workqueue that is flushed with
+the RTNL held.
 
-|INFO: trying to register non-static key.
-|the code is fine but needs lockdep annotation.
-|turning off the locking correctness validator.
-|CPU: 0 PID: 708 Comm: modprobe Not tainted 3.12.0+ #435
-|[<c00867bc>] (lock_acquire+0xf0/0x108) from [<c00529d0>] (flush_work+0x38/0x2ec)
-|[<c00529d0>] (flush_work+0x38/0x2ec) from [<c0052d24>] (__cancel_work_timer+0xa0/0x134)
-|[<c0052d24>] (__cancel_work_timer+0xa0/0x134) from [<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc])
-|[<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc]) from [<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc])
-|[<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
-|[<c0294bf0>] (platform_drv_probe+0x1c/0x24) from [<c0293970>] (driver_probe_device+0x90/0x224)
-|[<c0293970>] (driver_probe_device+0x90/0x224) from [<c0291ef0>] (bus_for_each_drv+0x60/0x8c)
-|[<c0291ef0>] (bus_for_each_drv+0x60/0x8c) from [<c02938bc>] (device_attach+0x80/0xa4)
-|[<c02938bc>] (device_attach+0x80/0xa4) from [<c0292b24>] (bus_probe_device+0x88/0xac)
-|[<c0292b24>] (bus_probe_device+0x88/0xac) from [<c0291490>] (device_add+0x388/0x6c8)
-|[<c0291490>] (device_add+0x388/0x6c8) from [<c02952a0>] (platform_device_add+0x188/0x22c)
-|[<c02952a0>] (platform_device_add+0x188/0x22c) from [<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps])
-|[<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
-|platform musb-hdrc.1.auto: Driver musb-hdrc requests probe deferral
-|musb-hdrc musb-hdrc.1.auto: musb_init_controller failed with status -517
+Fix this by simply using schedule_work(), the work only needs
+to finish running before the wiphy is unregistered, no other
+synchronisation (e.g. with suspend) is really required since
+for suspend userspace is already blocked anyway when we flush
+the workqueue so will only pick up the event after resume.
 
-This patch moves the init part to earlier part so it can be cleaned as
-part of the fail3 label because now it is surrounded by the fail4 label.
-Step two is to remove it from musb_free() and add it to the two cleanup
-paths (error path and device removal) separately.
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ kamal: backport to 3.8 (context) ]
+Fixes: 5fe231e87372 ("cfg80211: vastly simplify locking")
+Reported-and-tested-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/musb/musb_core.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ net/mac80211/main.c | 1 +
+ net/mac80211/scan.c | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 85b7a91..dd4fe41 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1816,7 +1816,6 @@ static void musb_free(struct musb *musb)
- 			disable_irq_wake(musb->nIrq);
- 		free_irq(musb->nIrq, musb);
- 	}
--	cancel_work_sync(&musb->irq_work);
- 	if (is_dma_capable() && musb->dma_controller) {
- 		struct dma_controller	*c = musb->dma_controller;
+diff --git a/net/mac80211/main.c b/net/mac80211/main.c
+index 1b087ff..e93d39d 100644
+--- a/net/mac80211/main.c
++++ b/net/mac80211/main.c
+@@ -1104,6 +1104,7 @@ void ieee80211_unregister_hw(struct ieee80211_hw *hw)
  
-@@ -1915,6 +1914,9 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
- 	musb_platform_disable(musb);
- 	musb_generic_disable(musb);
+ 	cancel_work_sync(&local->restart_work);
+ 	cancel_work_sync(&local->reconfig_filter);
++	flush_work(&local->sched_scan_stopped_work);
  
-+	/* Init IRQ workqueue before request_irq */
-+	INIT_WORK(&musb->irq_work, musb_irq_work);
-+
- 	/* setup musb parts of the core (especially endpoints) */
- 	status = musb_core_init(plat->config->multipoint
- 			? MUSB_CONTROLLER_MHDRC
-@@ -1924,9 +1926,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	ieee80211_clear_tx_pending(local);
+ 	rate_control_deinitialize(local);
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index 8d6ba43..49b5681 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -1049,6 +1049,6 @@ void ieee80211_sched_scan_stopped(struct ieee80211_hw *hw)
  
- 	setup_timer(&musb->otg_timer, musb_otg_timer_func, (unsigned long) musb);
+ 	trace_api_sched_scan_stopped(local);
  
--	/* Init IRQ workqueue before request_irq */
--	INIT_WORK(&musb->irq_work, musb_irq_work);
--
- 	/* attach to the IRQ */
- 	if (request_irq(nIrq, musb->isr, 0, dev_name(dev), musb)) {
- 		dev_err(dev, "request_irq %d failed!\n", nIrq);
-@@ -1986,6 +1985,7 @@ fail4:
- 	musb_gadget_cleanup(musb);
- 
- fail3:
-+	cancel_work_sync(&musb->irq_work);
- 	pm_runtime_put_sync(musb->controller);
- 
- fail2:
-@@ -2050,6 +2050,7 @@ static int musb_remove(struct platform_device *pdev)
- 	musb_exit_debugfs(musb);
- 	musb_shutdown(pdev);
- 
-+	cancel_work_sync(&musb->irq_work);
- 	musb_free(musb);
- 	iounmap(ctrl_base);
- 	device_init_wakeup(dev, 0);
+-	ieee80211_queue_work(&local->hw, &local->sched_scan_stopped_work);
++	schedule_work(&local->sched_scan_stopped_work);
+ }
+ EXPORT_SYMBOL(ieee80211_sched_scan_stopped);
 -- 
 1.8.3.2
 
