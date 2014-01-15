@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaAOUgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:36:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48500 "EHLO
+	id S1752770AbaAOUgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:36:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48499 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbaAOUdj (ORCPT
+	with ESMTP id S1752026AbaAOUdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 15:33:39 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/13] perf: tools: Fix cross building
-Date: Wed, 15 Jan 2014 17:33:07 -0300
-Message-Id: <1389817991-8145-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/13] tools lib traceevent: Make plugin unload function receive pevent
+Date: Wed, 15 Jan 2014 17:33:06 -0300
+Message-Id: <1389817991-8145-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389817991-8145-1-git-send-email-acme@infradead.org>
 References: <1389817991-8145-1-git-send-email-acme@infradead.org>
@@ -25,106 +27,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Currently the feature-checks Makefile does not inherit $(CC), and calls
-cc rather than $(CROSS_COMPILE)gcc. Thus the feature checks invoke the
-native toolchain rather than the cross toolchain, and can identify
-features as available when they are not. This can break the build.
+The PEVENT_PLUGIN_UNLOADER function might need some cleanup using pevent
+like unregister some handlers.  So pass pevent as argument.
 
-Additionally the native pkg-config is always called as opposed to
-$(CROSS_COMPILE)pkg-config, so the wrong flags and paths may be passed
-to the cross compiler.
-
-This patch passes CROSS_COMPILE down to the feature-checks Makefile, and
-forces its use. Additionally pkg-config is replaced with
-$(CROSS_COMPILE)pkg-config via a new $(PKG_CONFIG) variable. This patch
-has been build tested on x86_64 and arm.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/r/1389782648-4417-4-git-send-email-mark.rutland@arm.com
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1389750340-15965-6-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf                  | 1 +
- tools/perf/config/Makefile                | 6 +++---
- tools/perf/config/feature-checks/Makefile | 9 +++++----
- 3 files changed, 9 insertions(+), 7 deletions(-)
+ tools/lib/traceevent/event-parse.h     | 7 ++++---
+ tools/lib/traceevent/event-plugin.c    | 4 ++--
+ tools/lib/traceevent/plugin_function.c | 2 +-
+ tools/perf/util/trace-event.c          | 2 +-
+ 4 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 87d7726cee2d..7257e7e9e38a 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -76,6 +76,7 @@ $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 3c890cb28db7..a3beca56cb35 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -105,7 +105,7 @@ typedef int (*pevent_event_handler_func)(struct trace_seq *s,
+ 					 void *context);
  
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
-+PKG_CONFIG = $(CROSS_COMPILE)pkg-config
+ typedef int (*pevent_plugin_load_func)(struct pevent *pevent);
+-typedef int (*pevent_plugin_unload_func)(void);
++typedef int (*pevent_plugin_unload_func)(struct pevent *pevent);
  
- RM      = rm -f
- LN      = ln -f
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 01dd43df0d04..d604e50fc167 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -372,7 +372,7 @@ ifndef NO_SLANG
- endif
+ struct plugin_option {
+ 	struct plugin_option		*next;
+@@ -130,7 +130,7 @@ struct plugin_option {
+  * PEVENT_PLUGIN_UNLOADER:  (optional)
+  *   The function called just before unloading
+  *
+- *   int PEVENT_PLUGIN_UNLOADER(void)
++ *   int PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
+  *
+  * PEVENT_PLUGIN_OPTIONS:  (optional)
+  *   Plugin options that can be set before loading
+@@ -411,7 +411,8 @@ enum pevent_errno {
+ struct plugin_list;
  
- ifndef NO_GTK2
--  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
-   ifneq ($(feature-gtk2), 1)
-     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
-     NO_GTK2 := 1
-@@ -381,8 +381,8 @@ ifndef NO_GTK2
-       GTK_CFLAGS := -DHAVE_GTK_INFO_BAR_SUPPORT
-     endif
-     CFLAGS += -DHAVE_GTK2_SUPPORT
--    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+    GTK_CFLAGS += $(shell $(PKG_CONFIG) --cflags gtk+-2.0 2>/dev/null)
-+    GTK_LIBS := $(shell $(PKG_CONFIG) --libs gtk+-2.0 2>/dev/null)
-     EXTLIBS += -ldl
-   endif
- endif
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 7cf6fcdacebe..12e551346fa6 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -28,7 +28,8 @@ FILES=					\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin
+ struct plugin_list *traceevent_load_plugins(struct pevent *pevent);
+-void traceevent_unload_plugins(struct plugin_list *plugin_list);
++void traceevent_unload_plugins(struct plugin_list *plugin_list,
++			       struct pevent *pevent);
  
--CC := $(CC) -MD
-+CC := $(CROSS_COMPILE)gcc -MD
-+PKG_CONFIG := $(CROSS_COMPILE)pkg-config
+ struct cmdline;
+ struct cmdline_list;
+diff --git a/tools/lib/traceevent/event-plugin.c b/tools/lib/traceevent/event-plugin.c
+index 125f5676bcb5..0c8bf6780e4d 100644
+--- a/tools/lib/traceevent/event-plugin.c
++++ b/tools/lib/traceevent/event-plugin.c
+@@ -197,7 +197,7 @@ traceevent_load_plugins(struct pevent *pevent)
+ }
  
- all: $(FILES)
+ void
+-traceevent_unload_plugins(struct plugin_list *plugin_list)
++traceevent_unload_plugins(struct plugin_list *plugin_list, struct pevent *pevent)
+ {
+ 	pevent_plugin_unload_func func;
+ 	struct plugin_list *list;
+@@ -207,7 +207,7 @@ traceevent_unload_plugins(struct plugin_list *plugin_list)
+ 		plugin_list = list->next;
+ 		func = dlsym(list->handle, PEVENT_PLUGIN_UNLOADER_NAME);
+ 		if (func)
+-			func();
++			func(pevent);
+ 		dlclose(list->handle);
+ 		free(list->name);
+ 		free(list);
+diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
+index aad92ad5e96f..39461485f9a7 100644
+--- a/tools/lib/traceevent/plugin_function.c
++++ b/tools/lib/traceevent/plugin_function.c
+@@ -144,7 +144,7 @@ int PEVENT_PLUGIN_LOADER(struct pevent *pevent)
+ 	return 0;
+ }
  
-@@ -37,7 +38,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
- ###############################
+-void PEVENT_PLUGIN_UNLOADER(void)
++void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
+ {
+ 	int i, x;
  
- test-all.bin:
--	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+diff --git a/tools/perf/util/trace-event.c b/tools/perf/util/trace-event.c
+index d9f5f6137ab3..6322d37164c5 100644
+--- a/tools/perf/util/trace-event.c
++++ b/tools/perf/util/trace-event.c
+@@ -34,8 +34,8 @@ int trace_event__init(struct trace_event *t)
  
- test-hello.bin:
- 	$(BUILD)
-@@ -82,10 +83,10 @@ test-libslang.bin:
- 	$(BUILD) -I/usr/include/slang -lslang
+ void trace_event__cleanup(struct trace_event *t)
+ {
++	traceevent_unload_plugins(t->plugin_list, t->pevent);
+ 	pevent_free(t->pevent);
+-	traceevent_unload_plugins(t->plugin_list);
+ }
  
- test-gtk2.bin:
--	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+	$(BUILD) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
- 
- test-gtk2-infobar.bin:
--	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+	$(BUILD) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
- 
- grep-libs  = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
+ static struct event_format*
 -- 
 1.8.1.4
 
