@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaAOTAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 14:00:22 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:44986 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407AbaAOTAU (ORCPT
+	id S1752787AbaAOTBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 14:01:55 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:7139 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbaAOTBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 14:00:20 -0500
-Date: Wed, 15 Jan 2014 20:00:15 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC 1/3] memcg: notify userspace about OOM only when and action
- is due
-Message-ID: <20140115190015.GA22196@dhcp22.suse.cz>
-References: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
- <1389798068-19885-2-git-send-email-mhocko@suse.cz>
- <20140115175655.GJ6963@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140115175655.GJ6963@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Jan 2014 14:01:53 -0500
+Message-ID: <1389812509.4971.34.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH -next] sched/numa: document CLONE_VM behavior
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Date: Wed, 15 Jan 2014 11:01:49 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-01-14 12:56:55, Johannes Weiner wrote:
-> On Wed, Jan 15, 2014 at 04:01:06PM +0100, Michal Hocko wrote:
-> > Userspace is currently notified about OOM condition after reclaim
-> > fails to uncharge any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
-> > This usually means that the memcg is really in troubles and an
-> > OOM action (either done by userspace or kernel) has to be taken.
-> > The kernel OOM killer however bails out and doesn't kill anything
-> > if it sees an already dying/exiting task in a good hope a memory
-> > will be released and the OOM situation will be resolved.
-> > 
-> > Therefore it makes sense to notify userspace only after really all
-> > measures have been taken and an userspace action is required or
-> > the kernel kills a task.
-> > 
-> > This patch is based on idea by David Rientjes to not notify
-> > userspace when the current task is killed or in a late exiting.
-> > The original patch, however, didn't handle in kernel oom killer
-> > back offs which is implemtented by this patch.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> 
-> OOM is a temporary state because any task can exit at a time that is
-> not under our control and outside our knowledge.  That's why the OOM
-> situation is defined by failing an allocation after a certain number
-> of reclaim and charge attempts.
-> 
-> As of right now, the OOM sampling window is MEM_CGROUP_RECLAIM_RETRIES
-> loops of charge attempts and reclaim.  If a racing task is exiting and
-> releasing memory during that window, the charge will succeed fine.  If
-> the sampling window is too short in practice, it will have to be
-> extended, preferrably through increasing MEM_CGROUP_RECLAIM_RETRIES.
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-The patch doesn't try to address the above race because that one is
-unfixable. I hope that is clear.
+The changelog for Rik's "sched/numa: Stay on the same node if CLONE_VM" patch
+serves well documented in the code.
 
-It just tries to reduce burden on the userspace oom notification
-consumers and given them a simple semantic. Notification comes only if
-an action will be necessary (either kernel kills something or user space
-is expected).
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ kernel/sched/core.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-E.g. consider a handler which tries to clean up after kernel handled
-OOM and killed something. If the kernel could back off and refrain
-from killing anything after the norification already fired up then the
-userspace has no practical way to detect that (except for checking the
-kernel log to search for OOM messages which might get suppressed due to
-rate limitting etc.. Nothing I would call optimal).
-Or do you think that such a use case doesn't make much sense and it is
-an abuse of the notification interface?
-
-> But a random task exiting a split second after the sampling window has
-> closed will always be a possibility, regardless of how long it is.
-
-Agreed and this is not what the patch is about. If the kernel oom killer
-couldn't back off then I would completely agree with you here.
-
-> There is nothing to be gained from this layering violation and it's
-> mind-boggling that you two still think this is a meaningful change.
-> 
-> Nacked-by: Johannes Weiner <hannes@cmpxchg.org>
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7f45fd5..a2d690c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1743,10 +1743,16 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+-		p->mm->numa_next_scan = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+ 		p->mm->numa_scan_seq = 0;
++		p->mm->numa_next_scan = jiffies +
++			msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
+ 	}
+ 
++	/*
++	 * A newly spawned thread should stay on the same NUMA node as its
++	 * parent. This prevents processes from being "torn" across multiple
++	 * NUMA nodes every time they spawn a new thread.
++	 */
+ 	if (clone_flags & CLONE_VM)
+ 		p->numa_preferred_nid = current->numa_preferred_nid;
+ 	else
 -- 
-Michal Hocko
-SUSE Labs
+1.8.1.4
+
+
+
