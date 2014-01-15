@@ -1,154 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaAOJW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:22:56 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:37071 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaAOJWt (ORCPT
+	id S1751850AbaAOJXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:23:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39094 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaAOJXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:22:49 -0500
-Date: Wed, 15 Jan 2014 10:22:45 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: raistlin@linux.it, juri.lelli@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-Message-ID: <20140115092245.GA15190@gmail.com>
-References: <52D64676.4040000@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52D64676.4040000@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 15 Jan 2014 04:23:46 -0500
+Date: Wed, 15 Jan 2014 01:25:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on
+ memory
+Message-Id: <20140115012541.ad302526.akpm@linux-foundation.org>
+In-Reply-To: <52D64B27.30604@parallels.com>
+References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com>
+	<20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org>
+	<52D4E5F2.5080205@parallels.com>
+	<20140114141453.374bd18e5290876177140085@linux-foundation.org>
+	<52D64B27.30604@parallels.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 15 Jan 2014 12:47:35 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-
+> On 01/15/2014 02:14 AM, Andrew Morton wrote:
+> > On Tue, 14 Jan 2014 11:23:30 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
+> >
+> >> On 01/14/2014 03:05 AM, Andrew Morton wrote:
+> >>> That being said, I think I'll schedule this patch as-is for 3.14.  Can
+> >>> you please take a look at implementing the simpler approach, send me
+> >>> something for 3.15-rc1?
+> >> IMHO the simpler approach (Glauber's patch) is not suitable as is,
+> >> because it, in fact, neglects the notion of batch_size when doing low
+> >> prio scans, because it calls ->scan() for < batch_size objects even if
+> >> the slab has >= batch_size objects while AFAIU it should accumulate a
+> >> sufficient number of objects to scan in nr_deferred instead.
+> > Well.  If you mean that when nr-objects=large and batch_size=32 and
+> > total_scan=33, the patched code will scan 32 objects and then 1 object
+> > then yes, that should be fixed.
 > 
-> Hi all,
+> I mean if nr_objects=large and batch_size=32 and shrink_slab() is called
+> 8 times with total_scan=4, we can either call ->scan() 8 times with
+> nr_to_scan=4 (Glauber's patch) or call it only once with nr_to_scan=32
+> (that's how it works now). Frankly, after a bit of thinking I am
+> starting to doubt that this can affect performance at all provided the
+> shrinker is implemented in a sane way, because as you've mentioned
+> shrink_slab() is already a slow path. It seems I misunderstood the
+> purpose of batch_size initially: I though we need it to limit the number
+> of calls to ->scan(), but now I guess the only purpose of it is limiting
+> the number of objects scanned in one pass to avoid latency issues.
+
+Actually, the intent of batching is to limit the number of calls to
+->scan().  At least, that was the intent when I wrote it!  This is a
+good principle and we should keep doing it.  If we're going to send the
+CPU away to tread on a pile of cold cachelines, we should make sure
+that it does a good amount of work while it's there.
+
+> But
+> then another question arises - why do you think the behavior you
+> described above (scanning 32 and then 1 object if total_scan=33,
+> batch_size=32) is bad?
+
+Yes, it's a bit inefficient but it won't be too bad.  What would be bad
+would be to scan a very small number of objects and then to advance to
+the next shrinker.
+
+> In other words why can't we make the scan loop
+> look like this:
 > 
-> I use the tip/sched/core branch.
+>     while (total_scan > 0) {
+>         unsigned long ret;
+>         unsigned long nr_to_scan = min(total_scan, batch_size);
 > 
-> After git pulling yesterday, my host is unresponsive after booting the OS.
+>         shrinkctl->nr_to_scan = nr_to_scan;
+>         ret = shrinker->scan_objects(shrinker, shrinkctl);
+>         if (ret == SHRINK_STOP)
+>             break;
+>         freed += ret;
 > 
->  * It boots normally
->  * It sends info to the console
->  * The graphics does not work
->  * The terminals show the prompt, I can enter the username but after
-> pressing enter, it does not give the password prompt
->  * sysrq works more or less, I can't get the process stack but it
-> receives the command
+>         count_vm_events(SLABS_SCANNED, nr_to_scan);
+>         total_scan -= nr_to_scan;
 > 
-> It is like no new process can be created.
-> 
-> I have a dual Xeon processor E5325 (2 x 4 cores).
-> 
-> After git bisecting, the following patch seems to introduce the bug.
-> 
-> commit d50dde5a10f305253cbc3855307f608f8a3c5f73
-> Author: Dario Faggioli <raistlin@linux.it>
-> Date:   Thu Nov 7 14:43:36 2013 +0100
-> 
->     sched: Add new scheduler syscalls to support an extended
-> scheduling parameters ABI
-> 
->     Add the syscalls needed for supporting scheduling algorithms
->     with extended scheduling parameters (e.g., SCHED_DEADLINE).
-> 
-> 
-> [ ... ]
-> 
-> 
->     Signed-off-by: Dario Faggioli <raistlin@linux.it>
->     [ Rewrote to use sched_attr. ]
->     Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
->     [ Removed sched_setscheduler2() for now. ]
->     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->     Link: http://lkml.kernel.org/r/1383831828-15501-3-git-send-email-juri.lelli@gmail.com
->     Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-I checked this patch again, and noticed a few oddities:
-
-1)
-
-There's this change to __setscheduler():
-
--__setscheduler(struct rq *rq, struct task_struct *p, int policy, int prio)
-+/* Actually do priority change: must hold pi & rq lock. */
-+static void __setscheduler(struct rq *rq, struct task_struct *p,
-+                          const struct sched_attr *attr)
- {
-+       int policy = attr->sched_policy;
-+
-        p->policy = policy;
--       p->rt_priority = prio;
-+
-+       if (rt_policy(policy))
-+               p->rt_priority = attr->sched_priority;
-+       else
-+               p->static_prio = NICE_TO_PRIO(attr->sched_nice);
-+
+>         cond_resched();
+>     }
 
 
-doesnt this change keep p->rt_priority uninitialized in the 
-normalize_task() case?
+Well, if we come in here with total_scan=1 then we defeat the original
+intent of the batching, don't we?  We end up doing a lot of work just
+to scan one object.  So perhaps add something like
 
-I.e. rt_priority should still be set unconditionally. In the 
-SCHED_NORMAL case that will be a zero initialization.
+	if (total_scan < batch_size && max_pass > batch_size)
+		skip the while loop
 
-2)
+If we do this, total_scan will be accumulated into nr_deferred, up to
+the point where the threshold is exceeded, yes?
 
-It's not clear why this change to __setscheduler() was done:
+All the arithmetic in there hurts my brain and I don't know what values
+total_scan typically ends up with.
 
-        /*
-         * Allow unprivileged RT tasks to decrease priority:
-         */
-        if (user && !capable(CAP_SYS_NICE)) {
-+               if (fair_policy(policy)) {
-+                       if (!can_nice(p, attr->sched_nice))
-+                               return -EPERM;
-+               }
-+
-                if (rt_policy(policy)) {
+btw. all that trickery with delta and lru_pages desperately needs
+documenting.  What the heck is it intended to do??
 
 
-3)
 
-On ARM:
+We could avoid the "scan 32 then scan just 1" issue with something like
 
--#define __NR_syscalls  (380)
-+#define __NR_syscalls  (384)
+	if (total_scan > batch_size)
+		total_scan %= batch_size;
 
-but:
-
- #define __NR_finit_module              (__NR_SYSCALL_BASE+379)
-+#define __NR_sched_setattr             (__NR_SYSCALL_BASE+380)
-+#define __NR_sched_getattr             (__NR_SYSCALL_BASE+381)
- 
- /*
-
-
-Why is the syscall table increased by 4, while we only add 2 new 
-syscalls?
-
-4)
-
-In hindsight this patch should have been 3 patches or so:
-
- - one that just mechanically extends __setscheduler() with an 'attr' 
-   way to pass parameters
-
- - one that adds whatever other desired changes to __setscheduler(), 
-   with an explanation.
-
- - one that adds the new syscalls.
-
-Which would ease the debugging of such bugs.
-
-Thanks,
-
-	Ingo
+before the loop.  But I expect the effects of that will be unmeasurable
+- on average the number of objects which are scanned in the final pass
+of the loop will be batch_size/2, yes?  That's still a decent amount.
