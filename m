@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaAOKav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:30:51 -0500
-Received: from mail-vb0-f41.google.com ([209.85.212.41]:47718 "EHLO
-	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaAOKat (ORCPT
+	id S1751826AbaAOKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:31:57 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:65071 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395AbaAOKbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:30:49 -0500
+	Wed, 15 Jan 2014 05:31:53 -0500
+X-Originating-IP: 108.223.40.66
+Message-ID: <52D66396.5050104@roeck-us.net>
+Date: Wed, 15 Jan 2014 02:31:50 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140106183000.GG1096@mudshark.cambridge.arm.com>
-References: <1388420732-13961-1-git-send-email-jean.pihet@linaro.org>
-	<1388420732-13961-2-git-send-email-jean.pihet@linaro.org>
-	<20140106183000.GG1096@mudshark.cambridge.arm.com>
-Date: Wed, 15 Jan 2014 11:30:48 +0100
-Message-ID: <CAFrcx1=ivcoNBTSBO47zs04Ji3XZza7pH3bVFS5M0-uZTg38RA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] ARM64: perf: add support for perf registers API
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo <acme@ghostprotocols.net>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Jean Pihet <jean.pihet@newoldbits.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-mm@kvack.org, linux-bcache@vger.kernel.org,
+        Vineet Gupta <vgupta@synopsys.com>, sparclinux@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
+References: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On 01/15/2014 01:33 AM, Geert Uytterhoeven wrote:
+> {,set}page_address() are macros if WANT_PAGE_VIRTUAL.
+> If !WANT_PAGE_VIRTUAL, they're plain C functions.
+>
+> If someone calls them with a void *, this pointer is auto-converted to
+> struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
+> architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc):
+>
+> drivers/md/bcache/bset.c: In function ‘__btree_sort’:
+> drivers/md/bcache/bset.c:1190: warning: dereferencing ‘void *’ pointer
+> drivers/md/bcache/bset.c:1190: error: request for member ‘virtual’ in something not a structure or union
+>
+> Convert them to static inline functions to fix this. There are already
+> plenty of  users of struct page members inside <linux/mm.h>, so there's no
+> reason to keep them as macros.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-On 6 January 2014 19:30, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Jean,
->
-> Thanks for the updated patches. One minor comment on this one.
->
-> On Mon, Dec 30, 2013 at 04:25:30PM +0000, Jean Pihet wrote:
->> From: Jean Pihet <jean.pihet@newoldbits.com>
->>
->> This patch implements the functions required for the perf registers API,
->> allowing the perf tool to interface kernel register dumps with libunwind
->> in order to provide userspace backtracing.
->> Compat mode is also supported.
->
-> [...]
->
->> +u64 perf_reg_value(struct pt_regs *regs, int idx)
->> +{
->> +     if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM64_MAX))
->> +             return 0;
->
-> While this is probably fine, I'd feel more comfortable if you had separate
-> limit checks for native and compat...
-In fact in the native and compat modes the same set of registers are
-accessed, based on the native regs that are registered to the perf
-event core, cf. the definition of PERF_REGS_MASK in
-tools/perf/arch/arm64/include/perf_regs.h.
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 
-The regs set could be registered differently based on the binary to
-trace, but unfortunately the perf core code does not allow that.
+That also fixes the problem seen in stable-queue for 3.10 and 3.12,
+so it may be a better fix for the problem seen there than the patch
+provided by Michael.
 
-I would leave the code as is, what do you think?
+Guenter
 
-Cheers,
-Jean
-
->
->> +     /*
->> +      * Compat (i.e. 32 bit) mode:
->> +      * - PC has been set in the pt_regs struct in kernel_entry,
->> +      * - Handle SP and LR here.
->> +      */
->> +     if (compat_user_mode(regs)) {
->
-> i.e. have a WARN_ON_ONCE here for the compat structure size.
->
->> +             if ((u32)idx == PERF_REG_ARM64_SP)
->> +                     return regs->compat_sp;
->> +             if ((u32)idx == PERF_REG_ARM64_LR)
->> +                     return regs->compat_lr;
->> +     }
->
-> then stick an else here with the original check.
->
-> Make sense?
->
-> Will
