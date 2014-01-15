@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751214AbaAOHEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 02:04:13 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:38826 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaAOHEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 02:04:10 -0500
-Message-ID: <1389769445.2944.33.camel@j-VirtualBox>
-Subject: Re: [RFC 3/3] mutex: When there is no owner, stop spinning after
- too many tries
-From: Jason Low <jason.low2@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com, davidlohr@hp.com,
-        hpa@zytor.com, aswin@hp.com, scott.norton@hp.com
-Date: Tue, 14 Jan 2014 23:04:05 -0800
-In-Reply-To: <20140114170056.7e93f279e11c751acb15ae67@linux-foundation.org>
-References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
-	 <1389745990-7069-4-git-send-email-jason.low2@hp.com>
-	 <20140114170056.7e93f279e11c751acb15ae67@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751566AbaAOHOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 02:14:36 -0500
+Received: from ozlabs.org ([203.10.76.45]:46309 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703AbaAOHOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 02:14:34 -0500
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: <linuxppc-dev@ozlabs.org>
+Cc: Michael Neuling <mikey@neuling.org>, Linus Torvalds <torvalds@osdl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] powerpc: Add support for the optimised lockref implementation
+Date: Wed, 15 Jan 2014 18:14:28 +1100
+Message-Id: <1389770069-28733-1-git-send-email-mpe@ellerman.id.au>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-14 at 17:00 -0800, Andrew Morton wrote:
-> On Tue, 14 Jan 2014 16:33:10 -0800 Jason Low <jason.low2@hp.com> wrote:
-> 
-> > When running workloads that have high contention in mutexes on an 8 socket
-> > machine, spinners would often spin for a long time with no lock owner.
-> > 
-> > One of the potential reasons for this is because a thread can be preempted
-> > after clearing lock->owner but before releasing the lock, or preempted after
-> > acquiring the mutex but before setting lock->owner. In those cases, the
-> > spinner cannot check if owner is not on_cpu because lock->owner is NULL.
-> 
-> That sounds like a very small window.  And your theory is that this
-> window is being hit sufficiently often to impact aggregate runtime
-> measurements, which sounds improbable to me?
-> 
-> > A solution that would address the preemption part of this problem would
-> > be to disable preemption between acquiring/releasing the mutex and
-> > setting/clearing the lock->owner. However, that will require adding overhead
-> > to the mutex fastpath.
-> 
-> preempt_disable() is cheap, and sometimes free.
-> 
-> Have you confirmed that the preempt_disable() approach actually fixes
-> the performance issues?  If it does then this would confirm your
-> "potential reason" hypothesis.  If it doesn't then we should be hunting
-> further for the explanation.
+This commit adds the architecture support required to enable the
+optimised implementation of lockrefs.
 
-Using Ingo's test-mutex application (http://lkml.org/lkml/2006/1/8/50)
-which can also generate high mutex contention, the preempt_disable()
-approach did provide approximately a 4% improvement at 160 threads, but
-not nearly the 25+% I was seeing with this patchset. So, it looks like
-preemption is not the main cause of the problem then.
+That's as simple as defining arch_spin_value_unlocked() and selecting
+the Kconfig option.
 
-Thanks,
-Jason
+We also define cmpxchg64_relaxed(), because the lockref code does not
+need the cmpxchg to have barrier semantics.
+
+Using Linus' test case[1] on one system I see a 4x improvement for the
+basic enablement, and a further 1.3x for cmpxchg64_relaxed(), for a
+total of 5.3x vs the baseline.
+
+On another system I see more like 2x improvement.
+
+[1]: http://marc.info/?l=linux-fsdevel&m=137782380714721&w=4
+
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+---
+ arch/powerpc/Kconfig                | 1 +
+ arch/powerpc/include/asm/cmpxchg.h  | 1 +
+ arch/powerpc/include/asm/spinlock.h | 5 +++++
+ 3 files changed, 7 insertions(+)
+
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index b44b52c..b34b53d 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -139,6 +139,7 @@ config PPC
+ 	select OLD_SIGACTION if PPC32
+ 	select HAVE_DEBUG_STACKOVERFLOW
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
++	select ARCH_USE_CMPXCHG_LOCKREF if PPC64
+ 
+ config GENERIC_CSUM
+ 	def_bool CPU_LITTLE_ENDIAN
+diff --git a/arch/powerpc/include/asm/cmpxchg.h b/arch/powerpc/include/asm/cmpxchg.h
+index e245aab..d463c68 100644
+--- a/arch/powerpc/include/asm/cmpxchg.h
++++ b/arch/powerpc/include/asm/cmpxchg.h
+@@ -300,6 +300,7 @@ __cmpxchg_local(volatile void *ptr, unsigned long old, unsigned long new,
+ 	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
+ 	cmpxchg_local((ptr), (o), (n));					\
+   })
++#define cmpxchg64_relaxed	cmpxchg64_local
+ #else
+ #include <asm-generic/cmpxchg-local.h>
+ #define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+diff --git a/arch/powerpc/include/asm/spinlock.h b/arch/powerpc/include/asm/spinlock.h
+index 5f54a74..5162f8c 100644
+--- a/arch/powerpc/include/asm/spinlock.h
++++ b/arch/powerpc/include/asm/spinlock.h
+@@ -54,6 +54,11 @@
+ #define SYNC_IO
+ #endif
+ 
++static __always_inline int arch_spin_value_unlocked(arch_spinlock_t lock)
++{
++	return lock.slock == 0;
++}
++
+ /*
+  * This returns the old value in the lock, so we succeeded
+  * in getting the lock if the return value is 0.
+-- 
+1.8.3.2
 
