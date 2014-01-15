@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401AbaAOFyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:54:31 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49170 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaAOFy3 (ORCPT
+	id S1751481AbaAOF4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:56:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45224 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaAOF4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:54:29 -0500
-X-AuditID: 9c930179-b7c84ae000000e38-20-52d6229359d8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/3] perf tools: Do proper comm override error handling
-References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
-	<1389713836-13375-2-git-send-email-fweisbec@gmail.com>
-Date: Wed, 15 Jan 2014 14:54:27 +0900
-In-Reply-To: <1389713836-13375-2-git-send-email-fweisbec@gmail.com> (Frederic
-	Weisbecker's message of "Tue, 14 Jan 2014 16:37:14 +0100")
-Message-ID: <8761plaiy4.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 15 Jan 2014 00:56:34 -0500
+Message-ID: <52D622B5.6070203@oracle.com>
+Date: Wed, 15 Jan 2014 13:55:01 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
+        Metin Doslu <metin@citusdata.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ozgun Erdogan <ozgun@citusdata.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Roman Gushchin <klamm@yandex-team.ru>, Ryan Mallon <rmallon@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: keep page cache radix tree nodes in check
+References: <1389377443-11755-1-git-send-email-hannes@cmpxchg.org> <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1389377443-11755-10-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+Hi Johannes,
 
-On Tue, 14 Jan 2014 16:37:14 +0100, Frederic Weisbecker wrote:
-> The comm overriding API ignores memory allocation failures by silently
-> keeping the previous and out of date comm.
->
-> As a result, the user may get buggy events without ever being notified
-> about the problem and its source.
->
-> Lets start to fix this by propagating the error from the API. Not all
-> callers may be doing proper error handling on comm set yet but this
-> is the first step toward it.
+On 01/11/2014 02:10 AM, Johannes Weiner wrote:
+> Previously, page cache radix tree nodes were freed after reclaim
+> emptied out their page pointers.  But now reclaim stores shadow
+> entries in their place, which are only reclaimed when the inodes
+> themselves are reclaimed.  This is problematic for bigger files that
+> are still in use after they have a significant amount of their cache
+> reclaimed, without any of those pages actually refaulting.  The shadow
+> entries will just sit there and waste memory.  In the worst case, the
+> shadow entries will accumulate until the machine runs out of memory.
+> 
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+I have one more question. It seems that other algorithm only remember
+history information of a limit number of evicted pages where the number
+is usually the same as the total cache or memory size.
+But in your patch, I didn't see a preferred value that how many evicted
+pages' history information should be recorded. It all depends on the
+workingset_shadow_shrinker?
 
 Thanks,
-Namhyung
+-Bob
