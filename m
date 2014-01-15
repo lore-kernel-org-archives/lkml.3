@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaAOEIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:08:21 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:45758 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaAOEIT (ORCPT
+	id S1751450AbaAOEMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:12:53 -0500
+Received: from forward1h.mail.yandex.net ([84.201.187.146]:33112 "EHLO
+	forward1h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751AbaAOEMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:08:19 -0500
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        daniel.lezcano@linaro.org, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org,
-        Alex Shi <alex.shi@linaro.org>
-Subject: [RFC PATCH] sched: find the latest idle cpu
-Date: Wed, 15 Jan 2014 12:07:59 +0800
-Message-Id: <1389758879-19951-1-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 14 Jan 2014 23:12:49 -0500
+From: Victor Porton <porton@narod.ru>
+Envelope-From: porton@yandex.ru
+To: linux-kernel@vger.kernel.org
+Subject: Notifying on empty cgroup
+MIME-Version: 1.0
+Message-Id: <135711389759165@web22h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 15 Jan 2014 06:12:45 +0200
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we just try to find least load cpu. If some cpus idled,
-we just pick the first cpu in cpu mask.
+I want to write software which needs to receive a signal when the cgroup 
+created by it becomes empty. (After this the empty cgroup should be deleted 
+just not to clutter the memory.)
 
-In fact we can get the interrupted idle cpu or the latest idled cpu,
-then we may get the benefit from both latency and power.
-The selected cpu maybe not the best, since other cpu may be interrupted
-during our selecting. But be captious costs too much.
+If the kernel does not support such notifications, it should be improved. 
+This functionality is crucial for some kinds of software.
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- kernel/sched/fair.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+There is /sys/fs/cgroup/systemd/release_agent but I don't understand how to 
+use it. I don't understand why we would need it at all.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c7395d9..fb52d26 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4167,6 +4167,26 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- 			min_load = load;
- 			idlest = i;
- 		}
-+#ifdef CONFIG_NO_HZ_COMMON
-+		/*
-+		 * Coarsely to get the latest idle cpu for shorter latency and
-+		 * possible power benefit.
-+		 */
-+		if (!min_load) {
-+			struct tick_sched *ts = &per_cpu(tick_cpu_sched, i);
-+
-+			s64 latest_wake = 0;
-+			/* idle cpu doing irq */
-+			if (ts->inidle && !ts->idle_active)
-+				idlest = i;
-+			/* the cpu resched */
-+			else if (!ts->inidle)
-+				idlest = i;
-+			/* find latest idle cpu */
-+			else if (ktime_to_us(ts->idle_entrytime) > latest_wake)
-+				idlest = i;
-+		}
-+#endif
- 	}
- 
- 	return idlest;
+Starting a binary on emptying a cgroup with the purpose to notify an other 
+binary looks like a big overkill. Also my program should work in userspace 
+without the need to use release_agent which can be accessed only by root.
+
+Note that my work is related with sandboxing software (running a program in 
+closed environment, so that it would be unable for example to remove user's 
+files).
+
+See also
+http://portonsoft.wordpress.com/2014/01/11/toward-robust-linux-sandbox/
+
 -- 
-1.8.1.2
-
+Victor Porton - http://portonvictor.org
