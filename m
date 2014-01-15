@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbaAOWA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:00:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41471 "EHLO
+	id S1754373AbaAOWBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:01:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41488 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309AbaAOWAs (ORCPT
+	with ESMTP id S1754348AbaAOWAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:00:48 -0500
+	Wed, 15 Jan 2014 17:00:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <khali@linux-fr.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 047/166] hwmon: (w83l768ng) Fix fan speed control range
-Date: Wed, 15 Jan 2014 13:51:01 -0800
-Message-Id: <1389822780-4729-48-git-send-email-kamal@canonical.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 079/166] iio:adc:ad7887 Fix channel reported endianness from cpu to big endian
+Date: Wed, 15 Jan 2014 13:51:33 -0800
+Message-Id: <1389822780-4729-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -26,53 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Jonathan Cameron <jic23@kernel.org>
 
-commit 33a7ab91d509fa33b4bcd3ce0038cc80298050da upstream.
+commit e39d99059ad7f75d7ae2d3c59055d3c476cdb0d9 upstream.
 
-The W83L786NG stores the fan speed on 4 bits while the sysfs interface
-uses a 0-255 range. Thus the driver should scale the user input down
-to map it to the device range, and scale up the value read from the
-device before presenting it to the user. The reserved register nibble
-should be left unchanged.
+Note this also sets the endianness to big endian whereas it would
+previously have defaulted to the cpu endian.  Hence technically
+this is a bug fix on LE platforms.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/w83l786ng.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/iio/adc/ad7887.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/w83l786ng.c b/drivers/hwmon/w83l786ng.c
-index c7514e0..0cce70c 100644
---- a/drivers/hwmon/w83l786ng.c
-+++ b/drivers/hwmon/w83l786ng.c
-@@ -482,9 +482,11 @@ store_pwm(struct device *dev, struct device_attribute *attr,
- 	if (err)
- 		return err;
- 	val = SENSORS_LIMIT(val, 0, 255);
-+	val = DIV_ROUND_CLOSEST(val, 0x11);
- 
- 	mutex_lock(&data->update_lock);
--	data->pwm[nr] = val;
-+	data->pwm[nr] = val * 0x11;
-+	val |= w83l786ng_read_value(client, W83L786NG_REG_PWM[nr]) & 0xf0;
- 	w83l786ng_write_value(client, W83L786NG_REG_PWM[nr], val);
- 	mutex_unlock(&data->update_lock);
- 	return count;
-@@ -778,8 +780,9 @@ static struct w83l786ng_data *w83l786ng_update_device(struct device *dev)
- 			    ? 0 : 1;
- 			data->pwm_enable[i] =
- 			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
--			data->pwm[i] = w83l786ng_read_value(client,
--			    W83L786NG_REG_PWM[i]);
-+			data->pwm[i] =
-+			    (w83l786ng_read_value(client, W83L786NG_REG_PWM[i])
-+			     & 0x0f) * 0x11;
- 		}
- 
- 
+diff --git a/drivers/iio/adc/ad7887.c b/drivers/iio/adc/ad7887.c
+index a33d5cd..b61002b 100644
+--- a/drivers/iio/adc/ad7887.c
++++ b/drivers/iio/adc/ad7887.c
+@@ -211,7 +211,13 @@ static const struct ad7887_chip_info ad7887_chip_info_tbl[] = {
+ 			IIO_CHAN_INFO_SCALE_SHARED_BIT,
+ 			.address = 1,
+ 			.scan_index = 1,
+-			.scan_type = IIO_ST('u', 12, 16, 0),
++			.scan_type = {
++				.sign = 'u',
++				.realbits = 12,
++				.storagebits = 16,
++				.shift = 0,
++				.endianness = IIO_BE,
++			},
+ 		},
+ 		.channel[1] = {
+ 			.type = IIO_VOLTAGE,
+@@ -221,7 +227,13 @@ static const struct ad7887_chip_info ad7887_chip_info_tbl[] = {
+ 			IIO_CHAN_INFO_SCALE_SHARED_BIT,
+ 			.address = 0,
+ 			.scan_index = 0,
+-			.scan_type = IIO_ST('u', 12, 16, 0),
++			.scan_type = {
++				.sign = 'u',
++				.realbits = 12,
++				.storagebits = 16,
++				.shift = 0,
++				.endianness = IIO_BE,
++			},
+ 		},
+ 		.channel[2] = IIO_CHAN_SOFT_TIMESTAMP(2),
+ 		.int_vref_mv = 2500,
 -- 
 1.8.3.2
 
