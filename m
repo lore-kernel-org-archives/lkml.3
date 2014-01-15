@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaAOTb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 14:31:26 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37777 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaAOTbT (ORCPT
+	id S1751768AbaAOTdk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 14:33:40 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:44167 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaAOTdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 14:31:19 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Colin Cross <ccross@android.com>, Jesse Barker <jesse.barker@arm.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] staging: don't use module_init in non-modular ion_dummy_driver.c
-Date: Wed, 15 Jan 2014 14:30:41 -0500
-Message-ID: <1389814241-26016-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Wed, 15 Jan 2014 14:33:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140115190445.GA18166@redhat.com>
+References: <1389645028-17157-1-git-send-email-wad@chromium.org>
+	<1389645028-17157-2-git-send-email-wad@chromium.org>
+	<20140114192118.GA31411@redhat.com>
+	<CABqD9hYB7d4=cpCaXZms5v8+=SJnYnkmL8biPE5Jz0YQuJ20MQ@mail.gmail.com>
+	<20140115190445.GA18166@redhat.com>
+Date: Wed, 15 Jan 2014 13:33:37 -0600
+Message-ID: <CABqD9hYgn28EcF=AbyKSv-+pZH+yzV1L_P9dTnrezNRd220YtA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] sys, seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+From: Will Drewry <wad@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Nicolas Schichan <nschichan@freebox.fr>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, holt@sgi.com,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ION_DUMMY option is bool, and hence this code is either
-present or absent.  It will never be modular, so using
-module_init as an alias for __initcall is rather misleading.
+On Wed, Jan 15, 2014 at 1:04 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/14, Will Drewry wrote:
+>>
+>> On Tue, Jan 14, 2014 at 1:21 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>
+>> >> +                     get_seccomp_filter(caller);
+>> >> +                     /*
+>> >> +                      * Drop the task reference to the shared ancestor since
+>> >> +                      * current's path will hold a reference.  (This also
+>> >> +                      * allows a put before the assignment.)
+>> >> +                      */
+>> >> +                     put_seccomp_filter(thread);
+>> >> +                     thread->seccomp.filter = caller->seccomp.filter;
+>> >
+>> > As I said, I do not understand this patch yet, but this looks suspicious.
+>> >
+>> > Why we can't race with this thread doing clone(CLONE_THREAD) ? We do
+>> > not the the new thread yet, but its ->seccomp can be already copied
+>> > by copy_process(), no?
+>>
+>> Yeah I missed that. That said, I think the worst of it would be that
+>> the new thread
+>> gets the old filter.
+>
+> Yes, but this means you can trust SECCOMP_EXT_ACT_TSYNC.
+>
+>> I'll see if
+>> the siglock helps
+>> here and walk the clone() code again to see what else I missed.
+>
+> No, siglock itself can't help to avoid this race. Unless you move
+> copy_process()->get_seccomp_filter() under the same lock, and in
+> this case it should also re-copy ->seccomp. Not nice.
 
-Fix this up now, so that we can relocate module_init from
-init.h into module.h in the future.  If we don't do this, we'd
-have to add module.h to obviously non-modular code, and that
-would be a worse thing.
+Yeah - not at all.  I'll rethink it. I was too excited about how easy
+is_ancestor works, but the locking is really the hard part.
 
-Note that direct use of __initcall is discouraged, vs. one
-of the priority categorized subgroups.  As __initcall gets
-mapped onto device_initcall, our use of device_initcall
-directly in this change means that the runtime impact is
-zero -- it will remain at level 6 in initcall ordering.
+> But note task_lock() (or any other per-thread locking) is wrong.
+> Just look at the code above. We hold task_lock(thread) but not
+> task_lock(caller). What if another thread calls seccomp_sync_threads()
+> and changes caller->seccomp right after get_seccomp_filter(caller).
 
-Cc: Colin Cross <ccross@android.com>
-Cc: Jesse Barker <jesse.barker@arm.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Yup - I was thinking of tasklist_lock as a non-multi-reader lock,
+which is wrong.
+The task_lock(current) would clearly cover that case, but I need to walk through
+all the interactions paying more attention to the lock being used.
 
-diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
-index 55b2002753f2..8e7f8912af46 100644
---- a/drivers/staging/android/ion/ion_dummy_driver.c
-+++ b/drivers/staging/android/ion/ion_dummy_driver.c
-@@ -17,6 +17,7 @@
- #include <linux/err.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
-+#include <linux/init.h>
- #include <linux/bootmem.h>
- #include <linux/memblock.h>
- #include <linux/sizes.h>
-@@ -128,6 +129,7 @@ err:
- 	}
- 	return err;
- }
-+device_initcall(ion_dummy_init);
- 
- static void __exit ion_dummy_exit(void)
- {
-@@ -152,7 +154,4 @@ static void __exit ion_dummy_exit(void)
- 
- 	return;
- }
--
--module_init(ion_dummy_init);
--module_exit(ion_dummy_exit);
--
-+__exitcall(ion_dummy_exit);
--- 
-1.8.5.2
+> And even get_seccomp_filter() itself becomes racy. I think the
+> locking is seriously broken in this series.
 
+It certainly needs to be better applied :)
+
+thanks!
