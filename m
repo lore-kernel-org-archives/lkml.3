@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaAOQ7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:59:36 -0500
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:61695 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaAOQ7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:59:34 -0500
-Date: Wed, 15 Jan 2014 17:59:30 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/3] perf tools: Spare double comparison of callchain
- first entry
-Message-ID: <20140115165927.GA21574@localhost.localdomain>
-References: <1389713836-13375-1-git-send-email-fweisbec@gmail.com>
- <1389713836-13375-3-git-send-email-fweisbec@gmail.com>
- <87y52h930t.fsf@sejong.aot.lge.com>
+	id S1752245AbaAORDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:03:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20338 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864AbaAORDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 12:03:52 -0500
+Date: Wed, 15 Jan 2014 18:03:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/timers 2/4] timers: Reduce __run_timers()
+	latency for empty list
+Message-ID: <20140115170310.GB11499@redhat.com>
+References: <20140115051939.GA31164@linux.vnet.ibm.com> <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com> <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87y52h930t.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 03:23:46PM +0900, Namhyung Kim wrote:
-> On Tue, 14 Jan 2014 16:37:15 +0100, Frederic Weisbecker wrote:
-> > When a new callchain child branch matches an existing one in the rbtree,
-> > the comparison of its first entry is performed twice:
-> >
-> > 1) From append_chain_children() on branch lookup
-> >
-> > 2) If 1) reports a match, append_chain() then compares all entries of
-> > the new branch against the matching node in the rbtree, and this
-> > comparison includes the first entry of the new branch again.
-> 
-> Right.
-> 
-> >
-> > Lets shortcut this by performing the whole comparison only from
-> > append_chain() which then returns the result of the comparison between
-> > the first entry of the new branch and the iterating node in the rbtree.
-> > If the first entry matches, the lookup on the current level of siblings
-> > stops and propagates to the children of the matching nodes.
-> 
-> Hmm..  it looks like that I thought directly calling append_chain() has
-> some overhead - but it's not.
+On 01/14, Paul E. McKenney wrote:
+>
+> The __run_timers() function currently steps through the list one jiffy at
+> a time
 
-No that's a right concern. I worried as well because I wasn't sure if there
-is more match than unmatch on the first entry. I'd tend to think that the first
-entry endures unmatches most often, in which case calling match_chain() first
-may be more efficient as a fast path (ie: calling append_chain() involves
-one more function call and a few other details).
+And this is very suboptimal if jiffies - timer_jiffies is huge. Looks
+like, we should rework base->tv* structures, or (perhaps) optimize
+the "cascade" logic so that __run_timers() can increment timer_jiffies
+and move all the expired timers into work_list at one step. And the
+->next_timer logic is obviously very suboptimal.
 
-But eventually measurement hasn't shown significant difference before and
-after the patch.
+But this is almost off-topic, I agree that in the short term these
+changes make sense.
 
-> 
-> >
-> > This results in less comparisons performed by the CPU.
-> 
-> Do you have any numbers?  I suspect it'd not be a big change, but just
-> curious.
+> +static bool catchup_timer_jiffies(struct tvec_base *base)
+> +{
+> +#ifdef CONFIG_NO_HZ_FULL
+> +	if (!base->all_timers) {
+> +		base->timer_jiffies = jiffies;
+> +		return 1;
+> +	}
+> +#endif /* #ifdef CONFIG_NO_HZ_FULL */
+> +	return 0;
+> +}
+> +
+>  static void
+>  __internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+>  {
+> @@ -1150,6 +1161,10 @@ static inline void __run_timers(struct tvec_base *base)
+>  	struct timer_list *timer;
+>  
+>  	spin_lock_irq(&base->lock);
+> +	if (catchup_timer_jiffies(base)) {
+> +		spin_unlock_irq(&base->lock);
+> +		return;
+> +	}
 
-So I compared before/after the patchset (which include the cursor restore removal)
-with:
 
-	1) Some big hackbench-like load that generates > 200 MB perf.data
+This is really minor, but perhaps it would be better to modify
+run_timer_softirq() to call catchup_timer_jiffies() lockless along
+with another fast-path time_after_eq() check.
 
-	perf record -g -- perf bench sched messaging -l $SOME_BIG_NUMBER
+Better yet, it would be nice to avoid raise_softirq(TIMER_SOFTIRQ),
+but this is not simple due to hrtimer_run_pending().
 
-	2) Compare before/after with the following reports:
+Oleg.
 
-	perf stat perf report --stdio > /dev/null
-	perf stat perf report --stdio -s sym > /dev/null
-	perf stat perf report --stdio -G > /dev/null
-	perf stat perf report --stdio -g fractal,0.5,caller,address > /dev/null 
-
-And most of the time I had < 0.01% difference on time completion in favour of the patchset
-(which may be due to the removed cursor restore patch eventually).
-
-So, all in one, there was no real interesting difference. If you want the true results I can definetly relaunch the tests.
-
-> >
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
-> Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-
-Thanks!
-
-> 
-> Thanks,
-> Namhyung
