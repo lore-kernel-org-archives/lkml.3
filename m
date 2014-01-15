@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaAOSiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:38:18 -0500
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:48856 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674AbaAOSiM (ORCPT
+	id S1752889AbaAOSjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:39:05 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:63700 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaAOSjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:38:12 -0500
-Date: Wed, 15 Jan 2014 19:38:07 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, aravind.gopalakrishnan@amd.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, cpu, amd: Add workaround for family 16h,
- erratum 793
-Message-ID: <20140115183807.GA23486@gmail.com>
-References: <20140114230711.GS29865@pd.tnic>
- <tip-3b56496865f9f7d9bcb2f93b44c63f274f08e3b6@git.kernel.org>
- <52D5DC51.9010606@zytor.com>
- <20140115062817.GA11869@gmail.com>
- <20140115133619.GA32051@pd.tnic>
- <52D69291.8080003@linux.intel.com>
+	Wed, 15 Jan 2014 13:39:02 -0500
+Date: Wed, 15 Jan 2014 15:38:56 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: perf probe: Build error with missing libraries
+Message-ID: <20140115183856.GD9750@ghostprotocols.net>
+References: <20140113180400.GD5318@ghostprotocols.net>
+ <20140113181458.GE5318@ghostprotocols.net>
+ <52D495D1.5080505@hitachi.com>
+ <20140114130907.GA29798@ghostprotocols.net>
+ <87sisq9fa5.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D69291.8080003@linux.intel.com>
+In-Reply-To: <87sisq9fa5.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, Jan 15, 2014 at 10:58:58AM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo,
+> 
+> On Tue, 14 Jan 2014 10:09:07 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Tue, Jan 14, 2014 at 10:41:37AM +0900, Masami Hiramatsu escreveu:
+> >> (2014/01/14 3:14), Arnaldo Carvalho de Melo wrote:
+> >> > Jiri, this is something else for the give-me-more-ponies list for
+> >> > tests/make: build it on freshly provisioned systems with multiple mixes
+> >> > of devel packages installed ;-)
+> >  
+> >> I think we can change makefile to get some combinations of config options
+> >> when building perf tools.
+> >
+> > This is what:
+> >
+> >  make -C tools/perf -f tests/make
+> >
+> > does, and we use it already, many config combos are tested, but that
+> > kinda expects that all optional devel libs be installed.
+> 
+> I've been thinking that the above should look like below.
+> 
+>   make build-test (-C tools/perf)
+> 
+> 
+> Maybe something like this?
 
-* H. Peter Anvin <hpa@linux.intel.com> wrote:
+Haven't tested, but I think it is worth to make this a shortcut, care to
+test (if not yet) and resubmit with proper S-O-B, etc?
 
-> On 01/15/2014 05:36 AM, Borislav Petkov wrote:
-> >>
-> >> msr_read() would essentially map to rdmsr_safe(). Each method has a
-> >> return value that can be checked for failure.
-> > 
-> > I'm not sure we want to use the _safe() variants by default as it 
-> > would generate the exception tables even in cases where they're 
-> > clearly not needed.
-
-I don't think those new methods should be inline functions - thus 
-there will be only one exception entry for each.
-
-> It would be particularly silly if what you end up with is in effect 
-> to wrap msr_read/write() in a BUG_ON(), which is the effect of the 
-> current (trapping) form.  There is something to be said for hard 
-> errors.
-
-Right, the fact that most of our MSR accesses today are 
-crash-on-failure, which happens to trigger crashes on a regular 
-schedule, where most of the crashes are 'harmless' situation except 
-that they crash the systems for good.
-
-So I think defaulting to soft failures is the right approach.
-
-Thanks,
-
-	Ingo
+- Arnaldo
+ 
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index eefb9fb0c02f..e110c2a2ade1 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -75,6 +75,12 @@ clean:
+>  	$(make)
+>  
+>  #
+> +# The build-test target is not really parallel, don't print the jobs info:
+> +#
+> +build-test:
+> +	@$(MAKE) -f tests/make --no-print-directory
+> +
+> +#
+>  # All other targets get passed through:
+>  #
+>  %:
+> 
+> -- 
+> Thanks,
+> Namhyung
