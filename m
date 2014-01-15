@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaAOV5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:57:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40956 "EHLO
+	id S1755173AbaAOW1B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:27:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41005 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaAOV5V (ORCPT
+	with ESMTP id S1753515AbaAOV5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:21 -0500
+	Wed, 15 Jan 2014 16:57:34 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 137/166] SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
-Date: Wed, 15 Jan 2014 13:52:31 -0800
-Message-Id: <1389822780-4729-138-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 140/166] rds: prevent BUG_ON triggered on congestion update to loopback
+Date: Wed, 15 Jan 2014 13:52:34 -0800
+Message-Id: <1389822780-4729-141-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,143 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
 
-commit 3dc91d4338d698ce77832985f9cb183d8eeaf6be upstream.
+[ Upstream commit 18fc25c94eadc52a42c025125af24657a93638c0 ]
 
-While running stress tests on adding and deleting ftrace instances I hit
-this bug:
+After congestion update on a local connection, when rds_ib_xmit returns
+less bytes than that are there in the message, rds_send_xmit calls
+back rds_ib_xmit with an offset that causes BUG_ON(off & RDS_FRAG_SIZE)
+to trigger.
 
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-  IP: selinux_inode_permission+0x85/0x160
-  PGD 63681067 PUD 7ddbe067 PMD 0
-  Oops: 0000 [#1] PREEMPT
-  CPU: 0 PID: 5634 Comm: ftrace-test-mki Not tainted 3.13.0-rc4-test-00033-gd2a6dde-dirty #20
-  Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
-  task: ffff880078375800 ti: ffff88007ddb0000 task.ti: ffff88007ddb0000
-  RIP: 0010:[<ffffffff812d8bc5>]  [<ffffffff812d8bc5>] selinux_inode_permission+0x85/0x160
-  RSP: 0018:ffff88007ddb1c48  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: 0000000000800000 RCX: ffff88006dd43840
-  RDX: 0000000000000001 RSI: 0000000000000081 RDI: ffff88006ee46000
-  RBP: ffff88007ddb1c88 R08: 0000000000000000 R09: ffff88007ddb1c54
-  R10: 6e6576652f6f6f66 R11: 0000000000000003 R12: 0000000000000000
-  R13: 0000000000000081 R14: ffff88006ee46000 R15: 0000000000000000
-  FS:  00007f217b5b6700(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
-  CR2: 0000000000000020 CR3: 000000006a0fe000 CR4: 00000000000007f0
-  Call Trace:
-    security_inode_permission+0x1c/0x30
-    __inode_permission+0x41/0xa0
-    inode_permission+0x18/0x50
-    link_path_walk+0x66/0x920
-    path_openat+0xa6/0x6c0
-    do_filp_open+0x43/0xa0
-    do_sys_open+0x146/0x240
-    SyS_open+0x1e/0x20
-    system_call_fastpath+0x16/0x1b
-  Code: 84 a1 00 00 00 81 e3 00 20 00 00 89 d8 83 c8 02 40 f6 c6 04 0f 45 d8 40 f6 c6 08 74 71 80 cf 02 49 8b 46 38 4c 8d 4d cc 45 31 c0 <0f> b7 50 20 8b 70 1c 48 8b 41 70 89 d9 8b 78 04 e8 36 cf ff ff
-  RIP  selinux_inode_permission+0x85/0x160
-  CR2: 0000000000000020
+For a 4Kb PAGE_SIZE rds_ib_xmit returns min(8240,4096)=4096 when actually
+the message contains 8240 bytes. rds_send_xmit thinks there is more to send
+and calls rds_ib_xmit again with a data offset "off" of 4096-48(rds header)
+=4048 bytes thus hitting the BUG_ON(off & RDS_FRAG_SIZE) [RDS_FRAG_SIZE=4k].
 
-Investigating, I found that the inode->i_security was NULL, and the
-dereference of it caused the oops.
+The commit 6094628bfd94323fc1cea05ec2c6affd98c18f7f
+"rds: prevent BUG_ON triggering on congestion map updates" introduced
+this regression. That change was addressing the triggering of a different
+BUG_ON in rds_send_xmit() on PowerPC architecture with 64Kbytes PAGE_SIZE:
+ 	BUG_ON(ret != 0 &&
+    		 conn->c_xmit_sg == rm->data.op_nents);
+This was the sequence it was going through:
+(rds_ib_xmit)
+/* Do not send cong updates to IB loopback */
+if (conn->c_loopback
+   && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+  	rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+    	return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+}
+rds_ib_xmit returns 8240
+rds_send_xmit:
+  c_xmit_data_off = 0 + 8240 - 48 (rds header accounted only the first time)
+   		 = 8192
+  c_xmit_data_off < 65536 (sg->length), so calls rds_ib_xmit again
+rds_ib_xmit returns 8240
+rds_send_xmit:
+  c_xmit_data_off = 8192 + 8240 = 16432, calls rds_ib_xmit again
+  and so on (c_xmit_data_off 24672,32912,41152,49392,57632)
+rds_ib_xmit returns 8240
+On this iteration this sequence causes the BUG_ON in rds_send_xmit:
+    while (ret) {
+    	tmp = min_t(int, ret, sg->length - conn->c_xmit_data_off);
+    	[tmp = 65536 - 57632 = 7904]
+    	conn->c_xmit_data_off += tmp;
+    	[c_xmit_data_off = 57632 + 7904 = 65536]
+    	ret -= tmp;
+    	[ret = 8240 - 7904 = 336]
+    	if (conn->c_xmit_data_off == sg->length) {
+    		conn->c_xmit_data_off = 0;
+    		sg++;
+    		conn->c_xmit_sg++;
+    		BUG_ON(ret != 0 &&
+    			conn->c_xmit_sg == rm->data.op_nents);
+    		[c_xmit_sg = 1, rm->data.op_nents = 1]
 
-in selinux_inode_permission():
+What the current fix does:
+Since the congestion update over loopback is not actually transmitted
+as a message, all that rds_ib_xmit needs to do is let the caller think
+the full message has been transmitted and not return partial bytes.
+It will return 8240 (RDS_CONG_MAP_BYTES+48) when PAGE_SIZE is 4Kb.
+And 64Kb+48 when page size is 64Kb.
 
-	isec = inode->i_security;
-
-	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
-
-Note, the crash came from stressing the deletion and reading of debugfs
-files.  I was not able to recreate this via normal files.  But I'm not
-sure they are safe.  It may just be that the race window is much harder
-to hit.
-
-What seems to have happened (and what I have traced), is the file is
-being opened at the same time the file or directory is being deleted.
-As the dentry and inode locks are not held during the path walk, nor is
-the inodes ref counts being incremented, there is nothing saving these
-structures from being discarded except for an rcu_read_lock().
-
-The rcu_read_lock() protects against freeing of the inode, but it does
-not protect freeing of the inode_security_struct.  Now if the freeing of
-the i_security happens with a call_rcu(), and the i_security field of
-the inode is not changed (it gets freed as the inode gets freed) then
-there will be no issue here.  (Linus Torvalds suggested not setting the
-field to NULL such that we do not need to check if it is NULL in the
-permission check).
-
-Note, this is a hack, but it fixes the problem at hand.  A real fix is
-to restructure the destroy_inode() to call all the destructor handlers
-from the RCU callback.  But that is a major job to do, and requires a
-lot of work.  For now, we just band-aid this bug with this fix (it
-works), and work on a more maintainable solution in the future.
-
-Link: http://lkml.kernel.org/r/20140109101932.0508dec7@gandalf.local.home
-Link: http://lkml.kernel.org/r/20140109182756.17abaaa8@gandalf.local.home
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Josh Hunt <joshhunt00@gmail.com>
+Tested-by: Honggang Li <honli@redhat.com>
+Acked-by: Bang Nguyen <bang.nguyen@oracle.com>
+Signed-off-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/selinux/hooks.c          | 20 ++++++++++++++++++--
- security/selinux/include/objsec.h |  5 ++++-
- 2 files changed, 22 insertions(+), 3 deletions(-)
+ net/rds/ib_send.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 6b0b250..89c986e 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -218,6 +218,14 @@ static int inode_alloc_security(struct inode *inode)
- 	return 0;
- }
+diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
+index e590949..37be6e2 100644
+--- a/net/rds/ib_send.c
++++ b/net/rds/ib_send.c
+@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
+ 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
+ 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
+ 		scat = &rm->data.op_sg[sg];
+-		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
+-		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
+-		return ret;
++		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
++		return sizeof(struct rds_header) + ret;
+ 	}
  
-+static void inode_free_rcu(struct rcu_head *head)
-+{
-+	struct inode_security_struct *isec;
-+
-+	isec = container_of(head, struct inode_security_struct, rcu);
-+	kmem_cache_free(sel_inode_cache, isec);
-+}
-+
- static void inode_free_security(struct inode *inode)
- {
- 	struct inode_security_struct *isec = inode->i_security;
-@@ -228,8 +236,16 @@ static void inode_free_security(struct inode *inode)
- 		list_del_init(&isec->list);
- 	spin_unlock(&sbsec->isec_lock);
- 
--	inode->i_security = NULL;
--	kmem_cache_free(sel_inode_cache, isec);
-+	/*
-+	 * The inode may still be referenced in a path walk and
-+	 * a call to selinux_inode_permission() can be made
-+	 * after inode_free_security() is called. Ideally, the VFS
-+	 * wouldn't do this, but fixing that is a much harder
-+	 * job. For now, simply free the i_security via RCU, and
-+	 * leave the current inode->i_security pointer intact.
-+	 * The inode will be freed after the RCU grace period too.
-+	 */
-+	call_rcu(&isec->rcu, inode_free_rcu);
- }
- 
- static int file_alloc_security(struct file *file)
-diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
-index aa47bca..6fd9dd2 100644
---- a/security/selinux/include/objsec.h
-+++ b/security/selinux/include/objsec.h
-@@ -38,7 +38,10 @@ struct task_security_struct {
- 
- struct inode_security_struct {
- 	struct inode *inode;	/* back pointer to inode object */
--	struct list_head list;	/* list of inode_security_struct */
-+	union {
-+		struct list_head list;	/* list of inode_security_struct */
-+		struct rcu_head rcu;	/* for freeing the inode_security_struct */
-+	};
- 	u32 task_sid;		/* SID of creating task */
- 	u32 sid;		/* SID of this object */
- 	u16 sclass;		/* security class of this object */
+ 	/* FIXME we may overallocate here */
 -- 
 1.8.3.2
 
