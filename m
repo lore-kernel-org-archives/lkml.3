@@ -1,197 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752271AbaAOPLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:11:20 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:19180 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaAOPLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:11:16 -0500
-Message-ID: <52D6A4FB.7060305@hp.com>
-Date: Wed, 15 Jan 2014 10:10:51 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1752309AbaAOPMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:12:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51044 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499AbaAOPMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:12:19 -0500
+Date: Wed, 15 Jan 2014 16:12:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Victor Porton <porton@narod.ru>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: Notifying on empty cgroup
+Message-ID: <20140115151218.GO8782@dhcp22.suse.cz>
+References: <135711389759165@web22h.yandex.ru>
+ <20140115135930.GK8782@dhcp22.suse.cz>
+ <409331389795100@web18j.yandex.ru>
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        aswin@hp.com, scott.norton@hp.com
-Subject: Re: [RFC 2/3] mutex: Modify the way optimistic spinners are queued
-References: <1389745990-7069-1-git-send-email-jason.low2@hp.com> <1389745990-7069-3-git-send-email-jason.low2@hp.com>
-In-Reply-To: <1389745990-7069-3-git-send-email-jason.low2@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <409331389795100@web18j.yandex.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2014 07:33 PM, Jason Low wrote:
-> This patch is needed for patch 3, but should also be beneficial in general.
->
-> The mutex->spin_mlock was introduced in order to ensure that only 1 thread
-> loops on lock->owner field at a time to reduce cache line contention. When
-> lock->owner is NULL and the lock->count is still not 1, the spinner(s) will
-> continually release and obtain the lock->spin_mlock. This can generate
-> quite a bit of overhead/contention, and also might just delay the spinner
-> from getting the lock.
->
-> This patch modifies the way optimistic spinners are queued by queuing before
-> entering the optimistic spinning loop as oppose to acquiring before every
-> call to mutex_spin_on_owner(). So in situations where the spinner requires
-> extra spins before obtaining the lock, then there will only be 1 spinner
-> trying to get the lock and it will avoid the overhead from unnecessarily
-> unlocking and locking the spin_mlock.
->
-> Signed-off-by: Jason Low<jason.low2@hp.com>
-> ---
->   kernel/locking/mutex.c |   13 ++++++++-----
->   1 files changed, 8 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index 85c6be1..b500cc7 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -419,6 +419,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->   	struct mutex_waiter waiter;
->   	unsigned long flags;
->   	int ret;
-> +	struct mspin_node node;
->
->   	preempt_disable();
->   	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
-> @@ -449,9 +450,9 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->   	if (!mutex_can_spin_on_owner(lock))
->   		goto slowpath;
->
-> +	mspin_lock(MLOCK(lock),&node);
->   	for (;;) {
->   		struct task_struct *owner;
-> -		struct mspin_node  node;
->
->   		if (use_ww_ctx&&  ww_ctx->acquired>  0) {
->   			struct ww_mutex *ww;
-> @@ -465,15 +466,16 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->   			 * As such, when deadlock detection needs to be
->   			 * performed the optimistic spinning cannot be done.
->   			 */
-> -			if (ACCESS_ONCE(ww->ctx))
-> +			if (ACCESS_ONCE(ww->ctx)) {
-> +				mspin_unlock(MLOCK(lock),&node);
->   				goto slowpath;
-> +			}
->   		}
->
->   		/*
->   		 * If there's an owner, wait for it to either
->   		 * release the lock or go to sleep.
->   		 */
-> -		mspin_lock(MLOCK(lock),&node);
->   		owner = ACCESS_ONCE(lock->owner);
->   		if (owner&&  !mutex_spin_on_owner(lock, owner)) {
->   			mspin_unlock(MLOCK(lock),&node);
-> @@ -495,7 +497,6 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->   			preempt_enable();
->   			return 0;
->   		}
-> -		mspin_unlock(MLOCK(lock),&node);
->
->   		/*
->   		 * When there's no owner, we might have preempted between the
-> @@ -503,8 +504,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->   		 * we're an RT task that will live-lock because we won't let
->   		 * the owner complete.
->   		 */
-> -		if (!owner&&  (need_resched() || rt_task(task)))
-> +		if (!owner&&  (need_resched() || rt_task(task))) {
-> +			mspin_unlock(MLOCK(lock),&node);
->   			goto slowpath;
-> +		}
->
->   		/*
->   		 * The cpu_relax() call is a compiler barrier which forces
+On Wed 15-01-14 16:11:40, Victor Porton wrote:
+> 15.01.2014, 15:59, "Michal Hocko" <mhocko@suse.cz>:
+> > [CCing cgroups mailing list]
+> > On Wed 15-01-14 06:12:45, Victor Porton wrote:
+> >
+> >>  I want to write software which needs to receive a signal when the cgroup
+> >>  created by it becomes empty. (After this the empty cgroup should be deleted
+> >>  just not to clutter the memory.)
+> >>
+> >>  If the kernel does not support such notifications, it should be improved.
+> >>  This functionality is crucial for some kinds of software.
+> >>
+> >>  There is /sys/fs/cgroup/systemd/release_agent but I don't understand how to
+> >>  use it. I don't understand why we would need it at all.
+> >
+> > "1.4 What does notify_on_release do ?" in
+> > Documentation/cgroups/cgroups.txt the kernel source doesn't help?
+> 
+> I've read it. I understand what it does. I don't understand how to use
+> it in practice nor
 
-Maybe you can consider restructure the code as follows to reduce the 
-number of mspin_unlock() call sites:
-diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 4dd6e4c..0a78a0c 100644
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -416,6 +416,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned
-         struct mutex_waiter waiter;
-         unsigned long flags;
-         int ret;
-+       struct mspin_node  node;
+You want to clean up your memcg without any tasks so the script might do
+something like:
+---
+#!/bin/sh
 
-         preempt_disable();
-         mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
-@@ -446,9 +447,9 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned
-         if (!mutex_can_spin_on_owner(lock))
-                 goto slowpath;
+CGROUP="$1"
+CGROUP_MNT=`mount | grep cgroup | awk '{print $3}'`
 
-+       mspin_lock(MLOCK(lock), &node);
-         for (;;) {
-                 struct task_struct *owner;
--               struct mspin_node  node;
+rmdir "$CGROUP_MNT/$CGROUP"
+---
 
-                 if (use_ww_ctx && ww_ctx->acquired > 0) {
-                         struct ww_mutex *ww;
-@@ -463,19 +464,16 @@ __mutex_lock_common(struct mutex *lock, long 
-state, unsign
-                          * performed the optimistic spinning cannot be 
-done.
-                          */
-                         if (ACCESS_ONCE(ww->ctx))
--                               goto slowpath;
-+                               break;
-                 }
+> why it is done this way.
 
-                 /*
-                  * If there's an owner, wait for it to either
-                  * release the lock or go to sleep.
-                  */
--               mspin_lock(MLOCK(lock), &node);
-                 owner = ACCESS_ONCE(lock->owner);
--               if (owner && !mutex_spin_on_owner(lock, owner)) {
--                       mspin_unlock(MLOCK(lock), &node);
--                       goto slowpath;
--               }
-+               if (owner && !mutex_spin_on_owner(lock, owner))
-+                       break;
+I find the interface rather awkward as well but that is a question for
+those who have implement it.
 
-                 if ((atomic_read(&lock->count) == 1) &&
-                     (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
-@@ -492,7 +490,6 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned
-                         preempt_enable();
-                         return 0;
-                 }
--               mspin_unlock(MLOCK(lock), &node);
+The interface will change in the future (sorry I do not have any link to
+discussion about the change handy).
 
-                 /*
-                  * When there's no owner, we might have preempted 
-between the
-@@ -501,7 +498,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned
-                  * the owner complete.
-                  */
-                 if (!owner && (need_resched() || rt_task(task)))
--                       goto slowpath;
-+                       break;
+> >>  Starting a binary on emptying a cgroup with the purpose to notify an other
+> >>  binary looks like a big overkill.
+> >
+> > the binary can do rmdir which is what you want, no?
+> 
+> I suppose a base package should do that, not my specific software. Do
+> I understand right?
 
-                 /*
-                  * The cpu_relax() call is a compiler barrier which forces
-@@ -511,6 +508,7 @@ __mutex_lock_common(struct mutex *lock, long state, 
-unsigned
-                  */
-                 arch_mutex_cpu_relax();
-         }
-+       mspin_unlock(MLOCK(lock), &node);
-  slowpath:
-  #endif
-         spin_lock_mutex(&lock->wait_lock, flags);
+Yes. The notifier works on the root of the cgroup hierarchy so it is a
+matter of the admin to set it.
+ 
+> >>  Also my program should work in userspace without the need to use
+> >>  release_agent which can be accessed only by root.
+> >
+> > The release_agent is global for all groups so the program doesn't have
+> > to care.
+> 
+> Again: What MY program should do?
 
+Nothing. (assuming the only thing you are interested in is removing the
+empty group).
 
+[...]
+-- 
+Michal Hocko
+SUSE Labs
