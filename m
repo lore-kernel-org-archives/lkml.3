@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaAOMY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 07:24:59 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:37553 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362AbaAOMY5 (ORCPT
+	id S1752011AbaAOMZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 07:25:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47034 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaAOMZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 07:24:57 -0500
-Date: Wed, 15 Jan 2014 13:24:52 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, raistlin@linux.it,
-        juri.lelli@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
-Message-ID: <20140115122452.GA18311@gmail.com>
-References: <52D64676.4040000@linaro.org>
- <20140115120418.GD31570@twins.programming.kicks-ass.net>
+	Wed, 15 Jan 2014 07:25:41 -0500
+Date: Wed, 15 Jan 2014 04:25:23 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-d139336700a5f3a560da235e4dfcd286773025d4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1389786735-16751-1-git-send-email-bp@alien8.de>
+References: <1389786735-16751-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86, cpu, amd:
+  Fix a shadowed variable situation
+Git-Commit-ID: d139336700a5f3a560da235e4dfcd286773025d4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140115120418.GD31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 15 Jan 2014 04:25:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  d139336700a5f3a560da235e4dfcd286773025d4
+Gitweb:     http://git.kernel.org/tip/d139336700a5f3a560da235e4dfcd286773025d4
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Wed, 15 Jan 2014 12:52:15 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 15 Jan 2014 04:21:45 -0800
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+x86, cpu, amd: Fix a shadowed variable situation
 
-> On Wed, Jan 15, 2014 at 09:27:34AM +0100, Daniel Lezcano wrote:
-> > 
-> > Hi all,
-> > 
-> > I use the tip/sched/core branch.
-> > 
-> > After git pulling yesterday, my host is unresponsive after booting the OS.
-> > 
-> >  * It boots normally
-> >  * It sends info to the console
-> >  * The graphics does not work
-> >  * The terminals show the prompt, I can enter the username but after
-> > pressing enter, it does not give the password prompt
-> >  * sysrq works more or less, I can't get the process stack but it receives
-> > the command
-> > 
-> > It is like no new process can be created.
-> > 
-> > I have a dual Xeon processor E5325 (2 x 4 cores).
-> > 
-> > After git bisecting, the following patch seems to introduce the bug.
-> > 
-> > commit d50dde5a10f305253cbc3855307f608f8a3c5f73
-> 
-> OK, so my headless WSM-EP boots just fine. Obviously it cannot confirm
-> if graphics works, but I can ssh in and work on it without bother.
-> 
-> I can even log in on the serial console without problems.
-> 
-> I tried both tip/master and tip/sched/core.
+Having u32 and struct cpuinfo_x86 * by the same name is not very smart,
+although it was ok in this case due to the limited scope of u32 c and it
+being used only once in there.
 
-I too booted various sytems and have yet to notice similar oddity.
+Fix this.
 
-Thanks,
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1389786735-16751-1-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/amd.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-	Ingo
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 39bc78d..e5647ab 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -789,14 +789,10 @@ static void cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
+ 	}
+ 
+ 	/* Handle DTLB 2M and 4M sizes, fall back to L1 if L2 is disabled */
+-	if (!((eax >> 16) & mask)) {
+-		u32 a, b, c, d;
+-
+-		cpuid(0x80000005, &a, &b, &c, &d);
+-		tlb_lld_2m[ENTRIES] = (a >> 16) & 0xff;
+-	} else {
++	if (!((eax >> 16) & mask))
++		tlb_lld_2m[ENTRIES] = (cpuid_eax(0x80000005) >> 16) & 0xff;
++	else
+ 		tlb_lld_2m[ENTRIES] = (eax >> 16) & mask;
+-	}
+ 
+ 	/* a 4M entry uses two 2M entries */
+ 	tlb_lld_4m[ENTRIES] = tlb_lld_2m[ENTRIES] >> 1;
