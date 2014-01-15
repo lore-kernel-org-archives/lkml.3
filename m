@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaAOGpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 01:45:40 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:59838 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaAOGph (ORCPT
+	id S1751590AbaAOGqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 01:46:13 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:46805 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaAOGqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 01:45:37 -0500
+	Wed, 15 Jan 2014 01:46:10 -0500
+Message-ID: <52D62E96.6030301@linaro.org>
+Date: Wed, 15 Jan 2014 14:45:42 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <52D019BD.30401@samsung.com>
-References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
- <1389354321-32096-1-git-send-email-ch.naveen@samsung.com> <52D019BD.30401@samsung.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Wed, 15 Jan 2014 12:15:16 +0530
-Message-ID: <CAHfPSqAtm-Nk1BeC3sWmtUi0dvyfweXSXYnYiQMFzzdWYiDhAg@mail.gmail.com>
-Subject: Re: [PATCH 7/8 v3] crypto:s5p-sss: validate iv before memcpy
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-crypto@vger.kernel.org,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
-        cpgs@samsung.com, tomasz.figa@gmail.com
+To: Michael wang <wangyun@linux.vnet.ibm.com>, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, daniel.lezcano@linaro.org,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org> <52D61DA0.8050206@linux.vnet.ibm.com>
+In-Reply-To: <52D61DA0.8050206@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomasz,
+On 01/15/2014 01:33 PM, Michael wang wrote:
+> On 01/15/2014 12:07 PM, Alex Shi wrote:
+>> > Currently we just try to find least load cpu. If some cpus idled,
+>> > we just pick the first cpu in cpu mask.
+>> > 
+>> > In fact we can get the interrupted idle cpu or the latest idled cpu,
+>> > then we may get the benefit from both latency and power.
+>> > The selected cpu maybe not the best, since other cpu may be interrupted
+>> > during our selecting. But be captious costs too much.
+> So the idea here is we want to choose the latest idle cpu if we have
+> multiple idle cpu for choosing, correct?
 
-On 10 January 2014 21:33, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Naveen,
->
->
-> On 10.01.2014 12:45, Naveen Krishna Chatradhi wrote:
->>
->> This patch adds code to validate "iv" buffer before trying to
->> memcpy the contents
->>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> ---
->> Changes since v2:
->> None
->>
->>   drivers/crypto/s5p-sss.c |    5 +++--
->>   1 file changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
->> index f274f5f..7058bb6 100644
->> --- a/drivers/crypto/s5p-sss.c
->> +++ b/drivers/crypto/s5p-sss.c
->> @@ -381,8 +381,9 @@ static void s5p_set_aes(struct s5p_aes_dev *dev,
->>         struct samsung_aes_variant *var = dev->variant;
->>         void __iomem *keystart;
->>
->> -       memcpy(dev->ioaddr + SSS_REG_AES_IV_DATA
->> -                               (var->aes_offset, 0), iv, 0x10);
->> +       if (iv)
->> +               memcpy(dev->ioaddr + SSS_REG_AES_IV_DATA
->> +                                       (var->aes_offset, 0), iv, 0x10);
->
->
-> In what conditions can the iv end up being NULL?
-req->info is the initialization vector in our case, which comes from user space.
-Its good to have a check to avoid any crashes.
+yes.
+> 
+> And I guess that was in order to avoid choosing tickless cpu while there
+> are un-tickless idle one, is that right?
 
-Also AES ECB mode does not use IV.
->
-> Best regards,
-> Tomasz
+no, current logical choice least load cpu no matter if it is idle.
+> 
+> What confused me is, what about those cpu who just going to recover from
+> tickless as you mentioned, which means latest idle doesn't mean the best
+> choice, or even could be the worst (if just two choice, and the longer
+> tickless one is just going to recover while the latest is going to
+> tickless).
 
+yes, to save your scenario, we need to know the next timer for idle cpu,
+but that is not enough, interrupt is totally unpredictable. So, I'd
+rather bear the coarse method now.
+> 
+> So what about just check 'ts->tick_stopped' and record one ticking idle
+> cpu? the cost could be lower than time comparison, we could reduce the
+> risk may be...(well, not so risky since the logical only works when
+> system is relaxing with several cpu idle)
 
+first, nohz full also stop tick. second, tick_stopped can not reflect
+the interrupt. when the idle cpu was interrupted, it's waken, then be a
+good candidate for task running.
 
 -- 
-Shine bright,
-(: Nav :)
+Thanks
+    Alex
