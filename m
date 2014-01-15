@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaAOU4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:56:54 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:12818 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750886AbaAOU4v (ORCPT
+	id S1752024AbaAOU5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:57:03 -0500
+Received: from mail-gg0-f180.google.com ([209.85.161.180]:56283 "EHLO
+	mail-gg0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751785AbaAOU47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:56:51 -0500
-Date: Wed, 15 Jan 2014 15:56:50 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH 1/1] timers: internal_add_timer() should update
- ->next_timer if ->active_timers == 0
-Message-ID: <20140115155650.51d11395@gandalf.local.home>
-In-Reply-To: <20140115173137.GB14473@redhat.com>
-References: <20140115051939.GA31164@linux.vnet.ibm.com>
-	<1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1389763248-31297-4-git-send-email-paulmck@linux.vnet.ibm.com>
-	<20140115172409.GD11499@redhat.com>
-	<20140115173117.GA14473@redhat.com>
-	<20140115173137.GB14473@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 15 Jan 2014 15:56:59 -0500
+Date: Wed, 15 Jan 2014 12:56:54 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: atomlin@redhat.com
+cc: linux-kernel@vger.kernel.org, mingo@kernel.org, oleg@redhat.com,
+        riel@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH v3 2/2] hung_task: Display every hung task warning
+In-Reply-To: <1389803231-16092-3-git-send-email-atomlin@redhat.com>
+Message-ID: <alpine.DEB.2.02.1401151252100.10727@chino.kir.corp.google.com>
+References: <1389803231-16092-1-git-send-email-atomlin@redhat.com> <1389803231-16092-3-git-send-email-atomlin@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 18:31:37 +0100
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Wed, 15 Jan 2014, atomlin@redhat.com wrote:
 
-> internal_add_timer(timer) updates base->next_timer only if
-> timer->expires < base->next_timer. This is correct, but it also
-> makes sense to do the same if we add the first non-deferrable
-> timer.
+> From: Aaron Tomlin <atomlin@redhat.com>
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> When khungtaskd detects hung tasks, it prints out
+> backtraces from a number of those tasks. Sometimes
+> the information on why things are stuck is hidden
+> in those backtraces. Limiting the number of
+> backtraces being printed out can result in the user
+> not seeing the information necessary to debug the
+> issue. This patch introduces an option to print an
+> unlimited number of backtraces when khungtaskd
+> detects hung tasks.
+> 
+> While ULONG_MAX is practically "inf", this patch
+> takes it one step further.  Note: The maximum is
+> now 2^31-1 (INT_MAX) which should hopefully be
+> sufficient.
+> 
 
-Makes sense.
+This rationale is someone cryptic, it seems what you're doing is allowing 
+the sysctl to be set to -1 that will never limit the number of warnings 
+and to do that you need a signed value so you converted ulong to int.
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
+> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 > ---
->  kernel/timer.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  include/linux/sched/sysctl.h | 2 +-
+>  kernel/hung_task.c           | 6 ++++--
+>  kernel/sysctl.c              | 5 +++--
+>  3 files changed, 8 insertions(+), 5 deletions(-)
 > 
-> diff --git a/kernel/timer.c b/kernel/timer.c
-> index 6582b82..9492d57 100644
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -388,9 +388,9 @@ static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
->  	 * Update base->active_timers and base->next_timer
->  	 */
->  	if (!tbase_get_deferrable(timer->base)) {
-> -		if (time_before(timer->expires, base->next_timer))
-> +		if (!base->active_timers++ ||
-> +		    time_before(timer->expires, base->next_timer))
->  			base->next_timer = timer->expires;
-> -		base->active_timers++;
->  	}
->  }
+> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+> index 41467f8..eb3c72d7 100644
+> --- a/include/linux/sched/sysctl.h
+> +++ b/include/linux/sched/sysctl.h
+> @@ -5,7 +5,7 @@
+>  extern int	     sysctl_hung_task_check_count;
+>  extern unsigned int  sysctl_hung_task_panic;
+>  extern unsigned long sysctl_hung_task_timeout_secs;
+> -extern unsigned long sysctl_hung_task_warnings;
+> +extern int sysctl_hung_task_warnings;
+>  extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+>  					 void __user *buffer,
+>  					 size_t *lenp, loff_t *ppos);
+> diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+> index 9328b80..0b9c169 100644
+> --- a/kernel/hung_task.c
+> +++ b/kernel/hung_task.c
+> @@ -37,7 +37,7 @@ int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
+>   */
+>  unsigned long __read_mostly sysctl_hung_task_timeout_secs = CONFIG_DEFAULT_HUNG_TASK_TIMEOUT;
 >  
+> -unsigned long __read_mostly sysctl_hung_task_warnings = 10;
+> +int __read_mostly sysctl_hung_task_warnings = 10;
+>  
+>  static int __read_mostly did_panic;
+>  
+> @@ -98,7 +98,9 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
+>  
+>  	if (!sysctl_hung_task_warnings)
+>  		return;
+> -	sysctl_hung_task_warnings--;
+> +
+> +	if (sysctl_hung_task_warnings > 0)
+> +		sysctl_hung_task_warnings--;
+>  
+>  	/*
+>  	 * Ok, the task did not get scheduled for more than 2 minutes,
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index dd531a6..b50cd13 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -985,9 +985,10 @@ static struct ctl_table kern_table[] = {
+>  	{
+>  		.procname	= "hung_task_warnings",
+>  		.data		= &sysctl_hung_task_warnings,
+> -		.maxlen		= sizeof(unsigned long),
+> +		.maxlen		= sizeof(int),
+>  		.mode		= 0644,
+> -		.proc_handler	= proc_doulongvec_minmax,
+> +		.proc_handler	= proc_dointvec_minmax,
+> +		.extra1		= &neg_one,
+>  	},
+>  #endif
+>  #ifdef CONFIG_COMPAT
 
+hung_task_warnings isn't documented in the source, so how is anybody 
+supposed to know that -1 is an acceptable value and what it's special case 
+allows?
