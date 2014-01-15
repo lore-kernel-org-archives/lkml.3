@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaAOPds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:33:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145AbaAOPdm (ORCPT
+	id S1752230AbaAOPfA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:35:00 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:60608 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789AbaAOPe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:33:42 -0500
-Date: Wed, 15 Jan 2014 16:33:20 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dario Faggioli <raistlin@linux.it>, Juri Lelli <juri.lelli@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@linux.intel.com
-Subject: [PATCH] sched: Fixup scheduler syscall LTP fails
-Message-ID: <20140115153320.GH31570@twins.programming.kicks-ass.net>
-References: <20140115124739.GB19419@localhost>
+	Wed, 15 Jan 2014 10:34:57 -0500
+Date: Wed, 15 Jan 2014 16:34:46 +0100
+From: Robert Richter <rric@kernel.org>
+To: poma <pomidorabelisima@gmail.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for
+ vector 0x400
+Message-ID: <20140115153446.GA5701@rric.localhost>
+References: <52CF6727.8050804@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115124739.GB19419@localhost>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <52CF6727.8050804@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: sched: Fixup scheduler syscall LTP fails
+On 10.01.14 04:21:11, poma wrote:
+> 
+> Robert, is there a patch for this case?
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1152484/comments/12
 
-Wu reported:
+I just sent a patch to lkml that fixes this:
 
-> ltp.sched_setparam02.1.TFAIL
-> ltp.sched_setparam02.2.TFAIL
-> ltp.sched_setparam02.3.TFAIL
-> ltp.sched_setparam03.1.TFAIL
+ https://lkml.kernel.org/r/1389797849-5565-1-git-send-email-rric.net@gmail.com
 
-There were 2 things wrong; firstly __setscheduler() failed on
-sched_setparam()'s policy = -1, fix that by reading from p->policy in
-that case.
+-Robert
 
-Secondly, getparam() (and getattr()) would still report !0
-sched_priority for !FIFO/RR tasks after having been such. So
-unconditionally set p->rt_priority.
-
-Fixes: d50dde5a10f3 ("sched: Add new scheduler syscalls to support an extended scheduling parameters ABI")
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/core.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0326c06953eb..50e99f2cf98b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3183,15 +3183,23 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
- {
- 	int policy = attr->sched_policy;
- 
-+	if (policy == -1) /* setparam */
-+		policy = p->policy;
-+
- 	p->policy = policy;
- 
- 	if (dl_policy(policy))
- 		__setparam_dl(p, attr);
--	else if (rt_policy(policy))
--		p->rt_priority = attr->sched_priority;
--	else
-+	else if (fair_policy(policy))
- 		p->static_prio = NICE_TO_PRIO(attr->sched_nice);
- 
-+	/*
-+	 * __sched_setscheduler() ensures attr->sched_priority == 0 when
-+	 * !rt_policy. Always setting this ensures that things like
-+	 * getparam()/getattr() don't report silly values for !rt tasks.
-+	 */
-+	p->rt_priority = attr->sched_priority;
-+
- 	p->normal_prio = normal_prio(p);
- 	p->prio = rt_mutex_getprio(p);
- 
+> 
+> 3.10.2 - 3.13.0-0.rc7:
+> ACPI: Low-level resume complete
+> PM: Restoring platform NVS memory
+> microcode: CPU0: new patch_level=0x010000c8
+> Enabling non-boot CPUs ...
+> x86: Booting SMP configuration:
+> smpboot: Booting Node 0 Processor 1 APIC 0x1
+> [Firmware Bug]: cpu 1, try to use APIC500 (LVT offset 0) for vector
+> 0x400, but the register is already in use for vector 0xf9 on another cpu
+> perf: IBS APIC setup failed on cpu #1
+> kvm: enabling virtualization on CPU1
+> process: Switch to broadcast mode on CPU1
+> microcode: CPU1: new patch_level=0x010000c8
+> CPU1 is up
+> smpboot: Booting Node 0 Processor 2 APIC 0x2
+> CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.13.0-0.rc7.git2.2.fc21.x86_64 #1
+> [Firmware Bug]: cpu 2, try to use APIC500 (LVT offset 0) for vector
+> 0x400, but the register is already in use for vector 0xf9 on another cpu
+> perf: IBS APIC setup failed on cpu #2
+> kvm: enabling virtualization on CPU2
+> process: Switch to broadcast mode on CPU2
+> microcode: CPU2: new patch_level=0x010000c8
+> CPU2 is up
+> smpboot: Booting Node 0 Processor 3 APIC 0x3
+> [Firmware Bug]: cpu 3, try to use APIC500 (LVT offset 0) for vector
+> 0x400, but the register is already in use for vector 0xf9 on another cpu
+> perf: IBS APIC setup failed on cpu #3
+> kvm: enabling virtualization on CPU3
+> process: Switch to broadcast mode on CPU3
+> microcode: CPU3: new patch_level=0x010000c8
+> CPU3 is up
+> ACPI: Waking up from system sleep state S3
+> 
+> 
+> poma
+> 
