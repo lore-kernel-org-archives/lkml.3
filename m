@@ -1,171 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaAOBLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:11:45 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58308 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaAOBK3 (ORCPT
+	id S1752191AbaAOBMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:12:12 -0500
+Received: from denmail01-v4020.amcc.com ([192.195.68.30]:58524 "EHLO
+	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751664AbaAOBMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:10:29 -0500
-X-AuditID: 9c93017e-b7b63ae000000e6a-e6-52d5e002d441
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 2/4] zram: introduce zram->tb_lock
-Date: Wed, 15 Jan 2014 10:11:08 +0900
-Message-Id: <1389748270-15618-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389748270-15618-1-git-send-email-minchan@kernel.org>
-References: <1389748270-15618-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 14 Jan 2014 20:12:09 -0500
+From: Feng Kan <fkan@apm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V3 3/3] power: reset: use syscon driver to parse reboot register from scu
+Date: Tue, 14 Jan 2014 17:07:35 -0800
+Message-Id: <1389748055-23534-4-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.7.6.1
+In-Reply-To: <1389748055-23534-1-git-send-email-fkan@apm.com>
+References: <1389748055-23534-1-git-send-email-fkan@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, table is protected by zram->lock but it's rather
-coarse-grained lock and it makes hard for scalibility.
+Use the syscon driver to parse out the reboot register map and issue
+reboot via the regmap function.
 
-Let's use own rwlock instead of depending on zram->lock.
-This patch adds new locking so obviously, it would make slow
-but this patch is just prepartion for removing coarse-grained
-rw_semaphore(ie, zram->lock) which is hurdle about zram
-scalability.
-
-Final patch in this patchset series will remove the lock
-from read-path and change rw_semaphore with mutex in write path.
-With bonus, we could drop pending slot free mess in next patch.
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Feng Kan <fkan@apm.com>
 ---
- drivers/staging/zram/zram_drv.c | 26 +++++++++++++++++++++-----
- drivers/staging/zram/zram_drv.h |  3 ++-
- 2 files changed, 23 insertions(+), 6 deletions(-)
+ drivers/power/reset/xgene-reboot.c |   75 +++++++++---------------------------
+ 1 files changed, 19 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 6613225dfca1..8636f8511518 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -140,6 +140,7 @@ static ssize_t mem_used_total_show(struct device *dev,
- 	return sprintf(buf, "%llu\n", val);
- }
+diff --git a/drivers/power/reset/xgene-reboot.c b/drivers/power/reset/xgene-reboot.c
+index ecd55f8..660ed8a 100644
+--- a/drivers/power/reset/xgene-reboot.c
++++ b/drivers/power/reset/xgene-reboot.c
+@@ -24,80 +24,43 @@
+  * For system shutdown, this is board specify. If a board designer
+  * implements GPIO shutdown, use the gpio-poweroff.c driver.
+  */
+-#include <linux/io.h>
+ #include <linux/of_device.h>
+ #include <linux/of_address.h>
+ #include <linux/platform_device.h>
+-#include <linux/stat.h>
+-#include <linux/slab.h>
++#include <linux/mfd/syscon.h>
++#include <linux/regmap.h>
++#include <linux/reboot.h>
+ #include <asm/system_misc.h>
  
-+/* flag operations needs meta->tb_lock */
- static int zram_test_flag(struct zram_meta *meta, u32 index,
- 			enum zram_pageflags flag)
+-struct xgene_reboot_context {
+-	struct platform_device *pdev;
+-	void *csr;
+-	u32 mask;
+-};
++#define SCU_SRST	0x14
+ 
+-static struct xgene_reboot_context *xgene_restart_ctx;
+-
+-static void xgene_restart(char str, const char *cmd)
++static void xgene_restart(enum reboot_mode reboot_mode, const char *cmd)
  {
-@@ -227,6 +228,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
- 		goto free_table;
- 	}
- 
-+	rwlock_init(&meta->tb_lock);
- 	return meta;
- 
- free_table:
-@@ -279,6 +281,7 @@ static void handle_zero_page(struct bio_vec *bvec)
- 	flush_dcache_page(page);
- }
- 
-+/* NOTE: caller should hold meta->tb_lock with write-side */
- static void zram_free_page(struct zram *zram, size_t index)
- {
- 	struct zram_meta *meta = zram->meta;
-@@ -318,20 +321,26 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 	size_t clen = PAGE_SIZE;
- 	unsigned char *cmem;
- 	struct zram_meta *meta = zram->meta;
--	unsigned long handle = meta->table[index].handle;
-+	unsigned long handle;
-+	u16 size;
+-	struct xgene_reboot_context *ctx = xgene_restart_ctx;
+ 	unsigned long timeout;
++	struct regmap *map;
++	unsigned int ret;
++	struct device_node *dn;
 +
-+	read_lock(&meta->tb_lock);
-+	handle = meta->table[index].handle;
-+	size = meta->table[index].size;
++	dn = of_find_node_by_name(NULL, "reboot");
++	map = syscon_regmap_lookup_by_phandle(dn, "apm,scu");
++	if (IS_ERR(map)) {
++		ret = PTR_ERR(map);
++		pr_err("Reboot driver failed to get scu regmap: %d\n", ret);
++		return;
++	}
  
- 	if (!handle || zram_test_flag(meta, index, ZRAM_ZERO)) {
-+		read_unlock(&meta->tb_lock);
- 		clear_page(mem);
- 		return 0;
- 	}
+-	/* Issue the reboot */
+-	if (ctx)
+-		writel(ctx->mask, ctx->csr);
++	regmap_write(map, SCU_SRST, 0x1);
  
- 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
--	if (meta->table[index].size == PAGE_SIZE)
-+	if (size == PAGE_SIZE)
- 		copy_page(mem, cmem);
- 	else
--		ret = lzo1x_decompress_safe(cmem, meta->table[index].size,
--						mem, &clen);
-+		ret = lzo1x_decompress_safe(cmem, size,	mem, &clen);
- 	zs_unmap_object(meta->mem_pool, handle);
-+	read_unlock(&meta->tb_lock);
+ 	timeout = jiffies + HZ;
+ 	while (time_before(jiffies, timeout))
+ 		cpu_relax();
  
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
-@@ -352,11 +361,14 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 	struct zram_meta *meta = zram->meta;
- 	page = bvec->bv_page;
+-	dev_emerg(&ctx->pdev->dev, "Unable to restart system\n");
++	pr_emerg("Unable to restart system\n");
+ }
  
-+	read_lock(&meta->tb_lock);
- 	if (unlikely(!meta->table[index].handle) ||
- 			zram_test_flag(meta, index, ZRAM_ZERO)) {
-+		read_unlock(&meta->tb_lock);
- 		handle_zero_page(bvec);
- 		return 0;
- 	}
-+	read_unlock(&meta->tb_lock);
- 
- 	if (is_partial_io(bvec))
- 		/* Use  a temporary buffer to decompress the page */
-@@ -432,10 +444,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	if (page_zero_filled(uncmem)) {
- 		kunmap_atomic(user_mem);
- 		/* Free memory associated with this sector now. */
-+		write_lock(&zram->meta->tb_lock);
- 		zram_free_page(zram, index);
-+		zram_set_flag(meta, index, ZRAM_ZERO);
-+		write_unlock(&zram->meta->tb_lock);
- 
- 		atomic_inc(&zram->stats.pages_zero);
--		zram_set_flag(meta, index, ZRAM_ZERO);
- 		ret = 0;
- 		goto out;
- 	}
-@@ -485,10 +499,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	 * Free memory associated with this sector
- 	 * before overwriting unused sectors.
- 	 */
-+	write_lock(&zram->meta->tb_lock);
- 	zram_free_page(zram, index);
- 
- 	meta->table[index].handle = handle;
- 	meta->table[index].size = clen;
-+	write_unlock(&zram->meta->tb_lock);
- 
- 	/* Update stats */
- 	atomic64_add(clen, &zram->stats.compr_size);
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 459483966c3d..cf64bea3f7cc 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -84,6 +84,7 @@ struct zram_stats {
- };
- 
- struct zram_meta {
-+	rwlock_t tb_lock;	/* protect table */
- 	void *compress_workmem;
- 	void *compress_buffer;
- 	struct table *table;
-@@ -97,7 +98,7 @@ struct zram_slot_free {
- 
- struct zram {
- 	struct zram_meta *meta;
--	struct rw_semaphore lock; /* protect compression buffers, table,
-+	struct rw_semaphore lock; /* protect compression buffers,
- 				   * reads and writes
- 				   */
- 
+-static int xgene_reboot_probe(struct platform_device *pdev)
++static int __init xgene_reboot_init(void)
+ {
+-	struct xgene_reboot_context *ctx;
+-
+-	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+-	if (!ctx) {
+-		dev_err(&pdev->dev, "out of memory for context\n");
+-		return -ENODEV;
+-	}
+-
+-	ctx->csr = of_iomap(pdev->dev.of_node, 0);
+-	if (!ctx->csr) {
+-		devm_kfree(&pdev->dev, ctx);
+-		dev_err(&pdev->dev, "can not map resource\n");
+-		return -ENODEV;
+-	}
+-
+-	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
+-		ctx->mask = 0xFFFFFFFF;
+-
+-	ctx->pdev = pdev;
+ 	arm_pm_restart = xgene_restart;
+-	xgene_restart_ctx = ctx;
+-
+ 	return 0;
+ }
+-
+-static struct of_device_id xgene_reboot_of_match[] = {
+-	{ .compatible = "apm,xgene-reboot" },
+-	{}
+-};
+-
+-static struct platform_driver xgene_reboot_driver = {
+-	.probe = xgene_reboot_probe,
+-	.driver = {
+-		.name = "xgene-reboot",
+-		.of_match_table = xgene_reboot_of_match,
+-	},
+-};
+-
+-static int __init xgene_reboot_init(void)
+-{
+-	return platform_driver_register(&xgene_reboot_driver);
+-}
+ device_initcall(xgene_reboot_init);
 -- 
-1.8.5.2
+1.7.6.1
 
