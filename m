@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371AbaAOWkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:40:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40714 "EHLO
+	id S1755343AbaAOWkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:40:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40723 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaAOVxY (ORCPT
+	with ESMTP id S1752828AbaAOVxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:53:24 -0500
+	Wed, 15 Jan 2014 16:53:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Antti Palosaari <crope@iki.fi>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 012/166] [media] af9035: add [0413:6a05] Leadtek WinFast DTV Dongle Dual
-Date: Wed, 15 Jan 2014 13:50:26 -0800
-Message-Id: <1389822780-4729-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 013/166] [media] saa7164: fix return value check in saa7164_initdev()
+Date: Wed, 15 Jan 2014 13:50:27 -0800
+Message-Id: <1389822780-4729-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,34 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 0c413d10515feae02cee967b31bb8afea8aa0d29 upstream.
+commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
 
-It is IT9135 dual design.
-Thanks to Michael Piko for reporting that!
+In case of error, the function kthread_run() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
-Reported-by: Michael Piko <michael@piko.com.au>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/pci/saa7164/saa7164-core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/dvb-usb-v2/af9035.c b/drivers/media/usb/dvb-usb-v2/af9035.c
-index cbe1373..3b41d7c 100644
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -1175,6 +1175,8 @@ static const struct usb_device_id af9035_id_table[] = {
- 	/* XXX: that same ID [0ccd:0099] is used by af9015 driver too */
- 	{ DVB_USB_DEVICE(USB_VID_TERRATEC, 0x0099,
- 		&af9035_props, "TerraTec Cinergy T Stick Dual RC (rev. 2)", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_LEADTEK, 0x6a05,
-+		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, af9035_id_table);
+diff --git a/drivers/media/pci/saa7164/saa7164-core.c b/drivers/media/pci/saa7164/saa7164-core.c
+index 63502e7..bb394e0 100644
+--- a/drivers/media/pci/saa7164/saa7164-core.c
++++ b/drivers/media/pci/saa7164/saa7164-core.c
+@@ -1348,9 +1348,11 @@ static int saa7164_initdev(struct pci_dev *pci_dev,
+ 		if (fw_debug) {
+ 			dev->kthread = kthread_run(saa7164_thread_function, dev,
+ 				"saa7164 debug");
+-			if (!dev->kthread)
++			if (IS_ERR(dev->kthread)) {
++				dev->kthread = NULL;
+ 				printk(KERN_ERR "%s() Failed to create "
+ 					"debug kernel thread\n", __func__);
++			}
+ 		}
+ 
+ 	} /* != BOARD_UNKNOWN */
 -- 
 1.8.3.2
 
