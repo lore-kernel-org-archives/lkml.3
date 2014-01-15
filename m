@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaAOEOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:14:10 -0500
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:42953
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750751AbaAOEOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:14:06 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <arnd@arndb.de>, <gregkh@linuxfoundation.org>, <p.zabel@pengutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] misc: sram: cleanup the code
-Date: Wed, 15 Jan 2014 11:16:35 +0800
-Message-ID: <1389755795-17584-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	id S1751395AbaAOEUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:20:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:54144 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751AbaAOEUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 23:20:49 -0500
+Date: Wed, 15 Jan 2014 15:20:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Joerg Roedel <joro@8bytes.org>, Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>
+Subject: linux-next: manual merge of the iommu tree with the drm tree
+Message-Id: <20140115152041.2e80fe852696fd9cbaa6d21d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__15_Jan_2014_15_20_41_+1100_Aql5=/hIikivimkT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the devm_gen_pool_create() is used, so the gen_pool_destroy()
-here is redundant.
+--Signature=_Wed__15_Jan_2014_15_20_41_+1100_Aql5=/hIikivimkT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/misc/sram.c | 2 --
- 1 file changed, 2 deletions(-)
+Hi Joerg,
 
-diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
-index afe66571..e3e421d 100644
---- a/drivers/misc/sram.c
-+++ b/drivers/misc/sram.c
-@@ -87,8 +87,6 @@ static int sram_remove(struct platform_device *pdev)
- 	if (gen_pool_avail(sram->pool) < gen_pool_size(sram->pool))
- 		dev_dbg(&pdev->dev, "removed while SRAM allocated\n");
- 
--	gen_pool_destroy(sram->pool);
--
- 	if (sram->clk)
- 		clk_disable_unprepare(sram->clk);
- 
--- 
-1.8.4
+Today's linux-next merge of the iommu tree got a conflict in
+drivers/gpu/drm/msm/Kconfig between commit 3083894f7f29 ("drm/msm:
+COMPILE_TEST support") from the drm tree and commit 4c071c7b851b
+("drm/msm: Fix link error with !MSM_IOMMU") from the iommu tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/msm/Kconfig
+index bb103fb4519e,d3de8e1ae915..000000000000
+--- a/drivers/gpu/drm/msm/Kconfig
++++ b/drivers/gpu/drm/msm/Kconfig
+@@@ -2,7 -2,9 +2,8 @@@
+  config DRM_MSM
+  	tristate "MSM DRM"
+  	depends on DRM
+ -	depends on ARCH_MSM
+ -	depends on ARCH_MSM8960
+ +	depends on (ARCH_MSM && ARCH_MSM8960) || (ARM && COMPILE_TEST)
++ 	depends on MSM_IOMMU
+  	select DRM_KMS_HELPER
+  	select SHMEM
+  	select TMPFS
+
+--Signature=_Wed__15_Jan_2014_15_20_41_+1100_Aql5=/hIikivimkT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS1gyeAAoJEMDTa8Ir7ZwVixoP/j29Zrx47k59wIXonaoMy8Ub
+yraXnWk/nRXp3sHCp5Q3UvlDcun3zdyCMvm1ag16MTPpy+xVCxmgH+FawStZO2a0
+TGXVsfipjBtXfmsUtKEJpUKDInrT1XKdPXe8gjS9xy1aNFHuQM5SK8dyFfPdKKzi
+7w248cg3x1KR1LH275qHHv0sDYFXzNsd421TRap6H7tLzjWoBnG9j/5mcvorNl0v
+D8DNiqggpt+WmRl0OPjqygvoa6sl8UlT3DAmrLozMrVmvtpacr4KkFR2Ikt/Hjvj
+5gT0L97TG/fGVfZlxnRzNp6qOCBX+VWe2oLysf9CxoUKxc6Pm151lpr8W2fy7qYF
+7kqVsSZ5gSTZAODnlT7tL6PGtOGd1QWRviB/VWHSYLsY3adr+v0wtn0PUs9dBx1e
+3eG9r4p3JVQF2YGOO0N4x4TA30VdHb6lesSyZs0qugSnCsfY0nzab02h4QzCGWhQ
+dP2n1IqxaSra1j5xE+l26Cnhd46A2Qmlu2WWGFxFnog0WzefOKDy4g4h7YUC1RnP
+zwGG+f3PITLyFBh13gTExQOl9tOptnB4C1dkIKYGnejJYpG+GEbyBGmfGyDv9IOa
+dWJ777OVEhc2aZaJ80fK4muBy8x+NdsZWlL5ikkwoe2Km2/356DxFmIfPfaUAI+Q
+H2vS9JqSv9tcV4yBca/5
+=BBKT
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Jan_2014_15_20_41_+1100_Aql5=/hIikivimkT--
