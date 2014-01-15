@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaAOO11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:27:27 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:34718 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260AbaAOO1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:27:24 -0500
+	id S1752322AbaAOO1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:27:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35919 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752297AbaAOO1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:27:40 -0500
+Date: Wed, 15 Jan 2014 09:27:27 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Gaurav Jain <gjain@fb.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH] perf tools: Synthesize anon MMAP records on the heap
+Message-ID: <20140115142727.GJ25953@redhat.com>
+References: <20140113165441.GB25953@redhat.com>
+ <CEFB09CC.2CAAA%gjain@fb.com>
 MIME-Version: 1.0
-In-Reply-To: <1389711141-21090-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1389711077-20949-1-git-send-email-srinivas.kandagatla@st.com>
-	<1389711141-21090-1-git-send-email-srinivas.kandagatla@st.com>
-Date: Wed, 15 Jan 2014 15:27:24 +0100
-Message-ID: <CACRpkdbFGOm2xm5H+of_NuJ6DVmBDcEODZbDxVU8nGC-RU64Tw@mail.gmail.com>
-Subject: Re: [PATCH v1 3/5] pinctrl: st: Add software edge trigger interrupt support.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CEFB09CC.2CAAA%gjain@fb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 3:52 PM,  <srinivas.kandagatla@st.com> wrote:
+On Tue, Jan 14, 2014 at 08:48:23PM +0000, Gaurav Jain wrote:
+> On 1/13/14, 11:54 AM, "Don Zickus" <dzickus@redhat.com> wrote:
+> 
+> >On Sat, Jan 11, 2014 at 08:32:14PM -0800, Gaurav Jain wrote:
+> >> Anon records usually do not have the 'execname' entry. However if they
+> >>are on
+> >> the heap, the execname shows up as '[heap]'. The fix considers any
+> >>executable
+> >> entries in the map that do not have a name or are on the heap as anon
+> >>records
+> >> and sets the name to '//anon'.
+> >> 
+> >> This fixes JIT profiling for records on the heap.
+> >
+> >I guess I don't understand the need for this fix.  It seems breaking out
+> >//anon vs. [heap] would be useful.  Your patch is saying otherwise.  Can
+> >give a description of the problem you are trying to solve?
+> 
+> Thank you for looking at the patch.
+> 
+> We generate a perf map file which includes certain JIT¹ed functions that
+> show up as [heap] entries. As a result, I included the executable heap
+> entries as anon pages so that it would be handled in
+> util/map.c:map__new(). The alternative would be to handle heap entries in
+> map__new() directly, however I wasn¹t sure if this would break something
+> as it seems that heap and stack entries are expected to fail all
+> map__find_* functions. Thus I considered executable heap entries as
+> //anon, but perhaps there is a better way.
 
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> ST pin controller does not have hardware support for detecting edge
-> triggered interrupts, It only has level triggering support.
-> This patch attempts to fake up edge triggers from hw level trigger
-> support in software. With this facility now the gpios can be easily used
-> for keypads, otherwise it would be difficult for drivers like keypads to
-> work with level trigger interrupts.
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Thanks for the improved problem description.   I see it led to a better
+patch. :-)  That is why it is generally a good idea to describe the
+problem you are trying to solve to see if others have a better solution.
 
-Clever! Mostly I like the patch as it is but:
+Cheers,
+Don
 
->         for_each_set_bit(n, &port_active, BITS_PER_LONG) {
-> +               /* check if we are detecting fake edges ... */
-> +               pin_edge_cfg = ST_IRQ_EDGE_CONF(bank_edge_mask, n);
-> +
-> +               if (pin_edge_cfg) {
-> +                       /* edge detection. */
-> +                       val = st_gpio_get(&bank->gpio_chip, n);
-> +                       if (val)
-> +                               writel(BIT(n), bank->base + REG_PIO_SET_PCOMP);
-> +                       else
-> +                               writel(BIT(n), bank->base + REG_PIO_CLR_PCOMP);
-> +
-> +                       if (pin_edge_cfg != ST_IRQ_EDGE_BOTH &&
-> +                               !((pin_edge_cfg & ST_IRQ_EDGE_FALLING) ^ val))
-> +                                       continue;
-> +               }
-> +
-
-Please insert comments here to explain what you are actually doing
-because I sure as hell do not understand this code without comments
-describing the trick used.
-
-Yours,
-Linus Walleij
+> 
+> >Also style issue below..
+> >
+> >> 
+> >> Signed-off-by: Gaurav Jain <gjain@fb.com>
+> >> Cc: Ingo Molnar <mingo@kernel.org>
+> >> Cc: Jiri Olsa <jolsa@redhat.com>
+> >> Cc: Paul Mackerras <paulus@samba.org>
+> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> Cc: Don Zickus <dzickus@redhat.com>
+> >> Cc: Arun Sharma <asharma@fb.com>
+> >> ---
+> >>  tools/perf/util/event.c | 5 ++---
+> >>  1 file changed, 2 insertions(+), 3 deletions(-)
+> >> 
+> >> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> >> index bb788c1..ae9c55b 100644
+> >> --- a/tools/perf/util/event.c
+> >> +++ b/tools/perf/util/event.c
+> >> @@ -224,10 +224,9 @@ static int
+> >>perf_event__synthesize_mmap_events(struct perf_tool *tool,
+> >>  				continue;
+> >>  
+> >>  			event->header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+> >> -		}
+> >> -
+> >> -		if (!strcmp(execname, ""))
+> >> +		} if (!strcmp(execname, "") || !strcmp(execname, "[heap]")) {
+> >
+> >The '} if' part should seperate the 'if' on to its own line (unless you
+> >meant an 'else' in there).
+> 
+> Bah yes, I intended 'else if'. I apologize for that. Does the fact that I
+> filtered anon entries to only those marked as executable break the
+> existing behavior?
+> 
+> Thanks,
+> 
+> Gaurav
+> 
