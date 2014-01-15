@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086AbaAONwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:52:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22252 "EHLO mx1.redhat.com"
+	id S1752059AbaAONwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:52:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61805 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752011AbaAONwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751664AbaAONwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 08:52:19 -0500
-From: Mateusz Guzik <mguzik@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gabriellla Schmidt <gsc@bruker.de>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] ipc: fix compat msgrcv with negative msgtyp
-Date: Wed, 15 Jan 2014 14:52:12 +0100
-Message-Id: <1389793932-7549-1-git-send-email-mguzik@redhat.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,663,1384329600"; 
+   d="scan'208";a="439224207"
+Message-ID: <52D69291.8080003@linux.intel.com>
+Date: Wed, 15 Jan 2014 05:52:17 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@suse.de>, Ingo Molnar <mingo@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        aravind.gopalakrishnan@amd.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, cpu, amd: Add workaround for family 16h,
+ erratum 793
+References: <20140114230711.GS29865@pd.tnic> <tip-3b56496865f9f7d9bcb2f93b44c63f274f08e3b6@git.kernel.org> <52D5DC51.9010606@zytor.com> <20140115062817.GA11869@gmail.com> <20140115133619.GA32051@pd.tnic>
+In-Reply-To: <20140115133619.GA32051@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compat function takes msgtyp argument as u32 and passes it down to
-do_msgrcv which results in casting to long, thus the sign is lost
-and we get a big positive number instead.
+On 01/15/2014 05:36 AM, Borislav Petkov wrote:
+>>
+>> msr_read() would essentially map to rdmsr_safe(). Each method has a
+>> return value that can be checked for failure.
+> 
+> I'm not sure we want to use the _safe() variants by default as it would
+> generate the exception tables even in cases where they're clearly not
+> needed.
+> 
 
-Cast the argument to signed type before passing it down.
+It would be particularly silly if what you end up with is in effect to
+wrap msr_read/write() in a BUG_ON(), which is the effect of the current
+(trapping) form.  There is something to be said for hard errors.
 
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Reported-by: Gabriellla Schmidt <gsc@bruker.de>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
----
- ipc/compat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+	-hpa
 
-diff --git a/ipc/compat.c b/ipc/compat.c
-index 892f658..d3b3760 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -381,7 +381,7 @@ COMPAT_SYSCALL_DEFINE6(ipc, u32, call, int, first, int, second,
- 			uptr = compat_ptr(ipck.msgp);
- 			fifth = ipck.msgtyp;
- 		}
--		return do_msgrcv(first, uptr, second, fifth, third,
-+		return do_msgrcv(first, uptr, second, (s32)fifth, third,
- 				 compat_do_msg_fill);
- 	}
- 	case MSGGET:
--- 
-1.8.3.1
 
