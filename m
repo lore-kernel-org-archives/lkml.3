@@ -1,770 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaAOXmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 18:42:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44976 "EHLO
+	id S1753203AbaAOXmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:42:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaAOXmO (ORCPT
+	with ESMTP id S1751936AbaAOXmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:42:14 -0500
-Date: Wed, 15 Jan 2014 15:42:53 -0800
+	Wed, 15 Jan 2014 18:42:36 -0500
+Date: Wed, 15 Jan 2014 15:43:15 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.77
-Message-ID: <20140115234253.GC14618@kroah.com>
-References: <20140115234237.GB14618@kroah.com>
+Subject: Linux 3.10.27
+Message-ID: <20140115234315.GA23280@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+HP7ph2BbKc20aGI"
 Content-Disposition: inline
-In-Reply-To: <20140115234237.GB14618@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 8045c75414ae..bbdd7ab3e0e3 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 76
-+SUBLEVEL = 77
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index a53a5a3c3c2e..f01ad2992a20 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -37,7 +37,13 @@
- 
- #include "signal.h"
- 
--static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
-+static const char *handler[]= {
-+	"prefetch abort",
-+	"data abort",
-+	"address exception",
-+	"interrupt",
-+	"undefined instruction",
-+};
- 
- void *vectors_page;
- 
-diff --git a/arch/arm/mach-shmobile/board-mackerel.c b/arch/arm/mach-shmobile/board-mackerel.c
-index 8c6202bb6aeb..9c19b45db36d 100644
---- a/arch/arm/mach-shmobile/board-mackerel.c
-+++ b/arch/arm/mach-shmobile/board-mackerel.c
-@@ -422,7 +422,7 @@ static struct platform_device lcdc_device = {
- 	.resource	= lcdc_resources,
- 	.dev	= {
- 		.platform_data	= &lcdc_info,
--		.coherent_dma_mask = ~0,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
- 
-@@ -498,7 +498,7 @@ static struct platform_device hdmi_lcdc_device = {
- 	.id		= 1,
- 	.dev	= {
- 		.platform_data	= &hdmi_lcdc_info,
--		.coherent_dma_mask = ~0,
-+		.coherent_dma_mask = DMA_BIT_MASK(32),
- 	},
- };
- 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 92e05b6c84f8..a65708f2f015 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -266,12 +266,13 @@ static inline int restore_fpu_checking(struct task_struct *tsk)
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. "m" is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"		/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (tsk->thread.fpu.has_fpu));
-+	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %P[addr]"	/* set F?P to defined value */
-+			: : [addr] "m" (tsk->thread.fpu.has_fpu));
-+	}
- 
- 	return fpu_restore_checking(&tsk->thread.fpu);
- }
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 3551ad82ba8f..650286be8da1 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -14671,6 +14671,9 @@ static int __devinit tg3_get_invariants(struct tg3 *tp)
- 	/* Clear this out for sanity. */
- 	tw32(TG3PCI_MEM_WIN_BASE_ADDR, 0);
- 
-+	/* Clear TG3PCI_REG_BASE_ADDR to prevent hangs. */
-+	tw32(TG3PCI_REG_BASE_ADDR, 0);
-+
- 	pci_read_config_dword(tp->pdev, TG3PCI_PCISTATE,
- 			      &pci_state_reg);
- 	if ((pci_state_reg & PCISTATE_CONV_PCI_MODE) == 0 &&
-diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index 4ebbe6f609d0..5699105112d3 100644
---- a/drivers/net/ethernet/calxeda/xgmac.c
-+++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -1776,7 +1776,7 @@ static int xgmac_probe(struct platform_device *pdev)
- 	if (device_can_wakeup(priv->device))
- 		priv->wolopts = WAKE_MAGIC;	/* Magic Frame as default */
- 
--	ndev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_HIGHDMA;
-+	ndev->hw_features = NETIF_F_SG | NETIF_F_HIGHDMA;
- 	if (readl(priv->base + XGMAC_DMA_HW_FEATURE) & DMA_HW_FEAT_TXCOESEL)
- 		ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
- 				     NETIF_F_RXCSUM;
-diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-index f4d2da0db1b1..8b3da6eb5bc4 100644
---- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
-+++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-@@ -3029,7 +3029,7 @@ static struct ehea_port *ehea_setup_single_port(struct ehea_adapter *adapter,
- 
- 	dev->hw_features = NETIF_F_SG | NETIF_F_TSO
- 		      | NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_TX | NETIF_F_LRO;
--	dev->features = NETIF_F_SG | NETIF_F_FRAGLIST | NETIF_F_TSO
-+	dev->features = NETIF_F_SG | NETIF_F_TSO
- 		      | NETIF_F_HIGHDMA | NETIF_F_IP_CSUM | NETIF_F_HW_VLAN_TX
- 		      | NETIF_F_HW_VLAN_RX | NETIF_F_HW_VLAN_FILTER
- 		      | NETIF_F_RXCSUM;
-diff --git a/drivers/net/ethernet/tehuti/tehuti.c b/drivers/net/ethernet/tehuti/tehuti.c
-index ad973ffc9ff3..32f0bcd5e30d 100644
---- a/drivers/net/ethernet/tehuti/tehuti.c
-+++ b/drivers/net/ethernet/tehuti/tehuti.c
-@@ -1995,7 +1995,6 @@ bdx_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		ndev->features = NETIF_F_IP_CSUM | NETIF_F_SG | NETIF_F_TSO
- 		    | NETIF_F_HW_VLAN_TX | NETIF_F_HW_VLAN_RX |
- 		    NETIF_F_HW_VLAN_FILTER | NETIF_F_RXCSUM
--		    /*| NETIF_F_FRAGLIST */
- 		    ;
- 		ndev->hw_features = NETIF_F_IP_CSUM | NETIF_F_SG |
- 			NETIF_F_TSO | NETIF_F_HW_VLAN_TX;
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 5e5b791f12e9..d240c0624d46 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -1026,7 +1026,7 @@ static int __devinit temac_of_probe(struct platform_device *op)
- 	dev_set_drvdata(&op->dev, ndev);
- 	SET_NETDEV_DEV(ndev, &op->dev);
- 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
--	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
-+	ndev->features = NETIF_F_SG;
- 	ndev->netdev_ops = &temac_netdev_ops;
- 	ndev->ethtool_ops = &temac_ethtool_ops;
- #if 0
-diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index 9c365e192a31..fde716dec196 100644
---- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-@@ -1494,7 +1494,7 @@ static int __devinit axienet_of_probe(struct platform_device *op)
- 
- 	SET_NETDEV_DEV(ndev, &op->dev);
- 	ndev->flags &= ~IFF_MULTICAST;  /* clear multicast */
--	ndev->features = NETIF_F_SG | NETIF_F_FRAGLIST;
-+	ndev->features = NETIF_F_SG;
- 	ndev->netdev_ops = &axienet_netdev_ops;
- 	ndev->ethtool_ops = &axienet_ethtool_ops;
- 
-diff --git a/drivers/net/hamradio/hdlcdrv.c b/drivers/net/hamradio/hdlcdrv.c
-index a4a3516b6bbf..3b3a7e07bbf1 100644
---- a/drivers/net/hamradio/hdlcdrv.c
-+++ b/drivers/net/hamradio/hdlcdrv.c
-@@ -571,6 +571,8 @@ static int hdlcdrv_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 	case HDLCDRVCTL_CALIBRATE:
- 		if(!capable(CAP_SYS_RAWIO))
- 			return -EPERM;
-+		if (bi.data.calibrate > INT_MAX / s->par.bitrate)
-+			return -EINVAL;
- 		s->hdlctx.calibrate = bi.data.calibrate * s->par.bitrate / 16;
- 		return 0;
- 
-diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
-index 5a6412ecce73..d8faeb628aa7 100644
---- a/drivers/net/hamradio/yam.c
-+++ b/drivers/net/hamradio/yam.c
-@@ -1058,6 +1058,7 @@ static int yam_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 		break;
- 
- 	case SIOCYAMGCFG:
-+		memset(&yi, 0, sizeof(yi));
- 		yi.cfg.mask = 0xffffffff;
- 		yi.cfg.iobase = yp->iobase;
- 		yi.cfg.irq = yp->irq;
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 2d59138db7f3..a6ed38284134 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -321,7 +321,6 @@ static int netvsc_change_mtu(struct net_device *ndev, int mtu)
- 		return -EINVAL;
- 
- 	nvdev->start_remove = true;
--	cancel_delayed_work_sync(&ndevctx->dwork);
- 	cancel_work_sync(&ndevctx->work);
- 	netif_tx_disable(ndev);
- 	rndis_filter_device_remove(hdev);
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 77ce8b2bee6d..f5b9de48bb82 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -797,11 +797,10 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 				const struct sk_buff *skb,
- 				const struct iovec *iv, int len)
- {
--	struct macvlan_dev *vlan;
- 	int ret;
- 	int vnet_hdr_len = 0;
- 	int vlan_offset = 0;
--	int copied;
-+	int copied, total;
- 
- 	if (q->flags & IFF_VNET_HDR) {
- 		struct virtio_net_hdr vnet_hdr;
-@@ -816,7 +815,8 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
- 			return -EFAULT;
- 	}
--	copied = vnet_hdr_len;
-+	total = copied = vnet_hdr_len;
-+	total += skb->len;
- 
- 	if (!vlan_tx_tag_present(skb))
- 		len = min_t(int, skb->len, len);
-@@ -831,6 +831,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 
- 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
- 		len = min_t(int, skb->len + VLAN_HLEN, len);
-+		total += VLAN_HLEN;
- 
- 		copy = min_t(int, vlan_offset, len);
- 		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
-@@ -848,16 +849,9 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
- 	}
- 
- 	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
--	copied += len;
- 
- done:
--	rcu_read_lock_bh();
--	vlan = rcu_dereference_bh(q->vlan);
--	if (vlan)
--		macvlan_count_rx(vlan, copied - vnet_hdr_len, ret == 0, 0);
--	rcu_read_unlock_bh();
--
--	return ret ? ret : copied;
-+	return ret ? ret : total;
- }
- 
- static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
-@@ -911,7 +905,9 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
- 	}
- 
- 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
--	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
-+	ret = min_t(ssize_t, ret, len);
-+	if (ret > 0)
-+		iocb->ki_pos = ret;
- out:
- 	return ret;
- }
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 194f8798b7ed..5b1a1b51fdb0 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -903,6 +903,8 @@ static ssize_t tun_chr_aio_read(struct kiocb *iocb, const struct iovec *iv,
- 
- 	ret = tun_do_read(tun, iocb, iv, len, file->f_flags & O_NONBLOCK);
- 	ret = min_t(ssize_t, ret, len);
-+	if (ret > 0)
-+		iocb->ki_pos = ret;
- out:
- 	tun_put(tun);
- 	return ret;
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 45232814fc03..ff8097592f1d 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -215,7 +215,7 @@ struct proto_ops {
- 				      int offset, size_t size, int flags);
- 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
- 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
--	void		(*set_peek_off)(struct sock *sk, int val);
-+	int		(*set_peek_off)(struct sock *sk, int val);
- };
- 
- #define DECLARE_SOCKADDR(type, dst, src)	\
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index dc6c6878700c..5b465010f102 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1702,6 +1702,15 @@ static inline int dev_parse_header(const struct sk_buff *skb,
- 	return dev->header_ops->parse(skb, haddr);
- }
- 
-+static inline int dev_rebuild_header(struct sk_buff *skb)
-+{
-+	const struct net_device *dev = skb->dev;
-+
-+	if (!dev->header_ops || !dev->header_ops->rebuild)
-+		return 0;
-+	return dev->header_ops->rebuild(skb);
-+}
-+
- typedef int gifconf_func_t(struct net_device * dev, char __user * bufptr, int len);
- extern int		register_gifconf(unsigned int family, gifconf_func_t * gifconf);
- static inline int unregister_gifconf(unsigned int family)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4b6c546774b2..3a5b31796edf 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7906,7 +7906,12 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
- 
- 	runtime_enabled = quota != RUNTIME_INF;
- 	runtime_was_enabled = cfs_b->quota != RUNTIME_INF;
--	account_cfs_bandwidth_used(runtime_enabled, runtime_was_enabled);
-+	/*
-+	 * If we need to toggle cfs_bandwidth_used, off->on must occur
-+	 * before making related changes, and on->off must occur afterwards
-+	 */
-+	if (runtime_enabled && !runtime_was_enabled)
-+		cfs_bandwidth_usage_inc();
- 	raw_spin_lock_irq(&cfs_b->lock);
- 	cfs_b->period = ns_to_ktime(period);
- 	cfs_b->quota = quota;
-@@ -7932,6 +7937,8 @@ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
- 			unthrottle_cfs_rq(cfs_rq);
- 		raw_spin_unlock_irq(&rq->lock);
- 	}
-+	if (runtime_was_enabled && !runtime_enabled)
-+		cfs_bandwidth_usage_dec();
- out_unlock:
- 	mutex_unlock(&cfs_constraints_mutex);
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index efe9253bd235..363df3702c20 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1393,13 +1393,14 @@ static inline bool cfs_bandwidth_used(void)
- 	return static_key_false(&__cfs_bandwidth_used);
- }
- 
--void account_cfs_bandwidth_used(int enabled, int was_enabled)
-+void cfs_bandwidth_usage_inc(void)
- {
--	/* only need to count groups transitioning between enabled/!enabled */
--	if (enabled && !was_enabled)
--		static_key_slow_inc(&__cfs_bandwidth_used);
--	else if (!enabled && was_enabled)
--		static_key_slow_dec(&__cfs_bandwidth_used);
-+	static_key_slow_inc(&__cfs_bandwidth_used);
-+}
-+
-+void cfs_bandwidth_usage_dec(void)
-+{
-+	static_key_slow_dec(&__cfs_bandwidth_used);
- }
- #else /* HAVE_JUMP_LABEL */
- static bool cfs_bandwidth_used(void)
-@@ -1407,7 +1408,8 @@ static bool cfs_bandwidth_used(void)
- 	return true;
- }
- 
--void account_cfs_bandwidth_used(int enabled, int was_enabled) {}
-+void cfs_bandwidth_usage_inc(void) {}
-+void cfs_bandwidth_usage_dec(void) {}
- #endif /* HAVE_JUMP_LABEL */
- 
- /*
-@@ -1769,6 +1771,13 @@ static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- 	if (idle)
- 		goto out_unlock;
- 
-+	/*
-+	 * if we have relooped after returning idle once, we need to update our
-+	 * status as actually running, so that other cpus doing
-+	 * __start_cfs_bandwidth will stop trying to cancel us.
-+	 */
-+	cfs_b->timer_active = 1;
-+
- 	__refill_cfs_bandwidth_runtime(cfs_b);
- 
- 	if (!throttled) {
-@@ -1829,7 +1838,13 @@ static const u64 min_bandwidth_expiration = 2 * NSEC_PER_MSEC;
- /* how long we wait to gather additional slack before distributing */
- static const u64 cfs_bandwidth_slack_period = 5 * NSEC_PER_MSEC;
- 
--/* are we near the end of the current quota period? */
-+/*
-+ * Are we near the end of the current quota period?
-+ *
-+ * Requires cfs_b->lock for hrtimer_expires_remaining to be safe against the
-+ * hrtimer base being cleared by __hrtimer_start_range_ns. In the case of
-+ * migrate_hrtimers, base is never cleared, so we are fine.
-+ */
- static int runtime_refresh_within(struct cfs_bandwidth *cfs_b, u64 min_expire)
- {
- 	struct hrtimer *refresh_timer = &cfs_b->period_timer;
-@@ -1905,10 +1920,12 @@ static void do_sched_cfs_slack_timer(struct cfs_bandwidth *cfs_b)
- 	u64 expires;
- 
- 	/* confirm we're still not at a refresh boundary */
--	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration))
-+	raw_spin_lock(&cfs_b->lock);
-+	if (runtime_refresh_within(cfs_b, min_bandwidth_expiration)) {
-+		raw_spin_unlock(&cfs_b->lock);
- 		return;
-+	}
- 
--	raw_spin_lock(&cfs_b->lock);
- 	if (cfs_b->quota != RUNTIME_INF && cfs_b->runtime > slice) {
- 		runtime = cfs_b->runtime;
- 		cfs_b->runtime = 0;
-@@ -2033,11 +2050,11 @@ void __start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
- 	 * (timer_active==0 becomes visible before the hrtimer call-back
- 	 * terminates).  In either case we ensure that it's re-programmed
- 	 */
--	while (unlikely(hrtimer_active(&cfs_b->period_timer))) {
-+	while (unlikely(hrtimer_active(&cfs_b->period_timer)) &&
-+	       hrtimer_try_to_cancel(&cfs_b->period_timer) < 0) {
-+		/* bounce the lock to allow do_sched_cfs_period_timer to run */
- 		raw_spin_unlock(&cfs_b->lock);
--		/* ensure cfs_b->lock is available while we wait */
--		hrtimer_cancel(&cfs_b->period_timer);
--
-+		cpu_relax();
- 		raw_spin_lock(&cfs_b->lock);
- 		/* if someone else restarted the timer then we're done */
- 		if (cfs_b->timer_active)
-@@ -5453,7 +5470,8 @@ void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
- 		se->cfs_rq = parent->my_q;
- 
- 	se->my_q = cfs_rq;
--	update_load_set(&se->load, 0);
-+	/* guarantee group entities always have weight */
-+	update_load_set(&se->load, NICE_0_LOAD);
- 	se->parent = parent;
- }
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index acfa7017eb0a..4e2bd6c32da7 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1140,7 +1140,8 @@ extern void init_cfs_rq(struct cfs_rq *cfs_rq);
- extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
- extern void unthrottle_offline_cfs_rqs(struct rq *rq);
- 
--extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
-+extern void cfs_bandwidth_usage_inc(void);
-+extern void cfs_bandwidth_usage_dec(void);
- 
- #ifdef CONFIG_NO_HZ
- enum rq_nohz_flag_bits {
-diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
-index 8f453927cc51..c2029f732126 100644
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -525,6 +525,23 @@ static const struct header_ops vlan_header_ops = {
- 	.parse	 = eth_header_parse,
- };
- 
-+static int vlan_passthru_hard_header(struct sk_buff *skb, struct net_device *dev,
-+				     unsigned short type,
-+				     const void *daddr, const void *saddr,
-+				     unsigned int len)
-+{
-+	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
-+	struct net_device *real_dev = vlan->real_dev;
-+
-+	return dev_hard_header(skb, real_dev, type, daddr, saddr, len);
-+}
-+
-+static const struct header_ops vlan_passthru_header_ops = {
-+	.create	 = vlan_passthru_hard_header,
-+	.rebuild = dev_rebuild_header,
-+	.parse	 = eth_header_parse,
-+};
-+
- static const struct net_device_ops vlan_netdev_ops;
- 
- static int vlan_dev_init(struct net_device *dev)
-@@ -564,7 +581,7 @@ static int vlan_dev_init(struct net_device *dev)
- 
- 	dev->needed_headroom = real_dev->needed_headroom;
- 	if (real_dev->features & NETIF_F_HW_VLAN_TX) {
--		dev->header_ops      = real_dev->header_ops;
-+		dev->header_ops      = &vlan_passthru_header_ops;
- 		dev->hard_header_len = real_dev->hard_header_len;
- 	} else {
- 		dev->header_ops      = &vlan_header_ops;
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index ca670d96bae7..cef202a94112 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1744,7 +1744,7 @@ int br_multicast_set_hash_max(struct net_bridge *br, unsigned long val)
- 	u32 old;
- 	struct net_bridge_mdb_htable *mdb;
- 
--	spin_lock(&br->multicast_lock);
-+	spin_lock_bh(&br->multicast_lock);
- 	if (!netif_running(br->dev))
- 		goto unlock;
- 
-@@ -1776,7 +1776,7 @@ rollback:
- 	}
- 
- unlock:
--	spin_unlock(&br->multicast_lock);
-+	spin_unlock_bh(&br->multicast_lock);
- 
- 	return err;
- }
-diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-index b856f87e63d2..1d9a52929bad 100644
---- a/net/core/drop_monitor.c
-+++ b/net/core/drop_monitor.c
-@@ -61,7 +61,6 @@ static struct genl_family net_drop_monitor_family = {
- 	.hdrsize        = 0,
- 	.name           = "NET_DM",
- 	.version        = 2,
--	.maxattr        = NET_DM_CMD_MAX,
- };
- 
- static DEFINE_PER_CPU(struct per_cpu_dm_data, dm_cpu_data);
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 561eb57f590c..832cf043a8f7 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -795,7 +795,7 @@ set_rcvbuf:
- 
- 	case SO_PEEK_OFF:
- 		if (sock->ops->set_peek_off)
--			sock->ops->set_peek_off(sk, val);
-+			ret = sock->ops->set_peek_off(sk, val);
- 		else
- 			ret = -EOPNOTSUPP;
- 		break;
-diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
-index d7b862ad4be4..5fcc8df3f179 100644
---- a/net/ipv4/inet_diag.c
-+++ b/net/ipv4/inet_diag.c
-@@ -110,6 +110,10 @@ int inet_sk_diag_fill(struct sock *sk, struct inet_connection_sock *icsk,
- 
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = inet->inet_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
- 	r->id.idiag_dst[0] = inet->inet_daddr;
- 
-@@ -227,12 +231,19 @@ static int inet_twsk_diag_fill(struct inet_timewait_sock *tw,
- 
- 	r->idiag_family	      = tw->tw_family;
- 	r->idiag_retrans      = 0;
-+
- 	r->id.idiag_if	      = tw->tw_bound_dev_if;
- 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
-+
- 	r->id.idiag_sport     = tw->tw_sport;
- 	r->id.idiag_dport     = tw->tw_dport;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
- 	r->id.idiag_dst[0]    = tw->tw_daddr;
-+
- 	r->idiag_state	      = tw->tw_substate;
- 	r->idiag_timer	      = 3;
- 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
-@@ -714,8 +725,13 @@ static int inet_diag_fill_req(struct sk_buff *skb, struct sock *sk,
- 
- 	r->id.idiag_sport = inet->inet_sport;
- 	r->id.idiag_dport = ireq->rmt_port;
-+
-+	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
-+	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
-+
- 	r->id.idiag_src[0] = ireq->loc_addr;
- 	r->id.idiag_dst[0] = ireq->rmt_addr;
-+
- 	r->idiag_expires = jiffies_to_msecs(tmo);
- 	r->idiag_rqueue = 0;
- 	r->idiag_wqueue = 0;
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 6ac8bc29b43e..335b16fccb9d 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2114,15 +2114,11 @@ struct rt6_info *addrconf_dst_alloc(struct inet6_dev *idev,
- {
- 	struct net *net = dev_net(idev->dev);
- 	struct rt6_info *rt = ip6_dst_alloc(&net->ipv6.ip6_dst_ops,
--					    net->loopback_dev, 0);
-+					    net->loopback_dev, DST_NOCOUNT);
- 	int err;
- 
--	if (!rt) {
--		if (net_ratelimit())
--			pr_warning("IPv6:  Maximum number of routes reached,"
--				   " consider increasing route/max_size.\n");
-+	if (!rt)
- 		return ERR_PTR(-ENOMEM);
--	}
- 
- 	in6_dev_hold(idev);
- 
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index df08d7779e1d..1c2dc50c9b44 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -716,7 +716,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	unsigned long cpu_flags;
- 	size_t copied = 0;
- 	u32 peek_seq = 0;
--	u32 *seq;
-+	u32 *seq, skb_len;
- 	unsigned long used;
- 	int target;	/* Read at least this many bytes */
- 	long timeo;
-@@ -814,6 +814,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		}
- 		continue;
- 	found_ok_skb:
-+		skb_len = skb->len;
- 		/* Ok so how much can we use? */
- 		used = skb->len - offset;
- 		if (len < used)
-@@ -846,7 +847,7 @@ static int llc_ui_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		}
- 
- 		/* Partial read */
--		if (used + offset < skb->len)
-+		if (used + offset < skb_len)
- 			continue;
- 	} while (len > 0);
- 
-diff --git a/net/rds/ib.c b/net/rds/ib.c
-index b4c8b0022fee..ba2dffeff608 100644
---- a/net/rds/ib.c
-+++ b/net/rds/ib.c
-@@ -338,7 +338,8 @@ static int rds_ib_laddr_check(__be32 addr)
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support iWARP devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_IB_CA)
-+	if (ret || !cm_id->device ||
-+	    cm_id->device->node_type != RDMA_NODE_IB_CA)
- 		ret = -EADDRNOTAVAIL;
- 
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
-diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
-index e59094981175..37be6e226d1b 100644
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
- 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
- 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
- 		scat = &rm->data.op_sg[sg];
--		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
--		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
--		return ret;
-+		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-+		return sizeof(struct rds_header) + ret;
- 	}
- 
- 	/* FIXME we may overallocate here */
-diff --git a/net/rose/af_rose.c b/net/rose/af_rose.c
-index ce5f5b934ea1..bde7d69b440d 100644
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -1257,6 +1257,7 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	if (msg->msg_name) {
- 		struct sockaddr_rose *srose;
-+		struct full_sockaddr_rose *full_srose = msg->msg_name;
- 
- 		memset(msg->msg_name, 0, sizeof(struct full_sockaddr_rose));
- 		srose = msg->msg_name;
-@@ -1264,18 +1265,9 @@ static int rose_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		srose->srose_addr   = rose->dest_addr;
- 		srose->srose_call   = rose->dest_call;
- 		srose->srose_ndigis = rose->dest_ndigis;
--		if (msg->msg_namelen >= sizeof(struct full_sockaddr_rose)) {
--			struct full_sockaddr_rose *full_srose = (struct full_sockaddr_rose *)msg->msg_name;
--			for (n = 0 ; n < rose->dest_ndigis ; n++)
--				full_srose->srose_digis[n] = rose->dest_digis[n];
--			msg->msg_namelen = sizeof(struct full_sockaddr_rose);
--		} else {
--			if (rose->dest_ndigis >= 1) {
--				srose->srose_ndigis = 1;
--				srose->srose_digi = rose->dest_digis[0];
--			}
--			msg->msg_namelen = sizeof(struct sockaddr_rose);
--		}
-+		for (n = 0 ; n < rose->dest_ndigis ; n++)
-+			full_srose->srose_digis[n] = rose->dest_digis[n];
-+		msg->msg_namelen = sizeof(struct full_sockaddr_rose);
- 	}
- 
- 	skb_free_datagram(sk, skb);
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 0540dd9b0387..c0a81a50bd4e 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -524,13 +524,17 @@ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
- static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
- 				  struct msghdr *, size_t, int);
- 
--static void unix_set_peek_off(struct sock *sk, int val)
-+static int unix_set_peek_off(struct sock *sk, int val)
- {
- 	struct unix_sock *u = unix_sk(sk);
- 
--	mutex_lock(&u->readlock);
-+	if (mutex_lock_interruptible(&u->readlock))
-+		return -EINTR;
-+
- 	sk->sk_peek_off = val;
- 	mutex_unlock(&u->readlock);
-+
-+	return 0;
- }
- 
- 
-@@ -708,7 +712,9 @@ static int unix_autobind(struct socket *sock)
- 	int err;
- 	unsigned int retries = 0;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err)
-+		return err;
- 
- 	err = 0;
- 	if (u->addr)
-@@ -841,7 +847,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 		goto out;
- 	addr_len = err;
- 
--	mutex_lock(&u->readlock);
-+	err = mutex_lock_interruptible(&u->readlock);
-+	if (err)
-+		goto out;
- 
- 	err = -EINVAL;
- 	if (u->addr)
+--+HP7ph2BbKc20aGI
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.27 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/networking/packet_mmap.txt          |   10 +
+ Makefile                                          |    2=20
+ arch/arm/boot/dts/exynos5250.dtsi                 |    2=20
+ arch/arm/kernel/traps.c                           |    8 +
+ arch/arm/mach-footbridge/dc21285-timer.c          |    5=20
+ arch/arm/mach-shmobile/board-armadillo800eva.c    |    4=20
+ arch/arm/mach-shmobile/board-kzm9g.c              |    2=20
+ arch/arm/mach-shmobile/board-mackerel.c           |    4=20
+ arch/parisc/include/asm/cacheflush.h              |   12 --
+ arch/parisc/include/asm/page.h                    |    5=20
+ arch/parisc/kernel/cache.c                        |   35 ------
+ arch/x86/include/asm/fpu-internal.h               |   13 +-
+ drivers/acpi/battery.c                            |   21 +++
+ drivers/ata/ahci.c                                |    3=20
+ drivers/char/tpm/tpm_ppi.c                        |   15 +-
+ drivers/clk/clk-divider.c                         |    2=20
+ drivers/clk/samsung/clk-exynos4.c                 |    2=20
+ drivers/clk/samsung/clk-exynos5250.c              |    7 -
+ drivers/clocksource/em_sti.c                      |    2=20
+ drivers/cpufreq/intel_pstate.c                    |    3=20
+ drivers/gpio/gpio-rcar.c                          |    2=20
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c   |    6 -
+ drivers/hid/hid-logitech-dj.c                     |   45 ++++++++
+ drivers/hid/hid-logitech-dj.h                     |    1=20
+ drivers/irqchip/irq-renesas-irqc.c                |    4=20
+ drivers/mfd/rtsx_pcr.c                            |   10 +
+ drivers/net/ethernet/broadcom/tg3.c               |    3=20
+ drivers/net/ethernet/freescale/fec_main.c         |    4=20
+ drivers/net/ethernet/ibm/ehea/ehea_main.c         |    2=20
+ drivers/net/ethernet/tehuti/tehuti.c              |    1=20
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |    2=20
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2=20
+ drivers/net/hamradio/hdlcdrv.c                    |    2=20
+ drivers/net/hamradio/yam.c                        |    1=20
+ drivers/net/hyperv/netvsc_drv.c                   |    1=20
+ drivers/net/macvtap.c                             |   20 +--
+ drivers/net/tun.c                                 |    2=20
+ drivers/net/virtio_net.c                          |  119 +++++++++++++++--=
+-----
+ drivers/scsi/sd.c                                 |    5=20
+ include/linux/net.h                               |    2=20
+ include/linux/netdevice.h                         |    9 +
+ include/linux/skbuff.h                            |    5=20
+ kernel/sched/core.c                               |    9 +
+ kernel/sched/fair.c                               |   48 ++++++--
+ kernel/sched/sched.h                              |    3=20
+ net/8021q/vlan_dev.c                              |   19 +++
+ net/bridge/br_multicast.c                         |    4=20
+ net/core/drop_monitor.c                           |    1=20
+ net/core/neighbour.c                              |    2=20
+ net/core/netpoll.c                                |   11 +-
+ net/core/skbuff.c                                 |    3=20
+ net/core/sock.c                                   |    2=20
+ net/ipv4/inet_diag.c                              |   16 ++
+ net/ipv4/ip_gre.c                                 |    1=20
+ net/ipv6/route.c                                  |   34 ++----
+ net/ipv6/udp_offload.c                            |    2=20
+ net/llc/af_llc.c                                  |    5=20
+ net/mac80211/tx.c                                 |   23 ++--
+ net/netfilter/nf_nat_irc.c                        |   32 ++++-
+ net/packet/af_packet.c                            |   65 +++++++-----
+ net/rds/ib.c                                      |    3=20
+ net/rds/ib_send.c                                 |    5=20
+ net/rose/af_rose.c                                |   16 --
+ net/unix/af_unix.c                                |   16 ++
+ 64 files changed, 478 insertions(+), 247 deletions(-)
+
+Abhilash Kesavan (2):
+      ARM: dts: exynos5250: Fix MDMA0 clock number
+      clk: samsung: exynos5250: Add CLK_IGNORE_UNUSED flag for the sysreg c=
+lock
+
+Andrew Bresticker (1):
+      clk: exynos5250: fix sysmmu_mfc{l,r} gate clocks
+
+Andrey Vagin (1):
+      virtio: delete napi structures from netdev before releasing memory
+
+Axel Lin (1):
+      irqchip: renesas-irqc: Fix irqc_probe error handling
+
+Ben Segall (3):
+      sched: Fix race on toggling cfs_bandwidth_used
+      sched: Fix cfs_bandwidth misuse of hrtimer_expires_remaining
+      sched: Fix hrtimer_cancel()/rq->lock deadlock
+
+Bernd Schubert (1):
+      SCSI: sd: Reduce buffer size for vpd request
+
+Changli Gao (1):
+      net: drop_monitor: fix the value of maxattr
+
+Curt Brune (1):
+      bridge: use spin_lock_bh() in br_multicast_set_hash_max
+
+Daniel Borkmann (4):
+      packet: fix send path when running with proto =3D=3D 0
+      net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+      net: llc: fix use after free in llc_ui_recvmsg
+      netfilter: nf_nat: fix access to uninitialized buffer in IRC NAT help=
+er
+
+David S. Miller (2):
+      vlan: Fix header ops passthru when doing TX VLAN offload.
+      netpoll: Fix missing TXQ unlock and and OOPS.
+
+Dirk Brandewie (1):
+      intel_pstate: Add X86_FEATURE_APERFMPERF to cpu match parameters.
+
+Eric Dumazet (2):
+      net: do not pretend FRAGLIST support
+      net: fec: fix potential use after free
+
+Felix Fietkau (1):
+      mac80211: move "bufferable MMPDU" check to fix AP mode scan
+
+Florian Westphal (1):
+      net: rose: restore old recvmsg behavior
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.27
+
+Hannes Frederic Sowa (2):
+      ipv6: don't count addrconf generated routes against gc limit
+      ipv6: fix illegal mac_header comparison on 32bit
+
+Ilia Mirkin (1):
+      drm/nouveau/bios: make jump conditional
+
+James Hogan (1):
+      clk: clk-divider: fix divisor > 255 bug
+
+Jason Wang (3):
+      macvtap: signal truncated packets
+      netvsc: don't flush peers notifying work during setting mtu
+      virtio-net: fix refill races during restore
+
+Jiang Liu (1):
+      ACPI / TPM: fix memory leak when walking ACPI namespace
+
+John David Anglin (1):
+      parisc: Ensure full cache coherency for kmap/kunmap
+
+Kamala R (1):
+      IPv6: Fixed support for blackhole and prohibit routes
+
+Kuninori Morimoto (1):
+      gpio-rcar: R-Car GPIO IRQ share interrupt
+
+Lan Tianyu (1):
+      ACPI / Battery: Add a _BIX quirk for NEC LZ750/LS
+
+Laurent Pinchart (3):
+      ARM: shmobile: kzm9g: Fix coherent DMA mask
+      ARM: shmobile: armadillo: Fix coherent DMA mask
+      ARM: shmobile: mackerel: Fix coherent DMA mask
+
+Li RongQing (1):
+      ipv6: always set the new created dst's from in ip6_rt_copy
+
+Linus Torvalds (1):
+      x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
+
+Magnus Damm (1):
+      clocksource: em_sti: Set cpu_possible_mask to fix SMP broadcast
+
+Michael S. Tsirkin (3):
+      virtio_net: fix error handling for mergeable buffers
+      virtio-net: make all RX paths handle errors consistently
+      virtio_net: don't leak memory or block when too many frags
+
+Nat Gurumoorthy (1):
+      tg3: Initialize REG_BASE_ADDR at PCI config offset 120 to 0
+
+Nestor Lopez Casado (1):
+      HID: Revert "Revert "HID: Fix logitech-dj: missing Unifying device is=
+sue""
+
+Paul Turner (1):
+      sched: Guarantee new group-entities always have weight
+
+Russell King (2):
+      ARM: fix footbridge clockevent device
+      ARM: fix "bad mode in ... handler" message for undefined instructions
+
+Salva Peir=F3 (1):
+      hamradio/yam: fix info leak in ioctl
+
+Sasha Levin (3):
+      net: unix: allow set_peek_off to fail
+      net: unix: allow bind to fail on mutex lock
+      rds: prevent dereference of a NULL device
+
+Seung-Woo Kim (1):
+      clk: samsung: exynos4: Correct SRC_MFC register
+
+Simon Guinot (1):
+      ahci: add PCI ID for Marvell 88SE9170 SATA controller
+
+Simon Horman (1):
+      net: Loosen constraints for recalculating checksum in skb_segment()
+
+Thomas Gleixner (1):
+      mfd: rtsx_pcr: Disable interrupts before cancelling delayed works
+
+Timo Ter=E4s (1):
+      ip_gre: fix msg_name parsing for recvfrom/recvmsg
+
+Venkat Venkatsubra (1):
+      rds: prevent BUG_ON triggered on congestion update to loopback
+
+Vlad Yasevich (1):
+      macvtap: Do not double-count received packets
+
+Wenliang Fan (1):
+      drivers/net/hamradio: Integer overflow in hdlcdrv_ioctl()
+
+Zhi Yong Wu (2):
+      macvtap: update file current position
+      tun: update file current position
+
+
+--+HP7ph2BbKc20aGI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJS1x0TAAoJEDjbvchgkmk+GgwP/2r5TJb8DzwuYyBPOYftnwpq
+NBfBhRHHX3zqA4BJ34pchbdzVmM5hoUmP1UN5ZIdmYgsqa08VvJjfelN52Thx46w
+pL3/2YKw85ldvZemRTNEkwKFmgGPEi4Nj8j6lwh5PHnvx5Z6CUyuPOn7f13xbFfs
+uRn7GbM4FqdLh+EM42gxX83uFtIfi58LF+CCkIM5uqBKlJPpAq2Lle2qrj7G6UFj
+lSM/xuOocRuMhz881/vw/Pg2JZu3AiVG0o02TjxlUFWyVPtQP0B+xIfYtV2b8L/0
+t0bk6EY7Zj/L4PkE6nrw7QhCVV5icYoTVxMfcIL+VCWI6Je0eiCJdvcy6zaXqBUW
+8YUjMUtPspeW9bfWP+mjmnR/JwsTIGyrm6dkrxpVbO3wmApDnIQOdl9vHnJv1l2H
+SgquQvRZjnlBfjqSGBnUrOSmBv9W0IsWyqCfM1TJ2jiYZJrkMmUhzBhsdGNUoBCf
+pdq3cXrRV0liTTnSvBEToV0p7jcT+Z794+iNfM6NKZS339bXKsBV+oM3Xgq7QcSU
+CCAr+jwEzk13yy9m6q/sS4jWKGXN259G3DnA6nKAyShs4jo59sLSqg/j20Bi/C0W
+uU/l6EmIbiFKV0/cHU87n1JgbXkmHnzAZlozPaheJXjMdmxEIns/1IfyKX96Vkbr
+eJ9M2nAGtra5YWfh9aYL
+=TnyJ
+-----END PGP SIGNATURE-----
+
+--+HP7ph2BbKc20aGI--
