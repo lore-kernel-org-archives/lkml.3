@@ -1,66 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaAOEGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:06:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37075 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaAOEG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:06:28 -0500
-Date: Tue, 14 Jan 2014 20:06:42 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [STABLE] find missing bug fixes in a stable kernel
-Message-ID: <20140115040642.GA16810@kroah.com>
-References: <52D3958B.1060902@huawei.com>
- <20140113155746.GA2432@kroah.com>
- <52D494D2.7000908@huawei.com>
+	id S1751520AbaAOEHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:07:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071AbaAOEHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 23:07:40 -0500
+Date: Tue, 14 Jan 2014 23:02:27 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Jan Kaluza <jkaluza@redhat.com>
+Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, eparis@redhat.com, tj@kernel.org,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v4 1/3] Send loginuid and sessionid in SCM_AUDIT
+Message-ID: <20140115040227.GW13431@madcap2.tricolour.ca>
+References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
+ <1389600109-30739-1-git-send-email-jkaluza@redhat.com>
+ <1389600109-30739-2-git-send-email-jkaluza@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D494D2.7000908@huawei.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1389600109-30739-2-git-send-email-jkaluza@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 09:37:22AM +0800, Li Zefan wrote:
-> On 2014/1/13 23:57, Greg Kroah-Hartman wrote:
-> > On Mon, Jan 13, 2014 at 03:28:11PM +0800, Li Zefan wrote:
-> >> We have several long-term and extended stable kernels, and it's possible
-> >> that a bug fix is in some stable versions but is missing in some other
-> >> versions, so I've written a script to find out those fixes.
-> >>
-> >> Take 3.4.xx and 3.2.xx for example. If a bug fix was merged into upstream
-> >> kernel after 3.4, and then it was backported to 3.2.xx, then it probably
-> >> needs to be backported to 3.4.xx.
-> > 
-> > I agree.
-> > 
-> >> The result is, there're ~430 bug fixes in 3.2.xx that probably need to be
-> >> backported to 3.4.xx. Given there're about 4500 commits in 3.2.xx, that
-> >> is ~10%, which is quite a big number for stable kernels.
-> > 
-> > That's a really big number, how am I missing so many patches for the 3.4
-> > kernel?  Is it because people are doing backports to 3.2 for patches
-> > that didn't apply to 3.4?  Or are these patches being applied that do
-> > not have -stable markings on them?  Or something else?
-> > 
+On 14/01/13, Jan Kaluza wrote:
+> Server-like processes in many cases need credentials and other
+> metadata of the peer, to decide if the calling process is allowed to
+> request a specific action, or the server just wants to log away this
+> type of information for auditing tasks.
 > 
-> I guess the biggest reason is, most people tag a patch with stable without
-> specifying kernel versions, and if this patch can't be applied to 3.4, it
-> will be dropped silently. I guess Ben has been checking this kind of patches
-> manually.
+> The current practice to retrieve such process metadata is to look that
+> information up in procfs with the $PID received over SCM_CREDENTIALS.
+> This is sufficient for long-running tasks, but introduces a race which
+> cannot be worked around for short-living processes; the calling
+> process and all the information in /proc/$PID/ is gone before the
+> receiver of the socket message can look it up.
 > 
-> >> We (our team in Huawei) are going to go through the whole list to filter
-> >> out fixes that're applicable for 3.4.xx.
+> This introduces a new SCM type called SCM_AUDIT to allow the direct
+> attaching of "loginuid" and "sessionid" to SCM, which is significantly more
+> efficient and will reliably avoid the race with the round-trip over
+> procfs.
+> 
+> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
 
-Please do this, I don't have the resources at the moment to be able to
-go through all of these git ids to see if they really are relevant or
-not right now.  Any help that you can provide with this for 3.4 or 3.10
-would be most appreciated.
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
 
-thanks,
+> ---
+>  include/linux/socket.h |  6 ++++++
+>  include/net/af_unix.h  |  2 ++
+>  include/net/scm.h      | 28 ++++++++++++++++++++++++++--
+>  net/unix/af_unix.c     |  7 +++++++
+>  4 files changed, 41 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/socket.h b/include/linux/socket.h
+> index 5d488a6..eeac565 100644
+> --- a/include/linux/socket.h
+> +++ b/include/linux/socket.h
+> @@ -130,6 +130,7 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
+>  #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
+>  #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
+>  #define SCM_SECURITY	0x03		/* rw: security label		*/
+> +#define SCM_AUDIT	0x04		/* rw: struct uaudit		*/
+>  
+>  struct ucred {
+>  	__u32	pid;
+> @@ -137,6 +138,11 @@ struct ucred {
+>  	__u32	gid;
+>  };
+>  
+> +struct uaudit {
+> +	__u32	loginuid;
+> +	__u32	sessionid;
+> +};
+> +
+>  /* Supported address families. */
+>  #define AF_UNSPEC	0
+>  #define AF_UNIX		1	/* Unix domain sockets 		*/
+> diff --git a/include/net/af_unix.h b/include/net/af_unix.h
+> index a175ba4..3b9d22a 100644
+> --- a/include/net/af_unix.h
+> +++ b/include/net/af_unix.h
+> @@ -36,6 +36,8 @@ struct unix_skb_parms {
+>  	u32			secid;		/* Security ID		*/
+>  #endif
+>  	u32			consumed;
+> +	kuid_t			loginuid;
+> +	unsigned int		sessionid;
+>  };
+>  
+>  #define UNIXCB(skb) 	(*(struct unix_skb_parms *)&((skb)->cb))
+> diff --git a/include/net/scm.h b/include/net/scm.h
+> index 262532d..67de64f 100644
+> --- a/include/net/scm.h
+> +++ b/include/net/scm.h
+> @@ -6,6 +6,7 @@
+>  #include <linux/security.h>
+>  #include <linux/pid.h>
+>  #include <linux/nsproxy.h>
+> +#include <linux/audit.h>
+>  
+>  /* Well, we should have at least one descriptor open
+>   * to accept passed FDs 8)
+> @@ -18,6 +19,11 @@ struct scm_creds {
+>  	kgid_t	gid;
+>  };
+>  
+> +struct scm_audit {
+> +	kuid_t loginuid;
+> +	unsigned int sessionid;
+> +};
+> +
+>  struct scm_fp_list {
+>  	short			count;
+>  	short			max;
+> @@ -28,6 +34,7 @@ struct scm_cookie {
+>  	struct pid		*pid;		/* Skb credentials */
+>  	struct scm_fp_list	*fp;		/* Passed files		*/
+>  	struct scm_creds	creds;		/* Skb credentials	*/
+> +	struct scm_audit	audit;		/* Skb audit	*/
+>  #ifdef CONFIG_SECURITY_NETWORK
+>  	u32			secid;		/* Passed security ID 	*/
+>  #endif
+> @@ -58,6 +65,13 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
+>  	scm->creds.gid = gid;
+>  }
+>  
+> +static inline void scm_set_audit(struct scm_cookie *scm,
+> +				    kuid_t loginuid, unsigned int sessionid)
+> +{
+> +	scm->audit.loginuid = loginuid;
+> +	scm->audit.sessionid = sessionid;
+> +}
+> +
+>  static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
+>  {
+>  	put_pid(scm->pid);
+> @@ -77,8 +91,12 @@ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
+>  	memset(scm, 0, sizeof(*scm));
+>  	scm->creds.uid = INVALID_UID;
+>  	scm->creds.gid = INVALID_GID;
+> -	if (forcecreds)
+> -		scm_set_cred(scm, task_tgid(current), current_uid(), current_gid());
+> +	if (forcecreds) {
+> +		scm_set_cred(scm, task_tgid(current), current_uid(),
+> +			     current_gid());
+> +		scm_set_audit(scm, audit_get_loginuid(current),
+> +			      audit_get_sessionid(current));
+> +	}
+>  	unix_get_peersec_dgram(sock, scm);
+>  	if (msg->msg_controllen <= 0)
+>  		return 0;
+> @@ -123,7 +141,13 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+>  			.uid = from_kuid_munged(current_ns, scm->creds.uid),
+>  			.gid = from_kgid_munged(current_ns, scm->creds.gid),
+>  		};
+> +		struct uaudit uaudits = {
+> +			.loginuid = from_kuid_munged(current_ns,
+> +						     scm->audit.loginuid),
+> +			.sessionid = scm->audit.sessionid,
+> +		};
+>  		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(ucreds), &ucreds);
+> +		put_cmsg(msg, SOL_SOCKET, SCM_AUDIT, sizeof(uaudits), &uaudits);
+>  	}
+>  
+>  	scm_destroy_cred(scm);
+> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+> index 800ca61..bc02a25 100644
+> --- a/net/unix/af_unix.c
+> +++ b/net/unix/af_unix.c
+> @@ -1413,6 +1413,8 @@ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool sen
+>  	UNIXCB(skb).pid  = get_pid(scm->pid);
+>  	UNIXCB(skb).uid = scm->creds.uid;
+>  	UNIXCB(skb).gid = scm->creds.gid;
+> +	UNIXCB(skb).loginuid = scm->audit.loginuid;
+> +	UNIXCB(skb).sessionid = scm->audit.sessionid;
+>  	UNIXCB(skb).fp = NULL;
+>  	if (scm->fp && send_fds)
+>  		err = unix_attach_fds(scm, skb);
+> @@ -1436,6 +1438,8 @@ static void maybe_add_creds(struct sk_buff *skb, const struct socket *sock,
+>  	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
+>  		UNIXCB(skb).pid  = get_pid(task_tgid(current));
+>  		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
+> +		UNIXCB(skb).loginuid = audit_get_loginuid(current);
+> +		UNIXCB(skb).sessionid = audit_get_sessionid(current);
+>  	}
+>  }
+>  
+> @@ -1829,6 +1833,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
+>  		memset(&tmp_scm, 0, sizeof(tmp_scm));
+>  	}
+>  	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
+> +	scm_set_audit(siocb->scm, UNIXCB(skb).loginuid, UNIXCB(skb).sessionid);
+>  	unix_set_secdata(siocb->scm, skb);
+>  
+>  	if (!(flags & MSG_PEEK)) {
+> @@ -2008,6 +2013,8 @@ again:
+>  		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
+>  			/* Copy credentials */
+>  			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
+> +			scm_set_audit(siocb->scm, UNIXCB(skb).loginuid,
+> +				      UNIXCB(skb).sessionid);
+>  			check_creds = 1;
+>  		}
+>  
+> -- 
+> 1.8.3.1
+> 
 
-greg k-h
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
