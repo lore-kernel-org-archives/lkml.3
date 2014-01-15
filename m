@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaAOMzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 07:55:42 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:55753 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632AbaAOMzj (ORCPT
+	id S1751938AbaAONFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:05:51 -0500
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:48583 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaAONFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 07:55:39 -0500
-Message-ID: <52D684E9.6080308@ti.com>
-Date: Wed, 15 Jan 2014 18:24:01 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 08:05:47 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH 7/7] drivers/gpio: don't check resource with devm_ioremap_resource
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>	<1389700739-3696-7-git-send-email-wsa@the-dreams.de> <CACRpkdYymB4i7Ju5MMNXWVe5nB6_NbWHwrPbOK2KeT0Ji-RzQg@mail.gmail.com>
-In-Reply-To: <CACRpkdYymB4i7Ju5MMNXWVe5nB6_NbWHwrPbOK2KeT0Ji-RzQg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <309B89C4C689E141A5FF6A0C5FB2118B7312CEE1@ORSMSX101.amr.corp.intel.com>
+References: <1387901568-1762-1-git-send-email-ethan.kernel@gmail.com>
+	<1388134966.2183.144.camel@jtkirshe-mobl>
+	<309B89C4C689E141A5FF6A0C5FB2118B7312CEE1@ORSMSX101.amr.corp.intel.com>
+Date: Wed, 15 Jan 2014 21:05:46 +0800
+Message-ID: <CABawtvPLZA+wLCvV5rPJ5wzQm5+M6UDaLMt-+pMUxwUjT+X4zg@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and
+ cleanup const 63
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: "Brown, Aaron F" <aaron.f.brown@intel.com>
+Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 January 2014 02:58 PM, Linus Walleij wrote:
-> On Tue, Jan 14, 2014 at 12:58 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> 
->> devm_ioremap_resource does sanity checks on the given resource. No need to
->> duplicate this in the driver.
->>
->> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
->> ---
->>
->> Should go via subsystem tree
->>
->>  drivers/gpio/gpio-davinci.c | 5 -----
->>  1 file changed, 5 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
->> index 84be701..a5e1a56 100644
->> --- a/drivers/gpio/gpio-davinci.c
->> +++ b/drivers/gpio/gpio-davinci.c
->> @@ -172,11 +172,6 @@ static int davinci_gpio_probe(struct platform_device *pdev)
->>         }
->>
->>         res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> -       if (!res) {
->> -               dev_err(dev, "Invalid memory resource\n");
->> -               return -EBUSY;
->> -       }
->> -
->>         gpio_base = devm_ioremap_resource(dev, res);
->>         if (IS_ERR(gpio_base))
->>                 return PTR_ERR(gpio_base);
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> The DaVinci maintainers are queuing GPIO patches for their driver
-> for this merge window, so requesting them to apply this patch.
-
-I wont be sending any more pull requests for v3.14. Even if I send, the
-ARM-SoC maintainers will not take it anyway. So likely this wont get
-into v3.14. For v3.15, Linus should be able to queue it as dependencies
-would have made it into the kernel by then.
+Aaron,
+   I will check the patch and make it pass the building, seems encoding issue.
 
 Thanks,
-Sekhar
+Ethan
+
+On Wed, Jan 15, 2014 at 11:46 AM, Brown, Aaron F
+<aaron.f.brown@intel.com> wrote:
+> On Fri, 2013-12-27 at 01:02 -0800, Jeff Kirsher wrote:
+>> On Wed, 2013-12-25 at 00:12 +0800, Ethan Zhao wrote:
+>> > Because ixgbe driver limit the max number of VF functions could be
+>> > enabled
+>> > to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the
+>> > const 63
+>> > in code.
+>> >
+>> > v2: fix a typo.
+>> >
+>> > Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
+>> > ---
+>> >  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 4 ++--
+>> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 5 +++--
+>> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h | 5 +++++
+>> >  3 files changed, 10 insertions(+), 4 deletions(-)
+>>
+>> Added to my queue, thanks Ethan!
+>
+> Hi Ethan,
+>
+> Did Jeff contact you about this failing to compile?  I'm currently
+> providing vacation covering for him and we found this was failing to
+> compile just before he left.  We captured the failure in our notes for
+> this but there is no comment on if you were contacted or not.
+>
+> Regardless, when I apply this patch (with or without 2-2) we get the
+> following error on a compilation attempt: Here's the error:
+> --------------------------------------------------------
+> Here's the error:
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function
+> "ixgbe_sw_init":
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\357"
+> in program
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\274"
+> in program
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\215"
+> in program
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: expected ")"
+> before numeric constant
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function
+> "ixgbe_probe":
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\357"
+> in program
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\274"
+> in program
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\215"
+> in program
+> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: expected ")"
+> before numeric constant
+> make[5]: *** [drivers/net/ethernet/intel/ixgbe/ixgbe_main.o] Error 1
+> make[5]: *** Waiting for unfinished jobs....
+> make[4]: *** [drivers/net/ethernet/intel/ixgbe] Error 2
+> make[4]: *** Waiting for unfinished jobs....
+> make[3]: *** [drivers/net/ethernet/intel] Error 2
+> make[2]: *** [drivers/net/ethernet] Error 2
+> make[1]: *** [drivers/net] Error 2
+> make: *** [drivers] Error 2
+> --------------------------------------------------------
+>
+> Thanks,
+> Aaron
+>
