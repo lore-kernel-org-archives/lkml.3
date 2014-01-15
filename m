@@ -1,134 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaAOUsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:48:20 -0500
-Received: from mail-yk0-f178.google.com ([209.85.160.178]:43540 "EHLO
-	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaAOUsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:48:18 -0500
-X-Greylist: delayed 63592 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 15:48:17 EST
-Date: Wed, 15 Jan 2014 12:48:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Prarit Bhargava <prarit@redhat.com>
-cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        kosaki.motohiro@gmail.com, dyoung@redhat.com,
-        linux-acpi@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH] acpi memory hotplug, add parameter to disable memory
- hotplug [v4]
-In-Reply-To: <1389789284-10622-1-git-send-email-prarit@redhat.com>
-Message-ID: <alpine.DEB.2.02.1401151247500.10727@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1401141642020.3375@chino.kir.corp.google.com> <1389789284-10622-1-git-send-email-prarit@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751875AbaAOUuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:50:35 -0500
+Received: from ozlabs.org ([203.10.76.45]:37010 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867AbaAOUud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 15:50:33 -0500
+Date: Thu, 16 Jan 2014 07:50:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Weinberger <richard@nod.at>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: linux-next: Tree for Jan 15 (um, rcu)
+Message-Id: <20140116075025.7b7ec09805b5f90c75a36dd2@canb.auug.org.au>
+In-Reply-To: <2114717.uibXxy8kL0@sandpuppy>
+References: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au>
+	<52D6B591.3070707@infradead.org>
+	<2114717.uibXxy8kL0@sandpuppy>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__16_Jan_2014_07_50_25_+1100_buA4VgT.pFvwGlg1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014, Prarit Bhargava wrote:
+--Signature=_Thu__16_Jan_2014_07_50_25_+1100_buA4VgT.pFvwGlg1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> When booting a kexec/kdump kernel on a system that has specific memory hotplug
-> regions the boot will fail with warnings like:
-> 
-> [    2.939467] swapper/0: page allocation failure: order:9, mode:0x84d0
-> [    2.946564] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-> 3.10.0-65.el7.x86_64 #1
-> [    2.954532] Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS
-> QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
-> [    2.964926]  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67
-> ffff8800341bd950
-> [    2.973224]  ffffffff8113b1a0 ffff880036339b00 0000000000000009
-> 00000000000084d0
-> [    2.981523]  ffff8800341bd950 ffffffff815b87ee 0000000000000000
-> 0000000000000200
-> [    2.989821] Call Trace:
-> [    2.992560]  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
-> [    2.998300]  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
-> [    3.004817]  [<ffffffff815b87ee>] ?
-> __alloc_pages_direct_compact+0xac/0x196
-> [    3.012594]  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
-> [    3.019692]  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
-> [    3.026303]  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
-> [    3.033302]  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
-> [    3.039718]  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
-> [    3.046717]  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
-> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-> [    3.131987]  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
-> [    3.138889]  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
-> [    3.145210]  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
-> [    3.152111]  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
-> [    3.158430]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-> [    3.164264]  [<ffffffff8159feae>] kernel_init+0xe/0x180
-> [    3.170097]  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
-> [    3.176123]  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
-> [    3.181956] Mem-Info:
-> [    3.184490] Node 0 DMA per-cpu:
-> [    3.188007] CPU    0: hi:    0, btch:   1 usd:   0
-> [    3.193353] Node 0 DMA32 per-cpu:
-> [    3.197060] CPU    0: hi:   42, btch:   7 usd:   0
-> [    3.202410] active_anon:0 inactive_anon:0 isolated_anon:0
-> [    3.202410]  active_file:0 inactive_file:0 isolated_file:0
-> [    3.202410]  unevictable:0 dirty:0 writeback:0 unstable:0
-> [    3.202410]  free:872 slab_reclaimable:13 slab_unreclaimable:1880
-> [    3.202410]  mapped:0 shmem:0 pagetables:0 bounce:0
-> [    3.202410]  free_cma:0
-> 
-> because the system has run out of memory at boot time.  This occurs
-> because of the following sequence in the boot:
-> 
-> Main kernel boots and sets E820 map.  The second kernel is booted with a
-> map generated by the kdump service using memmap= and memmap=exactmap.
-> These parameters are added to the kernel parameters of the kexec/kdump
-> kernel.   The kexec/kdump kernel has limited memory resources so as not
-> to severely impact the main kernel.
-> 
-> The system then panics and the kdump/kexec kernel boots (which is a
-> completely new kernel boot).  During this boot ACPI is initialized and the
-> kernel (as can be seen above) traverses the ACPI namespace and finds an
-> entry for a memory device to be hotadded.
-> 
-> ie)
-> 
-> [    3.053720]  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
-> [    3.059656]  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
-> [    3.065877]  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
-> [    3.071713]  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
-> [    3.078813]  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
-> [    3.085719]  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
-> [    3.092716]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.100004]  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
-> [    3.107293]  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
-> [    3.113904]  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
-> [    3.119933]  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
-> [    3.126153]  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
-> 
-> At this point the kernel adds page table information and the the kexec/kdump
-> kernel runs out of memory.
-> 
-> This can also be reproduced by using the memmap=exactmap and mem=X
-> parameters on the main kernel and booting.
-> 
-> This patchset resolves the problem by adding a kernel parameter,
-> acpi_no_memhotplug, to disable ACPI memory hotplug.
-> 
-> [v2]: changed acpi_no_memhotplug to bool
-> [v3]: cleaned up Documentation/kernel-parameters.txt
-> [v4]: add __initdata to acpi_no_memhotplug
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Hi Richard,
 
-Acked-by: David Rientjes <rientjes@google.com>
+On Wed, 15 Jan 2014 20:39:03 +0100 Richard Weinberger <richard@nod.at> wrot=
+e:
+>
+> Stephen, can you please add my UML tree to -next?
+> It contains already the fix.
+> git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git next
+
+Sure, added from today.  As long as it only contains stuff for v3.14 ...
+
+> Please note there is a trivial merge conflict in arch/um/include/asm/Kbui=
+ld.
+
+Yeah, what Geert said.  If you can fix this, then fine, but a single
+conflict is not so bad.
+
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Thu__16_Jan_2014_07_50_25_+1100_buA4VgT.pFvwGlg1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS1vSXAAoJEMDTa8Ir7ZwViB8QAIWP/XeQ2WaHt5M1yruvzxqT
+AhEAirFadQ1rWGnc8VPkgDh0zd+bU2WKNiUI9Jg1ZOBOmy5OV5YrZiD3/G2bIzky
+oGSlYtWWKslYbr/1hQYc+m/YJB+e8sOi/aGRyJguKeh6D5Tt+x6sw51pEllCrs6q
+V4LNBuIK3gprLEWWBeDu+GnlQEfMJ/QURxytGyvfTS8XCmbn+HsoDYSUzRNJBO8N
+5xq3mnk6+5m8q1XKsnmUa77uVExGsWV2uc3npRgoqSD/kP+ksf8Wo6HEO8Ex5xF4
+JMvuzkempqwmTippSghfDsacBIHsHixg/wCPnMv91kfbzdGu1qgnV/EKC1PnFbp3
+5rN/845i3MButhL0BWRfK80tnNyYnWjuMpE9IVrK2uvhV3o/akLT4bspskCGvFp1
+NqPCiYbJuk+raJqxUUuWo/CxZXXGsY+xXDfQt1rBclQ8YNh9BKijDktF9sco6kRn
+LrczXLDXHr7IaDbvBsEziZ3IxtrQGb9LqNxSyj/8WIOJj4snsz2AHKyGyb2zDjv9
+qk/cw7I4iD+l1EfGdJ3XD5qyH0TOJMQynr/SD3dK44QFvLE7nfSSLMu9H3GhPy+p
+k0RP8HLVqc43XZ1NnL6msdroGQlRYub5zXuauUr+q3H3RPS0lx5JRGgo0XcsFWTr
+pOfSaLXY6o8V/TC3mf7X
+=hoyx
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__16_Jan_2014_07_50_25_+1100_buA4VgT.pFvwGlg1--
