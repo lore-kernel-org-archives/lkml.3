@@ -1,100 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaAOSPR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:15:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728AbaAOSPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:15:14 -0500
-Date: Wed, 15 Jan 2014 13:14:26 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, hpa@linux.intel.com,
-        jingbai.ma@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bp@alien8.de, ebiederm@xmission.com,
-        akpm@linux-foundation.org, fengguang.wu@intel.com
-Subject: Re: [RESEND PATCH v10] x86, apic, kexec, Documentation: Add
- disable_cpu_apicid kernel parameter
-Message-ID: <20140115181426.GC29244@redhat.com>
-References: <20140115064458.1545.38775.stgit@localhost6.localdomain6>
- <20140115170525.GF3180@redhat.com>
- <52D6C4B6.8010804@zytor.com>
- <20140115174714.GG3180@redhat.com>
- <52D6CB57.8030804@zytor.com>
+	id S1752804AbaAOSP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:15:28 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52148 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaAOSPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 13:15:23 -0500
+Date: Wed, 15 Jan 2014 19:15:19 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] locking fixes
+Message-ID: <20140115181519.GA21063@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52D6CB57.8030804@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 09:54:31AM -0800, H. Peter Anvin wrote:
-> On 01/15/2014 09:47 AM, Vivek Goyal wrote:
-> > On Wed, Jan 15, 2014 at 09:26:14AM -0800, H. Peter Anvin wrote:
-> >> On 01/15/2014 09:05 AM, Vivek Goyal wrote:
-> >>>
-> >>> I think this is a reasonable approach to solve the issue. Use a command
-> >>> line to not bring up specific cpu in second kernel which can create
-> >>> problems.
-> >>>
-> >>> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> >>>
-> >>> hpa, I know you are not excited about this approach. If you made up your
-> >>> mind that this appoarch is not worth pursuing, please do suggest what
-> >>> would you like to see and we can give that a try.
-> >>>
-> >>> We want to solve this problem as on large memory machines saving dump can
-> >>> take lot of time and we want to bring up multiple cpus and speed up
-> >>> compression and save on dump time.
-> >>>
-> >>
-> >> I'm not excited about kdump's reliance on the command line, since it
-> >> seems to be a neverending source of trouble, simply because the command
-> >> line is fundamentally intended as a human interface.
-> > 
-> > So in general, what are the alternatives? Either we figure out that kernel
-> > is booting as kdump kernel and do things differently. That seems even
-> > worse as what do we want in kdump kernel will change over a period of
-> > time.
-> > 
-> > Other thing is that pass more information in bootparams. But that does
-> > not seem much different than command line to me.
-> > 
-> 
-> It is the commingling of semantics that is the problem.  Command line
-> options are generally imperative, "do this".  What you want in the kdump
-> situation, as you yourself state above, is get a description of the
-> current situation and let the kdump side choose the action to take.
-> 
-> As a transport mechanism the command line suffers from limited size and
-> that you have to share it with an arbitrary amount of user-provided
-> options that may or may not be essential.
+Linus,
 
-For large amount of info like memory map, I agree that passing on command
-line is not a good idea. (/me taks the blame for doing that). That's why
-in new patches I want to move to pass new map on bootparams and pass
-saved_max_pfn on command line instead. This is a fresh start so we
-probably can ignore compatibility with older kernels for this new
-interface and set things right.
+Please pull the latest core-urgent-for-linus git tree from:
 
-But for smaller options, command line seems to be good that they don't
-consume precious space in bootparams. If we introduce an option today,
-we are not sure if kdump will continue to use that option down the line
-or not. For example, few years down the line, we might be able to send
-INIT IPI to boot cpu too and not need disable_cpu_apicid. Same is the case
-with max_cpus vs nr_cpus. We used to use max_cpus=1 and now use nr_cpus=1.
-If we put all this informatoin in bootparams, they might soon become
-obsolete and keep on sitting there for eternity with no users.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
 
-Also by creating a command line, a user can use these knobs as debugging
-options and can easily test first kernel's behavior to make sure knob
-works well in first kernel before it is tested in second kernel. By making
-it part of bootparams, we have no idea whether knob works fine in first
-kernel or not.
+   # HEAD: 7a06c41cbec33c6dbe7eec575c61986122617408 sched_clock: Disable seqlock lockdep usage in sched_clock()
 
-For above reasons, I am not averse to the idea of commingling.
+Two fixes from lockdep coverage of seqlocks, which fix deadlocks on 
+lockdep-enabled ARM systems.
 
-Thanks
-Vivek
+ Thanks,
+
+	Ingo
+
+------------------>
+John Stultz (2):
+      seqlock: Use raw_ prefix instead of _no_lockdep
+      sched_clock: Disable seqlock lockdep usage in sched_clock()
+
+
+ arch/x86/vdso/vclock_gettime.c |  8 ++++----
+ include/linux/seqlock.h        | 27 +++++++++++++++++++--------
+ kernel/time/sched_clock.c      |  6 +++---
+ 3 files changed, 26 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 2ada505..eb5d7a5 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -178,7 +178,7 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
+ 
+ 	ts->tv_nsec = 0;
+ 	do {
+-		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
++		seq = raw_read_seqcount_begin(&gtod->seq);
+ 		mode = gtod->clock.vclock_mode;
+ 		ts->tv_sec = gtod->wall_time_sec;
+ 		ns = gtod->wall_time_snsec;
+@@ -198,7 +198,7 @@ notrace static int do_monotonic(struct timespec *ts)
+ 
+ 	ts->tv_nsec = 0;
+ 	do {
+-		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
++		seq = raw_read_seqcount_begin(&gtod->seq);
+ 		mode = gtod->clock.vclock_mode;
+ 		ts->tv_sec = gtod->monotonic_time_sec;
+ 		ns = gtod->monotonic_time_snsec;
+@@ -214,7 +214,7 @@ notrace static int do_realtime_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+-		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
++		seq = raw_read_seqcount_begin(&gtod->seq);
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+@@ -225,7 +225,7 @@ notrace static int do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq;
+ 	do {
+-		seq = read_seqcount_begin_no_lockdep(&gtod->seq);
++		seq = raw_read_seqcount_begin(&gtod->seq);
+ 		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
+ 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index cf87a24..535f158 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -117,15 +117,15 @@ repeat:
+ }
+ 
+ /**
+- * read_seqcount_begin_no_lockdep - start seq-read critical section w/o lockdep
++ * raw_read_seqcount_begin - start seq-read critical section w/o lockdep
+  * @s: pointer to seqcount_t
+  * Returns: count to be passed to read_seqcount_retry
+  *
+- * read_seqcount_begin_no_lockdep opens a read critical section of the given
++ * raw_read_seqcount_begin opens a read critical section of the given
+  * seqcount, but without any lockdep checking. Validity of the critical
+  * section is tested by checking read_seqcount_retry function.
+  */
+-static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
++static inline unsigned raw_read_seqcount_begin(const seqcount_t *s)
+ {
+ 	unsigned ret = __read_seqcount_begin(s);
+ 	smp_rmb();
+@@ -144,7 +144,7 @@ static inline unsigned read_seqcount_begin_no_lockdep(const seqcount_t *s)
+ static inline unsigned read_seqcount_begin(const seqcount_t *s)
+ {
+ 	seqcount_lockdep_reader_access(s);
+-	return read_seqcount_begin_no_lockdep(s);
++	return raw_read_seqcount_begin(s);
+ }
+ 
+ /**
+@@ -206,14 +206,26 @@ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
+ }
+ 
+ 
++
++static inline void raw_write_seqcount_begin(seqcount_t *s)
++{
++	s->sequence++;
++	smp_wmb();
++}
++
++static inline void raw_write_seqcount_end(seqcount_t *s)
++{
++	smp_wmb();
++	s->sequence++;
++}
++
+ /*
+  * Sequence counter only version assumes that callers are using their
+  * own mutexing.
+  */
+ static inline void write_seqcount_begin_nested(seqcount_t *s, int subclass)
+ {
+-	s->sequence++;
+-	smp_wmb();
++	raw_write_seqcount_begin(s);
+ 	seqcount_acquire(&s->dep_map, subclass, 0, _RET_IP_);
+ }
+ 
+@@ -225,8 +237,7 @@ static inline void write_seqcount_begin(seqcount_t *s)
+ static inline void write_seqcount_end(seqcount_t *s)
+ {
+ 	seqcount_release(&s->dep_map, 1, _RET_IP_);
+-	smp_wmb();
+-	s->sequence++;
++	raw_write_seqcount_end(s);
+ }
+ 
+ /**
+diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+index 68b7993..0abb364 100644
+--- a/kernel/time/sched_clock.c
++++ b/kernel/time/sched_clock.c
+@@ -74,7 +74,7 @@ unsigned long long notrace sched_clock(void)
+ 		return cd.epoch_ns;
+ 
+ 	do {
+-		seq = read_seqcount_begin(&cd.seq);
++		seq = raw_read_seqcount_begin(&cd.seq);
+ 		epoch_cyc = cd.epoch_cyc;
+ 		epoch_ns = cd.epoch_ns;
+ 	} while (read_seqcount_retry(&cd.seq, seq));
+@@ -99,10 +99,10 @@ static void notrace update_sched_clock(void)
+ 			  cd.mult, cd.shift);
+ 
+ 	raw_local_irq_save(flags);
+-	write_seqcount_begin(&cd.seq);
++	raw_write_seqcount_begin(&cd.seq);
+ 	cd.epoch_ns = ns;
+ 	cd.epoch_cyc = cyc;
+-	write_seqcount_end(&cd.seq);
++	raw_write_seqcount_end(&cd.seq);
+ 	raw_local_irq_restore(flags);
+ }
+ 
