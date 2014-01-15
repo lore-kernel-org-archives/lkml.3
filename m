@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156AbaAOW0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:26:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41015 "EHLO
+	id S1753533AbaAOV5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:57:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40956 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaAOV5h (ORCPT
+	with ESMTP id S1753446AbaAOV5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:37 -0500
+	Wed, 15 Jan 2014 16:57:21 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 053/166] KVM: x86: Convert vapic synchronization to _cached functions (CVE-2013-6368)
-Date: Wed, 15 Jan 2014 13:51:07 -0800
-Message-Id: <1389822780-4729-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 137/166] SELinux: Fix possible NULL pointer dereference in selinux_inode_permission()
+Date: Wed, 15 Jan 2014 13:52:31 -0800
+Message-Id: <1389822780-4729-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,193 +28,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit fda4e2e85589191b123d31cdc21fd33ee70f50fd upstream.
+commit 3dc91d4338d698ce77832985f9cb183d8eeaf6be upstream.
 
-In kvm_lapic_sync_from_vapic and kvm_lapic_sync_to_vapic there is the
-potential to corrupt kernel memory if userspace provides an address that
-is at the end of a page.  This patches concerts those functions to use
-kvm_write_guest_cached and kvm_read_guest_cached.  It also checks the
-vapic_address specified by userspace during ioctl processing and returns
-an error to userspace if the address is not a valid GPA.
+While running stress tests on adding and deleting ftrace instances I hit
+this bug:
 
-This is generally not guest triggerable, because the required write is
-done by firmware that runs before the guest.  Also, it only affects AMD
-processors and oldish Intel that do not have the FlexPriority feature
-(unless you disable FlexPriority, of course; then newer processors are
-also affected).
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+  IP: selinux_inode_permission+0x85/0x160
+  PGD 63681067 PUD 7ddbe067 PMD 0
+  Oops: 0000 [#1] PREEMPT
+  CPU: 0 PID: 5634 Comm: ftrace-test-mki Not tainted 3.13.0-rc4-test-00033-gd2a6dde-dirty #20
+  Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+  task: ffff880078375800 ti: ffff88007ddb0000 task.ti: ffff88007ddb0000
+  RIP: 0010:[<ffffffff812d8bc5>]  [<ffffffff812d8bc5>] selinux_inode_permission+0x85/0x160
+  RSP: 0018:ffff88007ddb1c48  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: 0000000000800000 RCX: ffff88006dd43840
+  RDX: 0000000000000001 RSI: 0000000000000081 RDI: ffff88006ee46000
+  RBP: ffff88007ddb1c88 R08: 0000000000000000 R09: ffff88007ddb1c54
+  R10: 6e6576652f6f6f66 R11: 0000000000000003 R12: 0000000000000000
+  R13: 0000000000000081 R14: ffff88006ee46000 R15: 0000000000000000
+  FS:  00007f217b5b6700(0000) GS:ffffffff81e21000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033^M
+  CR2: 0000000000000020 CR3: 000000006a0fe000 CR4: 00000000000007f0
+  Call Trace:
+    security_inode_permission+0x1c/0x30
+    __inode_permission+0x41/0xa0
+    inode_permission+0x18/0x50
+    link_path_walk+0x66/0x920
+    path_openat+0xa6/0x6c0
+    do_filp_open+0x43/0xa0
+    do_sys_open+0x146/0x240
+    SyS_open+0x1e/0x20
+    system_call_fastpath+0x16/0x1b
+  Code: 84 a1 00 00 00 81 e3 00 20 00 00 89 d8 83 c8 02 40 f6 c6 04 0f 45 d8 40 f6 c6 08 74 71 80 cf 02 49 8b 46 38 4c 8d 4d cc 45 31 c0 <0f> b7 50 20 8b 70 1c 48 8b 41 70 89 d9 8b 78 04 e8 36 cf ff ff
+  RIP  selinux_inode_permission+0x85/0x160
+  CR2: 0000000000000020
 
-Fixes: b93463aa59d6 ('KVM: Accelerated apic support')
+Investigating, I found that the inode->i_security was NULL, and the
+dereference of it caused the oops.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+in selinux_inode_permission():
+
+	isec = inode->i_security;
+
+	rc = avc_has_perm_noaudit(sid, isec->sid, isec->sclass, perms, 0, &avd);
+
+Note, the crash came from stressing the deletion and reading of debugfs
+files.  I was not able to recreate this via normal files.  But I'm not
+sure they are safe.  It may just be that the race window is much harder
+to hit.
+
+What seems to have happened (and what I have traced), is the file is
+being opened at the same time the file or directory is being deleted.
+As the dentry and inode locks are not held during the path walk, nor is
+the inodes ref counts being incremented, there is nothing saving these
+structures from being discarded except for an rcu_read_lock().
+
+The rcu_read_lock() protects against freeing of the inode, but it does
+not protect freeing of the inode_security_struct.  Now if the freeing of
+the i_security happens with a call_rcu(), and the i_security field of
+the inode is not changed (it gets freed as the inode gets freed) then
+there will be no issue here.  (Linus Torvalds suggested not setting the
+field to NULL such that we do not need to check if it is NULL in the
+permission check).
+
+Note, this is a hack, but it fixes the problem at hand.  A real fix is
+to restructure the destroy_inode() to call all the destructor handlers
+from the RCU callback.  But that is a major job to do, and requires a
+lot of work.  For now, we just band-aid this bug with this fix (it
+works), and work on a more maintainable solution in the future.
+
+Link: http://lkml.kernel.org/r/20140109101932.0508dec7@gandalf.local.home
+Link: http://lkml.kernel.org/r/20140109182756.17abaaa8@gandalf.local.home
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kvm/lapic.c | 27 +++++++++++++++------------
- arch/x86/kvm/lapic.h |  4 ++--
- arch/x86/kvm/x86.c   | 40 +---------------------------------------
- 3 files changed, 18 insertions(+), 53 deletions(-)
+ security/selinux/hooks.c          | 20 ++++++++++++++++++--
+ security/selinux/include/objsec.h |  5 ++++-
+ 2 files changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 8d11f7735..b8a559b 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1633,7 +1633,6 @@ static void apic_sync_pv_eoi_from_guest(struct kvm_vcpu *vcpu,
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- {
- 	u32 data;
--	void *vapic;
- 
- 	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
- 		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
-@@ -1641,9 +1640,8 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- 	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
- 		return;
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
--	kunmap_atomic(vapic);
-+	kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+				sizeof(u32));
- 
- 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
- }
-@@ -1679,7 +1677,6 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 	u32 data, tpr;
- 	int max_irr, max_isr;
- 	struct kvm_lapic *apic = vcpu->arch.apic;
--	void *vapic;
- 
- 	apic_sync_pv_eoi_to_guest(vcpu, apic);
- 
-@@ -1695,18 +1692,24 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 		max_isr = 0;
- 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
--	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
--	kunmap_atomic(vapic);
-+	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.apic->vapic_cache, &data,
-+				sizeof(u32));
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 6b0b250..89c986e 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -218,6 +218,14 @@ static int inode_alloc_security(struct inode *inode)
+ 	return 0;
  }
  
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
- {
--	vcpu->arch.apic->vapic_addr = vapic_addr;
--	if (vapic_addr)
-+	if (vapic_addr) {
-+		if (kvm_gfn_to_hva_cache_init(vcpu->kvm,
-+					&vcpu->arch.apic->vapic_cache,
-+					vapic_addr, sizeof(u32)))
-+			return -EINVAL;
- 		__set_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
--	else
-+	} else {
- 		__clear_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention);
-+	}
++static void inode_free_rcu(struct rcu_head *head)
++{
++	struct inode_security_struct *isec;
 +
-+	vcpu->arch.apic->vapic_addr = vapic_addr;
-+	return 0;
- }
- 
- int kvm_x2apic_msr_write(struct kvm_vcpu *vcpu, u32 msr, u64 data)
-diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
-index e5ebf9f..de61f21 100644
---- a/arch/x86/kvm/lapic.h
-+++ b/arch/x86/kvm/lapic.h
-@@ -31,7 +31,7 @@ struct kvm_lapic {
- 	 */
- 	void *regs;
- 	gpa_t vapic_addr;
--	struct page *vapic_page;
-+	struct gfn_to_hva_cache vapic_cache;
- };
- int kvm_create_lapic(struct kvm_vcpu *vcpu);
- void kvm_free_lapic(struct kvm_vcpu *vcpu);
-@@ -64,7 +64,7 @@ int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu);
- u64 kvm_get_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu);
- void kvm_set_lapic_tscdeadline_msr(struct kvm_vcpu *vcpu, u64 data);
- 
--void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
-+int kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr);
- void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu);
- void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu);
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6e2af7b..c22ab85 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3094,8 +3094,7 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
- 		r = -EFAULT;
- 		if (copy_from_user(&va, argp, sizeof va))
- 			goto out;
--		r = 0;
--		kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
-+		r = kvm_lapic_set_vapic_addr(vcpu, va.vapic_addr);
- 		break;
- 	}
- 	case KVM_X86_SETUP_MCE: {
-@@ -5450,36 +5449,6 @@ static void post_kvm_run_save(struct kvm_vcpu *vcpu)
- 			!kvm_event_needs_reinjection(vcpu);
- }
- 
--static int vapic_enter(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	struct page *page;
--
--	if (!apic || !apic->vapic_addr)
--		return 0;
--
--	page = gfn_to_page(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--	if (is_error_page(page))
--		return -EFAULT;
--
--	vcpu->arch.apic->vapic_page = page;
--	return 0;
--}
--
--static void vapic_exit(struct kvm_vcpu *vcpu)
--{
--	struct kvm_lapic *apic = vcpu->arch.apic;
--	int idx;
--
--	if (!apic || !apic->vapic_addr)
--		return;
--
--	idx = srcu_read_lock(&vcpu->kvm->srcu);
--	kvm_release_page_dirty(apic->vapic_page);
--	mark_page_dirty(vcpu->kvm, apic->vapic_addr >> PAGE_SHIFT);
--	srcu_read_unlock(&vcpu->kvm->srcu, idx);
--}
--
- static void update_cr8_intercept(struct kvm_vcpu *vcpu)
++	isec = container_of(head, struct inode_security_struct, rcu);
++	kmem_cache_free(sel_inode_cache, isec);
++}
++
+ static void inode_free_security(struct inode *inode)
  {
- 	int max_irr, tpr;
-@@ -5796,11 +5765,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 	}
+ 	struct inode_security_struct *isec = inode->i_security;
+@@ -228,8 +236,16 @@ static void inode_free_security(struct inode *inode)
+ 		list_del_init(&isec->list);
+ 	spin_unlock(&sbsec->isec_lock);
  
- 	vcpu->srcu_idx = srcu_read_lock(&kvm->srcu);
--	r = vapic_enter(vcpu);
--	if (r) {
--		srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
--		return r;
--	}
- 
- 	r = 1;
- 	while (r > 0) {
-@@ -5857,8 +5821,6 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 
- 	srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
- 
--	vapic_exit(vcpu);
--
- 	return r;
+-	inode->i_security = NULL;
+-	kmem_cache_free(sel_inode_cache, isec);
++	/*
++	 * The inode may still be referenced in a path walk and
++	 * a call to selinux_inode_permission() can be made
++	 * after inode_free_security() is called. Ideally, the VFS
++	 * wouldn't do this, but fixing that is a much harder
++	 * job. For now, simply free the i_security via RCU, and
++	 * leave the current inode->i_security pointer intact.
++	 * The inode will be freed after the RCU grace period too.
++	 */
++	call_rcu(&isec->rcu, inode_free_rcu);
  }
  
+ static int file_alloc_security(struct file *file)
+diff --git a/security/selinux/include/objsec.h b/security/selinux/include/objsec.h
+index aa47bca..6fd9dd2 100644
+--- a/security/selinux/include/objsec.h
++++ b/security/selinux/include/objsec.h
+@@ -38,7 +38,10 @@ struct task_security_struct {
+ 
+ struct inode_security_struct {
+ 	struct inode *inode;	/* back pointer to inode object */
+-	struct list_head list;	/* list of inode_security_struct */
++	union {
++		struct list_head list;	/* list of inode_security_struct */
++		struct rcu_head rcu;	/* for freeing the inode_security_struct */
++	};
+ 	u32 task_sid;		/* SID of creating task */
+ 	u32 sid;		/* SID of this object */
+ 	u16 sclass;		/* security class of this object */
 -- 
 1.8.3.2
 
