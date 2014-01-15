@@ -1,220 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaAOEHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:07:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25646 "EHLO mx1.redhat.com"
+	id S1751641AbaAOEHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:07:53 -0500
+Received: from ozlabs.org ([203.10.76.45]:43910 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071AbaAOEHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:07:40 -0500
-Date: Tue, 14 Jan 2014 23:02:27 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Jan Kaluza <jkaluza@redhat.com>
-Cc: davem@davemloft.net, LKML <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org, eparis@redhat.com, tj@kernel.org,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v4 1/3] Send loginuid and sessionid in SCM_AUDIT
-Message-ID: <20140115040227.GW13431@madcap2.tricolour.ca>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
- <1389600109-30739-1-git-send-email-jkaluza@redhat.com>
- <1389600109-30739-2-git-send-email-jkaluza@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389600109-30739-2-git-send-email-jkaluza@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751253AbaAOEHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 23:07:49 -0500
+Date: Wed, 15 Jan 2014 15:07:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Neil Brown <neilb@suse.de>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: linux-next: manual merge of the md tree with the block tree
+Message-Id: <20140115150743.ff3de076048b32e82fa5ba27@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__15_Jan_2014_15_07_43_+1100_vzHtctWUMmX0MDi0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/13, Jan Kaluza wrote:
-> Server-like processes in many cases need credentials and other
-> metadata of the peer, to decide if the calling process is allowed to
-> request a specific action, or the server just wants to log away this
-> type of information for auditing tasks.
-> 
-> The current practice to retrieve such process metadata is to look that
-> information up in procfs with the $PID received over SCM_CREDENTIALS.
-> This is sufficient for long-running tasks, but introduces a race which
-> cannot be worked around for short-living processes; the calling
-> process and all the information in /proc/$PID/ is gone before the
-> receiver of the socket message can look it up.
-> 
-> This introduces a new SCM type called SCM_AUDIT to allow the direct
-> attaching of "loginuid" and "sessionid" to SCM, which is significantly more
-> efficient and will reliably avoid the race with the round-trip over
-> procfs.
-> 
-> Signed-off-by: Jan Kaluza <jkaluza@redhat.com>
+--Signature=_Wed__15_Jan_2014_15_07_43_+1100_vzHtctWUMmX0MDi0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Richard Guy Briggs <rgb@redhat.com>
+Hi Neil,
 
-> ---
->  include/linux/socket.h |  6 ++++++
->  include/net/af_unix.h  |  2 ++
->  include/net/scm.h      | 28 ++++++++++++++++++++++++++--
->  net/unix/af_unix.c     |  7 +++++++
->  4 files changed, 41 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/socket.h b/include/linux/socket.h
-> index 5d488a6..eeac565 100644
-> --- a/include/linux/socket.h
-> +++ b/include/linux/socket.h
-> @@ -130,6 +130,7 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
->  #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
->  #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
->  #define SCM_SECURITY	0x03		/* rw: security label		*/
-> +#define SCM_AUDIT	0x04		/* rw: struct uaudit		*/
->  
->  struct ucred {
->  	__u32	pid;
-> @@ -137,6 +138,11 @@ struct ucred {
->  	__u32	gid;
->  };
->  
-> +struct uaudit {
-> +	__u32	loginuid;
-> +	__u32	sessionid;
-> +};
-> +
->  /* Supported address families. */
->  #define AF_UNSPEC	0
->  #define AF_UNIX		1	/* Unix domain sockets 		*/
-> diff --git a/include/net/af_unix.h b/include/net/af_unix.h
-> index a175ba4..3b9d22a 100644
-> --- a/include/net/af_unix.h
-> +++ b/include/net/af_unix.h
-> @@ -36,6 +36,8 @@ struct unix_skb_parms {
->  	u32			secid;		/* Security ID		*/
->  #endif
->  	u32			consumed;
-> +	kuid_t			loginuid;
-> +	unsigned int		sessionid;
->  };
->  
->  #define UNIXCB(skb) 	(*(struct unix_skb_parms *)&((skb)->cb))
-> diff --git a/include/net/scm.h b/include/net/scm.h
-> index 262532d..67de64f 100644
-> --- a/include/net/scm.h
-> +++ b/include/net/scm.h
-> @@ -6,6 +6,7 @@
->  #include <linux/security.h>
->  #include <linux/pid.h>
->  #include <linux/nsproxy.h>
-> +#include <linux/audit.h>
->  
->  /* Well, we should have at least one descriptor open
->   * to accept passed FDs 8)
-> @@ -18,6 +19,11 @@ struct scm_creds {
->  	kgid_t	gid;
->  };
->  
-> +struct scm_audit {
-> +	kuid_t loginuid;
-> +	unsigned int sessionid;
-> +};
-> +
->  struct scm_fp_list {
->  	short			count;
->  	short			max;
-> @@ -28,6 +34,7 @@ struct scm_cookie {
->  	struct pid		*pid;		/* Skb credentials */
->  	struct scm_fp_list	*fp;		/* Passed files		*/
->  	struct scm_creds	creds;		/* Skb credentials	*/
-> +	struct scm_audit	audit;		/* Skb audit	*/
->  #ifdef CONFIG_SECURITY_NETWORK
->  	u32			secid;		/* Passed security ID 	*/
->  #endif
-> @@ -58,6 +65,13 @@ static __inline__ void scm_set_cred(struct scm_cookie *scm,
->  	scm->creds.gid = gid;
->  }
->  
-> +static inline void scm_set_audit(struct scm_cookie *scm,
-> +				    kuid_t loginuid, unsigned int sessionid)
-> +{
-> +	scm->audit.loginuid = loginuid;
-> +	scm->audit.sessionid = sessionid;
-> +}
-> +
->  static __inline__ void scm_destroy_cred(struct scm_cookie *scm)
->  {
->  	put_pid(scm->pid);
-> @@ -77,8 +91,12 @@ static __inline__ int scm_send(struct socket *sock, struct msghdr *msg,
->  	memset(scm, 0, sizeof(*scm));
->  	scm->creds.uid = INVALID_UID;
->  	scm->creds.gid = INVALID_GID;
-> -	if (forcecreds)
-> -		scm_set_cred(scm, task_tgid(current), current_uid(), current_gid());
-> +	if (forcecreds) {
-> +		scm_set_cred(scm, task_tgid(current), current_uid(),
-> +			     current_gid());
-> +		scm_set_audit(scm, audit_get_loginuid(current),
-> +			      audit_get_sessionid(current));
-> +	}
->  	unix_get_peersec_dgram(sock, scm);
->  	if (msg->msg_controllen <= 0)
->  		return 0;
-> @@ -123,7 +141,13 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
->  			.uid = from_kuid_munged(current_ns, scm->creds.uid),
->  			.gid = from_kgid_munged(current_ns, scm->creds.gid),
->  		};
-> +		struct uaudit uaudits = {
-> +			.loginuid = from_kuid_munged(current_ns,
-> +						     scm->audit.loginuid),
-> +			.sessionid = scm->audit.sessionid,
-> +		};
->  		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(ucreds), &ucreds);
-> +		put_cmsg(msg, SOL_SOCKET, SCM_AUDIT, sizeof(uaudits), &uaudits);
->  	}
->  
->  	scm_destroy_cred(scm);
-> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-> index 800ca61..bc02a25 100644
-> --- a/net/unix/af_unix.c
-> +++ b/net/unix/af_unix.c
-> @@ -1413,6 +1413,8 @@ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool sen
->  	UNIXCB(skb).pid  = get_pid(scm->pid);
->  	UNIXCB(skb).uid = scm->creds.uid;
->  	UNIXCB(skb).gid = scm->creds.gid;
-> +	UNIXCB(skb).loginuid = scm->audit.loginuid;
-> +	UNIXCB(skb).sessionid = scm->audit.sessionid;
->  	UNIXCB(skb).fp = NULL;
->  	if (scm->fp && send_fds)
->  		err = unix_attach_fds(scm, skb);
-> @@ -1436,6 +1438,8 @@ static void maybe_add_creds(struct sk_buff *skb, const struct socket *sock,
->  	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
->  		UNIXCB(skb).pid  = get_pid(task_tgid(current));
->  		current_uid_gid(&UNIXCB(skb).uid, &UNIXCB(skb).gid);
-> +		UNIXCB(skb).loginuid = audit_get_loginuid(current);
-> +		UNIXCB(skb).sessionid = audit_get_sessionid(current);
->  	}
->  }
->  
-> @@ -1829,6 +1833,7 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
->  		memset(&tmp_scm, 0, sizeof(tmp_scm));
->  	}
->  	scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
-> +	scm_set_audit(siocb->scm, UNIXCB(skb).loginuid, UNIXCB(skb).sessionid);
->  	unix_set_secdata(siocb->scm, skb);
->  
->  	if (!(flags & MSG_PEEK)) {
-> @@ -2008,6 +2013,8 @@ again:
->  		} else if (test_bit(SOCK_PASSCRED, &sock->flags)) {
->  			/* Copy credentials */
->  			scm_set_cred(siocb->scm, UNIXCB(skb).pid, UNIXCB(skb).uid, UNIXCB(skb).gid);
-> +			scm_set_audit(siocb->scm, UNIXCB(skb).loginuid,
-> +				      UNIXCB(skb).sessionid);
->  			check_creds = 1;
->  		}
->  
-> -- 
-> 1.8.3.1
-> 
+Today's linux-next merge of the md tree got a conflict in
+drivers/md/raid10.c between commit 4f024f3797c4 ("block: Abstract out
+bvec iterator") from the block tree and commit b50c259e25d9 ("md/raid10:
+fix two bugs in handling of known-bad-blocks") from the md tree.
 
-- RGB
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/md/raid10.c
+index 6d43d88657aa,8d39d63281b9..000000000000
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@@ -1256,8 -1319,8 +1256,8 @@@ read_again
+  			/* Could not read all from this device, so we will
+  			 * need another r10_bio.
+  			 */
+- 			sectors_handled =3D (r10_bio->sectors + max_sectors
++ 			sectors_handled =3D (r10_bio->sector + max_sectors
+ -					   - bio->bi_sector);
+ +					   - bio->bi_iter.bi_sector);
+  			r10_bio->sectors =3D max_sectors;
+  			spin_lock_irq(&conf->device_lock);
+  			if (bio->bi_phys_segments =3D=3D 0)
+
+--Signature=_Wed__15_Jan_2014_15_07_43_+1100_vzHtctWUMmX0MDi0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJS1gmSAAoJEMDTa8Ir7ZwVFOYP/1l77UJFdfzcVCzGq1QWbN04
+OLhwA7rOavW5xKLa79IZ/w08cyHHomIQ7RBvyBDslpFwV/k1yMMTBsZE3CuVNAYp
+LpJlXB7bJ6IsKU0yfHxSVGLt3ALe39nQCBdq/k637MbWYACVFbC7KWik+XqGt37L
+F3DQQnGwqYRtIXQxi51pjPkCL95VJ9cRE65afcDFcRmxvZqfI4lo/2PmAexhqD9Z
+CPNNBIftcx3fXy3Ie6uwF5dOx1yaPOeRQ/gaCfe41K00oY+maNE302JhmOUBO1rP
+p0vo1Kgp0Up31tkT3b4gec6lGgRFPYeptM9Yjf3YCfL0os0tm8tdtxuhLJAedRKs
+UZa2bHFyyrtdtcp93qqMnTAoOTY1IybVu+MsQodr3RKhkTKG/LXiZefTZAhqadp3
+eyEuMLIxNazZM4zgsN+L00Kvtuz5Uf6IIXHNS0OAhH2TJ2P8XoPG01gKxpimxx8T
+Am/5sfhltSY5Bf9xcQ4L9ZIPxcEOiv9sNfnD/wPuZxoYn6H5Tgey7HXjRhBzQpS4
+v6BIgdtMKVVU5ucz7WYMewOtf8ijYZ9gHTibttzwNv4ahKw8w9NZHEePGdpzZCmA
+HxE3OYxD+JRHr1HCinuk/B8CqaxCtijCp/yz+v0kxzhVnfsTdh6u72Z4n+RD8jf6
+V06kAezldEv9WEcHlgca
+=SZfX
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__15_Jan_2014_15_07_43_+1100_vzHtctWUMmX0MDi0--
