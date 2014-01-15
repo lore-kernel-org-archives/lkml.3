@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaAOTLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 14:11:11 -0500
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:23126
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752120AbaAOTLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 14:11:09 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Thread-Topic: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-Thread-Index: AQHPEVjnKHWBxAK/ME2641uqAhZ1vZqF/DsAgAAryDA=
-Date: Wed, 15 Jan 2014 19:11:05 +0000
-Message-ID: <7d05d0da979343979b7bcdd7896b2c95@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1389728116-21337-1-git-send-email-kys@microsoft.com>
- <20140115163304.GA31066@aepfle.de>
-In-Reply-To: <20140115163304.GA31066@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e0:ee43::3]
-x-forefront-prvs: 00922518D8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(779001)(679001)(689001)(51704005)(377454003)(24454002)(13464003)(199002)(189002)(47446002)(76796001)(74502001)(76786001)(31966008)(74662001)(76576001)(85306002)(51856001)(69226001)(85852003)(81342001)(65816001)(80022001)(63696002)(79102001)(2656002)(77982001)(54316002)(59766001)(87936001)(81686001)(56776001)(87266001)(81542001)(80976001)(19580395003)(19580405001)(83322001)(81816001)(56816005)(90146001)(83072002)(46102001)(33646001)(74876001)(93136001)(53806001)(92566001)(74706001)(47976001)(76482001)(47736001)(49866001)(74316001)(50986001)(74366001)(54356001)(4396001)(93516002)(3826001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ee43::3;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1752243AbaAOTWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 14:22:40 -0500
+Received: from nm1.bullet.mail.gq1.yahoo.com ([98.136.218.75]:40268 "EHLO
+	nm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751480AbaAOTWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 14:22:38 -0500
+X-Yahoo-Newman-Id: 138747.61810.bm@smtp240.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: I_ZU5JMVM1mNiWNEyiRhsSAbhhjhDRehISuzrM5wLKo4quJ
+ K0ZYceMaFMI_bSfRBvdgYb1..tx_C6vsGYnbhn52FoWFFSo1DsnJGe4KcE6v
+ FXainzDm7F9PjFjaUXUa3cZcMo7eRoKvBKe4UUPcg3fek1MwjBIS5uMENoa7
+ rWWj3hTauAzwgonNCw1dB8XwOhPf1mgeT8flEZtCi1SV0jEKSx7SsbhhQJuv
+ lJZDMidPFYcEKbc7_b18WQo1tybsnUBhp1K4g4qgEO79pDs9bQoU1xT6yHPD
+ lfr9d3zhuBJ3Ye58ARvFcjMOzhCUjLMeBHnfnLZynjtLq0Po30btiFxpFGA9
+ xqPXvnq9.rO7hqEnZKBrtnyJu7CbZEWn1ctVDWStKI1XzlbGviK3qG7DeD0w
+ cSYEMT5V_FgcXO8E84XqiQySC.5Sno0hp2xFIbnixmj5MxIcDR8EbQARhw2X
+ PoI3ZkCm88Bf8MoOAO0EsNxpSrEIIRyXexiV0Row6_0kLmShszXkCqBtZKGD
+ 7ZoHxH2iliFZ_w4__tEDh1c8lMRdP0Iw9LSs-
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain.com (chase.southwood@50.44.157.207 with plain [98.138.105.21])
+        by smtp240.mail.gq1.yahoo.com with SMTP; 15 Jan 2014 19:22:37 +0000 UTC
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH v7] Staging: comedi: convert while loop to timeout in ni_mio_common.c
+Date: Wed, 15 Jan 2014 13:22:32 -0600
+Message-Id: <1389813752-3009-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0FJBHFO011035
 
+This patch for ni_mio_common.c changes out a while loop for a timeout,
+which is preferred.
 
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+---
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Wednesday, January 15, 2014 8:33 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
-> Subject: Re: [PATCH V2 1/1] Drivers: hv: Implement the file copy service
-> 
-> On Tue, Jan 14, K. Y. Srinivasan wrote:
-> 
-> > +static int hv_start_fcopy(struct hv_start_fcopy *smsg)
-> 
-> > +	if (access((char *)smsg->path_name, F_OK)) {
-> > +		if (smsg->copy_flags & CREATE_PATH) {
-> > +			if (mkdir((char *)smsg->path_name, 0755)) {
-> 
-> KY,
-> 
-> I guess this needs a loop over every path compoment to implement
-> 'mkdir -p', if the "-CreateFullPath" option is used?
+Hartley,
+I sincerely apologize for the obvious mistake, I thought I had built it
+but clearly I made a mistake somewhere, as your observation is exactly
+correct.  It is now fixed.
 
-Yes; I will make the change. The good news is that for the destination path and file name,
-the host does not interpret the path components.
+Thanks,
+Chase Southwood
 
-Regards,
+2: Changed from simple clean-up to swapping a timeout in for a while loop.
 
-K. Y
-> 
-> Hopefully "-DestinationPath" is an arbitrary string and does not require
-> some sort of C: prefix. ;-)
-> 
-> 
-> Olaf
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+3: Removed extra counter variable, and added error checking.
+
+4: No longer using counter variable, using jiffies instead.
+
+5: udelay for 10u, instead of 1u.
+
+6: Scrap udelay entirely, in favor of cpu_relax. Include asm/processor.h
+in order to use cpu_relax.
+
+7: Fix typo (msec vs msecs).
+
+ drivers/staging/comedi/drivers/ni_mio_common.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+index 457b884..ab7a74c 100644
+--- a/drivers/staging/comedi/drivers/ni_mio_common.c
++++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+@@ -55,6 +55,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/sched.h>
+ #include <linux/delay.h>
++#include <asm/processor.h>
+ #include "8255.h"
+ #include "mite.h"
+ #include "comedi_fc.h"
+@@ -687,12 +688,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
+ {
+ 	const struct ni_board_struct *board = comedi_board(dev);
+ 	struct ni_private *devpriv = dev->private;
++	unsigned long timeout;
+ 
+ 	if (board->reg_type == ni_reg_6143) {
+ 		/*  Flush the 6143 data FIFO */
+ 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
+ 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
+-		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
++		/*  Wait for complete */
++		timeout = jiffies + msecs_to_jiffies(500);
++		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
++			if (time_after(jiffies, timeout)) {
++				comedi_error(dev, "FIFO flush timeout.");
++				break;
++			}
++			cpu_relax();
++		}
+ 	} else {
+ 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
+ 		if (board->reg_type == ni_reg_625x) {
+-- 
+1.8.4.2
+
