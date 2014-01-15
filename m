@@ -1,291 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbaAOWXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:23:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43832 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984AbaAOWXt (ORCPT
+	id S1753694AbaAOV6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:58:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41053 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040AbaAOV6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:23:49 -0500
-Date: Wed, 15 Jan 2014 14:23:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: pmladek@suse.cz, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 9/9] printk: Hand over printing to console if printing
- too long
-Message-Id: <20140115142347.34a3239184a989df141154f2@linux-foundation.org>
-In-Reply-To: <1387831171-5264-10-git-send-email-jack@suse.cz>
-References: <1387831171-5264-1-git-send-email-jack@suse.cz>
-	<1387831171-5264-10-git-send-email-jack@suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Jan 2014 16:58:11 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Alex Thorlton <athorlton@sgi.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 087/166] mm: numa: do not clear PTE for pte_numa update
+Date: Wed, 15 Jan 2014 13:51:41 -0800
+Message-Id: <1389822780-4729-88-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 23 Dec 2013 21:39:30 +0100 Jan Kara <jack@suse.cz> wrote:
+3.8.13.16 -stable review patch.  If anyone has any objections, please let me know.
 
-> Currently, console_unlock() prints messages from kernel printk buffer to
-> console while the buffer is non-empty. When serial console is attached,
-> printing is slow and thus other CPUs in the system have plenty of time
-> to append new messages to the buffer while one CPU is printing. Thus the
-> CPU can spend unbounded amount of time doing printing in console_unlock().
-> This is especially serious problem if the printk() calling
-> console_unlock() was called with interrupts disabled.
-> 
-> In practice users have observed a CPU can spend tens of seconds printing
-> in console_unlock() (usually during boot when hundreds of SCSI devices
-> are discovered) resulting in RCU stalls (CPU doing printing doesn't
-> reach quiescent state for a long time), softlockup reports (IPIs for the
-> printing CPU don't get served and thus other CPUs are spinning waiting
-> for the printing CPU to process IPIs), and eventually a machine death
-> (as messages from stalls and lockups append to printk buffer faster than
-> we are able to print). So these machines are unable to boot with serial
-> console attached. Also during artificial stress testing SATA disk
-> disappears from the system because its interrupts aren't served for too
-> long.
-> 
-> This patch implements a mechanism where after printing specified number
-> of characters (tunable as a kernel parameter printk.offload_chars), CPU
-> doing printing asks for help by setting a 'hand over' state. The CPU
-> still keeps printing until another CPU running printk() or a CPU being
-> pinged by an IPI comes and takes over printing.  This way no CPU should
-> spend printing too long if there is heavy printk traffic.
-> 
-> ...
->
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -84,6 +84,45 @@ static DEFINE_SEMAPHORE(console_sem);
->  struct console *console_drivers;
->  EXPORT_SYMBOL_GPL(console_drivers);
->  
-> +/*
-> + * State of printing to console.
-> + * 0 - noone is printing
-> + * 1 - the CPU doing printing is happy doing so
-> + * 2 - the printing CPU wants some other CPU to take over
-> + * 3 - some CPU is waiting to take over printing
-> + *
-> + * Allowed state transitions are:
-> + * 0 -> 1, 1 -> 0, 1 -> 2, 2 -> 0, 2 -> 3, 3 -> 0
-> + * All state transitions except for 2 -> 3 are done by the holder of
-> + * console_sem. Transition 2 -> 3 happens using cmpxchg from a task not owning
-> + * console_sem. Thus it can race with other state transitions from state 2.
-> + * However these races are harmless since the only transition we can race with
-> + * is 2 -> 0. If cmpxchg comes after we have moved from state 2, it does
-> + * nothing and we end in state 0. If cmpxchg comes before, we end in state 0 as
-> + * desired.
-> + */
+------------------
 
-This comment is great, but would be much better if "0"-"3" were
-replaced with their PS_foo representations.
+From: Mel Gorman <mgorman@suse.de>
 
-The locking issue is regrettable.  What's the problem with getting full
-console_sem coverage?
+commit 0c5f83c23ca703d32f930393825487257a5cde6d upstream.
 
-The mixture of cmpxchg with non-atomic reads and writes makes things
-significantly more difficult.
+The TLB must be flushed if the PTE is updated but change_pte_range is
+clearing the PTE while marking PTEs pte_numa without necessarily
+flushing the TLB if it reinserts the same entry.  Without the flush,
+it's conceivable that two processors have different TLBs for the same
+virtual address and at the very least it would generate spurious faults.
 
-> +static enum {
-> +	PS_NONE,
-> +	PS_PRINTING,
-> +	PS_HANDOVER,
-> +	PS_WAITING
-> +} printing_state;
-> +/* CPU which is handing over printing */
-> +static unsigned int hand_over_cpu;
-> +/*
-> + * Structure for IPI to hand printing to another CPU. We have actually two
-> + * structures for the case we need to send IPI from an IPI handler...
-> + */
-> +static void printk_take_over(void *info);
-> +static struct call_single_data hand_over_csd[2] = {
-> +	{ .func = printk_take_over, },
-> +	{ .func = printk_take_over, }
-> +};
-> +/* Index of csd to use for sending IPI now */
-> +static int current_csd;
+This patch only unmaps the pages in change_pte_range for a full
+protection change.
 
-Locking for this?
+[riel@redhat.com: write pte_numa pte back to the page tables]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Cc: Chegu Vinod <chegu_vinod@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ mm/mprotect.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-> +/* Set if there is IPI pending to take over printing */
-> +static bool printk_ipi_sent;
-
-And this?
-
->  #ifdef CONFIG_LOCKDEP
->  static struct lockdep_map console_lock_dep_map = {
->  	.name = "console_lock"
-> 
-> ...
->
-> @@ -1342,8 +1393,40 @@ static int console_trylock_for_printk(void)
->  {
->  	unsigned int cpu = smp_processor_id();
->  
-> -	if (!console_trylock())
-> -		return 0;
-> +	if (!console_trylock()) {
-> +		int state;
-> +
-> +		if (printing_state != PS_HANDOVER || console_suspended)
-> +			return 0;
-> +		smp_rmb();	/* Paired with smp_wmb() in cpu_stop_printing */
-> +		/*
-> +		 * Avoid deadlocks when CPU holding console_sem takes an
-> +		 * interrupt which does printk.
-> +		 */
-> +		if (hand_over_cpu == cpu)
-> +			return 0;
-> +
-> +		state = cmpxchg(&printing_state, PS_HANDOVER, PS_WAITING);
-> +		if (state != PS_HANDOVER)
-> +			return 0;
-> +
-> +		/*
-> +		 * Since PS_HANDOVER state is set only in console_unlock()
-> +		 * we shouldn't spin for long here.
-
-"shouldn't" is ambiguous here.  Suggest replacing it with "won't".
-
->		    And we cannot sleep because
-> +		 * the printk() might be called from atomic context.
-> +		 */
-
-console_trylock_for_printk() is called under logbuf_lock, isn't it? 
-We're atomic here regardless of the printk() caller's state.  That's
-why smp_processor_id() was OK.
-
-> +		while (!console_trylock()) {
-> +			if (console_suspended)
-> +				return 0;
-> +			/*
-> +			 * Someone else took console_sem? Exit as we don't want
-> +			 * to spin for a long time here.
-> +			 */
-> +			if (ACCESS_ONCE(printing_state) == PS_PRINTING)
-
-Is this appropriate use of ACCESS_ONCE?  What is the ACCESS_ONCE()
-trying to achieve?
-
-> +				return 0;
-> +			__delay(1);
-> +		}
-> +	}
->  	/*
->  	 * If we can't use the console, we need to release the console
->  	 * semaphore by hand to avoid flushing the buffer. We need to hold the
-> 
-> ...
->
-> @@ -2005,15 +2091,77 @@ out:
->  	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
->  }
->  
-> +/* Handler for IPI to take over printing from another CPU */
-> +static void printk_take_over(void *info)
-> +{
-> +	/*
-> +	 * We have to clear printk_ipi_sent only after we succeed / fail the
-> +	 * trylock. That way we make sure there is at most one IPI spinning
-> +	 * on console_sem and thus we cannot deadlock on csd_lock
-> +	 */
-> +	if (console_trylock_for_printk()) {
-
-erk, scared.  We're in interrupt and console_trylock_for_printk() can
-loop for arbitrarily long durations.  printk_take_over() is called
-asynchronously and the system could be in any state at all.
-
-> +		printk_ipi_sent = false;
-> +		/* Switch csd as the current one is locked until we finish */
-> +		current_csd ^= 1;
-
-So current_csd is protected by console_sem?  As is printk_ipi_sent?
-
-> +		console_unlock();
-
-So it's via this console_unlock() that the current CPU starts printing?
-Within IPI context?  It's worth documenting this a bit.
-
-> +	} else
-> +		printk_ipi_sent = false;
-> +}
-> +
-> +/*
-> + * Returns true iff there is other cpu waiting to take over printing. This
-> + * function also takes are of changing printing_state if we want to hand over
-
-"care"
-
-> + * printing to some other cpu.
-> + */
-> +static bool cpu_stop_printing(int printed_chars)
-> +{
-> +	cpumask_var_t mask;
-> +
-> +	/* Oops? Print everything now to maximize chances user will see it */
-> +	if (oops_in_progress)
-> +		return false;
-> +	/* Someone is waiting. Stop printing. */
-> +	if (printing_state == PS_WAITING)
-> +		return true;
-> +	if (!printk_offload_chars || printed_chars <= printk_offload_chars)
-
-Off-by-one?  Should that be "<"?
-
-> +		return false;
-> +	if (printing_state == PS_PRINTING) {
-> +		hand_over_cpu = smp_processor_id();
-> +		/* Paired with smp_rmb() in console_trylock_for_printk() */
-> +		smp_wmb();
-> +		printing_state = PS_HANDOVER;
-
-So console_sem must be held by the caller?  Worth documenting this.
-
-Again, the race with cmpxchg is worrisome.  Perhaps document its
-(non-)effects here?
-
-> +		return false;
-> +	}
-> +	/*
-> +	 * We ping another CPU with IPI only if noone took over printing for a
-> +	 * long time - we prefer other printk() to take over printing since it
-> +	 * has chances to happen from a better context than IPI handler.
-> +	 */
-> +	if (!printk_ipi_sent && printed_chars > 2 * printk_offload_chars) {
-
-What is the "2 *" doing?  I don't recall seeing a description of this.
-
-> +		struct call_single_data *csd = &hand_over_csd[current_csd];
-
-I didn't really understand why we need two call_single_data's.
-
-> +
-> +		/* Ping another cpu to take printing from us */
-> +		cpumask_copy(mask, cpu_online_mask);
-> +		cpumask_clear_cpu(hand_over_cpu, mask);
-> +		if (!cpumask_empty(mask)) {
-
-So what happens if this was the only online CPU?  We blow a chunk of
-CPU time in cpu_stop_printing() for each printed char?  Not a problem I
-guess.
-
-> +			printk_ipi_sent = true;
-> +			__smp_call_function_any(mask, csd, 0);
-
-The IPI is sent to all other online CPUs.  I wonder if that was overkill.
-
-> +		}
-> +	}
-> +	return false;
-> +}
-> +
-> 
-> ...
->
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 4c35eb8..79abf13 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -54,13 +54,14 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 			pte_t ptent;
+ 			bool updated = false;
+ 
+-			ptent = ptep_modify_prot_start(mm, addr, pte);
+ 			if (!prot_numa) {
++				ptent = ptep_modify_prot_start(mm, addr, pte);
+ 				ptent = pte_modify(ptent, newprot);
+ 				updated = true;
+ 			} else {
+ 				struct page *page;
+ 
++				ptent = *pte;
+ 				page = vm_normal_page(vma, addr, oldpte);
+ 				if (page) {
+ 					int this_nid = page_to_nid(page);
+@@ -73,6 +74,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 					if (!pte_numa(oldpte) &&
+ 					    page_mapcount(page) == 1) {
+ 						ptent = pte_mknuma(ptent);
++						set_pte_at(mm, addr, pte, ptent);
+ 						updated = true;
+ 					}
+ 				}
+@@ -89,7 +91,10 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 
+ 			if (updated)
+ 				pages++;
+-			ptep_modify_prot_commit(mm, addr, pte, ptent);
++
++			/* Only !prot_numa always clears the pte */
++			if (!prot_numa)
++				ptep_modify_prot_commit(mm, addr, pte, ptent);
+ 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+ 
+-- 
+1.8.3.2
 
