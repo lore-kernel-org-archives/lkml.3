@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750856AbaAOFAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:00:43 -0500
-Received: from ozlabs.org ([203.10.76.45]:45567 "EHLO ozlabs.org"
+	id S1751163AbaAOFBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:01:31 -0500
+Received: from gate.crashing.org ([63.228.1.57]:60281 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703AbaAOFAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:00:40 -0500
-Date: Wed, 15 Jan 2014 16:00:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Paul Burton <paul.burton@imgtec.com>
-Subject: linux-next: manual merge of the tip tree with the mips tree
-Message-Id: <20140115160032.96b4d84d063ab108ae3cdb35@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+	id S1750703AbaAOFBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 00:01:30 -0500
+Message-ID: <1389762075.6933.76.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 15 Jan 2014 16:01:15 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__15_Jan_2014_16_00_32_+1100_GqHf/5IIuKgra868"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__15_Jan_2014_16_00_32_+1100_GqHf/5IIuKgra868
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus !
 
-Hi all,
+So you make the call onto whether taking that one now or waiting for the
+merge window. It's a bug fix for a crash in mremap that occurs on
+powerpc with THP enabled.
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/mips/Kconfig between commit 597ce1723e0f ("MIPS: Support for 64-bit
-FP with O32 binaries") from the mips tree and commit 19952a92037e
-("stackprotector: Unify the HAVE_CC_STACKPROTECTOR logic between
-architectures") from the tip tree.
+The fix however requires a small change in the generic code. It moves a
+condition into a helper we can override from the arch which is harmless,
+but it *also* slightly changes the order of the set_pmd and the withdraw
+& deposit, which should be fine according to Kirill (who wrote that
+code) but I agree -rc8 is a bit late...
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+It was acked by Kirill and Andrew told me to just merge it via powerpc.
 
---=20
+My original intend was to put it in powerpc-next and then shoot it to
+stable, but it got a tad annoying (due to churn it needs to be applied
+at least on rc4 or later while my next is at rc1 and clean that way), so
+I put it in the merge branch.
+
+>From there, you tell me if you want to take it now, if not, I'll send
+you that branch along with my normal next one after you open the merge
+window.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben.
 
-diff --cc arch/mips/Kconfig
-index 87dc0c3fe05f,c93d92beb3d6..000000000000
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@@ -2354,36 -2323,6 +2355,23 @@@ config SECCOM
- =20
-  	  If unsure, say Y. Only embedded should say N here.
- =20
-- config CC_STACKPROTECTOR
-- 	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
-- 	help
-- 	  This option turns on the -fstack-protector GCC feature. This
-- 	  feature puts, at the beginning of functions, a canary value on
-- 	  the stack just before the return address, and validates
-- 	  the value just before actually returning.  Stack based buffer
-- 	  overflows (that need to overwrite this return address) now also
-- 	  overwrite the canary, which gets detected and the attack is then
-- 	  neutralized via a kernel panic.
--=20
-- 	  This feature requires gcc version 4.2 or above.
--=20
- +config MIPS_O32_FP64_SUPPORT
- +	bool "Support for O32 binaries using 64-bit FP"
- +	depends on 32BIT || MIPS32_O32
- +	default y
- +	help
- +	  When this is enabled, the kernel will support use of 64-bit floating
- +	  point registers with binaries using the O32 ABI along with the
- +	  EF_MIPS_FP64 ELF header flag (typically built with -mfp64). On
- +	  32-bit MIPS systems this support is at the cost of increasing the
- +	  size and complexity of the compiled FPU emulator. Thus if you are
- +	  running a MIPS32 system and know that none of your userland binaries
- +	  will require 64-bit floating point, you may wish to reduce the size
- +	  of your kernel & potentially improve FP emulation performance by
- +	  saying N here.
- +
- +	  If unsure, say Y.
- +
-  config USE_OF
-  	bool
-  	select OF
+The following changes since commit a6da83f98267bc8ee4e34aa899169991eb0ceb93:
 
---Signature=_Wed__15_Jan_2014_16_00_32_+1100_GqHf/5IIuKgra868
-Content-Type: application/pgp-signature
+  Merge branch 'merge' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2014-01-13 10:59:05 +0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+are available in the git repository at:
 
-iQIcBAEBCAAGBQJS1hX0AAoJEMDTa8Ir7ZwVpFgP/3hYeH0qXGnX/Ac3L3jtAhSf
-4VO1ntxUCvFSoC0BBceDvmImeIkADA2RpSA+GRIw1OLKBLX70SdEI34HVQBXDVG/
-Rskth9SgnGBg8IiA4W6HeNFx5bj7rNhdfCnQuP9XwlQLC3xfv1YGkdYoUa98oUCC
-+Jp+kcT0TehzoRf7/N7+lsBE582xwp6I7Bb5qiktlLe3k9qLrXDIVkStgnIvp4ah
-jbZe4zzeoyCEpMBzoCOs4b4kJmeXuQtJsJ3bPprFJAa/2r9Q/tWc4sxPo6z4Fw64
-c/4gukclbaLadccT+2DJA4ssJpfJWJ3NRzds+WlO2VLwmkcvMLbFSBZnv8rGUhGn
-C97kzBWJTqKPX85oTH7S/KIr7K1iiFF27KzZMsI6LXZe90JY5OJLQ5o53tUtv34A
-gRYOIWixyOcRsgI4fTaKBolgIY0bPiHUbsAFtnFACTSMVY+UlhitLUVgtUE+PNEu
-7CM10qeC3VmUdbdtG0f3tNluojcPcYR8AhawipXHKkioakzqbZAwxQd0p4QJCaR1
-KN+LpnLgHaYTP+Zjxm0h4YjxWnJ1Sv+SrR+ffJgUgNgwyP5cNIxgxJiPOFraAUEK
-+Q7aTJk4UfDLVtIwijUCrTQBz5gtKVGktJPOddrTd6locRdW9Xgae/E5w57ZWBcZ
-AGUm4A5G5Wo7cRS8qA2C
-=Dkrm
------END PGP SIGNATURE-----
 
---Signature=_Wed__15_Jan_2014_16_00_32_+1100_GqHf/5IIuKgra868--
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+
+for you to fetch changes up to b3084f4db3aeb991c507ca774337c7e7893ed04f:
+
+  powerpc/thp: Fix crash on mremap (2014-01-15 15:46:38 +1100)
+
+----------------------------------------------------------------
+Aneesh Kumar K.V (1):
+      powerpc/thp: Fix crash on mremap
+
+ arch/powerpc/include/asm/pgtable-ppc64.h | 14 ++++++++++++++
+ include/asm-generic/pgtable.h            | 12 ++++++++++++
+ mm/huge_memory.c                         | 14 +++++---------
+ 3 files changed, 31 insertions(+), 9 deletions(-)
+
+
