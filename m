@@ -1,194 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaAOTbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 14:31:15 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:52746 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaAOTbN (ORCPT
+	id S1751852AbaAOTb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 14:31:26 -0500
+Received: from mail.windriver.com ([147.11.1.11]:37777 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaAOTbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 14:31:13 -0500
-Message-ID: <52D6E1FE.8000303@linaro.org>
-Date: Wed, 15 Jan 2014 14:31:10 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 15 Jan 2014 14:31:19 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Colin Cross <ccross@android.com>, Jesse Barker <jesse.barker@arm.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] staging: don't use module_init in non-modular ion_dummy_driver.c
+Date: Wed, 15 Jan 2014 14:30:41 -0500
+Message-ID: <1389814241-26016-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.5.2
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Rabin Vincent <rabin@rab.in>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 13/16] ARM: Add an emulate flag to the kprobes/uprobes
- instruction decode functions
-References: <1387166930-13182-1-git-send-email-dave.long@linaro.org>  <1387166930-13182-14-git-send-email-dave.long@linaro.org> <1387551482.3404.63.camel@linaro1.home>
-In-Reply-To: <1387551482.3404.63.camel@linaro1.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/13 09:58, Jon Medhurst (Tixy) wrote:
-> On Sun, 2013-12-15 at 23:08 -0500, David Long wrote:
->> From: "David A. Long" <dave.long@linaro.org>
->>
->> Add an emulate flag into the instruction interpreter, primarily for uprobes
->> support.
->>
->> Signed-off-by: David A. Long <dave.long@linaro.org>
->> ---
->>   arch/arm/kernel/kprobes.c      |  3 ++-
->>   arch/arm/kernel/kprobes.h      |  1 +
->>   arch/arm/kernel/probes-arm.c   |  4 ++--
->>   arch/arm/kernel/probes-arm.h   |  2 +-
->>   arch/arm/kernel/probes-thumb.c |  8 ++++----
->>   arch/arm/kernel/probes-thumb.h |  4 ++--
->>   arch/arm/kernel/probes.c       | 32 +++++++++++++++++++++++---------
->>   arch/arm/kernel/probes.h       |  2 +-
->>   8 files changed, 36 insertions(+), 20 deletions(-)
->>
->> diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
->> index 0d9d49b..04690f9 100644
->> --- a/arch/arm/kernel/kprobes.c
->> +++ b/arch/arm/kernel/kprobes.c
->> @@ -87,7 +87,8 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
->>   	p->opcode = insn;
->>   	p->ainsn.insn = tmp_insn;
->>
->> -	switch ((*decode_insn)(insn, &p->ainsn, actions)) {
->> +	switch ((*decode_insn)(insn, &p->ainsn,
->> +			       true, actions)) {
->
-> Any reason why the function args need splitting over two lines?
+The ION_DUMMY option is bool, and hence this code is either
+present or absent.  It will never be modular, so using
+module_init as an alias for __initcall is rather misleading.
 
-I undid the that change.
+Fix this up now, so that we can relocate module_init from
+init.h into module.h in the future.  If we don't do this, we'd
+have to add module.h to obviously non-modular code, and that
+would be a worse thing.
 
->>   	case INSN_REJECTED:	/* not supported */
->>   		return -EINVAL;
->>
->
-> [...]
->
->> --- a/arch/arm/kernel/probes.c
->> +++ b/arch/arm/kernel/probes.c
->> @@ -193,7 +193,7 @@ void __kprobes probes_emulate_none(probes_opcode_t opcode,
->>    */
->>   static probes_opcode_t __kprobes
->>   prepare_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->> -								bool thumb)
->> +			bool thumb)
->
-> Seems like a spurious indentation change.
+Note that direct use of __initcall is discouraged, vs. one
+of the priority categorized subgroups.  As __initcall gets
+mapped onto device_initcall, our use of device_initcall
+directly in this change means that the runtime impact is
+zero -- it will remain at level 6 in initcall ordering.
 
-Fixed.
+Cc: Colin Cross <ccross@android.com>
+Cc: Jesse Barker <jesse.barker@arm.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
->>   {
->>   #ifdef CONFIG_THUMB2_KERNEL
->>   	if (thumb) {
->> @@ -218,7 +218,7 @@ prepare_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->>    */
->>   static void  __kprobes
->>   set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->> -								bool thumb)
->> +			bool thumb)
->
-> Another spurious whitespace change.
-
-Fixed.
-
->>   {
->>   #ifdef CONFIG_THUMB2_KERNEL
->>   	if (thumb) {
->> @@ -253,7 +253,7 @@ set_emulated_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->>    * non-zero value, the corresponding nibble in pinsn is validated and modified
->>    * according to the type.
->>    */
->> -static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
->> +static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs, bool modify)
->>   {
->>   	probes_opcode_t insn = *pinsn;
->>   	probes_opcode_t mask = 0xf; /* Start at least significant nibble */
->> @@ -317,9 +317,16 @@ static bool __kprobes decode_regs(probes_opcode_t *pinsn, u32 regs)
->>   		/* Replace value of nibble with new register number... */
->>   		insn &= ~mask;
->>   		insn |= new_bits & mask;
->> +		if (modify) {
->> +			/* Replace value of nibble with new register number */
->> +			insn &= ~mask;
->> +			insn |= new_bits & mask;
->> +		}
->
-> Huh? As is, the above addition doesn't do anything because insn has
-> already been modified. I guess you played with the idea that you needed
-> to avoid changing insn (you don't) and then didn't undo the experiment
-> quite right. :-)
->
-
-The conditional modification of the instruction was part of Rabin's 
-original work for uprobes, but I messed up the merge from an earlier 
-working version of my patches.  My intention was/is to delete the old 
-unconditional code.  Sounds like maybe you disagree though.  The intent 
-is to only modify the instruction in the kprobes case.
-
->>   	}
->>
->> -	*pinsn = insn;
->> +	if (modify)
->> +		*pinsn = insn;
->> +
->>   	return true;
->>
->>   reject:
->> @@ -380,14 +387,15 @@ static const int decode_struct_sizes[NUM_DECODE_TYPES] = {
->>    */
->>   int __kprobes
->>   probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->> -				const union decode_item *table, bool thumb,
->> -				const union decode_item *actions)
->> +		   const union decode_item *table, bool thumb,
->> +		   bool emulate, const union decode_item *actions)
->>   {
->>   	struct decode_header *h = (struct decode_header *)table;
->>   	struct decode_header *next;
->>   	bool matched = false;
->>
->> -	insn = prepare_emulated_insn(insn, asi, thumb);
->> +	if (emulate)
->> +		insn = prepare_emulated_insn(insn, asi, thumb);
->>
->>   	for (;; h = next) {
->>   		enum decode_type type = h->type_regs.bits & DECODE_TYPE_MASK;
->> @@ -402,7 +410,7 @@ probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->>   		if (!matched && (insn & h->mask.bits) != h->value.bits)
->>   			continue;
->>
->> -		if (!decode_regs(&insn, regs))
->> +		if (!decode_regs(&insn, regs, emulate))
->>   			return INSN_REJECTED;
->>
->>   		switch (type) {
->> @@ -415,7 +423,8 @@ probes_decode_insn(probes_opcode_t insn, struct arch_specific_insn *asi,
->>
->>   		case DECODE_TYPE_CUSTOM: {
->>   			struct decode_custom *d = (struct decode_custom *)h;
->> -			return actions[d->decoder.bits].decoder(insn, asi, h);
->> +			return actions[d->decoder.bits].decoder(insn,
->> +					asi, h);
->
-> No need to split the above line, you haven't changed it and it doesn't
-> exceed 80 characters anyway.
-
-Fixed.
-
-> [Rest of patch cut]
->
-
--dl
+diff --git a/drivers/staging/android/ion/ion_dummy_driver.c b/drivers/staging/android/ion/ion_dummy_driver.c
+index 55b2002753f2..8e7f8912af46 100644
+--- a/drivers/staging/android/ion/ion_dummy_driver.c
++++ b/drivers/staging/android/ion/ion_dummy_driver.c
+@@ -17,6 +17,7 @@
+ #include <linux/err.h>
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
++#include <linux/init.h>
+ #include <linux/bootmem.h>
+ #include <linux/memblock.h>
+ #include <linux/sizes.h>
+@@ -128,6 +129,7 @@ err:
+ 	}
+ 	return err;
+ }
++device_initcall(ion_dummy_init);
+ 
+ static void __exit ion_dummy_exit(void)
+ {
+@@ -152,7 +154,4 @@ static void __exit ion_dummy_exit(void)
+ 
+ 	return;
+ }
+-
+-module_init(ion_dummy_init);
+-module_exit(ion_dummy_exit);
+-
++__exitcall(ion_dummy_exit);
+-- 
+1.8.5.2
 
