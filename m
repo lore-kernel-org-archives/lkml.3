@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaAOPB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:01:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50829 "EHLO mx2.suse.de"
+	id S1752416AbaAOPCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:02:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35712 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179AbaAOPBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:01:19 -0500
-From: Michal Hocko <mhocko@suse.cz>
-To: <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 2/3] memcg: do not check PF_EXITING in mem_cgroup_out_of_memory
-Date: Wed, 15 Jan 2014 16:01:07 +0100
-Message-Id: <1389798068-19885-3-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
-References: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
+	id S1752383AbaAOPCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:02:00 -0500
+Date: Wed, 15 Jan 2014 16:00:57 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, namhyung@kernel.org, mingo@kernel.org,
+        dsahern@gmail.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/6] perf, tools: Support handling complete branch stacks
+ as histograms v3
+Message-ID: <20140115150057.GB17358@krava.redhat.com>
+References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
+ <1389661461-18996-3-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389661461-18996-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-because all tasks with PF_EXITING will skip the charge since (memcg: do
-not hang on OOM when killed by userspace OOM access to memory reserves)
-was merged.
+On Mon, Jan 13, 2014 at 05:04:17PM -0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+SNIP
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 491d368ae488..97ae5cf12f5e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1766,7 +1766,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 	 * select it.  The goal is to allow it to allocate so that it may
- 	 * quickly exit and free its memory.
- 	 */
--	if (fatal_signal_pending(current) || current->flags & PF_EXITING) {
-+	if (fatal_signal_pending(current)) {
- 		set_thread_flag(TIF_MEMDIE);
- 		return;
- 	}
--- 
-1.8.5.2
+>  
+>  int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+>  {
+> @@ -1248,9 +1249,98 @@ struct branch_info *machine__resolve_bstack(struct machine *machine,
+>  	return bi;
+>  }
+>  
+> +static int add_callchain_ip(struct machine *machine,
+> +			    struct thread *thread,
+> +			    struct symbol **parent,
+> +			    struct addr_location *root_al,
+> +			    int cpumode,
+> +			    u64 ip)
+> +{
+> +	struct addr_location al;
+> +
+> +	al.filtered = false;
+> +	al.sym = NULL;
+> +	if (cpumode == -1) {
+> +		int i;
+> +
+> +		for (i = 0; i < (int)NCPUMODES && !al.sym; i++) {
+> +			/*
+> +			 * We cannot use the header.misc hint to determine whether a
+> +			 * branch stack address is user, kernel, guest, hypervisor.
+> +			 * Branches may straddle the kernel/user/hypervisor boundaries.
+> +			 * Thus, we have to try consecutively until we find a match
+> +			 * or else, the symbol is unknown
+> +			 */
+> +			thread__find_addr_location(thread, machine, cpumodes[i],
+> +					MAP__FUNCTION,
+> +					ip, &al);
+> +		}
 
+above code is already in ip__resolve_ams, maybe we could add put this
+into separate function like 'thread__find_addr_location_cpumodes'
+
+jirka
