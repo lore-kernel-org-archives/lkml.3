@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaAOUdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:33:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48480 "EHLO
+	id S1752343AbaAOUdv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:33:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48520 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613AbaAOUdg (ORCPT
+	with ESMTP id S1752179AbaAOUdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:33:36 -0500
+	Wed, 15 Jan 2014 15:33:46 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/13] perf tools: Fix build error due to zfree() cast
-Date: Wed, 15 Jan 2014 17:33:01 -0300
-Message-Id: <1389817991-8145-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 12/13] perf hists: Convert hist entry functions to use struct he_stat
+Date: Wed, 15 Jan 2014 17:33:10 -0300
+Message-Id: <1389817991-8145-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1389817991-8145-1-git-send-email-acme@infradead.org>
 References: <1389817991-8145-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,73 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-It failed to build perf on my ubuntu 10.04 box (gcc 4.4.3):
+The hist_entry__add_cpumode_period() and hist_entry__decay() functions
+are dealing with hist_entry's stat fields only.
 
-    CC       util/strlist.o
-  cc1: warnings being treated as errors
-  util/strlist.c: In function ‘str_node__delete’:
-  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/strlist.c:42: error: dereferencing type-punned pointer will break strict-aliasing rules
-    CC       util/strfilter.o
-  make: *** [util/strlist.o] Error 1
-
-    CC       util/srcline.o
-  cc1: warnings being treated as errors
-  util/srcline.c: In function ‘addr2line_init’:
-  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/srcline.c:132: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/srcline.c: In function ‘addr2line_cleanup’:
-  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
-  util/srcline.c:143: error: dereferencing type-punned pointer will break strict-aliasing rules
-  make: *** [util/srcline.o] Error 1
-
-It seems it only allows to remove 'const' qualifier.
+Make them he_stat methods then.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1389276479-9047-1-git-send-email-namhyung@kernel.org
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Link: http://lkml.kernel.org/r/1389677157-30513-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/srcline.c | 4 ++--
- tools/perf/util/strlist.c | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/hist.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index 7e67879ebd25..f3e4bc5fe5d2 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -129,7 +129,7 @@ static struct a2l_data *addr2line_init(const char *path)
- 
- out:
- 	if (a2l) {
--		zfree((void **)&a2l->input);
-+		zfree((char **)&a2l->input);
- 		free(a2l);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 4ed3e883240d..e4e6249b87d4 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -181,21 +181,21 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
  	}
- 	bfd_close(abfd);
-@@ -140,7 +140,7 @@ static void addr2line_cleanup(struct a2l_data *a2l)
- {
- 	if (a2l->abfd)
- 		bfd_close(a2l->abfd);
--	zfree((void **)&a2l->input);
-+	zfree((char **)&a2l->input);
- 	zfree(&a2l->syms);
- 	free(a2l);
  }
-diff --git a/tools/perf/util/strlist.c b/tools/perf/util/strlist.c
-index 61a90bf24b4d..71f9d102b96f 100644
---- a/tools/perf/util/strlist.c
-+++ b/tools/perf/util/strlist.c
-@@ -39,7 +39,7 @@ out_delete:
- static void str_node__delete(struct str_node *snode, bool dupstr)
+ 
+-static void hist_entry__add_cpumode_period(struct hist_entry *he,
+-					   unsigned int cpumode, u64 period)
++static void he_stat__add_cpumode_period(struct he_stat *he_stat,
++					unsigned int cpumode, u64 period)
  {
- 	if (dupstr)
--		zfree((void **)&snode->s);
-+		zfree((char **)&snode->s);
- 	free(snode);
+ 	switch (cpumode) {
+ 	case PERF_RECORD_MISC_KERNEL:
+-		he->stat.period_sys += period;
++		he_stat->period_sys += period;
+ 		break;
+ 	case PERF_RECORD_MISC_USER:
+-		he->stat.period_us += period;
++		he_stat->period_us += period;
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_KERNEL:
+-		he->stat.period_guest_sys += period;
++		he_stat->period_guest_sys += period;
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_USER:
+-		he->stat.period_guest_us += period;
++		he_stat->period_guest_us += period;
+ 		break;
+ 	default:
+ 		break;
+@@ -222,10 +222,10 @@ static void he_stat__add_stat(struct he_stat *dest, struct he_stat *src)
+ 	dest->weight		+= src->weight;
+ }
+ 
+-static void hist_entry__decay(struct hist_entry *he)
++static void he_stat__decay(struct he_stat *he_stat)
+ {
+-	he->stat.period = (he->stat.period * 7) / 8;
+-	he->stat.nr_events = (he->stat.nr_events * 7) / 8;
++	he_stat->period = (he_stat->period * 7) / 8;
++	he_stat->nr_events = (he_stat->nr_events * 7) / 8;
+ 	/* XXX need decay for weight too? */
+ }
+ 
+@@ -236,7 +236,7 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+ 	if (prev_period == 0)
+ 		return true;
+ 
+-	hist_entry__decay(he);
++	he_stat__decay(&he->stat);
+ 
+ 	if (!he->filtered)
+ 		hists->stats.total_period -= prev_period - he->stat.period;
+@@ -402,7 +402,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+-	hist_entry__add_cpumode_period(he, al->cpumode, period);
++	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
+ 	return he;
  }
  
 -- 
