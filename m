@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaAOXD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 18:03:58 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:58238 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018AbaAOXDy (ORCPT
+	id S1753425AbaAOXEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:04:44 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:38080 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaAOXEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:03:54 -0500
-Message-ID: <1389827148.5567.597.camel@haakon3.risingtidesystems.com>
-Subject: [LSF/MM TOPIC] [ATTEND] scsi-mq
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: lsf-pc@lists.linux-foundation.org
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Jan 2014 15:05:48 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 15 Jan 2014 18:04:42 -0500
+Date: Wed, 15 Jan 2014 15:04:38 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] percpu_ida: Various tweaks
+Message-ID: <20140115230438.GP9037@kmo>
+References: <20131028100440.GA5744@dhcp-26-207.brq.redhat.com>
+ <20140114114153.GA10822@dhcp-26-207.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140114114153.GA10822@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Jan 14, 2014 at 12:41:53PM +0100, Alexander Gordeev wrote:
+> On Mon, Oct 28, 2013 at 11:04:44AM +0100, Alexander Gordeev wrote:
+> > Here is an update of few behaviours which caught my eye.
+> > I have not tested any, so it is up to your judgement ;)
+> 
+> Hi Kent et al.
+> 
+> Can we go ahead with this series?
 
-I'd like to discuss the current state of scsi-mq prototype code.
-
-And now that blk-mq is upstream for v3.13, exploring the remaining TODO
-items towards an initial scsi-mq merge sometime before 2015 is upon us.
-
-The benefits of scsi-mq remain unchanged:
-
-  - Utilizes blk-mq's native per-cpu primitive + NUMA local friendly 
-    queuing of pre-allocated struct request descriptor memory
-  - Eliminates all fast-path memory allocations in SCSI-core + 
-    optionally the underlying SCSI LLDs
-  - Avoids fast-path Scsi_Host->host_lock + request_queue->queue_lock 
-    accesses in submission + completion paths
-
-These benefits have been discussed in greater detail in [1], and the
-latest alpha quality code is available at [2] below.
-
-The current TODO items include:
-
- - A plan for per device SCSI error handling
- - Proper scsi_device->sdev_gendev reference counting
- - Queuing fairness across multiple scsi-mq devices per host
- - Support for > 1 nr_hw_queues + conversion of qla2xxx + lpfc 
-   LLDs that support native hardware multiqueue
-
-Thank you,
-
---nab
-
-References:
-
-[1]:
-[ATTEND] scsi-mq prototype discussion
-http://marc.info/?l=linux-scsi&m=137358831329753&w=2
-
-[2]:
-scsi-mq WIP updated to v3.13-rc3
-http://marc.info/?l=linux-scsi&m=138782535731722&w=2
-
+I must've seen it at some point, but I can't find this patch series anywhere.
+Can you resend it to me?
