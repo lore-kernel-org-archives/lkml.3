@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaAOXKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 18:10:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35870 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768AbaAOXKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:10:31 -0500
-Date: Wed, 15 Jan 2014 21:10:15 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, glommer@gmail.com
-Subject: Re: [PATCH] KVM: remove useless write to vcpu->hv_clock.tsc_timestamp
-Message-ID: <20140115231015.GA30432@amt.cnet>
-References: <1389805691-3183-1-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389805691-3183-1-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753590AbaAOXMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:12:10 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41796 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411AbaAOXMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 18:12:07 -0500
+Date: Wed, 15 Jan 2014 15:12:06 -0800 (PST)
+Message-Id: <20140115.151206.1969611706248707914.davem@davemloft.net>
+To: pebolle@tiscali.nl
+Cc: ogerlitz@mellanox.com, jackm@dev.mellanox.co.il, ronye@mellanox.com,
+        hadarh@mellanox.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] net/mlx4_core: clean up cq_res_start_move_to()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1389728736.28068.8.camel@x220>
+References: <1389099678.15032.19.camel@x41>
+	<20140114084752.1db64b21@jpm-OptiPlex-GX620>
+	<1389728736.28068.8.camel@x220>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 06:08:11PM +0100, Paolo Bonzini wrote:
-> After the previous patch from Marcelo, the comment before this write
-> became obsolete.  In fact, the write is unnecessary.  The calls to
-> kvm_write_tsc ultimately result in a master clock update as soon as
-> all TSCs agree and the master clock is re-enabled.  This master
-> clock update will rewrite tsc_timestamp.
+From: Paul Bolle <pebolle@tiscali.nl>
+Date: Tue, 14 Jan 2014 20:45:36 +0100
+
+> Building resource_tracker.o triggers a GCC warning:
+>     drivers/net/ethernet/mellanox/mlx4/resource_tracker.c: In function 'mlx4_HW2SW_CQ_wrapper':
+>     drivers/net/ethernet/mellanox/mlx4/resource_tracker.c:3019:16: warning: 'cq' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>       atomic_dec(&cq->mtt->ref_count);
+>                     ^
 > 
-> So, together with the comment, delete the dead write too.
+> This is a false positive. But a cleanup of cq_res_start_move_to() can
+> help GCC here. The code currently uses a switch statement where an
+> if/else construct would do too, since only two of the switch's four
+> cases can ever occur. Dropping that switch makes the warning go away.
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> While we're at it, add some missing braces.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
->  arch/x86/kvm/x86.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 842abd3..0fbdced 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1278,8 +1278,6 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, struct msr_data *msr)
->  	kvm->arch.last_tsc_write = data;
->  	kvm->arch.last_tsc_khz = vcpu->arch.virtual_tsc_khz;
->  
-> -	/* Reset of TSC must disable overshoot protection below */
-> -	vcpu->arch.hv_clock.tsc_timestamp = 0;
->  	vcpu->arch.last_guest_tsc = data;
->  
->  	/* Keep track of which generation this VCPU has synchronized to */
-> -- 
-> 1.7.1
+> v2: adjust to Jack's review.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-
+Can I please get some review of these two patches, thank you.
