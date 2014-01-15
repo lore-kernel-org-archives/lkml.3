@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaAOAZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:25:17 -0500
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:40434 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaAOAZO (ORCPT
+	id S1751899AbaAOAdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:33:17 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:1477 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaAOAdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:25:14 -0500
-Date: Tue, 14 Jan 2014 16:25:10 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Han Pingtian <hanpt@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-In-Reply-To: <20140114155241.7891fce1fb2b9dfdcde15a8c@linux-foundation.org>
-Message-ID: <alpine.DEB.2.02.1401141621560.3375@chino.kir.corp.google.com>
-References: <52C5AA61.8060701@intel.com> <20140103033303.GB4106@localhost.localdomain> <52C6FED2.7070700@intel.com> <20140105003501.GC4106@localhost.localdomain> <20140106164604.GC27602@dhcp22.suse.cz> <20140108101611.GD27937@dhcp22.suse.cz>
- <20140110081744.GC9437@dhcp22.suse.cz> <20140114200720.GM4106@localhost.localdomain> <20140114155241.7891fce1fb2b9dfdcde15a8c@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 14 Jan 2014 19:33:14 -0500
+From: Jason Low <jason.low2@hp.com>
+To: mingo@redhat.com, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        Waiman.Long@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        jason.low2@hp.com
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, akpm@linux-foundation.org,
+        davidlohr@hp.com, hpa@zytor.com, aswin@hp.com, scott.norton@hp.com
+Subject: [RFC 0/3] mutex: Reduce spinning contention when there is no lock owner
+Date: Tue, 14 Jan 2014 16:33:07 -0800
+Message-Id: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 14 Jan 2014, Andrew Morton wrote:
+While optimistic spinning is beneficial to performance, I have found that
+threads can potentially spin for a long time while there is no lock owner
+during high contention cases. In these scenarios, too much spinning can reduce
+performance. This RFC patchset attempts to address some of the issues with
+spinning too much with no owner.
 
-> This is all a bit nasty, isn't it?  THP goes and alters min_free_kbytes
-> to improve its own reliability, but min_free_kbytes is also
-> user-modifiable.  And over many years we have trained a *lot* of users
-> to alter min_free_kbytes.  Often to prevent nasty page allocation
-> failure warnings from net drivers.
-> 
+Patch 1 changes the mutex_can_spin_on_owner() function to address the
+need_resched() case. Patch 2 modifies the way mutex spinners are queued to
+reduce mspin_lock and mspin_unlock overhead when there is no owner, and is also
+necessary patch for patch 3. Patch 3 limits the number of times each thread
+can spin on lock->count when there is no lock owner.
 
-I can vouch for kernel logs that are spammed with tons of net page 
-allocation failure warnings, in fact we're going through and adding 
-__GFP_NOWARN to most of these.
+This change benefit the AIM7 fserver (run on disk) at 1000-2000 users
+on an 8 socket (80 core) box, with a +19.5% gain with 3.13-rc7 + patchset
+compared to the baseline 3.13-rc7 kernel. At 100-900 users, the
+% gain was about 4.9%, and there wasn't much performance difference
+at 10-90 users. On a 2 socket (8 core) box, there was about a 5.5%
+improvement at 1000-2000 users.
 
-> So there are probably quite a lot of people out there who are manually
-> rubbing out THP's efforts.  And there may also be people who are
-> setting min_free_kbytes to a value which is unnecessarily high for more
-> recent kernels.
-> 
-
-Indeed, we have initscripts that modified min_free_kbytes before thp was 
-introduced but luckily they were comparing their newly computed value to 
-the existing value and only writing if the new value is greater.  
-Hopefully most users are doing the same thing.
-
-Would it be overkill to save the kernel default both with and without thp 
-and then doing a WARN_ON_ONCE() if a user-written value is ever less?
