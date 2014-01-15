@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaAOAgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:36:52 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:54989 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaAOAgr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:36:47 -0500
-Date: Tue, 14 Jan 2014 16:36:43 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [slub] WARNING: CPU: 0 PID: 0 at mm/slub.c:1511
- __kmem_cache_create()
-In-Reply-To: <52D5746F.2040604@intel.com>
-Message-ID: <alpine.DEB.2.02.1401141634580.3375@chino.kir.corp.google.com>
-References: <20140114131915.GA26942@localhost> <52D5746F.2040604@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752085AbaAOAhk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:37:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34300 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880AbaAOAhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 19:37:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
+   d="scan'208";a="466758261"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
+Subject: RE: [PATCH] PM: Enable asynchronous noirq resume threads to save
+ the resuming time
+Thread-Topic: [PATCH] PM: Enable asynchronous noirq resume threads to save
+ the resuming time
+Thread-Index: AQHPEXmxHJZk4e3zx0694YnUG8KNkpqE7cOA
+Date: Wed, 15 Jan 2014 00:35:16 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C02047@SHSMSX101.ccr.corp.intel.com>
+References: <1389683888.3650.78.camel@cliu38-desktop-build>
+ <1746120.u7vbF1Vtmp@vostro.rjw.lan>
+In-Reply-To: <1746120.u7vbF1Vtmp@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0F0bkC8004792
 
-On Tue, 14 Jan 2014, Dave Hansen wrote:
+Hello Rafael,
 
-> > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=c65c1877bd6826ce0d9713d76e30a7bed8e49f38
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> Sent: Wednesday, January 15, 2014 6:55 AM
+> To: Liu, Chuansheng
+> Cc: gregkh@linuxfoundation.org; Brown, Len; pavel@ucw.cz;
+> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
+> Subject: Re: [PATCH] PM: Enable asynchronous noirq resume threads to save
+> the resuming time
 > 
-> I think the assert is just bogus at least in the early case.
-> early_kmem_cache_node_alloc() says:
->  * No kmalloc_node yet so do it by hand. We know that this is the first
->  * slab on the node for this slabcache. There are no concurrent accesses
->  * possible.
+> On Tuesday, January 14, 2014 03:18:08 PM Chuansheng Liu wrote:
+> >
+> > Currently, the dpm_resume_noirq() is done synchronously, and for PCI devices
+> > pci_pm_resume_noirq():
+> >
+> > pci_pm_resume_noirq()
+> >  pci_pm_default_resume_early()
+> >   pci_power_up()
+> >    pci_raw_set_power_state()
+> > Which set the device from D3hot to D0 mostly, for every device, there will
+> > be one 10ms(pci_pm_d3_delay) to wait.
+> >
+> > Hence normally dpm_resume_noirq() will cost > 100ms, which is bigger for
+> mobile
+> > platform.
 > 
-> Should we do something like the attached patch?  (very lightly tested)
-> 
+> pci_pm_d3_delay usually is not 10 ms.  What is 10 ms is dev->d3_delay, but
+> that also is not on every platform now.
+Yes, it is d3_delay exactly, thanks your correction.
 
-Yeah, I think that's the best option to keep the runtime checking to 
-ensure the proper lock is held on debug kernels with lockdep enabled and 
-is better than reverting back to the comment.
+> 
+> That said the approach here makes sense, but I have two questions:
+> 
+> 1. On what systems has it been tested?
+I have been tested on Baytrail platform, and at the beginning the d3_delay is set to 0,
+but we really meet the HANG issue if we operate the device immediately sometimes,
+so currently most PCI devices in Baytrail has the 10ms delay.
+And it caused the whole resume time bigger than Clovertrail platform;
+
+> 2. What about suspend_late/resume_early?  If the _noirq things are to be
+> executed asynchronously, those should be too.
+I noticed it just taken little time often, and I cannot find out some reasons for changing them
+in theory, so if you like it, I will update them into patch V2 also:)
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
