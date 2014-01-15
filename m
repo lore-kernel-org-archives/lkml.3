@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaAOWOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:14:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41262 "EHLO
+	id S1754771AbaAOWOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:14:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41257 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752678AbaAOV70 (ORCPT
+	with ESMTP id S1753991AbaAOV7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:59:26 -0500
+	Wed, 15 Jan 2014 16:59:24 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefano Panella <stefano.panella@citrix.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 031/166] ALSA: memalloc.h - fix wrong truncation of dma_addr_t
-Date: Wed, 15 Jan 2014 13:50:45 -0800
-Message-Id: <1389822780-4729-32-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 153/166] net: inet_diag: zero out uninitialized idiag_{src,dst} fields
+Date: Wed, 15 Jan 2014 13:52:47 -0800
+Message-Id: <1389822780-4729-154-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,70 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Panella <stefano.panella@citrix.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 932e9dec380c67ec15ac3eb073bb55797d8b4801 upstream.
+[ Upstream commit b1aac815c0891fe4a55a6b0b715910142227700f ]
 
-When running a 32bit kernel the hda_intel driver is still reporting
-a 64bit dma_mask if the HW supports it.
+Jakub reported while working with nlmon netlink sniffer that parts of
+the inet_diag_sockid are not initialized when r->idiag_family != AF_INET6.
+That is, fields of r->id.idiag_src[1 ... 3], r->id.idiag_dst[1 ... 3].
 
->From sound/pci/hda/hda_intel.c:
+In fact, it seems that we can leak 6 * sizeof(u32) byte of kernel [slab]
+memory through this. At least, in udp_dump_one(), we allocate a skb in ...
 
-        /* allow 64bit DMA address if supported by H/W */
-        if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
-        else {
-                pci_set_dma_mask(pci, DMA_BIT_MASK(32));
-                pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
-        }
+  rep = nlmsg_new(sizeof(struct inet_diag_msg) + ..., GFP_KERNEL);
 
-which means when there is a call to dma_alloc_coherent from
-snd_malloc_dev_pages a machine address bigger than 32bit can be returned.
-This can be true in particular if running  the 32bit kernel as a pv dom0
-under the Xen Hypervisor or PAE on bare metal.
+... and then pass that to inet_sk_diag_fill() that puts the whole struct
+inet_diag_msg into the skb, where we only fill out r->id.idiag_src[0],
+r->id.idiag_dst[0] and leave the rest untouched:
 
-The problem is that when calling setup_bdle to program the BLE the
-dma_addr_t returned from the dma_alloc_coherent is wrongly truncated
-from snd_sgbuf_get_addr if running a 32bit kernel:
+  r->id.idiag_src[0] = inet->inet_rcv_saddr;
+  r->id.idiag_dst[0] = inet->inet_daddr;
 
-static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
-                                           size_t offset)
-{
-        struct snd_sg_buf *sgbuf = dmab->private_data;
-        dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
-        addr &= PAGE_MASK;
-        return addr + offset % PAGE_SIZE;
-}
+struct inet_diag_msg embeds struct inet_diag_sockid that is correctly /
+fully filled out in IPv6 case, but for IPv4 not.
 
-where PAGE_MASK in a 32bit kernel is zeroing the upper 32bit af addr.
+So just zero them out by using plain memset (for this little amount of
+bytes it's probably not worth the extra check for idiag_family == AF_INET).
 
-Without this patch the HW will fetch the 32bit truncated address,
-which is not the one obtained from dma_alloc_coherent and will result
-to a non working audio but can corrupt host memory at a random location.
+Similarly, fix also other places where we fill that out.
 
-The current patch apply to v3.13-rc3-74-g6c843f5
-
-Signed-off-by: Stefano Panella <stefano.panella@citrix.com>
-Reviewed-by: Frediano Ziglio <frediano.ziglio@citrix.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Jakub Zawadzki <darkjames-ws@darkjames.pl>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/sound/memalloc.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/inet_diag.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/include/sound/memalloc.h b/include/sound/memalloc.h
-index 844af65..d12356b 100644
---- a/include/sound/memalloc.h
-+++ b/include/sound/memalloc.h
-@@ -103,7 +103,7 @@ static inline dma_addr_t snd_sgbuf_get_addr(struct snd_dma_buffer *dmab,
- {
- 	struct snd_sg_buf *sgbuf = dmab->private_data;
- 	dma_addr_t addr = sgbuf->table[offset >> PAGE_SHIFT].addr;
--	addr &= PAGE_MASK;
-+	addr &= ~((dma_addr_t)PAGE_SIZE - 1);
- 	return addr + offset % PAGE_SIZE;
- }
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index 7afa2c3..84e812a 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -106,6 +106,10 @@ int inet_sk_diag_fill(struct sock *sk, struct inet_connection_sock *icsk,
  
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = inet->inet_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = inet->inet_rcv_saddr;
+ 	r->id.idiag_dst[0] = inet->inet_daddr;
+ 
+@@ -238,12 +242,19 @@ static int inet_twsk_diag_fill(struct inet_timewait_sock *tw,
+ 
+ 	r->idiag_family	      = tw->tw_family;
+ 	r->idiag_retrans      = 0;
++
+ 	r->id.idiag_if	      = tw->tw_bound_dev_if;
+ 	sock_diag_save_cookie(tw, r->id.idiag_cookie);
++
+ 	r->id.idiag_sport     = tw->tw_sport;
+ 	r->id.idiag_dport     = tw->tw_dport;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0]    = tw->tw_rcv_saddr;
+ 	r->id.idiag_dst[0]    = tw->tw_daddr;
++
+ 	r->idiag_state	      = tw->tw_substate;
+ 	r->idiag_timer	      = 3;
+ 	r->idiag_expires      = DIV_ROUND_UP(tmo * 1000, HZ);
+@@ -730,8 +741,13 @@ static int inet_diag_fill_req(struct sk_buff *skb, struct sock *sk,
+ 
+ 	r->id.idiag_sport = inet->inet_sport;
+ 	r->id.idiag_dport = ireq->rmt_port;
++
++	memset(&r->id.idiag_src, 0, sizeof(r->id.idiag_src));
++	memset(&r->id.idiag_dst, 0, sizeof(r->id.idiag_dst));
++
+ 	r->id.idiag_src[0] = ireq->loc_addr;
+ 	r->id.idiag_dst[0] = ireq->rmt_addr;
++
+ 	r->idiag_expires = jiffies_to_msecs(tmo);
+ 	r->idiag_rqueue = 0;
+ 	r->idiag_wqueue = 0;
 -- 
 1.8.3.2
 
