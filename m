@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaAOOwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:52:47 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:26929 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaAOOwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:52:45 -0500
-X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
-   d="scan'208";a="90982437"
-Message-ID: <52D6A0B9.2030204@citrix.com>
-Date: Wed, 15 Jan 2014 14:52:41 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752231AbaAOOzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:55:47 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12386 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751725AbaAOOzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:55:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,663,1384329600"; 
+   d="scan'208";a="467089176"
+Date: Wed, 15 Jan 2014 17:02:45 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org,
+        wsa@the-dreams.de, broonie@linaro.org, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, grant.likely@linaro.org,
+        rob.herring@calxeda.com, jarkko.nikula@linux.intel.com
+Subject: Re: [PATCH 1/4] ACPI: fix create_modalias() return value handling
+Message-ID: <20140115150245.GW2494@intel.com>
+References: <1389689198-2641-1-git-send-email-rui.zhang@intel.com>
+ <1389689198-2641-2-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next] xen-netback: Rework rx_work_todo
-References: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com> <20140115103707.GI5698@zion.uk.xensource.com> <52D67536.4030106@citrix.com> <20140115144519.GO5698@zion.uk.xensource.com>
-In-Reply-To: <20140115144519.GO5698@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1389689198-2641-2-git-send-email-rui.zhang@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/14 14:45, Wei Liu wrote:
->>>> The recent patch to fix receive side flow control (11b57f) solved the spinning
->>>> > >>thread problem, however caused an another one. The receive side can stall, if:
->>>> > >>- xenvif_rx_action sets rx_queue_stopped to false
->>>> > >>- interrupt happens, and sets rx_event to true
->>>> > >>- then xenvif_kthread sets rx_event to false
->>>> > >>
->>> > >
->>> > >If you mean "rx_work_todo" returns false.
->>> > >
->>> > >In this case
->>> > >
->>> > >(!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) || vif->rx_event;
->>> > >
->>> > >can still be true, can't it?
->> >Sorry, I should wrote rx_queue_stopped to true
->> >
-> In this case, if rx_queue_stopped is true, then we're expecting frontend
-> to notify us, right?
->
-> rx_queue_stopped is set to true if we cannot make any progress to queue
-> packet into the ring. In that situation we can expect frontend will send
-> notification to backend after it goes through the backlog in the ring.
-> That means rx_event is set to true, and rx_work_todo is true again. So
-> the ring is actually not stalled in this case as well. Did I miss
-> something?
->
+On Tue, Jan 14, 2014 at 04:46:35PM +0800, Zhang Rui wrote:
+> Currently, create_modalias() handles the output truncated case in
+> an improper way (return -EINVAL).
+> Plus, acpi_device_uevent() and acpi_device_modalias_show() do
+> improper check for the create_modalias() return value as well.
+> 
+> This patch fixes create_modalias() to
+> return -EINVAL if there is an output error,
+> return -ENOMEM if the output is truncated,
+> and also fixes both acpi_device_uevent() and acpi_device_modalias_show()
+> to do proper return value check.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 
-Yes, we expect the guest to notify us, and it does, and we set rx_event 
-to true (see second point), but then the thread set it to false (see 
-third point). Talking with Paul, another solution could be to set 
-rx_event false before calling xenvif_rx_action. But using 
-rx_last_skb_slots makes it quicker for the thread to see if it doesn't 
-have to do anything.
-
-Zoli
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
