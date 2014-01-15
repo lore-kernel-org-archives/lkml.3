@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774AbaAOV6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:58:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41100 "EHLO
+	id S1754892AbaAOWWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:22:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41113 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738AbaAOV61 (ORCPT
+	with ESMTP id S1753749AbaAOV6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:27 -0500
+	Wed, 15 Jan 2014 16:58:31 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junho Ryu <jayr@google.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Mel Gorman <mgorman@suse.de>, Darren Hart <dvhart@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 100/166] ext4: fix use-after-free in ext4_mb_new_blocks
-Date: Wed, 15 Jan 2014 13:51:54 -0800
-Message-Id: <1389822780-4729-101-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 050/166] futex: fix handling of read-only-mapped hugepages
+Date: Wed, 15 Jan 2014 13:51:04 -0800
+Message-Id: <1389822780-4729-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,92 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junho Ryu <jayr@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 4e8d2139802ce4f41936a687f06c560b12115247 upstream.
+commit f12d5bfceb7e1f9051563381ec047f7f13956c3c upstream.
 
-ext4_mb_put_pa should hold pa->pa_lock before accessing pa->pa_count.
-While ext4_mb_use_preallocated checks pa->pa_deleted first and then
-increments pa->count later, ext4_mb_put_pa decrements pa->pa_count
-before holding pa->pa_lock and then sets pa->pa_deleted.
+The hugepage code had the exact same bug that regular pages had in
+commit 7485d0d3758e ("futexes: Remove rw parameter from
+get_futex_key()").
 
-* Free sequence
-ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
-ext4_mb_put_pa (2):		lock pa->pa_lock
-ext4_mb_put_pa (3):			check pa->pa_deleted
-ext4_mb_put_pa (4):			set pa->pa_deleted=1
-ext4_mb_put_pa (5):		unlock pa->pa_lock
-ext4_mb_put_pa (6):		remove pa from a list
-ext4_mb_pa_callback:		free pa
+The regular page case was fixed by commit 9ea71503a8ed ("futex: Fix
+regression with read only mappings"), but the transparent hugepage case
+(added in a5b338f2b0b1: "thp: update futex compound knowledge") case
+remained broken.
 
-* Use sequence
-ext4_mb_use_preallocated (1):	iterate over preallocation
-ext4_mb_use_preallocated (2):	lock pa->pa_lock
-ext4_mb_use_preallocated (3):		check pa->pa_deleted
-ext4_mb_use_preallocated (4):		increase pa->pa_count
-ext4_mb_use_preallocated (5):	unlock pa->pa_lock
-ext4_mb_release_context:	access pa
+Found by Dave Jones and his trinity tool.
 
-* Use-after-free sequence
-[initial status]		<pa->pa_deleted = 0, pa_count = 1>
-ext4_mb_use_preallocated (1):	iterate over preallocation
-ext4_mb_use_preallocated (2):	lock pa->pa_lock
-ext4_mb_use_preallocated (3):		check pa->pa_deleted
-ext4_mb_put_pa (1):		atomic_dec_and_test pa->pa_count
-[pa_count decremented]		<pa->pa_deleted = 0, pa_count = 0>
-ext4_mb_use_preallocated (4):		increase pa->pa_count
-[pa_count incremented]		<pa->pa_deleted = 0, pa_count = 1>
-ext4_mb_use_preallocated (5):	unlock pa->pa_lock
-ext4_mb_put_pa (2):		lock pa->pa_lock
-ext4_mb_put_pa (3):			check pa->pa_deleted
-ext4_mb_put_pa (4):			set pa->pa_deleted=1
-[race condition!]		<pa->pa_deleted = 1, pa_count = 1>
-ext4_mb_put_pa (5):		unlock pa->pa_lock
-ext4_mb_put_pa (6):		remove pa from a list
-ext4_mb_pa_callback:		free pa
-ext4_mb_release_context:	access pa
-
-AddressSanitizer has detected use-after-free in ext4_mb_new_blocks
-Bug report: http://goo.gl/rG1On3
-
-Signed-off-by: Junho Ryu <jayr@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-and-tested-by: Dave Jones <davej@fedoraproject.org>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/mballoc.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ kernel/futex.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index c8003a1..2167e90 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3337,6 +3337,9 @@ static void ext4_mb_pa_callback(struct rcu_head *head)
- {
- 	struct ext4_prealloc_space *pa;
- 	pa = container_of(head, struct ext4_prealloc_space, u.pa_rcu);
-+
-+	BUG_ON(atomic_read(&pa->pa_count));
-+	BUG_ON(pa->pa_deleted == 0);
- 	kmem_cache_free(ext4_pspace_cachep, pa);
- }
- 
-@@ -3350,11 +3353,13 @@ static void ext4_mb_put_pa(struct ext4_allocation_context *ac,
- 	ext4_group_t grp;
- 	ext4_fsblk_t grp_blk;
- 
--	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0)
--		return;
--
- 	/* in this short window concurrent discard can set pa_deleted */
- 	spin_lock(&pa->pa_lock);
-+	if (!atomic_dec_and_test(&pa->pa_count) || pa->pa_free != 0) {
-+		spin_unlock(&pa->pa_lock);
-+		return;
-+	}
-+
- 	if (pa->pa_deleted == 1) {
- 		spin_unlock(&pa->pa_lock);
- 		return;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index f0ee318..e564a9a 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -285,7 +285,7 @@ again:
+ 		put_page(page);
+ 		/* serialize against __split_huge_page_splitting() */
+ 		local_irq_disable();
+-		if (likely(__get_user_pages_fast(address, 1, 1, &page) == 1)) {
++		if (likely(__get_user_pages_fast(address, 1, !ro, &page) == 1)) {
+ 			page_head = compound_head(page);
+ 			/*
+ 			 * page_head is valid pointer but we must pin
 -- 
 1.8.3.2
 
