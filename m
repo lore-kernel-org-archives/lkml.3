@@ -1,176 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaAOION (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 03:14:13 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:44112 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253AbaAOIOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 03:14:09 -0500
-Subject: [PATCH V5 8/8] cpuidle/powernv: Parse device tree to setup idle
- states
-To: daniel.lezcano@linaro.org, peterz@infradead.org, fweisbec@gmail.com,
-        agraf@suse.de, paul.gortmaker@windriver.com, paulus@samba.org,
-        mingo@kernel.org, mikey@neuling.org, shangw@linux.vnet.ibm.com,
-        rafael.j.wysocki@intel.com, galak@kernel.crashing.org,
-        benh@kernel.crashing.org, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, rostedt@goodmis.org, michael@ellerman.id.au,
-        john.stultz@linaro.org, anton@samba.org, tglx@linutronix.de,
-        chenhui.zhao@freescale.com, deepthi@linux.vnet.ibm.com,
-        r58472@freescale.com, geoff@infradead.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Wed, 15 Jan 2014 13:40:30 +0530
-Message-ID: <20140115081030.20446.2989.stgit@preeti.in.ibm.com>
-In-Reply-To: <20140115080555.20446.27238.stgit@preeti.in.ibm.com>
-References: <20140115080555.20446.27238.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
+	id S1751735AbaAOISK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 03:18:10 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42534 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaAOISI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 03:18:08 -0500
+Message-ID: <52D64439.5040800@hitachi.com>
+Date: Wed, 15 Jan 2014 17:18:01 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Petr Mladek <pmladek@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH v6 3/8] x86: add generic function to modify more calls
+ using int3 framework
+References: <1386690140-19941-1-git-send-email-pmladek@suse.cz> <1386690140-19941-4-git-send-email-pmladek@suse.cz> <20140114193338.4375f205@gandalf.local.home>
+In-Reply-To: <20140114193338.4375f205@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011508-5806-0000-0000-000023DED032
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add deep idle states such as nap and fast sleep to the cpuidle state table
-only if they are discovered from the device tree during cpuidle initialization.
+(2014/01/15 9:33), Steven Rostedt wrote:
+> On Tue, 10 Dec 2013 16:42:15 +0100
+> Petr Mladek <pmladek@suse.cz> wrote:
+> 
+>> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+>> index 586747f5f41d..82ffe7e1529c 100644
+>> --- a/arch/x86/include/asm/alternative.h
+>> +++ b/arch/x86/include/asm/alternative.h
+>> @@ -232,4 +232,40 @@ extern int text_poke_bp(void *addr, const void *opcode, size_t len,
+>>  extern void text_poke_bp_or_die(void *addr, const void *opcode, size_t len,
+>>  				void *handler);
+> 
+> Small nit. If you can, place comments on the same line as the
+> structure field.
+>   
+>> +struct text_poke_bp_iter {
+>> +	/* information used to start iteration from the beginning */
+>> +	void *init;
+>> +	/* length of the patched instruction */
+>> +	size_t len;
+>> +	/* details about failure if any */
+>> +	int fail_count;
+>> +	void *fail_addr;
+> 
+> The above should have the comments on the same line as the field.
+> Something like this:
+> 
+> 	void		*init;	/* information used to start
+> 	iteration from the beginning */
+> 
+> The comments for the function pointers below are fine.
+> 
+>> +	/* iteration over entries */
+>> +	void *(*start)(void *init);
+>> +	void *(*next)(void *prev);
+>> +	/* callback to get patched address */
+>> +	void *(*get_addr)(void *cur);
+>> +	/*
+>> +	 * Callbacks to get the patched code. They could return NULL if no
+>> +	 * patching is needed; This is useful for example in ftrace.
+>> +	 */
+>> +	const void *(*get_opcode)(void *cur);
+>> +	const void *(*get_old_opcode)(void *cur);
+>> +	/*
+>> +	 * Optional function that is called when the patching of the given
+>> +	 * has finished. It might be NULL if no postprocess is needed.
+>> +	 */
+>> +	int (*finish)(void *cur);
+>> +	/*
+>> +	 * Helper function for int3 handler. It decides whether the given IP
+>> +	 * is being patched or not.
+>> +	 *
+>> +	 * Try to implement it as fast as possible. It affects performance
+>> +	 * of the system when the patching is in progress.
+>> +	 */
+>> +	void *(*is_handled)(const unsigned long ip);
+>> +};
+>> +
+>> +extern int text_poke_bp_list(struct text_poke_bp_iter *iter);
+>> +
+>>  #endif /* _ASM_X86_ALTERNATIVE_H */
+>> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+>> index 6436beec7b0c..8e57ac03a0e8 100644
+>> --- a/arch/x86/kernel/alternative.c
+>> +++ b/arch/x86/kernel/alternative.c
+>> @@ -7,6 +7,7 @@
+>>  #include <linux/stringify.h>
+>>  #include <linux/kprobes.h>
+>>  #include <linux/mm.h>
+>> +#include <linux/uaccess.h>
+>>  #include <linux/vmalloc.h>
+>>  #include <linux/memory.h>
+>>  #include <linux/stop_machine.h>
+>> @@ -610,8 +611,11 @@ static void run_sync(void)
+>>  		on_each_cpu(do_sync_core, NULL, 1);
+>>  }
+>>  
+>> +static char bp_int3;
+> 
+> bp_int3 is not going to be anything but 0xcc. Let's change that to:
+> 
+> static char bp_int3 = 0xcc;
+> 
+> And remove the other initializations.
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
+just a comment.
+If it is always 0xcc, it should be a const variable.
 
- drivers/cpuidle/cpuidle-powernv.c |   81 +++++++++++++++++++++++++++++--------
- 1 file changed, 64 insertions(+), 17 deletions(-)
+Thank you,
 
-diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-index e3aa62f..b01987d 100644
---- a/drivers/cpuidle/cpuidle-powernv.c
-+++ b/drivers/cpuidle/cpuidle-powernv.c
-@@ -12,10 +12,17 @@
- #include <linux/cpu.h>
- #include <linux/notifier.h>
- #include <linux/clockchips.h>
-+#include <linux/of.h>
- 
- #include <asm/machdep.h>
- #include <asm/firmware.h>
- 
-+/* Flags and constants used in PowerNV platform */
-+
-+#define MAX_POWERNV_IDLE_STATES	8
-+#define IDLE_USE_INST_NAP	0x00010000 /* Use nap instruction */
-+#define IDLE_USE_INST_SLEEP	0x00020000 /* Use sleep instruction */
-+
- struct cpuidle_driver powernv_idle_driver = {
- 	.name             = "powernv_idle",
- 	.owner            = THIS_MODULE,
-@@ -84,7 +91,7 @@ static int fastsleep_loop(struct cpuidle_device *dev,
- /*
-  * States for dedicated partition case.
-  */
--static struct cpuidle_state powernv_states[] = {
-+static struct cpuidle_state powernv_states[MAX_POWERNV_IDLE_STATES] = {
- 	{ /* Snooze */
- 		.name = "snooze",
- 		.desc = "snooze",
-@@ -92,20 +99,6 @@ static struct cpuidle_state powernv_states[] = {
- 		.exit_latency = 0,
- 		.target_residency = 0,
- 		.enter = &snooze_loop },
--	{ /* NAP */
--		.name = "NAP",
--		.desc = "NAP",
--		.flags = CPUIDLE_FLAG_TIME_VALID,
--		.exit_latency = 10,
--		.target_residency = 100,
--		.enter = &nap_loop },
--	 { /* Fastsleep */
--		.name = "fastsleep",
--		.desc = "fastsleep",
--		.flags = CPUIDLE_FLAG_TIME_VALID,
--		.exit_latency = 10,
--		.target_residency = 100,
--		.enter = &fastsleep_loop },
- };
- 
- static int powernv_cpuidle_add_cpu_notifier(struct notifier_block *n,
-@@ -166,19 +159,73 @@ static int powernv_cpuidle_driver_init(void)
- 	return 0;
- }
- 
-+static int powernv_add_idle_states(void)
-+{
-+	struct device_node *power_mgt;
-+	struct property *prop;
-+	int nr_idle_states = 1; /* Snooze */
-+	int dt_idle_states;
-+	u32 *flags;
-+	int i;
-+
-+	/* Currently we have snooze statically defined */
-+
-+	power_mgt = of_find_node_by_path("/ibm,opal/power-mgt");
-+	if (!power_mgt) {
-+		pr_warn("opal: PowerMgmt Node not found\n");
-+		return nr_idle_states;
-+	}
-+
-+	prop = of_find_property(power_mgt, "ibm,cpu-idle-state-flags", NULL);
-+	if (!prop) {
-+		pr_warn("DT-PowerMgmt: missing ibm,cpu-idle-state-flags\n");
-+		return nr_idle_states;
-+	}
-+
-+	dt_idle_states = prop->length / sizeof(u32);
-+	flags = (u32 *) prop->value;
-+
-+	for (i = 0; i < dt_idle_states; i++) {
-+
-+		if (flags[i] & IDLE_USE_INST_NAP) {
-+			/* Add NAP state */
-+			strcpy(powernv_states[nr_idle_states].name, "Nap");
-+			strcpy(powernv_states[nr_idle_states].desc, "Nap");
-+			powernv_states[nr_idle_states].flags = CPUIDLE_FLAG_TIME_VALID;
-+			powernv_states[nr_idle_states].exit_latency = 10;
-+			powernv_states[nr_idle_states].target_residency = 100;
-+			powernv_states[nr_idle_states].enter = &nap_loop;
-+			nr_idle_states++;
-+		}
-+
-+		if (flags[i] & IDLE_USE_INST_SLEEP) {
-+			/* Add FASTSLEEP state */
-+			strcpy(powernv_states[nr_idle_states].name, "FastSleep");
-+			strcpy(powernv_states[nr_idle_states].desc, "FastSleep");
-+			powernv_states[nr_idle_states].flags = CPUIDLE_FLAG_TIME_VALID;
-+			powernv_states[nr_idle_states].exit_latency = 300;
-+			powernv_states[nr_idle_states].target_residency = 1000000;
-+			powernv_states[nr_idle_states].enter = &fastsleep_loop;
-+			nr_idle_states++;
-+		}
-+	}
-+
-+	return nr_idle_states;
-+}
-+
- /*
-  * powernv_idle_probe()
-  * Choose state table for shared versus dedicated partition
-  */
- static int powernv_idle_probe(void)
- {
--
- 	if (cpuidle_disable != IDLE_NO_OVERRIDE)
- 		return -ENODEV;
- 
- 	if (firmware_has_feature(FW_FEATURE_OPALv3)) {
- 		cpuidle_state_table = powernv_states;
--		max_idle_state = ARRAY_SIZE(powernv_states);
-+		/* Device tree can indicate more idle states */
-+		max_idle_state = powernv_add_idle_states();
-  	} else
-  		return -ENODEV;
- 
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
