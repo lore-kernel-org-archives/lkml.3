@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664AbaAOHQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 02:16:35 -0500
-Received: from mail-gg0-f169.google.com ([209.85.161.169]:61265 "EHLO
-	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaAOHQ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 02:16:29 -0500
-Date: Tue, 14 Jan 2014 23:16:26 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave@sr71.net>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [RFC][PATCH 1/9] mm: slab/slub: use page->list consistently
- instead of page->lru
-In-Reply-To: <52D63192.3080306@sr71.net>
-Message-ID: <alpine.DEB.2.02.1401142316090.19933@chino.kir.corp.google.com>
-References: <20140114180042.C1C33F78@viggo.jf.intel.com> <20140114180044.1E401C47@viggo.jf.intel.com> <alpine.DEB.2.02.1401141829530.32645@chino.kir.corp.google.com> <52D63192.3080306@sr71.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-478612926-1389770188=:19933"
+	id S1751350AbaAOHUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 02:20:00 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:46176 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856AbaAOHTz (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Wed, 15 Jan 2014 02:19:55 -0500
+Subject: Re: [RFT][PATCH] ACPI / init: Run acpi_early_init() before
+ efi_enter_virtual_mode()
+From: joeyli <jlee@suse.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Matt Fleming <matt@console-pimps.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
+        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
+        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        x86@kernel.org,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <bp@suse.de>
+In-Reply-To: <1389731547.1792.296.camel@misato.fc.hp.com>
+References: <1387439053-8711-1-git-send-email-jlee@suse.com>
+	 <3476450.BMEcId2Lgj@vostro.rjw.lan>
+	 <20131221122148.GB29501@console-pimps.org>
+	 <2530951.HFPX8MI38t@vostro.rjw.lan>
+	 <1389672548.24105.252.camel@linux-s257.site> <52D57B54.7080509@zytor.com>
+	 <1389731547.1792.296.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 15 Jan 2014 15:18:02 +0800
+Message-ID: <1389770282.24105.259.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---531381512-478612926-1389770188=:19933
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 14 Jan 2014, Dave Hansen wrote:
-
-> > block/blk-mq.c: In function ‘blk_mq_free_rq_map’:
-> > block/blk-mq.c:1094:10: error: ‘struct page’ has no member named ‘list’
-> > block/blk-mq.c:1094:10: warning: initialization from incompatible pointer type [enabled by default]
-> > block/blk-mq.c:1094:10: error: ‘struct page’ has no member named ‘list’
-> > block/blk-mq.c:1095:22: error: ‘struct page’ has no member named ‘list’
-> > block/blk-mq.c: In function ‘blk_mq_init_rq_map’:
-> > block/blk-mq.c:1159:22: error: ‘struct page’ has no member named ‘list’
+於 二，2014-01-14 於 13:32 -0700，Toshi Kani 提到：
+> > > +       acpi_early_init();
+> > >         timekeeping_init();
+> > >         time_init();
+> > >         sched_clock_postinit();
+> > > @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
+> > >  
+> > >         check_bugs();
+> > >  
+> > > -       acpi_early_init(); /* before LAPIC and SMP init */
+> > >         sfi_init_late();
+> > >  
+> > >         if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+> > > 
+> > 
+> > Hi Toshi,
+> > 
+> > Could you try this variant, too?  If this works as well then we end
+> up
+> > solving two problems in one patch...
 > 
-> As I mentioned in the introduction, these are against linux-next.
-> There's a patch in there at the moment which fixed this.
+> Hi Peter,
 > 
+> Yes, this version works fine as well.
+> 
+> Tested-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> Thanks,
+> -Toshi
 
-Ok, thanks, I like this patch.
+Thanks a lot for your testing.
 
-Acked-by: David Rientjes <rientjes@google.com>
---531381512-478612926-1389770188=:19933--
+I will re-send a formal patch with changelog to everybody.
+
+Regards
+Joey Lee
+
+
+
