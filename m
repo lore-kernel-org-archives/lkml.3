@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaAOEpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:45:05 -0500
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:34616 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaAOEoc (ORCPT
+	id S1751841AbaAOEp2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:45:28 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:12263 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbaAOEo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:44:32 -0500
+	Tue, 14 Jan 2014 23:44:29 -0500
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
@@ -23,9 +23,9 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Tim Chen <tim.c.chen@linux.intel.com>,
         "Aswin Chandramouleeswaran\"" <aswin@hp.com>,
         Scott J Norton <scott.norton@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v9 4/5] qrwlock: Use smp_store_release() in write_unlock()
-Date: Tue, 14 Jan 2014 23:44:06 -0500
-Message-Id: <1389761047-47566-5-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v9 2/5] qrwlock x86: Enable x86 to use queue read/write lock
+Date: Tue, 14 Jan 2014 23:44:04 -0500
+Message-Id: <1389761047-47566-3-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
 References: <1389761047-47566-1-git-send-email-Waiman.Long@hp.com>
@@ -33,87 +33,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the queue_write_unlock() function to use the new
-smp_store_release() function (currently in tip). It also removes the
-temporary implementation of smp_load_acquire() and smp_store_release()
-function in qrwlock.c.
+This patch makes the necessary changes at the x86 architecture specific
+layer to enable the presence of the CONFIG_QUEUE_RWLOCK kernel option
+to replace the read/write lock by the queue read/write lock.
 
-This patch will use atomic subtraction instead if the writer field is
-not atomic.
+It also enables the CONFIG_QUEUE_RWLOCK option by default for x86 which
+will force the use of queue read/write lock. That will greatly improve
+the fairness of read/write lock and eliminate live-lock situation
+where one task may not get the lock for an indefinite period of time.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/asm-generic/qrwlock.h |   10 ++++++----
- kernel/locking/qrwlock.c      |   34 ----------------------------------
- 2 files changed, 6 insertions(+), 38 deletions(-)
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/spinlock.h       |    2 ++
+ arch/x86/include/asm/spinlock_types.h |    4 ++++
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/qrwlock.h b/include/asm-generic/qrwlock.h
-index 5abb6ca..68f488b 100644
---- a/include/asm-generic/qrwlock.h
-+++ b/include/asm-generic/qrwlock.h
-@@ -181,11 +181,13 @@ static inline void queue_read_unlock(struct qrwlock *lock)
- static inline void queue_write_unlock(struct qrwlock *lock)
- {
- 	/*
--	 * Make sure that none of the critical section will be leaked out.
-+	 * If the writer field is atomic, it can be cleared directly.
-+	 * Otherwise, an atomic subtraction will be used to clear it.
- 	 */
--	smp_mb__before_clear_bit();
--	ACCESS_ONCE(lock->cnts.writer) = 0;
--	smp_mb__after_clear_bit();
-+	if (__native_word(lock->cnts.writer))
-+		smp_store_release(&lock->cnts.writer, 0);
-+	else
-+		atomic_sub(_QW_LOCKED, &lock->cnts.rwa);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index e0acf82..3c6094b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -119,6 +119,7 @@ config X86
+ 	select MODULES_USE_ELF_RELA if X86_64
+ 	select CLONE_BACKWARDS if X86_32
+ 	select ARCH_USE_BUILTIN_BSWAP
++	select ARCH_USE_QUEUE_RWLOCK
+ 	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
+ 	select OLD_SIGACTION if X86_32
+ 	select COMPAT_OLD_SIGACTION if IA32_EMULATION
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index bf156de..8fb88c5 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -188,6 +188,7 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+ 		cpu_relax();
  }
  
++#ifndef CONFIG_QUEUE_RWLOCK
  /*
-diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
-index 053be4d..2727188 100644
---- a/kernel/locking/qrwlock.c
-+++ b/kernel/locking/qrwlock.c
-@@ -47,40 +47,6 @@
- # define arch_mutex_cpu_relax() cpu_relax()
- #endif
+  * Read-write spinlocks, allowing multiple readers
+  * but only one writer.
+@@ -270,6 +271,7 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
+ 	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
+ 		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
+ }
++#endif /* CONFIG_QUEUE_RWLOCK */
  
--#ifndef smp_load_acquire
--# ifdef CONFIG_X86
--#   define smp_load_acquire(p)				\
--	({						\
--		typeof(*p) ___p1 = ACCESS_ONCE(*p);	\
--		barrier();				\
--		___p1;					\
--	})
--# else
--#   define smp_load_acquire(p)				\
--	({						\
--		typeof(*p) ___p1 = ACCESS_ONCE(*p);	\
--		smp_mb();				\
--		___p1;					\
--	})
--# endif
--#endif
--
--#ifndef smp_store_release
--# ifdef CONFIG_X86
--#   define smp_store_release(p, v)			\
--	do {						\
--		barrier();				\
--		ACCESS_ONCE(*p) = v;			\
--	} while (0)
--# else
--#   define smp_store_release(p, v)			\
--	do {						\
--		smp_mb();				\
--		ACCESS_ONCE(*p) = v;			\
--	} while (0)
--# endif
--#endif
--
- /*
-  * If an xadd (exchange-add) macro isn't available, simulate one with
-  * the atomic_add_return() function.
+ #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
+ #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index 4f1bea1..a585635 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -34,6 +34,10 @@ typedef struct arch_spinlock {
+ 
+ #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
+ 
++#ifdef CONFIG_QUEUE_RWLOCK
++#include <asm-generic/qrwlock.h>
++#else
+ #include <asm/rwlock.h>
++#endif
+ 
+ #endif /* _ASM_X86_SPINLOCK_TYPES_H */
 -- 
 1.7.1
 
