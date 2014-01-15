@@ -1,132 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaAODTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 22:19:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6564 "EHLO mx1.redhat.com"
+	id S1751950AbaAODgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 22:36:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42213 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbaAODTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 22:19:39 -0500
-Message-ID: <1389755971.8705.5.camel@bling.home>
-Subject: Re: [PATCH] vfio-pci: Use pci "try" reset interface
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Tue, 14 Jan 2014 20:19:31 -0700
-In-Reply-To: <CAErSpo74iO-cD71+q-Bz52r4Eg1p9KpGQQXLnQ3zUxzs54YSuw@mail.gmail.com>
-References: <20131216221615.3539.78656.stgit@bling.home>
-	 <CAErSpo74iO-cD71+q-Bz52r4Eg1p9KpGQQXLnQ3zUxzs54YSuw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1751664AbaAODg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 22:36:28 -0500
+Message-ID: <52D60221.1060701@redhat.com>
+Date: Wed, 15 Jan 2014 11:36:01 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [PATCH net-next] tun/macvtap: limit the packets queued through
+ rcvbuf
+References: <1389682387-28601-1-git-send-email-jasowang@redhat.com> <20140114082516.GB1101@redhat.com> <52D4F924.2040502@redhat.com> <20140114095219.GB2846@redhat.com>
+In-Reply-To: <20140114095219.GB2846@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-01-14 at 16:48 -0700, Bjorn Helgaas wrote:
-> On Mon, Dec 16, 2013 at 3:16 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > PCI resets will attempt to take the device_lock for any device to be
-> > reset.  This is a problem if that lock is already held, for instance
-> > in the device remove path.  It's not sufficient to simply kill the
-> > user process or skip the reset if called after .remove as a race could
-> > result in the same deadlock.  Instead, we handle all resets as "best
-> > effort" using the PCI "try" reset interfaces.  This prevents the user
-> > from being able to induce a deadlock by triggering a reset.
-> >
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >
-> > This depends on the proposed pci "try" function/slot/bus reset patch.
-> >
-> >  drivers/vfio/pci/vfio_pci.c |   29 +++++++++--------------------
-> >  1 file changed, 9 insertions(+), 20 deletions(-)
-> >
-> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> > index 6ab71b9..576e34e 100644
-> > --- a/drivers/vfio/pci/vfio_pci.c
-> > +++ b/drivers/vfio/pci/vfio_pci.c
-> > @@ -139,25 +139,14 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
-> >         pci_write_config_word(pdev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
-> >
-> >         /*
-> > -        * Careful, device_lock may already be held.  This is the case if
-> > -        * a driver unbind is blocked.  Try to get the locks ourselves to
-> > -        * prevent a deadlock.
-> > +        * Try to reset the device.  The success of this is dependent on
-> > +        * being able to lock the device, which is not always possible.
-> >          */
-> >         if (vdev->reset_works) {
-> > -               bool reset_done = false;
-> > -
-> > -               if (pci_cfg_access_trylock(pdev)) {
-> > -                       if (device_trylock(&pdev->dev)) {
-> > -                               __pci_reset_function_locked(pdev);
-> > -                               reset_done = true;
-> > -                               device_unlock(&pdev->dev);
-> > -                       }
-> > -                       pci_cfg_access_unlock(pdev);
-> > -               }
-> > -
-> > -               if (!reset_done)
-> > -                       pr_warn("%s: Unable to acquire locks for reset of %s\n",
-> > -                               __func__, dev_name(&pdev->dev));
-> > +               int ret = pci_try_reset_function(pdev);
-> > +               if (ret)
-> > +                       pr_debug("%s: reset of device %s = %d\n",
-> > +                               __func__, dev_name(&pdev->dev), ret);
-> 
-> Why is this a pr_debug() instead of dev_dbg()?  I see vfio_pci.c seems
-> to always use pr_*() instead of dev_*(), so you probably have a
-> reason.
+On 01/14/2014 05:52 PM, Michael S. Tsirkin wrote:
+> On Tue, Jan 14, 2014 at 04:45:24PM +0800, Jason Wang wrote:
+>> > On 01/14/2014 04:25 PM, Michael S. Tsirkin wrote:
+>>> > > On Tue, Jan 14, 2014 at 02:53:07PM +0800, Jason Wang wrote:
+>>>> > >> We used to limit the number of packets queued through tx_queue_length. This
+>>>> > >> has several issues:
+>>>> > >>
+>>>> > >> - tx_queue_length is the control of qdisc queue length, simply reusing it
+>>>> > >>   to control the packets queued by device may cause confusion.
+>>>> > >> - After commit 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 ("macvtap: Add
+>>>> > >>   support of packet capture on macvtap device."), an unexpected qdisc
+>>>> > >>   caused by non-zero tx_queue_length will lead qdisc lock contention for
+>>>> > >>   multiqueue deivce.
+>>>> > >> - What we really want is to limit the total amount of memory occupied not
+>>>> > >>   the number of packets.
+>>>> > >>
+>>>> > >> So this patch tries to solve the above issues by using socket rcvbuf to
+>>>> > >> limit the packets could be queued for tun/macvtap. This was done by using
+>>>> > >> sock_queue_rcv_skb() instead of a direct call to skb_queue_tail(). Also two
+>>>> > >> new ioctl() were introduced for userspace to change the rcvbuf like what we
+>>>> > >> have done for sndbuf.
+>>>> > >>
+>>>> > >> With this fix, we can safely change the tx_queue_len of macvtap to
+>>>> > >> zero. This will make multiqueue works without extra lock contention.
+>>>> > >>
+>>>> > >> Cc: Vlad Yasevich <vyasevic@redhat.com>
+>>>> > >> Cc: Michael S. Tsirkin <mst@redhat.com>
+>>>> > >> Cc: John Fastabend <john.r.fastabend@intel.com>
+>>>> > >> Cc: Stephen Hemminger <stephen@networkplumber.org>
+>>>> > >> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+>>>> > >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>>> > > No, I don't think we can change userspace-visible behaviour like that.
+>>> > >
+>>> > > This will break any existing user that tries to control
+>>> > > queue length through sysfs,netlink or device ioctl.
+>> > 
+>> > But it looks like a buggy API, since tx_queue_len should be for qdisc
+>> > queue length instead of device itself.
+> Probably, but it's been like this since 2.6.x time.
+> Also, qdisc queue is unused for tun so it seemed kind of
+> reasonable to override tx_queue_len.
+>
+>> > If we really want to preserve the
+>> > behaviour, how about using a new feature flag and change the behaviour
+>> > only when the device is created (TUNSETIFF) with the new flag?
+> OK this addresses the issue partially, but there's also an issue
+> of permissions: tx_queue_len can only be changed if
+> capable(CAP_NET_ADMIN). OTOH in your patch a regular user
+> can change the amount of memory consumed per queue
+> by calling TUNSETRCVBUF.
 
-Inertia and lack of anyone suggesting it are probably the biggest
-reasons.  As you note, I've been using pr_foo throughout the file, so
-I'd probably prefer consistency and fix them in a separate patch.
+Yes, but we have the same issue for TUNSETSNDBUF.
+>
+>>> > >
+>>> > > Take a look at my patch in msg ID 20140109071721.GD19559@redhat.com
+>>> > > which gives one way to set tx_queue_len to zero without
+>>> > > breaking userspace.
+>> > 
+>> > If I read the patch correctly, it will make no way for the user who
+>> > really want to change the qdisc queue length for tun.
+> Why would this matter?  As far as I can see qdisc queue is currently unused.
+>
 
-> The text of the message ("vfio_pci_disable: reset of device
-> 0000:00:00.1 = -35") doesn't seem terribly clear; as a user, I'd have
-> to go look up the code to know whether I should be concerned about it.
->  Maybe it should be explicit that the device was not reset?
-
-Sure, I'll tweak the message to make it more clear that it failed and
-include the return value as extra info.  Thanks,
-
-Alex
-
-> >         }
-> >
-> >         pci_restore_state(pdev);
-> > @@ -514,7 +503,7 @@ static long vfio_pci_ioctl(void *device_data,
-> >
-> >         } else if (cmd == VFIO_DEVICE_RESET) {
-> >                 return vdev->reset_works ?
-> > -                       pci_reset_function(vdev->pdev) : -EINVAL;
-> > +                       pci_try_reset_function(vdev->pdev) : -EINVAL;
-> >
-> >         } else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
-> >                 struct vfio_pci_hot_reset_info hdr;
-> > @@ -684,8 +673,8 @@ reset_info_exit:
-> >                                                     &info, slot);
-> >                 if (!ret)
-> >                         /* User has access, do the reset */
-> > -                       ret = slot ? pci_reset_slot(vdev->pdev->slot) :
-> > -                                    pci_reset_bus(vdev->pdev->bus);
-> > +                       ret = slot ? pci_try_reset_slot(vdev->pdev->slot) :
-> > +                                    pci_try_reset_bus(vdev->pdev->bus);
-> >
-> >  hot_reset_release:
-> >                 for (i--; i >= 0; i--)
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
+User may use qdisc to do port mirroring, bandwidth limitation, traffic
+prioritization or more for a VM. So we do have users and maybe more
+consider the case of vpn.
