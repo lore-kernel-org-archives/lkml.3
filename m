@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536AbaAOWKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:10:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41337 "EHLO
+	id S1754330AbaAOWLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:11:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41326 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbaAOV7u (ORCPT
+	with ESMTP id S1754080AbaAOV7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:59:50 -0500
+	Wed, 15 Jan 2014 16:59:42 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 096/166] target/file: Update hw_max_sectors based on current block_size
-Date: Wed, 15 Jan 2014 13:51:50 -0800
-Message-Id: <1389822780-4729-97-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 085/166] mm: clear pmd_numa before invalidating
+Date: Wed, 15 Jan 2014 13:51:39 -0800
+Message-Id: <1389822780-4729-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,102 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 95cadace8f3959282e76ebf8b382bd0930807d2c upstream.
+commit 67f87463d3a3362424efcbe8b40e4772fd34fc61 upstream.
 
-This patch allows FILEIO to update hw_max_sectors based on the current
-max_bytes_per_io.  This is required because vfs_[writev,readv]() can accept
-a maximum of 2048 iovecs per call, so the enforced hw_max_sectors really
-needs to be calculated based on block_size.
+On x86, PMD entries are similar to _PAGE_PROTNONE protection and are
+handled as NUMA hinting faults.  The following two page table protection
+bits are what defines them
 
-This addresses a >= v3.5 bug where block_size=512 was rejecting > 1M
-sized I/O requests, because FD_MAX_SECTORS was hardcoded to 2048 for
-the block_size=4096 case.
+	_PAGE_NUMA:set	_PAGE_PRESENT:clear
 
-(v2: Use max_bytes_per_io instead of ->update_hw_max_sectors)
+A PMD is considered present if any of the _PAGE_PRESENT, _PAGE_PROTNONE,
+_PAGE_PSE or _PAGE_NUMA bits are set.  If pmdp_invalidate encounters a
+pmd_numa, it clears the present bit leaving _PAGE_NUMA which will be
+considered not present by the CPU but present by pmd_present.  The
+existing caller of pmdp_invalidate should handle it but it's an
+inconsistent state for a PMD.  This patch keeps the state consistent
+when calling pmdp_invalidate.
 
-Reported-by: Henrik Goldman <hg@x-formation.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ kamal: backport to 3.8 (context) ]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Alex Thorlton <athorlton@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/target_core_device.c | 5 +++++
- drivers/target/target_core_file.c   | 8 ++++----
- drivers/target/target_core_file.h   | 5 ++++-
- include/target/target_core_base.h   | 1 +
- 4 files changed, 14 insertions(+), 5 deletions(-)
+ mm/pgtable-generic.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 96f4981..c461180 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1048,6 +1048,11 @@ int se_dev_set_block_size(struct se_device *dev, u32 block_size)
- 	dev->dev_attrib.block_size = block_size;
- 	pr_debug("dev[%p]: SE Device block_size changed to %u\n",
- 			dev, block_size);
-+
-+	if (dev->dev_attrib.max_bytes_per_io)
-+		dev->dev_attrib.hw_max_sectors =
-+			dev->dev_attrib.max_bytes_per_io / block_size;
-+
- 	return 0;
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index 0c8323f..eb900bb 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -166,6 +166,9 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm)
+ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
+ 		     pmd_t *pmdp)
+ {
++	pmd_t entry = *pmdp;
++	if (pmd_numa(entry))
++		entry = pmd_mknonnuma(entry);
+ 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(*pmdp));
+ 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
  }
- 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 89aa3b2a..9bfe625 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -64,9 +64,8 @@ static int fd_attach_hba(struct se_hba *hba, u32 host_id)
- 	pr_debug("CORE_HBA[%d] - TCM FILEIO HBA Driver %s on Generic"
- 		" Target Core Stack %s\n", hba->hba_id, FD_VERSION,
- 		TARGET_CORE_MOD_VERSION);
--	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic"
--		" MaxSectors: %u\n",
--		hba->hba_id, fd_host->fd_host_id, FD_MAX_SECTORS);
-+	pr_debug("CORE_HBA[%d] - Attached FILEIO HBA: %u to Generic\n",
-+		hba->hba_id, fd_host->fd_host_id);
- 
- 	return 0;
- }
-@@ -174,7 +173,8 @@ static int fd_configure_device(struct se_device *dev)
- 	fd_dev->fd_block_size = dev->dev_attrib.hw_block_size;
- 
- 	dev->dev_attrib.hw_block_size = FD_BLOCKSIZE;
--	dev->dev_attrib.hw_max_sectors = FD_MAX_SECTORS;
-+	dev->dev_attrib.max_bytes_per_io = FD_MAX_BYTES;
-+	dev->dev_attrib.hw_max_sectors = FD_MAX_BYTES / fd_dev->fd_block_size;
- 	dev->dev_attrib.hw_queue_depth = FD_MAX_DEVICE_QUEUE_DEPTH;
- 
- 	if (fd_dev->fbd_flags & FDBD_HAS_BUFFERED_IO_WCE) {
-diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-index 37ffc5b..d7772c1 100644
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -7,7 +7,10 @@
- #define FD_DEVICE_QUEUE_DEPTH	32
- #define FD_MAX_DEVICE_QUEUE_DEPTH 128
- #define FD_BLOCKSIZE		512
--#define FD_MAX_SECTORS		2048
-+/*
-+ * Limited by the number of iovecs (2048) per vfs_[writev,readv] call
-+ */
-+#define FD_MAX_BYTES		8388608
- 
- #define RRF_EMULATE_CDB		0x01
- #define RRF_GOT_LBA		0x02
-diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index 663e34a..55bf359 100644
---- a/include/target/target_core_base.h
-+++ b/include/target/target_core_base.h
-@@ -615,6 +615,7 @@ struct se_dev_attrib {
- 	u32		unmap_granularity;
- 	u32		unmap_granularity_alignment;
- 	u32		max_write_same_len;
-+	u32		max_bytes_per_io;
- 	struct se_device *da_dev;
- 	struct config_group da_group;
- };
 -- 
 1.8.3.2
 
