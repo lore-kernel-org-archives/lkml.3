@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaAOWkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:40:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40725 "EHLO
+	id S1754935AbaAOWmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:42:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40689 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaAOVxZ (ORCPT
+	with ESMTP id S1752777AbaAOVxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:53:25 -0500
+	Wed, 15 Jan 2014 16:53:22 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Antti Palosaari <crope@iki.fi>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 011/166] [media] af9035: [0ccd:0099] TerraTec Cinergy T Stick Dual RC (rev. 2)
-Date: Wed, 15 Jan 2014 13:50:25 -0800
-Message-Id: <1389822780-4729-12-git-send-email-kamal@canonical.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 008/166] usb: musb: only cancel work if it is initialized
+Date: Wed, 15 Jan 2014 13:50:22 -0800
+Message-Id: <1389822780-4729-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,87 +27,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit b799b8102baa8e63139f0eadef00d75701328775 upstream.
+commit 66fadea5b79c07154126bb0db375be915f611246 upstream.
 
-That same USB ID is used both AF9015 and AF9035 driver.
-iManufacturer is only thing we can select correct driver without a I/O.
+Since commit c5340bd14 ("usb: musb: cancel work on removal") the workqueue
+is cancelled but then if we bail out before the workqueue is setup we
+get this:
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+|INFO: trying to register non-static key.
+|the code is fine but needs lockdep annotation.
+|turning off the locking correctness validator.
+|CPU: 0 PID: 708 Comm: modprobe Not tainted 3.12.0+ #435
+|[<c00867bc>] (lock_acquire+0xf0/0x108) from [<c00529d0>] (flush_work+0x38/0x2ec)
+|[<c00529d0>] (flush_work+0x38/0x2ec) from [<c0052d24>] (__cancel_work_timer+0xa0/0x134)
+|[<c0052d24>] (__cancel_work_timer+0xa0/0x134) from [<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc])
+|[<bf0e4ae4>] (musb_free+0x40/0x60 [musb_hdrc]) from [<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc])
+|[<bf0e5364>] (musb_probe+0x678/0xb78 [musb_hdrc]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
+|[<c0294bf0>] (platform_drv_probe+0x1c/0x24) from [<c0293970>] (driver_probe_device+0x90/0x224)
+|[<c0293970>] (driver_probe_device+0x90/0x224) from [<c0291ef0>] (bus_for_each_drv+0x60/0x8c)
+|[<c0291ef0>] (bus_for_each_drv+0x60/0x8c) from [<c02938bc>] (device_attach+0x80/0xa4)
+|[<c02938bc>] (device_attach+0x80/0xa4) from [<c0292b24>] (bus_probe_device+0x88/0xac)
+|[<c0292b24>] (bus_probe_device+0x88/0xac) from [<c0291490>] (device_add+0x388/0x6c8)
+|[<c0291490>] (device_add+0x388/0x6c8) from [<c02952a0>] (platform_device_add+0x188/0x22c)
+|[<c02952a0>] (platform_device_add+0x188/0x22c) from [<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps])
+|[<bf11ea30>] (dsps_probe+0x294/0x394 [musb_dsps]) from [<c0294bf0>] (platform_drv_probe+0x1c/0x24)
+|platform musb-hdrc.1.auto: Driver musb-hdrc requests probe deferral
+|musb-hdrc musb-hdrc.1.auto: musb_init_controller failed with status -517
+
+This patch moves the init part to earlier part so it can be cleaned as
+part of the fail3 label because now it is surrounded by the fail4 label.
+Step two is to remove it from musb_free() and add it to the two cleanup
+paths (error path and device removal) separately.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/dvb-usb-v2/af9035.c | 42 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+ drivers/usb/musb/musb_core.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/usb/dvb-usb-v2/af9035.c b/drivers/media/usb/dvb-usb-v2/af9035.c
-index c3cd6be..cbe1373 100644
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -1046,6 +1046,43 @@ err:
- 	return ret;
- }
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 85b7a91..dd4fe41 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1816,7 +1816,6 @@ static void musb_free(struct musb *musb)
+ 			disable_irq_wake(musb->nIrq);
+ 		free_irq(musb->nIrq, musb);
+ 	}
+-	cancel_work_sync(&musb->irq_work);
+ 	if (is_dma_capable() && musb->dma_controller) {
+ 		struct dma_controller	*c = musb->dma_controller;
  
-+static int af9035_probe(struct usb_interface *intf,
-+		const struct usb_device_id *id)
-+{
-+	struct usb_device *udev = interface_to_usbdev(intf);
-+	char manufacturer[sizeof("Afatech")];
+@@ -1915,6 +1914,9 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	musb_platform_disable(musb);
+ 	musb_generic_disable(musb);
+ 
++	/* Init IRQ workqueue before request_irq */
++	INIT_WORK(&musb->irq_work, musb_irq_work);
 +
-+	memset(manufacturer, 0, sizeof(manufacturer));
-+	usb_string(udev, udev->descriptor.iManufacturer,
-+			manufacturer, sizeof(manufacturer));
-+	/*
-+	 * There is two devices having same ID but different chipset. One uses
-+	 * AF9015 and the other IT9135 chipset. Only difference seen on lsusb
-+	 * is iManufacturer string.
-+	 *
-+	 * idVendor           0x0ccd TerraTec Electronic GmbH
-+	 * idProduct          0x0099
-+	 * bcdDevice            2.00
-+	 * iManufacturer           1 Afatech
-+	 * iProduct                2 DVB-T 2
-+	 *
-+	 * idVendor           0x0ccd TerraTec Electronic GmbH
-+	 * idProduct          0x0099
-+	 * bcdDevice            2.00
-+	 * iManufacturer           1 ITE Technologies, Inc.
-+	 * iProduct                2 DVB-T TV Stick
-+	 */
-+	if ((le16_to_cpu(udev->descriptor.idVendor) == USB_VID_TERRATEC) &&
-+			(le16_to_cpu(udev->descriptor.idProduct) == 0x0099)) {
-+		if (!strcmp("Afatech", manufacturer)) {
-+			dev_dbg(&udev->dev, "%s: rejecting device\n", __func__);
-+			return -ENODEV;
-+		}
-+	}
-+
-+	return dvb_usbv2_probe(intf, id);
-+}
-+
- /* interface 0 is used by DVB-T receiver and
-    interface 1 is for remote controller (HID) */
- static const struct dvb_usb_device_properties af9035_props = {
-@@ -1135,6 +1172,9 @@ static const struct usb_device_id af9035_id_table[] = {
- 		&af9035_props, "Asus U3100Mini Plus", NULL) },
-         { DVB_USB_DEVICE(USB_VID_TERRATEC, 0x00aa,
- 		&af9035_props, "TerraTec Cinergy T Stick (rev. 2)", NULL) },
-+	/* XXX: that same ID [0ccd:0099] is used by af9015 driver too */
-+	{ DVB_USB_DEVICE(USB_VID_TERRATEC, 0x0099,
-+		&af9035_props, "TerraTec Cinergy T Stick Dual RC (rev. 2)", NULL) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, af9035_id_table);
-@@ -1142,7 +1182,7 @@ MODULE_DEVICE_TABLE(usb, af9035_id_table);
- static struct usb_driver af9035_usb_driver = {
- 	.name = KBUILD_MODNAME,
- 	.id_table = af9035_id_table,
--	.probe = dvb_usbv2_probe,
-+	.probe = af9035_probe,
- 	.disconnect = dvb_usbv2_disconnect,
- 	.suspend = dvb_usbv2_suspend,
- 	.resume = dvb_usbv2_resume,
+ 	/* setup musb parts of the core (especially endpoints) */
+ 	status = musb_core_init(plat->config->multipoint
+ 			? MUSB_CONTROLLER_MHDRC
+@@ -1924,9 +1926,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 
+ 	setup_timer(&musb->otg_timer, musb_otg_timer_func, (unsigned long) musb);
+ 
+-	/* Init IRQ workqueue before request_irq */
+-	INIT_WORK(&musb->irq_work, musb_irq_work);
+-
+ 	/* attach to the IRQ */
+ 	if (request_irq(nIrq, musb->isr, 0, dev_name(dev), musb)) {
+ 		dev_err(dev, "request_irq %d failed!\n", nIrq);
+@@ -1986,6 +1985,7 @@ fail4:
+ 	musb_gadget_cleanup(musb);
+ 
+ fail3:
++	cancel_work_sync(&musb->irq_work);
+ 	pm_runtime_put_sync(musb->controller);
+ 
+ fail2:
+@@ -2050,6 +2050,7 @@ static int musb_remove(struct platform_device *pdev)
+ 	musb_exit_debugfs(musb);
+ 	musb_shutdown(pdev);
+ 
++	cancel_work_sync(&musb->irq_work);
+ 	musb_free(musb);
+ 	iounmap(ctrl_base);
+ 	device_init_wakeup(dev, 0);
 -- 
 1.8.3.2
 
