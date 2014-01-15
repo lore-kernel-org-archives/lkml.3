@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaAOWdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:33:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40862 "EHLO
+	id S1754195AbaAOWeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:34:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40850 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263AbaAOV4T (ORCPT
+	with ESMTP id S1750867AbaAOV4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:56:19 -0500
+	Wed, 15 Jan 2014 16:56:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 115/166] ath9k: Fix interrupt handling for the AR9002 family
-Date: Wed, 15 Jan 2014 13:52:09 -0800
-Message-Id: <1389822780-4729-116-git-send-email-kamal@canonical.com>
+Cc: Rob Herring <robh@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 123/166] Revert "of/address: Handle #address-cells > 2 specially"
+Date: Wed, 15 Jan 2014 13:52:17 -0800
+Message-Id: <1389822780-4729-124-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -29,117 +26,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Rob Herring <robh@kernel.org>
 
-commit 73f0b56a1ff64e7fb6c3a62088804bab93bcedc2 upstream.
+commit 13fcca8f25f4e9ce7f55da9cd353bb743236e212 upstream.
 
-This patch adds a driver workaround for a HW issue.
+This reverts commit e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7.
 
-A race condition in the HW results in missing interrupts,
-which can be avoided by a read/write with the ISR register.
-All chips in the AR9002 series are affected by this bug - AR9003
-and above do not have this problem.
+Nikita Yushchenko reports:
+While trying to make freescale p2020ds and  mpc8572ds boards working
+with mainline kernel, I faced that commit e38c0a1f (Handle
 
-Cc: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Both these boards have uli1575 chip.
+Corresponding part in device tree is something like
+
+                uli1575@0 {
+                        reg = <0x0 0x0 0x0 0x0 0x0>;
+                        #size-cells = <2>;
+                        #address-cells = <3>;
+                        ranges = <0x2000000 0x0 0x80000000
+                                  0x2000000 0x0 0x80000000
+                                  0x0 0x20000000
+
+                                  0x1000000 0x0 0x0
+                                  0x1000000 0x0 0x0
+                                  0x0 0x10000>;
+                        isa@1e {
+...
+
+I.e. it has #address-cells = <3>
+
+With commit e38c0a1f reverted, devices under uli1575 are registered
+correctly, e.g. for rtc
+
+OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
+OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
+OF: translating address: 00000001 00000070
+OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
+OF: walking ranges...
+OF: ISA map, cp=0, s=1000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 00000000 00000000 00000070
+OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
+OF: walking ranges...
+OF: default map, cp=a0000000, s=20000000, da=70
+OF: default map, cp=0, s=10000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 01000000 00000000 00000070
+OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000
+OF: walking ranges...
+OF: PCI map, cp=0, s=10000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 01000000 00000000 00000070
+OF: parent bus is default (na=2, ns=2) on /
+OF: walking ranges...
+OF: PCI map, cp=0, s=10000, da=70
+OF: parent translation for: 00000000 ffc10000
+OF: with offset: 70
+OF: one level translation: 00000000 ffc10070
+OF: reached root node
+
+With commit e38c0a1f in place, address translation fails:
+
+OF: ** translation for device /pcie@ffe09000/pcie@0/uli1575@0/isa@1e/rtc@70 **
+OF: bus is isa (na=2, ns=1) on /pcie@ffe09000/pcie@0/uli1575@0/isa@1e
+OF: translating address: 00000001 00000070
+OF: parent bus is default (na=3, ns=2) on /pcie@ffe09000/pcie@0/uli1575@0
+OF: walking ranges...
+OF: ISA map, cp=0, s=1000, da=70
+OF: parent translation for: 01000000 00000000 00000000
+OF: with offset: 70
+OF: one level translation: 00000000 00000000 00000070
+OF: parent bus is pci (na=3, ns=2) on /pcie@ffe09000/pcie@0
+OF: walking ranges...
+OF: default map, cp=a0000000, s=20000000, da=70
+OF: default map, cp=0, s=10000, da=70
+OF: not found !
+
+Thierry Reding confirmed this commit was not needed after all:
+"We ended up merging a different address representation for Tegra PCIe
+and I've confirmed that reverting this commit doesn't cause any obvious
+regressions. I think all other drivers in drivers/pci/host ended up
+copying what we did on Tegra, so I wouldn't expect any other breakage
+either."
+
+There doesn't appear to be a simple way to support both behaviours, so
+reverting this as nothing should be depending on the new behaviour.
+
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/ar9002_mac.c | 52 ++++++++++++++++++++++++-----
- 1 file changed, 43 insertions(+), 9 deletions(-)
+ drivers/of/address.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9002_mac.c b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-index 8d78253..a366d6b 100644
---- a/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9002_mac.c
-@@ -76,9 +76,16 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 				mask2 |= ATH9K_INT_CST;
- 			if (isr2 & AR_ISR_S2_TSFOOR)
- 				mask2 |= ATH9K_INT_TSFOOR;
-+
-+			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+				REG_WRITE(ah, AR_ISR_S2, isr2);
-+				isr &= ~AR_ISR_BCNMISC;
-+			}
- 		}
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 0125524..fb2a4e8 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -69,14 +69,6 @@ static u64 of_bus_default_map(__be32 *addr, const __be32 *range,
+ 		 (unsigned long long)cp, (unsigned long long)s,
+ 		 (unsigned long long)da);
  
--		isr = REG_READ(ah, AR_ISR_RAC);
-+		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)
-+			isr = REG_READ(ah, AR_ISR_RAC);
-+
- 		if (isr == 0xffffffff) {
- 			*masked = 0;
- 			return false;
-@@ -97,11 +104,23 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 
- 			*masked |= ATH9K_INT_TX;
- 
--			s0_s = REG_READ(ah, AR_ISR_S0_S);
-+			if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
-+				s0_s = REG_READ(ah, AR_ISR_S0_S);
-+				s1_s = REG_READ(ah, AR_ISR_S1_S);
-+			} else {
-+				s0_s = REG_READ(ah, AR_ISR_S0);
-+				REG_WRITE(ah, AR_ISR_S0, s0_s);
-+				s1_s = REG_READ(ah, AR_ISR_S1);
-+				REG_WRITE(ah, AR_ISR_S1, s1_s);
-+
-+				isr &= ~(AR_ISR_TXOK |
-+					 AR_ISR_TXDESC |
-+					 AR_ISR_TXERR |
-+					 AR_ISR_TXEOL);
-+			}
-+
- 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXOK);
- 			ah->intr_txqs |= MS(s0_s, AR_ISR_S0_QCU_TXDESC);
+-	/*
+-	 * If the number of address cells is larger than 2 we assume the
+-	 * mapping doesn't specify a physical address. Rather, the address
+-	 * specifies an identifier that must match exactly.
+-	 */
+-	if (na > 2 && memcmp(range, addr, na * 4) != 0)
+-		return OF_BAD_ADDR;
 -
--			s1_s = REG_READ(ah, AR_ISR_S1_S);
- 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXERR);
- 			ah->intr_txqs |= MS(s1_s, AR_ISR_S1_QCU_TXEOL);
- 		}
-@@ -114,13 +133,15 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 		*masked |= mask2;
- 	}
- 
--	if (AR_SREV_9100(ah))
--		return true;
--
--	if (isr & AR_ISR_GENTMR) {
-+	if (!AR_SREV_9100(ah) && (isr & AR_ISR_GENTMR)) {
- 		u32 s5_s;
- 
--		s5_s = REG_READ(ah, AR_ISR_S5_S);
-+		if (pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED) {
-+			s5_s = REG_READ(ah, AR_ISR_S5_S);
-+		} else {
-+			s5_s = REG_READ(ah, AR_ISR_S5);
-+		}
-+
- 		ah->intr_gen_timer_trigger =
- 				MS(s5_s, AR_ISR_S5_GENTIMER_TRIG);
- 
-@@ -133,8 +154,21 @@ static bool ar9002_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 		if ((s5_s & AR_ISR_S5_TIM_TIMER) &&
- 		    !(pCap->hw_caps & ATH9K_HW_CAP_AUTOSLEEP))
- 			*masked |= ATH9K_INT_TIM_TIMER;
-+
-+		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+			REG_WRITE(ah, AR_ISR_S5, s5_s);
-+			isr &= ~AR_ISR_GENTMR;
-+		}
- 	}
- 
-+	if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-+		REG_WRITE(ah, AR_ISR, isr);
-+		REG_READ(ah, AR_ISR);
-+	}
-+
-+	if (AR_SREV_9100(ah))
-+		return true;
-+
- 	if (sync_cause) {
- 		ath9k_debug_sync_cause(common, sync_cause);
- 		fatal_int =
+ 	if (da < cp || da >= (cp + s))
+ 		return OF_BAD_ADDR;
+ 	return da - cp;
 -- 
 1.8.3.2
 
