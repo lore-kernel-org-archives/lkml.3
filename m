@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaAONKN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:10:13 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51543 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752027AbaAONKG (ORCPT
+	id S1752085AbaAONKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:10:53 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:56747 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940AbaAONKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:10:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>, Elliott@hp.com,
-        samer.el-haj-mahmoud@hp.com, Oliver Neukum <oneukum@suse.de>,
-        werner@suse.com, trenn@suse.de, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        x86@kernel.org,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] ACPI / init: Run acpi_early_init() before timekeeping_init()
-Date: Wed, 15 Jan 2014 14:24:04 +0100
-Message-ID: <3042669.sJyHAYrJIM@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <52D67C3B.4050503@zytor.com>
-References: <1389770748-32698-1-git-send-email-jlee@suse.com> <52D67C3B.4050503@zytor.com>
+	Wed, 15 Jan 2014 08:10:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marc Carino <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH v3 7/7] ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
+Date: Wed, 15 Jan 2014 14:10:38 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Christian Daudt <bcm@fixthebug.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com> <1389743333-16741-8-git-send-email-marc.ceeeee@gmail.com>
+In-Reply-To: <1389743333-16741-8-git-send-email-marc.ceeeee@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201401151410.39112.arnd@arndb.de>
+X-Provags-ID: V02:K0:R8yzhaq74/5ImIqQLwSSFd6ILoxNDJJRlnP6fo3y0GA
+ lhGiKZjMOFAfih4ZSm+7cSGGGX7Wkdc8fh4VelsQrnCipOfauz
+ L6hTehjy0nwWtTblL5YYN/86LIonZ+pkq01yNqMTS7o+x+BWNm
+ Z7/86YSj+JhlgAD64JHq/xr5yBWoXgaz34Mq+NjiYLS+ZlLFDt
+ LF7iK/cF9pTBymgbtOSEfwXPQZhTyoPmXJ5d2qgfsmlqXI2SJ2
+ h81NnyXq4qG6nFqFLRTbPmvId6rBGzVcOEddQjOGtcK9d5Ho1B
+ PRJD4GPs4n/MlvFUFIqtArPLLKE1bRhwvw4/gORPoDob+yYMQG
+ vmmdYoYbeimrhdwFOYqA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 15, 2014 04:16:59 AM H. Peter Anvin wrote:
-> Rafael, you want to take this one?
+On Wednesday 15 January 2014, Marc Carino wrote:
+> +       gen-ctrl {
+> +               compatible = "brcm,brcmstb-gen-ctrl-v1";
+> +               reg = <0xf0404304 0x4
+> +                      0xf0404308 0x4
+> +                      0xf03e2578 0x4
+> +                      0xf03e2488 0x10
+> +                      0xf0452000 0x20>;
+> +       };
 
-Yes, I can take it.
+Sorry I didn't get back to you on this when we discussed the previous
+version. I'm actually less happy with this DT representation than the
+original. What I take from your description is that you have multiple
+register ranges that basically combine more-or-less random registers
+that belong into different Linux subsystems.
 
-Thanks!
+I think the best way to deal with this is to have the "syscon" driver
+handle the multiplexing between the various drivers that need access
+to the registers. It would look something like (taking the numbers
+from your previous patch):
 
-> On 01/14/2014 11:25 PM, Lee, Chun-Yi wrote:
-> > This is a variant patch from Rafael J. Wysocki's
-> > ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
-> > 
-> > According to Matt Fleming, if acpi_early_init() was executed before
-> > efi_enter_virtual_mode(), the EFI initialization could benefit from
-> > it, so Rafael's patch makes that happen.
-> > 
-> > And, we want accessing ACPI TAD device to set system clock, so move
-> > acpi_early_init() before timekeeping_init(). This final position is
-> > also before efi_enter_virtual_mode().
-> > 
-> > v2:
-> > Move acpi_early_init() before timekeeping_init() to prepare setting
-> > system clock with ACPI TAD.
-> > 
-> > v1:
-> > Rafael J. Wysocki
-> > ACPI / init: Run acpi_early_init() before efi_enter_virtual_mode()
-> > 
-> > Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> > Cc: Matt Fleming <matt@console-pimps.org>
-> > Cc: H. Peter Anvin <hpa@zytor.com>
-> > Cc: Borislav Petkov <bp@suse.de>
-> > Cc: Matthew Garrett <matthew.garrett@nebula.com>
-> > Tested-by: Toshi Kani <toshi.kani@hp.com>
-> > Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> > ---
-> >  init/main.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/init/main.c b/init/main.c
-> > index febc511..b6d93c8 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -565,6 +565,7 @@ asmlinkage void __init start_kernel(void)
-> >  	init_timers();
-> >  	hrtimers_init();
-> >  	softirq_init();
-> > +	acpi_early_init();
-> >  	timekeeping_init();
-> >  	time_init();
-> >  	sched_clock_postinit();
-> > @@ -641,7 +642,6 @@ asmlinkage void __init start_kernel(void)
-> >  
-> >  	check_bugs();
-> >  
-> > -	acpi_early_init(); /* before LAPIC and SMP init */
-> >  	sfi_init_late();
-> >  
-> >  	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
-> > 
-> 
+	ahb {
+		ranges = <0 0xf0000000 0x1000000>; /* 16 MB remapped registers */
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+		hif-cpubuictrl: syscon@3e2400 {
+			compatible = "brcm,7445-cpubioctrl", "syscon";
+			reg = <0x3e2000, 0x1000>;
+		};
+
+		hif-continuation: syscon@45200 {
+			compatible = "brcm,7445-hif-continuation", "syscon";
+			reg = <0x452000, 0x1000>;
+		};
+
+		sun-top-ctrl: ...
+	};
+
+This lets the syscon driver find and map the three register areas.
+Drivers that need access to the registers then do 
+
+	reset {
+		compatible = "brcm,7445-reset-ctrl";
+		syscon = <&sun-top-ctrl 0x300 0x100>;
+		#reset-cells = <1>;
+	};
+
+And then you can add a regular device driver to drivers/reset that provides
+a device_reset() API to other drivers, or a system-reset function to be
+registered as arm_pm_restart. This driver would use
+syscon_regmap_lookup_by_phandle() to get access to a regmap pointer,
+and then use either hardcoded offsets into the regmap, or get those
+offsets from numbers in the devicetree, as provided in the example
+above.
+
+	Arnd
