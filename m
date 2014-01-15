@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaAOIFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 03:05:17 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50669 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaAOIFO (ORCPT
+	id S1751853AbaAOIFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 03:05:50 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:34252 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaAOIFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 03:05:14 -0500
-Message-ID: <52D6412D.8050000@linux.vnet.ibm.com>
-Date: Wed, 15 Jan 2014 16:05:01 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 03:05:48 -0500
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
-Subject: Re: [RFC PATCH] sched: find the latest idle cpu
-References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org> <52D61DA0.8050206@linux.vnet.ibm.com> <52D62E96.6030301@linaro.org>
-In-Reply-To: <52D62E96.6030301@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011508-9264-0000-0000-00000547DEAE
+In-Reply-To: <1389762075.6933.76.camel@pasglop>
+References: <1389762075.6933.76.camel@pasglop>
+Date: Wed, 15 Jan 2014 15:05:46 +0700
+X-Google-Sender-Auth: Sf4VPeD42MAQXUXV3Hwk5SFnY-w
+Message-ID: <CA+55aFyfY5kEezwx8-jhgdgOX+EG__v3QRZmGnGstDpUP-UVWQ@mail.gmail.com>
+Subject: Re: [git pull] Please pull powerpc.git merge branch
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 02:45 PM, Alex Shi wrote:
-[snip]
-> 
-> yes, to save your scenario, we need to know the next timer for idle cpu,
-> but that is not enough, interrupt is totally unpredictable. So, I'd
-> rather bear the coarse method now.
->>
->> So what about just check 'ts->tick_stopped' and record one ticking idle
->> cpu? the cost could be lower than time comparison, we could reduce the
->> risk may be...(well, not so risky since the logical only works when
->> system is relaxing with several cpu idle)
-> 
-> first, nohz full also stop tick. second, tick_stopped can not reflect
-> the interrupt. when the idle cpu was interrupted, it's waken, then be a
-> good candidate for task running.
+On Wed, Jan 15, 2014 at 12:01 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>
+> My original intend was to put it in powerpc-next and then shoot it to
+> stable, but it got a tad annoying (due to churn it needs to be applied
+> at least on rc4 or later while my next is at rc1 and clean that way), so
+> I put it in the merge branch.
 
-IMHO, if we have to do gamble here, we better choose the cheaper bet,
-unless we could prove this 'coarse method' have more higher chance for
-BINGO than just check 'tick_stopped'...
+Quite frankly, I'll prefer to not merge it now, and then 3.13 will get
+it from stable, when it does things like this.
 
-BTW, may be the logical should be in the select_idle_sibling()?
+Partly because it fixes a power-only bug, but potentially changes
+non-power behavior. If it was all in arch/powerpc, I wouldn't mind.
 
-Regards,
-Michael Wang
-
-> 
-
+               Linus
