@@ -1,147 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaAOV0X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:26:23 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:44551 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959AbaAOV0V (ORCPT
+	id S1751971AbaAOVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:31:56 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:59357 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaAOVbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:26:21 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] drivers/tty/hvc: don't use module_init in non-modular hyp. console code
-Date: Wed, 15 Jan 2014 16:24:38 -0500
-Message-ID: <1389821078-24948-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.5.2
+	Wed, 15 Jan 2014 16:31:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAMAG_eduH4M2OPVh-R4Q6KG1DDcinEDzC-fQyXj1mLdZG=49hw@mail.gmail.com>
+References: <20140114004509.27138.50345.stgit@viggo.jf.intel.com>
+	<20140114004622.27138.54103.stgit@viggo.jf.intel.com>
+	<CAMAG_eduH4M2OPVh-R4Q6KG1DDcinEDzC-fQyXj1mLdZG=49hw@mail.gmail.com>
+Date: Wed, 15 Jan 2014 13:31:52 -0800
+Message-ID: <CAPcyv4hzNT15R41zSOM98f-0aQ60HBZoD_DAvf6VED7iXoCZ8w@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] net_dma: simple removal
+From: Dan Williams <dan.j.williams@intel.com>
+To: saeed bishara <saeed.bishara@gmail.com>
+Cc: "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        David Whipple <whipple@securedatainnovations.ch>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HVC_OPAL/RTAS/UDBG options are all bool, and hence their support
-is either present or absent.  It will never be modular, so using
-module_init as an alias for __initcall is rather misleading.
+On Wed, Jan 15, 2014 at 1:20 PM, saeed bishara <saeed.bishara@gmail.com> wrote:
+> Hi Dan,
+>
+> I'm using net_dma on my system and I achieve meaningful performance
+> boost when running Iperf receive.
+>
+> As far as I know the net_dma is used by many embedded systems out
+> there and might effect their performance.
+> Can you please elaborate on the exact scenario that cause the memory corruption?
+>
+> Is the scenario mentioned here caused by "real life" application or
+> this is more of theoretical issue found through manual testing, I was
+> trying to find the thread describing the failing scenario and couldn't
+> find it, any pointer will be appreciated.
 
-Fix this up now, so that we can relocate module_init from
-init.h into module.h in the future.  If we don't do this, we'd
-have to add module.h to obviously non-modular code, and that
-would be a worse thing.
+Did you see the referenced commit?
 
-Note that direct use of __initcall is discouraged, vs. one
-of the priority categorized subgroups.  As __initcall gets
-mapped onto device_initcall, our use of device_initcall
-directly in this change means that the runtime impact is
-zero -- it will remain at level 6 in initcall ordering.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=77873803363c
 
-Also the __exitcall functions have been outright deleted since
-they are only ever of interest to UML, and UML will never be
-using any of this code.
+This is a real issue in that any app that forks() while receiving data
+can cause the dma data to be lost.  The problem is that the copy
+operation falls back to cpu at many locations.  Any one of those
+instance could touch a mapped page and trigger a copy-on-write event.
+The dma completes to the wrong location.
 
-Cc: Richard Weinberger <richard@nod.at>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-
-diff --git a/drivers/tty/hvc/hvc_opal.c b/drivers/tty/hvc/hvc_opal.c
-index 6496872e2e47..b01659bd4f7c 100644
---- a/drivers/tty/hvc/hvc_opal.c
-+++ b/drivers/tty/hvc/hvc_opal.c
-@@ -255,13 +255,7 @@ static int __init hvc_opal_init(void)
- 	/* Register as a vio device to receive callbacks */
- 	return platform_driver_register(&hvc_opal_driver);
- }
--module_init(hvc_opal_init);
--
--static void __exit hvc_opal_exit(void)
--{
--	platform_driver_unregister(&hvc_opal_driver);
--}
--module_exit(hvc_opal_exit);
-+device_initcall(hvc_opal_init);
- 
- static void udbg_opal_putc(char c)
- {
-diff --git a/drivers/tty/hvc/hvc_rtas.c b/drivers/tty/hvc/hvc_rtas.c
-index 0069bb86ba49..08c87920b74a 100644
---- a/drivers/tty/hvc/hvc_rtas.c
-+++ b/drivers/tty/hvc/hvc_rtas.c
-@@ -102,17 +102,7 @@ static int __init hvc_rtas_init(void)
- 
- 	return 0;
- }
--module_init(hvc_rtas_init);
--
--/* This will tear down the tty portion of the driver */
--static void __exit hvc_rtas_exit(void)
--{
--	/* Really the fun isn't over until the worker thread breaks down and
--	 * the tty cleans up */
--	if (hvc_rtas_dev)
--		hvc_remove(hvc_rtas_dev);
--}
--module_exit(hvc_rtas_exit);
-+device_initcall(hvc_rtas_init);
- 
- /* This will happen prior to module init.  There is no tty at this time? */
- static int __init hvc_rtas_console_init(void)
-diff --git a/drivers/tty/hvc/hvc_udbg.c b/drivers/tty/hvc/hvc_udbg.c
-index 72228276fe31..9cf573d06a29 100644
---- a/drivers/tty/hvc/hvc_udbg.c
-+++ b/drivers/tty/hvc/hvc_udbg.c
-@@ -80,14 +80,7 @@ static int __init hvc_udbg_init(void)
- 
- 	return 0;
- }
--module_init(hvc_udbg_init);
--
--static void __exit hvc_udbg_exit(void)
--{
--	if (hvc_udbg_dev)
--		hvc_remove(hvc_udbg_dev);
--}
--module_exit(hvc_udbg_exit);
-+device_initcall(hvc_udbg_init);
- 
- static int __init hvc_udbg_console_init(void)
- {
-diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-index 636c9baad7a5..2dc2831840ca 100644
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -561,18 +561,7 @@ static int __init xen_hvc_init(void)
- #endif
- 	return r;
- }
--
--static void __exit xen_hvc_fini(void)
--{
--	struct xencons_info *entry, *next;
--
--	if (list_empty(&xenconsoles))
--			return;
--
--	list_for_each_entry_safe(entry, next, &xenconsoles, list) {
--		xen_console_remove(entry);
--	}
--}
-+device_initcall(xen_hvc_init);
- 
- static int xen_cons_init(void)
- {
-@@ -598,10 +587,6 @@ static int xen_cons_init(void)
- 	hvc_instantiate(HVC_COOKIE, 0, ops);
- 	return 0;
- }
--
--
--module_init(xen_hvc_init);
--module_exit(xen_hvc_fini);
- console_initcall(xen_cons_init);
- 
- #ifdef CONFIG_EARLY_PRINTK
--- 
-1.8.5.2
-
+--
+Dan
