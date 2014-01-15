@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaAOHtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 02:49:09 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57006 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaAOHtH (ORCPT
+	id S1751401AbaAOHzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 02:55:37 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:56175 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaAOHzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 02:49:07 -0500
-Date: Wed, 15 Jan 2014 08:48:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@redhat.com, paulmck@linux.vnet.ibm.com, Waiman.Long@hp.com,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, davidlohr@hp.com, hpa@zytor.com,
-        aswin@hp.com, scott.norton@hp.com
-Subject: Re: [RFC 1/3] mutex: In mutex_can_spin_on_owner(), return false if
- task need_resched()
-Message-ID: <20140115074844.GA3694@twins.programming.kicks-ass.net>
-References: <1389745990-7069-1-git-send-email-jason.low2@hp.com>
- <1389745990-7069-2-git-send-email-jason.low2@hp.com>
- <20140115074420.GV31570@twins.programming.kicks-ass.net>
+	Wed, 15 Jan 2014 02:55:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140115074420.GV31570@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140109104604.GT20094@book.gsilab.sittig.org>
+References: <1389259557-1731-1-git-send-email-zhangwm@marvell.com>
+	<20140109104604.GT20094@book.gsilab.sittig.org>
+Date: Wed, 15 Jan 2014 08:55:35 +0100
+Message-ID: <CACRpkdZxHPEHqPA5WQzfS722q7f0cVbJAOvd9xK-rKZKaEk6mg@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pxa: fix bug when get gpio value
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Gerhard Sittig <gsi@denx.de>
+Cc: Neil Zhang <zhangwm@marvell.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 08:44:20AM +0100, Peter Zijlstra wrote:
-> On Tue, Jan 14, 2014 at 04:33:08PM -0800, Jason Low wrote:
-> > The mutex_can_spin_on_owner() function should also return false if the
-> > task needs to be rescheduled.
-> > 
-> 
-> While I was staring at mutex_can_spin_on_owner(); don't we need this?
-> 
->  kernel/locking/mutex.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-> index 4dd6e4c219de..480d2f437964 100644
-> --- a/kernel/locking/mutex.c
-> +++ b/kernel/locking/mutex.c
-> @@ -214,8 +214,10 @@ static inline int mutex_can_spin_on_owner(struct mutex *lock)
->  
->  	rcu_read_lock();
->  	owner = ACCESS_ONCE(lock->owner);
-> -	if (owner)
-> +	if (owner) {
+On Thu, Jan 9, 2014 at 11:46 AM, Gerhard Sittig <gsi@denx.de> wrote:
 
-That is, its an unmatched barrier, as mutex_set_owner() doesn't include
-a barrier, and I don't think i needs to; but on alpha we still need this
-read barrier to ensure we do not mess up this related load afaik.
+> Here is why I'm asking:  Is there a need from GPIO get_value()
+> routines to return normalized values,
 
-Paul? can you explain an unpaired read_barrier_depends?
+That totally depends.
 
-> +		smp_read_barrier_depends();
->  		retval = owner->on_cpu;
-> +	}
->  	rcu_read_unlock();
->  	/*
->  	 * if lock->owner is not set, the mutex owner may have just acquired
+All drivers calling gpio[d]_get_value() will be returned the
+value directly from the driver without any clamping to [0,1] in
+gpiolib. These are 496 occurences in the kernel, you'd have
+to check them all to see if they expect this or not.
+
+Hm. Maybe we should clamp it in gpiolib...
+
+> and if so should not more
+> drivers receive an update?
+
+Probably. But on my part I want that more as a code
+readability and maintenance hygiene thing, it gives a clear
+sign that the driver author think about details.
+
+(Possibly it gives the compiler a chance to optimize stuff
+also, I don't quite know that.)
+
+> If the GPIO subsystem's API wants to guarantee values of 0 and 1
+> (which I think it doesn't), then I feel the adjustment should be
+> done in the gpio_get_value() routines (in all its public
+> variants, or a common routine which all of them pass through),
+> and certainly not in individual chip drivers.
+
+One does not exclude the other.
+
+Yours,
+Linus Walleij
