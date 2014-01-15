@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaAOKok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:44:40 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58724 "EHLO
+	id S1751884AbaAOKot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:44:49 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58732 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751693AbaAOKoh (ORCPT
+	by vger.kernel.org with ESMTP id S1751695AbaAOKoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:44:37 -0500
+	Wed, 15 Jan 2014 05:44:46 -0500
 From: Mark Rutland <mark.rutland@arm.com>
 To: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Ingo Molnar <mingo@redhat.com>
 Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 2/3] tools lib traceevent: fix pointer-integer size mismatch
-Date: Wed, 15 Jan 2014 10:44:07 +0000
-Message-Id: <1389782648-4417-3-git-send-email-mark.rutland@arm.com>
+Subject: [PATCH 3/3] perf: tools: fix cross building
+Date: Wed, 15 Jan 2014 10:44:08 +0000
+Message-Id: <1389782648-4417-4-git-send-email-mark.rutland@arm.com>
 X-Mailer: git-send-email 1.8.1.1
 In-Reply-To: <1389782648-4417-1-git-send-email-mark.rutland@arm.com>
 References: <1389782648-4417-1-git-send-email-mark.rutland@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scsi and cfg80211 plugins cast between unsigned long long and
-pointers, which is problematic for architectures where unsigned long
-long is wider than the native pointer size:
+Currently the feature-checks Makefile does not inherit $(CC), and calls
+cc rather than $(CROSS_COMPILE)gcc. Thus the feature checks invoke the
+native toolchain rather than the cross toolchain, and can identify
+features as available when they are not. This can break the build.
 
-  linux/tools/lib/traceevent/plugin_scsi.c: In function ‘process_scsi_trace_parse_cdb’:
-  linux/tools/lib/traceevent/plugin_scsi.c:408:26: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-    scsi_trace_parse_cdb(s, (unsigned char *) args[1], args[2]);
+Additionally the native pkg-config is always called as opposed to
+$(CROSS_COMPILE)pkg-config, so the wrong flags and paths may be passed
+to the cross compiler.
 
-  linux/tools/lib/traceevent/plugin_cfg80211.c: In function ‘process___le16_to_cpup’:
-  linux/tools/lib/traceevent/plugin_cfg80211.c:11:18: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-    uint16_t *val = (uint16_t *) args[0];
-
-This patch adds an intermediate cast to unsigned long, silencing the
-warning.
+This patch passes CROSS_COMPILE down to the feature-checks Makefile, and
+forces its use. Additionally pkg-config is replaced with
+$(CROSS_COMPILE)pkg-config via a new $(PKG_CONFIG) variable. This patch
+has been build tested on x86_64 and arm.
 
 Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
- tools/lib/traceevent/plugin_cfg80211.c | 2 +-
- tools/lib/traceevent/plugin_scsi.c     | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/Makefile.perf                  | 1 +
+ tools/perf/config/Makefile                | 6 +++---
+ tools/perf/config/feature-checks/Makefile | 9 +++++----
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
-I'm not sure about this one as I'm not certain I read all the sites
-input values for args could be generated. I'd appreciate if someone more
-familiar with traceevent plugins could verify this makes sense.
-
-Mark.
-
-diff --git a/tools/lib/traceevent/plugin_cfg80211.c b/tools/lib/traceevent/plugin_cfg80211.c
-index dcab8e8..57e9822 100644
---- a/tools/lib/traceevent/plugin_cfg80211.c
-+++ b/tools/lib/traceevent/plugin_cfg80211.c
-@@ -8,7 +8,7 @@ static unsigned long long
- process___le16_to_cpup(struct trace_seq *s,
- 		       unsigned long long *args)
- {
--	uint16_t *val = (uint16_t *) args[0];
-+	uint16_t *val = (uint16_t *) (unsigned long) args[0];
- 	return val ? (long long) le16toh(*val) : 0;
- }
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 87d7726..7257e7e 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -76,6 +76,7 @@ $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
  
-diff --git a/tools/lib/traceevent/plugin_scsi.c b/tools/lib/traceevent/plugin_scsi.c
-index 6fb8e3e..7ef16cc 100644
---- a/tools/lib/traceevent/plugin_scsi.c
-+++ b/tools/lib/traceevent/plugin_scsi.c
-@@ -405,7 +405,7 @@ scsi_trace_parse_cdb(struct trace_seq *p, unsigned char *cdb, int len)
- unsigned long long process_scsi_trace_parse_cdb(struct trace_seq *s,
- 						unsigned long long *args)
- {
--	scsi_trace_parse_cdb(s, (unsigned char *) args[1], args[2]);
-+	scsi_trace_parse_cdb(s, (unsigned char *) (unsigned long) args[1], args[2]);
- 	return 0;
- }
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
++PKG_CONFIG = $(CROSS_COMPILE)pkg-config
  
+ RM      = rm -f
+ LN      = ln -f
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 01dd43d..d604e50 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -372,7 +372,7 @@ ifndef NO_SLANG
+ endif
+ 
+ ifndef NO_GTK2
+-  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++  FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
+   ifneq ($(feature-gtk2), 1)
+     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+     NO_GTK2 := 1
+@@ -381,8 +381,8 @@ ifndef NO_GTK2
+       GTK_CFLAGS := -DHAVE_GTK_INFO_BAR_SUPPORT
+     endif
+     CFLAGS += -DHAVE_GTK2_SUPPORT
+-    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++    GTK_CFLAGS += $(shell $(PKG_CONFIG) --cflags gtk+-2.0 2>/dev/null)
++    GTK_LIBS := $(shell $(PKG_CONFIG) --libs gtk+-2.0 2>/dev/null)
+     EXTLIBS += -ldl
+   endif
+ endif
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 7cf6fcd..12e5513 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -28,7 +28,8 @@ FILES=					\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin
+ 
+-CC := $(CC) -MD
++CC := $(CROSS_COMPILE)gcc -MD
++PKG_CONFIG := $(CROSS_COMPILE)pkg-config
+ 
+ all: $(FILES)
+ 
+@@ -37,7 +38,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
+ ###############################
+ 
+ test-all.bin:
+-	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
++	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl
+ 
+ test-hello.bin:
+ 	$(BUILD)
+@@ -82,10 +83,10 @@ test-libslang.bin:
+ 	$(BUILD) -I/usr/include/slang -lslang
+ 
+ test-gtk2.bin:
+-	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	$(BUILD) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
+ 
+ test-gtk2-infobar.bin:
+-	$(BUILD) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
++	$(BUILD) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
+ 
+ grep-libs  = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
 -- 
 1.8.1.1
 
