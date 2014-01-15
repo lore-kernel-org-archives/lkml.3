@@ -1,113 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbaAOReJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:34:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53876 "EHLO mx2.suse.de"
+	id S1752698AbaAORfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:35:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5756 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754AbaAOReH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:34:07 -0500
-Message-ID: <1389807296.16290.32.camel@tucsk.piliscsaba.szeredi.hu>
-Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        miklos@szeredi.hu
-Date: Wed, 15 Jan 2014 18:34:56 +0100
-In-Reply-To: <20140115151749.GF23999@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752167AbaAORfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 12:35:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,664,1384329600"; 
+   d="scan'208";a="439340619"
+Date: Wed, 15 Jan 2014 09:39:52 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for
+ pdata error code
+Message-ID: <20140115173952.GB10933@psi-dev26.jf.intel.com>
+References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
+ <20131220084953.GB21133@gmail.com>
+ <20140115002121.GC18183@psi-dev26.jf.intel.com>
+ <20140115065837.GA13462@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115065837.GA13462@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-15 at 10:17 -0500, J. Bruce Fields wrote:
-> From: "J. Bruce Fields" <bfields@redhat.com>
+On Wed, Jan 15, 2014 at 07:58:37AM +0100, Ingo Molnar wrote:
 > 
-> d_splice_alias can create duplicate directory aliases (in the !new
-> case), or (in the new case) d_move without holding appropriate locks.
-
-It can d_move, because the dentry is known to be disconnected, i.e. it
-doesn't have a parent for which we could obtain the lock.
-
-> d_materialise_unique deals with both of these problems.  (The latter
-> seems to be dealt by trylocks (see __d_unalias), which look like they
-> could cause spurious lookup failures--but that's at least better than
-> corrupting the dcache.)
+> * David Cohen <david.a.cohen@linux.intel.com> wrote:
 > 
-> Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> ---
->  fs/dcache.c |   25 +------------------------
->  1 file changed, 1 insertion(+), 24 deletions(-)
+> > Hi Ingo,
+> > 
+> > On Fri, Dec 20, 2013 at 09:49:53AM +0100, Ingo Molnar wrote:
+> > > 
+> > > * David Cohen <david.a.cohen@linux.intel.com> wrote:
+> > > 
+> > > > Prevent sfi_handle_*_dev() to register device in case
+> > > > intel_mid_sfi_get_pdata() failed to execute.
+> > > > 
+> > > > Since 'NULL' is a valid return value, this patch makes
+> > > > sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
+> > > 
+> > > Is this bug triggering in practice? If not then please say so in the 
+> > > changelog. If yes then is this patch desired for v3.13 merging and 
+> > > also please fix the changelog to conform to the standard changelog 
+> > > style:
+> > > 
+> > >  - first describe the symptoms of the bug - how does a user notice?
+> > > 
+> > >  - then describe how the code behaves today and how that is causing
+> > >    the bug
+> > > 
+> > >  - and then only describe how it's fixed.
+> > > 
+> > > The first item is the most important one - while developers 
+> > > (naturally) tend to concentrate on the least important point, the last 
+> > > one.
+> > 
+> > Thanks for the feedback :)
+> > This new patch set was done in reply to your comment:
+> > https://lkml.org/lkml/2013/12/20/517
 > 
-> Only lightly tested....  If this is right, then we can also just ditch
-> d_splice_alias completely, and clean up the various d_find_alias's.
+> Hm, in what way does the new changelog address my first request:
 > 
-> I think the only reason we have both d_splice_alias and
-> d_materialise_unique is that the former was written for exportable
-> filesystems and the latter for distributed filesystems.
+> > >  - first describe the symptoms of the bug - how does a user notice?
 > 
-> But we have at least one exportable filesystem (fuse) using
-> d_materialise_unique.  And I doubt d_splice_alias was ever completely
-> correct even for on-disk filesystems.
+> They are all phrased as bug fixes, yet _none_ of the three changelogs 
+> appears to describe specific symptoms on specific systems - they all 
+> seem to talk in the abstract, with no specific connection to reality.
 > 
-> Am I missing some subtlety?
+> That really makes it harder for patches to get into the (way too 
+> narrow) attention span of maintainersm, while phrasing it like this:
+> 
+>  'If an Intel-MID system boots in a specific SFI environment then it 
+>   will hang on bootup without this fix.'
+> 
+> or:
+> 
+>  'Existing Intel-MID hardware will run faster with this patch.'
+> 
+> will certainly wake up maintainers like a good coffee in the morning.
+> 
+> If a patch is a cleanup with no known bug fix effects then say so in 
+> the title and the changelog.
 
-One subtle difference is that for a non-directory d_splice_alias() will
-reconnect a DCACHE_DISCONNECTED dentry if one exists, while
-d_materialise_unique() will not.
+Fair enough.
+These patches are fixing a potential bug that exists in current kernel,
+but I triggered with patches in my development tree that depends on
+this one to be refactored first:
+https://patchwork.kernel.org/patch/3109791/
 
-Does this matter in practice?   The small number of extra dentries
-probably does not matter.
+I tried to describe the potential bug, but it lacks the real use case as
+you pointed out. I'll resend the patches in a way to trigger and
+describe the situation without dependiing on non-upstreamed patches yet.
+And I'll hurry up to publish my intel mid devel tree as well.
 
-Thanks,
-Miklos
+I hope the new patch set tastes like good morning Brazilian coffee :)
 
+Br, David Cohen
 
 > 
-> --b.
+> Thanks,
 > 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 4bdb300..da82fa9 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1926,33 +1926,10 @@ EXPORT_SYMBOL(d_obtain_alias);
->   */
->  struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
->  {
-> -	struct dentry *new = NULL;
-> -
->  	if (IS_ERR(inode))
->  		return ERR_CAST(inode);
->  
-> -	if (inode && S_ISDIR(inode->i_mode)) {
-> -		spin_lock(&inode->i_lock);
-> -		new = __d_find_alias(inode, 1);
-> -		if (new) {
-> -			BUG_ON(!(new->d_flags & DCACHE_DISCONNECTED));
-> -			spin_unlock(&inode->i_lock);
-> -			security_d_instantiate(new, inode);
-> -			d_move(new, dentry);
-> -			iput(inode);
-> -		} else {
-> -			/* already taking inode->i_lock, so d_add() by hand */
-> -			__d_instantiate(dentry, inode);
-> -			spin_unlock(&inode->i_lock);
-> -			security_d_instantiate(dentry, inode);
-> -			d_rehash(dentry);
-> -		}
-> -	} else {
-> -		d_instantiate(dentry, inode);
-> -		if (d_unhashed(dentry))
-> -			d_rehash(dentry);
-> -	}
-> -	return new;
-> +	return d_materialise_unique(dentry, inode);
->  }
->  EXPORT_SYMBOL(d_splice_alias);
->  
-
-
+> 	Ingo
