@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbaAOXh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 18:37:27 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33304 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752724AbaAOXhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:37:24 -0500
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>
-CC: Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>
-Subject: [UPDATED PATCHv4 6/7] hwspinlock/omap: enable module before reading SYSSTATUS register
-Date: Wed, 15 Jan 2014 17:36:48 -0600
-Message-ID: <1389829008-31941-1-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 1.8.4.3
-In-Reply-To: <1389658764-39199-7-git-send-email-s-anna@ti.com>
-References: <1389658764-39199-7-git-send-email-s-anna@ti.com>
+	id S1752898AbaAOXi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:38:58 -0500
+Received: from mail.pdval.gob.ve ([200.11.139.253]:49834 "EHLO
+	mail.pdval.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618AbaAOXiy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 18:38:54 -0500
+X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 18:38:53 EST
+Date: Wed, 15 Jan 2014 19:04:12 -0430 (VET)
+From: "Dr. Joe Miller" <coord_falcon@pdval.gob.ve>
+Reply-To: "dr.joemiller-ubs@hotmail.com" <dr.joemiller-ubs@hotmail.com>
+Message-ID: <32674762.363034.1389828852761.JavaMail.root@pdval.gob.ve>
+Subject: Von Dr. Joe Miller,
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.206.1.1]
+X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of hwspinlocks are determined based on the value read
-from the IP block's SYSSTATUS register. However, the module may
-not be enabled and clocked, and the read may result in a bus error.
 
-This particular issue is seen rather easily on AM33XX, since the
-module wakeup is software controlled, and it is disabled out of
-reset. Make sure the module is enabled and clocked before reading
-the SYSSTATUS register.
+Von Dr. Joe Miller,
 
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
- drivers/hwspinlock/omap_hwspinlock.c | 27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/omap_hwspinlock.c
-index 9f56fb2..7764291 100644
---- a/drivers/hwspinlock/omap_hwspinlock.c
-+++ b/drivers/hwspinlock/omap_hwspinlock.c
-@@ -101,10 +101,29 @@ static int omap_hwspinlock_probe(struct platform_device *pdev)
- 	if (!io_base)
- 		return -ENOMEM;
- 
-+	/*
-+	 * make sure the module is enabled and clocked before reading
-+	 * the module SYSSTATUS register
-+	 */
-+	pm_runtime_enable(&pdev->dev);
-+	ret = pm_runtime_get_sync(&pdev->dev);
-+	if (ret < 0) {
-+		pm_runtime_put_noidle(&pdev->dev);
-+		goto iounmap_base;
-+	}
-+
- 	/* Determine number of locks */
- 	i = readl(io_base + SYSSTATUS_OFFSET);
- 	i >>= SPINLOCK_NUMLOCKS_BIT_OFFSET;
- 
-+	/*
-+	 * runtime PM will make sure the clock of this module is
-+	 * enabled again iff at least one lock is requested
-+	 */
-+	ret = pm_runtime_put_sync(&pdev->dev);
-+	if (ret < 0)
-+		goto iounmap_base;
-+
- 	/* one of the four lsb's must be set, and nothing else */
- 	if (hweight_long(i & 0xf) != 1 || i > 8) {
- 		ret = -EINVAL;
-@@ -124,12 +143,6 @@ static int omap_hwspinlock_probe(struct platform_device *pdev)
- 	for (i = 0, hwlock = &bank->lock[0]; i < num_locks; i++, hwlock++)
- 		hwlock->priv = io_base + LOCK_BASE_OFFSET + sizeof(u32) * i;
- 
--	/*
--	 * runtime PM will make sure the clock of this module is
--	 * enabled iff at least one lock is requested
--	 */
--	pm_runtime_enable(&pdev->dev);
--
- 	ret = hwspin_lock_register(bank, &pdev->dev, &omap_hwspinlock_ops,
- 						base_id, num_locks);
- 	if (ret)
-@@ -138,9 +151,9 @@ static int omap_hwspinlock_probe(struct platform_device *pdev)
- 	return 0;
- 
- reg_fail:
--	pm_runtime_disable(&pdev->dev);
- 	kfree(bank);
- iounmap_base:
-+	pm_runtime_disable(&pdev->dev);
- 	iounmap(io_base);
- 	return ret;
- }
--- 
-1.8.4.3
+Ich erwarte, dass mein Brief an Sie in guter Gesundheit und Ihre schönsten Stimmung heute treffen, mein Name ist Dr. Joe Miller, Assistant Manager UBS Investment Bank London Branch. Ich beschloss, eine vertrauliche Zusammenarbeit mit Ihnen bei der Ausführung der Transaktion beschrieben hier unter-für unsere beiden gegenseitigen Nutzen suchen und fordere Sie auf, halten es eine streng geheime wegen der Art der Transaktion. Während der Prüfung der Konten in unserer Bank, entdeckte ich einen herrenlosen Fonds Summe von £ 15.000,000.00 GBP (fünfzehn Millionen Great British Pounds Sterlings) in einem Konto, das zu einem unserer ausländischen Kunden spät ( mr.   Hock Miller) gehört einer Amerikanische Wissenschaftler und Ingenieur, der leider sein Leben verlor und Familie in einem tödlichen Autounfall.
+
+
+Nachdem man durch seine Personalakte in meiner Bank, entdeckte ich, dass er ohne spezifische Erbe zu diesen Mitteln gestorben. Ich gerne suche Ihre Zustimmung an Sie als nächsten Angehörigen / Erben des Verstorbenen zu präsentieren, so dass die Erlöse aus diesem Konto bei £ 15 Millionen Britische Pfund Sterling geschätzt wird Ihnen als Begünstigter freigegeben werden, was in prozentuale Verhältnis 60 geteilt werden % für mich und 40% für Sie sind. Alles, was ich verlangen, ist Ihre größter aufrichtige Zusammenarbeit, Vertrauen und höchste Vertraulichkeit, um dieses Projekt erfolgreich zu erreichen. Ich habe sorgfältig die Modalitäten für die Durchführung dieser Transaktion unter einer legitimen Anordnung, um Sie von einer Verletzung des Gesetzes sowohl in Ihrem Land und hier in England, wenn der Fonds wird auf Ihr Bankkonto überwiesen schützen gearbeitet. Nach Ihrer Prüfung und Annahme dieses Angebots, bitte senden Sie mir die folgenden Informationen sofort.
+
+
+- Ihr vollständiger Name,
+- Ihr Ansprechpartner Adresse
+- Ihr direkter Handynummer.
+- Ihr Geburtsdatum
+
+
+
+So kann ich Ihre Daten an unsere Bank Datenbank zu senden, um in das Banksystem scheint, dass Sie den Namen nächsten Angehörigen / Erben Nutznießer des Fonds sind, und dann werde ich Ihre Kommunikation mit UBS Investment Bank führen zur sofortigen Freilassung und Übergabe der finanzieren, dann warte ich auf Ihre sofortige Antwort auf meine private E-Mail: dr.joemiller-ubs@hotmail.com,so können wir die Transaktion sofort beginnen.
+
+
+
+Vielen Dank im Wertschätzung und Vorfreude auf Ihre dringende Antwort.
+
+
+
+Mit freundlichen Grüßen,
+
+Dr. Joe Miller
+Assistant Manager UBS Investment Bank.
+E-mail: dr.joemiller-ubs@hotmail.com
+
+
 
