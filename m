@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaAOPMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:12:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51044 "EHLO mx2.suse.de"
+	id S1752344AbaAOPMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:12:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40292 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499AbaAOPMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:12:19 -0500
-Date: Wed, 15 Jan 2014 16:12:18 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Victor Porton <porton@narod.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: Notifying on empty cgroup
-Message-ID: <20140115151218.GO8782@dhcp22.suse.cz>
-References: <135711389759165@web22h.yandex.ru>
- <20140115135930.GK8782@dhcp22.suse.cz>
- <409331389795100@web18j.yandex.ru>
+	id S1751914AbaAOPMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:12:53 -0500
+Date: Wed, 15 Jan 2014 10:12:23 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        Greg KH <gregkh@suse.de>,
+        "Ken'ichi Ohmichi" <oomichi@mxs.nes.nec.co.jp>,
+        Dan Aloni <da-x@monatomic.org>
+Subject: Re: [PATCH] kdump: Fix exported size of vmcoreinfo note
+Message-ID: <20140115151223.GB29244@redhat.com>
+References: <20140114193311.GL3096@redhat.com>
+ <20140114153554.88b4a8c193b88df9492f6973@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <409331389795100@web18j.yandex.ru>
+In-Reply-To: <20140114153554.88b4a8c193b88df9492f6973@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 15-01-14 16:11:40, Victor Porton wrote:
-> 15.01.2014, 15:59, "Michal Hocko" <mhocko@suse.cz>:
-> > [CCing cgroups mailing list]
-> > On Wed 15-01-14 06:12:45, Victor Porton wrote:
-> >
-> >>  I want to write software which needs to receive a signal when the cgroup
-> >>  created by it becomes empty. (After this the empty cgroup should be deleted
-> >>  just not to clutter the memory.)
-> >>
-> >>  If the kernel does not support such notifications, it should be improved.
-> >>  This functionality is crucial for some kinds of software.
-> >>
-> >>  There is /sys/fs/cgroup/systemd/release_agent but I don't understand how to
-> >>  use it. I don't understand why we would need it at all.
-> >
-> > "1.4 What does notify_on_release do ?" in
-> > Documentation/cgroups/cgroups.txt the kernel source doesn't help?
+On Tue, Jan 14, 2014 at 03:35:54PM -0800, Andrew Morton wrote:
+> On Tue, 14 Jan 2014 14:33:11 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
 > 
-> I've read it. I understand what it does. I don't understand how to use
-> it in practice nor
-
-You want to clean up your memcg without any tasks so the script might do
-something like:
----
-#!/bin/sh
-
-CGROUP="$1"
-CGROUP_MNT=`mount | grep cgroup | awk '{print $3}'`
-
-rmdir "$CGROUP_MNT/$CGROUP"
----
-
-> why it is done this way.
-
-I find the interface rather awkward as well but that is a question for
-those who have implement it.
-
-The interface will change in the future (sorry I do not have any link to
-discussion about the change handy).
-
-> >>  Starting a binary on emptying a cgroup with the purpose to notify an other
-> >>  binary looks like a big overkill.
-> >
-> > the binary can do rmdir which is what you want, no?
+> > Right now we seem to be exporting the max data size contained inside
+> > vmcoreinfo note. But this does not include the size of meta data around
+> > vmcore info data. Like name of the note and starting and ending elf_note.
+> > 
+> > I think user space expects total size and that size is put in PT_NOTE
+> > elf header. Things seem to be fine so far because we are not using
+> > vmcoreinfo note to the maximum capacity. But as it starts filling up,
+> > to capacity, at some point of time, problem will be visible.
 > 
-> I suppose a base package should do that, not my specific software. Do
-> I understand right?
-
-Yes. The notifier works on the root of the cgroup hierarchy so it is a
-matter of the admin to set it.
- 
-> >>  Also my program should work in userspace without the need to use
-> >>  release_agent which can be accessed only by root.
-> >
-> > The release_agent is global for all groups so the program doesn't have
-> > to care.
+> urgh.  This is what we get for adding undocumented interfaces.
 > 
-> Again: What MY program should do?
+> Looking through the fd59d231f81cb0287 changelog and the various email
+> threads it points to I can find no mention of what vmcoreinfo is
+> *supposed* to contain.  It was just kinda silently tossed in there.
+> 
+> So as a remedial step, could we please get this and any associated
+> interfaces written down in a way which people can very belatedly
+> review?
 
-Nothing. (assuming the only thing you are interested in is removing the
-empty group).
+Sure. I will send another patch to add some documentation for vmcoreinfo
+in Documentation/ABI/testing/* in a separate patch.
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+> 
+> Phrases like "I think user space expects" and "Things seem to be fine
+> so far" don't inspire a ton of confidence.  What are the chances of
+> userspace breakage here?  Would it be safer/saner to leave vmcoreinfo
+> alone and add a new vmcoreinfo2 with the altered behaviour?
+
+I don't think user space will be broken with this change. So there is
+no need to introduce vmcoreinfo2. This change is safe and backward 
+compatible. More explanation on why this change is safe is below.
+
+vmcoreinfo contains information about kernel which user space needs to
+know to do things like filtering. For example, various kernel config
+options or information about size or offset of some data structures etc.
+All this information is commmunicated to user space with an ELF note
+present in ELF /proc/vmcore file.
+
+Currently vmcoreinfo data size is 4096. With some elf note meta data
+around it, actual size is 4132 bytes. But we are using barely 25% of
+that size. Rest is empty. So even if we tell user space that size of
+ELf note is 4096 and not 4132, nothing will be broken becase after
+around 1000 bytes, everything is zero anyway.
+
+But once we start filling up the note to the capacity, and not report
+the full size of note, bad things will start happening. Either some data
+will be lost or tools will be confused that they did not fine the zero
+note at the end.
+
+So I think this change is safe and should not break existing tools.
+
+Thanks
+Vivek
