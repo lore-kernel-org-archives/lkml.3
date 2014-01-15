@@ -1,145 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaAOApY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:45:24 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:28399 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750880AbaAOApV (ORCPT
+	id S1752076AbaAOAp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:45:59 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60305 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaAOAp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:45:21 -0500
-Date: Tue, 14 Jan 2014 19:45:19 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH v6 4/8] x86: speed up int3-based patching using direct
- write
-Message-ID: <20140114194519.743261c4@gandalf.local.home>
-In-Reply-To: <1386690140-19941-5-git-send-email-pmladek@suse.cz>
-References: <1386690140-19941-1-git-send-email-pmladek@suse.cz>
-	<1386690140-19941-5-git-send-email-pmladek@suse.cz>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 14 Jan 2014 19:45:56 -0500
+Date: Tue, 14 Jan 2014 16:45:38 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-3b56496865f9f7d9bcb2f93b44c63f274f08e3b6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        aravind.gopalakrishnan@amd.com, tglx@linutronix.de,
+        hpa@linux.intel.com, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        aravind.gopalakrishnan@amd.com, tglx@linutronix.de, bp@suse.de,
+        hpa@linux.intel.com
+In-Reply-To: <20140114230711.GS29865@pd.tnic>
+References: <20140114230711.GS29865@pd.tnic>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, cpu, amd: Add workaround for family 16h,
+  erratum 793
+Git-Commit-ID: 3b56496865f9f7d9bcb2f93b44c63f274f08e3b6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Tue, 14 Jan 2014 16:45:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Dec 2013 16:42:16 +0100
-Petr Mladek <pmladek@suse.cz> wrote:
+Commit-ID:  3b56496865f9f7d9bcb2f93b44c63f274f08e3b6
+Gitweb:     http://git.kernel.org/tip/3b56496865f9f7d9bcb2f93b44c63f274f08e3b6
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Wed, 15 Jan 2014 00:07:11 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 14 Jan 2014 16:39:07 -0800
 
-> When trying to use text_poke_bp_iter in ftrace, the result was slower than
-> the original implementation.
-> 
-> It turned out that one difference was in text_poke vs. ftrace_write.
-> text_poke did many extra operations to make sure that code was read-write
-> and the change was atomic.
-> 
-> In fact, we do not need the atomic operation inside text_poke_bp_iter because
-> the modified code is guarded by the int3 handler. The int3 interrupt itself
-> is added and removed by an atomic operation because we modify only one byte.
-> 
-> Also if we patch many functions, it is more effective to set the whole text code
-> read-write instead of remapping each address into a helper address space.
-> 
-> This patch adds text_poke_part which is inspired by ftrace_write.
-> Then it is used in text_poke_bp_iter instead of the slower text_poke.
-> It adds the limitation that text_poke_bp_iter user is responsible for
-> setting the patched code read-write.
-> 
-> Note that we can't use it in text_poke because it is not effective
-> to set the page or two read-write just because patching one piece.
-> 
-> For example, I tried to switch between 7 tracers: blk, branch, function_graph,
-> wakeup_rt, irqsoff, function, and nop. Every tracer has also been enabled and
-> disabled. With 100 cycles, I got these times with text_poke:
-> 
->     real    25m7.380s     25m13.44s     25m9.072s
->     user    0m0.004s      0m0.004s      0m0.004s
->     sys     0m3.480s      0m3.508s      0m3.420s
-> 
-> and with text_poke_part:
-> 
->     real    3m23.335s     3m24.422s     3m26.686s
->     user    0m0.004s      0m0.004s	0m0.004s
->     sys     0m3.724s      0m3.772s	0m3.588s
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
->  arch/x86/kernel/alternative.c | 67 ++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 57 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index 8e57ac03a0e8..03abf9abf681 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -595,6 +595,51 @@ void __kprobes text_poke_or_die(void *addr, const void *opcode, size_t len)
->  	BUG_ON(err);
->  }
->  
-> +/**
-> + * text_poke_part - Update part of the instruction on a live kernel when using
-> + * 		    int3 breakpoint
-> + * @addr:   address to modify
-> + * @opcode: source of the copy
-> + * @len:    length to copy
-> + *
-> + * If we patch instructions using int3 interrupt, we do not need to be so
-> + * careful about an atomic write. Adding and removing the interrupt is atomic
-> + * because we modify only one byte. The rest of the instruction could be
-> + * modified in several steps because it is guarded by the interrupt handler.
+x86, cpu, amd: Add workaround for family 16h, erratum 793
 
-Another nit, because I'm anal. I know Intel confuses things by calling
-int3 an interrupt, when in reality it is a trap. There's nothing
-asynchronous about it and nothing is being interrupted. Can we use the
-term "trap" or "breakpoint" instead of "interrupt"?
+This adds the workaround for erratum 793 as a precaution in case not
+every BIOS implements it.  This addresses CVE-2013-6885.
 
-> + * Hence we could use faster code here. See also text_poke_bp_iter below
-> + * for more details.
-> + *
-> + * Note: This function must be called under text_mutex. Also the caller is
-> + * responsible for setting the patched code read-write. This is more effective
-> + * only when you patch many addresses at the same time.
+Erratum text:
 
-s/many/several/
+[Revision Guide for AMD Family 16h Models 00h-0Fh Processors,
+document 51810 Rev. 3.04 November 2013]
 
-> + */
-> +static int text_poke_part(void *addr, const void *opcode, size_t len)
-> +{
-> +	int ret;
-> +
-> +	/* The patching makes sense only for a text code */
+793 Specific Combination of Writes to Write Combined Memory Types and
+Locked Instructions May Cause Core Hang
 
-s/for a/for/
+Description
 
--- Steve
+Under a highly specific and detailed set of internal timing
+conditions, a locked instruction may trigger a timing sequence whereby
+the write to a write combined memory type is not flushed, causing the
+locked instruction to stall indefinitely.
 
-> +	if (unlikely((unsigned long)addr < (unsigned long)_text) ||
-> +	    unlikely((unsigned long)addr >= (unsigned long)_etext))
-> +		return -EFAULT;
-> +
-> +#if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-> +	/*
-> +	 * On x86_64, the kernel text mapping is always mapped read-only with
-> +	 * CONFIG_DEBUG_RODATA. Instead, we need to use the kernel identity
-> +	 * mapping that can be set read-write, for example using
-> +	 * set_kernel_text_rw().
-> +	 */
-> +	addr = __va(__pa_symbol(addr));
-> +#endif
-> +
-> +	ret = probe_kernel_write(addr, opcode, len);
-> +	if (unlikely(ret))
-> +		return -EPERM;
-> +
-> +	sync_core();
-> +	return 0;
-> +}
-> +
+Potential Effect on System
+
+Processor core hang.
+
+Suggested Workaround
+
+BIOS should set MSR
+C001_1020[15] = 1b.
+
+Fix Planned
+
+No fix planned
+
+[ hpa: updated description, fixed typo in MSR name ]
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/20140114230711.GS29865@pd.tnic
+Tested-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/uapi/asm/msr-index.h |  1 +
+ arch/x86/kernel/cpu/amd.c             | 10 ++++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index 37813b5..59cea18 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -184,6 +184,7 @@
+ #define MSR_AMD64_PATCH_LOADER		0xc0010020
+ #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+ #define MSR_AMD64_OSVW_STATUS		0xc0010141
++#define MSR_AMD64_LS_CFG		0xc0011020
+ #define MSR_AMD64_DC_CFG		0xc0011022
+ #define MSR_AMD64_BU_CFG2		0xc001102a
+ #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index bca023b..59bfebc 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -508,6 +508,16 @@ static void early_init_amd(struct cpuinfo_x86 *c)
+ 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
+ 	}
+ #endif
++
++	/* F16h erratum 793, CVE-2013-6885 */
++	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
++		u64 val;
++
++		rdmsrl(MSR_AMD64_LS_CFG, val);
++		if (!(val & BIT(15)))
++			wrmsrl(MSR_AMD64_LS_CFG, val | BIT(15));
++	}
++
+ }
+ 
+ static const int amd_erratum_383[];
