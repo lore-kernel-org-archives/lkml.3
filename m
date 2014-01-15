@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaAOKiL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:38:11 -0500
-Received: from mail.mev.co.uk ([62.49.15.74]:50373 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004AbaAOKiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:38:09 -0500
-Message-ID: <52D6650C.5090707@mev.co.uk>
-Date: Wed, 15 Jan 2014 10:38:04 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751731AbaAOKic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:38:32 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33259 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaAOKi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 05:38:29 -0500
+Date: Wed, 15 Jan 2014 11:38:08 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [QUERY]: Is using CPU hotplug right for isolating CPUs?
+Message-ID: <20140115103808.GY31570@twins.programming.kicks-ass.net>
+References: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: Ian Abbott <ian.abbott@mev.co.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] Staging: comedi: convert while loop to timeout in
- ni_mio_common.c
-References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com> <1389762917-3134-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1389762917-3134-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpomO+2WbNLceBznWwYRcv0e7RsPiaRF7ctRZ+6GFKtr4aA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-01-15 05:15, Chase Southwood wrote:
-> This patch for ni_mio_common.c changes out a while loop for a timeout,
-> which is preferred.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
->
-> All right, I think this guy's ready to go now!  Thanks for all the help!
-> Chase
->
-> 2: Changed from simple clean-up to swapping a timeout in for a while loop.
->
-> 3: Removed extra counter variable, and added error checking.
->
-> 4: No longer using counter variable, using jiffies instead.
->
-> 5: udelay for 10u, instead of 1u.
->
->   drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
->   1 file changed, 10 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-> index 457b884..07e9777 100644
-> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
-> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-> @@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
->   {
->   	const struct ni_board_struct *board = comedi_board(dev);
->   	struct ni_private *devpriv = dev->private;
-> +	unsigned long timeout;
->
->   	if (board->reg_type == ni_reg_6143) {
->   		/*  Flush the 6143 data FIFO */
->   		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
->   		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
-> -		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
-> +		/*  Wait for complete */
-> +		timeout = jiffies + msec_to_jiffies(500);
-> +		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
-> +			if (time_after(jiffies, timeout)) {
-> +				comedi_error(dev, "FIFO flush timeout.");
-> +				break;
-> +			}
-> +			udelay(10);
+On Wed, Jan 15, 2014 at 02:57:36PM +0530, Viresh Kumar wrote:
+> Hi Again,
+> 
+> I am now successful in isolating a CPU completely using CPUsets,
+> NO_HZ_FULL and CPU hotplug..
+> 
+> My setup and requirements for those who weren't following the
+> earlier mails:
+> 
+> For networking machines it is required to run data plane threads on
+> some CPUs (i.e. one thread per CPU) and these CPUs shouldn't be
+> interrupted by kernel at all.
+> 
+> Earlier I tried CPUSets with NO_HZ by creating two groups with
+> load_balancing disabled between them and manually tried to move
+> all tasks out to CPU0 group. But even then there were interruptions
+> which were continuously coming on CPU1 (which I am trying to
+> isolate). These were some workqueue events, some timers (like
+> prandom), timer overflow events (As NO_HZ_FULL pushes hrtimer
+> to long ahead in future, 450 seconds, rather than disabling them
+> completely, and these hardware timers were overflowing their
+> counters after 90 seconds on Samsung Exynos board).
+> 
+> So after creating CPUsets I hotunplugged CPU1 and added it back
+> immediately. This moved all these interruptions away and now
+> CPU1 is running my single thread ("stress") for ever.
+> 
+> Now my question is: Is there anything particularly wrong about using
+> hotplugging here ? Will that lead to a disaster :)
 
-I preferred the earlier udelay(1) from your PATCH v4, but I think it's 
-even better to replace it with:
-
-			cpu_relax();
-
-You might also need:
-
-#include <asm/processor.h>
-
-to define cpu_relax().
-
-> +		}
->   	} else {
->   		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
->   		if (board->reg_type == ni_reg_625x) {
->
+Nah, its just ugly and we should fix it. You need to be careful to not
+place tasks in a cpuset you're going to unplug though, that'll give
+funny results.
 
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
