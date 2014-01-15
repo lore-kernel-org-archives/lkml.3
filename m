@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951AbaAOSZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:25:19 -0500
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:56043 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326AbaAOSZO (ORCPT
+	id S1753013AbaAOS0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:26:47 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:46568 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549AbaAOS0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:25:14 -0500
+	Wed, 15 Jan 2014 13:26:43 -0500
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20140115175723.GA4596@fieldses.org>
-References: <20140115151749.GF23999@fieldses.org>
-	<1389807296.16290.32.camel@tucsk.piliscsaba.szeredi.hu>
-	<20140115175723.GA4596@fieldses.org>
-Date: Wed, 15 Jan 2014 19:25:11 +0100
-Message-ID: <CAJfpegs0+t4S1y9mhRMJMAERh-a95KjK_JQ7F5SRrfsNZOdoMA@mail.gmail.com>
-Subject: Re: [PATCH] dcache: fix d_splice_alias handling of aliases
-From: Miklos Szeredi <miklos@szeredi.hu>
+In-Reply-To: <20140115181955.GA5715@fieldses.org>
+References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
+ <1389219015-10980-6-git-send-email-miklos@szeredi.hu> <20140115181955.GA5715@fieldses.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 15 Jan 2014 10:26:23 -0800
+Message-ID: <CALCETrVRfz0Ha-0Dr6X=6De9K6HACzcfryjEk633zAKjYxg6wg@mail.gmail.com>
+Subject: Re: [PATCH 05/11] vfs: add RENAME_NOREPLACE flag
 To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux NFS list <linux-nfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
+        Jan Kara <jack@suse.cz>, "mszeredi@suse.cz" <mszeredi@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 6:57 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> On Wed, Jan 15, 2014 at 06:34:56PM +0100, Miklos Szeredi wrote:
->> On Wed, 2014-01-15 at 10:17 -0500, J. Bruce Fields wrote:
->> > From: "J. Bruce Fields" <bfields@redhat.com>
->> >
->> > d_splice_alias can create duplicate directory aliases (in the !new
->> > case), or (in the new case) d_move without holding appropriate locks.
+On Wed, Jan 15, 2014 at 10:19 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Wed, Jan 08, 2014 at 11:10:09PM +0100, Miklos Szeredi wrote:
+>> From: Miklos Szeredi <mszeredi@suse.cz>
 >>
->> It can d_move, because the dentry is known to be disconnected, i.e. it
->> doesn't have a parent for which we could obtain the lock.
+>> If this flag is specified and the target of the rename exists then the
+>> rename syscall fails with EEXIST.
 >
-> DCACHE_DISCONNECTED doesn't mean that.
+> Why is this useful?
 
-You're right, but I'm also right, because __d_find_alias() will check
-IS_ROOT() too.  So only "root" disconnected dentries will be moved.
+The trivial answer: to eliminate the race condition from 'mv -i'.
 
->
-> When you lookup a dentry by filehandle that dentry is initially marked
-> DCACHE_DISCONNECTED.  It is cleared only after reconnect_path() has
-> verified that the dentry is reachable all the way from the root.
->
-> So !DCACHE_DISCONNECTED implies that the dentry is connected all the way
-> up to the root, but the converse is not true.
->
-> This has been a source of confusion, but it is explained in
-> Documentation/filesystems/nfs/Exporting.  Recently I've cleaned up a few
-> odd uses of DCACHE_DISCONNECTED and rewritten reconnect_path(), partly
-> as an attempt to clarify the situation.
->
-> Let me know if any of that doesn't look right to you....
->
->> > d_materialise_unique deals with both of these problems.  (The latter
->> > seems to be dealt by trylocks (see __d_unalias), which look like they
->> > could cause spurious lookup failures--but that's at least better tha
->> > corrupting the dcache.)
->> >
->> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
->> > ---
->> >  fs/dcache.c |   25 +------------------------
->> >  1 file changed, 1 insertion(+), 24 deletions(-)
->> >
->> > Only lightly tested....  If this is right, then we can also just ditch
->> > d_splice_alias completely, and clean up the various d_find_alias's.
->> >
->> > I think the only reason we have both d_splice_alias and
->> > d_materialise_unique is that the former was written for exportable
->> > filesystems and the latter for distributed filesystems.
->> >
->> > But we have at least one exportable filesystem (fuse) using
->> > d_materialise_unique.  And I doubt d_splice_alias was ever completely
->> > correct even for on-disk filesystems.
->> >
->> > Am I missing some subtlety?
->>
->> One subtle difference is that for a non-directory d_splice_alias() will
->> reconnect a DCACHE_DISCONNECTED dentry if one exists, while
->> d_materialise_unique() will not.
->
-> Actually until f80de2cde10350b8d146e375ff8b634e72e6a827 "dcache: don't
-> clear DCACHE_DISCONNECTED too early", it was the reverse:
-> d_materialise_unique cleared DISCONNECTED and d_splice_alias (correctly)
-> did not.
->
-> The only place where it should be cleared is reconnect_path().
->
->> Does this matter in practice?   The small number of extra dentries
->> probably does not matter.
->
-> Directories are assumed to have unique aliases.  When they don't, the
-> kernel can deadlock or crash.
+Another answer: there's a common pattern to atomically create a file
+with contents: open a temporary file, write to it, optionally fsync
+it, close it, then link(2) it to the final name, then unlink the
+temporary file.
 
-What I meant is that d_materialise_unique() will currently not reuse
-disconnected *nondirectory* dentries, hence there may be more aliases
-than necessary.  This could easily be fixed, though.
+The reason to use link(2) is because it won't silently clobber the destination.
 
-Thanks,
-Miklos
+This is annoying:
+ - It requires an extra system call that shouldn't be necessary.
+ - It doesn't work on (IMO sensible) filesystems that don't support
+hard links (e.g. vfat).
+ - It's not atomic -- there's an intermediate state where both files exist.
+ - It's ugly.
 
+The new rename flag will make this totally sensible.
 
->
-> --b.
+To be fair, on new enough kernels, you can also use O_TMPFILE and
+linkat to achieve the same thing even more cleanly.
+
+--Andy
