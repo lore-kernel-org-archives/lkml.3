@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaAOPCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:02:55 -0500
-Received: from order.stressinduktion.org ([87.106.68.36]:39508 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaAOPCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:02:54 -0500
-Date: Wed, 15 Jan 2014 16:02:53 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: netdev@vger.kernel.org, dborkman@redhat.com, eric.dumazet@gmail.com,
-        linux-kernel@vger.kernel.org, darkjames-ws@darkjames.pl
-Subject: Re: [PATCH RFC] reciprocal_divide: correction/update of the algorithm
-Message-ID: <20140115150253.GG19945@order.stressinduktion.org>
-Mail-Followup-To: Randy Dunlap <rdunlap@infradead.org>,
-	netdev@vger.kernel.org, dborkman@redhat.com, eric.dumazet@gmail.com,
-	linux-kernel@vger.kernel.org, darkjames-ws@darkjames.pl
-References: <20140113214249.GK6586@order.stressinduktion.org> <52D57BAB.5070709@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <52D57BAB.5070709@infradead.org>
+	id S1752055AbaAOPGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:06:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:44282 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037AbaAOPGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:06:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,663,1384329600"; 
+   d="scan'208";a="465570359"
+Message-ID: <52D6A3FF.8070100@intel.com>
+Date: Wed, 15 Jan 2014 23:06:39 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fcr@adinet.com.uy, l@dorileo.org, "Zheng, Lv" <lv.zheng@intel.com>,
+        robert.moore@intel.com
+Subject: Re: [PATCH V2] ACPI/Battery: Add a _BIX quirk for NEC LZ750/LS
+References: <1389019837-13619-1-git-send-email-tianyu.lan@intel.com> <5255063.SeYbBZqxVQ@vostro.rjw.lan> <20140114212406.GA25438@srcf.ucam.org> <4100200.O09E65sAKi@vostro.rjw.lan> <52D69E57.5020208@intel.com> <20140115144720.GA23218@srcf.ucam.org>
+In-Reply-To: <20140115144720.GA23218@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 10:02:19AM -0800, Randy Dunlap wrote:
-> Just trivia (coding style and spelling):
-> 
-> > diff --git a/lib/reciprocal_div.c b/lib/reciprocal_div.c
-> > index 75510e9..b741b30 100644
-> > --- a/lib/reciprocal_div.c
-> > +++ b/lib/reciprocal_div.c
-> > @@ -1,11 +1,25 @@
-> > +#include <linux/kernel.h>
-> >  #include <asm/div64.h>
-> >  #include <linux/reciprocal_div.h>
-> >  #include <linux/export.h>
-> >  
-> > -u32 reciprocal_value(u32 k)
-> > +/* For a description of the algorithmus please look at
-> 
->                                algorithms
-> 
-> > + * linux/reciprocal_div.h
-> > + */
-> 
-> and kernel coding style for multi-line comments is like so:
-> 
-> /*
->  * For a description of the algorithms, please look at
->  * linux/reciprocal_div.h
->  */
-> 
-> > +
-> > +struct reciprocal_value reciprocal_value(u32 d)
-> >  {
+On 01/15/2014 10:47 PM, Matthew Garrett wrote:
+> On Wed, Jan 15, 2014 at 10:42:31PM +0800, Lan Tianyu wrote:
+>> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+>> index fbf1ace..e98fa83 100644
+>> --- a/drivers/acpi/battery.c
+>> +++ b/drivers/acpi/battery.c
+>> @@ -770,7 +770,7 @@ static int acpi_battery_add(struct acpi_device *device)
+>>          device->driver_data = battery;
+>>          mutex_init(&battery->lock);
+>>          mutex_init(&battery->sysfs_lock);
+>> -       if (acpi_has_method(battery->device->handle, "_BIX"))
+>> +       if (acpi_evaluate_object(device->handle, "_BIX", NULL, &buffer);)
+>>                  set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+>
+> Doesn't acpi_evaluate_object() return 0 on success? I think:
+>
+> if (ACPI_SUCESS(acpi_evaluate_object(device->handle, "_BIX", NULL,
+> &buffer))
+>
 
-Thanks, fixed those stuff locally along with a better description. I am
-used to netdev comments. ;)
+Yes, Sorry for oops.
 
+> But maybe we should check for existence first and give an FW_BUG message
+> to indicate an invalid _BIX?
+
+Yes, this is a good idea.
+
+Another point, the acpi_evaluate_object should return different error 
+code for these two cases(no _BIX and wrong size.). I wonder whether we 
+can use the error code to determine it belong which case?
+>
+
+
+-- 
+Best Regards
+Tianyu Lan
