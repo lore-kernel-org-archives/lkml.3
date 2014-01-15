@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaAOJcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:32:05 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:59015 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaAOJcB (ORCPT
+	id S1751962AbaAOJcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:32:46 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48708 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaAOJcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:32:01 -0500
-Message-ID: <52D65568.6080106@huawei.com>
-Date: Wed, 15 Jan 2014 17:31:20 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 15 Jan 2014 04:32:43 -0500
+Message-ID: <52D65423.2070706@linux.vnet.ibm.com>
+Date: Wed, 15 Jan 2014 17:25:55 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>, <robin.yb@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, <riel@redhat.com>
-CC: Xishi Qiu <qiuxishi@huawei.com>, <linux-fsdevel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm/fs: don't keep pages when receiving a pending SIGKILL
- in __get_user_pages()
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, raistlin@linux.it,
+        juri.lelli@gmail.com
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+References: <52D64676.4040000@linaro.org>
+In-Reply-To: <52D64676.4040000@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011509-1618-0000-0000-000005439BC3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the process IO direction, dio_refill_pages will call get_user_pages_fast 
-to map the page from user space. If ret is less than 0 and IO is write, the 
-function will create a zero page to fill data. This may work for some file 
-system, but in some device operate we prefer whole write or fail, not half 
-data half zero, e.g. fs metadata, like inode, identy.
-This happens often when kill a process which is doing direct IO. Consider 
-the following cases, the process A is doing IO process, may enter __get_user_pages 
-function, if other processes send process A SIG_KILL, A will enter the 
-following branches 
-		/*
-		 * If we have a pending SIGKILL, don't keep faulting
-		 * pages and potentially allocating memory.
-		 */
-		if (unlikely(fatal_signal_pending(current)))
-			return i ? i : -ERESTARTSYS;
-Return current pages. direct IO will write the pages, the subsequent pages 
-which can’t get will use zero page instead. 
-This patch will modify this judgment, if receive SIG_KILL, release pages and 
-return an error. Direct IO will find no blocks_available and return error 
-direct, rather than half IO data and half zero page.
+Hi, Daniel
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Signed-off-by: Bin Yang <robin.yb@huawei.com>
----
- mm/memory.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+On 01/15/2014 04:27 PM, Daniel Lezcano wrote:
+[snip]
+> commit d50dde5a10f305253cbc3855307f608f8a3c5f73
+> Author: Dario Faggioli <raistlin@linux.it>
+> Date:   Thu Nov 7 14:43:36 2013 +0100
+> 
+>     sched: Add new scheduler syscalls to support an extended scheduling
+> parameters ABI
+> 
+>     Add the syscalls needed for supporting scheduling algorithms
+>     with extended scheduling parameters (e.g., SCHED_DEADLINE).
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 6768ce9..0568faa 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1799,8 +1799,14 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			 * If we have a pending SIGKILL, don't keep faulting
- 			 * pages and potentially allocating memory.
- 			 */
--			if (unlikely(fatal_signal_pending(current)))
--				return i ? i : -ERESTARTSYS;
-+			if (unlikely(fatal_signal_pending(current))) {
-+				int j;
-+				for (j = 0; j < i; j++) {
-+					put_page(pages[j]);
-+					pages[j] = NULL;
-+				}
-+				return  -ERESTARTSYS;
-+			}
- 
- 			cond_resched();
- 			while (!(page = follow_page_mask(vma, start,
--- 
-1.7.1
+Will this do any helps?
 
+Regards,
+Michael Wang
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0326c06..bf4a6ed 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3464,6 +3464,10 @@ int sched_setscheduler(struct task_struct *p, int
+policy,
+                .sched_policy   = policy,
+                .sched_priority = param->sched_priority
+        };
++
++       if (fair_policy(policy))
++               attr.sched_nice = PRIO_TO_NICE(attr.sched_priority);
++
+        return __sched_setscheduler(p, &attr, true);
+ }
+ EXPORT_SYMBOL_GPL(sched_setscheduler);
+@@ -3494,6 +3498,10 @@ int sched_setscheduler_nocheck(struct task_struct
+*p, int policy,
+                .sched_policy   = policy,
+                .sched_priority = param->sched_priority
+        };
++
++       if (fair_policy(policy))
++               attr.sched_nice = PRIO_TO_NICE(attr.sched_priority);
++
+        return __sched_setscheduler(p, &attr, false);
+ }
+
+
+
+> 
+> 
+> [ ... ]
+> 
+> 
+>     Signed-off-by: Dario Faggioli <raistlin@linux.it>
+>     [ Rewrote to use sched_attr. ]
+>     Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+>     [ Removed sched_setscheduler2() for now. ]
+>     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>     Link:
+> http://lkml.kernel.org/r/1383831828-15501-3-git-send-email-juri.lelli@gmail.com
+> 
+>     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
 
