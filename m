@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaAOOLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:11:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38175 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977AbaAOOLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:11:48 -0500
-Message-ID: <52D69705.6010500@ti.com>
-Date: Wed, 15 Jan 2014 19:41:17 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751965AbaAOOLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:11:47 -0500
+Received: from forward13.mail.yandex.net ([95.108.130.120]:59530 "EHLO
+	forward13.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaAOOLo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:11:44 -0500
+From: Victor Porton <porton@narod.ru>
+Envelope-From: porton@yandex.ru
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cgroups mailinglist <cgroups@vger.kernel.org>
+In-Reply-To: <20140115135930.GK8782@dhcp22.suse.cz>
+References: <135711389759165@web22h.yandex.ru> <20140115135930.GK8782@dhcp22.suse.cz>
+Subject: Re: Notifying on empty cgroup
 MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 2/5] phy: add support for indexed lookup
-References: <1386601737-8735-1-git-send-email-heikki.krogerus@linux.intel.com> <1386601737-8735-3-git-send-email-heikki.krogerus@linux.intel.com> <52AEDDE2.8060406@ti.com> <20131216143227.GA22944@xps8300> <52CC03D4.50603@ti.com> <20140114142310.GA21169@xps8300>
-In-Reply-To: <20140114142310.GA21169@xps8300>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Message-Id: <409331389795100@web18j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 15 Jan 2014 16:11:40 +0200
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heikki,
-
-On Tuesday 14 January 2014 07:53 PM, Heikki Krogerus wrote:
-> Hi Kishon,
-> 
-> And happy new year..
-
-Happy new year :-)
-> 
-> On Tue, Jan 07, 2014 at 07:10:36PM +0530, Kishon Vijay Abraham I wrote:
->>>>>  /**
->>>>> - * phy_get() - lookup and obtain a reference to a phy.
->>>>> + * phy_get_index() - obtain a phy based on index
->>>>
->>>> NAK. It still takes a 'char' argument and the name is misleading.
->>>> Btw are you replacing phy_get() or adding a new API in addition to phy_get()?
->>>
->>> Additional API. The phy_get() would in practice act as a wrapper after
+15.01.2014, 15:59, "Michal Hocko" <mhocko@suse.cz>:
+> [CCing cgroups mailing list]
+> On Wed 15-01-14 06:12:45, Victor Porton wrote:
+>
+>> šI want to write software which needs to receive a signal when the cgroup
+>> šcreated by it becomes empty. (After this the empty cgroup should be deleted
+>> šjust not to clutter the memory.)
 >>
->> In this patch it looks like you've replaced phy_get().
->>> this. It could actually be just a #define macro in the include file.
->>> The function naming I just copied straight from gpiolib.c. I did not
->>> have the imagination for anything fancier.
->>>
->>> I would like to be able to use some function like phy_get_index() and
->>> be able to deliver it both the name and the index. With DT you guys
->>> will always be able to use the name (and the string will always
->>> supersede the index if we do it like this), but with ACPI, and possibly
->>> the platform lookup tables, the index can be used...
+>> šIf the kernel does not support such notifications, it should be improved.
+>> šThis functionality is crucial for some kinds of software.
 >>
->> I think in that case, we should drop the 'string' from phy_get_index since we
->> have the other API to handle that? I don't know about ACPI, but is it not
->> possible to use strings with ACPI?
-> 
-> No unfortunately. We just have what the ACPI tables provide. The PHYs
-> would be "child" device entries under the controller and we can only
-> get handle to them based on the index.
-> 
-> I think I'll skip this patch from this set. Let's wait until we have
-> an actual ACPI DSDT describing some PHYs.
+>> šThere is /sys/fs/cgroup/systemd/release_agent but I don't understand how to
+>> šuse it. I don't understand why we would need it at all.
+>
+> "1.4 What does notify_on_release do ?" in
+> Documentation/cgroups/cgroups.txt the kernel source doesn't help?
 
-yeah.. sure.
+I've read it. I understand what it does. I don't understand how to use it in practice nor why it is done this way.
 
-Cheers
-Kishon
+>> šStarting a binary on emptying a cgroup with the purpose to notify an other
+>> šbinary looks like a big overkill.
+>
+> the binary can do rmdir which is what you want, no?
+
+I suppose a base package should do that, not my specific software. Do I understand right?
+
+>> šAlso my program should work in userspace without the need to use
+>> šrelease_agent which can be accessed only by root.
+>
+> The release_agent is global for all groups so the program doesn't have
+> to care.
+
+Again: What MY program should do?
+
+>> šNote that my work is related with sandboxing software (running a program in
+>> šclosed environment, so that it would be unable for example to remove user's
+>> šfiles).
+>>
+>> šSee also
+>> šhttp://portonsoft.wordpress.com/2014/01/11/toward-robust-linux-sandbox/
+>>
+>> š--
+>> šVictor Porton - http://portonvictor.org
+>> š--
+>> šTo unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> šthe body of a message to majordomo@vger.kernel.org
+>> šMore majordomo info at šhttp://vger.kernel.org/majordomo-info.html
+>> šPlease read the FAQ at šhttp://www.tux.org/lkml/
+>
+> --
+> Michal Hocko
+> SUSE Labs
+
+-- 
+Victor Porton - http://portonvictor.org
