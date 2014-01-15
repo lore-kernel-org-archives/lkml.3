@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaAOIFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 03:05:50 -0500
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:34252 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaAOIFs (ORCPT
+	id S1751767AbaAOII3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 03:08:29 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57408 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAOII1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 03:05:48 -0500
+	Wed, 15 Jan 2014 03:08:27 -0500
+Date: Wed, 15 Jan 2014 09:07:53 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Henderson <rth@twiddle.net>, Matt Turner <mattst88@gmail.com>,
+        Daniel J Blueman <daniel@numascale.com>,
+        Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+Message-ID: <20140115080753.GW31570@twins.programming.kicks-ass.net>
+References: <52D353C8.4000000@numascale.com>
+ <52D4172E.6030706@hp.com>
+ <52D4A0C7.5070601@numascale.com>
+ <20140114110307.GW7572@laptop.programming.kicks-ass.net>
+ <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com>
+ <52D57B60.9020209@twiddle.net>
+ <20140114234443.GY10038@linux.vnet.ibm.com>
+ <CA+55aFyF2Vg785qO52fJLV7rsi6bMtGFhxsAvJ7354EBrcESCA@mail.gmail.com>
+ <20140115023958.GA10038@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1389762075.6933.76.camel@pasglop>
-References: <1389762075.6933.76.camel@pasglop>
-Date: Wed, 15 Jan 2014 15:05:46 +0700
-X-Google-Sender-Auth: Sf4VPeD42MAQXUXV3Hwk5SFnY-w
-Message-ID: <CA+55aFyfY5kEezwx8-jhgdgOX+EG__v3QRZmGnGstDpUP-UVWQ@mail.gmail.com>
-Subject: Re: [git pull] Please pull powerpc.git merge branch
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115023958.GA10038@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 12:01 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
->
-> My original intend was to put it in powerpc-next and then shoot it to
-> stable, but it got a tad annoying (due to churn it needs to be applied
-> at least on rc4 or later while my next is at rc1 and clean that way), so
-> I put it in the merge branch.
+On Tue, Jan 14, 2014 at 06:39:58PM -0800, Paul E. McKenney wrote:
+> > If you just want to do a store release, on alpha you'd want to
+> > implement that as a full memory barrier followed by a store. It
+> > doesn't get the advantage of a real release consistency model, but at
+> > least it's not doing an external bus access. But you can only do that
+> > store as a 4-byte or 8-byte store.on the older alphas (byte and word
+> > stores work on newer ones).
+> > 
+> > Of course, it's entirely possible that nobody cares..
+> 
+> That would be my hope.  ;-)
+> 
+> If nobody cares about Alpha period, it is easy.  However, the last time
+> that I tried that approach, they sent me a URL of a wiki showing Alpha
+> systems still running mainline.  But a slow-but-working approach for
+> Alpha does seem reasonable, even for those still running Linux on Alpha.
 
-Quite frankly, I'll prefer to not merge it now, and then 3.13 will get
-it from stable, when it does things like this.
+Well, if they're all EV56 or later we're still good as they can actually
+do what we need.
 
-Partly because it fixes a power-only bug, but potentially changes
-non-power behavior. If it was all in arch/powerpc, I wouldn't mind.
+But I don't think a ll/sc implementation of the store_release can even
+work, because in that case all users of the other bytes also need a
+ll/sc around them but how are we to know about them?
 
-               Linus
+So the only real way to allow store_release on 8/16 bit values is by
+removing all Alpha support _pre_ EV56 :/
