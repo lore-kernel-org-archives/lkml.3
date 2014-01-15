@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaAOVyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:54:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40751 "EHLO
+	id S1755275AbaAOWho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:37:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369AbaAOVyF (ORCPT
+	with ESMTP id S1753003AbaAOVyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:54:05 -0500
+	Wed, 15 Jan 2014 16:54:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Colin Leitner <colin.leitner@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 021/166] USB: pl2303: fixed handling of CS5 setting
-Date: Wed, 15 Jan 2014 13:50:35 -0800
-Message-Id: <1389822780-4729-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 024/166] drm/radeon/atom: fix bus probes when hw_i2c is set (v2)
+Date: Wed, 15 Jan 2014 13:50:38 -0800
+Message-Id: <1389822780-4729-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,69 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a313249937820f8b1996133fc285efbd6aad2c5b upstream.
+commit ffd3d3361d583cb73fa65a5fed3a196ba6f261bb upstream.
 
-This patch fixes the CS5 setting on the PL2303 USB-to-serial devices. CS5 has a
-value of 0 and the CSIZE setting has been skipped altogether by the enclosing
-if. Tested on 3.11.6 and the scope shows the correct output after the fix has
-been applied.
+When probing the bus, we need to set the byte count
+to 0 rather than 1.
 
-Tagged to be added to stable, because it fixes a user visible driver bug and is
-simple enough to backport easily.
+v2: Don't count the first byte.
 
-Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=66241
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/pl2303.c | 31 ++++++++++++++-----------------
- 1 file changed, 14 insertions(+), 17 deletions(-)
+ drivers/gpu/drm/radeon/atombios_i2c.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index a16d378..037fd68 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -303,24 +303,21 @@ static void pl2303_set_termios(struct tty_struct *tty,
- 	dev_dbg(&port->dev, "0xa1:0x21:0:0  %d - %x %x %x %x %x %x %x\n", i,
- 	    buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
+diff --git a/drivers/gpu/drm/radeon/atombios_i2c.c b/drivers/gpu/drm/radeon/atombios_i2c.c
+index 4bb4b7a..1dfafb1 100644
+--- a/drivers/gpu/drm/radeon/atombios_i2c.c
++++ b/drivers/gpu/drm/radeon/atombios_i2c.c
+@@ -44,7 +44,7 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+ 	PROCESS_I2C_CHANNEL_TRANSACTION_PS_ALLOCATION args;
+ 	int index = GetIndexIntoMasterTable(COMMAND, ProcessI2cChannelTransaction);
+ 	unsigned char *base;
+-	u16 out;
++	u16 out = cpu_to_le16(0);
  
--	if (cflag & CSIZE) {
--		switch (cflag & CSIZE) {
--		case CS5:
--			buf[6] = 5;
--			break;
--		case CS6:
--			buf[6] = 6;
--			break;
--		case CS7:
--			buf[6] = 7;
--			break;
--		default:
--		case CS8:
--			buf[6] = 8;
--			break;
+ 	memset(&args, 0, sizeof(args));
+ 
+@@ -55,10 +55,14 @@ static int radeon_process_i2c_ch(struct radeon_i2c_chan *chan,
+ 			DRM_ERROR("hw i2c: tried to write too many bytes (%d vs 2)\n", num);
+ 			return -EINVAL;
+ 		}
+-		if (num > 1) {
++		if (buf == NULL)
++			args.ucRegIndex = 0;
++		else
++			args.ucRegIndex = buf[0];
++		if (num)
+ 			num--;
++		if (num)
+ 			memcpy(&out, &buf[1], num);
 -		}
--		dev_dbg(&port->dev, "data bits = %d\n", buf[6]);
-+	switch (C_CSIZE(tty)) {
-+	case CS5:
-+		buf[6] = 5;
-+		break;
-+	case CS6:
-+		buf[6] = 6;
-+		break;
-+	case CS7:
-+		buf[6] = 7;
-+		break;
-+	default:
-+	case CS8:
-+		buf[6] = 8;
- 	}
-+	dev_dbg(&port->dev, "data bits = %d\n", buf[6]);
+ 		args.lpI2CDataOut = cpu_to_le16(out);
+ 	} else {
+ 		if (num > ATOM_MAX_HW_I2C_READ) {
+@@ -93,14 +97,14 @@ int radeon_atom_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
+ 	struct radeon_i2c_chan *i2c = i2c_get_adapdata(i2c_adap);
+ 	struct i2c_msg *p;
+ 	int i, remaining, current_count, buffer_offset, max_bytes, ret;
+-	u8 buf = 0, flags;
++	u8 flags;
  
- 	/* For reference buf[0]:buf[3] baud rate value */
- 	/* NOTE: Only the values defined in baud_sup are supported !
+ 	/* check for bus probe */
+ 	p = &msgs[0];
+ 	if ((num == 1) && (p->len == 0)) {
+ 		ret = radeon_process_i2c_ch(i2c,
+ 					    p->addr, HW_I2C_WRITE,
+-					    &buf, 1);
++					    NULL, 0);
+ 		if (ret)
+ 			return ret;
+ 		else
 -- 
 1.8.3.2
 
