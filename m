@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbaAOAWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:22:22 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:21273 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751384AbaAOAWT (ORCPT
+	id S1752068AbaAOAXP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:23:15 -0500
+Received: from nm28-vm3.bullet.mail.gq1.yahoo.com ([98.136.216.162]:22992 "EHLO
+	nm28-vm3.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750918AbaAOAXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:22:19 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmMKAKrT1VJ5LKVw/2dsb2JhbABagwuDOrJthVmBERd0giUBAQEEOhwjEAgDGAklDwUlAyETiAPERxcWjnEHhDcEmB2KTIdKg0Eo
-Date: Wed, 15 Jan 2014 11:22:15 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Li Wang <liwang@ubuntukylin.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Cong Wang <xiyou.wangcong@gmail.com>,
-        Zefan Li <lizefan@huawei.com>, Matthew Wilcox <matthew@wil.cx>,
-        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
-Subject: Re: [PATCH 2/3] Add shrink_pagecache_parent
-Message-ID: <20140115002215.GP3469@dastard>
-References: <cover.1388409686.git.liwang@ubuntukylin.com>
- <249cbd3edaa84dd58a0626780fb546ddf7c1dc11.1388409687.git.liwang@ubuntukylin.com>
- <20140102155534.9b0cd498209d835d0c93837e@linux-foundation.org>
- <52CCB2A7.2000300@ubuntukylin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52CCB2A7.2000300@ubuntukylin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 14 Jan 2014 19:23:12 -0500
+X-Yahoo-Newman-Id: 290395.18084.bm@smtp208.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: DUzO2UUVM1m8J05RFYxwmPXFV8hySs3dt59J4O54nnt4bT9
+ FJWR2rPtgkG_rm2mEJYAe0F4vs3GQ5gjoaSi815RGRaHTPzLhfJIMdVRlQMz
+ wdwox53mRYqJhWl5sM9LtWCEBV4lMEv6JNGADqmIeQ4EnlecUnp65PGMjEL.
+ 6dMw7pgrrGR7aI8C92c9s6kk9t.pdq6CVXonWUZ_yiOE7BnXnHBw7pcEk2FU
+ 2ntOYuf11SJUE6zLkeTf_nPgntvkAqj7r4qtay6VAex72OegpDrqvKL0Omwb
+ OFZDEPeQYQCUKIyoHdtGzGOXAeQDxiQwUr35GwLNDscrRv2ASvGzno6Qo.KD
+ eJeL4RihMizCPFOknXdY7e65kPGH_zmbEjWbuTovBqlWOJHbHBrz24B0woAb
+ 56HLatIxwkVzY8KPkxVpy8lpZ_Sq0jhf6E7q178Gj58tBEVK2N7s9l7g0JBx
+ ZAW9XnML26ntb4GA9ZcPmO3R5wvZVAbthdVJlsgAymPAXuPmG7.fSzwqKxaL
+ Ue42ur0D8XjMw23d4crVvCgtoX45i6BplATyy
+X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
+X-Rocket-Received: from localhost.localdomain (chase.southwood@50.103.236.80 with plain [63.250.193.228])
+        by smtp208.mail.gq1.yahoo.com with SMTP; 14 Jan 2014 16:23:11 -0800 PST
+From: Chase Southwood <chase.southwood@yahoo.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@yahoo.com>
+Subject: [PATCH v4] Staging: comedi: convert while loop to timeout in ni_mio_common.c
+Date: Tue, 14 Jan 2014 18:23:05 -0600
+Message-Id: <1389745385-27146-1-git-send-email-chase.southwood@yahoo.com>
+X-Mailer: git-send-email 1.8.4.2
+In-Reply-To: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
+References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 08, 2014 at 10:06:31AM +0800, Li Wang wrote:
-> Hi,
-> 
-> On 01/03/2014 07:55 AM, Andrew Morton wrote:
-> >On Mon, 30 Dec 2013 21:45:17 +0800 Li Wang <liwang@ubuntukylin.com> wrote:
-> >
-> >>Analogous to shrink_dcache_parent except that it collects inodes.
-> >>It is not very appropriate to be put in dcache.c, but d_walk can only
-> >>be invoked from here.
-> >However...  most inodes will be on an LRU list, won't they?  Doesn't
-> >this reuse of i_lru mean that many inodes will fail to be processed?
-> >If so, we might need to add a new list_head to the inode, which will be
-> >problematic.
-> >
-> As far as I know, fix me if i am wrong, only when inode has zero
-> reference count, it will be put into superblock lru list. For most
-> situations, there is at least a dentry refers to it, so it will not
-> be on any lru list.
+This patch for ni_mio_common.c changes out a while loop for a timeout,
+which is preferred.
 
-Yes, that's when they get added to the LRU, but they don't get
-removed if they are referenced again by a dentry. Hence dentries can
-be reclaimed, which puts the inode on it's LRU, but then the
-directory is read again and a new dentry allocated to point to it.
-We do not remove the inode from the LRU at this point in time.
-Hence you can have referenced inodes that are on the LRU, and in
-many workloads most of the referenced inodes in the system are on
-the LRU....
+Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+---
 
-Cheers,
+OK, here's another go at it.  Hopefully everything looks more correct
+this time.  Greg, I've followed the pattern you gave me, and I really
+appreciate all of the tips!  As always, just let me know if there are
+still things that need adjusting (especially length of timeout, udelay,
+etc.).
 
-Dave.
+Thanks,
+Chase Southwood
+
+2: Changed from simple clean-up to swapping a timeout in for a while loop.
+
+3: Removed extra counter variable, and added error checking.
+
+4: No longer using counter variable, using jiffies instead.
+
+ drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+index 457b884..882b249 100644
+--- a/drivers/staging/comedi/drivers/ni_mio_common.c
++++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+@@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
+ {
+ 	const struct ni_board_struct *board = comedi_board(dev);
+ 	struct ni_private *devpriv = dev->private;
++	unsigned long timeout;
+ 
+ 	if (board->reg_type == ni_reg_6143) {
+ 		/*  Flush the 6143 data FIFO */
+ 		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
+ 		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
+-		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
++		/*  Wait for complete */
++		timeout = jiffies + msec_to_jiffies(100);
++		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
++			if (time_after(jiffies, timeout)) {
++				comedi_error(dev, "FIFO flush timeout.");
++				break;
++			}
++			udelay(1);
++		}
+ 	} else {
+ 		devpriv->stc_writew(dev, 1, ADC_FIFO_Clear);
+ 		if (board->reg_type == ni_reg_625x) {
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.4.2
+
