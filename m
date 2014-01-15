@@ -1,153 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbaAOSA2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:00:28 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44924 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaAOSAZ (ORCPT
+	id S1752783AbaAOSCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 13:02:23 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36754 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbaAOSCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:00:25 -0500
-Message-ID: <52D6CCD4.5080104@infradead.org>
-Date: Wed, 15 Jan 2014 10:00:52 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 15 Jan 2014 13:02:19 -0500
+Date: Wed, 15 Jan 2014 11:02:15 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-scsi@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 0/9] PCI: Eliminate race conditions between hotplug and
+ sysfs rescan/remove (Was: Re: [PATCH v2 04/10] PCI: Destroy pci dev only
+ once)
+Message-ID: <20140115180215.GA31386@google.com>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org>
+ <CAErSpo6edmz5nkSYogbYk1FFYsCCwNV_-rir2jGP2JBnvOx+iw@mail.gmail.com>
+ <1992931.Zv6xBcN8V4@vostro.rjw.lan>
+ <20440867.YaQfKrcfsQ@vostro.rjw.lan>
 MIME-Version: 1.0
-To: mark.doffman@codethink.co.uk
-CC: ceph-devel@vger.kernel.org, Rob Taylor <rob.taylor@codethink.co.uk>,
-        sage@inktank.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] Documentation: Document the cephroot functionality
-References: <cover.1389806186.git.mark.doffman@codethink.co.uk> <29b3bd9700e23df2aee095df8c34a15a62f57d27.1389806186.git.mark.doffman@codethink.co.uk>
-In-Reply-To: <29b3bd9700e23df2aee095df8c34a15a62f57d27.1389806186.git.mark.doffman@codethink.co.uk>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20440867.YaQfKrcfsQ@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 09:26 AM, mark.doffman@codethink.co.uk wrote:
-> From: Rob Taylor <rob.taylor@codethink.co.uk>
->
-> Document using the cephfs as a root device, its purpose,
-> functionality and use.
->
-> Signed-off-by: Mark Doffman <mark.doffman@codethink.co.uk>
-> Signed-off-by: Rob Taylor <rob.taylor@codethink.co.uk>
-> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
-> ---
->   Documentation/filesystems/{ => ceph}/ceph.txt |  0
->   Documentation/filesystems/ceph/cephroot.txt   | 86 +++++++++++++++++++++++++++
->   2 files changed, 86 insertions(+)
->   rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
->   create mode 100644 Documentation/filesystems/ceph/cephroot.txt
->
-> diff --git a/Documentation/filesystems/ceph.txt b/Documentation/filesystems/ceph/ceph.txt
-> similarity index 100%
-> rename from Documentation/filesystems/ceph.txt
-> rename to Documentation/filesystems/ceph/ceph.txt
-> diff --git a/Documentation/filesystems/ceph/cephroot.txt b/Documentation/filesystems/ceph/cephroot.txt
-> new file mode 100644
-> index 0000000..deda4f0
-> --- /dev/null
-> +++ b/Documentation/filesystems/ceph/cephroot.txt
-> @@ -0,0 +1,86 @@
-> +Mounting the root filesystem via Ceph (cephroot)
-> +===============================================
-> +
-> +Written 2013 by Rob Taylor <rob.taylor@codethink.co.uk>
-> +
-> +derived from nfsroot.txt:
-> +
-> +Written 1996 by Gero Kuhlmann <gero@gkminix.han.de>
-> +Updated 1997 by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
-> +Updated 2006 by Nico Schottelius <nico-kernel-nfsroot@schottelius.org>
-> +Updated 2006 by Horms <horms@verge.net.au>
-> +
-> +
-> +
-> +In order to use a diskless system, such as an X-terminal or printer server
-> +for example, it is necessary for the root filesystem to be present on a
-> +non-disk device. This may be an initramfs (see Documentation/filesystems/
-> +ramfs-rootfs-initramfs.txt), a ramdisk (see Documentation/initrd.txt), a
-> +filesystem mounted via NFS or a filesystem mounted via Ceph. The following
-> +text describes on how to use Ceph for the root filesystem.
-> +
-> +For the rest of this text 'client' means the diskless system, and 'server'
-> +means the Ceph server.
-> +
-> +
-> +1.) Enabling cephroot capabilities
-> +    -----------------------------
-> +
-> +In order to use cephroot, CEPH_FS needs to be selected as
-> +built-in during configuration. Once this has been selected, the cephroot
-> +option will become available, which should also be selected.
-> +
-> +In the networking options, kernel level autoconfiguration can be selected,
-> +along with the types of autoconfiguration to support. Selecting all of
-> +DHCP, BOOTP and RARP is safe.
-> +
-> +
-> +2.) Kernel command line
-> +    -------------------
-> +
-> +When the kernel has been loaded by a boot loader (see below) it needs to be
-> +told what root fs device to use. And in the case of cephroot, where to find
+On Fri, Jan 10, 2014 at 03:20:44PM +0100, Rafael J. Wysocki wrote:
+> [Cc: adding linux-scsi for the MPT changes, Ben for powerpc, Matthew for
+>  platform/x86 and Konrad for Xen]
+> 
+> On Friday, December 06, 2013 02:21:50 AM Rafael J. Wysocki wrote:
+> 
+> [...]
+> 
+> > 
+> > OK
+> > 
+> > To be a bit more constructive, as the next step I'd try to use
+> > pci_remove_rescan_mutex to serialize all PCI hotplug operations (as I said
+> > above) without making the other changes made by my patch.  Does that sound
+> > reasonable?
+> 
+> Well, no answer here, so as a followup, a series implementing that idea
+> follows.
+> 
+> I *hope* I found all of the places that need to be synchronized vs the bus
+> rescan and device removal that can be triggered via sysfs, but I might overlook
+> something.  Also in some cases I wasn't quite sure how much stuff to put under
+> the lock, because said stuff is not exactly straightforward.
 
-                                use, and
+I applied this series to my pci/locking branch for v3.14.  It should appear
+in -next tomorrow.
 
-> +both the server and the name of the directory on the server to mount as root.
-> +This can be established using the following kernel command line parameters:
-> +
-> +root=/dev/ceph
-> +
-> +This is necessary to enable the pseudo-Ceph-device. Note that it's not a
-> +real device but just a synonym to tell the kernel to use Ceph instead of
-> +a real device.
-> +
-> +If cephroot is not specified, it is expected that that a valid mount will be
+Note that this touches some areas that are not strictly PCI, so speak
+up if I'm treading on your toes:
 
-drop duplicate:                                 that
+ arch/powerpc/kernel/eeh_driver.c       |   19 ++++++++++++--
+ drivers/acpi/pci_root.c                |    6 ++++
+ drivers/message/fusion/mptbase.c       |    2 -
+ drivers/pci/hotplug/acpiphp.h          |    5 +++
+ drivers/pci/hotplug/acpiphp_core.c     |    2 -
+ drivers/pci/hotplug/acpiphp_glue.c     |   43 +++++++++++++++++++++++++++++----
+ drivers/pci/hotplug/cpci_hotplug_pci.c |   14 +++++++++-
+ drivers/pci/hotplug/cpqphp_pci.c       |    8 +++++-
+ drivers/pci/hotplug/ibmphp_core.c      |   13 ++++++++-
+ drivers/pci/hotplug/pciehp_pci.c       |   17 +++++++++----
+ drivers/pci/hotplug/rpadlpar_core.c    |   19 ++++++++++----
+ drivers/pci/hotplug/rpaphp_core.c      |    4 +++
+ drivers/pci/hotplug/s390_pci_hpc.c     |    4 ++-
+ drivers/pci/hotplug/sgi_hotplug.c      |    5 +++
+ drivers/pci/hotplug/shpchp_pci.c       |   18 ++++++++++---
+ drivers/pci/pci-sysfs.c                |   19 +++++---------
+ drivers/pci/probe.c                    |   18 +++++++++++++
+ drivers/pci/remove.c                   |   11 ++++++++
+ drivers/pci/xen-pcifront.c             |    8 ++++++
+ drivers/pcmcia/cardbus.c               |    7 +++++
+ drivers/platform/x86/asus-wmi.c        |    2 +
+ drivers/platform/x86/eeepc-laptop.c    |    2 +
+ drivers/scsi/mpt2sas/mpt2sas_base.c    |    2 -
+ drivers/scsi/mpt3sas/mpt3sas_base.c    |    2 -
+ include/linux/pci.h                    |    3 ++
 
-> +found via DHCP option 17, Root Path [1]
-> +
-> +cephroot=<monaddrs>:/[<subdir>],<ceph-opts>
-> +
-> +  <monaddrs>    Monitor addresses separated by commas. Each takes the form
-> +		host[:port]. If the port is not specified, the Ceph default
-> +		of 6789 is assumed.
-> +
-> +  <subdir>	A subdirectory subdir may be specified if a subset of the file
-> +		system is to be mounted
-
-		                mounted.
-		
-> +
-> +  <ceph-opts>	Standard Ceph options. All options are separated by commas.
-> +		See Documentation/filesystems/ceph/ceph.txt for options and
-> +		their defaults.
-> +
-> +4.) References
-> +    ----------
-> +
-> +[1] http://tools.ietf.org/html/rfc2132
-> +
-> +5.) Credits
-> +    -------
-> +
-> +  cephroot was derived from nfsroot by Rob Taylor <rob.taylor@codethink.co.uk>
-> +  and Mark Doffman <mark.doffman@codethink.co.uk>
-> +
-> +  The nfsroot code in the kernel and the RARP support have been written
-> +  by Gero Kuhlmann <gero@gkminix.han.de>.
-> +
-> +  The rest of the IP layer autoconfiguration code has been written
-> +  by Martin Mares <mj@atrey.karlin.mff.cuni.cz>.
-> +
-> +  In order to write the initial version of nfsroot I would like to thank
-> +  Jens-Uwe Mager <jum@anubis.han.de> for his help.
->
-
-
--- 
-~Randy
