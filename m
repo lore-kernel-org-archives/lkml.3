@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750946AbaAOFbK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:31:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39323 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705AbaAOFbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:31:08 -0500
-Date: Wed, 15 Jan 2014 16:30:55 +1100
-From: NeilBrown <neilb@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
-Subject: Re: linux-next: manual merge of the md tree with the block tree
-Message-ID: <20140115163055.24e2bae2@notabene.brown>
-In-Reply-To: <20140115150743.ff3de076048b32e82fa5ba27@canb.auug.org.au>
-References: <20140115150743.ff3de076048b32e82fa5ba27@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/e.LDbpvrug70YpxkPZMxikS"; protocol="application/pgp-signature"
+	id S1751291AbaAOFdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:33:35 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37424 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaAOFdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 00:33:31 -0500
+Message-ID: <52D61DA0.8050206@linux.vnet.ibm.com>
+Date: Wed, 15 Jan 2014 13:33:20 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@linaro.org>, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, daniel.lezcano@linaro.org,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org>
+In-Reply-To: <1389758879-19951-1-git-send-email-alex.shi@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011505-9264-0000-0000-00000547ADCC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/e.LDbpvrug70YpxkPZMxikS
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 01/15/2014 12:07 PM, Alex Shi wrote:
+> Currently we just try to find least load cpu. If some cpus idled,
+> we just pick the first cpu in cpu mask.
+> 
+> In fact we can get the interrupted idle cpu or the latest idled cpu,
+> then we may get the benefit from both latency and power.
+> The selected cpu maybe not the best, since other cpu may be interrupted
+> during our selecting. But be captious costs too much.
 
-On Wed, 15 Jan 2014 15:07:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au>
-wrote:
+So the idea here is we want to choose the latest idle cpu if we have
+multiple idle cpu for choosing, correct?
 
-> Hi Neil,
->=20
-> Today's linux-next merge of the md tree got a conflict in
-> drivers/md/raid10.c between commit 4f024f3797c4 ("block: Abstract out
-> bvec iterator") from the block tree and commit b50c259e25d9 ("md/raid10:
-> fix two bugs in handling of known-bad-blocks") from the md tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
->=20
+And I guess that was in order to avoid choosing tickless cpu while there
+are un-tickless idle one, is that right?
 
-Thanks Stephen.
-Those md fixes are now on their way to Linus (I'm hoping for 3.13 inclusion,
-I might be lucky).  Good they they are easy to resolve!
+What confused me is, what about those cpu who just going to recover from
+tickless as you mentioned, which means latest idle doesn't mean the best
+choice, or even could be the worst (if just two choice, and the longer
+tickless one is just going to recover while the latest is going to
+tickless).
 
-Thanks,
-NeilBrown
+So what about just check 'ts->tick_stopped' and record one ticking idle
+cpu? the cost could be lower than time comparison, we could reduce the
+risk may be...(well, not so risky since the logical only works when
+system is relaxing with several cpu idle)
 
---Sig_/e.LDbpvrug70YpxkPZMxikS
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Regards,
+Michael Wang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> 
+> Signed-off-by: Alex Shi <alex.shi@linaro.org>
+> ---
+>  kernel/sched/fair.c | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c7395d9..fb52d26 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4167,6 +4167,26 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>  			min_load = load;
+>  			idlest = i;
+>  		}
+> +#ifdef CONFIG_NO_HZ_COMMON
+> +		/*
+> +		 * Coarsely to get the latest idle cpu for shorter latency and
+> +		 * possible power benefit.
+> +		 */
+> +		if (!min_load) {
+> +			struct tick_sched *ts = &per_cpu(tick_cpu_sched, i);
+> +
+> +			s64 latest_wake = 0;
+> +			/* idle cpu doing irq */
+> +			if (ts->inidle && !ts->idle_active)
+> +				idlest = i;
+> +			/* the cpu resched */
+> +			else if (!ts->inidle)
+> +				idlest = i;
+> +			/* find latest idle cpu */
+> +			else if (ktime_to_us(ts->idle_entrytime) > latest_wake)
+> +				idlest = i;
+> +		}
+> +#endif
+>  	}
+> 
+>  	return idlest;
+> 
 
-iQIVAwUBUtYdDznsnt1WYoG5AQJ4RhAApQC/r3v4Ze23mlnYCs5V9GEQO4AZ9sz4
-m3XzgAzG2spw6Z8nLNWtIdgQ1r0NOUG+YQWv7P4Zft3IqNWin9jWBxUFhBMi4rPJ
-zVKdYUmStnbFB4EvLWdODioSUVu5y5BEisErVfhjgm5K4xukjw3cFKgW8eRX/7u0
-asv/NwPjsL0+le1VA1JnF9jZxlzEg1JI+g5l6sz9cTNImAAfrFZZucExkmlu1SkP
-ti3lsOzk2KgoXsHZAwcHPEhVJyWEDMdoxXAsTfkn9wQeYXgHjHh6o7j3cNwmpwdZ
-ME6bmpuJ1mA4WdlIRDlencmoY+Xk3NS+Os5qY4z60y53MlbQJ21+K0vmgAdV4Zfj
-cj8U52oqXTMSF6piaVyaXkW0XElygaLbGzBn0TFeHW8V7oYDqXnMlKiNkUmKVwPI
-zda8UjTOhdlQ4dubdsxR/ZIjMvcDqXpxfQ2XOF79B1IvaZ0JLOvgsjGlKn4n1cRQ
-PKKP9aCyFNNLjHuAfQsd+hTWrL7QWNYYhqVe14hVl2f7KrzxWOkLHqPqEnhn/Jzp
-yao1X2wCGvnQj1N+ThtfyVGxn1qf4HNG00+8OzHaDf/oScsfckSPdzZN7miNATdY
-V6/+a/2VhK2vNIW9sdAwt8/pQiRAjR5XorXSP9HCif8JJ0Ro4CLgywj6+t+gq6BZ
-A702HF9LDz4=
-=NFMA
------END PGP SIGNATURE-----
-
---Sig_/e.LDbpvrug70YpxkPZMxikS--
