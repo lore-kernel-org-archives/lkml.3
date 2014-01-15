@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857AbaAOFVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:21:52 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:56132 "EHLO
+	id S1751831AbaAOFVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:21:48 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56131 "EHLO
 	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbaAOFU4 (ORCPT
+	with ESMTP id S1751442AbaAOFU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 00:20:56 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,16 +16,16 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/timers 3/4] timers: Reduce future __run_timers() latency for newly emptied list
-Date: Tue, 14 Jan 2014 21:20:47 -0800
-Message-Id: <1389763248-31297-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/timers 2/4] timers: Reduce __run_timers() latency for empty list
+Date: Tue, 14 Jan 2014 21:20:46 -0800
+Message-Id: <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140115051939.GA31164@linux.vnet.ibm.com>
  <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14011505-1344-0000-0000-000004F2ADB9
+x-cbid: 14011505-1344-0000-0000-000004F2ADB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,30 +35,48 @@ From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 The __run_timers() function currently steps through the list one jiffy at
 a time in order to update the timer wheel.  However, if the timer wheel
 is empty, no adjustment is needed other than updating ->timer_jiffies.
-Therefore, if we just emptied the timer wheel, for example, by deleting
-the last timer, we should mark the timer wheel as being up to date.
-This marking will reduce (and perhaps eliminate) the jiffy-stepping that
-a future __run_timers() call will need to do in response to some future
-timer posting or migration.  This commit therefore catches ->timer_jiffies
-for this case.
+In this case, which is likely to be common for NO_HZ_FULL kernels, the
+kernel currently incurs a large latency for no good reason.  This commit
+therefore short-circuits this case.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/timer.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/timer.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/kernel/timer.c b/kernel/timer.c
-index 295837e5e011..bdd1c00ec4ec 100644
+index 2245b7374c3d..295837e5e011 100644
 --- a/kernel/timer.c
 +++ b/kernel/timer.c
-@@ -700,6 +700,7 @@ static int detach_if_pending(struct timer_list *timer, struct tvec_base *base,
- 			base->next_timer = base->timer_jiffies;
- 	}
- 	base->all_timers--;
-+	(void)catchup_timer_jiffies(base);
- 	return 1;
+@@ -338,6 +338,17 @@ void set_timer_slack(struct timer_list *timer, int slack_hz)
  }
+ EXPORT_SYMBOL_GPL(set_timer_slack);
  
++static bool catchup_timer_jiffies(struct tvec_base *base)
++{
++#ifdef CONFIG_NO_HZ_FULL
++	if (!base->all_timers) {
++		base->timer_jiffies = jiffies;
++		return 1;
++	}
++#endif /* #ifdef CONFIG_NO_HZ_FULL */
++	return 0;
++}
++
+ static void
+ __internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+ {
+@@ -1150,6 +1161,10 @@ static inline void __run_timers(struct tvec_base *base)
+ 	struct timer_list *timer;
+ 
+ 	spin_lock_irq(&base->lock);
++	if (catchup_timer_jiffies(base)) {
++		spin_unlock_irq(&base->lock);
++		return;
++	}
+ 	while (time_after_eq(jiffies, base->timer_jiffies)) {
+ 		struct list_head work_list;
+ 		struct list_head *head = &work_list;
 -- 
 1.8.1.5
 
