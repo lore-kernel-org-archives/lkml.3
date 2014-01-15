@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaAOVzL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:55:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40835 "EHLO
+	id S1753221AbaAOVzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:55:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40830 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146AbaAOVys (ORCPT
+	with ESMTP id S1753171AbaAOVyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:54:48 -0500
+	Wed, 15 Jan 2014 16:54:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 125/166] x86, fpu, amd: Clear exceptions in AMD FXSAVE workaround
-Date: Wed, 15 Jan 2014 13:52:19 -0800
-Message-Id: <1389822780-4729-126-git-send-email-kamal@canonical.com>
+Cc: Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 122/166] powerpc: Fix bad stack check in exception entry
+Date: Wed, 15 Jan 2014 13:52:16 -0800
+Message-Id: <1389822780-4729-123-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -26,47 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 26bef1318adc1b3a530ecc807ef99346db2aa8b0 upstream.
+commit 90ff5d688e61f49f23545ffab6228bd7e87e6dc7 upstream.
 
-Before we do an EMMS in the AMD FXSAVE information leak workaround we
-need to clear any pending exceptions, otherwise we trap with a
-floating-point exception inside this code.
+In EXCEPTION_PROLOG_COMMON() we check to see if the stack pointer (r1)
+is valid when coming from the kernel.  If it's not valid, we die but
+with a nice oops message.
 
-Reported-by: halfdog <me@halfdog.net>
-Tested-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/CA%2B55aFxQnY_PCG_n4=0w-VG=YLXL-yr7oMxyy0WU2gCBAf3ydg@mail.gmail.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Currently we allocate a stack frame (subtract INT_FRAME_SIZE) before we
+check to see if the stack pointer is negative.  Unfortunately, this
+won't detect a bad stack where r1 is less than INT_FRAME_SIZE.
+
+This patch fixes the check to compare the modified r1 with
+-INT_FRAME_SIZE.  With this, bad kernel stack pointers (including NULL
+pointers) are correctly detected again.
+
+Kudos to Paulus for finding this.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/fpu-internal.h | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/powerpc/include/asm/exception-64s.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 41ab26e..87fac9e 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -294,12 +294,13 @@ static inline int restore_fpu_checking(struct task_struct *tsk)
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. "m" is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"		/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (tsk->thread.fpu.has_fpu));
-+	if (unlikely(static_cpu_has(X86_FEATURE_FXSAVE_LEAK))) {
-+		asm volatile(
-+			"fnclex\n\t"
-+			"emms\n\t"
-+			"fildl %P[addr]"	/* set F?P to defined value */
-+			: : [addr] "m" (tsk->thread.fpu.has_fpu));
-+	}
- 
- 	return fpu_restore_checking(&tsk->thread.fpu);
- }
+diff --git a/arch/powerpc/include/asm/exception-64s.h b/arch/powerpc/include/asm/exception-64s.h
+index 88e0825..7d8f88e 100644
+--- a/arch/powerpc/include/asm/exception-64s.h
++++ b/arch/powerpc/include/asm/exception-64s.h
+@@ -210,7 +210,7 @@ do_kvm_##n:								\
+ 	subi	r1,r1,INT_FRAME_SIZE;	/* alloc frame on kernel stack	*/ \
+ 	beq-	1f;							   \
+ 	ld	r1,PACAKSAVE(r13);	/* kernel stack to use		*/ \
+-1:	cmpdi	cr1,r1,0;		/* check if r1 is in userspace	*/ \
++1:	cmpdi	cr1,r1,-INT_FRAME_SIZE;	/* check if r1 is in userspace	*/ \
+ 	blt+	cr1,3f;			/* abort if it is		*/ \
+ 	li	r1,(n);			/* will be reloaded later	*/ \
+ 	sth	r1,PACA_TRAP_SAVE(r13);					   \
 -- 
 1.8.3.2
 
