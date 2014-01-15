@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaAOVuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:50:32 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:61071 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaAOVua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:50:30 -0500
+	id S1752687AbaAOVwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:52:04 -0500
+Received: from ozlabs.org ([203.10.76.45]:54078 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752498AbaAOVv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 16:51:57 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: powerpc: possible access beyond TASK_SIZE in start_thread
+In-Reply-To: <40484806.5780.1389328452206.JavaMail.zimbra@efficios.com>
+References: <40484806.5780.1389328452206.JavaMail.zimbra@efficios.com>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 15 Jan 2014 15:26:00 +1030
+Message-ID: <87bnzdx2qn.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <126550032.20140115203605@eikelenboom.it>
-References: <1389499841-6097-1-git-send-email-linux@eikelenboom.it>
- <XNM1$9$0$4$$3$3$7$A$9006858U52d4d109@hitachi.com> <6310129377.20140114162641@eikelenboom.it>
- <XNM1$9$0$4$$3$3$7$A$9006860U52d614ca@hitachi.com> <126550032.20140115203605@eikelenboom.it>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 15 Jan 2014 14:50:09 -0700
-Message-ID: <CAErSpo7Bjo3rVCnuf9fkKc=T33Z5ZBzS+nHOBqDDKt1j4u0yWg@mail.gmail.com>
-Subject: Re: In "pci_fixup_video" check if this is or should be the primary
- video devi
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: eiichiro.oiwa.nm@hitachi.com, Dave Airlie <airlied@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 12:36 PM, Sander Eikelenboom
-<linux@eikelenboom.it> wrote:
-> ...
-> And that's just what my patch does ..
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> writes:
+> Hi Rusty,
 >
-> +       if (!vga_default_device() || pdev == vga_default_device()) {
->
-> If we don't know the vga_default_device ... because we don't have that knowlegde
-> or
-> if this is actually the vga_default_device  ... because we do have that knowledge ..
->
-> and only then .. run the fixup code and set this device as the vga_default_device
->
->
-> So this change actually makes the code adhere to the comment already above it .. saying it should only be applied to the vga_default_device aka
-> boot video device.
->
-> Also added Bjorn and linux-pci to the CC .. should have done that right away ..
-> sorry for that.
+> I was looking at the diff between kernel v3.12 and recent master (after 3.13-rc7),
+> and noticed that in the following commit:
 
-Can you resend your patch to linux-pci?  I don't think it made it there.
+Cool!
 
-Bjorn
+        I just moved the code, so any problem exists before this, too.
+
+> commit 94af3abf995b17f6a008b00152c94841242ec6c7
+> Author: Rusty Russell <rusty@rustcorp.com.au>
+> Date:   Wed Nov 20 22:15:02 2013 +1100
+>
+>     powerpc: ELF2 binaries launched directly.
+>
+> on powerpc, those lines appear in start_thread():
+>
+> +                       /* start is a relocated pointer to the function
+> +                        * descriptor for the elf _start routine.  The first
+> +                        * entry in the function descriptor is the entry
+> +                        * address of _start and the second entry is the TOC
+> +                        * value we need to use.
+> +                        */
+> +                       __get_user(entry, (unsigned long __user *)start);
+> +                       __get_user(toc, (unsigned long __user *)start+1);
+>
+> Note the "__" before get_user(), which bypass any kind of validation on the
+> addresses.
+>
+> Amongst the callers, if we look at fs/binfmt_elf.c:load_elf_binary(), we see:
+>
+>                 elf_entry = loc->elf_ex.e_entry;
+>                 if (BAD_ADDR(elf_entry)) {
+>                         force_sig(SIGSEGV, current);
+>                         retval = -EINVAL;
+>                         goto out_free_dentry;
+>                 }
+>
+> and the elf_entry gets passed to start_thread().
+>
+> If we craft a binary with elf_entry address of
+>
+> TASK_SIZE - 1  (1 byte before TASK_SIZE), then I think we could make both
+> __get_user() calls access data beyond TASK_SIZE, because elf_entry address
+> is verified, but there is no validation on its range AFAIU. Is it expected ?
+> Am I missing something ?
+
+Yes, looks like we can read the first 15 bytes of kernel space.  That's
+not likely to be interesting, but we should probably check anyway.
+
+Thanks!
+Rusty.
+===
+Subject: powerpc: don't allow entry point to be read from kernel.
+
+Mathieu points out that while start is checked, it could be TASK_SIZE-1,
+which means this code could read the first 15 bytes of kernel space.
+That's text for now, but let's be paranoid.
+
+start_thread() doesn't have a return value, so easiest to use get_user:
+you'll get a jump to zero if it fails.
+
+Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 4a96556fd2d4..b4ca298a5536 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -1113,8 +1113,8 @@ void start_thread(struct pt_regs *regs, unsigned long start, unsigned long sp)
+ 			 * address of _start and the second entry is the TOC
+ 			 * value we need to use.
+ 			 */
+-			__get_user(entry, (unsigned long __user *)start);
+-			__get_user(toc, (unsigned long __user *)start+1);
++			get_user(entry, (unsigned long __user *)start);
++			get_user(toc, (unsigned long __user *)start+1);
+ 
+ 			/* Check whether the e_entry function descriptor entries
+ 			 * need to be relocated before we can use them.
