@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaAOWGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:06:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41423 "EHLO
+	id S1754619AbaAOWGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:06:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41420 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220AbaAOWA2 (ORCPT
+	with ESMTP id S1754218AbaAOWA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:00:28 -0500
+	Wed, 15 Jan 2014 17:00:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 091/166] mm: numa: clear numa hinting information on mprotect
-Date: Wed, 15 Jan 2014 13:51:45 -0800
-Message-Id: <1389822780-4729-92-git-send-email-kamal@canonical.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 044/166] ARM: pxa: tosa: fix keys mapping
+Date: Wed, 15 Jan 2014 13:50:58 -0800
+Message-Id: <1389822780-4729-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -29,51 +28,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit 1667918b6483b12a6496bf54151b827b8235d7b1 upstream.
+commit 506cac15ac86f204b83e3cfccde73eeb4e7c5f34 upstream.
 
-On a protection change it is no longer clear if the page should be still
-accessible.  This patch clears the NUMA hinting fault bits on a
-protection change.
+When converting from tosa-keyboard driver to matrix keyboard, tosa keys
+received extra 1 column shift. Replace that with correct values to make
+keyboard work again.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: f69a6548c9d5 ('[ARM] pxa/tosa: make use of the matrix keypad driver')
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c | 2 ++
- mm/mprotect.c    | 2 ++
- 2 files changed, 4 insertions(+)
+ arch/arm/mach-pxa/tosa.c | 102 +++++++++++++++++++++++------------------------
+ 1 file changed, 51 insertions(+), 51 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 594b3c1..a67726d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1504,6 +1504,8 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 		ret = 1;
- 		if (!prot_numa) {
- 			entry = pmdp_get_and_clear(mm, addr, pmd);
-+			if (pmd_numa(entry))
-+				entry = pmd_mknonnuma(entry);
- 			entry = pmd_modify(entry, newprot);
- 			ret = HPAGE_PMD_NR;
- 			BUG_ON(pmd_write(entry));
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 79abf13..c477655 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -56,6 +56,8 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+diff --git a/arch/arm/mach-pxa/tosa.c b/arch/arm/mach-pxa/tosa.c
+index 233629e..c7ff6d4 100644
+--- a/arch/arm/mach-pxa/tosa.c
++++ b/arch/arm/mach-pxa/tosa.c
+@@ -424,57 +424,57 @@ static struct platform_device tosa_power_device = {
+  * Tosa Keyboard
+  */
+ static const uint32_t tosakbd_keymap[] = {
+-	KEY(0, 2, KEY_W),
+-	KEY(0, 6, KEY_K),
+-	KEY(0, 7, KEY_BACKSPACE),
+-	KEY(0, 8, KEY_P),
+-	KEY(1, 1, KEY_Q),
+-	KEY(1, 2, KEY_E),
+-	KEY(1, 3, KEY_T),
+-	KEY(1, 4, KEY_Y),
+-	KEY(1, 6, KEY_O),
+-	KEY(1, 7, KEY_I),
+-	KEY(1, 8, KEY_COMMA),
+-	KEY(2, 1, KEY_A),
+-	KEY(2, 2, KEY_D),
+-	KEY(2, 3, KEY_G),
+-	KEY(2, 4, KEY_U),
+-	KEY(2, 6, KEY_L),
+-	KEY(2, 7, KEY_ENTER),
+-	KEY(2, 8, KEY_DOT),
+-	KEY(3, 1, KEY_Z),
+-	KEY(3, 2, KEY_C),
+-	KEY(3, 3, KEY_V),
+-	KEY(3, 4, KEY_J),
+-	KEY(3, 5, TOSA_KEY_ADDRESSBOOK),
+-	KEY(3, 6, TOSA_KEY_CANCEL),
+-	KEY(3, 7, TOSA_KEY_CENTER),
+-	KEY(3, 8, TOSA_KEY_OK),
+-	KEY(3, 9, KEY_LEFTSHIFT),
+-	KEY(4, 1, KEY_S),
+-	KEY(4, 2, KEY_R),
+-	KEY(4, 3, KEY_B),
+-	KEY(4, 4, KEY_N),
+-	KEY(4, 5, TOSA_KEY_CALENDAR),
+-	KEY(4, 6, TOSA_KEY_HOMEPAGE),
+-	KEY(4, 7, KEY_LEFTCTRL),
+-	KEY(4, 8, TOSA_KEY_LIGHT),
+-	KEY(4, 10, KEY_RIGHTSHIFT),
+-	KEY(5, 1, KEY_TAB),
+-	KEY(5, 2, KEY_SLASH),
+-	KEY(5, 3, KEY_H),
+-	KEY(5, 4, KEY_M),
+-	KEY(5, 5, TOSA_KEY_MENU),
+-	KEY(5, 7, KEY_UP),
+-	KEY(5, 11, TOSA_KEY_FN),
+-	KEY(6, 1, KEY_X),
+-	KEY(6, 2, KEY_F),
+-	KEY(6, 3, KEY_SPACE),
+-	KEY(6, 4, KEY_APOSTROPHE),
+-	KEY(6, 5, TOSA_KEY_MAIL),
+-	KEY(6, 6, KEY_LEFT),
+-	KEY(6, 7, KEY_DOWN),
+-	KEY(6, 8, KEY_RIGHT),
++	KEY(0, 1, KEY_W),
++	KEY(0, 5, KEY_K),
++	KEY(0, 6, KEY_BACKSPACE),
++	KEY(0, 7, KEY_P),
++	KEY(1, 0, KEY_Q),
++	KEY(1, 1, KEY_E),
++	KEY(1, 2, KEY_T),
++	KEY(1, 3, KEY_Y),
++	KEY(1, 5, KEY_O),
++	KEY(1, 6, KEY_I),
++	KEY(1, 7, KEY_COMMA),
++	KEY(2, 0, KEY_A),
++	KEY(2, 1, KEY_D),
++	KEY(2, 2, KEY_G),
++	KEY(2, 3, KEY_U),
++	KEY(2, 5, KEY_L),
++	KEY(2, 6, KEY_ENTER),
++	KEY(2, 7, KEY_DOT),
++	KEY(3, 0, KEY_Z),
++	KEY(3, 1, KEY_C),
++	KEY(3, 2, KEY_V),
++	KEY(3, 3, KEY_J),
++	KEY(3, 4, TOSA_KEY_ADDRESSBOOK),
++	KEY(3, 5, TOSA_KEY_CANCEL),
++	KEY(3, 6, TOSA_KEY_CENTER),
++	KEY(3, 7, TOSA_KEY_OK),
++	KEY(3, 8, KEY_LEFTSHIFT),
++	KEY(4, 0, KEY_S),
++	KEY(4, 1, KEY_R),
++	KEY(4, 2, KEY_B),
++	KEY(4, 3, KEY_N),
++	KEY(4, 4, TOSA_KEY_CALENDAR),
++	KEY(4, 5, TOSA_KEY_HOMEPAGE),
++	KEY(4, 6, KEY_LEFTCTRL),
++	KEY(4, 7, TOSA_KEY_LIGHT),
++	KEY(4, 9, KEY_RIGHTSHIFT),
++	KEY(5, 0, KEY_TAB),
++	KEY(5, 1, KEY_SLASH),
++	KEY(5, 2, KEY_H),
++	KEY(5, 3, KEY_M),
++	KEY(5, 4, TOSA_KEY_MENU),
++	KEY(5, 6, KEY_UP),
++	KEY(5, 10, TOSA_KEY_FN),
++	KEY(6, 0, KEY_X),
++	KEY(6, 1, KEY_F),
++	KEY(6, 2, KEY_SPACE),
++	KEY(6, 3, KEY_APOSTROPHE),
++	KEY(6, 4, TOSA_KEY_MAIL),
++	KEY(6, 5, KEY_LEFT),
++	KEY(6, 6, KEY_DOWN),
++	KEY(6, 7, KEY_RIGHT),
+ };
  
- 			if (!prot_numa) {
- 				ptent = ptep_modify_prot_start(mm, addr, pte);
-+				if (pte_numa(ptent))
-+					ptent = pte_mknonnuma(ptent);
- 				ptent = pte_modify(ptent, newprot);
- 				updated = true;
- 			} else {
+ static struct matrix_keymap_data tosakbd_keymap_data = {
 -- 
 1.8.3.2
 
