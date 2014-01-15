@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330AbaAOWLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:11:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41326 "EHLO
+	id S1754702AbaAOWLI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:11:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41325 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbaAOV7m (ORCPT
+	with ESMTP id S1754079AbaAOV7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 16:59:42 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Brian Carnes <bmcarnes@gmail.com>, Jean Delvare <khali@linux-fr.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 085/166] mm: clear pmd_numa before invalidating
-Date: Wed, 15 Jan 2014 13:51:39 -0800
-Message-Id: <1389822780-4729-86-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 046/166] hwmon: (w83l786ng) Fix fan speed control mode setting and reporting
+Date: Wed, 15 Jan 2014 13:51:00 -0800
+Message-Id: <1389822780-4729-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -29,48 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Brian Carnes <bmcarnes@gmail.com>
 
-commit 67f87463d3a3362424efcbe8b40e4772fd34fc61 upstream.
+commit cf7559bc053471f32373d71d04a9aa19e0b48d59 upstream.
 
-On x86, PMD entries are similar to _PAGE_PROTNONE protection and are
-handled as NUMA hinting faults.  The following two page table protection
-bits are what defines them
+The wrong mask is used, which causes some fan speed control modes
+(pwmX_enable) to be incorrectly reported, and some modes to be
+impossible to set.
 
-	_PAGE_NUMA:set	_PAGE_PRESENT:clear
+[JD: add subject and description.]
 
-A PMD is considered present if any of the _PAGE_PRESENT, _PAGE_PROTNONE,
-_PAGE_PSE or _PAGE_NUMA bits are set.  If pmdp_invalidate encounters a
-pmd_numa, it clears the present bit leaving _PAGE_NUMA which will be
-considered not present by the CPU but present by pmd_present.  The
-existing caller of pmdp_invalidate should handle it but it's an
-inconsistent state for a PMD.  This patch keeps the state consistent
-when calling pmdp_invalidate.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Brian Carnes <bmcarnes@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/pgtable-generic.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hwmon/w83l786ng.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index 0c8323f..eb900bb 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -166,6 +166,9 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm)
- void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
- 		     pmd_t *pmdp)
- {
-+	pmd_t entry = *pmdp;
-+	if (pmd_numa(entry))
-+		entry = pmd_mknonnuma(entry);
- 	set_pmd_at(vma->vm_mm, address, pmdp, pmd_mknotpresent(*pmdp));
- 	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
- }
+diff --git a/drivers/hwmon/w83l786ng.c b/drivers/hwmon/w83l786ng.c
+index 79710bc..c7514e0 100644
+--- a/drivers/hwmon/w83l786ng.c
++++ b/drivers/hwmon/w83l786ng.c
+@@ -511,7 +511,7 @@ store_pwm_enable(struct device *dev, struct device_attribute *attr,
+ 	mutex_lock(&data->update_lock);
+ 	reg = w83l786ng_read_value(client, W83L786NG_REG_FAN_CFG);
+ 	data->pwm_enable[nr] = val;
+-	reg &= ~(0x02 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
++	reg &= ~(0x03 << W83L786NG_PWM_ENABLE_SHIFT[nr]);
+ 	reg |= (val - 1) << W83L786NG_PWM_ENABLE_SHIFT[nr];
+ 	w83l786ng_write_value(client, W83L786NG_REG_FAN_CFG, reg);
+ 	mutex_unlock(&data->update_lock);
+@@ -777,7 +777,7 @@ static struct w83l786ng_data *w83l786ng_update_device(struct device *dev)
+ 			    ((pwmcfg >> W83L786NG_PWM_MODE_SHIFT[i]) & 1)
+ 			    ? 0 : 1;
+ 			data->pwm_enable[i] =
+-			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 2) + 1;
++			    ((pwmcfg >> W83L786NG_PWM_ENABLE_SHIFT[i]) & 3) + 1;
+ 			data->pwm[i] = w83l786ng_read_value(client,
+ 			    W83L786NG_REG_PWM[i]);
+ 		}
 -- 
 1.8.3.2
 
