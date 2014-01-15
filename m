@@ -1,64 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaAOJl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:41:28 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:55715 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaAOJlY (ORCPT
+	id S1752076AbaAOJol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:44:41 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:22655 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaAOJoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:41:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gerardo Di Iorio <arete74@gmail.com>, dev@linux-sunxi.org,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: sunxi: change the AllWinner A1X to sunxi
-Date: Wed, 15 Jan 2014 10:40:56 +0100
-Message-ID: <3612364.BZBltgonI0@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140115091006.GF3377@lukather>
-References: <20140109153404.GA21055@kvmhost> <20140115091006.GF3377@lukather>
+	Wed, 15 Jan 2014 04:44:38 -0500
+Message-ID: <52D65880.10301@atmel.com>
+Date: Wed, 15 Jan 2014 10:44:32 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cc4f5Bb/zk2pjq1RPDhStrG+gJdMkasScpBNhRr11Fl
- VrK7nyrbHX8Kzb4qDz8g4n9XtTQLzlsb6Vt8VheGX9BTSjaHGK
- SOP+s3ZOz0g8/kxFwh4nNXVJU+8ZuItWi5jJbzzEd5rZqrRnUW
- vlA2ZutDkNtoLnwSoP7nk1iobGGFSHwMpb+N8WRA14gY8eQalm
- 4XX7Q/tI+ByqPFR37dPn1EfmXUKzZhTYhMYlm8zPFf7MV7K6G0
- /L0CYEog7Gpv7lc14RhErF7A07GuBXssBr3BreGtqLXl59zRla
- fSu3tNgnklbuqHHXSnjw6s2XR4qNHf99srf371S02wR6Qx2epn
- splr0GpGKTYgTajvPtXQ=
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+CC: <b.brezillon@overkiz.com>, <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 06/12] at91: smc: Adds helper functions to validate
+ and clip the smc timings.
+References: <1389270709-32662-1-git-send-email-jjhiblot@traphandler.com> <1389270709-32662-7-git-send-email-jjhiblot@traphandler.com>
+In-Reply-To: <1389270709-32662-7-git-send-email-jjhiblot@traphandler.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 January 2014 10:10:06 Maxime Ripard wrote:
-> On Thu, Jan 09, 2014 at 04:34:04PM +0100, Gerardo Di Iorio wrote:
-> > Change the AllWinner A1X SOCs to Allwinner Sunxi SOCs
-> > 
-> > Signed-off-by: Gerardo Di Iorio <arete74@gmail.com>
-> > ---
-> >  arch/arm/mach-sunxi/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-> > index 547004c..adb2574 100644
-> > --- a/arch/arm/mach-sunxi/Kconfig
-> > +++ b/arch/arm/mach-sunxi/Kconfig
-> > @@ -1,5 +1,5 @@
-> >  config ARCH_SUNXI
-> > -       bool "Allwinner A1X SOCs" if ARCH_MULTI_V7
-> > +       bool "Allwinner Sunxi SOCs" if ARCH_MULTI_V7
+On 09/01/2014 13:31, Jean-Jacques Hiblot :
+> This patchs implememnts 2 functions to help with the configuration of a
+> chip-select's timing:
+> * sam9_smc_check_cs_configuration : checks that the values would fit in the
+>   registers.
+> * sam9_smc_clip_cs_configuration : clip the values to their maximum.
 > 
-> I wonder if the sunxi (apart the weird letter case) is actually
-> needed. Maybe we can just put "Allwinner SoCs" (it would be great if
-> you could fix the SoCs case too).
+> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+> ---
+>  arch/arm/mach-at91/include/mach/at91sam9_smc.h |  2 +
+>  arch/arm/mach-at91/sam9_smc.c                  | 77 ++++++++++++++++++++++++++
+>  2 files changed, 79 insertions(+)
+> 
+> diff --git a/arch/arm/mach-at91/include/mach/at91sam9_smc.h b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
+> index c3e29311..615ac56 100644
+> --- a/arch/arm/mach-at91/include/mach/at91sam9_smc.h
+> +++ b/arch/arm/mach-at91/include/mach/at91sam9_smc.h
+> @@ -47,6 +47,8 @@ extern void sam9_smc_read_mode(int id, int cs, struct sam9_smc_config *config);
+>  extern void sam9_smc_write_mode(int id, int cs, struct sam9_smc_config *config);
+>  extern void sam9_smc_cs_read(void __iomem *, struct sam9_smc_config *config);
+>  extern void sam9_smc_cs_configure(void __iomem *, struct sam9_smc_config *cfg);
+> +extern int sam9_smc_check_cs_configuration(struct sam9_smc_config *config);
+> +extern void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config);
+>  #endif
+>  
+>  #define AT91_SMC_SETUP		0x00				/* Setup Register for CS n */
+> diff --git a/arch/arm/mach-at91/sam9_smc.c b/arch/arm/mach-at91/sam9_smc.c
+> index d7a6156..fe3c492 100644
+> --- a/arch/arm/mach-at91/sam9_smc.c
+> +++ b/arch/arm/mach-at91/sam9_smc.c
+> @@ -23,6 +23,83 @@
+>  
+>  static void __iomem *smc_base_addr[2];
+>  
+> +static int count_trailing_zeroes(u32 x)
 
-If you want to have exact naming, try to find something that excludes the
-old Sun3i (F20) and earlier chips (unless someone is already planning
-to work on them). Maybe also mention the "Boxchip" name, although that
-seems to be falling out of use these days.
+Don't we have something generic for this?
 
-	Arnd
+Check include/asm-generic/bitops/count_zeros.h
 
+> +{
+> +	int ret = 0;
+> +	if (!(x & 0xFFFF)) {
+> +		ret += 16;
+> +		x = x >> 16;
+> +	}
+> +	if (!(x & 0xFF)) {
+> +		ret += 8;
+> +		x = x >> 8;
+> +	}
+> +	if (!(x & 0xF)) {
+> +		ret += 4;
+> +		x = x >> 4;
+> +	}
+> +	if (!(x & 0x3)) {
+> +		ret += 2;
+> +		x = x >> 2;
+> +	}
+> +	if (!(x & 0x1)) {
+> +		ret += 1;
+> +		x = x >> 1;
+> +	}
+> +	if (!(x & 0x1))
+> +		ret += 1;
+> +
+> +	return ret;
+> +}
+> +
+> +
+> +#define __CHECK_CFG(config, x, y)  do {\
+> +	if (x##_(config->y) > x) {\
+> +		pr_debug("error: %s (0x%x) is out of range\n", #y,\
+> +			config->y >> count_trailing_zeroes(x));\
+> +		return -EINVAL;\
+> +		} \
+> +	} while (0)
+
+I do not like the use of macro for this. You can convert them to
+functions and it would increase readability. I am pretty confident that
+gcc will optimize it so that is won't impact performance.
+
+> +int sam9_smc_check_cs_configuration(struct sam9_smc_config *config)
+> +{
+> +	__CHECK_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
+> +	__CHECK_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
+> +	__CHECK_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
+> +	__CHECK_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
+> +	__CHECK_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
+> +	__CHECK_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
+> +	__CHECK_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
+> +	__CHECK_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
+> +	__CHECK_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
+> +	__CHECK_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
+> +	__CHECK_CFG(config, AT91_SMC_TDF, tdf_cycles);
+> +	return 0;
+> +}
+> +
+> +#define __CLIP_CFG(config, x, y)  do {\
+> +	if (x##_(config->y) > x) {\
+> +		config->y = x >> count_trailing_zeroes(x);\
+> +		pr_debug("clipping %s to %d\n", #y, config->y);\
+> +		} \
+> +	} while (0)
+
+Ditto.
+
+> +
+> +void sam9_smc_clip_cs_configuration(struct sam9_smc_config *config)
+> +{
+> +	__CLIP_CFG(config, AT91_SMC_NWESETUP, nwe_setup);
+> +	__CLIP_CFG(config, AT91_SMC_NCS_WRSETUP, ncs_write_setup);
+> +	__CLIP_CFG(config, AT91_SMC_NRDSETUP, nrd_setup);
+> +	__CLIP_CFG(config, AT91_SMC_NCS_RDSETUP, ncs_read_setup);
+> +	__CLIP_CFG(config, AT91_SMC_NWEPULSE, nwe_pulse);
+> +	__CLIP_CFG(config, AT91_SMC_NCS_WRPULSE, ncs_write_pulse);
+> +	__CLIP_CFG(config, AT91_SMC_NRDPULSE, nrd_pulse);
+> +	__CLIP_CFG(config, AT91_SMC_NCS_RDPULSE, ncs_read_pulse);
+> +	__CLIP_CFG(config, AT91_SMC_NWECYCLE, write_cycle);
+> +	__CLIP_CFG(config, AT91_SMC_NRDCYCLE, read_cycle);
+> +	__CLIP_CFG(config, AT91_SMC_TDF, tdf_cycles);
+> +
+> +}
+> +
+>  static void sam9_smc_cs_write_mode(void __iomem *base,
+>  					struct sam9_smc_config *config)
+>  {
+> 
+
+
+-- 
+Nicolas Ferre
