@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbaAOJQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:16:50 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:21264 "EHLO
+	id S1752086AbaAOJRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:17:18 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:21424 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451AbaAOJQ0 (ORCPT
+	with ESMTP id S1750941AbaAOJRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:16:26 -0500
-X-AuditID: cbfee691-b7efc6d0000039d3-84-52d651e95f53
+	Wed, 15 Jan 2014 04:17:15 -0500
+X-AuditID: cbfee691-b7efc6d0000039d3-c4-52d6521922f0
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
         herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 6/8 v4] ARM: dts: exynos5250/5420: add dt node for sss module
-Date: Wed, 15 Jan 2014 14:46:37 +0530
-Message-id: <1389777397-15193-1-git-send-email-ch.naveen@samsung.com>
+        cpgs@samsung.com, tomasz.figa@gmail.com
+Subject: [PATCH 7/8 v4] crypto:s5p-sss: validate iv before memcpy
+Date: Wed, 15 Jan 2014 14:47:27 +0530
+Message-id: <1389777447-15225-1-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
 References: <1389243640-13282-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkSvdl4LUgg2NH2C1eHtK06H4lY9G7
-	4Cqbxf17P5ksLu+aw2Yx4/w+JotF2/4zW6za9YfR4uycQ0wOnB47Z91l99h2QNWjb8sqRo/P
-	m+QCWKK4bFJSczLLUov07RK4Mi40rGMuOMdT8fj5HqYGxu1cXYycHBICJhJ/vk9gg7DFJC7c
-	Ww9kc3EICSxllPh0/jAbTNHpie2sEIlFjBL73y2AqupnkujeepEZpIpNwEzi4KLV7CC2iICz
-	xO/mNWAdzAIHGCXWTT8FNkpYwFdi2bbjYDaLgKrEx9ZTLCA2r4CrRPOGBYxdjBxA6xQk5kyy
-	AQlzCrhJbL38BGymEFDJnBNXmSEuWsYu8aSNE2KMgMS3yYdYIFplJTYdgCqRlDi44gbLBEbh
-	BYwMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECQ/30v2cTdzDeP2B9iDEZaNxEZinR5Hxg
-	rOSVxBsamxlZmJqYGhuZW5qRJqwkzpv+KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6OY
-	zu1V79Wck7qe201ynLx13k/fDr3AO4bHtlTe4bqV+PjYnJ+T2uRX/5Cf5vllVtX+BYIPlR7r
-	X9q/RqTprdcey6lrKt+aBcqWP2bhldn22Xilxs0qwaXma3kSORh6tieVvTq0bQfXpMx9WT9N
-	VO+HW17ZMN+wO/7jssANzq/8IrLFbfdf26utxFKckWioxVxUnAgAG4NfsosCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd2XgdeCDE6wWrw8pGnR/UrGonfB
-	VTaL+/d+Mllc3jWHzWLG+X1MFou2/We2WLXrD6PF2TmHmBw4PXbOusvuse2AqkffllWMHp83
-	yQWwRDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA
-	HaKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzLjQsI654BxPxePne5ga
-	GLdzdTFyckgImEicntjOCmGLSVy4t56ti5GLQ0hgEaPE/ncLoJx+JonurReZQarYBMwkDi5a
-	zQ5iiwg4S/xuXsMKUsQscIBRYt30U2wgCWEBX4ll246D2SwCqhIfW0+xgNi8Aq4SzRsWMHYx
-	cgCtU5CYM8kGJMwp4Cax9fITsJlCQCVzTlxlnsDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66
-	XnJ+7iZGcCQ9k9rBuLLB4hCjAAejEg/vj/CrQUKsiWXFlbmHGCU4mJVEeKV8rgUJ8aYkVlal
-	FuXHF5XmpBYfYkwGOmois5Rocj4wyvNK4g2NTcxNjU0tTSxMzCxJE1YS5z3Qah0oJJCeWJKa
-	nZpakFoEs4WJg1OqgbHSTfuyvNhSKemr7Ps+fg356SQwP7jK//bbvQ8luJfGHJpxafPfyBX+
-	eY+6lgSXZYUXLl3StLp933SOB4Yv57z/N/d1vZl/+lklKf+9+fPXrU4+HaYz2/yV6h4/BYVl
-	lxckLpKNWah0Xi4m/35vSF5S7OyNNX+COAuK3PSuLntiIqv5ekIz0wQlluKMREMt5qLiRAAp
-	J47e6AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsWyRsSkTlcy6FqQQdccFYuXhzQtul/JWNy/
+	95PJ4vKuOWwWM87vY7JYtO0/s8WqXX8YLc7OOcTkwOGxc9Zddo9tB1Q9+rasYvT4vEkugCWK
+	yyYlNSezLLVI3y6BK6Pp2nWmgilsFZ933GFpYOxi7WLk5JAQMJHYs+AkG4QtJnHh3nogm4tD
+	SGApo8T6MzeAijjAip6skYSIL2KUWPrrPlRRP5PE80PvwLrZBMwkDi5azQ5iiwg4S/xuXsMK
+	UsQsMIdR4uGSdhaQhLCAo8TeU4/BVrMIqEqsOP2BCcTmFXCVuHV6GzPENgWJOZNsQMKcAm4S
+	Wy8/AZspBFQy58RVZohL57FLfPmWADFGQOLb5EMsEK2yEpsOQJVIShxccYNlAqPwAkaGVYyi
+	qQXJBcVJ6UWmesWJucWleel6yfm5mxiB4X3637OJOxjvH7A+xJgMNG4is5Rocj4wPvJK4g2N
+	zYwsTE1MjY3MLc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbH20KTwhtK4
+	Es85PNd+S+z4nO60Ln1buFr3A6O7nhn7Vz76/Vm8/1fyB7F7Suk54RFS3gLnPmhuZkqZcW7/
+	Q8lUs/jdMQyZugmTjTMs0zauSeK1Wu6WqvLi6u57SaHXDFZ53HbqV2b/uVPkdbfJNO4r238G
+	tm/Tz7A+ciuHbYucrrb2Yf20FiWW4oxEQy3mouJEAPhOuWWFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jAV3JoGtBBvenyFi8PKRp0f1KxuL+
+	vZ9MFpd3zWGzmHF+H5PFom3/mS1W7frDaHF2ziEmBw6PnbPusntsO6Dq0bdlFaPH501yASxR
+	DYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBHKCmU
+	JeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzmq5dZyqYwlbxeccdlgbGLtYu
+	Rg4OCQETiSdrJLsYOYFMMYkL99azdTFycQgJLGKUWPrrPpTTzyTx/NA7NpAqNgEziYOLVrOD
+	2CICzhK/m9ewghQxC8xhlHi4pJ0FJCEs4Cix99RjVhCbRUBVYsXpD0wgNq+Aq8St09uYITYr
+	SMyZZAMS5hRwk9h6+QnYTCGgkjknrjJPYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93
+	EyM4fp5J7WBc2WBxiFGAg1GJh/dH+NUgIdbEsuLK3EOMEhzMSiK8Uj7XgoR4UxIrq1KL8uOL
+	SnNSiw8xJgMdNZFZSjQ5HxjbeSXxhsYm5qbGppYmFiZmlqQJK4nzHmi1DhQSSE8sSc1OTS1I
+	LYLZwsTBKdXAOMFb9bTc74tLdJQqZ77NMf3+y2QJz+t82+WnTzB6/TrFwlRfwmqUYW/u8iYi
+	kDd76kM3CYZXCaYnztXd5d6SWXy3zCIoSCBvGSvTvxlN+s5XWR+vfGqowpFzYPb8V/IfFzml
+	uW479HfzoX+O7HYh+6z8F3PsUfjnd7/j/F0OnfgpsrY5BR+blViKMxINtZiLihMBvcSYNuMC	AAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,59 +49,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the device tree node for SSS module
-found on Exynos5420 and Exynos5250
+This patch adds code to validate "iv" buffer before trying to
+memcpy the contents
 
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-TO: <linux-samsung-soc@vger.kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: <linux-crypto@vger.kernel.org>
 ---
 Changes since v3:
-1. Modified the SSS clock ID as per dt-bindings for Exynos5250 in
-   samsung-clk.git tree.
+None
 
- arch/arm/boot/dts/exynos5250.dtsi |    8 ++++++++
- arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
- 2 files changed, 18 insertions(+)
+ drivers/crypto/s5p-sss.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index c341e55..1d249df 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -704,4 +704,12 @@
- 		io-channel-ranges;
- 		status = "disabled";
- 	};
-+
-+	sss@10830000 {
-+		compatible = "samsung,exynos4210-secss";
-+		reg = <0x10830000 0x10000>;
-+		interrupts = <0 112 0>;
-+		clocks = <&clock 348>;
-+		clock-names = "secss";
-+	};
- };
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index 11dd202..56a3f3e 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -652,4 +652,14 @@
- 		clocks = <&clock 319>, <&clock 318>;
- 		clock-names = "tmu_apbif", "tmu_triminfo_apbif";
- 	};
-+
-+	sss@10830000 {
-+		compatible = "samsung,exynos4210-secss";
-+		reg = <0x10830000 0x10000>;
-+		interrupts = <0 112 0>;
-+		clocks = <&clock 471>;
-+		clock-names = "secss";
-+		samsung,power-domain = <&g2d_pd>;
-+	};
-+
- };
+diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
+index 69130b2..f7c66c7 100644
+--- a/drivers/crypto/s5p-sss.c
++++ b/drivers/crypto/s5p-sss.c
+@@ -380,7 +380,8 @@ static void s5p_set_aes(struct s5p_aes_dev *dev,
+ {
+ 	void __iomem *keystart;
+ 
+-	memcpy(dev->aes_ioaddr + SSS_REG_AES_IV_DATA (0), iv, 0x10);
++	if (iv)
++		memcpy(dev->aes_ioaddr + SSS_REG_AES_IV_DATA (0), iv, 0x10);
+ 
+ 	if (keylen == AES_KEYSIZE_256)
+ 		keystart = dev->aes_ioaddr + SSS_REG_AES_KEY_DATA(0);
 -- 
 1.7.9.5
 
