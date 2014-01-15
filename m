@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaAOWUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:20:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41137 "EHLO
+	id S1754846AbaAOWUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:20:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41139 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801AbaAOV6j (ORCPT
+	with ESMTP id S1753717AbaAOV6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 16:58:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 068/166] drm/radeon: Fix sideport problems on certain RS690 boards
-Date: Wed, 15 Jan 2014 13:51:22 -0800
-Message-Id: <1389822780-4729-69-git-send-email-kamal@canonical.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 104/166] scripts/link-vmlinux.sh: only filter kernel symbols for arm
+Date: Wed, 15 Jan 2014 13:51:58 -0800
+Message-Id: <1389822780-4729-105-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,47 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 8333f0fe133be420ce3fcddfd568c3a559ab274e upstream.
+commit 7122c3e9154b5d9a7422f68f02d8acf050fad2b0 upstream.
 
-Some RS690 boards with 64MB of sideport memory show up as
-having 128MB sideport + 256MB of UMA.  In this case,
-just skip the sideport memory and use UMA.  This fixes
-rendering corruption and should improve performance.
+Actually CONFIG_PAGE_OFFSET isn't same with PAGE_OFFSET, so
+it isn't easy to figue out PAGE_OFFSET defined in header
+file from scripts.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=35457
+Because CONFIG_PAGE_OFFSET may not be defined in some ARCHs(
+64bit ARCH), or defined as bogus value in !MMU case, so
+this patch only applys the filter on ARM when CONFIG_PAGE_OFFSET
+is defined as the original problem is only on ARM.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ kamal: backport to 3.8 (context) ]
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Fixes: f6537f2f0eba4eba3354e48dbe3047db6d8b6254
+Singed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/rs690.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ scripts/link-vmlinux.sh | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
-index fad6633..213381f 100644
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -160,6 +160,17 @@ static void rs690_mc_init(struct radeon_device *rdev)
- 	base = RREG32_MC(R_000100_MCCFG_FB_LOCATION);
- 	base = G_000100_MC_FB_START(base) << 16;
- 	rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
-+	/* Some boards seem to be configured for 128MB of sideport memory,
-+	 * but really only have 64MB.  Just skip the sideport and use
-+	 * UMA memory.
-+	 */
-+	if (rdev->mc.igp_sideport_enabled &&
-+	    (rdev->mc.real_vram_size == (384 * 1024 * 1024))) {
-+		base += 128 * 1024 * 1024;
-+		rdev->mc.real_vram_size -= 128 * 1024 * 1024;
-+		rdev->mc.mc_vram_size = rdev->mc.real_vram_size;
-+	}
-+
- 	rs690_pm_info(rdev);
- 	radeon_vram_location(rdev, &rdev->mc, base);
- 	rdev->mc.gtt_base_align = rdev->mc.gtt_size - 1;
+diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
+index 5716ba1..d6a4eab 100644
+--- a/scripts/link-vmlinux.sh
++++ b/scripts/link-vmlinux.sh
+@@ -83,7 +83,9 @@ kallsyms()
+ 		kallsymopt="${kallsymopt} --all-symbols"
+ 	fi
+ 
+-	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++	if [ -n "${CONFIG_ARM}" ] && [ -n "${CONFIG_PAGE_OFFSET}" ]; then
++		kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
++	fi
+ 
+ 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
+ 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
 -- 
 1.8.3.2
 
