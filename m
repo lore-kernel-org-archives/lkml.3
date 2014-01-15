@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaAOOmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:42:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:15839 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037AbaAOOml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:42:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,663,1384329600"; 
-   d="scan'208";a="459229753"
-Message-ID: <52D69E57.5020208@intel.com>
-Date: Wed, 15 Jan 2014 22:42:31 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1752129AbaAOOpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:45:22 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:24016 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaAOOpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:45:20 -0500
+X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
+   d="scan'208";a="90979851"
+Date: Wed, 15 Jan 2014 14:45:19 +0000
+From: Wei Liu <wei.liu2@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next] xen-netback: Rework rx_work_todo
+Message-ID: <20140115144519.GO5698@zion.uk.xensource.com>
+References: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com>
+ <20140115103707.GI5698@zion.uk.xensource.com>
+ <52D67536.4030106@citrix.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fcr@adinet.com.uy, l@dorileo.org, "Zheng, Lv" <lv.zheng@intel.com>,
-        robert.moore@intel.com
-Subject: Re: [PATCH V2] ACPI/Battery: Add a _BIX quirk for NEC LZ750/LS
-References: <1389019837-13619-1-git-send-email-tianyu.lan@intel.com> <5255063.SeYbBZqxVQ@vostro.rjw.lan> <20140114212406.GA25438@srcf.ucam.org> <4100200.O09E65sAKi@vostro.rjw.lan>
-In-Reply-To: <4100200.O09E65sAKi@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <52D67536.4030106@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 06:17 AM, Rafael J. Wysocki wrote:
-> On Tuesday, January 14, 2014 09:24:06 PM Matthew Garrett wrote:
->> On Tue, Jan 14, 2014 at 10:37:02PM +0100, Rafael J. Wysocki wrote:
->>> On Tuesday, January 14, 2014 04:06:01 PM Matthew Garrett wrote:
->>>> On Mon, Jan 06, 2014 at 11:25:53PM +0100, Rafael J. Wysocki wrote:
->>>>
->>>>> Queued up as a fix for 3.13 (I fixed up the indentation).
->>>>
->>>> Ah, sorry, I missed this chunk of the thread. If the system provides
->>>> valid _BIF data then we should possibly just fall back to that rather
->>>> than adding another quirk table.
->>>
->>> The problem is to know that _BIX is broken.  If we could figure that out
->>> upfront, we woulnd't need the quirk table in any case.
->>
->> It's obvious that it is in this case - the package is the wrong size.
->
-> Then Tianyu should be able to come up with a better fix relatively easily. :-)
->
-Hi Rafael&Matthew:
+On Wed, Jan 15, 2014 at 11:47:02AM +0000, Zoltan Kiss wrote:
+> On 15/01/14 10:37, Wei Liu wrote:
+> >On Tue, Jan 14, 2014 at 07:28:39PM +0000, Zoltan Kiss wrote:
+> >>The recent patch to fix receive side flow control (11b57f) solved the spinning
+> >>thread problem, however caused an another one. The receive side can stall, if:
+> >>- xenvif_rx_action sets rx_queue_stopped to false
+> >>- interrupt happens, and sets rx_event to true
+> >>- then xenvif_kthread sets rx_event to false
+> >>
+> >
+> >If you mean "rx_work_todo" returns false.
+> >
+> >In this case
+> >
+> >(!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) || vif->rx_event;
+> >
+> >can still be true, can't it?
+> Sorry, I should wrote rx_queue_stopped to true
+> 
 
-	I think we can evaluate _BIX before setting ACPI_BATTERY_XINFO_PRESENT 
-flag. CA routine(acpi_ns_check_package) will check the package size and 
-return error code when there is wrong size package.
+In this case, if rx_queue_stopped is true, then we're expecting frontend
+to notify us, right?
 
-Something like this.
+rx_queue_stopped is set to true if we cannot make any progress to queue
+packet into the ring. In that situation we can expect frontend will send
+notification to backend after it goes through the backlog in the ring.
+That means rx_event is set to true, and rx_work_todo is true again. So
+the ring is actually not stalled in this case as well. Did I miss
+something?
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index fbf1ace..e98fa83 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -770,7 +770,7 @@ static int acpi_battery_add(struct acpi_device *device)
-         device->driver_data = battery;
-         mutex_init(&battery->lock);
-         mutex_init(&battery->sysfs_lock);
--       if (acpi_has_method(battery->device->handle, "_BIX"))
-+       if (acpi_evaluate_object(device->handle, "_BIX", NULL, &buffer);)
-                 set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
-         result = acpi_battery_update(battery);
-         if (result)
-
-
--- 
-Best Regards
-Tianyu Lan
+> >
+> >>Also, through rx_event a malicious guest can force the RX thread to spin. This
+> >>patch ditch that two variable, and rework rx_work_todo. If the thread finds it
+> >
+> >This seems to be a bigger problem. Can you elaborate?
+> My mistake too. I forgot that rx_action set it to false, so it's not
+> really a spinning. However the thread should still run
+> xenvif_rx_action to figure out there is no space in the ring before
+> it sets rx_event to false. In my patch we can quit earlier.
+> 
+> Zoli
