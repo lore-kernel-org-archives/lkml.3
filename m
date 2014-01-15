@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaAOPIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:08:54 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:18668 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaAOPIw (ORCPT
+	id S1752199AbaAOPJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:09:41 -0500
+Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:55072 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751783AbaAOPJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:08:52 -0500
-X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
-   d="scan'208";a="90991094"
-Message-ID: <52D6A45C.1060705@citrix.com>
-Date: Wed, 15 Jan 2014 15:08:12 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 10:09:37 -0500
+Message-ID: <52D6A48D.4080302@overkiz.com>
+Date: Wed, 15 Jan 2014 16:09:01 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>
-CC: <ian.campbell@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next] xen-netback: Rework rx_work_todo
-References: <1389727719-21439-1-git-send-email-zoltan.kiss@citrix.com> <20140115103707.GI5698@zion.uk.xensource.com> <52D67536.4030106@citrix.com> <20140115144519.GO5698@zion.uk.xensource.com> <52D6A0B9.2030204@citrix.com> <20140115145951.GP5698@zion.uk.xensource.com>
-In-Reply-To: <20140115145951.GP5698@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <20140108183418.GA12358@obsidianresearch.com> <52CDA032.3010804@overkiz.com> <20140108191339.GB12358@obsidianresearch.com> <52CE5F82.6070802@overkiz.com> <20140109173505.GB8899@obsidianresearch.com>
+In-Reply-To: <20140109173505.GB8899@obsidianresearch.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 11857414870855940330
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/14 14:59, Wei Liu wrote:
-> On Wed, Jan 15, 2014 at 02:52:41PM +0000, Zoltan Kiss wrote:
->> On 15/01/14 14:45, Wei Liu wrote:
->>>>>> The recent patch to fix receive side flow control (11b57f) solved the spinning
->>>>>>>>> thread problem, however caused an another one. The receive side can stall, if:
->>>>>>>>> - xenvif_rx_action sets rx_queue_stopped to false
->>>>>>>>> - interrupt happens, and sets rx_event to true
->>>>>>>>> - then xenvif_kthread sets rx_event to false
->>>>>>>>>
->>>>>>>
->>>>>>> If you mean "rx_work_todo" returns false.
->>>>>>>
->>>>>>> In this case
->>>>>>>
->>>>>>> (!skb_queue_empty(&vif->rx_queue) && !vif->rx_queue_stopped) || vif->rx_event;
->>>>>>>
->>>>>>> can still be true, can't it?
->>>>> Sorry, I should wrote rx_queue_stopped to true
->>>>>
->>> In this case, if rx_queue_stopped is true, then we're expecting frontend
->>> to notify us, right?
->>>
->>> rx_queue_stopped is set to true if we cannot make any progress to queue
->>> packet into the ring. In that situation we can expect frontend will send
->>> notification to backend after it goes through the backlog in the ring.
->>> That means rx_event is set to true, and rx_work_todo is true again. So
->>> the ring is actually not stalled in this case as well. Did I miss
->>> something?
->>>
->>
->> Yes, we expect the guest to notify us, and it does, and we set
->> rx_event to true (see second point), but then the thread set it to
->> false (see third point). Talking with Paul, another solution could
->> be to set rx_event false before calling xenvif_rx_action. But using
->> rx_last_skb_slots makes it quicker for the thread to see if it
->> doesn't have to do anything.
->>
+Hello Jason,
+
+On 09/01/2014 18:35, Jason Gunthorpe wrote:
+> On Thu, Jan 09, 2014 at 09:36:18AM +0100, boris brezillon wrote:
 >
-> OK, this is a better explaination. So actually there's no bug in the
-> original implementation and your patch is sort of an improvement.
+>>> You might want to check if you can boil down the DT timings from the
+>>> huge list to just an ONFI mode number..
+>> Sure, but the sunxi driver needs at least 19 of them...
+> So does mvebu's NAND driver..
 >
-> Could you send a new version of this patch with relevant information in
-> commit message? Talking to people offline is faster, but I would like to
-> have public discussion and relevant information archived in a searchable
-> form. Thanks.
+> What I ment was you could have a
+>
+>    onfi,nand-timing-mode = 0
+>
+> in the DT. Each of the modes defines all ~19 parameters, higher modes
+> are faster.
+>
+> Pick a mode value that fits all the parameters of the connected
+> non-ONFI flash.
+>
+> This would be instead of defining each parameter
+> individually.. Provide some helpers to convert from a onfi mode number
+> to all the onfi defined timing parameters so that drivers can
+> configure the HW..
 
-No, there is a bug in the original implementation:
-- [THREAD] xenvif_rx_action sets rx_queue_stopped to true
-- [INTERRUPT] interrupt happens, and sets rx_event to true
-- [THREAD] then xenvif_kthread sets rx_event to false
-- [THREAD] rx_work_todo never returns true anymore
+Are you suggesting we should provide a function that converts these
+modes into a nand_timings struct, or just use the timing modes and
+let the NAND controller drivers configure its IP accordingly ?
 
-I will update the explanation and send in the patch again.
+I found the ONFI timing tables in this document:
 
-Zoli
+www.*onfi*.org/~/media/*ONFI*/specs/*onfi*_3_1_spec.pdf‎ (chapter 4.16).
+
+I suppose my nand_timings struct should use the names described
+page 110-111 (at least if we decide to use nand_timings and not
+nand_timing_modes), right ?
+
+Best Regards,
+
+Boris
+
+>
+> Jason
+
