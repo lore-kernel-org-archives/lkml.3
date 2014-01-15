@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450AbaAOEMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 23:12:53 -0500
-Received: from forward1h.mail.yandex.net ([84.201.187.146]:33112 "EHLO
-	forward1h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaAOEMt (ORCPT
+	id S1751488AbaAOEOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 23:14:10 -0500
+Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:42953
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750751AbaAOEOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 23:12:49 -0500
-From: Victor Porton <porton@narod.ru>
-Envelope-From: porton@yandex.ru
-To: linux-kernel@vger.kernel.org
-Subject: Notifying on empty cgroup
+	Tue, 14 Jan 2014 23:14:06 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6hzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h2327h2336h2438h2461h2487h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <arnd@arndb.de>, <gregkh@linuxfoundation.org>, <p.zabel@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] misc: sram: cleanup the code
+Date: Wed, 15 Jan 2014 11:16:35 +0800
+Message-ID: <1389755795-17584-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Message-Id: <135711389759165@web22h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 15 Jan 2014 06:12:45 +0200
-Content-Transfer-Encoding: 7bit
 Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I want to write software which needs to receive a signal when the cgroup 
-created by it becomes empty. (After this the empty cgroup should be deleted 
-just not to clutter the memory.)
+Since the devm_gen_pool_create() is used, so the gen_pool_destroy()
+here is redundant.
 
-If the kernel does not support such notifications, it should be improved. 
-This functionality is crucial for some kinds of software.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/misc/sram.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-There is /sys/fs/cgroup/systemd/release_agent but I don't understand how to 
-use it. I don't understand why we would need it at all.
-
-Starting a binary on emptying a cgroup with the purpose to notify an other 
-binary looks like a big overkill. Also my program should work in userspace 
-without the need to use release_agent which can be accessed only by root.
-
-Note that my work is related with sandboxing software (running a program in 
-closed environment, so that it would be unable for example to remove user's 
-files).
-
-See also
-http://portonsoft.wordpress.com/2014/01/11/toward-robust-linux-sandbox/
-
+diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+index afe66571..e3e421d 100644
+--- a/drivers/misc/sram.c
++++ b/drivers/misc/sram.c
+@@ -87,8 +87,6 @@ static int sram_remove(struct platform_device *pdev)
+ 	if (gen_pool_avail(sram->pool) < gen_pool_size(sram->pool))
+ 		dev_dbg(&pdev->dev, "removed while SRAM allocated\n");
+ 
+-	gen_pool_destroy(sram->pool);
+-
+ 	if (sram->clk)
+ 		clk_disable_unprepare(sram->clk);
+ 
 -- 
-Victor Porton - http://portonvictor.org
+1.8.4
+
+
