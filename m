@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaAONFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:05:51 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:48583 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaAONFr (ORCPT
+	id S1751967AbaAONJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:09:51 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51762 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaAONJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:05:47 -0500
+	Wed, 15 Jan 2014 08:09:48 -0500
+Message-ID: <52D6887E.6010702@linaro.org>
+Date: Wed, 15 Jan 2014 14:09:18 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <309B89C4C689E141A5FF6A0C5FB2118B7312CEE1@ORSMSX101.amr.corp.intel.com>
-References: <1387901568-1762-1-git-send-email-ethan.kernel@gmail.com>
-	<1388134966.2183.144.camel@jtkirshe-mobl>
-	<309B89C4C689E141A5FF6A0C5FB2118B7312CEE1@ORSMSX101.amr.corp.intel.com>
-Date: Wed, 15 Jan 2014 21:05:46 +0800
-Message-ID: <CABawtvPLZA+wLCvV5rPJ5wzQm5+M6UDaLMt-+pMUxwUjT+X4zg@mail.gmail.com>
-Subject: Re: [PATCH 1/2 v2] ixgbe: define IXGBE_MAX_VFS_DRV_LIMIT macro and
- cleanup const 63
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: "Brown, Aaron F" <aaron.f.brown@intel.com>
-Cc: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: raistlin@linux.it, juri.lelli@gmail.com, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+References: <52D64676.4040000@linaro.org> <20140115120418.GD31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140115120418.GD31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaron,
-   I will check the patch and make it pass the building, seems encoding issue.
-
-Thanks,
-Ethan
-
-On Wed, Jan 15, 2014 at 11:46 AM, Brown, Aaron F
-<aaron.f.brown@intel.com> wrote:
-> On Fri, 2013-12-27 at 01:02 -0800, Jeff Kirsher wrote:
->> On Wed, 2013-12-25 at 00:12 +0800, Ethan Zhao wrote:
->> > Because ixgbe driver limit the max number of VF functions could be
->> > enabled
->> > to 63, so define one macro IXGBE_MAX_VFS_DRV_LIMIT and cleanup the
->> > const 63
->> > in code.
->> >
->> > v2: fix a typo.
->> >
->> > Signed-off-by: Ethan Zhao <ethan.kernel@gmail.com>
->> > ---
->> >  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  | 4 ++--
->> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.c | 5 +++--
->> >  drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h | 5 +++++
->> >  3 files changed, 10 insertions(+), 4 deletions(-)
+On 01/15/2014 01:04 PM, Peter Zijlstra wrote:
+> On Wed, Jan 15, 2014 at 09:27:34AM +0100, Daniel Lezcano wrote:
 >>
->> Added to my queue, thanks Ethan!
+>> Hi all,
+>>
+>> I use the tip/sched/core branch.
+>>
+>> After git pulling yesterday, my host is unresponsive after booting the OS.
+>>
+>>   * It boots normally
+>>   * It sends info to the console
+>>   * The graphics does not work
+>>   * The terminals show the prompt, I can enter the username but after
+>> pressing enter, it does not give the password prompt
+>>   * sysrq works more or less, I can't get the process stack but it receives
+>> the command
+>>
+>> It is like no new process can be created.
+>>
+>> I have a dual Xeon processor E5325 (2 x 4 cores).
+>>
+>> After git bisecting, the following patch seems to introduce the bug.
+>>
+>> commit d50dde5a10f305253cbc3855307f608f8a3c5f73
 >
-> Hi Ethan,
+> OK, so my headless WSM-EP boots just fine. Obviously it cannot confirm
+> if graphics works, but I can ssh in and work on it without bother.
 >
-> Did Jeff contact you about this failing to compile?  I'm currently
-> providing vacation covering for him and we found this was failing to
-> compile just before he left.  We captured the failure in our notes for
-> this but there is no comment on if you were contacted or not.
+> I can even log in on the serial console without problems.
 >
-> Regardless, when I apply this patch (with or without 2-2) we get the
-> following error on a compilation attempt: Here's the error:
-> --------------------------------------------------------
-> Here's the error:
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function
-> "ixgbe_sw_init":
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\357"
-> in program
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\274"
-> in program
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: stray "\215"
-> in program
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:5033: error: expected ")"
-> before numeric constant
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function
-> "ixgbe_probe":
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\357"
-> in program
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\274"
-> in program
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: stray "\215"
-> in program
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7977: error: expected ")"
-> before numeric constant
-> make[5]: *** [drivers/net/ethernet/intel/ixgbe/ixgbe_main.o] Error 1
-> make[5]: *** Waiting for unfinished jobs....
-> make[4]: *** [drivers/net/ethernet/intel/ixgbe] Error 2
-> make[4]: *** Waiting for unfinished jobs....
-> make[3]: *** [drivers/net/ethernet/intel] Error 2
-> make[2]: *** [drivers/net/ethernet] Error 2
-> make[1]: *** [drivers/net] Error 2
-> make: *** [drivers] Error 2
-> --------------------------------------------------------
+> I tried both tip/master and tip/sched/core.
 >
-> Thanks,
-> Aaron
->
+> Would you happen to have a .config for me to try?
+
+Yes, sure.
+
+http://pastebin.com/Hj4nEZHc
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
