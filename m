@@ -1,44 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaAONUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:20:25 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49503 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaAONUV (ORCPT
+	id S1751966AbaAONWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:22:40 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54985 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751725AbaAONWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:20:21 -0500
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: nicolas.ferre@atmel.com, b.brezillon@overkiz.com, wsa@the-dreams.de
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH repost] at91: dt: i2c: add a new compatibility string for the at91sam9261
-Date: Wed, 15 Jan 2014 14:17:13 +0100
-Message-Id: <1389791833-7572-1-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.8.5.2
+	Wed, 15 Jan 2014 08:22:37 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Guo Chao <yan@linux.vnet.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        Benjamin Herrenschmidt <benh@au1.ibm.com>, linux-scsi@vger.kernel.org,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [Update][PATCH 8/9] powerpc / eeh_driver: Use global PCI rescan-remove locking
+Date: Wed, 15 Jan 2014 14:36:36 +0100
+Message-ID: <1476201.kR505WbUas@vostro.rjw.lan>
+User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <4447911.Q1f9tEzrXs@vostro.rjw.lan>
+References: <1385429290-25397-1-git-send-email-yinghai@kernel.org> <20440867.YaQfKrcfsQ@vostro.rjw.lan> <4447911.Q1f9tEzrXs@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- drivers/i2c/busses/i2c-at91.c | 3 +++
- 1 file changed, 3 insertions(+)
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: powerpc / eeh_driver: Use global PCI rescan-remove locking
 
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index 8edba9d..843d012 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -589,6 +589,9 @@ static const struct of_device_id atmel_twi_dt_ids[] = {
- 		.compatible = "atmel,at91sam9260-i2c",
- 		.data = &at91sam9260_config,
- 	} , {
-+		.compatible = "atmel,at91sam9261-i2c",
-+		.data = &at91sam9261_config,
-+	} , {
- 		.compatible = "atmel,at91sam9g20-i2c",
- 		.data = &at91sam9g20_config,
- 	} , {
--- 
-1.8.5.2
+Race conditions are theoretically possible between the PCI device
+addition and removal in the PPC64 PCI error recovery driver and
+the generic PCI bus rescan and device removal that can be triggered
+via sysfs.
+
+To avoid those race conditions make PPC64 PCI error recovery driver
+use global PCI rescan-remove locking around PCI device addition and
+removal.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+
+The previous version had wrong function names in the last hunk, sorry about
+that.
+
+Rafael
+
+---
+ arch/powerpc/kernel/eeh_driver.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
+
+Index: linux-pm/arch/powerpc/kernel/eeh_driver.c
+===================================================================
+--- linux-pm.orig/arch/powerpc/kernel/eeh_driver.c
++++ linux-pm/arch/powerpc/kernel/eeh_driver.c
+@@ -369,7 +369,9 @@ static void *eeh_rmv_device(void *data,
+ 	edev->mode |= EEH_DEV_DISCONNECTED;
+ 	(*removed)++;
+ 
++	pci_lock_rescan_remove();
+ 	pci_stop_and_remove_bus_device(dev);
++	pci_unlock_rescan_remove();
+ 
+ 	return NULL;
+ }
+@@ -416,10 +418,13 @@ static int eeh_reset_device(struct eeh_p
+ 	 * into pcibios_add_pci_devices().
+ 	 */
+ 	eeh_pe_state_mark(pe, EEH_PE_KEEP);
+-	if (bus)
++	if (bus) {
++		pci_lock_rescan_remove();
+ 		pcibios_remove_pci_devices(bus);
+-	else if (frozen_bus)
++		pci_unlock_rescan_remove();
++	} else if (frozen_bus) {
+ 		eeh_pe_dev_traverse(pe, eeh_rmv_device, &removed);
++	}
+ 
+ 	/* Reset the pci controller. (Asserts RST#; resets config space).
+ 	 * Reconfigure bridges and devices. Don't try to bring the system
+@@ -429,6 +434,8 @@ static int eeh_reset_device(struct eeh_p
+ 	if (rc)
+ 		return rc;
+ 
++	pci_lock_rescan_remove();
++
+ 	/* Restore PE */
+ 	eeh_ops->configure_bridge(pe);
+ 	eeh_pe_restore_bars(pe);
+@@ -462,6 +469,7 @@ static int eeh_reset_device(struct eeh_p
+ 	pe->tstamp = tstamp;
+ 	pe->freeze_count = cnt;
+ 
++	pci_unlock_rescan_remove();
+ 	return 0;
+ }
+ 
+@@ -618,8 +626,11 @@ perm_error:
+ 	eeh_pe_dev_traverse(pe, eeh_report_failure, NULL);
+ 
+ 	/* Shut down the device drivers for good. */
+-	if (frozen_bus)
++	if (frozen_bus) {
++		pci_lock_rescan_remove();
+ 		pcibios_remove_pci_devices(frozen_bus);
++		pci_unlock_rescan_remove();
++	}
+ }
+ 
+ static void eeh_handle_special_event(void)
+@@ -692,6 +703,7 @@ static void eeh_handle_special_event(voi
+ 	if (rc == 2 || rc == 1)
+ 		eeh_handle_normal_event(pe);
+ 	else {
++		pci_lock_rescan_remove();
+ 		list_for_each_entry_safe(hose, tmp,
+ 			&hose_list, list_node) {
+ 			phb_pe = eeh_phb_pe_get(hose);
+@@ -703,6 +715,7 @@ static void eeh_handle_special_event(voi
+ 			eeh_pe_dev_traverse(pe, eeh_report_failure, NULL);
+ 			pcibios_remove_pci_devices(bus);
+ 		}
++		pci_unlock_rescan_remove();
+ 	}
+ }
+ 
 
