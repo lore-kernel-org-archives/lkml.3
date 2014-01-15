@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaAOV61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:58:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41082 "EHLO
+	id S1753798AbaAOV6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:58:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41101 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaAOV6X (ORCPT
+	with ESMTP id S1753717AbaAOV61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:23 -0500
+	Wed, 15 Jan 2014 16:58:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Kunilov <dmitry.kunilov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Takashi Iwai <tiwai@suse.de>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 063/166] usb: serial: zte_ev: move support for ZTE AC2726 from zte_ev back to option
-Date: Wed, 15 Jan 2014 13:51:17 -0800
-Message-Id: <1389822780-4729-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 064/166] xhci: Limit the spurious wakeup fix only to HP machines
+Date: Wed, 15 Jan 2014 13:51:18 -0800
+Message-Id: <1389822780-4729-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,56 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kunilov <dmitry.kunilov@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 52d0dc7597c89b2ab779f3dcb9b9bf0800dd9218 upstream.
+commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
 
-ZTE AC2726 EVDO modem drops ppp connection every minute when driven by
-zte_ev but works fine when driven by option. Move the support for AC2726
-back to option driver.
+We've got regression reports that my previous fix for spurious wakeups
+after S5 on HP Haswell machines leads to the automatic reboot at
+shutdown on some machines.  It turned out that the fix for one side
+triggers another BIOS bug in other side.  So, it's exclusive.
 
-Signed-off-by: Dmitry Kunilov <dmitry.kunilov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Since the original S5 wakeups have been confirmed only on HP machines,
+it'd be safer to apply it only to limited machines.  As a wild guess,
+limiting to machines with HP PCI SSID should suffice.
+
+This patch should be backported to kernels as old as 3.12, that
+contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
+spurious wakeups after S5 on Haswell".
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: <dashing.meng@gmail.com>
+Reported-by: Niklas Schnelle <niklas@komani.de>
+Reported-by: Giorgos <ganastasiouGR@gmail.com>
+Reported-by: <art1@vhex.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 2 ++
- drivers/usb/serial/zte_ev.c | 3 +--
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index a03c30e..3c1e5e3 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -251,6 +251,7 @@ static void option_instat_callback(struct urb *urb);
- #define ZTE_PRODUCT_MF628			0x0015
- #define ZTE_PRODUCT_MF626			0x0031
- #define ZTE_PRODUCT_MC2718			0xffe8
-+#define ZTE_PRODUCT_AC2726			0xfff1
- 
- #define BENQ_VENDOR_ID				0x04a5
- #define BENQ_PRODUCT_H10			0x4068
-@@ -1453,6 +1454,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
- 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
-diff --git a/drivers/usb/serial/zte_ev.c b/drivers/usb/serial/zte_ev.c
-index fca4c75..eae2c87 100644
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -281,8 +281,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
- 	{ USB_DEVICE(0x19d2, 0xfffc) },
- 	{ USB_DEVICE(0x19d2, 0xfffb) },
--	/* AC2726, AC8710_V3 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfff1, 0xff, 0xff, 0xff) },
-+	/* AC8710_V3 */
- 	{ USB_DEVICE(0x19d2, 0xfff6) },
- 	{ USB_DEVICE(0x19d2, 0xfff7) },
- 	{ USB_DEVICE(0x19d2, 0xfff8) },
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index ab4b0be..3d8d908 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -124,7 +124,12 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		 * any other sleep) on Haswell machines with LPT and LPT-LP
+ 		 * with the new Intel BIOS
+ 		 */
+-		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++		/* Limit the quirk to only known vendors, as this triggers
++		 * yet another BIOS bug on some other machines
++		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
++		 */
++		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
++			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 -- 
 1.8.3.2
 
