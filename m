@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaAOPWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:22:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51280 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaAOPWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:22:22 -0500
-Date: Wed, 15 Jan 2014 15:22:18 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Han Pingtian <hanpt@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        Dave Hansen <dave.hansen@intel.com>
-Subject: Re: [RFC] mm: show message when updating min_free_kbytes in thp
-Message-ID: <20140115152218.GL4963@suse.de>
-References: <20140103033303.GB4106@localhost.localdomain>
- <52C6FED2.7070700@intel.com>
- <20140105003501.GC4106@localhost.localdomain>
- <20140106164604.GC27602@dhcp22.suse.cz>
- <20140108101611.GD27937@dhcp22.suse.cz>
- <20140110081744.GC9437@dhcp22.suse.cz>
- <20140114200720.GM4106@localhost.localdomain>
- <20140114155241.7891fce1fb2b9dfdcde15a8c@linux-foundation.org>
- <alpine.DEB.2.02.1401141621560.3375@chino.kir.corp.google.com>
- <20140114163533.ab191e118e82ca7b4d499551@linux-foundation.org>
+	id S1752085AbaAOPXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:23:48 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:34159 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbaAOPXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:23:45 -0500
+Date: Wed, 15 Jan 2014 16:23:44 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, namhyung@kernel.org,
+        mingo@kernel.org, dsahern@gmail.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 3/6] perf, tools: Add --branch-history option to report
+ v2
+Message-ID: <20140115152344.GO20765@two.firstfloor.org>
+References: <1389661461-18996-1-git-send-email-andi@firstfloor.org>
+ <1389661461-18996-4-git-send-email-andi@firstfloor.org>
+ <20140115144442.GA14966@krava.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140114163533.ab191e118e82ca7b4d499551@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140115144442.GA14966@krava.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 04:35:33PM -0800, Andrew Morton wrote:
-> > Would it be overkill to save the kernel default both with and without thp 
-> > and then doing a WARN_ON_ONCE() if a user-written value is ever less?
+> this sort of settings needs to be in for the previous patch,
+> to make the following command work:
 > 
-> Well, min_free_kbytes is a userspace thing, not a kernel thing - maybe
-> THP shouldn't be dinking with it.  What effect is THP trying to achieve
-> and can we achieve it by other/better means?
+>   $ perf report --call-graph=fractal,0.5,callee,function,branch
+> 
+> will just set symbol_conf.use_callchain, but the sorting stays
+> as SORT_MODE__BRANCH.. and callchains are invisible
 
-It moved logic from hugeadm where few people knew about it to the
-kernel. The value is related to anti-fragmentation. With the recommended
-setting the probability of mixing pages of different mobility within a
-single pageblock is reduced. Very very superficially, it reduces the
-number of instances the mm_page_alloc_extfrag tracepoint is triggered
-with parameters that are considered to be severely fragmenting.
+You can use --no-branch-stack
 
--- 
-Mel Gorman
-SUSE Labs
+> as you said in the changelog, this should be 'short cut to make this nicer to use',
+> but it's actually currently the only way..
+
+It works, it's just very long and cumbersome.
+
+-Andi
