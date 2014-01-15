@@ -1,50 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaAODNc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 22:13:32 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:50637 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaAODN3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 22:13:29 -0500
-Date: Tue, 14 Jan 2014 19:08:19 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Davidlohr Bueso <davidlohr@hp.com>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, aswin@hp.com
-Subject: Re: [PATCH v3 13/14] mm, hugetlb: retry if failed to allocate and
- there is concurrent user
-In-Reply-To: <1389062214.9937.0.camel@buesod1.americas.hpqcorp.net>
-Message-ID: <alpine.DEB.2.02.1401141906350.451@chino.kir.corp.google.com>
-References: <1387349640-8071-1-git-send-email-iamjoonsoo.kim@lge.com> <1387349640-8071-14-git-send-email-iamjoonsoo.kim@lge.com> <20131219170202.0df2d82a2adefa3ab616bdaa@linux-foundation.org> <20131220140153.GC11295@suse.de> <1387608497.3119.17.camel@buesod1.americas.hpqcorp.net>
- <20131223004438.GA19388@lge.com> <20131223021118.GA2487@lge.com> <1388778945.2956.20.camel@buesod1.americas.hpqcorp.net> <20140106001938.GB696@lge.com> <1389010745.14953.5.camel@buesod1.americas.hpqcorp.net> <20140107015701.GB26726@lge.com>
- <1389062214.9937.0.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752010AbaAODTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 22:19:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503AbaAODTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 22:19:39 -0500
+Message-ID: <1389755971.8705.5.camel@bling.home>
+Subject: Re: [PATCH] vfio-pci: Use pci "try" reset interface
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Tue, 14 Jan 2014 20:19:31 -0700
+In-Reply-To: <CAErSpo74iO-cD71+q-Bz52r4Eg1p9KpGQQXLnQ3zUxzs54YSuw@mail.gmail.com>
+References: <20131216221615.3539.78656.stgit@bling.home>
+	 <CAErSpo74iO-cD71+q-Bz52r4Eg1p9KpGQQXLnQ3zUxzs54YSuw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Jan 2014, Davidlohr Bueso wrote:
-
-> > If Andrew agree, It would be great to merge 1-7 patches into mainline
-> > before your mutex approach. There are some of clean-up patches and, IMO,
-> > it makes the code more readable and maintainable, so it is worth to merge
-> > separately.
+On Tue, 2014-01-14 at 16:48 -0700, Bjorn Helgaas wrote:
+> On Mon, Dec 16, 2013 at 3:16 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > PCI resets will attempt to take the device_lock for any device to be
+> > reset.  This is a problem if that lock is already held, for instance
+> > in the device remove path.  It's not sufficient to simply kill the
+> > user process or skip the reset if called after .remove as a race could
+> > result in the same deadlock.  Instead, we handle all resets as "best
+> > effort" using the PCI "try" reset interfaces.  This prevents the user
+> > from being able to induce a deadlock by triggering a reset.
+> >
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >
+> > This depends on the proposed pci "try" function/slot/bus reset patch.
+> >
+> >  drivers/vfio/pci/vfio_pci.c |   29 +++++++++--------------------
+> >  1 file changed, 9 insertions(+), 20 deletions(-)
+> >
+> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> > index 6ab71b9..576e34e 100644
+> > --- a/drivers/vfio/pci/vfio_pci.c
+> > +++ b/drivers/vfio/pci/vfio_pci.c
+> > @@ -139,25 +139,14 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
+> >         pci_write_config_word(pdev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+> >
+> >         /*
+> > -        * Careful, device_lock may already be held.  This is the case if
+> > -        * a driver unbind is blocked.  Try to get the locks ourselves to
+> > -        * prevent a deadlock.
+> > +        * Try to reset the device.  The success of this is dependent on
+> > +        * being able to lock the device, which is not always possible.
+> >          */
+> >         if (vdev->reset_works) {
+> > -               bool reset_done = false;
+> > -
+> > -               if (pci_cfg_access_trylock(pdev)) {
+> > -                       if (device_trylock(&pdev->dev)) {
+> > -                               __pci_reset_function_locked(pdev);
+> > -                               reset_done = true;
+> > -                               device_unlock(&pdev->dev);
+> > -                       }
+> > -                       pci_cfg_access_unlock(pdev);
+> > -               }
+> > -
+> > -               if (!reset_done)
+> > -                       pr_warn("%s: Unable to acquire locks for reset of %s\n",
+> > -                               __func__, dev_name(&pdev->dev));
+> > +               int ret = pci_try_reset_function(pdev);
+> > +               if (ret)
+> > +                       pr_debug("%s: reset of device %s = %d\n",
+> > +                               __func__, dev_name(&pdev->dev), ret);
 > 
-> Fine by me.
-> 
+> Why is this a pr_debug() instead of dev_dbg()?  I see vfio_pci.c seems
+> to always use pr_*() instead of dev_*(), so you probably have a
+> reason.
 
-It appears like patches 1-7 are still missing from linux-next, would you 
-mind posting them in a series with your approach?
+Inertia and lack of anyone suggesting it are probably the biggest
+reasons.  As you note, I've been using pr_foo throughout the file, so
+I'd probably prefer consistency and fix them in a separate patch.
+
+> The text of the message ("vfio_pci_disable: reset of device
+> 0000:00:00.1 = -35") doesn't seem terribly clear; as a user, I'd have
+> to go look up the code to know whether I should be concerned about it.
+>  Maybe it should be explicit that the device was not reset?
+
+Sure, I'll tweak the message to make it more clear that it failed and
+include the return value as extra info.  Thanks,
+
+Alex
+
+> >         }
+> >
+> >         pci_restore_state(pdev);
+> > @@ -514,7 +503,7 @@ static long vfio_pci_ioctl(void *device_data,
+> >
+> >         } else if (cmd == VFIO_DEVICE_RESET) {
+> >                 return vdev->reset_works ?
+> > -                       pci_reset_function(vdev->pdev) : -EINVAL;
+> > +                       pci_try_reset_function(vdev->pdev) : -EINVAL;
+> >
+> >         } else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
+> >                 struct vfio_pci_hot_reset_info hdr;
+> > @@ -684,8 +673,8 @@ reset_info_exit:
+> >                                                     &info, slot);
+> >                 if (!ret)
+> >                         /* User has access, do the reset */
+> > -                       ret = slot ? pci_reset_slot(vdev->pdev->slot) :
+> > -                                    pci_reset_bus(vdev->pdev->bus);
+> > +                       ret = slot ? pci_try_reset_slot(vdev->pdev->slot) :
+> > +                                    pci_try_reset_bus(vdev->pdev->bus);
+> >
+> >  hot_reset_release:
+> >                 for (i--; i >= 0; i--)
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
