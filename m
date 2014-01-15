@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaAONv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:51:29 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:54614 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaAONvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:51:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <52D684E9.6080308@ti.com>
-References: <1389700739-3696-1-git-send-email-wsa@the-dreams.de>
-	<1389700739-3696-7-git-send-email-wsa@the-dreams.de>
-	<CACRpkdYymB4i7Ju5MMNXWVe5nB6_NbWHwrPbOK2KeT0Ji-RzQg@mail.gmail.com>
-	<52D684E9.6080308@ti.com>
-Date: Wed, 15 Jan 2014 14:51:25 +0100
-Message-ID: <CACRpkdY1FuRoSFAPT8qUybzrizN_tEgxB41dwW_-uEWdFPb0jA@mail.gmail.com>
-Subject: Re: [PATCH 7/7] drivers/gpio: don't check resource with devm_ioremap_resource
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sekhar Nori <nsekhar@ti.com>, Wolfram Sang <wsa@the-dreams.de>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752086AbaAONwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:52:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22252 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752011AbaAONwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 08:52:19 -0500
+From: Mateusz Guzik <mguzik@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Gabriellla Schmidt <gsc@bruker.de>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] ipc: fix compat msgrcv with negative msgtyp
+Date: Wed, 15 Jan 2014 14:52:12 +0100
+Message-Id: <1389793932-7549-1-git-send-email-mguzik@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 1:54 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On Wednesday 15 January 2014 02:58 PM, Linus Walleij wrote:
+Compat function takes msgtyp argument as u32 and passes it down to
+do_msgrcv which results in casting to long, thus the sign is lost
+and we get a big positive number instead.
 
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> The DaVinci maintainers are queuing GPIO patches for their driver
->> for this merge window, so requesting them to apply this patch.
->
-> I wont be sending any more pull requests for v3.14. Even if I send, the
-> ARM-SoC maintainers will not take it anyway.
+Cast the argument to signed type before passing it down.
 
-But as it is a fix I believe the ARM SoC maintainers will apply it
-directly to the davinci branch.
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Reported-by: Gabriellla Schmidt <gsc@bruker.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+---
+ ipc/compat.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Wolfram: I suggest you send this patch with my ACK directly
-to arm@kernel.org and ask it to be applied to the davinci branch
-in the ARM SoC tree.
+diff --git a/ipc/compat.c b/ipc/compat.c
+index 892f658..d3b3760 100644
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -381,7 +381,7 @@ COMPAT_SYSCALL_DEFINE6(ipc, u32, call, int, first, int, second,
+ 			uptr = compat_ptr(ipck.msgp);
+ 			fifth = ipck.msgtyp;
+ 		}
+-		return do_msgrcv(first, uptr, second, fifth, third,
++		return do_msgrcv(first, uptr, second, (s32)fifth, third,
+ 				 compat_do_msg_fill);
+ 	}
+ 	case MSGGET:
+-- 
+1.8.3.1
 
-Yours,
-Linus Walleij
