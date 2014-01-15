@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409AbaAOBsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 20:48:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64925 "EHLO
+	id S1752460AbaAOBs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 20:48:56 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53517 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaAOBpp (ORCPT
+	with ESMTP id S1751503AbaAOBpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 20:45:45 -0500
-X-AuditID: 9c930197-b7b7cae000000e34-5d-52d5e84692d0
+	Tue, 14 Jan 2014 20:45:44 -0500
+X-AuditID: 9c930197-b7b7cae000000e34-5a-52d5e84650d6
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/17] tools lib traceevent: Unregister handler when function plugin unloaded
-Date: Wed, 15 Jan 2014 10:45:31 +0900
-Message-Id: <1389750340-15965-9-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 07/17] tools lib traceevent: Add pevent_unregister_print_function()
+Date: Wed, 15 Jan 2014 10:45:30 +0900
+Message-Id: <1389750340-15965-8-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
 References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
@@ -26,29 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function handler should be unregistered when the plugin unloaded
-otherwise it'll try to access invalid memory.
+When a plugin unloaded it needs to unregister its print handler from
+pevent.  So add unregister function to do it.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/lib/traceevent/plugin_function.c | 3 +++
- 1 file changed, 3 insertions(+)
+ tools/lib/traceevent/event-parse.c | 23 +++++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h |  2 ++
+ 2 files changed, 25 insertions(+)
 
-diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
-index 39461485f9a7..80ba4ff1fe84 100644
---- a/tools/lib/traceevent/plugin_function.c
-+++ b/tools/lib/traceevent/plugin_function.c
-@@ -148,6 +148,9 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
- {
- 	int i, x;
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 05ae4b4ed0c8..fe962fbb156c 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -5560,6 +5560,29 @@ int pevent_register_print_function(struct pevent *pevent,
+ 	return ret;
+ }
  
-+	pevent_unregister_event_handler(pevent, -1, "ftrace", "function",
-+					function_handler, NULL);
++/**
++ * pevent_unregister_print_function - unregister a helper function
++ * @pevent: the handle to the pevent
++ * @func: the function to process the helper function
++ * @name: the name of the helper function
++ *
++ * This function removes existing print handler for function @name.
++ *
++ * Returns 0 if the handler was removed successully, -1 otherwise.
++ */
++int pevent_unregister_print_function(struct pevent *pevent,
++				     pevent_func_handler func, char *name)
++{
++	struct pevent_function_handler *func_handle;
 +
- 	for (i = 0; i <= cpus; i++) {
- 		for (x = 0; x < fstack[i].size && fstack[i].stack[x]; x++)
- 			free(fstack[i].stack[x]);
++	func_handle = find_func_handler(pevent, name);
++	if (func_handle && func_handle->func == func) {
++		remove_func_handler(pevent, name);
++		return 0;
++	}
++	return -1;
++}
++
+ static struct event_format *pevent_search_event(struct pevent *pevent, int id,
+ 						const char *sys_name,
+ 						const char *event_name)
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index c48acfbc6230..791c539374c7 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -631,6 +631,8 @@ int pevent_register_print_function(struct pevent *pevent,
+ 				   pevent_func_handler func,
+ 				   enum pevent_func_arg_type ret_type,
+ 				   char *name, ...);
++int pevent_unregister_print_function(struct pevent *pevent,
++				     pevent_func_handler func, char *name);
+ 
+ struct format_field *pevent_find_common_field(struct event_format *event, const char *name);
+ struct format_field *pevent_find_field(struct event_format *event, const char *name);
 -- 
 1.7.11.7
 
