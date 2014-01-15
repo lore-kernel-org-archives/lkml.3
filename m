@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaAOWke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:40:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40705 "EHLO
+	id S1755402AbaAOWka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:40:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40711 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798AbaAOVxX (ORCPT
+	with ESMTP id S1752808AbaAOVxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:53:23 -0500
+	Wed, 15 Jan 2014 16:53:24 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 007/166] usb: gadget: composite: reset delayed_status on reset_config
-Date: Wed, 15 Jan 2014 13:50:21 -0800
-Message-Id: <1389822780-4729-8-git-send-email-kamal@canonical.com>
+Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 014/166] ath9k: Fix QuickDrop usage
+Date: Wed, 15 Jan 2014 13:50:28 -0800
+Message-Id: <1389822780-4729-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,34 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 2bac51a1827a18821150ed8c9f9752c02f9c2b02 upstream.
+commit 93c1cfbe598f72cfa7be49e4a7d2a1d482e15119 upstream.
 
-The delayed_status value is used to keep track of status response
-packets on ep0. It needs to be reset or the set_config function would
-still delay the answer, if the usb device got unplugged while waiting
-for setup_continue to be called.
+Bit 5 in the miscConfiguration field of the base EEPROM
+header denotes whether QuickDrop is enabled or not. Fix
+the incorrect usage of BIT(1) and also make sure that
+this is done only for the required chips.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/gadget/composite.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 2a6bfe7..44fef44 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -556,6 +556,7 @@ static void reset_config(struct usb_composite_dev *cdev)
- 		bitmap_zero(f->endpoints, 32);
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+index 92e761a..5fcc943e 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3920,18 +3920,20 @@ static void ar9003_hw_quick_drop_apply(struct ath_hw *ah, u16 freq)
+ 	int quick_drop;
+ 	s32 t[3], f[3] = {5180, 5500, 5785};
+ 
+-	if (!(pBase->miscConfiguration & BIT(1)))
++	if (!(pBase->miscConfiguration & BIT(4)))
+ 		return;
+ 
+-	if (freq < 4000)
+-		quick_drop = eep->modalHeader2G.quick_drop;
+-	else {
+-		t[0] = eep->base_ext1.quick_drop_low;
+-		t[1] = eep->modalHeader5G.quick_drop;
+-		t[2] = eep->base_ext1.quick_drop_high;
+-		quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
++	if (AR_SREV_9300(ah) || AR_SREV_9580(ah) || AR_SREV_9340(ah)) {
++		if (freq < 4000) {
++			quick_drop = eep->modalHeader2G.quick_drop;
++		} else {
++			t[0] = eep->base_ext1.quick_drop_low;
++			t[1] = eep->modalHeader5G.quick_drop;
++			t[2] = eep->base_ext1.quick_drop_high;
++			quick_drop = ar9003_hw_power_interpolate(freq, f, t, 3);
++		}
++		REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
  	}
- 	cdev->config = NULL;
-+	cdev->delayed_status = 0;
+-	REG_RMW_FIELD(ah, AR_PHY_AGC, AR_PHY_AGC_QUICK_DROP, quick_drop);
  }
  
- static int set_config(struct usb_composite_dev *cdev,
+ static void ar9003_hw_txend_to_xpa_off_apply(struct ath_hw *ah, bool is2ghz)
 -- 
 1.8.3.2
 
