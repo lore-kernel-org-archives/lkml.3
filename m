@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152AbaAOCYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:24:30 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:35801 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752024AbaAOCYX (ORCPT
+	id S1752116AbaAOCY1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:24:27 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36129 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAOCYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:24:23 -0500
-Date: Tue, 14 Jan 2014 21:24:20 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 05/17] tools lib traceevent: Make plugin unload function
- receive pevent
-Message-ID: <20140114212420.69120c1f@gandalf.local.home>
-In-Reply-To: <1389750340-15965-6-git-send-email-namhyung@kernel.org>
-References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
-	<1389750340-15965-6-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Tue, 14 Jan 2014 21:24:18 -0500
+From: Ying Xue <ying.xue@windriver.com>
+To: <davem@davemloft.net>
+CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
+        <stephen@networkplumber.org>, <antonio@meshcoding.com>,
+        <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
+        <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH net-next v2 01/10] Drivers: Staging: cxt1e1: use __dev_get_name instead of dev_get_name to find interfaces
+Date: Wed, 15 Jan 2014 10:23:36 +0800
+Message-ID: <1389752625-23189-2-git-send-email-ying.xue@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+References: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 10:45:28 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+The following call chain denotes that both do_reset() and do_del_chan()
+are protected under rtnl_lock. If we use __dev_get_by_name() instead of
+dev_get_by_name() to find interface handlers in them, this would help
+us avoid to change interface reference counter.
 
-> The PEVENT_PLUGIN_UNLOADER function might need some cleanup using
-> pevent like unregister some handlers.  So pass pevent as argument.
-> 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+dev_ioctl()
+  rtnl_lock()
+  dev_ifsioc()
+    c4_ioctl()
+      do_reset()
+      do_del_chan()
+  rtnl_unlock()
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+---
+ drivers/staging/cxt1e1/linux.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-> ---
->  tools/lib/traceevent/event-parse.h     | 7 ++++---
->  tools/lib/traceevent/event-plugin.c    | 4 ++--
->  tools/lib/traceevent/plugin_function.c | 2 +-
->  tools/perf/util/trace-event.c          | 2 +-
->  4 files changed, 8 insertions(+), 7 deletions(-)
-> 
-
+diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
+index 9b48373..4a08e16 100644
+--- a/drivers/staging/cxt1e1/linux.c
++++ b/drivers/staging/cxt1e1/linux.c
+@@ -770,9 +770,9 @@ do_del_chan (struct net_device *musycc_dev, void *data)
+     if (cp.channum > 999)
+         return -EINVAL;
+     snprintf (buf, sizeof(buf), CHANNAME "%d", cp.channum);
+-    if (!(dev = dev_get_by_name (&init_net, buf)))
+-        return -ENOENT;
+-    dev_put (dev);
++	dev = __dev_get_by_name(&init_net, buf);
++	if (!dev)
++		return -ENODEV;
+     ret = do_deluser (dev, 1);
+     if (ret)
+         return ret;
+@@ -792,19 +792,18 @@ do_reset (struct net_device *musycc_dev, void *data)
+         char        buf[sizeof (CHANNAME) + 3];
+ 
+         sprintf (buf, CHANNAME "%d", i);
+-        if (!(ndev = dev_get_by_name(&init_net, buf)))
+-            continue;
++	ndev = __dev_get_by_name(&init_net, buf);
++	if (!ndev)
++		continue;
+         priv = dev_to_hdlc (ndev)->priv;
+ 
+         if ((unsigned long) (priv->ci) ==
+             (unsigned long) (netdev_priv(musycc_dev)))
+         {
+             ndev->flags &= ~IFF_UP;
+-            dev_put (ndev);
+             netif_stop_queue (ndev);
+             do_deluser (ndev, 1);
+-        } else
+-            dev_put (ndev);
++	}
+     }
+     return 0;
+ }
+-- 
+1.7.9.5
 
