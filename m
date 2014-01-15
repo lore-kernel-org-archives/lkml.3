@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaAOOew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:34:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49947 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683AbaAOOeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:34:50 -0500
-Date: Wed, 15 Jan 2014 15:34:49 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 1/2] mm, memcg: avoid oom notification when current needs
- access to memory reserves
-Message-ID: <20140115143449.GN8782@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz>
- <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
- <alpine.DEB.2.02.1401091324120.31538@chino.kir.corp.google.com>
- <20140109144757.e95616b4280c049b22743a15@linux-foundation.org>
- <alpine.DEB.2.02.1401091551390.20263@chino.kir.corp.google.com>
- <20140109161246.57ea590f00ea5b61fdbf5f11@linux-foundation.org>
- <alpine.DEB.2.02.1401091613560.22649@chino.kir.corp.google.com>
- <20140110221432.GD6963@cmpxchg.org>
- <alpine.DEB.2.02.1401121404530.20999@chino.kir.corp.google.com>
+	id S1752115AbaAOOiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:38:06 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:63619 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725AbaAOOiE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:38:04 -0500
+Message-ID: <52D69D44.4090504@linaro.org>
+Date: Wed, 15 Jan 2014 22:37:56 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401121404530.20999@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>, daniel.lezcano@linaro.org
+CC: mingo@redhat.com, tglx@linutronix.de, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, fengguang.wu@intel.com,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [RFC PATCH] sched: find the latest idle cpu
+References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org> <20140115073533.GU31570@twins.programming.kicks-ass.net>
+In-Reply-To: <20140115073533.GU31570@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 12-01-14 14:10:49, David Rientjes wrote:
-> On Fri, 10 Jan 2014, Johannes Weiner wrote:
+On 01/15/2014 03:35 PM, Peter Zijlstra wrote:
+> On Wed, Jan 15, 2014 at 12:07:59PM +0800, Alex Shi wrote:
+>> Currently we just try to find least load cpu. If some cpus idled,
+>> we just pick the first cpu in cpu mask.
+>>
+>> In fact we can get the interrupted idle cpu or the latest idled cpu,
+>> then we may get the benefit from both latency and power.
+>> The selected cpu maybe not the best, since other cpu may be interrupted
+>> during our selecting. But be captious costs too much.
 > 
-> > > > > It was acked-by Michal.
-> > 
-> > Michal acked it before we had most of the discussions and now he is
-> > proposing an alternate version of yours, a patch that you are even
-> > discussing with him concurrently in another thread.  To claim he is
-> > still backing your patch because of that initial ack is disingenuous.
-> > 
+> No, we should not do anything like this without first integrating
+> cpuidle.
 > 
-> His patch depends on mine, Johannes.
+> At which point we have a sane view of the idle states and can make a
+> sane choice between them.
+> 
 
-Does it? Are we talking about the same patch here?
-https://lkml.org/lkml/2013/12/12/174
 
-Which depends on yours only to revert your part. I plan to repost it but
-that still doesn't mean it will get merged because Johannes still has
-some argumnets against. I would like to start the discussion again
-because now we are so deep in circles that it is hard to come up with a
-reasonable outcome. It is still hard to e.g. agree on an actual fix
-for a real problem https://lkml.org/lkml/2013/12/12/129.
+Daniel,
 
-While notification might be an issue as well it is more of a corner case
-than a regular one. So let's try to move on, agree on the "oom vs.
-PF_EXITING) first and lay out discussion for the notification in a new
-threa. Shall we?
+Any comments to make it better?
+
 -- 
-Michal Hocko
-SUSE Labs
+Thanks
+    Alex
