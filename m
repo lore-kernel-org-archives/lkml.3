@@ -1,223 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaAOPz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:55:26 -0500
-Received: from relay.parallels.com ([195.214.232.42]:36110 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaAOPzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:55:25 -0500
-Message-ID: <52D6AF5F.2040102@parallels.com>
-Date: Wed, 15 Jan 2014 19:55:11 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <devel@openvz.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH 1/5] mm: vmscan: shrink all slab objects if tight on memory
-References: <7d37542211678a637dc6b4d995fd6f1e89100538.1389443272.git.vdavydov@parallels.com> <20140113150502.4505f661589a4a2d30e6f11d@linux-foundation.org> <52D4E5F2.5080205@parallels.com> <20140114141453.374bd18e5290876177140085@linux-foundation.org> <52D64B27.30604@parallels.com> <20140115012541.ad302526.akpm@linux-foundation.org>
-In-Reply-To: <20140115012541.ad302526.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+	id S1752256AbaAOP7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:59:09 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:59274 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751941AbaAOP7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:59:07 -0500
+From: Nicolas Schichan <nschichan@freebox.fr>
+To: Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Nicolas Schichan <nschichan@freebox.fr>
+Subject: [PATCH] md: check command validity early in md_ioctl().
+Date: Wed, 15 Jan 2014 16:58:52 +0100
+Message-Id: <1389801532-25567-1-git-send-email-nschichan@freebox.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140115125740.160e8998@notabene.brown>
+References: <20140115125740.160e8998@notabene.brown>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2014 01:25 PM, Andrew Morton wrote:
-> On Wed, 15 Jan 2014 12:47:35 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
->
->> On 01/15/2014 02:14 AM, Andrew Morton wrote:
->>> On Tue, 14 Jan 2014 11:23:30 +0400 Vladimir Davydov <vdavydov@parallels.com> wrote:
->>>
->>>> On 01/14/2014 03:05 AM, Andrew Morton wrote:
->>>>> That being said, I think I'll schedule this patch as-is for 3.14.  Can
->>>>> you please take a look at implementing the simpler approach, send me
->>>>> something for 3.15-rc1?
->>>> IMHO the simpler approach (Glauber's patch) is not suitable as is,
->>>> because it, in fact, neglects the notion of batch_size when doing low
->>>> prio scans, because it calls ->scan() for < batch_size objects even if
->>>> the slab has >= batch_size objects while AFAIU it should accumulate a
->>>> sufficient number of objects to scan in nr_deferred instead.
->>> Well.  If you mean that when nr-objects=large and batch_size=32 and
->>> total_scan=33, the patched code will scan 32 objects and then 1 object
->>> then yes, that should be fixed.
->> I mean if nr_objects=large and batch_size=32 and shrink_slab() is called
->> 8 times with total_scan=4, we can either call ->scan() 8 times with
->> nr_to_scan=4 (Glauber's patch) or call it only once with nr_to_scan=32
->> (that's how it works now). Frankly, after a bit of thinking I am
->> starting to doubt that this can affect performance at all provided the
->> shrinker is implemented in a sane way, because as you've mentioned
->> shrink_slab() is already a slow path. It seems I misunderstood the
->> purpose of batch_size initially: I though we need it to limit the number
->> of calls to ->scan(), but now I guess the only purpose of it is limiting
->> the number of objects scanned in one pass to avoid latency issues.
-> Actually, the intent of batching is to limit the number of calls to
-> ->scan().  At least, that was the intent when I wrote it!  This is a
-> good principle and we should keep doing it.  If we're going to send the
-> CPU away to tread on a pile of cold cachelines, we should make sure
-> that it does a good amount of work while it's there.
->
->> But
->> then another question arises - why do you think the behavior you
->> described above (scanning 32 and then 1 object if total_scan=33,
->> batch_size=32) is bad?
-> Yes, it's a bit inefficient but it won't be too bad.  What would be bad
-> would be to scan a very small number of objects and then to advance to
-> the next shrinker.
->
->> In other words why can't we make the scan loop
->> look like this:
->>
->>     while (total_scan > 0) {
->>         unsigned long ret;
->>         unsigned long nr_to_scan = min(total_scan, batch_size);
->>
->>         shrinkctl->nr_to_scan = nr_to_scan;
->>         ret = shrinker->scan_objects(shrinker, shrinkctl);
->>         if (ret == SHRINK_STOP)
->>             break;
->>         freed += ret;
->>
->>         count_vm_events(SLABS_SCANNED, nr_to_scan);
->>         total_scan -= nr_to_scan;
->>
->>         cond_resched();
->>     }
->
-> Well, if we come in here with total_scan=1 then we defeat the original
-> intent of the batching, don't we?  We end up doing a lot of work just
-> to scan one object.  So perhaps add something like
->
-> 	if (total_scan < batch_size && max_pass > batch_size)
-> 		skip the while loop
->
-> If we do this, total_scan will be accumulated into nr_deferred, up to
-> the point where the threshold is exceeded, yes?
+Verify that the cmd parameter passed to md_ioctl() is valid before
+doing anything.
 
-Yes, but only if the shrinker has > batch_size objects to scan,
-otherwise (max_pass < batch_size) we will proceed to the while loop and
-call ->scan() even if total_scan = 1. I mean if batch_size = 32,
-max_pass = 31 and total_scan = 1 (low memory pressure), we will call
-->scan() 31 times scanning only 1 object during each pass, which is not
-good.
+This fixes mddev->hold_active being set to 0 when an invalid ioctl
+command is passed to md_ioctl() before the array has been configured.
 
-> All the arithmetic in there hurts my brain and I don't know what values
-> total_scan typically ends up with.
->
-> btw. all that trickery with delta and lru_pages desperately needs
-> documenting.  What the heck is it intended to do??
->
->
->
-> We could avoid the "scan 32 then scan just 1" issue with something like
->
-> 	if (total_scan > batch_size)
-> 		total_scan %= batch_size;
->
-> before the loop.  But I expect the effects of that will be unmeasurable
-> - on average the number of objects which are scanned in the final pass
-> of the loop will be batch_size/2, yes?  That's still a decent amount.
+Clearing mddev->hold_active in that case can lead to a livelock
+situation when an invalid ioctl number is given to md_ioctl() by a
+process when the mddev is currently being opened by another process:
 
-Let me try to summarize. We want to scan batch_size objects in one pass,
-not more (to keep latency low) and not less (to avoid cpu cache
-pollution due to too frequent calls); if the calculated value of
-nr_to_scan is less than the batch_size we should accumulate it in
-nr_deferred instead of calling ->scan() and add nr_deferred to
-nr_to_scan on the next pass, i.e. in pseudo-code:
+Process 1				Process 2
+---------				---------
 
-    /* calculate current nr_to_scan */
-    max_pass = shrinker->count();
-    delta = max_pass * nr_user_pages_scanned / nr_user_pages;
+md_alloc()
+  mddev_find()
+  -> returns a new mddev with
+     hold_active == UNTIL_IOCTL
+  add_disk()
+  -> sends KOBJ_ADD uevent
 
-    /* add nr_deferred */
-    total_scan = delta + nr_deferred;
+					(sees KOBJ_ADD uevent for device)
+                    			md_open()
+                    			md_ioctl(INVALID_IOCTL)
+                    			-> returns ENODEV and clears
+                       			   mddev->hold_active
+                    			md_release()
+                      			md_put()
+                      			-> deletes the mddev as
+                         		   hold_active is 0
 
-    while (total_scan >= batch_size) {
-        shrinker->scan(batch_size);
-        total_scan -= batch_size;
-    }
+md_open()
+  mddev_find()
+  -> returns a newly
+    allocated mddev with
+    mddev->gendisk == NULL
+-> returns with ERESTARTSYS
+   (kernel restarts the open syscall)
 
-    /* save the remainder to nr_deferred  */
-    nr_deferred = total_scan;
+Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+---
 
-That would work, but if max_pass is < batch_size, it would not scan the
-objects immediately even if prio is high (we want to scan all objects).
-For example, dropping caches would not work on the first attempt - the
-user would have to call it batch_size / max_pass times. This could be
-fixed by making the code proceed to ->scan() not only if total_scan is
->= batch_size, but also if max_pass is < batch_size and total_scan is >=
-max_pass, i.e.
+A couple of notes:
 
-    while (total_scan >= batch_size ||
-            (max_pass < batch_size && total_scan >= max_pass)) ...
+This patch is based on linux 3.13-rc8.
 
-which is equivalent to
+The following  MD ioctl constants are  defined in md_u.h  but not used
+anywhere else, so are not accepted as valid ioctl commands:
 
-    while (total_scan >= batch_size ||
-                total_scan >= max_pass) ...
+CLEAR_ARRAY
+SET_DISK_INFO
+WRITE_RAID_INFO
+UNPROTECT_ARRAY
+PROTECT_ARRAY
 
-The latter is the loop condition from the current patch, i.e. this patch
-would make the trick if shrink_slab() followed the pseudo-code above. In
-real life, it does not actually - we have to bias total_scan before the
-while loop in order to avoid dropping fs meta caches on light memory
-pressure due to a large number being built in nr_deferred:
 
-    if (delta < max_pass / 4)
-        total_scan = min(total_scan, max_pass / 2);
+ drivers/md/md.c | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-    while (total_scan >= batch_size) ...
-
-With this biasing, it is impossible to achieve the ideal behavior I've
-described above, because we will never accumulate max_pass objects in
-nr_deferred if memory pressure is low. So, if applied to the real code,
-this patch takes on a slightly different sense, which I tried to reflect
-in the comment to the code: it will call ->scan() with nr_to_scan <
-batch_size only if:
-
-1) max_pass < batch_size && total_scan >= max_pass
-
-and
-
-2) we're tight on memory, i.e. the current delta is high (otherwise
-total_scan will be biased as max_pass / 2 and condition 1 won't be
-satisfied).
-
->From our discussion it seems condition 2 is not necessary at all, but it
-follows directly from the biasing rule. So I propose to tweak the
-biasing a bit so that total_scan won't be lowered < batch_size:
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eea668d..78ddd5e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -267,7 +267,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
-struct shrinker *shrinker,
-      * a large delta change is calculated directly.
-      */
-     if (delta < max_pass / 4)
--        total_scan = min(total_scan, max_pass / 2);
-+        total_scan = min(total_scan, max(max_pass / 2, batch_size));
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 21f4d7f..941ac65 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -6328,6 +6328,32 @@ static int md_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+ 	return 0;
+ }
  
-     /*
-      * Avoid risking looping forever due to too large nr value:
-@@ -281,7 +281,7 @@ shrink_slab_node(struct shrink_control *shrinkctl,
-struct shrinker *shrinker,
-                 nr_pages_scanned, lru_pages,
-                 max_pass, delta, total_scan);
++static inline bool md_ioctl_valid(unsigned int cmd)
++{
++	switch (cmd) {
++	case ADD_NEW_DISK:
++	case BLKROSET:
++	case GET_ARRAY_INFO:
++	case GET_BITMAP_FILE:
++	case GET_DISK_INFO:
++	case HOT_ADD_DISK:
++	case HOT_REMOVE_DISK:
++	case PRINT_RAID_DEBUG:
++	case RAID_AUTORUN:
++	case RAID_VERSION:
++	case RESTART_ARRAY_RW:
++	case RUN_ARRAY:
++	case SET_ARRAY_INFO:
++	case SET_BITMAP_FILE:
++	case SET_DISK_FAULTY:
++	case STOP_ARRAY:
++	case STOP_ARRAY_RO:
++		return true;
++	default:
++		return false;
++	}
++}
++
+ static int md_ioctl(struct block_device *bdev, fmode_t mode,
+ 			unsigned int cmd, unsigned long arg)
+ {
+@@ -6336,6 +6362,9 @@ static int md_ioctl(struct block_device *bdev, fmode_t mode,
+ 	struct mddev *mddev = NULL;
+ 	int ro;
  
--    while (total_scan >= batch_size) {
-+    while (total_scan >= batch_size || total_scan >= max_pass) {
-         unsigned long ret;
- 
-         shrinkctl->nr_to_scan = batch_size;
++	if (!md_ioctl_valid(cmd))
++		return -ENOTTY;
++
+ 	switch (cmd) {
+ 	case RAID_VERSION:
+ 	case GET_ARRAY_INFO:
+-- 
+1.8.3.2
 
-The first hunk guarantees that total_scan will always accumulate at
-least batch_size objects no matter how small max_pass is. That means
-that when max_pass is < batch_size we will eventually get >= max_pass
-objects to scan and shrink the slab to 0 as we need. What do you think
-about that?
-
-Thanks.
