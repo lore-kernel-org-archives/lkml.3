@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaAOWVO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:21:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41125 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaAOV6g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:36 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 105/166] drm/i915: Use the correct GMCH_CTRL register for Sandybridge+
-Date: Wed, 15 Jan 2014 13:51:59 -0800
-Message-Id: <1389822780-4729-106-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+	id S1754867AbaAOWVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:21:30 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29268 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753565AbaAOWV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 17:21:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.95,665,1384329600"; 
+   d="scan'208";a="459462774"
+Date: Wed, 15 Jan 2014 14:26:03 -0800
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] x86: intel-mid: sfi_handle_*_dev() should check for
+ pdata error code
+Message-ID: <20140115222603.GA28185@psi-dev26.jf.intel.com>
+References: <1387244246-20714-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1387518179-4316-2-git-send-email-david.a.cohen@linux.intel.com>
+ <20131220084953.GB21133@gmail.com>
+ <20140115002121.GC18183@psi-dev26.jf.intel.com>
+ <20140115065837.GA13462@gmail.com>
+ <20140115173952.GB10933@psi-dev26.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115173952.GB10933@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.16 -stable review patch.  If anyone has any objections, please let me know.
+Hi Ingo and hpa,
 
-------------------
+On Wed, Jan 15, 2014 at 09:39:52AM -0800, David Cohen wrote:
+> On Wed, Jan 15, 2014 at 07:58:37AM +0100, Ingo Molnar wrote:
+> > 
+> > * David Cohen <david.a.cohen@linux.intel.com> wrote:
+> > 
+> > > Hi Ingo,
+> > > 
+> > > On Fri, Dec 20, 2013 at 09:49:53AM +0100, Ingo Molnar wrote:
+> > > > 
+> > > > * David Cohen <david.a.cohen@linux.intel.com> wrote:
+> > > > 
+> > > > > Prevent sfi_handle_*_dev() to register device in case
+> > > > > intel_mid_sfi_get_pdata() failed to execute.
+> > > > > 
+> > > > > Since 'NULL' is a valid return value, this patch makes
+> > > > > sfi_handle_*_dev() functions to use IS_ERR() to validate returned pdata.
+> > > > 
+> > > > Is this bug triggering in practice? If not then please say so in the 
+> > > > changelog. If yes then is this patch desired for v3.13 merging and 
+> > > > also please fix the changelog to conform to the standard changelog 
+> > > > style:
+> > > > 
+> > > >  - first describe the symptoms of the bug - how does a user notice?
+> > > > 
+> > > >  - then describe how the code behaves today and how that is causing
+> > > >    the bug
+> > > > 
+> > > >  - and then only describe how it's fixed.
+> > > > 
+> > > > The first item is the most important one - while developers 
+> > > > (naturally) tend to concentrate on the least important point, the last 
+> > > > one.
+> > > 
+> > > Thanks for the feedback :)
+> > > This new patch set was done in reply to your comment:
+> > > https://lkml.org/lkml/2013/12/20/517
+> > 
+> > Hm, in what way does the new changelog address my first request:
+> > 
+> > > >  - first describe the symptoms of the bug - how does a user notice?
+> > 
+> > They are all phrased as bug fixes, yet _none_ of the three changelogs 
+> > appears to describe specific symptoms on specific systems - they all 
+> > seem to talk in the abstract, with no specific connection to reality.
+> > 
+> > That really makes it harder for patches to get into the (way too 
+> > narrow) attention span of maintainersm, while phrasing it like this:
+> > 
+> >  'If an Intel-MID system boots in a specific SFI environment then it 
+> >   will hang on bootup without this fix.'
+> > 
+> > or:
+> > 
+> >  'Existing Intel-MID hardware will run faster with this patch.'
+> > 
+> > will certainly wake up maintainers like a good coffee in the morning.
+> > 
+> > If a patch is a cleanup with no known bug fix effects then say so in 
+> > the title and the changelog.
+> 
+> Fair enough.
+> These patches are fixing a potential bug that exists in current kernel,
+> but I triggered with patches in my development tree that depends on
+> this one to be refactored first:
+> https://patchwork.kernel.org/patch/3109791/
+> 
+> I tried to describe the potential bug, but it lacks the real use case as
+> you pointed out. I'll resend the patches in a way to trigger and
+> describe the situation without dependiing on non-upstreamed patches yet.
+> And I'll hurry up to publish my intel mid devel tree as well.
+> 
+> I hope the new patch set tastes like good morning Brazilian coffee :)
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+In order to show a practical error case fixed by this patch set using
+current legacy platform code, I need to get them working first. But it
+turns out legacy platform code (for Moorestown and Medfield) aren't in a
+good shape at all. I found few cases of obsolete platform data being
+returned from platform code (intel mid was orphan for too long on
+upstream).
 
-commit a885b3ccc74d8e38074e1c43a47c354c5ea0b01e upstream.
+I'll have to append new patches to this set "[PATCH v2 0/3] x86:
+intel-mid: handle platform code error in better way", so it won't be a
+simple fix of patch description.
 
-The GMCH_CTRL register (or MGCC in the spec) is at a different address
-on Sandybridge, and the address to which we currently write to is
-undefined. These stray writes appear to upset (hard hang) my Ivybridge
-machine whilst it is in UEFI mode.
+In order to not block the rest of my patches on thread "[PATCH v2 0/4]
+Add Clovertrail and Merrifeld support to Intel MID", please consider to
+apply them first (maybe for 3.14 if possible).
 
-Note that the register is still marked as locked RO on Sandybridge, so
-vgaarb is still dysfunctional.
+When I resend these patches here, we can consider apply them on 3.14-rcX
+(as they are bug fixes) or just postpone them to >3.14.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/intel_display.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 5b769a7..7330c58 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9438,14 +9438,15 @@ void intel_connector_attach_encoder(struct intel_connector *connector,
- int intel_modeset_vga_set_state(struct drm_device *dev, bool state)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-+	unsigned reg = INTEL_INFO(dev)->gen >= 6 ? SNB_GMCH_CTRL : INTEL_GMCH_CTRL;
- 	u16 gmch_ctrl;
- 
--	pci_read_config_word(dev_priv->bridge_dev, INTEL_GMCH_CTRL, &gmch_ctrl);
-+	pci_read_config_word(dev_priv->bridge_dev, reg, &gmch_ctrl);
- 	if (state)
- 		gmch_ctrl &= ~INTEL_GMCH_VGA_DISABLE;
- 	else
- 		gmch_ctrl |= INTEL_GMCH_VGA_DISABLE;
--	pci_write_config_word(dev_priv->bridge_dev, INTEL_GMCH_CTRL, gmch_ctrl);
-+	pci_write_config_word(dev_priv->bridge_dev, reg, gmch_ctrl);
- 	return 0;
- }
- 
--- 
-1.8.3.2
+David Cohen
 
+> 
+> Br, David Cohen
+> 
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
