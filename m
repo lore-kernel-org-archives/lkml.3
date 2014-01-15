@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846AbaAOWUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:20:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41139 "EHLO
+	id S1754397AbaAOWVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:21:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41131 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaAOV6j (ORCPT
+	with ESMTP id S1753781AbaAOV6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:58:39 -0500
+	Wed, 15 Jan 2014 16:58:36 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 104/166] scripts/link-vmlinux.sh: only filter kernel symbols for arm
-Date: Wed, 15 Jan 2014 13:51:58 -0800
-Message-Id: <1389822780-4729-105-git-send-email-kamal@canonical.com>
+Cc: Liu Ping Fan <pingfank@linux.vnet.ibm.com>, Alexander Graf <agraf@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 058/166] powerpc: kvm: fix rare but potential deadlock scene
+Date: Wed, 15 Jan 2014 13:51:12 -0800
+Message-Id: <1389822780-4729-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -26,43 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: pingfan liu <qemulist@gmail.com>
 
-commit 7122c3e9154b5d9a7422f68f02d8acf050fad2b0 upstream.
+commit 91648ec09c1ef69c4d840ab6dab391bfb452d554 upstream.
 
-Actually CONFIG_PAGE_OFFSET isn't same with PAGE_OFFSET, so
-it isn't easy to figue out PAGE_OFFSET defined in header
-file from scripts.
+Since kvmppc_hv_find_lock_hpte() is called from both virtmode and
+realmode, so it can trigger the deadlock.
 
-Because CONFIG_PAGE_OFFSET may not be defined in some ARCHs(
-64bit ARCH), or defined as bogus value in !MMU case, so
-this patch only applys the filter on ARM when CONFIG_PAGE_OFFSET
-is defined as the original problem is only on ARM.
+Suppose the following scene:
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Fixes: f6537f2f0eba4eba3354e48dbe3047db6d8b6254
-Singed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Two physical cpuM, cpuN, two VM instances A, B, each VM has a group of
+vcpus.
+
+If on cpuM, vcpu_A_1 holds bitlock X (HPTE_V_HVLOCK), then is switched
+out, and on cpuN, vcpu_A_2 try to lock X in realmode, then cpuN will be
+caught in realmode for a long time.
+
+What makes things even worse if the following happens,
+  On cpuM, bitlockX is hold, on cpuN, Y is hold.
+  vcpu_B_2 try to lock Y on cpuM in realmode
+  vcpu_A_2 try to lock X on cpuN in realmode
+
+Oops! deadlock happens
+
+Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+Reviewed-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- scripts/link-vmlinux.sh | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/powerpc/kvm/book3s_64_mmu_hv.c | 6 +++++-
+ arch/powerpc/kvm/book3s_hv_rm_mmu.c | 4 ++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 5716ba1..d6a4eab 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -83,7 +83,9 @@ kallsyms()
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
+diff --git a/arch/powerpc/kvm/book3s_64_mmu_hv.c b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+index 8cc18ab..61a1dbf 100644
+--- a/arch/powerpc/kvm/book3s_64_mmu_hv.c
++++ b/arch/powerpc/kvm/book3s_64_mmu_hv.c
+@@ -473,11 +473,14 @@ static int kvmppc_mmu_book3s_64_hv_xlate(struct kvm_vcpu *vcpu, gva_t eaddr,
+ 		slb_v = vcpu->kvm->arch.vrma_slb_v;
+ 	}
  
--	kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
-+	if [ -n "${CONFIG_ARM}" ] && [ -n "${CONFIG_PAGE_OFFSET}" ]; then
-+		kallsymopt="${kallsymopt} --page-offset=$CONFIG_PAGE_OFFSET"
-+	fi
++	preempt_disable();
+ 	/* Find the HPTE in the hash table */
+ 	index = kvmppc_hv_find_lock_hpte(kvm, eaddr, slb_v,
+ 					 HPTE_V_VALID | HPTE_V_ABSENT);
+-	if (index < 0)
++	if (index < 0) {
++		preempt_enable();
+ 		return -ENOENT;
++	}
+ 	hptep = (unsigned long *)(kvm->arch.hpt_virt + (index << 4));
+ 	v = hptep[0] & ~HPTE_V_HVLOCK;
+ 	gr = kvm->arch.revmap[index].guest_rpte;
+@@ -485,6 +488,7 @@ static int kvmppc_mmu_book3s_64_hv_xlate(struct kvm_vcpu *vcpu, gva_t eaddr,
+ 	/* Unlock the HPTE */
+ 	asm volatile("lwsync" : : : "memory");
+ 	hptep[0] = v;
++	preempt_enable();
  
- 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
- 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
+ 	gpte->eaddr = eaddr;
+ 	gpte->vpage = ((v & HPTE_V_AVPN) << 4) | ((eaddr >> 12) & 0xfff);
+diff --git a/arch/powerpc/kvm/book3s_hv_rm_mmu.c b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
+index 19c93ba..9a1f990 100644
+--- a/arch/powerpc/kvm/book3s_hv_rm_mmu.c
++++ b/arch/powerpc/kvm/book3s_hv_rm_mmu.c
+@@ -735,6 +735,10 @@ static int slb_base_page_shift[4] = {
+ 	20,	/* 1M, unsupported */
+ };
+ 
++/* When called from virtmode, this func should be protected by
++ * preempt_disable(), otherwise, the holding of HPTE_V_HVLOCK
++ * can trigger deadlock issue.
++ */
+ long kvmppc_hv_find_lock_hpte(struct kvm *kvm, gva_t eaddr, unsigned long slb_v,
+ 			      unsigned long valid)
+ {
 -- 
 1.8.3.2
 
