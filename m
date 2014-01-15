@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaAOHgC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 02:36:02 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56628 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaAOHf7 (ORCPT
+	id S1751538AbaAOHji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 02:39:38 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:57758 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAOHjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 02:35:59 -0500
-Date: Wed, 15 Jan 2014 08:35:33 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@linaro.org>
-Cc: mingo@redhat.com, tglx@linutronix.de, daniel.lezcano@linaro.org,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, linaro-kernel@lists.linaro.org
-Subject: Re: [RFC PATCH] sched: find the latest idle cpu
-Message-ID: <20140115073533.GU31570@twins.programming.kicks-ass.net>
-References: <1389758879-19951-1-git-send-email-alex.shi@linaro.org>
+	Wed, 15 Jan 2014 02:39:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389758879-19951-1-git-send-email-alex.shi@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1389207661.10754.42.camel@host5.omatika.ru>
+References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+	<1387309071-22382-1-git-send-email-ynvich@gmail.com>
+	<1387309071-22382-12-git-send-email-ynvich@gmail.com>
+	<CACRpkdaY7xpoeeUqBBqUS2swe6Y5gKt67VYNvNRrsbFhyU=ATw@mail.gmail.com>
+	<1389207661.10754.42.camel@host5.omatika.ru>
+Date: Wed, 15 Jan 2014 08:39:35 +0100
+Message-ID: <CACRpkda_6P3s3LBwV5ve+=_JhxehephvpPT=pKPk3NzEKQLa9g@mail.gmail.com>
+Subject: Re: [PATCH v3 11/21] ARM: pxa: support ICP DAS LP-8x4x FPGA irq
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 12:07:59PM +0800, Alex Shi wrote:
-> Currently we just try to find least load cpu. If some cpus idled,
-> we just pick the first cpu in cpu mask.
-> 
-> In fact we can get the interrupted idle cpu or the latest idled cpu,
-> then we may get the benefit from both latency and power.
-> The selected cpu maybe not the best, since other cpu may be interrupted
-> during our selecting. But be captious costs too much.
+On Wed, Jan 8, 2014 at 8:01 PM, Sergei Ianovich <ynvich@gmail.com> wrote:
+> On Thu, 2014-01-02 at 13:32 +0100, Linus Walleij wrote:
+>> On Tue, Dec 17, 2013 at 8:37 PM, Sergei Ianovich <ynvich@gmail.com> wrote:
+>> Usually combined GPIO+IRQ controllers are put into drivers/gpio but
+>> this is a bit special as it seems to handle also non-GPIO-related IRQs
+>> so let's get some input on this.
+>
+> This one is a plain IRQ controller. It has simple input lines, not GPIO
+> pins. The chip reports its status to upper level interrupt controller.
+> The upper level controller is PXA GPIO in this case.
 
-No, we should not do anything like this without first integrating
-cpuidle.
+Hm I don't know why I was deluded into thinking this had something to
+do with GPIO. I must have been soft in the head. Sorry about all those
+comments ...
 
-At which point we have a sane view of the idle states and can make a
-sane choice between them.
+I'll re-read the irqchip driver v3.1.
+
+Yours,
+Linus Walleij
