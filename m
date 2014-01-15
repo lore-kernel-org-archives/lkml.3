@@ -1,65 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648AbaAPAXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 19:23:52 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:38200
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1751879AbaAPAZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 19:25:39 -0500
+Received: from ozlabs.org ([203.10.76.45]:53110 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900AbaAPAXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 19:23:50 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>,
-        "[3.9+]"@linuxonhyperv.com
-Subject: [PATCH 1/1] Drivers: hv: vmbus: Specify the target CPU that should receive notification
-Date: Wed, 15 Jan 2014 17:12:58 -0800
-Message-Id: <1389834778-15872-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1750900AbaAPAZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 19:25:36 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jason Wang <jasowang@redhat.com>, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH net-next RFC] virtio-net: drop rq->max and rq->num
+In-Reply-To: <87mwixx670.fsf@rustcorp.com.au>
+References: <1388134685-30691-1-git-send-email-jasowang@redhat.com> <87mwixx670.fsf@rustcorp.com.au>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 16 Jan 2014 10:25:26 +1030
+Message-ID: <87zjmwvlzl.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the initial VMBUS connect phase, starting with WS2012 R2, we should
-specify the VPCU in the guest that should receive the notification. Fix this
-issue. This fix is required to properly connect to the host in the kexeced
-kernel.
+Rusty Russell <rusty@rustcorp.com.au> writes:
+> Jason Wang <jasowang@redhat.com> writes:
+>> It looks like there's no need for those two fields:
+>>
+>> - Unless there's a failure for the first refill try, rq->max should be always
+>>   equal to the vring size.
+>> - rq->num is only used to determine the condition that we need to do the refill,
+>>   we could check vq->num_free instead.
+>> - rq->num was required to be increased or decreased explicitly after each
+>>   get/put which results a bad API.
+>>
+>> So this patch removes them both to make the code simpler.
+>
+> Nice.  These fields date from when the vq struct was opaque.
+>
+> Applied,
+> Rusty.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: <stable@vger.kernel.org>        [3.9+]
----
- drivers/hv/connection.c |    2 ++
- include/linux/hyperv.h  |    2 +-
- 2 files changed, 3 insertions(+), 1 deletions(-)
+Oops, this doesn't require any core virtio changes, so it's for DaveM:
 
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index af6edf9..855bbda 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -78,6 +78,8 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
- 	msg->interrupt_page = virt_to_phys(vmbus_connection.int_page);
- 	msg->monitor_page1 = virt_to_phys(vmbus_connection.monitor_pages[0]);
- 	msg->monitor_page2 = virt_to_phys(vmbus_connection.monitor_pages[1]);
-+	if (version == VERSION_WIN8)
-+		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
- 
- 	/*
- 	 * Add to list before we send the request since we may
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 15da677..344883d 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -875,7 +875,7 @@ struct vmbus_channel_relid_released {
- struct vmbus_channel_initiate_contact {
- 	struct vmbus_channel_message_header header;
- 	u32 vmbus_version_requested;
--	u32 padding2;
-+	u32 target_vcpu; /* The VCPU the host should respond to */
- 	u64 interrupt_page;
- 	u64 monitor_page1;
- 	u64 monitor_page2;
--- 
-1.7.4.1
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
+Thanks,
+Rusty.
+
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/net/virtio_net.c | 16 +++-------------
+>>  1 file changed, 3 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>> index c51a988..4e1bce3 100644
+>> --- a/drivers/net/virtio_net.c
+>> +++ b/drivers/net/virtio_net.c
+>> @@ -72,9 +72,6 @@ struct receive_queue {
+>>  
+>>  	struct napi_struct napi;
+>>  
+>> -	/* Number of input buffers, and max we've ever had. */
+>> -	unsigned int num, max;
+>> -
+>>  	/* Chain pages by the private ptr. */
+>>  	struct page *pages;
+>>  
+>> @@ -360,7 +357,6 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
+>>  		}
+>>  
+>>  		page = virt_to_head_page(buf);
+>> -		--rq->num;
+>>  
+>>  		num_skb_frags = skb_shinfo(curr_skb)->nr_frags;
+>>  		if (unlikely(num_skb_frags == MAX_SKB_FRAGS)) {
+>> @@ -406,7 +402,6 @@ err_skb:
+>>  		}
+>>  		page = virt_to_head_page(buf);
+>>  		put_page(page);
+>> -		--rq->num;
+>>  	}
+>>  err_buf:
+>>  	dev->stats.rx_dropped++;
+>> @@ -628,10 +623,7 @@ static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
+>>  		oom = err == -ENOMEM;
+>>  		if (err)
+>>  			break;
+>> -		++rq->num;
+>>  	} while (rq->vq->num_free);
+>> -	if (unlikely(rq->num > rq->max))
+>> -		rq->max = rq->num;
+>>  	if (unlikely(!virtqueue_kick(rq->vq)))
+>>  		return false;
+>>  	return !oom;
+>> @@ -699,11 +691,10 @@ again:
+>>  	while (received < budget &&
+>>  	       (buf = virtqueue_get_buf(rq->vq, &len)) != NULL) {
+>>  		receive_buf(rq, buf, len);
+>> -		--rq->num;
+>>  		received++;
+>>  	}
+>>  
+>> -	if (rq->num < rq->max / 2) {
+>> +	if (rq->vq->num_free > virtqueue_get_vring_size(rq->vq) / 2) {
+>>  		if (!try_fill_recv(rq, GFP_ATOMIC))
+>>  			schedule_delayed_work(&vi->refill, 0);
+>>  	}
+>> @@ -1398,9 +1389,7 @@ static void free_unused_bufs(struct virtnet_info *vi)
+>>  				give_pages(&vi->rq[i], buf);
+>>  			else
+>>  				dev_kfree_skb(buf);
+>> -			--vi->rq[i].num;
+>>  		}
+>> -		BUG_ON(vi->rq[i].num != 0);
+>>  	}
+>>  }
+>>  
+>> @@ -1671,7 +1660,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+>>  		try_fill_recv(&vi->rq[i], GFP_KERNEL);
+>>  
+>>  		/* If we didn't even get one input buffer, we're useless. */
+>> -		if (vi->rq[i].num == 0) {
+>> +		if (vi->rq[i].vq->num_free ==
+>> +		    virtqueue_get_vring_size(vi->rq[i].vq)) {
+>>  			free_unused_bufs(vi);
+>>  			err = -ENOMEM;
+>>  			goto free_recv_bufs;
+>> -- 
+>> 1.8.3.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
