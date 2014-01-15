@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaAOW3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:29:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40966 "EHLO
+	id S1753449AbaAOV5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:57:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40933 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462AbaAOV5X (ORCPT
+	with ESMTP id S1753429AbaAOV5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:23 -0500
+	Wed, 15 Jan 2014 16:57:14 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kamala R <kamala@aristanetworks.com>,
+Cc: Vlad Yasevich <vyasevich@gmail.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 138/166] IPv6: Fixed support for blackhole and prohibit routes
-Date: Wed, 15 Jan 2014 13:52:32 -0800
-Message-Id: <1389822780-4729-139-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 144/166] macvtap: signal truncated packets
+Date: Wed, 15 Jan 2014 13:52:38 -0800
+Message-Id: <1389822780-4729-145-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,100 +31,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamala R <kamala@aristanetworks.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 7150aede5dd241539686e17d9592f5ebd28a2cda ]
+[ Upstream commit ce232ce01d61b184202bb185103d119820e1260c ]
 
-The behaviour of blackhole and prohibit routes has been corrected by setting
-the input and output pointers of the dst variable appropriately. For
-blackhole routes, they are set to dst_discard and to ip6_pkt_discard and
-ip6_pkt_discard_out respectively for prohibit routes.
+macvtap_put_user() never return a value grater than iov length, this in fact
+bypasses the truncated checking in macvtap_recvmsg(). Fix this by always
+returning the size of packet plus the possible vlan header to let the trunca
+checking work.
 
-ipv6: ip6_pkt_prohibit(_out) should not depend on
-CONFIG_IPV6_MULTIPLE_TABLES
-
-We need ip6_pkt_prohibit(_out) available without
-CONFIG_IPV6_MULTIPLE_TABLES
-
-Signed-off-by: Kamala R <kamala@aristanetworks.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/route.c | 22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+ drivers/net/macvtap.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index abf3556..9b530eb 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -78,6 +78,8 @@ static int		 ip6_dst_gc(struct dst_ops *ops);
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index c8c9bcc..894613c 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -808,7 +808,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 	int ret;
+ 	int vnet_hdr_len = 0;
+ 	int vlan_offset = 0;
+-	int copied;
++	int copied, total;
  
- static int		ip6_pkt_discard(struct sk_buff *skb);
- static int		ip6_pkt_discard_out(struct sk_buff *skb);
-+static int		ip6_pkt_prohibit(struct sk_buff *skb);
-+static int		ip6_pkt_prohibit_out(struct sk_buff *skb);
- static void		ip6_link_failure(struct sk_buff *skb);
- static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
- 					   struct sk_buff *skb, u32 mtu);
-@@ -240,9 +242,6 @@ static const struct rt6_info ip6_null_entry_template = {
+ 	if (q->flags & IFF_VNET_HDR) {
+ 		struct virtio_net_hdr vnet_hdr;
+@@ -823,7 +823,8 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 		if (memcpy_toiovecend(iv, (void *)&vnet_hdr, 0, sizeof(vnet_hdr)))
+ 			return -EFAULT;
+ 	}
+-	copied = vnet_hdr_len;
++	total = copied = vnet_hdr_len;
++	total += skb->len;
  
- #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+ 	if (!vlan_tx_tag_present(skb))
+ 		len = min_t(int, skb->len, len);
+@@ -838,6 +839,7 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
  
--static int ip6_pkt_prohibit(struct sk_buff *skb);
--static int ip6_pkt_prohibit_out(struct sk_buff *skb);
--
- static const struct rt6_info ip6_prohibit_entry_template = {
- 	.dst = {
- 		.__refcnt	= ATOMIC_INIT(1),
-@@ -1512,21 +1511,24 @@ int ip6_route_add(struct fib6_config *cfg)
- 				goto out;
- 			}
- 		}
--		rt->dst.output = ip6_pkt_discard_out;
--		rt->dst.input = ip6_pkt_discard;
- 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
- 		switch (cfg->fc_type) {
- 		case RTN_BLACKHOLE:
- 			rt->dst.error = -EINVAL;
-+			rt->dst.output = dst_discard;
-+			rt->dst.input = dst_discard;
- 			break;
- 		case RTN_PROHIBIT:
- 			rt->dst.error = -EACCES;
-+			rt->dst.output = ip6_pkt_prohibit_out;
-+			rt->dst.input = ip6_pkt_prohibit;
- 			break;
- 		case RTN_THROW:
--			rt->dst.error = -EAGAIN;
--			break;
- 		default:
--			rt->dst.error = -ENETUNREACH;
-+			rt->dst.error = (cfg->fc_type == RTN_THROW) ? -EAGAIN
-+					: -ENETUNREACH;
-+			rt->dst.output = ip6_pkt_discard_out;
-+			rt->dst.input = ip6_pkt_discard;
- 			break;
- 		}
- 		goto install_route;
-@@ -2106,8 +2108,6 @@ static int ip6_pkt_discard_out(struct sk_buff *skb)
- 	return ip6_pkt_drop(skb, ICMPV6_NOROUTE, IPSTATS_MIB_OUTNOROUTES);
+ 		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
+ 		len = min_t(int, skb->len + VLAN_HLEN, len);
++		total += VLAN_HLEN;
+ 
+ 		copy = min_t(int, vlan_offset, len);
+ 		ret = skb_copy_datagram_const_iovec(skb, 0, iv, copied, copy);
+@@ -855,10 +857,9 @@ static ssize_t macvtap_put_user(struct macvtap_queue *q,
+ 	}
+ 
+ 	ret = skb_copy_datagram_const_iovec(skb, vlan_offset, iv, copied, len);
+-	copied += len;
+ 
+ done:
+-	return ret ? ret : copied;
++	return ret ? ret : total;
  }
  
--#ifdef CONFIG_IPV6_MULTIPLE_TABLES
--
- static int ip6_pkt_prohibit(struct sk_buff *skb)
- {
- 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_INNOROUTES);
-@@ -2119,8 +2119,6 @@ static int ip6_pkt_prohibit_out(struct sk_buff *skb)
- 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
- }
+ static ssize_t macvtap_do_read(struct macvtap_queue *q, struct kiocb *iocb,
+@@ -910,7 +911,7 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
+ 	}
  
--#endif
--
- /*
-  *	Allocate a dst for local (unicast / anycast) address.
-  */
+ 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+-	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
++	ret = min_t(ssize_t, ret, len);
+ 	if (ret > 0)
+ 		iocb->ki_pos = ret;
+ out:
 -- 
 1.8.3.2
 
