@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750998AbaAOGif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 01:38:35 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:59141 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaAOGic (ORCPT
+	id S1751352AbaAOGli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 01:41:38 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:51641 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaAOGlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 01:38:32 -0500
-Date: Wed, 15 Jan 2014 07:38:27 +0100
+	Wed, 15 Jan 2014 01:41:36 -0500
+Date: Wed, 15 Jan 2014 07:41:32 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, sboyd@codeaurora.org, w@1wt.eu, khalasa@piap.pl,
-        u.kleine-koenig@pengutronix.de, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/urgent] sched_clock: Disable seqlock lockdep usage in
- sched_clock()
-Message-ID: <20140115063827.GA11941@gmail.com>
-References: <1388704274-5278-2-git-send-email-john.stultz@linaro.org>
- <tip-7a06c41cbec33c6dbe7eec575c61986122617408@git.kernel.org>
- <52D58D7F.2030306@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents/clocksources: 3.13 fixes
+Message-ID: <20140115064132.GA12484@gmail.com>
+References: <52C14E45.5040403@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <52D58D7F.2030306@linaro.org>
+In-Reply-To: <52C14E45.5040403@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* John Stultz <john.stultz@linaro.org> wrote:
+* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
-> On 01/12/2014 10:42 AM, tip-bot for John Stultz wrote:
-> > Commit-ID:  7a06c41cbec33c6dbe7eec575c61986122617408
-> > Gitweb:     http://git.kernel.org/tip/7a06c41cbec33c6dbe7eec575c61986122617408
-> > Author:     John Stultz <john.stultz@linaro.org>
-> > AuthorDate: Thu, 2 Jan 2014 15:11:14 -0800
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Sun, 12 Jan 2014 10:14:00 +0100
-> >
-> > sched_clock: Disable seqlock lockdep usage in sched_clock()
-> >
-> > Unfortunately the seqlock lockdep enablement can't be used
-> > in sched_clock(), since the lockdep infrastructure eventually
-> > calls into sched_clock(), which causes a deadlock.
-> >
-> > Thus, this patch changes all generic sched_clock() usage
-> > to use the raw_* methods.
-> >
-> > Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-> > Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-> > Reported-by: Krzysztof Hałasa <khalasa@piap.pl>
-> > Signed-off-by: John Stultz <john.stultz@linaro.org>
-> > Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > Cc: Willy Tarreau <w@1wt.eu>
-> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> > Link: http://lkml.kernel.org/r/1388704274-5278-2-git-send-email-john.stultz@linaro.org
-> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
 > 
-> Hey Ingo,
->     Just wanted to follow up here, since I've still not seen this (and
-> the raw_ renaming patch) submitted to Linus. These address a lockup that
-> triggers on ARM systems if lockdep is enabled and it would be good to
-> get it in before 3.13 is out.
+> Hi Thomas and Ingo,
+> 
+> here is a pull request for a single fix for 3.13. It is based on the
+> latest timers/urgent update.
+> 
+>  * Soren Brinkmann fixed the cadence_ttc driver where a call to
+> clk_get_rate happens in an interrupt context. More precisely in an
+> IPI when the broadcast timer is initialized for each cpu in the
+> cpuidle driver
+> 
+> Thanks
+>   -- Daniel
+> 
+> The following changes since commit b0031f227e47919797dc0e1c1990f3ef151ff0cc:
+> 
+>   Merge tag 's2mps11-build' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator
+> (2013-12-17 12:57:36 -0800)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.linaro.org/people/daniel.lezcano/linux.git
+> clockevents/3.13-fixes
+> 
+> for you to fetch changes up to c1dcc927dae01dfd4904ee82ce2c00b50eab6dc3:
+> 
+>   clocksource: cadence_ttc: Fix mutex taken inside interrupt context
+> (2013-12-30 11:32:24 +0100)
+> 
+> ----------------------------------------------------------------
+> Soren Brinkmann (1):
+>       clocksource: cadence_ttc: Fix mutex taken inside interrupt context
+> 
+>  drivers/clocksource/cadence_ttc_timer.c |   21 +++++++++++++--------
+>  1 file changed, 13 insertions(+), 8 deletions(-)
 
-It's in tip:core/urgent, i.e. lined up for v3.13, I plan to send it to 
-Linus later today.
-
-Thanks,
+Pulled into tip:timers/urgent, thanks Daniel!
 
 	Ingo
