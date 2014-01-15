@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaAOI0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 03:26:50 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:43616 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751719AbaAOI0r (ORCPT
+	id S1751933AbaAOI1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 03:27:39 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:59040 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaAOI1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 03:26:47 -0500
-From: Neil Zhang <zhangwm@marvell.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 15 Jan 2014 00:26:43 -0800
-Subject: RE: [PATCH] gpio: pxa: normalize the return value for gpio_get
-Thread-Topic: [PATCH] gpio: pxa: normalize the return value for gpio_get
-Thread-Index: Ac8Rx4AXSzDLBBLlRp+5uoI5hoCaVwAA/vFA
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE540C390509@SC-VEXCH4.marvell.com>
-References: <1389333783-3372-1-git-send-email-zhangwm@marvell.com>
- <CACRpkda=4AhOWDYu7ENcovTo_+oSKKVU+eqkHD9W-3bDMv2MUQ@mail.gmail.com>
-In-Reply-To: <CACRpkda=4AhOWDYu7ENcovTo_+oSKKVU+eqkHD9W-3bDMv2MUQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Wed, 15 Jan 2014 03:27:36 -0500
+Message-ID: <52D64676.4040000@linaro.org>
+Date: Wed, 15 Jan 2014 09:27:34 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-15_02:2014-01-14,2014-01-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1401150001
+To: raistlin@linux.it, juri.lelli@gmail.com
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [BUG] [ tip/sched/core ] System unresponsive after booting
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0F8QtaC007218
 
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: 2014Äê1ÔÂ15ÈÕ 15:58
-> To: Neil Zhang
-> Cc: Alexandre Courbot; linux-gpio@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] gpio: pxa: normalize the return value for gpio_get
-> 
-> On Fri, Jan 10, 2014 at 7:03 AM, Neil Zhang <zhangwm@marvell.com> wrote:
-> 
-> > It would be convenient to normalize the return value for gpio_get.
-> >
-> > I have checked mach-mmp / mach-pxa / plat-pxa / plat-orion / mach-orion5x.
-> > It's OK for all of them to change this function to return 0 and 1.
-> >
-> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> 
-> Bah I updated the commit message a bit ... you dropped the
-> gpio: pxa: etc from the previous patch, not good but don't worry I fixed it up.
-> 
-Thanks!
+Hi all,
 
-> Yours,
-> Linus Walleij
+I use the tip/sched/core branch.
 
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+After git pulling yesterday, my host is unresponsive after booting the OS.
+
+  * It boots normally
+  * It sends info to the console
+  * The graphics does not work
+  * The terminals show the prompt, I can enter the username but after 
+pressing enter, it does not give the password prompt
+  * sysrq works more or less, I can't get the process stack but it 
+receives the command
+
+It is like no new process can be created.
+
+I have a dual Xeon processor E5325 (2 x 4 cores).
+
+After git bisecting, the following patch seems to introduce the bug.
+
+commit d50dde5a10f305253cbc3855307f608f8a3c5f73
+Author: Dario Faggioli <raistlin@linux.it>
+Date:   Thu Nov 7 14:43:36 2013 +0100
+
+     sched: Add new scheduler syscalls to support an extended scheduling 
+parameters ABI
+
+     Add the syscalls needed for supporting scheduling algorithms
+     with extended scheduling parameters (e.g., SCHED_DEADLINE).
+
+
+[ ... ]
+
+
+     Signed-off-by: Dario Faggioli <raistlin@linux.it>
+     [ Rewrote to use sched_attr. ]
+     Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
+     [ Removed sched_setscheduler2() for now. ]
+     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+     Link: 
+http://lkml.kernel.org/r/1383831828-15501-3-git-send-email-juri.lelli@gmail.com
+     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
