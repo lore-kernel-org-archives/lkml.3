@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaAOCnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:43:40 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:36495 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317AbaAOCmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:42:33 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s0F2gP2r019188, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <oliver@neukum.org>, <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next v2 1/3] r8152: change the descriptor
-Date: Wed, 15 Jan 2014 10:42:14 +0800
-Message-ID: <1389753736-2218-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.4.2
-In-Reply-To: <1389753736-2218-1-git-send-email-hayeswang@realtek.com>
-References: <1389250232-8663-1-git-send-email-hayeswang@realtek.com>
- <1389753736-2218-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	id S1752187AbaAOCmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:42:20 -0500
+Received: from ozlabs.org ([203.10.76.45]:56455 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010AbaAOCmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 21:42:16 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: linux-kernel@vger.kernel.org
+Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 1/6] virtio_net: don't crash if virtqueue is broken.
+Date: Wed, 15 Jan 2014 13:06:06 +1030
+Message-Id: <1389753371-26469-1-git-send-email-rusty@rustcorp.com.au>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The r8152 could support RTL8153. Update the relative descriptor.
+A bad implementation of virtio might cause us to mark the virtqueue
+broken: we'll dev_err() in that case, and the device is useless, but
+let's not BUG_ON().
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 ---
- drivers/net/usb/Kconfig | 5 +++--
- drivers/net/usb/r8152.c | 2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/virtio_net.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-index 47b0f73..6b638a0 100644
---- a/drivers/net/usb/Kconfig
-+++ b/drivers/net/usb/Kconfig
-@@ -92,11 +92,12 @@ config USB_RTL8150
- 	  module will be called rtl8150.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 5d776447d9c3..0949688ae540 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -904,8 +904,7 @@ static bool virtnet_send_command(struct virtnet_info *vi, u8 class, u8 cmd,
+ 	sgs[out_num + in_num++] = &stat;
  
- config USB_RTL8152
--	tristate "Realtek RTL8152 Based USB 2.0 Ethernet Adapters"
-+	tristate "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
- 	select MII
- 	help
- 	  This option adds support for Realtek RTL8152 based USB 2.0
--	  10/100 Ethernet adapters.
-+	  10/100 Ethernet adapters and RTL8153 based USB 3.0 10/100/1000
-+	  Ethernet adapters.
+ 	BUG_ON(out_num + in_num > ARRAY_SIZE(sgs));
+-	BUG_ON(virtqueue_add_sgs(vi->cvq, sgs, out_num, in_num, vi, GFP_ATOMIC)
+-	       < 0);
++	virtqueue_add_sgs(vi->cvq, sgs, out_num, in_num, vi, GFP_ATOMIC);
  
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called r8152.
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index bf7d549..38f3c14 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -26,7 +26,7 @@
- /* Version Information */
- #define DRIVER_VERSION "v1.03.0 (2013/12/26)"
- #define DRIVER_AUTHOR "Realtek linux nic maintainers <nic_swsd@realtek.com>"
--#define DRIVER_DESC "Realtek RTL8152 Based USB 2.0 Ethernet Adapters"
-+#define DRIVER_DESC "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
- #define MODULENAME "r8152"
- 
- #define R8152_PHY_ID		32
+ 	if (unlikely(!virtqueue_kick(vi->cvq)))
+ 		return status == VIRTIO_NET_OK;
 -- 
-1.8.4.2
+1.8.3.2
 
