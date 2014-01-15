@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaAOW2n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:28:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40973 "EHLO
+	id S1753966AbaAOW3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:29:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40966 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399AbaAOV50 (ORCPT
+	with ESMTP id S1753462AbaAOV5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:26 -0500
+	Wed, 15 Jan 2014 16:57:23 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Andrey Vagin <avagin@openvz.org>,
+Cc: Kamala R <kamala@aristanetworks.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 145/166] virtio: delete napi structures from netdev before releasing memory
-Date: Wed, 15 Jan 2014 13:52:39 -0800
-Message-Id: <1389822780-4729-146-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 138/166] IPv6: Fixed support for blackhole and prohibit routes
+Date: Wed, 15 Jan 2014 13:52:32 -0800
+Message-Id: <1389822780-4729-139-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -30,83 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Kamala R <kamala@aristanetworks.com>
 
-[ Upstream commit d4fb84eefe5164f6a6ea51d0a9e26280c661a0dd ]
+[ Upstream commit 7150aede5dd241539686e17d9592f5ebd28a2cda ]
 
-free_netdev calls netif_napi_del too, but it's too late, because napi
-structures are placed on vi->rq. netif_napi_add() is called from
-virtnet_alloc_queues.
+The behaviour of blackhole and prohibit routes has been corrected by setting
+the input and output pointers of the dst variable appropriately. For
+blackhole routes, they are set to dst_discard and to ip6_pkt_discard and
+ip6_pkt_discard_out respectively for prohibit routes.
 
-general protection fault: 0000 [#1] SMP
-Dumping ftrace buffer:
-   (ftrace buffer empty)
-Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
-CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
-RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
-RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
-RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
-RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
-RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
-R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
-FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
-Stack:
- ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
- ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
- ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
-Call Trace:
- [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
- [<ffffffff8156499b>] free_netdev+0x8b/0x110
- [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
- [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
- [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
- [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
- [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
- [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
- [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
- [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
- [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
- [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
- [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
-Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
-RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
- RSP <ffff8800379e1dd0>
----[ end trace d5931cd3f87c9763 ]---
+ipv6: ip6_pkt_prohibit(_out) should not depend on
+CONFIG_IPV6_MULTIPLE_TABLES
 
-Fixes: 986a4f4d452d (virtio_net: multiqueue support)
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+We need ip6_pkt_prohibit(_out) available without
+CONFIG_IPV6_MULTIPLE_TABLES
+
+Signed-off-by: Kamala R <kamala@aristanetworks.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/virtio_net.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv6/route.c | 22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index c3bcb4a..fa2385a 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1265,6 +1265,11 @@ static void virtnet_config_changed(struct virtio_device *vdev)
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index abf3556..9b530eb 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -78,6 +78,8 @@ static int		 ip6_dst_gc(struct dst_ops *ops);
  
- static void virtnet_free_queues(struct virtnet_info *vi)
- {
-+	int i;
-+
-+	for (i = 0; i < vi->max_queue_pairs; i++)
-+		netif_napi_del(&vi->rq[i].napi);
-+
- 	kfree(vi->rq);
- 	kfree(vi->sq);
+ static int		ip6_pkt_discard(struct sk_buff *skb);
+ static int		ip6_pkt_discard_out(struct sk_buff *skb);
++static int		ip6_pkt_prohibit(struct sk_buff *skb);
++static int		ip6_pkt_prohibit_out(struct sk_buff *skb);
+ static void		ip6_link_failure(struct sk_buff *skb);
+ static void		ip6_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
+ 					   struct sk_buff *skb, u32 mtu);
+@@ -240,9 +242,6 @@ static const struct rt6_info ip6_null_entry_template = {
+ 
+ #ifdef CONFIG_IPV6_MULTIPLE_TABLES
+ 
+-static int ip6_pkt_prohibit(struct sk_buff *skb);
+-static int ip6_pkt_prohibit_out(struct sk_buff *skb);
+-
+ static const struct rt6_info ip6_prohibit_entry_template = {
+ 	.dst = {
+ 		.__refcnt	= ATOMIC_INIT(1),
+@@ -1512,21 +1511,24 @@ int ip6_route_add(struct fib6_config *cfg)
+ 				goto out;
+ 			}
+ 		}
+-		rt->dst.output = ip6_pkt_discard_out;
+-		rt->dst.input = ip6_pkt_discard;
+ 		rt->rt6i_flags = RTF_REJECT|RTF_NONEXTHOP;
+ 		switch (cfg->fc_type) {
+ 		case RTN_BLACKHOLE:
+ 			rt->dst.error = -EINVAL;
++			rt->dst.output = dst_discard;
++			rt->dst.input = dst_discard;
+ 			break;
+ 		case RTN_PROHIBIT:
+ 			rt->dst.error = -EACCES;
++			rt->dst.output = ip6_pkt_prohibit_out;
++			rt->dst.input = ip6_pkt_prohibit;
+ 			break;
+ 		case RTN_THROW:
+-			rt->dst.error = -EAGAIN;
+-			break;
+ 		default:
+-			rt->dst.error = -ENETUNREACH;
++			rt->dst.error = (cfg->fc_type == RTN_THROW) ? -EAGAIN
++					: -ENETUNREACH;
++			rt->dst.output = ip6_pkt_discard_out;
++			rt->dst.input = ip6_pkt_discard;
+ 			break;
+ 		}
+ 		goto install_route;
+@@ -2106,8 +2108,6 @@ static int ip6_pkt_discard_out(struct sk_buff *skb)
+ 	return ip6_pkt_drop(skb, ICMPV6_NOROUTE, IPSTATS_MIB_OUTNOROUTES);
  }
+ 
+-#ifdef CONFIG_IPV6_MULTIPLE_TABLES
+-
+ static int ip6_pkt_prohibit(struct sk_buff *skb)
+ {
+ 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_INNOROUTES);
+@@ -2119,8 +2119,6 @@ static int ip6_pkt_prohibit_out(struct sk_buff *skb)
+ 	return ip6_pkt_drop(skb, ICMPV6_ADM_PROHIBITED, IPSTATS_MIB_OUTNOROUTES);
+ }
+ 
+-#endif
+-
+ /*
+  *	Allocate a dst for local (unicast / anycast) address.
+  */
 -- 
 1.8.3.2
 
