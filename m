@@ -1,103 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaAODpT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 22:45:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaAODpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 22:45:17 -0500
-Subject: [PATCH v2] vfio-pci: Use pci "try" reset interface
-From: Alex Williamson <alex.williamson@redhat.com>
-To: bhelgaas@google.com, alex.williamson@redhat.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Tue, 14 Jan 2014 20:45:09 -0700
-Message-ID: <20140115033854.18253.62934.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751679AbaAODqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 22:46:38 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:50140 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAODqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 22:46:36 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 14 Jan 2014 22:46:34 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mm: nobootmem: avoid type warning about alignment value
+In-reply-to: <20140112105958.GA9791@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.10.1401142238110.28907@knanqh.ubzr>
+References: <1385249326-9089-1-git-send-email-santosh.shilimkar@ti.com>
+ <529217C7.6030304@cogentembedded.com> <52935762.1080409@ti.com>
+ <20131209165044.cf7de2edb8f4205d5ac02ab0@linux-foundation.org>
+ <20131210005454.GX4360@n2100.arm.linux.org.uk> <52A66826.7060204@ti.com>
+ <20140112105958.GA9791@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCI resets will attempt to take the device_lock for any device to be
-reset.  This is a problem if that lock is already held, for instance
-in the device remove path.  It's not sufficient to simply kill the
-user process or skip the reset if called after .remove as a race could
-result in the same deadlock.  Instead, we handle all resets as "best
-effort" using the PCI "try" reset interfaces.  This prevents the user
-from being able to induce a deadlock by triggering a reset.
+On Sun, 12 Jan 2014, Russell King - ARM Linux wrote:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+> This patch makes their types match exactly with x86's definitions of
+> the same, which is the basic problem: on ARM, they all took "int" values
+> and returned "int"s, which leads to min() in nobootmem.c complaining.
+> 
+>  arch/arm/include/asm/bitops.h | 54 +++++++++++++++++++++++++++++++++++--------
+>  1 file changed, 44 insertions(+), 10 deletions(-)
 
-v2: Update error message to make it clear that device reset failed
-    and change back to pr_warn to make sure it's visible.  I'll
-    address whether dev_warn would be more appropriate in future
-    updates.
+For the record:
 
-Bjorn, if this looks good and you don't mind, please take this in
-through your tree so that it syncs with the introduction of the
-pci_try_reset interfaces.  Thanks!
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
- drivers/vfio/pci/vfio_pci.c |   29 +++++++++--------------------
- 1 file changed, 9 insertions(+), 20 deletions(-)
+The reason why macros were used at the time this was originally written 
+is because gcc used to have issues forwarding the constant nature of a 
+variable down multiple levels of inline functions and 
+__builtin_constant_p() always returned false.  But that was quite a long 
+time ago.
 
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index 6ab71b9..2319d20 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -139,25 +139,14 @@ static void vfio_pci_disable(struct vfio_pci_device *vdev)
- 	pci_write_config_word(pdev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
- 
- 	/*
--	 * Careful, device_lock may already be held.  This is the case if
--	 * a driver unbind is blocked.  Try to get the locks ourselves to
--	 * prevent a deadlock.
-+	 * Try to reset the device.  The success of this is dependent on
-+	 * being able to lock the device, which is not always possible.
- 	 */
- 	if (vdev->reset_works) {
--		bool reset_done = false;
--
--		if (pci_cfg_access_trylock(pdev)) {
--			if (device_trylock(&pdev->dev)) {
--				__pci_reset_function_locked(pdev);
--				reset_done = true;
--				device_unlock(&pdev->dev);
--			}
--			pci_cfg_access_unlock(pdev);
--		}
--
--		if (!reset_done)
--			pr_warn("%s: Unable to acquire locks for reset of %s\n",
--				__func__, dev_name(&pdev->dev));
-+		int ret = pci_try_reset_function(pdev);
-+		if (ret)
-+			pr_warn("%s: Failed to reset device %s (%d)\n",
-+				__func__, dev_name(&pdev->dev), ret);
- 	}
- 
- 	pci_restore_state(pdev);
-@@ -514,7 +503,7 @@ static long vfio_pci_ioctl(void *device_data,
- 
- 	} else if (cmd == VFIO_DEVICE_RESET) {
- 		return vdev->reset_works ?
--			pci_reset_function(vdev->pdev) : -EINVAL;
-+			pci_try_reset_function(vdev->pdev) : -EINVAL;
- 
- 	} else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
- 		struct vfio_pci_hot_reset_info hdr;
-@@ -684,8 +673,8 @@ reset_info_exit:
- 						    &info, slot);
- 		if (!ret)
- 			/* User has access, do the reset */
--			ret = slot ? pci_reset_slot(vdev->pdev->slot) :
--				     pci_reset_bus(vdev->pdev->bus);
-+			ret = slot ? pci_try_reset_slot(vdev->pdev->slot) :
-+				     pci_try_reset_bus(vdev->pdev->bus);
- 
- hot_reset_release:
- 		for (i--; i >= 0; i--)
 
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index e691ec91e4d3..b2e298a90d76 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -254,25 +254,59 @@ static inline int constant_fls(int x)
+>  }
+>  
+>  /*
+> - * On ARMv5 and above those functions can be implemented around
+> - * the clz instruction for much better code efficiency.
+> + * On ARMv5 and above those functions can be implemented around the
+> + * clz instruction for much better code efficiency.  __clz returns
+> + * the number of leading zeros, zero input will return 32, and
+> + * 0x80000000 will return 0.
+>   */
+> +static inline unsigned int __clz(unsigned int x)
+> +{
+> +	unsigned int ret;
+> +
+> +	asm("clz\t%0, %1" : "=r" (ret) : "r" (x));
+>  
+> +	return ret;
+> +}
+> +
+> +/*
+> + * fls() returns zero if the input is zero, otherwise returns the bit
+> + * position of the last set bit, where the LSB is 1 and MSB is 32.
+> + */
+>  static inline int fls(int x)
+>  {
+> -	int ret;
+> -
+>  	if (__builtin_constant_p(x))
+>  	       return constant_fls(x);
+>  
+> -	asm("clz\t%0, %1" : "=r" (ret) : "r" (x));
+> -       	ret = 32 - ret;
+> -	return ret;
+> +	return 32 - __clz(x);
+> +}
+> +
+> +/*
+> + * __fls() returns the bit position of the last bit set, where the
+> + * LSB is 0 and MSB is 31.  Zero input is undefined.
+> + */
+> +static inline unsigned long __fls(unsigned long x)
+> +{
+> +	return fls(x) - 1;
+> +}
+> +
+> +/*
+> + * ffs() returns zero if the input was zero, otherwise returns the bit
+> + * position of the first set bit, where the LSB is 1 and MSB is 32.
+> + */
+> +static inline int ffs(int x)
+> +{
+> +	return fls(x & -x);
+> +}
+> +
+> +/*
+> + * __ffs() returns the bit position of the first bit set, where the
+> + * LSB is 0 and MSB is 31.  Zero input is undefined.
+> + */
+> +static inline unsigned long __ffs(unsigned long x)
+> +{
+> +	return ffs(x) - 1;
+>  }
+>  
+> -#define __fls(x) (fls(x) - 1)
+> -#define ffs(x) ({ unsigned long __t = (x); fls(__t & -__t); })
+> -#define __ffs(x) (ffs(x) - 1)
+>  #define ffz(x) __ffs( ~(x) )
+>  
+>  #endif
+> 
+> 
+> -- 
+> FTTC broadband for 0.8mile line: 5.8Mbps down 500kbps up.  Estimation
+> in database were 13.1 to 19Mbit for a good line, about 7.5+ for a bad.
+> Estimate before purchase was "up to 13.2Mbit".
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
