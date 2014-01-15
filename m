@@ -1,77 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaAOJ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:58:25 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57932 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaAOJ6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:58:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Subject: Re: [RFC PATCH V2 3/4] dt-bindings: pci: xgene pcie device tree bindings
-Date: Wed, 15 Jan 2014 10:57:42 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, linux-pci@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@apm.com, jcm@redhat.com
-References: <1389742458-7693-1-git-send-email-tinamdar@apm.com> <1389742458-7693-4-git-send-email-tinamdar@apm.com>
-In-Reply-To: <1389742458-7693-4-git-send-email-tinamdar@apm.com>
+	id S1752020AbaAOJ6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:58:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43410 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751214AbaAOJ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 04:58:32 -0500
+Date: Wed, 15 Jan 2014 10:58:29 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm/memcg: fix endless iteration in reclaim
+Message-ID: <20140115095829.GI8782@dhcp22.suse.cz>
+References: <alpine.LSU.2.11.1401131742370.2229@eggly.anvils>
+ <alpine.LSU.2.11.1401131751080.2229@eggly.anvils>
+ <20140114132727.GB32227@dhcp22.suse.cz>
+ <20140114142610.GF32227@dhcp22.suse.cz>
+ <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201401151057.43044.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZQZo5kTmNBrSZXRvBz3SMToBDCu2XTtdIN986pwJ1az
- eYZ7lTkXBxjASfRr6fYXQg9jAlzZPIofzKjy0gvJ5m26WxyQ8w
- dRGbROqn7pMABG0aJ9V2cPsnHb9pG4rUZEl8h5ZDzsTbcpI33p
- BguR17wki8+oCErPyZ9EI+EcIey2hfAC7CYGd2af1J4MBpvhJC
- XPEEsgfqHwIm3I7KQM/gQCCfCtQ3NPpubSrzXzs4VpQwg2q9nE
- SAR5mMrBDUKLkS78vG1nFXY+ZIqHUiqJq52utoHzz+3yBzYWw3
- WT/6CDrvUiABoWsgWFEN76bs1K5hw02fdoIbk5+OlW8NT73qaD
- sTokTWSAe5JVRyHhWbnw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1401141201120.3762@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 January 2014, Tanmay Inamdar wrote:
-> This patch adds the bindings for X-Gene PCIe driver. The driver resides
-> under 'drivers/pci/host/pci-xgene.c' file.
+On Tue 14-01-14 12:42:28, Hugh Dickins wrote:
+> On Tue, 14 Jan 2014, Michal Hocko wrote:
+> > On Tue 14-01-14 14:27:27, Michal Hocko wrote:
+> > > On Mon 13-01-14 17:52:30, Hugh Dickins wrote:
+> > > > On one home machine I can easily reproduce (by rmdir of memcgdir during
+> > > > reclaim) multiple processes stuck looping forever in mem_cgroup_iter():
+> > > > __mem_cgroup_iter_next() keeps selecting the memcg being destroyed, fails
+> > > > to tryget it, returns NULL to mem_cgroup_iter(), which goes around again.
+> > > 
+> > > So you had a single memcg (without any children) and a limit-reclaim
+> > > on it when you removed it, right?
+> > 
+> > Hmm, thinking about this once more how can this happen? There must be a
+> > task to trigger the limit reclaim so the cgroup cannot go away (or is
+> > this somehow related to kmem accounting?). Only if the taks was migrated
+> > after the reclaim was initiated but before we started iterating?
 > 
-> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  .../devicetree/bindings/pci/xgene-pcie.txt         |   45 ++++++++++++++++++++
->  1 file changed, 45 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pcie.txt
+> Yes, I believe that's how it comes about (but no kmem accounting:
+> it's configured in but I'm not setting limits).
+
+OK, then it makes more sense now.
+
+> The "cg" script I run for testing appended below.  Normally I just run
+> it as "cg 2" to set up two memcgs, then my dual-tmpfs-kbuild script runs
+> one kbuild on tmpfs in cg 1, and another kbuild on ext4 on loop on tmpfs
+> in cg 2, mainly to test swapping.  But for this bug I run it as "cg m",
+> to repeatedly create new memcg, move running tasks from old to new, and
+> remove old.
+
+thanks I will play with it.
+
+> Sometimes I'm doing swapoff and swapon in the background too, but
+> that's not needed to see this bug.  And although we're accustomed to
+> move_charge_at_immigrate being a beast, for this bug it's much quicker
+> to have that turned off.
+
+yes, that makes sense becuase the task doesn't take its memory with it
+and the reclaim contains even without any task in the group.
+
+> (Until a couple of months ago, I was working in /cg/1 and /cg/2; but
+> have now pushed down a level to /cg/cg/1 and /cg/cg/2 after realizing
+> that working at the root would miss some important issues - in particular
+> the mem_cgroup_reparent_charges wrong-usage hang; but in fact I have
+> *never* caught that here, just know that it still exists from some
+> Google watchdog dumps, but we've still not identified the cause -
+> seen even without MEMCG_SWAP and with Hannes's extra reparent_charges.)
+
+Interesting. There is another user seeing hangs with the reparent
+workaround as well. I still didn't get to his test case because of other
+interal work that is due.
+
+> > I am confused now and have to rush shortly so I will think about it
+> > tomorrow some more.
 > 
-> diff --git a/Documentation/devicetree/bindings/pci/xgene-pcie.txt b/Documentation/devicetree/bindings/pci/xgene-pcie.txt
-> new file mode 100644
-> index 0000000..19b9c28
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pci/xgene-pcie.txt
-> @@ -0,0 +1,45 @@
-> +* AppliedMicro X-Gene PCIe interface
-> +
-> +Required properties:
-> +- status: Either "ok" or "disabled".
+> Thanks, yes, I knew it's one you'd want to think about first: no rush.
+> 
+> > 
+> > > This is nasty because __mem_cgroup_iter_next will try to skip it but
+> > > there is nothing else so it returns NULL. We update iter->generation++
+> > > but that doesn't help us as prev = NULL as this is the first iteration
+> > > so
+> > > 		if (prev && reclaim->generation != iter->generation)
+> > > 
+> > > break out will not help us.
+> > 
+> > > You patch will surely help I am just not sure it is the right thing to
+> > > do. Let me think about this.
+> > 
+> > The patch is actually not correct after all. You are returning root
+> > memcg without taking a reference. So there is a risk that memcg will
+> > disappear. Although, it is true that the race with removal is not that
+> > probable because mem_cgroup_css_offline (resp. css_free) will see some
+> > pages on LRUs and they will reclaim as well.
+> > 
+> > Ouch. And thinking about this shows that out_css_put is broken as well
+> > for subtree walks (those that do not start at root_mem_cgroup level). We
+> > need something like the the snippet bellow.
+> 
+> It's the out_css_put precedent that I was following in not incrementing
+> for the root.  I think that's been discussed in the past, and rightly or
+> wrongly we've concluded that the caller of mem_cgroup_iter() always has
+> some hold on the root, which makes it safe to skip get/put on it here.
+> No doubt one of those many short cuts to avoid memcg overhead when
+> there's no memcg other than the root_mem_cgroup.
 
-"status" isn't normally a required property. The default interpretation is
-that a node without a status property is active.
+That might be true but I guess it makes sense to get rid of some subtle
+assumptions. Especially now that we have an effective per-cpu ref.
+counting for css.
 
-> +- device_type: set to "pci"
-> +- compatible: should contain "xgene,pcie" to identify the core.
-> +- reg: base addresses and lengths of the pcie controller configuration
-> +	space register.
+> I've not given enough thought to whether that is still a good assumption.
+> The try_charge route does a css_tryget, and that will be the hold on the
+> root in the reclaim case, won't it?
 
-Doesn't match the code or example: You only list one area here, but
-you actually need to register sets.
+Yes, that is what I realized when looked at the code yesterday and tried
+to handle by the snippet. I will post it as a separate patch.
 
-Looks good otherwise now.
+> And its css_tryget succeeding does not guarantee that a css_tryget a
+> moment later will also succeed, which is what happens in this bug.
 
-	Arnd
+Once the tryget succeeds then we get the memcg so another tryget won't
+be needed. Or am I missing something? What I tried to tell is that you
+should do css_get(root) in your escape path.
+
+> But I have not attempted to audit other uses of mem_cgroup_iter() and
+> for_each_mem_cgroup_tree().  I've not hit any problems from them, but
+> may not have exercised those paths at all.  And the question of
+> whether there's a good hold on the root is a separate issue, really.
+> 
+> Hugh
+[...]
+-- 
+Michal Hocko
+SUSE Labs
