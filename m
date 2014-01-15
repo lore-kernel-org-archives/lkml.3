@@ -1,412 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaAOJNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:13:13 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:50594 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaAOJNH (ORCPT
+	id S1751730AbaAOJOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:14:18 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:22668 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaAOJOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:13:07 -0500
-Date: Wed, 15 Jan 2014 12:10:12 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] zram: rework reported to end-user zram statistics
-Message-ID: <20140115091012.GA2178@swordfish>
-References: <1389692260-4421-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1389692260-4421-4-git-send-email-sergey.senozhatsky@gmail.com>
- <20140115042457.GI1992@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140115042457.GI1992@bbox>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 15 Jan 2014 04:14:11 -0500
+X-AuditID: cbfee68e-b7f566d000002344-ed-52d6516103fd
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
+        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
+        cpgs@samsung.com, tomasz.figa@gmail.com,
+        Naveen Krishna Ch <ch.naveen@samsung.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 1/8 v4] crypto:s5p-sss: Use platform_get_irq() instead of
+ _byname()
+Date: Wed, 15 Jan 2014 14:44:22 +0530
+Message-id: <1389777262-14978-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1389095509-14357-2-git-send-email-ch.naveen@samsung.com>
+References: <1389095509-14357-2-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSpZsYeC3I4OJZNYu7zw8zWrw8pGkx
+	53wLi0X3KxmL+/d+Mllc3jWHzWLG+X1MFou2/We2WLXrD6PF2TmHmBy4PLasvMnksXPWXXaP
+	bQdUPfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugStjy9KrzAV3RSrW7etma2DsFOxi5OSQEDCR
+	uLf4DRuELSZx4d56IJuLQ0hgKaPE3ZabzDBFLV8vsEMkFjFKdD8/wwTh9DNJzP3bzwRSxSZg
+	JnFw0Wp2EFtEwFnid/MaVpAiZoFPjBIN61exgiSEBUIlOh9sANrBwcEioCpx64E3SJhXwFVi
+	75YPTCBhCQEFiTmTbEDCnAJuEge+7wEbLwRU8n3PEbDrJAQ2sUucmf0NbBeLgIDEt8mHWCB6
+	ZSU2HYA6WlLi4IobLBMYhRcwMqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93ECAz/0/+e9e1g
+	vHnA+hBjMtC4icxSosn5wPjJK4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS1OzU1ILU
+	ovii0pzU4kOMTBycUg2Mm+RzhLez7p3nbL6J2aiieMkybtfobZn3chlYjjUZrqpdm/k87dfO
+	+qJZX6rXqQgvuvgozd/Z6O4BnU0JW+Vn30kSXXijXl7qcLjUkzhRoU+bN7WuqlrceN1PYqvO
+	HokMh7NdM/KD3j7esaOrcfckjto7S962828227ugdEXOksDlVbe0exs4lViKMxINtZiLihMB
+	+5oOeJUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t9jAd3EwGtBBn/2SlvcfX6Y0eLlIU2L
+	OedbWCy6X8lY3L/3k8ni8q45bBYzzu9jsli07T+zxapdfxgtzs45xOTA5bFl5U0mj52z7rJ7
+	bDug6tG3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJ
+	uam2Si4+AbpumTlANykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM7Ys
+	vcpccFekYt2+brYGxk7BLkZODgkBE4mWrxfYIWwxiQv31rN1MXJxCAksYpTofn6GCcLpZ5KY
+	+7efCaSKTcBM4uCi1WAdIgLOEr+b17CCFDELfGKUaFi/ihUkISwQKtH5YAPQKA4OFgFViVsP
+	vEHCvAKuEnu3fGACCUsIKEjMmWQDEuYUcJM48H0P2HghoJLve46wTWDkXcDIsIpRNLUguaA4
+	KT3XSK84Mbe4NC9dLzk/dxMjOLqeSe9gXNVgcYhRgINRiYf3R/jVICHWxLLiytxDjBIczEoi
+	vFI+14KEeFMSK6tSi/Lji0pzUosPMSYD3TSRWUo0OR8Y+Xkl8YbGJuamxqaWJhYmZpakCSuJ
+	8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwKhgtPD45rrC5zX3I25cy75f59deqcn9lSuIletV
+	e/8Urh/l8kYmLD8M3DUns0xOWyakJLL0xM3T/y5FsEV6f+cMiHv/ZvNXRfGrwtVfjvt9bUi7
+	enbqHf4XJq/W7ChmYAqd/kRM/VmWdMsLFQ2L5Lc+s+dY3Xy2u9en/9/3JqOq0hulusIRa5RY
+	ijMSDbWYi4oTAa8X39nyAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/15/14 13:24), Minchan Kim wrote:
-> Hello Sergey,
-> 
-> On Tue, Jan 14, 2014 at 12:37:40PM +0300, Sergey Senozhatsky wrote:
-> > 1) Introduce ZRAM_ATTR_RO macro to generate zram atomic64_t stats
-> > `show' functions and reduce code duplication.
-> > 
-> > 2) Account and report back to user numbers of failed READ and WRITE
-> > operations.
-> > 
-> > 3) Remove `good' and `bad' compressed sub-requests stats. RW request may
-> > cause a number of RW sub-requests. zram used to account `good' compressed
-> > sub-queries (with compressed size less than 50% of original size), `bad'
-> > compressed sub-queries (with compressed size greater that 75% of original
-> > size), leaving sub-requests with compression size between 50% and 75% of
-> > original size not accounted and not reported. Account each sub-request
-> > compression size so we can calculate real device compression ratio.
-> > 
-> > 4) reported zram stats:
-> >   - num_writes  -- number of writes
-> >   - num_reads  -- number of reads
-> >   - pages_stored -- number of pages currently stored
-> >   - compressed_size -- compressed size of pages stored
-> >   - pages_zero  -- number of zero filled pages
-> >   - failed_read -- number of failed reads
-> >   - failed_writes -- can happen when memory is too low
-> >   - invalid_io   -- non-page-aligned I/O requests
-> >   - notify_free  -- number of swap slot free notifications
-> >   - memory_used -- zs pool zs_get_total_size_bytes()
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
->
+From: Naveen Krishna Ch <ch.naveen@samsung.com>
 
-Hello Minchan,
-I wouldn't say that it changes behaviour. The only things that is new
-is that zram now accounts failed RW requests. the rest is a part of
-clean up.
+This patch uses the platform_get_irq() instead of the
+platform_get_irq_byname(). Making feeder control interrupt
+as resource "0" and hash interrupt as "1".
 
-	-ss
+reasons for this change.
+1. Cannot find any Arch which is currently using this driver
+2. Samsung Exynos4 and 5 SoCs only use the feeder control interrupt
+3. Patches adding support for DT and H/W version are in pipeline
 
-> So this patch includes some clean up and behavior changes?
-> Please seaprate them and each patch in behavior change includes
-> why it's bad or good(ie, motivation).
-> 
-> It could make reviewer/maintainer happy, even you because
-> some of them could be picked up and other things could be dropped.
-> Sorry for the bothering you.
-> 
-> Thanks.
-> 
-> > ---
-> >  drivers/block/zram/zram_drv.c | 167 ++++++++++++------------------------------
-> >  drivers/block/zram/zram_drv.h |  17 ++---
-> >  2 files changed, 54 insertions(+), 130 deletions(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 2a7682c..8bddaff 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -42,6 +42,17 @@ static struct zram *zram_devices;
-> >  /* Module params (documentation at end) */
-> >  static unsigned int num_devices = 1;
-> >  
-> > +#define ZRAM_ATTR_RO(name)						\
-> > +static ssize_t zram_attr_##name##_show(struct device *d,		\
-> > +				struct device_attribute *attr, char *b)	\
-> > +{									\
-> > +	struct zram *zram = dev_to_zram(d);				\
-> > +	return sprintf(b, "%llu\n",					\
-> > +		(u64)atomic64_read(&zram->stats.name));			\
-> > +}									\
-> > +static struct device_attribute dev_attr_##name =			\
-> > +	__ATTR(name, S_IRUGO, zram_attr_##name##_show, NULL);
-> > +
-> >  static inline int init_done(struct zram *zram)
-> >  {
-> >  	return zram->meta != NULL;
-> > @@ -52,97 +63,36 @@ static inline struct zram *dev_to_zram(struct device *dev)
-> >  	return (struct zram *)dev_to_disk(dev)->private_data;
-> >  }
-> >  
-> > -static ssize_t disksize_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n", zram->disksize);
-> > -}
-> > -
-> > -static ssize_t initstate_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%u\n", init_done(zram));
-> > -}
-> > -
-> > -static ssize_t num_reads_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.num_reads));
-> > -}
-> > -
-> > -static ssize_t num_writes_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.num_writes));
-> > -}
-> > -
-> > -static ssize_t invalid_io_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.invalid_io));
-> > -}
-> > -
-> > -static ssize_t notify_free_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.notify_free));
-> > -}
-> > -
-> > -static ssize_t zero_pages_show(struct device *dev,
-> > -		struct device_attribute *attr, char *buf)
-> > -{
-> > -	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%u\n", atomic_read(&zram->stats.pages_zero));
-> > -}
-> > -
-> > -static ssize_t orig_data_size_show(struct device *dev,
-> > +static ssize_t memory_used_show(struct device *dev,
-> >  		struct device_attribute *attr, char *buf)
-> >  {
-> > +	u64 val = 0;
-> >  	struct zram *zram = dev_to_zram(dev);
-> > +	struct zram_meta *meta = zram->meta;
-> >  
-> > -	return sprintf(buf, "%llu\n",
-> > -		(u64)(atomic_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
-> > +	down_read(&zram->init_lock);
-> > +	if (init_done(zram))
-> > +		val = zs_get_total_size_bytes(meta->mem_pool);
-> > +	up_read(&zram->init_lock);
-> > +	return sprintf(buf, "%llu\n", val);
-> >  }
-> >  
-> > -static ssize_t compr_data_size_show(struct device *dev,
-> > +static ssize_t disksize_show(struct device *dev,
-> >  		struct device_attribute *attr, char *buf)
-> >  {
-> >  	struct zram *zram = dev_to_zram(dev);
-> > -
-> > -	return sprintf(buf, "%llu\n",
-> > -			(u64)atomic64_read(&zram->stats.compr_size));
-> > +	return sprintf(buf, "%llu\n", zram->disksize);
-> >  }
-> >  
-> > -static ssize_t mem_used_total_show(struct device *dev,
-> > +static ssize_t initstate_show(struct device *dev,
-> >  		struct device_attribute *attr, char *buf)
-> >  {
-> > -	u64 val = 0;
-> > +	u32 val = 0;
-> >  	struct zram *zram = dev_to_zram(dev);
-> > -	struct zram_meta *meta = zram->meta;
-> > -
-> >  	down_read(&zram->init_lock);
-> > -	if (init_done(zram))
-> > -		val = zs_get_total_size_bytes(meta->mem_pool);
-> > +	val = init_done(zram);
-> >  	up_read(&zram->init_lock);
-> > -
-> > -	return sprintf(buf, "%llu\n", val);
-> > +	return sprintf(buf, "%u\n", val);
-> >  }
-> >  
-> >  /* flag operations needs meta->tb_lock */
-> > @@ -293,7 +243,6 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  {
-> >  	struct zram_meta *meta = zram->meta;
-> >  	unsigned long handle = meta->table[index].handle;
-> > -	u16 size = meta->table[index].size;
-> >  
-> >  	if (unlikely(!handle)) {
-> >  		/*
-> > @@ -302,21 +251,15 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  		 */
-> >  		if (zram_test_flag(meta, index, ZRAM_ZERO)) {
-> >  			zram_clear_flag(meta, index, ZRAM_ZERO);
-> > -			atomic_dec(&zram->stats.pages_zero);
-> > +			atomic64_dec(&zram->stats.pages_zero);
-> >  		}
-> >  		return;
-> >  	}
-> >  
-> > -	if (unlikely(size > max_zpage_size))
-> > -		atomic_dec(&zram->stats.bad_compress);
-> > -
-> >  	zs_free(meta->mem_pool, handle);
-> >  
-> > -	if (size <= PAGE_SIZE / 2)
-> > -		atomic_dec(&zram->stats.good_compress);
-> > -
-> > -	atomic64_sub(meta->table[index].size, &zram->stats.compr_size);
-> > -	atomic_dec(&zram->stats.pages_stored);
-> > +	atomic64_sub(meta->table[index].size, &zram->stats.compressed_size);
-> > +	atomic64_dec(&zram->stats.pages_stored);
-> >  
-> >  	meta->table[index].handle = 0;
-> >  	meta->table[index].size = 0;
-> > @@ -362,7 +305,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> >  static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-> >  			  u32 index, int offset, struct bio *bio)
-> >  {
-> > -	int ret;
-> > +	int ret = -EINVAL;
-> >  	struct page *page;
-> >  	unsigned char *user_mem, *uncmem = NULL;
-> >  	struct zram_meta *meta = zram->meta;
-> > @@ -406,6 +349,8 @@ out_cleanup:
-> >  	kunmap_atomic(user_mem);
-> >  	if (is_partial_io(bvec))
-> >  		kfree(uncmem);
-> > +	if (ret)
-> > +		atomic64_inc(&zram->stats.failed_reads);
-> >  	return ret;
-> >  }
-> >  
-> > @@ -459,7 +404,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  		zram_set_flag(meta, index, ZRAM_ZERO);
-> >  		write_unlock(&zram->meta->tb_lock);
-> >  
-> > -		atomic_inc(&zram->stats.pages_zero);
-> > +		atomic64_inc(&zram->stats.pages_zero);
-> >  		ret = 0;
-> >  		goto out;
-> >  	}
-> > @@ -478,7 +423,6 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  	}
-> >  
-> >  	if (unlikely(clen > max_zpage_size)) {
-> > -		atomic_inc(&zram->stats.bad_compress);
-> >  		clen = PAGE_SIZE;
-> >  		src = NULL;
-> >  		if (is_partial_io(bvec))
-> > @@ -516,11 +460,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >  	write_unlock(&zram->meta->tb_lock);
-> >  
-> >  	/* Update stats */
-> > -	atomic64_add(clen, &zram->stats.compr_size);
-> > -	atomic_inc(&zram->stats.pages_stored);
-> > -	if (clen <= PAGE_SIZE / 2)
-> > -		atomic_inc(&zram->stats.good_compress);
-> > -
-> > +	atomic64_add(clen, &zram->stats.compressed_size);
-> > +	atomic64_inc(&zram->stats.pages_stored);
-> >  out:
-> >  	if (locked)
-> >  		mutex_unlock(&meta->buffer_lock);
-> > @@ -586,23 +527,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >  
-> >  static void zram_init_device(struct zram *zram, struct zram_meta *meta)
-> >  {
-> > -	if (zram->disksize > 2 * (totalram_pages << PAGE_SHIFT)) {
-> > -		pr_info(
-> > -		"There is little point creating a zram of greater than "
-> > -		"twice the size of memory since we expect a 2:1 compression "
-> > -		"ratio. Note that zram uses about 0.1%% of the size of "
-> > -		"the disk when not in use so a huge zram is "
-> > -		"wasteful.\n"
-> > -		"\tMemory Size: %lu kB\n"
-> > -		"\tSize you selected: %llu kB\n"
-> > -		"Continuing anyway ...\n",
-> > -		(totalram_pages << PAGE_SHIFT) >> 10, zram->disksize >> 10
-> > -		);
-> > -	}
-> > -
-> >  	/* zram devices sort of resembles non-rotational disks */
-> >  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
-> > -
-> >  	zram->meta = meta;
-> >  	pr_debug("Initialization done!\n");
-> >  }
-> > @@ -774,14 +700,15 @@ static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
-> >  		disksize_show, disksize_store);
-> >  static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
-> >  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
-> > -static DEVICE_ATTR(num_reads, S_IRUGO, num_reads_show, NULL);
-> > -static DEVICE_ATTR(num_writes, S_IRUGO, num_writes_show, NULL);
-> > -static DEVICE_ATTR(invalid_io, S_IRUGO, invalid_io_show, NULL);
-> > -static DEVICE_ATTR(notify_free, S_IRUGO, notify_free_show, NULL);
-> > -static DEVICE_ATTR(zero_pages, S_IRUGO, zero_pages_show, NULL);
-> > -static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
-> > -static DEVICE_ATTR(compr_data_size, S_IRUGO, compr_data_size_show, NULL);
-> > -static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> > +static DEVICE_ATTR(memory_used, S_IRUGO, memory_used_show, NULL);
-> > +
-> > +ZRAM_ATTR_RO(num_reads);
-> > +ZRAM_ATTR_RO(num_writes);
-> > +ZRAM_ATTR_RO(pages_stored);
-> > +ZRAM_ATTR_RO(invalid_io);
-> > +ZRAM_ATTR_RO(notify_free);
-> > +ZRAM_ATTR_RO(pages_zero);
-> > +ZRAM_ATTR_RO(compressed_size);
-> >  
-> >  static struct attribute *zram_disk_attrs[] = {
-> >  	&dev_attr_disksize.attr,
-> > @@ -789,12 +716,12 @@ static struct attribute *zram_disk_attrs[] = {
-> >  	&dev_attr_reset.attr,
-> >  	&dev_attr_num_reads.attr,
-> >  	&dev_attr_num_writes.attr,
-> > +	&dev_attr_pages_stored.attr,
-> >  	&dev_attr_invalid_io.attr,
-> >  	&dev_attr_notify_free.attr,
-> > -	&dev_attr_zero_pages.attr,
-> > -	&dev_attr_orig_data_size.attr,
-> > -	&dev_attr_compr_data_size.attr,
-> > -	&dev_attr_mem_used_total.attr,
-> > +	&dev_attr_pages_zero.attr,
-> > +	&dev_attr_compressed_size.attr,
-> > +	&dev_attr_memory_used.attr,
-> >  	NULL,
-> >  };
-> >  
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index e81e9cd..277023d 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -64,22 +64,19 @@ enum zram_pageflags {
-> >  struct table {
-> >  	unsigned long handle;
-> >  	u16 size;	/* object size (excluding header) */
-> > -	u8 count;	/* object ref count (not yet used) */
-> > -	u8 flags;
-> > +	u16 flags;
-> >  } __aligned(4);
-> >  
-> >  struct zram_stats {
-> > -	atomic64_t compr_size;	/* compressed size of pages stored */
-> > -	atomic64_t num_reads;	/* failed + successful */
-> > -	atomic64_t num_writes;	/* --do-- */
-> > -	atomic64_t failed_reads;	/* should NEVER! happen */
-> > +	atomic64_t num_writes;	/* number of writes */
-> > +	atomic64_t num_reads;	/* number of reads */
-> > +	atomic64_t pages_stored;	/* no. of pages currently stored */
-> > +	atomic64_t compressed_size;	/* compressed size of pages stored */
-> > +	atomic64_t pages_zero;		/* no. of zero filled pages */
-> > +	atomic64_t failed_reads;	/* no. of failed reads */
-> >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > -	atomic_t pages_zero;		/* no. of zero filled pages */
-> > -	atomic_t pages_stored;	/* no. of pages currently stored */
-> > -	atomic_t good_compress;	/* % of pages with compression ratio<=50% */
-> > -	atomic_t bad_compress;	/* % of pages with compression ratio>=75% */
-> >  };
-> >  
-> >  struct zram_meta {
-> > -- 
-> > 1.8.5.2.487.g7559984
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: David S. Miller <davem@davemloft.net>
+CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
+TO: <linux-crypto@vger.kernel.org>
+CC: <linux-samsung-soc@vger.kernel.org>
+---
+Changes since v3:
+None
+
+ drivers/crypto/s5p-sss.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/crypto/s5p-sss.c b/drivers/crypto/s5p-sss.c
+index cf149b1..93cddeb 100644
+--- a/drivers/crypto/s5p-sss.c
++++ b/drivers/crypto/s5p-sss.c
+@@ -592,29 +592,29 @@ static int s5p_aes_probe(struct platform_device *pdev)
+ 	pdata->ioaddr = devm_ioremap(dev, res->start,
+ 				     resource_size(res));
+ 
+-	pdata->irq_hash = platform_get_irq_byname(pdev, "hash");
+-	if (pdata->irq_hash < 0) {
+-		err = pdata->irq_hash;
+-		dev_warn(dev, "hash interrupt is not available.\n");
++	pdata->irq_fc = platform_get_irq(pdev, 0);
++	if (pdata->irq_fc < 0) {
++		err = pdata->irq_fc;
++		dev_warn(dev, "feed control interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+-	err = devm_request_irq(dev, pdata->irq_hash, s5p_aes_interrupt,
++	err = devm_request_irq(dev, pdata->irq_fc, s5p_aes_interrupt,
+ 			       IRQF_SHARED, pdev->name, pdev);
+ 	if (err < 0) {
+-		dev_warn(dev, "hash interrupt is not available.\n");
++		dev_warn(dev, "feed control interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+ 
+-	pdata->irq_fc = platform_get_irq_byname(pdev, "feed control");
+-	if (pdata->irq_fc < 0) {
+-		err = pdata->irq_fc;
+-		dev_warn(dev, "feed control interrupt is not available.\n");
++	pdata->irq_hash = platform_get_irq(pdev, 1);
++	if (pdata->irq_hash < 0) {
++		err = pdata->irq_hash;
++		dev_warn(dev, "hash interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+-	err = devm_request_irq(dev, pdata->irq_fc, s5p_aes_interrupt,
++	err = devm_request_irq(dev, pdata->irq_hash, s5p_aes_interrupt,
+ 			       IRQF_SHARED, pdev->name, pdev);
+ 	if (err < 0) {
+-		dev_warn(dev, "feed control interrupt is not available.\n");
++		dev_warn(dev, "hash interrupt is not available.\n");
+ 		goto err_irq;
+ 	}
+ 
+-- 
+1.7.9.5
+
