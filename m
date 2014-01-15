@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570AbaAOVJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:09:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54518 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaAOVJy (ORCPT
+	id S1751848AbaAOVLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 16:11:15 -0500
+Received: from SpacedOut.fries.net ([67.64.210.234]:44543 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaAOVLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:09:54 -0500
-Date: Wed, 15 Jan 2014 13:09:35 -0800
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-5b4d1dbc24bb6fd7179ada0f47be34e27e64decb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, d.hatayama@jp.fujitsu.com, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, d.hatayama@jp.fujitsu.com
-In-Reply-To: <20140115182511.GA22737@gmail.com>
-References: <20140115182511.GA22737@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, apic:
-  Make disabled_cpu_apicid static read_mostly, fix typos
-Git-Commit-ID: 5b4d1dbc24bb6fd7179ada0f47be34e27e64decb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 15 Jan 2014 16:11:12 -0500
+Date: Wed, 15 Jan 2014 15:10:57 -0600
+From: David Fries <david@fries.net>
+To: Evgeniy Polyakov <zbr@ioremap.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        GregKH <greg@kroah.com>
+Subject: Re: [PATCH 16/16] hold bus_mutex in netlink and search
+Message-ID: <20140115211057.GH27675@spacedout.fries.net>
+References: <1388299556-12669-1-git-send-email-David@Fries.net>
+ <20140115045200.GA29560@spacedout.fries.net>
+ <8351389819482@web5j.yandex.ru>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.5.1 (terminus.zytor.com [127.0.0.1]); Wed, 15 Jan 2014 13:09:42 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <8351389819482@web5j.yandex.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 15 Jan 2014 15:10:59 -0600 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5b4d1dbc24bb6fd7179ada0f47be34e27e64decb
-Gitweb:     http://git.kernel.org/tip/5b4d1dbc24bb6fd7179ada0f47be34e27e64decb
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Wed, 15 Jan 2014 13:02:08 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 15 Jan 2014 13:02:08 -0800
+That's 1 through 14, and 16.  Patch 15 was in my tree from another developer,
+"drivers/w1/masters/w1-gpio.c: add strong pullup emulation"
+and wasn't included in what I submitted.  Should I repost the series
+in sequence?
 
-x86, apic: Make disabled_cpu_apicid static read_mostly, fix typos
+On Thu, Jan 16, 2014 at 12:58:02AM +0400, Evgeniy Polyakov wrote:
+> Hi
+> 
+> 15.01.2014, 08:52, "David Fries" <David@Fries.net>:
+> > The bus_mutex needs to be taken to serialize access to a specific bus.
+> > netlink wasn't updated when bus_mutex was added and was calling
+> > without that lock held, and not all of the masters were holding the
+> > bus_mutex in a search.  This was causing the ds2490 hardware to stop
+> > responding when both netlink and /sys slaves were executing bus
+> > commands at the same time.
+> >
+> > Signed-off-by: David Fries <David@Fries.net>
+> 
+> Looks good to me, thank you.
+> Greg, please pull the whole set if you hadn't yet
+> 
+> Acked-by: Evgeniy Polyakov <zbr@ioremap.net> 
 
-Make disabled_cpu_apicid static and read_mostly, and fix a couple of
-typos.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Link: http://lkml.kernel.org/r/20140115182511.GA22737@gmail.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
----
- arch/x86/kernel/apic/apic.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index e78ab8c..7f26c9a 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -79,7 +79,7 @@ physid_mask_t phys_cpu_present_map;
-  * disable_cpu_apicid=<int>, mostly used for the kdump 2nd kernel to
-  * avoid undefined behaviour caused by sending INIT from AP to BSP.
-  */
--unsigned int disabled_cpu_apicid = BAD_APICID;
-+static unsigned int disabled_cpu_apicid __read_mostly = BAD_APICID;
- 
- /*
-  * Map cpu index to physical APIC ID
-@@ -2124,7 +2124,7 @@ int generic_processor_info(int apicid, int version)
- 	 * boot_cpu_physical_apicid is designed to have the apicid
- 	 * returned by read_apic_id(), i.e, the apicid of the
- 	 * currently booting-up processor. However, on some platforms,
--	 * it is temporarilly modified by the apicid reported as BSP
-+	 * it is temporarily modified by the apicid reported as BSP
- 	 * through MP table. Concretely:
- 	 *
- 	 * - arch/x86/kernel/mpparse.c: MP_processor_info()
-@@ -2145,7 +2145,7 @@ int generic_processor_info(int apicid, int version)
- 	    disabled_cpu_apicid == apicid) {
- 		int thiscpu = num_processors + disabled_cpus;
- 
--		pr_warning("ACPI: Disabling requested cpu."
-+		pr_warning("APIC: Disabling requested cpu."
- 			   " Processor %d/0x%x ignored.\n",
- 			   thiscpu, apicid);
- 
+-- 
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
