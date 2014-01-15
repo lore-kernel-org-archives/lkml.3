@@ -1,124 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751123AbaAOGoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 01:44:54 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:65360 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750722AbaAOGou (ORCPT
+	id S1751475AbaAOGpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 01:45:06 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60225 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbaAOGpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 01:44:50 -0500
-From: Gaurav Jain <gjain@fb.com>
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Thread-Topic: [PATCH] perf tools: Synthesize anon MMAP records on the heap
-Thread-Index: AQHPD09bvhY6ouXu+ki8ciwGSba3HpqDZ8uAgAF/04CAAGQLRIAAQoUA
-Date: Wed, 15 Jan 2014 06:44:39 +0000
-Message-ID: <CEFB97C1.2CC71%gjain@fb.com>
-In-Reply-To: <87a9exajbg.fsf@sejong.aot.lge.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="euc-kr"
-Content-ID: <D0D2CB6B60FE9B428273552E78FFBD92@fb.com>
+	Wed, 15 Jan 2014 01:45:01 -0500
+Subject: [RESEND PATCH v10] x86, apic, kexec,
+ Documentation: Add disable_cpu_apicid kernel parameter
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+To: hpa@linux.intel.com
+Cc: jingbai.ma@hp.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        bp@alien8.de, ebiederm@xmission.com, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, vgoyal@redhat.com
+Date: Wed, 15 Jan 2014 15:44:58 +0900
+Message-ID: <20140115064458.1545.38775.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-01-15_02:2014-01-14,2014-01-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=26.6288010966121
- compositescore=0.998981209195878 urlsuspect_oldscore=0.998981209195878
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.998981209195878 spamscore=0
- recipient_to_sender_domain_totalscore=57 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1305240000
- definitions=main-1401140260
-X-FB-Internal: deliver
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0F6ixWT006612
 
-Hi Namhyung,
+Add disable_cpu_apicid kernel parameter. To use this kernel parameter,
+specify an initial APIC ID of the corresponding CPU you want to
+disable.
 
+This is mostly used for the kdump 2nd kernel to disable BSP to wake up
+multiple CPUs without causing system reset or hang due to sending INIT
+from AP to BSP.
 
-On 1/15/14, 12:46 AM, "Namhyung Kim" <namhyung@kernel.org> wrote:
+Kdump users first figure out initial APIC ID of the BSP, CPU0 in the
+1st kernel, for example from /proc/cpuinfo and then set up this kernel
+parameter for the 2nd kernel using the obtained APIC ID.
 
->I'd like to take my ack back - it seems I missed some points.
+However, doing this procedure at each boot time manually is awkward,
+which should be automatically done by user-land service scripts, for
+example, kexec-tools on fedora/RHEL distributions.
 
-No worries, looks like the patch wasn°Øt well thought out.
+This design is more flexible than disabling BSP in kernel boot time
+automatically in that in kernel boot time we have no choice but
+referring to ACPI/MP table to obtain initial APIC ID for BSP, meaning
+that the method is not applicable to the systems without such BIOS
+tables.
 
->On Tue, 14 Jan 2014 20:48:23 +0000, Gaurav Jain wrote:
->> On 1/13/14, 11:54 AM, "Don Zickus" <dzickus@redhat.com> wrote:
->>
->>>On Sat, Jan 11, 2014 at 08:32:14PM -0800, Gaurav Jain wrote:
->>>> Anon records usually do not have the 'execname' entry. However if they
->>>>are on
->>>> the heap, the execname shows up as '[heap]'. The fix considers any
->>>>executable
->>>> entries in the map that do not have a name or are on the heap as anon
->>>>records
->>>> and sets the name to '//anon'.
->>>> 
->>>> This fixes JIT profiling for records on the heap.
->>>
->>>I guess I don't understand the need for this fix.  It seems breaking out
->>>//anon vs. [heap] would be useful.  Your patch is saying otherwise.  Can
->>>give a description of the problem you are trying to solve?
->>
->> Thank you for looking at the patch.
->>
->> We generate a perf map file which includes certain JIT©ˆed functions that
->> show up as [heap] entries. As a result, I included the executable heap
->> entries as anon pages so that it would be handled in
->> util/map.c:map__new(). The alternative would be to handle heap entries
->>in
->> map__new() directly, however I wasn©ˆt sure if this would break something
->> as it seems that heap and stack entries are expected to fail all
->> map__find_* functions. Thus I considered executable heap entries as
->> //anon, but perhaps there is a better way.
->
->Hmm.. so the point is that an executable heap mapping should have
->/tmp/perf-XXX.map as a file name, right?  If so, does something like
->below work well for you?
+One assumption behind this design is that users get initial APIC ID of
+the BSP in still healthy state and so BSP is uniquely kept in
+CPU0. Thus, through the kernel parameter, only one initial APIC ID can
+be specified.
 
-Just gave it a try and it fixed the issue perfectly! Thanks for the help.
-This looks like a much better solution than treating the heap mapping as
-an anon record.
+In a comparison with disabled_cpu_apicid, we use read_apic_id(), not
+boot_cpu_physical_apicid, because on some platforms, the variable is
+modified to the apicid reported as BSP through MP table and this
+function is executed with the temporarily modified
+boot_cpu_physical_apicid. As a result, disabled_cpu_apicid kernel
+parameter doesn't work well for apicids of APs.
 
-Gaurav
+Fixing the wrong handling of boot_cpu_physical_apicid requires some
+reviews and tests beyond some platforms and it could take some
+time. The fix here is a kind of workaround to focus on the main topic
+of this patch.
 
->diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
->index 9b9bd719aa19..d52387fe83f1 100644
->--- a/tools/perf/util/map.c
->+++ b/tools/perf/util/map.c
->@@ -69,7 +69,7 @@ struct map *map__new(struct list_head *dsos__list, u64
->start, u64 len,
-> 		map->ino = ino;
-> 		map->ino_generation = ino_gen;
-> 
->-		if (anon) {
->+		if (anon || (no_dso && type == MAP__FUNCTION)) {
-> 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
-> 			filename = newfilename;
-> 		}
->@@ -93,7 +93,7 @@ struct map *map__new(struct list_head *dsos__list, u64
->start, u64 len,
-> 			 * functions still return NULL, and we avoid the
-> 			 * unnecessary map__load warning.
-> 			 */
->-			if (no_dso)
->+			if (no_dso && type != MAP__FUNCTION)
-> 				dso__set_loaded(dso, map->type);
-> 		}
-> 	}
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |    9 ++++++
+ arch/x86/kernel/apic/apic.c         |   49 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 50680a5..4e5528c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -774,6 +774,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	disable=	[IPV6]
+ 			See Documentation/networking/ipv6.txt.
+ 
++	disable_cpu_apicid= [X86,APIC,SMP]
++			Format: <int>
++			The number of initial APIC ID for the
++			corresponding CPU to be disabled at boot,
++			mostly used for the kdump 2nd kernel to
++			disable BSP to wake up multiple CPUs without
++			causing system reset or hang due to sending
++			INIT from AP to BSP.
++
+ 	disable_ddw     [PPC/PSERIES]
+ 			Disable Dynamic DMA Window support. Use this if
+ 			to workaround buggy firmware.
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index d278736..6c0b7d5 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -75,6 +75,13 @@ unsigned int max_physical_apicid;
+ physid_mask_t phys_cpu_present_map;
+ 
+ /*
++ * Processor to be disabled specified by kernel parameter
++ * disable_cpu_apicid=<int>, mostly used for the kdump 2nd kernel to
++ * avoid undefined behaviour caused by sending INIT from AP to BSP.
++ */
++unsigned int disabled_cpu_apicid = BAD_APICID;
++
++/*
+  * Map cpu index to physical APIC ID
+  */
+ DEFINE_EARLY_PER_CPU_READ_MOSTLY(u16, x86_cpu_to_apicid, BAD_APICID);
+@@ -2115,6 +2122,39 @@ int generic_processor_info(int apicid, int version)
+ 				phys_cpu_present_map);
+ 
+ 	/*
++	 * boot_cpu_physical_apicid is designed to have the apicid
++	 * returned by read_apic_id(), i.e, the apicid of the
++	 * currently booting-up processor. However, on some platforms,
++	 * it is temporarilly modified by the apicid reported as BSP
++	 * through MP table. Concretely:
++	 *
++	 * - arch/x86/kernel/mpparse.c: MP_processor_info()
++	 * - arch/x86/mm/amdtopology.c: amd_numa_init()
++	 * - arch/x86/platform/visws/visws_quirks.c: MP_processor_info()
++	 *
++	 * This function is executed with the modified
++	 * boot_cpu_physical_apicid. So, disabled_cpu_apicid kernel
++	 * parameter doesn't work to disable APs on kdump 2nd kernel.
++	 *
++	 * Since fixing handling of boot_cpu_physical_apicid requires
++	 * another discussion and tests on each platform, we leave it
++	 * for now and here we use read_apic_id() directly in this
++	 * function, generic_processor_info().
++	 */
++	if (disabled_cpu_apicid != BAD_APICID &&
++	    disabled_cpu_apicid != read_apic_id() &&
++	    disabled_cpu_apicid == apicid) {
++		int thiscpu = num_processors + disabled_cpus;
++
++		pr_warning("ACPI: Disabling requested cpu."
++			   " Processor %d/0x%x ignored.\n",
++			   thiscpu, apicid);
++
++		disabled_cpus++;
++		return -ENODEV;
++	}
++
++	/*
+ 	 * If boot cpu has not been detected yet, then only allow upto
+ 	 * nr_cpu_ids - 1 processors and keep one slot free for boot cpu
+ 	 */
+@@ -2592,3 +2632,12 @@ static int __init lapic_insert_resource(void)
+  * that is using request_resource
+  */
+ late_initcall(lapic_insert_resource);
++
++static int __init apic_set_disabled_cpu_apicid(char *arg)
++{
++	if (!arg || !get_option(&arg, &disabled_cpu_apicid))
++		return -EINVAL;
++
++	return 0;
++}
++early_param("disable_cpu_apicid", apic_set_disabled_cpu_apicid);
+
