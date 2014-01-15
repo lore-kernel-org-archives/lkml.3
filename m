@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaAOJPq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 04:15:46 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:22248 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbaAOJPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 04:15:36 -0500
-X-AuditID: cbfee690-b7f266d00000287c-3b-52d651b118a2
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-crypto@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, vzapolskiy@gmail.com,
-        herbert@gondor.apana.org.au, naveenkrishna.ch@gmail.com,
-        cpgs@samsung.com, tomasz.figa@gmail.com,
-        Naveen Krishna Ch <ch.naveen@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 4/8 v4] crypto:s5p-sss: Kconfig: Let Exynos SoCs select SSS
- driver
-Date: Wed, 15 Jan 2014 14:45:43 +0530
-Message-id: <1389777343-15108-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
-References: <1389243595-13207-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSq7sx8FqQwf+fWhZ3nx9mtHh5SNNi
-	zvkWFovuVzIW9+/9ZLK4vGsOm8WM8/uYLBZt+89ssWrXH0aLs3MOMTlweWxZeZPJY+esu+we
-	2w6oevRtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfG0o2XmAueclc8+bqapYHxGWcXIyeHhICJ
-	xMu+o0wQtpjEhXvr2boYuTiEBJYySvxbPoUJpmjzyn52iMR0RomeHe0sIAkhgX4miTVvZEBs
-	NgEziYOLVrOD2CICzhK/m9ewgjQwC3xilGhYv4oVJCEsECLxctsksCIWAVWJ21sWMoPYvAKu
-	EjPWnABazQG0TUFiziQbkDCngJvE7rWPGCF2uUo0f9/GDDJTQmAbu8Sm7j9QcwQkvk0+xALR
-	Kyux6QAzxNGSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZg+J/+92zC
-	DsZ7B6wPMSYDjZvILCWanA+Mn7ySeENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YW
-	pBbFF5XmpBYfYmTi4JRqYMwIXDdfI3yX9Qxn+aQV3yRUX/l9WGq86rRMTOABkZpJVqocV0vl
-	WPyTNDb6ZDqHrz4dMdu18KZc3ycO/kQe5QeP/vcrPH+r8vsq/7mH7K/DhSd83M9Vu+n9DO1q
-	Z4UGEZ5NlpPKuZ5Z59mEPnkz4/ycl4JlGXv0WPbei861MdfeWT1tZtn/aCWW4oxEQy3mouJE
-	AB4STsGVAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t9jQd2NgdeCDFZdVbC4+/wwo8XLQ5oW
-	c863sFh0v5KxuH/vJ5PF5V1z2CxmnN/HZLFo239mi1W7/jBanJ1ziMmBy2PLyptMHjtn3WX3
-	2HZA1aNvyypGj8+b5AJYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPIS
-	c1NtlVx8AnTdMnOAblJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYwZizd
-	eIm54Cl3xZOvq1kaGJ9xdjFyckgImEhsXtnPDmGLSVy4t56ti5GLQ0hgOqNEz452FpCEkEA/
-	k8SaNzIgNpuAmcTBRavBGkQEnCV+N69hBWlgFvjEKNGwfhUrSEJYIETi5bZJYEUsAqoSt7cs
-	ZAaxeQVcJWasOQG0gQNom4LEnEk2IGFOATeJ3WsfMULscpVo/r6NeQIj7wJGhlWMoqkFyQXF
-	Sem5RnrFibnFpXnpesn5uZsYwdH1THoH46oGi0OMAhyMSjy8P8KvBgmxJpYVV+YeYpTgYFYS
-	4ZXyuRYkxJuSWFmVWpQfX1Sak1p8iDEZ6KiJzFKiyfnAyM8riTc0NjE3NTa1NLEwMbMkTVhJ
-	nPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsbeRzcDVNOmpjQK7FBRNPH/kCt/aee+31GfJWQC
-	6k0U+drOX5h6JavCn2HpG7Y17o9V713Pzy7oE/j/Zr4gX281U5XekeIADqc7/M6FzL9drASO
-	7tX/efGc5zXNs9NvLtm+pEY/7J/lg08r8n88Wm4wobzzy+LJNy9um9Jzb2VBJHfioRMPBduU
-	WIozEg21mIuKEwEiejpx8gIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752018AbaAOJP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 04:15:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378AbaAOJPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 04:15:49 -0500
+Date: Wed, 15 Jan 2014 11:15:18 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Miller <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH stable-only] virtio-net: fix build on m68k and sparc64
+Message-ID: <20140115091518.GE1719@redhat.com>
+References: <1389774152-1526-1-git-send-email-mst@redhat.com>
+ <CAMuHMdV=qzDApabSiQj9up_RUW=PoVJA8oWaiWY7d2iQ22AfeQ@mail.gmail.com>
+ <20140115084605.GF29177@redhat.com>
+ <CAMuHMdW4io2BcPvR-VwLMrCNReTEcUeNgO1ievVw+Eg=UdyeuA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdW4io2BcPvR-VwLMrCNReTEcUeNgO1ievVw+Eg=UdyeuA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naveen Krishna Ch <ch.naveen@samsung.com>
+On Wed, Jan 15, 2014 at 10:01:49AM +0100, Geert Uytterhoeven wrote:
+> On Wed, Jan 15, 2014 at 9:46 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Wed, Jan 15, 2014 at 09:36:13AM +0100, Geert Uytterhoeven wrote:
+> >> On Wed, Jan 15, 2014 at 9:26 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> >> > As a result of backporting a bugfix, virtio_net started passing void *
+> >> > to page_address, assuming that it will get silently converted to struct
+> >> > page *. But this does not happen on architectures where page_address is
+> >> > a macro, the result is build failure as the macro tries to dereference
+> >> > void*.
+> >> >
+> >> > Fix by reordering code slightly, so we always pass
+> >> > struct page * to page_address.
+> >>
+> >> Thanks for the clue! I was just investigating a similar failure in -next.
+> >>
+> >> Gr{oetje,eeting}s,
+> >>
+> >>                         Geert
+> >
+> > You don't mean linux-next? And not in virtio-net? I don't see page_address
+> > being used on void * anywhere there.
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/10469287/
 
-This patch modifies Kconfig such that ARCH_EXYNOS SoCs
-which includes (Exynos4210, Exynos5250 and Exynos5420)
-can also select Samsung SSS(Security SubSystem) driver.
+Wew, so it's not my fault :)
 
-Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: David S. Miller <davem@davemloft.net>
-CC: Vladimir Zapolskiy <vzapolskiy@gmail.com>
-TO: <linux-crypto@vger.kernel.org>
-CC: <linux-samsung-soc@vger.kernel.org>
----
-Changes since v3:
-Modified description to use "Exynos" instead of individual SoC name
+> I'm making {,set}page_address() static inline to fix this.
 
- drivers/crypto/Kconfig |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Yes, I don't see why it has to be a macro.
 
-diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
-index f4fd837..cb38863 100644
---- a/drivers/crypto/Kconfig
-+++ b/drivers/crypto/Kconfig
-@@ -300,14 +300,14 @@ config CRYPTO_DEV_DCP
- 	  capabilities of the DCP co-processor
- 
- config CRYPTO_DEV_S5P
--	tristate "Support for Samsung S5PV210 crypto accelerator"
--	depends on ARCH_S5PV210
-+	tristate "Support for Samsung S5PV210/Exynos crypto accelerator"
-+	depends on ARCH_S5PV210 || ARCH_EXYNOS
- 	select CRYPTO_AES
- 	select CRYPTO_ALGAPI
- 	select CRYPTO_BLKCIPHER
- 	help
- 	  This option allows you to have support for S5P crypto acceleration.
--	  Select this to offload Samsung S5PV210 or S5PC110 from AES
-+	  Select this to offload Samsung S5PV210 or S5PC110, Exynos from AES
- 	  algorithms execution.
- 
- config CRYPTO_DEV_TEGRA_AES
--- 
-1.7.9.5
-
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
