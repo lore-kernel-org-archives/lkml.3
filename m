@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaAOCYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 21:24:32 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:44093 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaAOCYW (ORCPT
+	id S1752589AbaAOC06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 21:26:58 -0500
+Received: from mail.windriver.com ([147.11.1.11]:36158 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174AbaAOCYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 21:24:22 -0500
+	Tue, 14 Jan 2014 21:24:31 -0500
 From: Ying Xue <ying.xue@windriver.com>
 To: <davem@davemloft.net>
 CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
@@ -14,9 +14,9 @@ CC: <vfalico@redhat.com>, <john.r.fastabend@intel.com>,
         <dmitry.tarnyagin@lockless.no>, <socketcan@hartkopp.net>,
         <johannes@sipsolutions.net>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next v2 02/10] bonding: use __dev_get_by_name instead of dev_get_by_name to find interface
-Date: Wed, 15 Jan 2014 10:23:37 +0800
-Message-ID: <1389752625-23189-3-git-send-email-ying.xue@windriver.com>
+Subject: [PATCH net-next v2 05/10] decnet: use __dev_get_by_index instead of dev_get_by_index to find interface
+Date: Wed, 15 Jan 2014 10:23:40 +0800
+Message-ID: <1389752625-23189-6-git-send-email-ying.xue@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
 References: <1389752625-23189-1-git-send-email-ying.xue@windriver.com>
@@ -26,93 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following call chain indicates that bond_do_ioctl() is protected
-under rtnl_lock. If we use __dev_get_by_name() instead of
-dev_get_by_name() to find interface handler in it, this would
-help us avoid to change reference counter of interface once.
+The following call chain we can identify that dn_cache_getroute() is
+protected under rtnl_lock. So if we use __dev_get_by_index() instead
+of dev_get_by_index() to find interface handlers in it, this would help
+us avoid to change interface reference counter.
 
-dev_ioctl()
+rtnetlink_rcv()
   rtnl_lock()
-  dev_ifsioc()
-    bond_do_ioctl()
+    netlink_rcv_skb()
+      dn_cache_getroute()
   rtnl_unlock()
 
-Additionally we also change the coding style in bond_do_ioctl(),
-letting it more readable for us.
-
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: Ying Xue <ying.xue@windriver.com>
-Acked-by: Veaceslav Falico <vfalico@redhat.com>
 ---
- drivers/net/bonding/bond_main.c |   49 ++++++++++++++++++---------------------
- 1 file changed, 23 insertions(+), 26 deletions(-)
+ net/decnet/dn_route.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 7069b84..f2fe6cb 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3213,37 +3213,34 @@ static int bond_do_ioctl(struct net_device *bond_dev, struct ifreq *ifr, int cmd
- 	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
+diff --git a/net/decnet/dn_route.c b/net/decnet/dn_route.c
+index ad2efa5..ce0cbbf 100644
+--- a/net/decnet/dn_route.c
++++ b/net/decnet/dn_route.c
+@@ -1666,12 +1666,8 @@ static int dn_cache_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh)
  
--	slave_dev = dev_get_by_name(net, ifr->ifr_slave);
-+	slave_dev = __dev_get_by_name(net, ifr->ifr_slave);
- 
- 	pr_debug("slave_dev=%p:\n", slave_dev);
- 
- 	if (!slave_dev)
--		res = -ENODEV;
--	else {
--		pr_debug("slave_dev->name=%s:\n", slave_dev->name);
--		switch (cmd) {
--		case BOND_ENSLAVE_OLD:
--		case SIOCBONDENSLAVE:
--			res = bond_enslave(bond_dev, slave_dev);
--			break;
--		case BOND_RELEASE_OLD:
--		case SIOCBONDRELEASE:
--			res = bond_release(bond_dev, slave_dev);
--			break;
--		case BOND_SETHWADDR_OLD:
--		case SIOCBONDSETHWADDR:
--			bond_set_dev_addr(bond_dev, slave_dev);
--			res = 0;
--			break;
--		case BOND_CHANGE_ACTIVE_OLD:
--		case SIOCBONDCHANGEACTIVE:
--			res = bond_option_active_slave_set(bond, slave_dev);
--			break;
--		default:
--			res = -EOPNOTSUPP;
+ 	if (fld.flowidn_iif) {
+ 		struct net_device *dev;
+-		if ((dev = dev_get_by_index(&init_net, fld.flowidn_iif)) == NULL) {
+-			kfree_skb(skb);
+-			return -ENODEV;
 -		}
-+		return -ENODEV;
- 
--		dev_put(slave_dev);
-+	pr_debug("slave_dev->name=%s:\n", slave_dev->name);
-+	switch (cmd) {
-+	case BOND_ENSLAVE_OLD:
-+	case SIOCBONDENSLAVE:
-+		res = bond_enslave(bond_dev, slave_dev);
-+		break;
-+	case BOND_RELEASE_OLD:
-+	case SIOCBONDRELEASE:
-+		res = bond_release(bond_dev, slave_dev);
-+		break;
-+	case BOND_SETHWADDR_OLD:
-+	case SIOCBONDSETHWADDR:
-+		bond_set_dev_addr(bond_dev, slave_dev);
-+		res = 0;
-+		break;
-+	case BOND_CHANGE_ACTIVE_OLD:
-+	case SIOCBONDCHANGEACTIVE:
-+		res = bond_option_active_slave_set(bond, slave_dev);
-+		break;
-+	default:
-+		res = -EOPNOTSUPP;
+-		if (!dev->dn_ptr) {
+-			dev_put(dev);
++		dev = __dev_get_by_index(&init_net, fld.flowidn_iif);
++		if (!dev || !dev->dn_ptr) {
+ 			kfree_skb(skb);
+ 			return -ENODEV;
+ 		}
+@@ -1693,8 +1689,6 @@ static int dn_cache_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh)
+ 		err = dn_route_output_key((struct dst_entry **)&rt, &fld, 0);
  	}
  
- 	return res;
+-	if (skb->dev)
+-		dev_put(skb->dev);
+ 	skb->dev = NULL;
+ 	if (err)
+ 		goto out_free;
 -- 
 1.7.9.5
 
