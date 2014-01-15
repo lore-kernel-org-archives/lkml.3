@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaAOURd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:17:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38549 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaAOURc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:17:32 -0500
-Date: Wed, 15 Jan 2014 12:17:30 -0800 (PST)
-Message-Id: <20140115.121730.1984913330507219167.davem@davemloft.net>
-To: jkaluza@redhat.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, eparis@redhat.com,
-        rgb@redhat.com, tj@kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v4 0/3] Send audit/procinfo/cgroup data in socket-level
- control message
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1389600109-30739-1-git-send-email-jkaluza@redhat.com>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
-	<1389600109-30739-1-git-send-email-jkaluza@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1751824AbaAOUa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:30:59 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:46598 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618AbaAOUa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 15:30:56 -0500
+Date: Wed, 15 Jan 2014 15:30:47 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 1/3] memcg: notify userspace about OOM only when and action
+ is due
+Message-ID: <20140115203047.GK6963@cmpxchg.org>
+References: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
+ <1389798068-19885-2-git-send-email-mhocko@suse.cz>
+ <20140115175655.GJ6963@cmpxchg.org>
+ <20140115190015.GA22196@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115190015.GA22196@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kaluza <jkaluza@redhat.com>
-Date: Mon, 13 Jan 2014 09:01:46 +0100
+On Wed, Jan 15, 2014 at 08:00:15PM +0100, Michal Hocko wrote:
+> On Wed 15-01-14 12:56:55, Johannes Weiner wrote:
+> > On Wed, Jan 15, 2014 at 04:01:06PM +0100, Michal Hocko wrote:
+> > > Userspace is currently notified about OOM condition after reclaim
+> > > fails to uncharge any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
+> > > This usually means that the memcg is really in troubles and an
+> > > OOM action (either done by userspace or kernel) has to be taken.
+> > > The kernel OOM killer however bails out and doesn't kill anything
+> > > if it sees an already dying/exiting task in a good hope a memory
+> > > will be released and the OOM situation will be resolved.
+> > > 
+> > > Therefore it makes sense to notify userspace only after really all
+> > > measures have been taken and an userspace action is required or
+> > > the kernel kills a task.
+> > > 
+> > > This patch is based on idea by David Rientjes to not notify
+> > > userspace when the current task is killed or in a late exiting.
+> > > The original patch, however, didn't handle in kernel oom killer
+> > > back offs which is implemtented by this patch.
+> > > 
+> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > 
+> > OOM is a temporary state because any task can exit at a time that is
+> > not under our control and outside our knowledge.  That's why the OOM
+> > situation is defined by failing an allocation after a certain number
+> > of reclaim and charge attempts.
+> > 
+> > As of right now, the OOM sampling window is MEM_CGROUP_RECLAIM_RETRIES
+> > loops of charge attempts and reclaim.  If a racing task is exiting and
+> > releasing memory during that window, the charge will succeed fine.  If
+> > the sampling window is too short in practice, it will have to be
+> > extended, preferrably through increasing MEM_CGROUP_RECLAIM_RETRIES.
+> 
+> The patch doesn't try to address the above race because that one is
+> unfixable. I hope that is clear.
+> 
+> It just tries to reduce burden on the userspace oom notification
+> consumers and given them a simple semantic. Notification comes only if
+> an action will be necessary (either kernel kills something or user space
+> is expected).
 
-> Changes introduced in this patchset can also increase performance
-> of such server-like processes, because current way of opening and
-> parsing /proc/$PID/* files is much more expensive than receiving these
-> metadata using SCM.
+I.e. turn the OOM notification into an OOM kill event notification.
 
-The problem with this line of reasoning is that these changes will
-hurt everyone else, because these new control messages are sent
-unconditionally, whether the application is interested in them or not.
+> E.g. consider a handler which tries to clean up after kernel handled
+> OOM and killed something. If the kernel could back off and refrain
+> from killing anything after the norification already fired up then the
+> userspace has no practical way to detect that (except for checking the
+> kernel log to search for OOM messages which might get suppressed due to
+> rate limitting etc.. Nothing I would call optimal).
+> Or do you think that such a use case doesn't make much sense and it is
+> an abuse of the notification interface?
 
-I really don't like this cost tradeoff, it's terrible, and therefore
-I'm really not inclined to apply these patches, sorry.
+I'm not sure what such a cleanup would be doing, a real life usecase
+would be useful when we are about to change notification semantics.
+I've heard "taking down the remaining tasks of the job" before, but
+that would be better solved by having the OOM killer operate on
+cgroups as single entities instead of taking out individual tasks.
+
+On the other hand, I can see how people use the OOM notification to
+monitor system/cgroup health.  David argued that vmpressure "critical"
+would be the same thing.  But first of all, this is not an argument to
+change semantics of an established interface.  And secondly, it only
+tells you that reclaim is struggling, it doesn't give you the point of
+failure (the OOM condition), regardless of what the docs claim.
+
+So, please, if you need a new interface, make a clear case for it and
+then we can discuss if it's the right way to go.  We do the same for
+every other user interface, whether it's a syscall, an ioctl, a procfs
+file etc.  Just taking something existing that is close enough and
+skewing the semantics in your favor like this is not okay.
