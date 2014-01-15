@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaAOQz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:55:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaAOQz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:55:27 -0500
-Date: Wed, 15 Jan 2014 11:55:12 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Dave Young <dyoung@redhat.com>, wim@iguana.be, dzickus@redhat.com,
-        bhe@redhat.com, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: add a parameter for stop wdt before register
-Message-ID: <20140115165512.GD3180@redhat.com>
-References: <20140114082323.GA4485@dhcp-16-126.nay.redhat.com>
- <20140114121639.77fe75ec@alan.etchedpixels.co.uk>
- <20140115005931.GB23767@dhcp-16-126.nay.redhat.com>
- <20140115121556.0407a099@alan.etchedpixels.co.uk>
+	id S1752484AbaAOQ41 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:56:27 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:40266 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaAOQ4Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 11:56:25 -0500
+Date: Wed, 15 Jan 2014 08:56:23 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 2/4] devicetree: bindings: Document Krait CPU/L1 EDAC
+Message-ID: <20140115165623.GJ14405@codeaurora.org>
+References: <1389735034-21430-1-git-send-email-sboyd@codeaurora.org>
+ <1389735034-21430-3-git-send-email-sboyd@codeaurora.org>
+ <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115121556.0407a099@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140115102701.GA27314@e102568-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 12:15:56PM +0000, One Thousand Gnomes wrote:
-> > watchdog and crash dump really conflicts to some degree, from the watchdog
-> > point of view it can reboot system whhen kdump kernel hangs. But from kdump
-> > point of view it want ensure saving the vmcore for later debugging.
+On 01/15, Lorenzo Pieralisi wrote:
+> On Tue, Jan 14, 2014 at 09:30:32PM +0000, Stephen Boyd wrote:
+> > The Krait CPU/L1 error reporting device is made up a per-CPU
+> > interrupt. While we're here, document the next-level-cache
+> > property that's used by the Krait EDAC driver.
 > > 
-> > Maybe we can only select only one in this case.
-> 
-> You want to be able to make a decision at runtime which to use.
-> 
-> > > - if it can be stopped, you can open and stop it
+> > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Kumar Gala <galak@codeaurora.org>
+> > Cc: <devicetree@vger.kernel.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  Documentation/devicetree/bindings/arm/cpus.txt | 52 ++++++++++++++++++++++++++
+> >  1 file changed, 52 insertions(+)
 > > 
-> > For the last one since crashing happens we have no chance to open and stop.
+> > diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> > index 91304353eea4..c332b5168456 100644
+> > --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> > +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> > @@ -191,6 +191,16 @@ nodes to be present and contain the properties described below.
+> >  			  property identifying a 64-bit zero-initialised
+> >  			  memory location.
+> >  
+> > +	- interrupts
+> > +		Usage: required for cpus with compatible string "qcom,krait".
+> > +		Value type: <prop-encoded-array>
+> > +		Definition: L1/CPU error interrupt
 > 
-> When you decide you need to set up to catch a core rather than just
-> crash you can open and stop the watchdog (if supported), and you can then
-> set up for a kdump and then at some point later if it crashes capture the
-> dump.
+> I reckon you want this property to belong in the cpus node (example below),
+> not in cpu nodes, right ?
 
-Disabling watchdog if kdump serice starts will not make many happy. If
-kernel hangs, we don't have a functionality to reboot it.
+Yes.
 
-What about other idea of keeping watchdog interval long enough that new
-kernel can boot, driver can load and then new driver/user space can
-continue to kick the watchdog. And if second kernel hangs, watchdog will
-reboot the system.
+> 
+> Are you relying on a platform device to be created for /cpus node in
+> order for this series to work ? I guess that's why you want the
+> interrupts property to be defined in /cpus so that it becomes a platform
+> device resource (and you also add a compatible property in /cpus that is
+> missing in these bindings).
 
-Thanks
-Vivek
+Ah yes. I'll move this to the /cpus section.
+
+> 
+> > +
+> > +	- next-level-cache
+> > +		Usage: optional
+> > +		Value type: <phandle>
+> > +		Definition: phandle pointing to the next level cache
+> > +
+> >  Example 1 (dual-cluster big.LITTLE system 32-bit):
+> >  
+> >  	cpus {
+> > @@ -382,3 +392,45 @@ cpus {
+> >  		cpu-release-addr = <0 0x20000000>;
+> >  	};
+> >  };
+> > +
+> > +
+> > +Example 5 (Krait 32-bit system):
+> > +
+> > +cpus {
+> > +	#address-cells = <1>;
+> > +	#size-cells = <0>;
+> > +	interrupts = <1 9 0xf04>;
+> 
+> In patch 4 you also add a compatible property here, and that's not documented,
+> and honestly I do not think that's acceptable either. I guess you want a
+> compatible property here to match the platform driver, right ?
+
+Ah sorry, I forgot to put the compatible property here like in
+the dts change. I'll do that in the next revision. Yes we need a
+compatible property here to match the platform driver.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
