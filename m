@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbaAONRJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:17:09 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:52341 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751664AbaAONRH (ORCPT
+	id S1751921AbaAONR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:17:58 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:44562 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673AbaAONRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:17:07 -0500
-Message-ID: <1389791824.17407.9.camel@x220>
-Subject: [PATCH] kexec.h: stop exporting kexec_load() to userspace
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Eric Biederman <ebiederm@xmission.com>
-Cc: Maximilian Attems <max@stro.at>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 15 Jan 2014 14:17:04 +0100
+	Wed, 15 Jan 2014 08:17:55 -0500
+Message-ID: <1389791864.9124.5.camel@host5.omatika.ru>
+Subject: Re: [PATCH v3 11/21] ARM: pxa: support ICP DAS LP-8x4x FPGA irq
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
+Date: Wed, 15 Jan 2014 17:17:44 +0400
+In-Reply-To: <CACRpkda_6P3s3LBwV5ve+=_JhxehephvpPT=pKPk3NzEKQLa9g@mail.gmail.com>
+References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+	 <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+	 <1387309071-22382-12-git-send-email-ynvich@gmail.com>
+	 <CACRpkdaY7xpoeeUqBBqUS2swe6Y5gKt67VYNvNRrsbFhyU=ATw@mail.gmail.com>
+	 <1389207661.10754.42.camel@host5.omatika.ru>
+	 <CACRpkda_6P3s3LBwV5ve+=_JhxehephvpPT=pKPk3NzEKQLa9g@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+X-Mailer: Evolution 3.8.5-2+b1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Jan 2014 13:17:05.0231 (UTC) FILETIME=[15CA5DF0:01CF11F4]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since v3.5 kexec.h is exported to userspace. That includes its
-declaration of kexec_load():
-    extern int kexec_load(void *, size_t, struct kexec_segment *,
-                   unsigned long int);
+On Wed, 2014-01-15 at 08:39 +0100, Linus Walleij wrote:
+> On Wed, Jan 8, 2014 at 8:01 PM, Sergei Ianovich <ynvich@gmail.com> wrote:
+> Hm I don't know why I was deluded into thinking this had something to
+> do with GPIO. I must have been soft in the head. Sorry about all those
+> comments ...
 
-This declaration isn't very useful to userspace programs on itself. They
-still have to define a matching function (which basically wraps the
-kexec_load syscall). I'm not aware of programs or libraries that actually
-do that.
+It's not your fault for sure. My commit message wasn't clear enough and
+needed clarifications. It is better now.
 
-It can be removed. The programs that actually use it, if there
-are any, should then provide their own declaration to keep compiling.
-Already compiled binaries will not be affected.
-
-This gets rid of the headers_check warning that can be seen ever since
-this header was exported:
-    [...]/usr/include/linux/kexec.h:49: userspace cannot reference function or variable defined in the kernel
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-This declaration of kexec_load() was added to kexec.h in commit
-29a5c67e7a ("kexec: export kexec.h to user space").
-
- include/uapi/linux/kexec.h | 7 -------
- 1 file changed, 7 deletions(-)
-
-diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
-index 104838f..c7897b6 100644
---- a/include/uapi/linux/kexec.h
-+++ b/include/uapi/linux/kexec.h
-@@ -42,13 +42,6 @@ struct kexec_segment {
- 	const void *mem;
- 	size_t memsz;
- };
--
--/* Load a new kernel image as described by the kexec_segment array
-- * consisting of passed number of segments at the entry-point address.
-- * The flags allow different useage types.
-- */
--extern int kexec_load(void *, size_t, struct kexec_segment *,
--		unsigned long int);
- #endif /* __KERNEL__ */
- 
- #endif /* _UAPILINUX_KEXEC_H */
--- 
-1.8.4.2
+Thanks for constructive reviewing.
 
