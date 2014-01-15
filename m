@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaAOFRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:17:34 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:49647 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314AbaAOFRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:17:32 -0500
-Date: Wed, 15 Jan 2014 05:17:31 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm last fixes
-Message-ID: <alpine.DEB.2.00.1401150516090.3314@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751350AbaAOFTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:19:48 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:32828 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaAOFTr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 00:19:47 -0500
+Date: Tue, 14 Jan 2014 21:19:39 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: [PATCH v2 tip/core/timers] Crude timer-wheel latency hacks
+Message-ID: <20140115051939.GA31164@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-691175057-1389763051=:3314"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14011505-8236-0000-0000-000006151FBB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello!
 
---29444707-691175057-1389763051=:3314
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+The following three patches provide some crude timer-wheel latency
+patches.  I understand that a more comprehensive solution is in progress,
+but in the meantime, these patches work well in cases where a given
+CPU has either zero or one timers pending, which is a common case for
+NO_HZ_FULL kernels.  So, on the off-chance that this is helpful to
+someone, the individual patches are as follows:
 
+1.	Add ->all_timers field to tbase_vec to count all timers, not
+	just the non-deferrable ones.
 
-Hi Linus,
+2.	Avoid jiffy-at-a-time stepping when the timer wheel is empty.
 
-One nouveau regression fix on older cards, i915 black screen fixes, and a 
-revert for a strange G33 intel problem.
+3.	Avoid jiffy-at-a-time stepping when the timer wheel transitions
+	to empty.
 
-Dave.
+4.	Avoid jiffy-at-a-time stepping after a timer is added to an
+	initially empty timer wheel.
 
-The following changes since commit 7e22e91102c6b9df7c4ae2168910e19d2bb14cd6:
+Differences from v1:
 
-  Linux 3.13-rc8 (2014-01-12 17:04:18 +0700)
+o	Fix an embarrassing bug located by Oleg Nesterov where the
+	timer wheel could be judged to be empty even if it contained
+	deferrable timers.
 
-are available in the git repository at:
+							Thanx, Paul
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+------------------------------------------------------------------------
 
-for you to fetch changes up to 703a8c2dfa5aa69b9b0a6684dc78ea28a2c7fe3e:
+ b/kernel/timer.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-  Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes (2014-01-15 15:01:11 +1000)
-
-----------------------------------------------------------------
-
-Ben Skeggs (1):
-      drm/nouveau: fix null ptr dereferences on some boards
-
-Dave Airlie (3):
-      Merge tag 'drm-intel-fixes-2014-01-13' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-      Revert "drm: copy mode type in drm_mode_connector_list_update()"
-      Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-
-Jesse Barnes (1):
-      drm/i915/bdw: make sure south port interrupts are enabled properly v2
-
-Paulo Zanoni (1):
-      drm/i915: fix DDI PLLs HW state readout code
-
-Ville Syrjälä (1):
-      drm/i915: Don't grab crtc mutexes in intel_modeset_gem_init()
-
- drivers/gpu/drm/drm_modes.c                           |  2 +-
- drivers/gpu/drm/i915/i915_irq.c                       |  2 ++
- drivers/gpu/drm/i915/intel_ddi.c                      |  8 +++++++-
- drivers/gpu/drm/i915/intel_display.c                  |  4 ++--
- drivers/gpu/drm/nouveau/core/include/subdev/i2c.h     |  2 +-
- drivers/gpu/drm/nouveau/core/include/subdev/instmem.h |  7 +++++++
- drivers/gpu/drm/nouveau/core/subdev/i2c/base.c        |  4 ++--
- drivers/gpu/drm/nouveau/core/subdev/therm/ic.c        | 10 +++++-----
- drivers/gpu/drm/nouveau/dispnv04/dfp.c                |  2 +-
- drivers/gpu/drm/nouveau/dispnv04/tvnv04.c             |  2 +-
- 10 files changed, 29 insertions(+), 14 deletions(-)
---29444707-691175057-1389763051=:3314--
