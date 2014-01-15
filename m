@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaAOWG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:06:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41403 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207AbaAOWAU (ORCPT
+	id S1754640AbaAOWHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:07:31 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:47136 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753648AbaAOWH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:00:20 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 043/166] ALSA: hda - hdmi: Fix IEC958 ctl indexes for some simple HDMI devices
-Date: Wed, 15 Jan 2014 13:50:57 -0800
-Message-Id: <1389822780-4729-44-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Wed, 15 Jan 2014 17:07:27 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao8RAN8F11J5LKVw/2dsb2JhbABZgwuDOqNhjyWBJIQrAQmBFRd0giUBAQEEOhwjEAgDDgoJGgsPBSUDIROIA8MrFxaOIEkHhDcEmB+KTIdKgW+BUiiBLQ
+Date: Thu, 16 Jan 2014 09:07:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Sergey Meirovich <rathamahata@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
+        Jan Kara <jack@suse.cz>, linux-scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gluk <git.user@gmail.com>
+Subject: Re: Terrible performance of sequential O_DIRECT 4k writes in SAN
+ environment. ~3 times slower then Solars 10 with the same HBA/Storage.
+Message-ID: <20140115220721.GY3469@dastard>
+References: <CA+QCeVQRrqx=CrxyuAe7k0e0y4Nqo7x_8jtkuD99VM8L9Dxp+g@mail.gmail.com>
+ <20140106201032.GA13491@quack.suse.cz>
+ <20140107155830.GA28395@infradead.org>
+ <CA+QCeVRiwHU+C5utaLQXf_MpjoYMYEF4LKRyDPaqcd=H6n-RRw@mail.gmail.com>
+ <20140108140307.GA588@infradead.org>
+ <CA+QCeVRuvNtZ8+9D-NtMOD=B9UEA5HMvKaGdXOQCjO-KTnZdbw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+QCeVRuvNtZ8+9D-NtMOD=B9UEA5HMvKaGdXOQCjO-KTnZdbw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.16 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jan 14, 2014 at 03:30:11PM +0200, Sergey Meirovich wrote:
+> Hi Cristoph,
+> 
+> On 8 January 2014 16:03, Christoph Hellwig <hch@infradead.org> wrote:
+> > On Tue, Jan 07, 2014 at 08:37:23PM +0200, Sergey Meirovich wrote:
+> >> Actually my initial report (14.67Mb/sec  3755.41 Requests/sec) was about ext4
+> >> However I have tried XFS as well. It was a bit slower than ext4 on all
+> >> occasions.
+> >
+> > I wasn't trying to say XFS fixes your problem, but that we could
+> > implement appending AIO writes in XFS fairly easily.
+> >
+> > To verify Jan's theory, can you try to preallocate the file to the full
+> > size and then run the benchmark by doing a:
+> >
+> > # fallocate -l <size> <filename>
+> >
+> > and then run it?  If that's indeed the issue I'd be happy to implement
+> > the "real aio" append support for you as well.
+> >
+> 
+> I've resorted to write simple wrapper around io_submit() and ran it
+> against preallocated file (exactly to avoid append AIO scenario).
+> Random data was used to avoid XtremIO online deduplication but results
+> were still wonderfull for 4k sequential AIO write:
+> 
+> 744.77 MB/s   190660.17 Req/sec
+> 
+> Clearly Linux lacks "rial aio" append to be available for any FS.
+> Seems that you are thinking that it would be relatively easy to
+> implement it for XFS on Linux? If so - I will really appreciate your
+> afford.
 
-------------------
+Yes, I think it can be done relatively simply. We'd have to change
+the code in xfs_file_aio_write_checks() to check whether EOF zeroing
+was required rather than always taking an exclusive lock (for block
+aligned IO at EOF sub-block zeroing isn't required), and then we'd
+have to modify the direct IO code to set the is_async flag
+appropriately. We'd probably need a new flag to say tell the DIO
+code that AIO beyond EOF is OK, but that isn't hard to do....
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+And for those that are wondering about the stale data exposure problem
+documented in the aio code:
 
-commit c9a6338aecdb92f9d015ecc26d203e54250bebbb upstream.
+        /*
+         * For file extending writes updating i_size before data
+         * writeouts complete can expose uninitialized blocks. So
+         * even for AIO, we need to wait for i/o to complete before
+         * returning in this case.
+         */
 
-In case a single HDA card has both HDMI and S/PDIF outputs, the S/PDIF
-outputs will have their IEC958 controls created starting from index 16
-and the HDMI controls will be created starting from index 0.
+This is fixed in XFS by removing a single if() check in
+xfs_iomap_write_direct(). We already use unwritten extents for DIO
+within EOF to avoid races that could expose uninitialised blocks, so
+we just need to make that unconditional behaviour.  Hence racing IO
+on concurrent appending i_size updates will only ever see a hole
+(zeros), an unwritten region (zeros) or the written data.
 
-However, HDMI simple_playback_build_controls() as used by old VIA and
-NVIDIA codecs incorrectly requests the IEC958 controls to be created
-with an S/PDIF type instead of HDMI.
-In case the card has other codecs that have HDMI outputs, the controls
-will be created with wrong index=16, causing them to e.g. be unreachable
-by the ALSA "hdmi" alias.
+Christoph, are you going to get any time to look at doing this in
+the next few days?
 
-Fix that by making simple_playback_build_controls() request controls
-with HDMI indexes.
+Cheers,
 
-Not many cards have an affected configuration, but e.g. ASUS M3N78-VM
-contains an integrated NVIDIA HDA "card" with:
-- a VIA codec that has, among others, an S/PDIF pin incorrectly
-  labelled as an HDMI pin, and
-- an NVIDIA MCP7x HDMI codec.
-
-Reported-by: MysterX on #openelec
-Tested-by: MysterX on #openelec
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[ kamal: backport to 3.8 (context) ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/pci/hda/patch_hdmi.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 01b98b0..027e4f0 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1800,9 +1800,9 @@ static int simple_playback_build_controls(struct hda_codec *codec)
- 	struct hdmi_spec *spec = codec->spec;
- 	int err;
- 
--	err = snd_hda_create_spdif_out_ctls(codec,
--					    spec->cvts[0].cvt_nid,
--					    spec->cvts[0].cvt_nid);
-+	err = snd_hda_create_dig_out_ctls(codec, spec->cvts[0].cvt_nid,
-+					  spec->cvts[0].cvt_nid,
-+					  HDA_PCM_TYPE_HDMI);
- 	if (err < 0)
- 		return err;
- 	return simple_hdmi_build_jack(codec, 0);
+Dave.
 -- 
-1.8.3.2
-
+Dave Chinner
+david@fromorbit.com
