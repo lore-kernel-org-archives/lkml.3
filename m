@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaAOK3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:29:44 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:49576 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaAOK3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:29:41 -0500
-Date: Wed, 15 Jan 2014 11:30:32 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, dhowells@redhat.com, zab@redhat.com,
-        jack@suse.cz, luto@amacapital.net, mszeredi@suse.cz
-Subject: Re: [PATCH 04/11] vfs: add renameat2 syscall
-Message-ID: <20140115103032.GD24171@tucsk.piliscsaba.szeredi.hu>
-References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>
- <1389219015-10980-5-git-send-email-miklos@szeredi.hu>
- <201401150711.AHB52169.VMSFFLtHQFOOOJ@I-love.SAKURA.ne.jp>
+	id S1752142AbaAOKaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 05:30:07 -0500
+Received: from mail.mev.co.uk ([62.49.15.74]:50351 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004AbaAOKaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 05:30:03 -0500
+Message-ID: <52D66325.3010003@mev.co.uk>
+Date: Wed, 15 Jan 2014 10:29:57 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201401150711.AHB52169.VMSFFLtHQFOOOJ@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Chase Southwood <chase.southwood@yahoo.com>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] Staging: comedi: convert while loop to timeout in
+ ni_mio_common.c
+References: <1389669228-15090-1-git-send-email-chase.southwood@yahoo.com> <1389745385-27146-1-git-send-email-chase.southwood@yahoo.com> <20140115035849.GA13127@kroah.com>
+In-Reply-To: <20140115035849.GA13127@kroah.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 07:11:16AM +0900, Tetsuo Handa wrote:
-> Miklos Szeredi wrote:
-> > +
-> > +	if (flags)
-> > +		return -EOPNOTSUPP;
-> > +
-> 
-> If (at least for now) only ext4 interprets renameat2() flags,
-> I think adding a new member to "struct inode_operations" and
-> check it like
-> 
-> 	if (!old_dir->i_op->swapname)
-> 		return -EOPNOTSUPP;
-> 
-> or
+On 2014-01-15 03:58, Greg KH wrote:
+> On Tue, Jan 14, 2014 at 06:23:05PM -0600, Chase Southwood wrote:
+>> This patch for ni_mio_common.c changes out a while loop for a timeout,
+>> which is preferred.
+>>
+>> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+>> ---
+>>
+>> OK, here's another go at it.  Hopefully everything looks more correct
+>> this time.  Greg, I've followed the pattern you gave me, and I really
+>> appreciate all of the tips!  As always, just let me know if there are
+>> still things that need adjusting (especially length of timeout, udelay,
+>> etc.).
+>>
+>> Thanks,
+>> Chase Southwood
+>>
+>> 2: Changed from simple clean-up to swapping a timeout in for a while loop.
+>>
+>> 3: Removed extra counter variable, and added error checking.
+>>
+>> 4: No longer using counter variable, using jiffies instead.
+>>
+>>   drivers/staging/comedi/drivers/ni_mio_common.c | 11 ++++++++++-
+>>   1 file changed, 10 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
+>> index 457b884..882b249 100644
+>> --- a/drivers/staging/comedi/drivers/ni_mio_common.c
+>> +++ b/drivers/staging/comedi/drivers/ni_mio_common.c
+>> @@ -687,12 +687,21 @@ static void ni_clear_ai_fifo(struct comedi_device *dev)
+>>   {
+>>   	const struct ni_board_struct *board = comedi_board(dev);
+>>   	struct ni_private *devpriv = dev->private;
+>> +	unsigned long timeout;
+>>
+>>   	if (board->reg_type == ni_reg_6143) {
+>>   		/*  Flush the 6143 data FIFO */
+>>   		ni_writel(0x10, AIFIFO_Control_6143);	/*  Flush fifo */
+>>   		ni_writel(0x00, AIFIFO_Control_6143);	/*  Flush fifo */
+>> -		while (ni_readl(AIFIFO_Status_6143) & 0x10) ;	/*  Wait for complete */
+>> +		/*  Wait for complete */
+>> +		timeout = jiffies + msec_to_jiffies(100);
+>> +		while (ni_readl(AIFIFO_Status_6143) & 0x10) {
+>> +			if (time_after(jiffies, timeout)) {
+>> +				comedi_error(dev, "FIFO flush timeout.");
+>> +				break;
+>> +			}
+>> +			udelay(1);
+>
+> Sleep for at least 10, as I think that's the smallest time delay you can
+> sleep for anyway (meaning it will be that long no matter what number you
+> put there less than 10, depending on the hardware used of course.)
 
-This is not just about swapname, but other rename variants too (non-overwriting
-rename is also included in the patchset).
+udelay() doesn't sleep (though it may get pre-empted) and I think you 
+can use any value you like within reason (up to a few 1000 microseconds).
 
-> 
-> 	if (!(old_dir->i_op->supported_features & flags))
-> 		return -EOPNOTSUPP;
+>
+> Other than that, looks much better.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Or rather old_dir->i_sb->s_type->fs_flags.  We access it due to
-FS_RENAME_DOES_D_MOVE anyway.
 
-I like this variant, because now filesystems need to explicitly add a flag to
-*enable* the functionality and not a check to disable it.
-
-Objections?
-
-Thanks,
-Miklos
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
