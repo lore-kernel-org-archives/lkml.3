@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619AbaAOK73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 05:59:29 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:34859 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaAOK72 (ORCPT
+	id S1751725AbaAOLAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 06:00:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33753 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaAOLAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 05:59:28 -0500
-Message-ID: <52D66A0C.4090509@atmel.com>
-Date: Wed, 15 Jan 2014 11:59:24 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 06:00:42 -0500
+Date: Wed, 15 Jan 2014 12:00:18 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, raistlin@linux.it,
+        juri.lelli@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] [ tip/sched/core ] System unresponsive after booting
+Message-ID: <20140115110018.GA31570@twins.programming.kicks-ass.net>
+References: <52D64676.4040000@linaro.org>
+ <20140115092245.GA15190@gmail.com>
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-CC: <b.brezillon@overkiz.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH] at91: dt: i2c: add a new compatibility string for the
- at91sam9261
-References: <1389781467-29626-1-git-send-email-jjhiblot@traphandler.com>
-In-Reply-To: <1389781467-29626-1-git-send-email-jjhiblot@traphandler.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140115092245.GA15190@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/2014 11:24, Jean-Jacques Hiblot :
-> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Thanks Jean-Jacques.
-
-Side note: do not forget i2c maintainer and ml.
-
-> ---
->  drivers/i2c/busses/i2c-at91.c | 3 +++
->  1 file changed, 3 insertions(+)
+On Wed, Jan 15, 2014 at 10:22:45AM +0100, Ingo Molnar wrote:
+> 1)
 > 
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 8edba9d..843d012 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -589,6 +589,9 @@ static const struct of_device_id atmel_twi_dt_ids[] = {
->  		.compatible = "atmel,at91sam9260-i2c",
->  		.data = &at91sam9260_config,
->  	} , {
-> +		.compatible = "atmel,at91sam9261-i2c",
-> +		.data = &at91sam9261_config,
-> +	} , {
->  		.compatible = "atmel,at91sam9g20-i2c",
->  		.data = &at91sam9g20_config,
->  	} , {
+> There's this change to __setscheduler():
 > 
+> -__setscheduler(struct rq *rq, struct task_struct *p, int policy, int prio)
+> +/* Actually do priority change: must hold pi & rq lock. */
+> +static void __setscheduler(struct rq *rq, struct task_struct *p,
+> +                          const struct sched_attr *attr)
+>  {
+> +       int policy = attr->sched_policy;
+> +
+>         p->policy = policy;
+> -       p->rt_priority = prio;
+> +
+> +       if (rt_policy(policy))
+> +               p->rt_priority = attr->sched_priority;
+> +       else
+> +               p->static_prio = NICE_TO_PRIO(attr->sched_nice);
+> +
+> 
+> 
+> doesnt this change keep p->rt_priority uninitialized in the 
+> normalize_task() case?
+> 
+> I.e. rt_priority should still be set unconditionally. In the 
+> SCHED_NORMAL case that will be a zero initialization.
 
+But why? SCHED_NORMAL doesn't care about rt_priority afaict. And once it
+gets priority boosted we'll set the rt_priority again to whatever is
+propagated from the pi-chain.
 
--- 
-Nicolas Ferre
+> 2)
+> 
+> It's not clear why this change to __setscheduler() was done:
+> 
+>         /*
+>          * Allow unprivileged RT tasks to decrease priority:
+>          */
+>         if (user && !capable(CAP_SYS_NICE)) {
+> +               if (fair_policy(policy)) {
+> +                       if (!can_nice(p, attr->sched_nice))
+> +                               return -EPERM;
+> +               }
+> +
+>                 if (rt_policy(policy)) {o
+
+Bah, I'm pretty sure I wrote that :/ And I can't for the life of me
+remember why I did that. Complete fail there.
