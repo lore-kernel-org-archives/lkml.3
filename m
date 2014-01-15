@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaAOW1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:27:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41005 "EHLO
+	id S1754728AbaAOW06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:26:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41007 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbaAOV5e (ORCPT
+	with ESMTP id S1753430AbaAOV5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 16:57:34 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+Cc: Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 140/166] rds: prevent BUG_ON triggered on congestion update to loopback
-Date: Wed, 15 Jan 2014 13:52:34 -0800
-Message-Id: <1389822780-4729-141-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 149/166] net: unix: allow set_peek_off to fail
+Date: Wed, 15 Jan 2014 13:52:43 -0800
+Message-Id: <1389822780-4729-150-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -28,93 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit 18fc25c94eadc52a42c025125af24657a93638c0 ]
+[ Upstream commit 12663bfc97c8b3fdb292428105dd92d563164050 ]
 
-After congestion update on a local connection, when rds_ib_xmit returns
-less bytes than that are there in the message, rds_send_xmit calls
-back rds_ib_xmit with an offset that causes BUG_ON(off & RDS_FRAG_SIZE)
-to trigger.
+unix_dgram_recvmsg() will hold the readlock of the socket until recv
+is complete.
 
-For a 4Kb PAGE_SIZE rds_ib_xmit returns min(8240,4096)=4096 when actually
-the message contains 8240 bytes. rds_send_xmit thinks there is more to send
-and calls rds_ib_xmit again with a data offset "off" of 4096-48(rds header)
-=4048 bytes thus hitting the BUG_ON(off & RDS_FRAG_SIZE) [RDS_FRAG_SIZE=4k].
+In the same time, we may try to setsockopt(SO_PEEK_OFF) which will hang until
+unix_dgram_recvmsg() will complete (which can take a while) without allowing
+us to break out of it, triggering a hung task spew.
 
-The commit 6094628bfd94323fc1cea05ec2c6affd98c18f7f
-"rds: prevent BUG_ON triggering on congestion map updates" introduced
-this regression. That change was addressing the triggering of a different
-BUG_ON in rds_send_xmit() on PowerPC architecture with 64Kbytes PAGE_SIZE:
- 	BUG_ON(ret != 0 &&
-    		 conn->c_xmit_sg == rm->data.op_nents);
-This was the sequence it was going through:
-(rds_ib_xmit)
-/* Do not send cong updates to IB loopback */
-if (conn->c_loopback
-   && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
-  	rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
-    	return sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
-}
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 0 + 8240 - 48 (rds header accounted only the first time)
-   		 = 8192
-  c_xmit_data_off < 65536 (sg->length), so calls rds_ib_xmit again
-rds_ib_xmit returns 8240
-rds_send_xmit:
-  c_xmit_data_off = 8192 + 8240 = 16432, calls rds_ib_xmit again
-  and so on (c_xmit_data_off 24672,32912,41152,49392,57632)
-rds_ib_xmit returns 8240
-On this iteration this sequence causes the BUG_ON in rds_send_xmit:
-    while (ret) {
-    	tmp = min_t(int, ret, sg->length - conn->c_xmit_data_off);
-    	[tmp = 65536 - 57632 = 7904]
-    	conn->c_xmit_data_off += tmp;
-    	[c_xmit_data_off = 57632 + 7904 = 65536]
-    	ret -= tmp;
-    	[ret = 8240 - 7904 = 336]
-    	if (conn->c_xmit_data_off == sg->length) {
-    		conn->c_xmit_data_off = 0;
-    		sg++;
-    		conn->c_xmit_sg++;
-    		BUG_ON(ret != 0 &&
-    			conn->c_xmit_sg == rm->data.op_nents);
-    		[c_xmit_sg = 1, rm->data.op_nents = 1]
+Instead, allow set_peek_off to fail, this way userspace will not hang.
 
-What the current fix does:
-Since the congestion update over loopback is not actually transmitted
-as a message, all that rds_ib_xmit needs to do is let the caller think
-the full message has been transmitted and not return partial bytes.
-It will return 8240 (RDS_CONG_MAP_BYTES+48) when PAGE_SIZE is 4Kb.
-And 64Kb+48 when page size is 64Kb.
-
-Reported-by: Josh Hunt <joshhunt00@gmail.com>
-Tested-by: Honggang Li <honli@redhat.com>
-Acked-by: Bang Nguyen <bang.nguyen@oracle.com>
-Signed-off-by: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/rds/ib_send.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ include/linux/net.h | 2 +-
+ net/core/sock.c     | 2 +-
+ net/unix/af_unix.c  | 8 ++++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/net/rds/ib_send.c b/net/rds/ib_send.c
-index e590949..37be6e2 100644
---- a/net/rds/ib_send.c
-+++ b/net/rds/ib_send.c
-@@ -552,9 +552,8 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
- 	    && rm->m_inc.i_hdr.h_flags & RDS_FLAG_CONG_BITMAP) {
- 		rds_cong_map_updated(conn->c_fcong, ~(u64) 0);
- 		scat = &rm->data.op_sg[sg];
--		ret = sizeof(struct rds_header) + RDS_CONG_MAP_BYTES;
--		ret = min_t(int, ret, scat->length - conn->c_xmit_data_off);
--		return ret;
-+		ret = max_t(int, RDS_CONG_MAP_BYTES, scat->length);
-+		return sizeof(struct rds_header) + ret;
- 	}
+diff --git a/include/linux/net.h b/include/linux/net.h
+index 5ea38d9..f6dc1f5 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -180,7 +180,7 @@ struct proto_ops {
+ 				      int offset, size_t size, int flags);
+ 	ssize_t 	(*splice_read)(struct socket *sock,  loff_t *ppos,
+ 				       struct pipe_inode_info *pipe, size_t len, unsigned int flags);
+-	void		(*set_peek_off)(struct sock *sk, int val);
++	int		(*set_peek_off)(struct sock *sk, int val);
+ };
  
- 	/* FIXME we may overallocate here */
+ #define DECLARE_SOCKADDR(type, dst, src)	\
+diff --git a/net/core/sock.c b/net/core/sock.c
+index fc0d751..7367c05 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -886,7 +886,7 @@ set_rcvbuf:
+ 
+ 	case SO_PEEK_OFF:
+ 		if (sock->ops->set_peek_off)
+-			sock->ops->set_peek_off(sk, val);
++			ret = sock->ops->set_peek_off(sk, val);
+ 		else
+ 			ret = -EOPNOTSUPP;
+ 		break;
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 6cc5803..499efb7 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -531,13 +531,17 @@ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
+ static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
+ 				  struct msghdr *, size_t, int);
+ 
+-static void unix_set_peek_off(struct sock *sk, int val)
++static int unix_set_peek_off(struct sock *sk, int val)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
+ 
+-	mutex_lock(&u->readlock);
++	if (mutex_lock_interruptible(&u->readlock))
++		return -EINTR;
++
+ 	sk->sk_peek_off = val;
+ 	mutex_unlock(&u->readlock);
++
++	return 0;
+ }
+ 
+ 
 -- 
 1.8.3.2
 
