@@ -1,49 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaAORLh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:11:37 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43453 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaAORLd (ORCPT
+	id S1752556AbaAORMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:12:31 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35487 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751928AbaAORM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:11:33 -0500
-Date: Wed, 15 Jan 2014 18:10:37 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/timers 2/4] timers: Reduce __run_timers()
- latency for empty list
-Message-ID: <20140115171037.GK31570@twins.programming.kicks-ass.net>
-References: <20140115051939.GA31164@linux.vnet.ibm.com>
- <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1389763248-31297-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20140115170310.GB11499@redhat.com>
+	Wed, 15 Jan 2014 12:12:28 -0500
+Date: Wed, 15 Jan 2014 17:11:55 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Marc Carino <marc.ceeeee@gmail.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 5/7] ARM: brcmstb: add misc. DT bindings for
+ brcm,brcmstb-*
+Message-ID: <20140115171155.GK25824@e106331-lin.cambridge.arm.com>
+References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com>
+ <1389743333-16741-6-git-send-email-marc.ceeeee@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115170310.GB11499@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1389743333-16741-6-git-send-email-marc.ceeeee@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 06:03:10PM +0100, Oleg Nesterov wrote:
-> On 01/14, Paul E. McKenney wrote:
-> >
-> > The __run_timers() function currently steps through the list one jiffy at
-> > a time
+On Tue, Jan 14, 2014 at 11:48:51PM +0000, Marc Carino wrote:
+> Document the bindings that the Broadcom STB platform needs
+> for proper bootup.
 > 
-> And this is very suboptimal if jiffies - timer_jiffies is huge. Looks
-> like, we should rework base->tv* structures, or (perhaps) optimize
-> the "cascade" logic so that __run_timers() can increment timer_jiffies
-> and move all the expired timers into work_list at one step. And the
-> ->next_timer logic is obviously very suboptimal.
+> Signed-off-by: Marc Carino <marc.ceeeee@gmail.com>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+>  .../devicetree/bindings/arm/brcm-brcmstb.txt       |   43 ++++++++++++++++++++
+>  1 files changed, 43 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt b/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+> new file mode 100644
+> index 0000000..5f1aba7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
+> @@ -0,0 +1,43 @@
+> +Broadcom STB platforms Device Tree Bindings
+> +-------------------------------------------
+> +Boards with Broadcom Brahma15 ARM-based BCM7xxx SoC shall have the following
+> +properties.
+> +
+> +Required root node properties:
+> +
+> +    - compatible = "brcm,brcmstb-<chip_id>";
 
-Thomas is actually actively working on a replacement for the entire
-cascade mess.
+I'd prefer it if variants were listed explicitly (as it makes it far
+easier to grep for). Something like:
+
+- compatible: should contain one of:
+  * "brcm,brcmsrb-7445"
+  * "brcm,brcmsrb-7446"
+
+> +
+> +Further, a node with the following compatible string shall be defined:
+> +
+> +    - compatible: "brcm,brcmstb-gen-ctrl-v1"
+
+It's probably better to say a brcmstb-gen-ctrl node (described below)
+should be present, or you'll have two places to update the compatible
+strings for each new variant...
+
+> +
+> +brcmstb-gen-ctrl
+> +----------------
+> +This node describes the registers needed for reset and CPU power control.
+> +
+> +    - compatible: "brcm,brcmstb-gen-ctrl-v1"
+> +    - properties:
+
+This looks odd, compatible is itself a property.
+
+> +        o reg = <rst-src-en-reg-base len
+> +                 sw-mstr-rst-reg-base len
+> +                 cpu-rst-cfg-reg-base len
+> +                 cpu-pwr-zone-ctrl-reg-base len
+> +                 stb-boot-hi-addr0-reg len>;
+
+This would be nicer as something like follows, but with less
+abberviation (unless these names are from a datasheet for the hardware).
+
+- reg: a list of base-address size pairs:
+  * The first entry should cover the sw-mstr-rst registers
+  * The second entry should cover the cpu-rst-cfg registers
+  * The third entry should cover the cpu-pwr-zone registers
+  * The fourth entry should cover the stb-boot-hi-addr0 registers
+
+It may make sense to use reg-names, future revisions might change
+things.
+
+> +
+> +example:
+> +/ {
+> +    model = "Broadcom STB";
+> +    compatible =  "brcm,brcmstb-7445";
+> +
+> +    /* snip */
+> +
+> +    gen-ctrl {
+> +        compatible = "brcm,brcmstb-gen-ctrl-v1";
+> +        reg = <0xf0404304 0x4
+> +               0xf0404308 0x4
+> +               0xf03e2578 0x4
+> +               0xf03e2488 0x10
+> +               0xf0452000 0x20>;
+
+Nit: please bracket each entry individually:
+
+reg = <0xf0404304 0x4>,
+      <0xf0404308 0x4>,
+      <0xf03e2578 0x4>,
+      <0xf03e2488 0x10>,
+      <0xf0452000 0x20>;
+
+Also, these look to be single registers in a larger register bank. Is
+there any reason you can't describe the bank(s) they are in? That'll
+give you more flexibility in the driver...
+
+Thanks,
+Mark
