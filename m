@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489AbaAOWCl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:02:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41497 "EHLO
+	id S1754533AbaAOWDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:03:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41483 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361AbaAOWBD (ORCPT
+	with ESMTP id S1753203AbaAOWAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:01:03 -0500
+	Wed, 15 Jan 2014 17:00:52 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 073/166] drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
-Date: Wed, 15 Jan 2014 13:51:27 -0800
-Message-Id: <1389822780-4729-74-git-send-email-kamal@canonical.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 082/166] net_dma: mark broken
+Date: Wed, 15 Jan 2014 13:51:36 -0800
+Message-Id: <1389822780-4729-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,61 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 49d45a31b71d7d9da74485922bdb63faf3dc9684 upstream.
+commit 77873803363c9e831fc1d1e6895c084279090c22 upstream.
 
-This bug in EDID was exposed by:
+net_dma can cause data to be copied to a stale mapping if a
+copy-on-write fault occurs during dma.  The application sees missing
+data.
 
-commit eccea7920cfb009c2fa40e9ecdce8c36f61cab66
-Author: Alex Deucher <alexander.deucher@amd.com>
-Date:   Mon Mar 26 15:12:54 2012 -0400
+The following trace is triggered by modifying the kernel to WARN if it
+ever triggers copy-on-write on a page that is undergoing dma:
 
-    drm/radeon/kms: improve bpc handling (v2)
+ WARNING: CPU: 24 PID: 2529 at lib/dma-debug.c:485 debug_dma_assert_idle+0xd2/0x120()
+ ioatdma 0000:00:04.0: DMA-API: cpu touching an active dma mapped page [pfn=0x16bcd9]
+ Modules linked in: iTCO_wdt iTCO_vendor_support ioatdma lpc_ich pcspkr dca
+ CPU: 24 PID: 2529 Comm: linbug Tainted: G        W    3.13.0-rc1+ #353
+  00000000000001e5 ffff88016f45f688 ffffffff81751041 ffff88017ab0ef70
+  ffff88016f45f6d8 ffff88016f45f6c8 ffffffff8104ed9c ffffffff810f3646
+  ffff8801768f4840 0000000000000282 ffff88016f6cca10 00007fa2bb699349
+ Call Trace:
+  [<ffffffff81751041>] dump_stack+0x46/0x58
+  [<ffffffff8104ed9c>] warn_slowpath_common+0x8c/0xc0
+  [<ffffffff810f3646>] ? ftrace_pid_func+0x26/0x30
+  [<ffffffff8104ee86>] warn_slowpath_fmt+0x46/0x50
+  [<ffffffff8139c062>] debug_dma_assert_idle+0xd2/0x120
+  [<ffffffff81154a40>] do_wp_page+0xd0/0x790
+  [<ffffffff811582ac>] handle_mm_fault+0x51c/0xde0
+  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
+  [<ffffffff8175fc2c>] __do_page_fault+0x19c/0x530
+  [<ffffffff8175c196>] ? _raw_spin_lock_bh+0x16/0x40
+  [<ffffffff810f3539>] ? trace_clock_local+0x9/0x10
+  [<ffffffff810fa1f4>] ? rb_reserve_next_event+0x64/0x310
+  [<ffffffffa0014c00>] ? ioat2_dma_prep_memcpy_lock+0x60/0x130 [ioatdma]
+  [<ffffffff8175ffce>] do_page_fault+0xe/0x10
+  [<ffffffff8175c862>] page_fault+0x22/0x30
+  [<ffffffff81643991>] ? __kfree_skb+0x51/0xd0
+  [<ffffffff813830b9>] ? copy_user_enhanced_fast_string+0x9/0x20
+  [<ffffffff81388ea2>] ? memcpy_toiovec+0x52/0xa0
+  [<ffffffff8164770f>] skb_copy_datagram_iovec+0x5f/0x2a0
+  [<ffffffff8169d0f4>] tcp_rcv_established+0x674/0x7f0
+  [<ffffffff816a68c5>] tcp_v4_do_rcv+0x2e5/0x4a0
+  [..]
+ ---[ end trace e30e3b01191b7617 ]---
+ Mapped at:
+  [<ffffffff8139c169>] debug_dma_map_page+0xb9/0x160
+  [<ffffffff8142bf47>] dma_async_memcpy_pg_to_pg+0x127/0x210
+  [<ffffffff8142cce9>] dma_memcpy_pg_to_iovec+0x119/0x1f0
+  [<ffffffff81669d3c>] dma_skb_copy_datagram_iovec+0x11c/0x2b0
+  [<ffffffff8169d1ca>] tcp_rcv_established+0x74a/0x7f0:
 
-Which resulted in kind of regression in 3.5. This fixes
-https://bugs.freedesktop.org/show_bug.cgi?id=70934
+...the problem is that the receive path falls back to cpu-copy in
+several locations and this trace is just one of the areas.  A few
+options were considered to fix this:
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+1/ sync all dma whenever a cpu copy branch is taken
+
+2/ modify the page fault handler to hold off while dma is in-flight
+
+Option 1 adds yet more cpu overhead to an "offload" that struggles to compete
+with cpu-copy.  Option 2 adds checks for behavior that is already documented as
+broken when using get_user_pages().  At a minimum a debug mode is warranted to
+catch and flag these violations of the dma-api vs get_user_pages().
+
+Thanks to David for his reproducer.
+
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Reported-by: David Whipple <whipple@securedatainnovations.ch>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/drm_edid.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/dma/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index 60d6b35..559f49b 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -68,6 +68,8 @@
- #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
- /* Force reduced-blanking timings for detailed modes */
- #define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
-+/* Force 8bpc */
-+#define EDID_QUIRK_FORCE_8BPC			(1 << 8)
- 
- struct detailed_mode_closure {
- 	struct drm_connector *connector;
-@@ -128,6 +130,9 @@ static struct edid_quirk {
- 
- 	/* Medion MD 30217 PG */
- 	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
-+
-+	/* Panel in Samsung NP700G7A-S01PL notebook reports 6bpc */
-+	{ "SEC", 0xd033, EDID_QUIRK_FORCE_8BPC },
- };
- 
- /*** DDC fetch and block validation ***/
-@@ -2034,6 +2039,9 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
- 
- 	drm_add_display_info(edid, &connector->display_info);
- 
-+	if (quirks & EDID_QUIRK_FORCE_8BPC)
-+		connector->display_info.bpc = 8;
-+
- 	return num_modes;
- }
- EXPORT_SYMBOL(drm_add_edid_modes);
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index d4c1218..11bbcca 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -333,6 +333,7 @@ config NET_DMA
+ 	bool "Network: TCP receive copy offload"
+ 	depends on DMA_ENGINE && NET
+ 	default (INTEL_IOATDMA || FSL_DMA)
++	depends on BROKEN
+ 	help
+ 	  This enables the use of DMA engines in the network stack to
+ 	  offload receive copy-to-user operations, freeing CPU cycles.
 -- 
 1.8.3.2
 
