@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480AbaAOWCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:02:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41499 "EHLO
+	id S1754489AbaAOWCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:02:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41497 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362AbaAOWBE (ORCPT
+	with ESMTP id S1754361AbaAOWBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:01:04 -0500
+	Wed, 15 Jan 2014 17:01:03 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jie Liu <jeff.liu@oracle.com>, Ben Myers <bpm@sgi.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 076/166] xfs: fix infinite loop by detaching the group/project hints from user dquot
-Date: Wed, 15 Jan 2014 13:51:30 -0800
-Message-Id: <1389822780-4729-77-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 073/166] drm/edid: add quirk for BPC in Samsung NP700G7A-S01PL notebook
+Date: Wed, 15 Jan 2014 13:51:27 -0800
+Message-Id: <1389822780-4729-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,165 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jie Liu <jeff.liu@oracle.com>
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
 
-commit 718cc6f88cbfc4fbd39609f28c4c86883945f90d upstream.
+commit 49d45a31b71d7d9da74485922bdb63faf3dc9684 upstream.
 
-xfs_quota(8) will hang up if trying to turn group/project quota off
-before the user quota is off, this could be 100% reproduced by:
-  # mount -ouquota,gquota /dev/sda7 /xfs
-  # mkdir /xfs/test
-  # xfs_quota -xc 'off -g' /xfs <-- hangs up
-  # echo w > /proc/sysrq-trigger
-  # dmesg
+This bug in EDID was exposed by:
 
-  SysRq : Show Blocked State
-  task                        PC stack   pid father
-  xfs_quota       D 0000000000000000     0 27574   2551 0x00000000
-  [snip]
-  Call Trace:
-  [<ffffffff81aaa21d>] schedule+0xad/0xc0
-  [<ffffffff81aa327e>] schedule_timeout+0x35e/0x3c0
-  [<ffffffff8114b506>] ? mark_held_locks+0x176/0x1c0
-  [<ffffffff810ad6c0>] ? call_timer_fn+0x2c0/0x2c0
-  [<ffffffffa0c25380>] ? xfs_qm_shrink_count+0x30/0x30 [xfs]
-  [<ffffffff81aa3306>] schedule_timeout_uninterruptible+0x26/0x30
-  [<ffffffffa0c26155>] xfs_qm_dquot_walk+0x235/0x260 [xfs]
-  [<ffffffffa0c059d8>] ? xfs_perag_get+0x1d8/0x2d0 [xfs]
-  [<ffffffffa0c05805>] ? xfs_perag_get+0x5/0x2d0 [xfs]
-  [<ffffffffa0b7707e>] ? xfs_inode_ag_iterator+0xae/0xf0 [xfs]
-  [<ffffffffa0c22280>] ? xfs_trans_free_dqinfo+0x50/0x50 [xfs]
-  [<ffffffffa0b7709f>] ? xfs_inode_ag_iterator+0xcf/0xf0 [xfs]
-  [<ffffffffa0c261e6>] xfs_qm_dqpurge_all+0x66/0xb0 [xfs]
-  [<ffffffffa0c2497a>] xfs_qm_scall_quotaoff+0x20a/0x5f0 [xfs]
-  [<ffffffffa0c2b8f6>] xfs_fs_set_xstate+0x136/0x180 [xfs]
-  [<ffffffff8136cf7a>] do_quotactl+0x53a/0x6b0
-  [<ffffffff812fba4b>] ? iput+0x5b/0x90
-  [<ffffffff8136d257>] SyS_quotactl+0x167/0x1d0
-  [<ffffffff814cf2ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81abcd19>] system_call_fastpath+0x16/0x1b
+commit eccea7920cfb009c2fa40e9ecdce8c36f61cab66
+Author: Alex Deucher <alexander.deucher@amd.com>
+Date:   Mon Mar 26 15:12:54 2012 -0400
 
-It's fine if we turn user quota off at first, then turn off other
-kind of quotas if they are enabled since the group/project dquot
-refcount is decreased to zero once the user quota if off. Otherwise,
-those dquots refcount is non-zero due to the user dquot might refer
-to them as hint(s).  Hence, above operation cause an infinite loop
-at xfs_qm_dquot_walk() while trying to purge dquot cache.
+    drm/radeon/kms: improve bpc handling (v2)
 
-This problem has been around since Linux 3.4, it was introduced by:
-  [ b84a3a9675 xfs: remove the per-filesystem list of dquots ]
+Which resulted in kind of regression in 3.5. This fixes
+https://bugs.freedesktop.org/show_bug.cgi?id=70934
 
-Originally we will release the group dquot pointers because the user
-dquots maybe carrying around as a hint via xfs_qm_detach_gdquots().
-However, with above change, there is no such work to be done before
-purging group/project dquot cache.
-
-In order to solve this problem, this patch introduces a special routine
-xfs_qm_dqpurge_hints(), and it would release the group/project dquot
-pointers the user dquots maybe carrying around as a hint, and then it
-will proceed to purge the user dquot cache if requested.
-
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-[ kamal: backport to 3.8 (no q_pdquot member, just q_gdquot) ]
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/xfs/xfs_qm.c | 58 +++++++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 44 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/drm_edid.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
-index 60eff47..e2db199 100644
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -135,7 +135,6 @@ xfs_qm_dqpurge(
- {
- 	struct xfs_mount	*mp = dqp->q_mount;
- 	struct xfs_quotainfo	*qi = mp->m_quotainfo;
--	struct xfs_dquot	*gdqp = NULL;
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index 60d6b35..559f49b 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -68,6 +68,8 @@
+ #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
+ /* Force reduced-blanking timings for detailed modes */
+ #define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
++/* Force 8bpc */
++#define EDID_QUIRK_FORCE_8BPC			(1 << 8)
  
- 	xfs_dqlock(dqp);
- 	if ((dqp->dq_flags & XFS_DQ_FREEING) || dqp->q_nrefs != 0) {
-@@ -143,16 +142,6 @@ xfs_qm_dqpurge(
- 		return EAGAIN;
- 	}
+ struct detailed_mode_closure {
+ 	struct drm_connector *connector;
+@@ -128,6 +130,9 @@ static struct edid_quirk {
  
--	/*
--	 * If this quota has a group hint attached, prepare for releasing it
--	 * now.
--	 */
--	gdqp = dqp->q_gdquot;
--	if (gdqp) {
--		xfs_dqlock(gdqp);
--		dqp->q_gdquot = NULL;
--	}
--
- 	dqp->dq_flags |= XFS_DQ_FREEING;
+ 	/* Medion MD 30217 PG */
+ 	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
++
++	/* Panel in Samsung NP700G7A-S01PL notebook reports 6bpc */
++	{ "SEC", 0xd033, EDID_QUIRK_FORCE_8BPC },
+ };
  
- 	xfs_dqflock(dqp);
-@@ -204,9 +193,40 @@ xfs_qm_dqpurge(
- 	mutex_unlock(&qi->qi_lru_lock);
+ /*** DDC fetch and block validation ***/
+@@ -2034,6 +2039,9 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
  
- 	xfs_qm_dqdestroy(dqp);
-+	return 0;
-+}
-+
-+/*
-+ * Release the group or project dquot pointers the user dquots maybe carrying
-+ * around as a hint, and proceed to purge the user dquot cache if requested.
-+*/
-+STATIC int
-+xfs_qm_dqpurge_hints(
-+	struct xfs_dquot	*dqp,
-+	void			*data)
-+{
-+	struct xfs_dquot	*gdqp = NULL;
-+	uint			flags = *((uint *)data);
-+
-+	xfs_dqlock(dqp);
-+	if (dqp->dq_flags & XFS_DQ_FREEING) {
-+		xfs_dqunlock(dqp);
-+		return EAGAIN;
-+	}
-+
-+	/* If this quota has a hint attached, prepare for releasing it now */
-+	gdqp = dqp->q_gdquot;
-+	if (gdqp)
-+		dqp->q_gdquot = NULL;
-+
-+	xfs_dqunlock(dqp);
+ 	drm_add_display_info(edid, &connector->display_info);
  
- 	if (gdqp)
--		xfs_qm_dqput(gdqp);
-+		xfs_qm_dqrele(gdqp);
++	if (quirks & EDID_QUIRK_FORCE_8BPC)
++		connector->display_info.bpc = 8;
 +
-+	if (flags & XFS_QMOPT_UQUOTA)
-+		return xfs_qm_dqpurge(dqp, NULL);
-+
- 	return 0;
+ 	return num_modes;
  }
- 
-@@ -218,8 +238,18 @@ xfs_qm_dqpurge_all(
- 	struct xfs_mount	*mp,
- 	uint			flags)
- {
--	if (flags & XFS_QMOPT_UQUOTA)
--		xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge, NULL);
-+	/*
-+	 * We have to release group/project dquot hint(s) from the user dquot
-+	 * at first if they are there, otherwise we would run into an infinite
-+	 * loop while walking through radix tree to purge other type of dquots
-+	 * since their refcount is not zero if the user dquot refers to them
-+	 * as hint.
-+	 *
-+	 * Call the special xfs_qm_dqpurge_hints() will end up go through the
-+	 * general xfs_qm_dqpurge() against user dquot cache if requested.
-+	 */
-+	xfs_qm_dquot_walk(mp, XFS_DQ_USER, xfs_qm_dqpurge_hints, &flags);
-+
- 	if (flags & XFS_QMOPT_GQUOTA)
- 		xfs_qm_dquot_walk(mp, XFS_DQ_GROUP, xfs_qm_dqpurge, NULL);
- 	if (flags & XFS_QMOPT_PQUOTA)
+ EXPORT_SYMBOL(drm_add_edid_modes);
 -- 
 1.8.3.2
 
