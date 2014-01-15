@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaAORPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:15:22 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:56679 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbaAORPR (ORCPT
+	id S1752661AbaAORQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:16:15 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:51461 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaAORQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:15:17 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Marc Carino <marc.ceeeee@gmail.com>, Christian Daudt <bcm@fixthebug.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 5/7] ARM: brcmstb: add misc. DT bindings for brcm,brcmstb-*
-Date: Wed, 15 Jan 2014 18:15:10 +0100
-Message-ID: <12927046.KPmoBiUFty@wuerfel>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.0-5-generic; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140115171155.GK25824@e106331-lin.cambridge.arm.com>
-References: <1389743333-16741-1-git-send-email-marc.ceeeee@gmail.com> <1389743333-16741-6-git-send-email-marc.ceeeee@gmail.com> <20140115171155.GK25824@e106331-lin.cambridge.arm.com>
+	Wed, 15 Jan 2014 12:16:13 -0500
+Message-ID: <52D6C258.6010204@atmel.com>
+Date: Wed, 15 Jan 2014 18:16:08 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:upj3I+Ct2+xipsCHC+vSNkYMv4tHLEBEgDq7CFxxDEa
- pqXZWc2QtepyPTXyMTKW1VOSbIiXGWQ7KwAMJMqK5hgT4J0FNK
- UEP7I3linnkI6axbZMDt6vizFA6AVn/5nIXQL9q8IXXCn2cd8d
- 72+PvB0sm92g/7aaluATxD0Q2f1dYl1GkR0WZIMlXfx6TJvzT5
- gbFEBUR/e9LaYpk7CIRsOrjcCfwV9/Wa7QTg9jpmbbST2odKpV
- 4Kl0m/12NOQXv7zrcwBMbGNI/RyPgenX5NC3g+fshZohGDZ+JI
- S9vVqwAbiDLZMyvogu4uZe0KN0NhCqBMJRkGeP1ZQ6AC0x+1Gh
- 39v+9FhQwMyLhT32qfXs=
+To: Bo Shen <voice.shen@atmel.com>, <broonie@kernel.org>
+CC: <plagnioj@jcrosoft.com>, <linux-sound@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>,
+        "Liam Girdwood" <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, "Takashi Iwai" <tiwai@suse.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ASoC: atmel_wm8904: make it available to choose clock
+References: <1389669956-2304-1-git-send-email-voice.shen@atmel.com> <1389669956-2304-3-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1389669956-2304-3-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 15 January 2014 17:11:55 Mark Rutland wrote:
-> > +
-> > +Further, a node with the following compatible string shall be defined:
-> > +
-> > +    - compatible: "brcm,brcmstb-gen-ctrl-v1"
+On 14/01/2014 04:25, Bo Shen :
+> Make it available to choose the clock from TK pin or RK pin. This
+> is hardware design decided.
 > 
-> It's probably better to say a brcmstb-gen-ctrl node (described below)
-> should be present, or you'll have two places to update the compatible
-> strings for each new variant...
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> ---
+> 
+>  sound/soc/atmel/atmel_wm8904.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/sound/soc/atmel/atmel_wm8904.c b/sound/soc/atmel/atmel_wm8904.c
+> index b4e3690..b85088d 100644
+> --- a/sound/soc/atmel/atmel_wm8904.c
+> +++ b/sound/soc/atmel/atmel_wm8904.c
+> @@ -108,6 +108,7 @@ static int atmel_asoc_wm8904_dt_init(struct platform_device *pdev)
+>  	struct device_node *codec_np, *cpu_np;
+>  	struct snd_soc_card *card = &atmel_asoc_wm8904_card;
+>  	struct snd_soc_dai_link *dailink = &atmel_asoc_wm8904_dailink;
+> +	struct atmel_ssc_info *ssc_info;
+>  	int ret;
+>  
+>  	if (!np) {
+> @@ -115,6 +116,15 @@ static int atmel_asoc_wm8904_dt_init(struct platform_device *pdev)
+>  		return -EINVAL;
+>  	}
+>  
+> +	ssc_info = devm_kzalloc(&pdev->dev, sizeof(*ssc_info), GFP_KERNEL);
 
-See my other reply on this node. The previous patch version had a different
-approach to these registers, and I suggested doing yet another one and
-using syscon.
+Isn't an atmel_ssc_info structure table already instantiated in
+sound/soc/atmel/atmel_ssc_dai.c ...
+I see, you copy the information contained in this field in the proper
+ssc_info of the DAI in the previous patch... Well, isn't it a better way
+to pass parameters to the DAI than this one?
 
-	Arnd
+
+> +	if (!ssc_info)
+> +		return -ENOMEM;
+> +
+> +	ssc_info->clk_from_rk_pin =
+> +		of_property_read_bool(np, "clk_from_rk_pin");
+> +
+> +	card->drvdata = (void *)ssc_info;
+> +
+>  	ret = snd_soc_of_parse_card_name(card, "atmel,model");
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "failed to parse card name\n");
+> 
+
+
+-- 
+Nicolas Ferre
