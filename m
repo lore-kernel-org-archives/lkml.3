@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaAORR2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:17:28 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:10084 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157AbaAORRZ (ORCPT
+	id S1752475AbaAORUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:20:08 -0500
+Received: from mo4.mail-out.ovh.net ([178.32.228.4]:39336 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbaAORUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:17:25 -0500
-Message-ID: <52D6C2A1.4080405@atmel.com>
-Date: Wed, 15 Jan 2014 18:17:21 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 15 Jan 2014 12:20:06 -0500
+Message-ID: <52D6BF45.80407@overkiz.com>
+Date: Wed, 15 Jan 2014 18:03:01 +0100
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Bo Shen <voice.shen@atmel.com>, <broonie@kernel.org>,
-        <devicetree@vger.kernel.org>
-CC: <plagnioj@jcrosoft.com>, <linux-sound@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, "Mark Rutland" <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, "Mark Brown" <broonie@linaro.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] Binding: atmel-wm8904: add option to choose clock
-References: <1389669956-2304-1-git-send-email-voice.shen@atmel.com> <1389669956-2304-4-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1389669956-2304-4-git-send-email-voice.shen@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org, dev@linux-sunxi.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 3/9] of: mtd: add NAND timings retrieval support
+References: <1389190924-26226-1-git-send-email-b.brezillon@overkiz.com> <1389190924-26226-4-git-send-email-b.brezillon@overkiz.com> <20140108183418.GA12358@obsidianresearch.com> <52CDA032.3010804@overkiz.com> <20140108191339.GB12358@obsidianresearch.com> <52CE5F82.6070802@overkiz.com> <20140109173505.GB8899@obsidianresearch.com> <52D6A48D.4080302@overkiz.com>
+In-Reply-To: <52D6A48D.4080302@overkiz.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 13782422236713482474
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejtddrfeekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/2014 04:25, Bo Shen :
-> Add the option to choose clock output on which pin connect to SSC.
-> Default is on TK pin to SSC, add clk_from_rk_pin option, the clock
+On 15/01/2014 16:09, boris brezillon wrote:
+> Hello Jason,
+>
+> On 09/01/2014 18:35, Jason Gunthorpe wrote:
+>> On Thu, Jan 09, 2014 at 09:36:18AM +0100, boris brezillon wrote:
+>>
+>>>> You might want to check if you can boil down the DT timings from the
+>>>> huge list to just an ONFI mode number..
+>>> Sure, but the sunxi driver needs at least 19 of them...
+>> So does mvebu's NAND driver..
+>>
+>> What I ment was you could have a
+>>
+>>    onfi,nand-timing-mode = 0
+>>
+>> in the DT. Each of the modes defines all ~19 parameters, higher modes
+>> are faster.
+>>
+>> Pick a mode value that fits all the parameters of the connected
+>> non-ONFI flash.
+>>
+>> This would be instead of defining each parameter
+>> individually.. Provide some helpers to convert from a onfi mode number
+>> to all the onfi defined timing parameters so that drivers can
+>> configure the HW..
+>
+> Are you suggesting we should provide a function that converts these
+> modes into a nand_timings struct, or just use the timing modes and
+> let the NAND controller drivers configure its IP accordingly ?
+>
+> I found the ONFI timing tables in this document:
+>
+> www.*onfi*.org/~/media/*ONFI*/specs/*onfi*_3_1_spec.pdf‎ (chapter 4.16).
+>
+> I suppose my nand_timings struct should use the names described
+> page 110-111 (at least if we decide to use nand_timings and not
+> nand_timing_modes), right ?
 
-Please do not use "_" in DT properties. It is a common pattern to use
-"-" instead.
+After taking a closer look at this document, the only parameter 
+available in my
+nand_timings struct that is not defined in the standard is tR_max (data 
+transfer
+from cell to register).
 
-> is on RK pin to SSC.
-> 
-> Signed-off-by: Bo Shen <voice.shen@atmel.com>
-> ---
-> 
->  Documentation/devicetree/bindings/sound/atmel-wm8904.txt | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
-> index 8bbe50c..68a5c1a 100644
-> --- a/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
-> +++ b/Documentation/devicetree/bindings/sound/atmel-wm8904.txt
-> @@ -33,6 +33,8 @@ Required properties:
->  
->  Optional properties:
->    - pinctrl-names, pinctrl-0: Please refer to pinctrl-bindings.txt
-> +  - clk_from_rk_pin: according to hardware design, clk privide on rk pin
-
-typo + more description is needed:
-Please tell that it is a boolean property, that by default it is using
-the TK pin (like in the commit message in fact).
-
-Bye,
-
-> +    to ssc device
->  
->  Example:
->  sound {
-> 
+And the ONFI standard defines 4 more timings:
+- tCEA_max
+- tCEH_min
+- tFEAT_max
+- tITC_max
 
 
--- 
-Nicolas Ferre
+
+>
+> Best Regards,
+>
+> Boris
+>
+>>
+>> Jason
+>
+
