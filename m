@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaAORYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 12:24:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaAORYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 12:24:38 -0500
-Date: Wed, 15 Jan 2014 18:24:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/timers 4/4] timers: Reduce future
-	__run_timers() latency for first add to empty list
-Message-ID: <20140115172409.GD11499@redhat.com>
-References: <20140115051939.GA31164@linux.vnet.ibm.com> <1389763248-31297-1-git-send-email-paulmck@linux.vnet.ibm.com> <1389763248-31297-4-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389763248-31297-4-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752693AbaAOR07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 12:26:59 -0500
+Received: from ducie-dc1.codethink.co.uk ([37.128.190.40]:60898 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928AbaAOR04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 12:26:56 -0500
+From: mark.doffman@codethink.co.uk
+To: ceph-devel@vger.kernel.org
+Cc: Mark Doffman <mark.doffman@codethink.co.uk>, sage@inktank.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, rob.taylor@codethink.co.uk
+Subject: [PATCH v2 0/2] Add ceph root filesystem functionality and documentation.
+Date: Wed, 15 Jan 2014 11:26:27 -0600
+Message-Id: <cover.1389806186.git.mark.doffman@codethink.co.uk>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
+References: <1385000024-23463-1-git-send-email-mark.doffman@codethink.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14, Paul E. McKenney wrote:
->
-> @@ -749,6 +749,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
->
->  	base = lock_timer_base(timer, &flags);
->
-> +	(void)catchup_timer_jiffies(base);
+From: Mark Doffman <mark.doffman@codethink.co.uk>
 
-Agreed, but perhaps it would be better to do this before
-all_timers++ in internal_add_timer() ?
+Hi All,
 
-This is funny, but I already have the same change for ->next_timer,
-if we add this optimization perhaps that trivial patch makes sense
-too.
+The following is a second version of a patch series that adds the ability to use
+a ceph distributed file system as the root device.
 
-Oleg.
+Changes from version 1
+
+fs/ceph/root.c:
+
+The parsing code that takes the DHCP option 17 and kernel command line
+parameters has been extensively altered.
+
+The parsing now accepts multiple monitor addresses and ipv6 addresses.
+
+The monitors listed in DHCP option 17 are now concatenated with those
+listed on the kernel command line.
+
+The patch series applies to v3.13-rc8-7-g3539717
+
+Thanks
+
+Mark
+
+Mark Doffman (1):
+  init: Add a new root device option, the Ceph file system
+
+Rob Taylor (1):
+  Documentation: Document the cephroot functionality
+
+ Documentation/filesystems/{ => ceph}/ceph.txt |   0
+ Documentation/filesystems/ceph/cephroot.txt   |  86 +++++++++++++
+ fs/ceph/Kconfig                               |  10 ++
+ fs/ceph/Makefile                              |   1 +
+ fs/ceph/root.c                                | 176 ++++++++++++++++++++++++++
+ include/linux/ceph/ceph_root.h                |  10 ++
+ include/linux/root_dev.h                      |   1 +
+ init/do_mounts.c                              |  32 ++++-
+ net/ipv4/ipconfig.c                           |  10 +-
+ 9 files changed, 323 insertions(+), 3 deletions(-)
+ rename Documentation/filesystems/{ => ceph}/ceph.txt (100%)
+ create mode 100644 Documentation/filesystems/ceph/cephroot.txt
+ create mode 100644 fs/ceph/root.c
+ create mode 100644 include/linux/ceph/ceph_root.h
+
+-- 
+1.8.4
 
