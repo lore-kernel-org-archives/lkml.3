@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaAOV5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 16:57:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40945 "EHLO
+	id S1754753AbaAOW1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:27:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40996 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430AbaAOV5Q (ORCPT
+	with ESMTP id S1753499AbaAOV5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:16 -0500
+	Wed, 15 Jan 2014 16:57:32 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>, Johannes Berg <johannes.berg@intel.com>,
+Cc: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 129/166] mac80211: move "bufferable MMPDU" check to fix AP mode scan
-Date: Wed, 15 Jan 2014 13:52:23 -0800
-Message-Id: <1389822780-4729-130-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 142/166] macvtap: update file current position
+Date: Wed, 15 Jan 2014 13:52:36 -0800
+Message-Id: <1389822780-4729-143-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,73 +28,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-commit 277d916fc2e959c3f106904116bb4f7b1148d47a upstream.
+[ Upstream commit e6ebc7f16ca1434a334647aa56399c546be4e64b ]
 
-The check needs to apply to both multicast and unicast packets,
-otherwise probe requests on AP mode scans are sent through the multicast
-buffer queue, which adds long delays (often longer than the scanning
-interval).
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/tx.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+ drivers/net/macvtap.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 6b976b7..0892d9a 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -442,7 +442,6 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- {
- 	struct sta_info *sta = tx->sta;
- 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
--	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
- 	struct ieee80211_local *local = tx->local;
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index a4df37f..c8c9bcc 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -911,6 +911,8 @@ static ssize_t macvtap_aio_read(struct kiocb *iocb, const struct iovec *iv,
  
- 	if (unlikely(!sta))
-@@ -453,15 +452,6 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
- 		int ac = skb_get_queue_mapping(tx->skb);
- 
--		/* only deauth, disassoc and action are bufferable MMPDUs */
--		if (ieee80211_is_mgmt(hdr->frame_control) &&
--		    !ieee80211_is_deauth(hdr->frame_control) &&
--		    !ieee80211_is_disassoc(hdr->frame_control) &&
--		    !ieee80211_is_action(hdr->frame_control)) {
--			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
--			return TX_CONTINUE;
--		}
--
- 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
- 		       sta->sta.addr, sta->sta.aid, ac);
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
-@@ -504,9 +494,22 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- static ieee80211_tx_result debug_noinline
- ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
- {
-+	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
-+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
-+
- 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
- 		return TX_CONTINUE;
- 
-+	/* only deauth, disassoc and action are bufferable MMPDUs */
-+	if (ieee80211_is_mgmt(hdr->frame_control) &&
-+	    !ieee80211_is_deauth(hdr->frame_control) &&
-+	    !ieee80211_is_disassoc(hdr->frame_control) &&
-+	    !ieee80211_is_action(hdr->frame_control)) {
-+		if (tx->flags & IEEE80211_TX_UNICAST)
-+			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
-+		return TX_CONTINUE;
-+	}
-+
- 	if (tx->flags & IEEE80211_TX_UNICAST)
- 		return ieee80211_tx_h_unicast_ps_buf(tx);
- 	else
+ 	ret = macvtap_do_read(q, iocb, iv, len, file->f_flags & O_NONBLOCK);
+ 	ret = min_t(ssize_t, ret, len); /* XXX copied from tun.c. Why? */
++	if (ret > 0)
++		iocb->ki_pos = ret;
+ out:
+ 	return ret;
+ }
 -- 
 1.8.3.2
 
