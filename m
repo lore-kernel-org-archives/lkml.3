@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaAOAhk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 19:37:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34300 "EHLO mga02.intel.com"
+	id S1752226AbaAOAi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 19:38:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60225 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880AbaAOAhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 19:37:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.95,659,1384329600"; 
-   d="scan'208";a="466758261"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: RE: [PATCH] PM: Enable asynchronous noirq resume threads to save
- the resuming time
-Thread-Topic: [PATCH] PM: Enable asynchronous noirq resume threads to save
- the resuming time
-Thread-Index: AQHPEXmxHJZk4e3zx0694YnUG8KNkpqE7cOA
-Date: Wed, 15 Jan 2014 00:35:16 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01C02047@SHSMSX101.ccr.corp.intel.com>
-References: <1389683888.3650.78.camel@cliu38-desktop-build>
- <1746120.u7vbF1Vtmp@vostro.rjw.lan>
-In-Reply-To: <1746120.u7vbF1Vtmp@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1750928AbaAOAi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 19:38:56 -0500
+Message-ID: <52D5D883.802@zytor.com>
+Date: Tue, 14 Jan 2014 16:38:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kim Naru <kim.naru@amd.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        Sherry Hurwitz <sherry.hurwitz@amd.com>
+Subject: Re: [PATCH -v1.1] x86, CPU, AMD: Add workaround for family 16h, erratum
+ 793
+References: <20140114114133.GA31473@khazad-dum.debian.net> <20140114115547.GA29887@pd.tnic> <52D55468.6000000@zytor.com> <20140114153534.GE29865@pd.tnic> <20140114162722.GF29865@pd.tnic> <52D56627.9060802@zytor.com> <20140114164208.GK29865@pd.tnic> <52D5780E.4070700@zytor.com> <20140114230711.GS29865@pd.tnic>
+In-Reply-To: <20140114230711.GS29865@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s0F0bkC8004792
 
-Hello Rafael,
-
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Wednesday, January 15, 2014 6:55 AM
-> To: Liu, Chuansheng
-> Cc: gregkh@linuxfoundation.org; Brown, Len; pavel@ucw.cz;
-> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
-> Subject: Re: [PATCH] PM: Enable asynchronous noirq resume threads to save
-> the resuming time
+On 01/14/2014 03:07 PM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> On Tuesday, January 14, 2014 03:18:08 PM Chuansheng Liu wrote:
-> >
-> > Currently, the dpm_resume_noirq() is done synchronously, and for PCI devices
-> > pci_pm_resume_noirq():
-> >
-> > pci_pm_resume_noirq()
-> >  pci_pm_default_resume_early()
-> >   pci_power_up()
-> >    pci_raw_set_power_state()
-> > Which set the device from D3hot to D0 mostly, for every device, there will
-> > be one 10ms(pci_pm_d3_delay) to wait.
-> >
-> > Hence normally dpm_resume_noirq() will cost > 100ms, which is bigger for
-> mobile
-> > platform.
+> This adds the workaround for erratum 793 as a precaution in case not
+> every BIOS implements it. This addresses CVE-2013-6885.
 > 
-> pci_pm_d3_delay usually is not 10 ms.  What is 10 ms is dev->d3_delay, but
-> that also is not on every platform now.
-Yes, it is d3_delay exactly, thanks your correction.
-
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> Tested-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+> ---
+>  arch/x86/include/uapi/asm/msr-index.h |  1 +
+>  arch/x86/kernel/cpu/amd.c             | 10 ++++++++++
+>  2 files changed, 11 insertions(+)
 > 
-> That said the approach here makes sense, but I have two questions:
+> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+> index 37813b5ddc37..59cea185ad1d 100644
+> --- a/arch/x86/include/uapi/asm/msr-index.h
+> +++ b/arch/x86/include/uapi/asm/msr-index.h
+> @@ -184,6 +184,7 @@
+>  #define MSR_AMD64_PATCH_LOADER		0xc0010020
+>  #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+>  #define MSR_AMD64_OSVW_STATUS		0xc0010141
+> +#define MSR_AMD64_LS_CFG		0xc0011020
+>  #define MSR_AMD64_DC_CFG		0xc0011022
+>  #define MSR_AMD64_BU_CFG2		0xc001102a
+>  #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index 4a48e8bbd857..a4bec9cd293a 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -507,6 +507,16 @@ static void early_init_amd(struct cpuinfo_x86 *c)
+>  			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
+>  	}
+>  #endif
+> +
+> +	/* F16h erratum 793, CVE-2013-6885 */
+> +	if (c->x86 == 0x16 && c->x86_model <= 0xf) {
+> +		u64 val;
+> +
+> +		rdmsrl(MSR_AMD64_LS_CFG, val);
+> +		if (!(val & BIT(15)))
+> +			wrmsrl(MSR_AMD_LS_CFG, val | BIT(15));
+> +	}
+> +
+>  }
+>  
+>  static const int amd_erratum_383[];
 > 
-> 1. On what systems has it been tested?
-I have been tested on Baytrail platform, and at the beginning the d3_delay is set to 0,
-but we really meet the HANG issue if we operate the device immediately sometimes,
-so currently most PCI devices in Baytrail has the 10ms delay.
-And it caused the whole resume time bigger than Clovertrail platform;
 
-> 2. What about suspend_late/resume_early?  If the _noirq things are to be
-> executed asynchronously, those should be too.
-I noticed it just taken little time often, and I cannot find out some reasons for changing them
-in theory, so if you like it, I will update them into patch V2 also:)
+In file included from
+/home/hpa/kernel/distwork/arch/x86/include/asm/processor.h:20:0,
+                 from
+/home/hpa/kernel/distwork/arch/x86/include/asm/thread_info.h:22,
+                 from
+/home/hpa/kernel/distwork/include/linux/thread_info.h:54,
+                 from
+/home/hpa/kernel/distwork/arch/x86/include/asm/elf.h:7,
+                 from /home/hpa/kernel/distwork/include/linux/elf.h:4,
+                 from /home/hpa/kernel/distwork/arch/x86/kernel/cpu/amd.c:4:
+/home/hpa/kernel/distwork/arch/x86/kernel/cpu/amd.c: In function
+â€˜early_init_amdâ€™:
+/home/hpa/kernel/distwork/arch/x86/kernel/cpu/amd.c:518:11: error:
+â€˜MSR_AMD_LS_CFGâ€™ undeclared (first use in this function)
+    wrmsrl(MSR_AMD_LS_CFG, val | BIT(15));
+           ^
+/home/hpa/kernel/distwork/arch/x86/include/asm/msr.h:156:20: note: in
+definition of macro â€˜wrmsrlâ€™
+  native_write_msr((msr), (u32)((u64)(val)), (u32)((u64)(val) >> 32))
+                    ^
+/home/hpa/kernel/distwork/arch/x86/kernel/cpu/amd.c:518:11: note: each
+undeclared identifier is reported only once for each function it appear
+s in
+    wrmsrl(MSR_AMD_LS_CFG, val | BIT(15));
+           ^
+/home/hpa/kernel/distwork/arch/x86/include/asm/msr.h:156:20: note: in
+definition of macro â€˜wrmsrlâ€™
+  native_write_msr((msr), (u32)((u64)(val)), (u32)((u64)(val) >> 32))
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	-hpa
+
