@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192AbaAOW2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:28:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40975 "EHLO
+	id S1754722AbaAOW2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:28:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaAOV51 (ORCPT
+	with ESMTP id S1753399AbaAOV50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 16:57:27 -0500
+	Wed, 15 Jan 2014 16:57:26 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Guinot <sguinot@lacie.com>, Tejun Heo <tj@kernel.org>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 131/166] ahci: add PCI ID for Marvell 88SE9170 SATA controller
-Date: Wed, 15 Jan 2014 13:52:25 -0800
-Message-Id: <1389822780-4729-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 145/166] virtio: delete napi structures from netdev before releasing memory
+Date: Wed, 15 Jan 2014 13:52:39 -0800
+Message-Id: <1389822780-4729-146-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,35 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <sguinot@lacie.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit e098f5cbe9d410e7878b50f524dce36cc83ec40e upstream.
+[ Upstream commit d4fb84eefe5164f6a6ea51d0a9e26280c661a0dd ]
 
-This patch adds support for the PCI ID provided by the Marvell 88SE9170
-SATA controller.
+free_netdev calls netif_napi_del too, but it's too late, because napi
+structures are placed on vi->rq. netif_napi_add() is called from
+virtnet_alloc_queues.
 
-Signed-off-by: Simon Guinot <sguinot@lacie.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ kamal: backport to 3.8 (revert to hardcoded PCI id)
+general protection fault: 0000 [#1] SMP
+Dumping ftrace buffer:
+   (ftrace buffer empty)
+Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables virtio_balloon pcspkr virtio_net(-) i2c_pii
+CPU: 1 PID: 347 Comm: rmmod Not tainted 3.13.0-rc2+ #171
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+task: ffff8800b779c420 ti: ffff8800379e0000 task.ti: ffff8800379e0000
+RIP: 0010:[<ffffffff81322e19>]  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
+RSP: 0018:ffff8800379e1dd0  EFLAGS: 00010a83
+RAX: 6b6b6b6b6b6b6b6b RBX: ffff8800379c2fd0 RCX: dead000000200200
+RDX: 6b6b6b6b6b6b6b6b RSI: 0000000000000001 RDI: ffff8800379c2fd0
+RBP: ffff8800379e1dd0 R08: 0000000000000001 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000001 R12: ffff8800379c2f90
+R13: ffff880037839160 R14: 0000000000000000 R15: 00000000013352f0
+FS:  00007f1400e34740(0000) GS:ffff8800bfb00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f464124c763 CR3: 00000000b68cf000 CR4: 00000000000006e0
+Stack:
+ ffff8800379e1df0 ffffffff8155beab 6b6b6b6b6b6b6b2b ffff8800378391c0
+ ffff8800379e1e18 ffffffff8156499b ffff880037839be0 ffff880037839d20
+ ffff88003779d3f0 ffff8800379e1e38 ffffffffa003477c ffff88003779d388
+Call Trace:
+ [<ffffffff8155beab>] netif_napi_del+0x1b/0x80
+ [<ffffffff8156499b>] free_netdev+0x8b/0x110
+ [<ffffffffa003477c>] virtnet_remove+0x7c/0x90 [virtio_net]
+ [<ffffffff813ae323>] virtio_dev_remove+0x23/0x80
+ [<ffffffff813f62ef>] __device_release_driver+0x7f/0xf0
+ [<ffffffff813f6ca0>] driver_detach+0xc0/0xd0
+ [<ffffffff813f5f28>] bus_remove_driver+0x58/0xd0
+ [<ffffffff813f72ec>] driver_unregister+0x2c/0x50
+ [<ffffffff813ae65e>] unregister_virtio_driver+0xe/0x10
+ [<ffffffffa0036942>] virtio_net_driver_exit+0x10/0x6ce [virtio_net]
+ [<ffffffff810d7cf2>] SyS_delete_module+0x172/0x220
+ [<ffffffff810a732d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff810f5d4c>] ? __audit_syscall_entry+0x9c/0xf0
+ [<ffffffff81677f69>] system_call_fastpath+0x16/0x1b
+Code: 00 00 55 48 8b 17 48 b9 00 01 10 00 00 00 ad de 48 8b 47 08 48 89 e5 48 39 ca 74 29 48 b9 00 02 20 00 00 00
+RIP  [<ffffffff81322e19>] __list_del_entry+0x29/0xd0
+ RSP <ffff8800379e1dd0>
+---[ end trace d5931cd3f87c9763 ]---
+
+Fixes: 986a4f4d452d (virtio_net: multiqueue support)
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ahci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/virtio_net.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 6468d43..67fb282 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -425,6 +425,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
- 	{ PCI_DEVICE(0x1b4b, 0x9125),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
-+	{ PCI_DEVICE_SUB(0x1b4b, 0x9178,
-+			 0x1b4b, 0x9170),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9170 */
- 	{ PCI_DEVICE(0x1b4b, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(0x1b4b, 0x9192),
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index c3bcb4a..fa2385a 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1265,6 +1265,11 @@ static void virtnet_config_changed(struct virtio_device *vdev)
+ 
+ static void virtnet_free_queues(struct virtnet_info *vi)
+ {
++	int i;
++
++	for (i = 0; i < vi->max_queue_pairs; i++)
++		netif_napi_del(&vi->rq[i].napi);
++
+ 	kfree(vi->rq);
+ 	kfree(vi->sq);
+ }
 -- 
 1.8.3.2
 
