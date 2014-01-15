@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaAOU56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 15:57:58 -0500
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751883AbaAOU5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 15:57:55 -0500
-From: Richard Weinberger <richard@nod.at>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: Tree for Jan 15 (um, rcu)
-Date: Wed, 15 Jan 2014 21:57:49 +0100
-Message-ID: <1481134.LAgAS757c0@sandpuppy>
-User-Agent: KMail/4.11.2 (Linux/3.12.0-34.ge8fa6b4-desktop; KDE/4.11.2; x86_64; ; )
-In-Reply-To: <20140116075025.7b7ec09805b5f90c75a36dd2@canb.auug.org.au>
-References: <20140115185545.497c14923814b6ecaa540d9f@canb.auug.org.au> <2114717.uibXxy8kL0@sandpuppy> <20140116075025.7b7ec09805b5f90c75a36dd2@canb.auug.org.au>
+	id S1752127AbaAOU6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 15:58:17 -0500
+Received: from forward15.mail.yandex.net ([95.108.130.119]:53774 "EHLO
+	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaAOU6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 15:58:07 -0500
+From: Evgeniy Polyakov <zbr@ioremap.net>
+Envelope-From: drustafa@yandex.ru
+To: David Fries <david@fries.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        GregKH <greg@kroah.com>
+In-Reply-To: <20140115045200.GA29560@spacedout.fries.net>
+References: <1388299556-12669-1-git-send-email-David@Fries.net> <20140115045200.GA29560@spacedout.fries.net>
+Subject: Re: [PATCH 16/16] hold bus_mutex in netlink and search
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Message-Id: <8351389819482@web5j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Thu, 16 Jan 2014 00:58:02 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi
 
-Am Donnerstag, 16. Januar 2014, 07:50:25 schrieb Stephen Rothwell:
-> Hi Richard,
-> 
-> On Wed, 15 Jan 2014 20:39:03 +0100 Richard Weinberger <richard@nod.at> 
-wrote:
-> > Stephen, can you please add my UML tree to -next?
-> > It contains already the fix.
-> > git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git next
-> 
-> Sure, added from today.  As long as it only contains stuff for v3.14 ...
+15.01.2014, 08:52, "David Fries" <David@Fries.net>:
+> The bus_mutex needs to be taken to serialize access to a specific bus.
+> netlink wasn't updated when bus_mutex was added and was calling
+> without that lock held, and not all of the masters were holding the
+> bus_mutex in a search. šThis was causing the ds2490 hardware to stop
+> responding when both netlink and /sys slaves were executing bus
+> commands at the same time.
+>
+> Signed-off-by: David Fries <David@Fries.net>
 
-Yep, only stuff for 3.14.
+Looks good to me, thank you.
+Greg, please pull the whole set if you hadn't yet
 
-> > Please note there is a trivial merge conflict in
-> > arch/um/include/asm/Kbuild.
-> Yeah, what Geert said.  If you can fix this, then fine, but a single
-> conflict is not so bad.
-
-I can update my tree if it saves you time. No problem...
-
-> Thanks for adding your subsystem tree as a participant of linux-next.  As
-> you may know, this is not a judgment of your code.  The purpose of
-> linux-next is for integration testing and to lower the impact of
-> conflicts between subsystems in the next merge window.
-> 
-> You will need to ensure that the patches/commits in your tree/series have
-> been:
->      * submitted under GPL v2 (or later) and include the Contributor's
-> 	Signed-off-by,
->      * posted to the relevant mailing list,
->      * reviewed by you (or another maintainer of your subsystem tree),
->      * successfully unit tested, and
->      * destined for the current or next Linux merge window.
-> 
-> Basically, this should be just what you would send to Linus (or ask him
-> to fetch).  It is allowed to be rebased if you deem it necessary.
-
-Thanks,
-//richard
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net> 
