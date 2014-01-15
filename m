@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbaAOII3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 03:08:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57408 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaAOII1 (ORCPT
+	id S1751887AbaAOIIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 03:08:43 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45528 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807AbaAOIIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 03:08:27 -0500
-Date: Wed, 15 Jan 2014 09:07:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Henderson <rth@twiddle.net>, Matt Turner <mattst88@gmail.com>,
-        Daniel J Blueman <daniel@numascale.com>,
-        Waiman Long <waiman.long@hp.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
-Message-ID: <20140115080753.GW31570@twins.programming.kicks-ass.net>
-References: <52D353C8.4000000@numascale.com>
- <52D4172E.6030706@hp.com>
- <52D4A0C7.5070601@numascale.com>
- <20140114110307.GW7572@laptop.programming.kicks-ass.net>
- <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com>
- <52D57B60.9020209@twiddle.net>
- <20140114234443.GY10038@linux.vnet.ibm.com>
- <CA+55aFyF2Vg785qO52fJLV7rsi6bMtGFhxsAvJ7354EBrcESCA@mail.gmail.com>
- <20140115023958.GA10038@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140115023958.GA10038@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 15 Jan 2014 03:08:35 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] mtd: davinci_nand: Remove unnecessary labels from error path
+Date: Wed, 15 Jan 2014 13:38:26 +0530
+Message-Id: <1389773306-7055-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 14, 2014 at 06:39:58PM -0800, Paul E. McKenney wrote:
-> > If you just want to do a store release, on alpha you'd want to
-> > implement that as a full memory barrier followed by a store. It
-> > doesn't get the advantage of a real release consistency model, but at
-> > least it's not doing an external bus access. But you can only do that
-> > store as a 4-byte or 8-byte store.on the older alphas (byte and word
-> > stores work on newer ones).
-> > 
-> > Of course, it's entirely possible that nobody cares..
-> 
-> That would be my hope.  ;-)
-> 
-> If nobody cares about Alpha period, it is easy.  However, the last time
-> that I tried that approach, they sent me a URL of a wiki showing Alpha
-> systems still running mainline.  But a slow-but-working approach for
-> Alpha does seem reasonable, even for those still running Linux on Alpha.
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-Well, if they're all EV56 or later we're still good as they can actually
-do what we need.
+This patch removes the unnecessary labels from
+the error path in probe function which did nothing
+than just returning error values, Thus simplifying code
+path and improved readability.
 
-But I don't think a ll/sc implementation of the store_release can even
-work, because in that case all users of the other bytes also need a
-ll/sc around them but how are we to know about them?
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/mtd/nand/davinci_nand.c |   31 ++++++++++---------------------
+ 1 file changed, 10 insertions(+), 21 deletions(-)
 
-So the only real way to allow store_release on 8/16 bit values is by
-removing all Alpha support _pre_ EV56 :/
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index b77a01e..3e4d457 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -609,8 +609,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+ 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+ 	if (!info) {
+ 		dev_err(&pdev->dev, "unable to allocate memory\n");
+-		ret = -ENOMEM;
+-		goto err_nomem;
++		return -ENOMEM;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, info);
+@@ -619,20 +618,16 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+ 	res2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+ 	if (!res1 || !res2) {
+ 		dev_err(&pdev->dev, "resource missing\n");
+-		ret = -EINVAL;
+-		goto err_nomem;
++		return -EINVAL;
+ 	}
+ 
+ 	vaddr = devm_ioremap_resource(&pdev->dev, res1);
+-	if (IS_ERR(vaddr)) {
+-		ret = PTR_ERR(vaddr);
+-		goto err_ioremap;
+-	}
++	if (IS_ERR(vaddr))
++		return PTR_ERR(vaddr);
++
+ 	base = devm_ioremap_resource(&pdev->dev, res2);
+-	if (IS_ERR(base)) {
+-		ret = PTR_ERR(base);
+-		goto err_ioremap;
+-	}
++	if (IS_ERR(base))
++		return PTR_ERR(base);
+ 
+ 	info->dev		= &pdev->dev;
+ 	info->base		= base;
+@@ -699,7 +694,7 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+ 			spin_unlock_irq(&davinci_nand_lock);
+ 
+ 			if (ret == -EBUSY)
+-				goto err_ecc;
++				return ret;
+ 
+ 			info->chip.ecc.calculate = nand_davinci_calculate_4bit;
+ 			info->chip.ecc.correct = nand_davinci_correct_4bit;
+@@ -715,16 +710,14 @@ static int __init nand_davinci_probe(struct platform_device *pdev)
+ 		info->chip.ecc.strength = pdata->ecc_bits;
+ 		break;
+ 	default:
+-		ret = -EINVAL;
+-		goto err_ecc;
++		return -EINVAL;
+ 	}
+ 	info->chip.ecc.mode = ecc_mode;
+ 
+ 	info->clk = devm_clk_get(&pdev->dev, "aemif");
+ 	if (IS_ERR(info->clk)) {
+-		ret = PTR_ERR(info->clk);
+ 		dev_dbg(&pdev->dev, "unable to get AEMIF clock, err %d\n", ret);
+-		goto err_clk;
++		return PTR_ERR(info->clk);
+ 	}
+ 
+ 	ret = clk_prepare_enable(info->clk);
+@@ -853,10 +846,6 @@ err_clk_enable:
+ 		ecc4_busy = false;
+ 	spin_unlock_irq(&davinci_nand_lock);
+ 
+-err_ecc:
+-err_clk:
+-err_ioremap:
+-err_nomem:
+ 	return ret;
+ }
+ 
+-- 
+1.7.9.5
+
