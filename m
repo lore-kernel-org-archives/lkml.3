@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaAOQUC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 11:20:02 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64461 "EHLO
+	id S1752425AbaAOQVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 11:21:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:14991 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752205AbaAOQT6 (ORCPT
+	by vger.kernel.org with ESMTP id S1751932AbaAOQVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 11:19:58 -0500
-Date: Wed, 15 Jan 2014 11:19:56 -0500
+	Wed, 15 Jan 2014 11:21:18 -0500
+Date: Wed, 15 Jan 2014 11:21:16 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -15,32 +15,52 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 07/17] tools lib traceevent: Add
- pevent_unregister_print_function()
-Message-ID: <20140115111956.7c85b0f2@gandalf.local.home>
-In-Reply-To: <1389750340-15965-8-git-send-email-namhyung@kernel.org>
+Subject: Re: [PATCH 08/17] tools lib traceevent: Unregister handler when
+ function plugin unloaded
+Message-ID: <20140115112116.21fe7f31@gandalf.local.home>
+In-Reply-To: <1389750340-15965-9-git-send-email-namhyung@kernel.org>
 References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
-	<1389750340-15965-8-git-send-email-namhyung@kernel.org>
+	<1389750340-15965-9-git-send-email-namhyung@kernel.org>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Jan 2014 10:45:30 +0900
+On Wed, 15 Jan 2014 10:45:31 +0900
 Namhyung Kim <namhyung@kernel.org> wrote:
 
-> When a plugin unloaded it needs to unregister its print handler from
-> pevent.  So add unregister function to do it.
+> The function handler should be unregistered when the plugin unloaded
+> otherwise it'll try to access invalid memory.
 > 
 > Cc: Jiri Olsa <jolsa@redhat.com>
 > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
 
 Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
 -- Steve
+
+
+> ---
+>  tools/lib/traceevent/plugin_function.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/tools/lib/traceevent/plugin_function.c b/tools/lib/traceevent/plugin_function.c
+> index 39461485f9a7..80ba4ff1fe84 100644
+> --- a/tools/lib/traceevent/plugin_function.c
+> +++ b/tools/lib/traceevent/plugin_function.c
+> @@ -148,6 +148,9 @@ void PEVENT_PLUGIN_UNLOADER(struct pevent *pevent)
+>  {
+>  	int i, x;
+>  
+> +	pevent_unregister_event_handler(pevent, -1, "ftrace", "function",
+> +					function_handler, NULL);
+> +
+>  	for (i = 0; i <= cpus; i++) {
+>  		for (x = 0; x < fstack[i].size && fstack[i].stack[x]; x++)
+>  			free(fstack[i].stack[x]);
+
