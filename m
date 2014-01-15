@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaAOXXv (ORCPT <rfc822;w@1wt.eu>);
+	id S1753280AbaAOXXy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 18:23:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752859AbaAOXXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 18:23:51 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:64667 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859AbaAOXXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 18:23:49 -0500
-Date: Wed, 15 Jan 2014 18:23:45 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: David Miller <davem@davemloft.net>, jkaluza@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rgb@redhat.com,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v4 0/3] Send audit/procinfo/cgroup data in socket-level
- control message
-Message-ID: <20140115232345.GA22237@mtj.dyndns.org>
-References: <1377614400-27122-1-git-send-email-jkaluza@redhat.com>
- <1389600109-30739-1-git-send-email-jkaluza@redhat.com>
- <20140115.121730.1984913330507219167.davem@davemloft.net>
- <1389828103.681.34.camel@flatline.rdu.redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 0/2] reciprocal_divide updates
+Date: Thu, 16 Jan 2014 00:23:46 +0100
+Message-Id: <1389828228-30312-1-git-send-email-dborkman@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1389828103.681.34.camel@flatline.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 15, 2014 at 06:21:43PM -0500, Eric Paris wrote:
-> Reliably being able to audit what process requested an action is
-> extremely useful.  And I like the audit patch, as it is a couple of ints
-> we are storing.
-> 
-> procinfo and cgroup can both be up to 4k of data.
-> 
-> Is there an alternative he should consider?  Some way to grab a
-> reference on task_struct and just attach that to the message?
+Set is on top of Eric's BPF fix, that is:
 
-Or maybe it can be made separately optional instead of tagging along
-on an existing option so that it doesn't tax use cases which don't
-care about the new stuff?
+   http://patchwork.ozlabs.org/patch/311163/
 
-Thanks.
+Daniel Borkmann (1):
+  random32: add prandom_u32_lt_N and convert "misuses" of reciprocal_divide
+
+Hannes Frederic Sowa (1):
+  reciprocal_divide: correction/update of the algorithm
+
+ drivers/net/bonding/bond_main.c     | 16 +++++++-------
+ drivers/net/bonding/bond_netlink.c  |  4 ----
+ drivers/net/bonding/bond_options.c  |  9 +++-----
+ drivers/net/bonding/bond_sysfs.c    |  5 -----
+ drivers/net/bonding/bonding.h       |  3 +++
+ drivers/net/team/team_mode_random.c |  8 +------
+ include/linux/flex_array.h          |  3 ++-
+ include/linux/random.h              | 19 ++++++++++++++++-
+ include/linux/reciprocal_div.h      | 42 ++++++++++++++++++++++---------------
+ include/linux/slab_def.h            |  4 +++-
+ include/net/codel.h                 |  4 +---
+ include/net/red.h                   |  3 ++-
+ lib/flex_array.c                    |  3 ++-
+ lib/reciprocal_div.c                | 28 +++++++++++++++++++++----
+ net/packet/af_packet.c              |  5 ++---
+ net/sched/sch_choke.c               |  9 +-------
+ net/sched/sch_netem.c               |  4 +++-
+ 17 files changed, 99 insertions(+), 70 deletions(-)
 
 -- 
-tejun
+1.8.3.1
+
