@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaAOS4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 13:56:33 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54872 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaAOS43 (ORCPT
+	id S1752728AbaAOTAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 14:00:22 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:44986 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407AbaAOTAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 13:56:29 -0500
-Date: Wed, 15 Jan 2014 18:56:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, lgirdwood@gmail.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Message-ID: <20140115185621.GL15567@sirena.org.uk>
-References: <20140115191831.5965d17e@armhf>
+	Wed, 15 Jan 2014 14:00:20 -0500
+Date: Wed, 15 Jan 2014 20:00:15 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 1/3] memcg: notify userspace about OOM only when and action
+ is due
+Message-ID: <20140115190015.GA22196@dhcp22.suse.cz>
+References: <1389798068-19885-1-git-send-email-mhocko@suse.cz>
+ <1389798068-19885-2-git-send-email-mhocko@suse.cz>
+ <20140115175655.GJ6963@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="171LwGa4zcdgM9o6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140115191831.5965d17e@armhf>
-X-Cookie: Marriage is the sole cause of divorce.
+In-Reply-To: <20140115175655.GJ6963@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Problems with simple-card
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 15-01-14 12:56:55, Johannes Weiner wrote:
+> On Wed, Jan 15, 2014 at 04:01:06PM +0100, Michal Hocko wrote:
+> > Userspace is currently notified about OOM condition after reclaim
+> > fails to uncharge any memory after MEM_CGROUP_RECLAIM_RETRIES rounds.
+> > This usually means that the memcg is really in troubles and an
+> > OOM action (either done by userspace or kernel) has to be taken.
+> > The kernel OOM killer however bails out and doesn't kill anything
+> > if it sees an already dying/exiting task in a good hope a memory
+> > will be released and the OOM situation will be resolved.
+> > 
+> > Therefore it makes sense to notify userspace only after really all
+> > measures have been taken and an userspace action is required or
+> > the kernel kills a task.
+> > 
+> > This patch is based on idea by David Rientjes to not notify
+> > userspace when the current task is killed or in a late exiting.
+> > The original patch, however, didn't handle in kernel oom killer
+> > back offs which is implemtented by this patch.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> 
+> OOM is a temporary state because any task can exit at a time that is
+> not under our control and outside our knowledge.  That's why the OOM
+> situation is defined by failing an allocation after a certain number
+> of reclaim and charge attempts.
+> 
+> As of right now, the OOM sampling window is MEM_CGROUP_RECLAIM_RETRIES
+> loops of charge attempts and reclaim.  If a racing task is exiting and
+> releasing memory during that window, the charge will succeed fine.  If
+> the sampling window is too short in practice, it will have to be
+> extended, preferrably through increasing MEM_CGROUP_RECLAIM_RETRIES.
 
---171LwGa4zcdgM9o6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The patch doesn't try to address the above race because that one is
+unfixable. I hope that is clear.
 
-On Wed, Jan 15, 2014 at 07:18:31PM +0100, Jean-Francois Moine wrote:
+It just tries to reduce burden on the userspace oom notification
+consumers and given them a simple semantic. Notification comes only if
+an action will be necessary (either kernel kills something or user space
+is expected).
 
-> The main problem is about sysclk: when there is no clock in the DT,
-> you get the clock of the CPU or CODEC DAI. In my system, two clocks
-> are declared in the controller CPU DAI, but there is no .set_sysclk
-> pointer. So, snd_soc_dai_set_sysclk() returns -EINVAL and the card is
-> not created.
+E.g. consider a handler which tries to clean up after kernel handled
+OOM and killed something. If the kernel could back off and refrain
+from killing anything after the norification already fired up then the
+userspace has no practical way to detect that (except for checking the
+kernel log to search for OOM messages which might get suppressed due to
+rate limitting etc.. Nothing I would call optimal).
+Or do you think that such a use case doesn't make much sense and it is
+an abuse of the notification interface?
 
-set_sysclk() should be returning -ENOTSUPP in this case as with
-set_fmt() and the generic code then ignoring that error.
+> But a random task exiting a split second after the sampling window has
+> closed will always be a possibility, regardless of how long it is.
 
-> As I don't know why you need these fmt and sysclk, may you have a
-> look at these problems?
+Agreed and this is not what the patch is about. If the kernel oom killer
+couldn't back off then I would completely agree with you here.
 
-The overwhelming majority of combinations of devices need a format
-specifying (usually one will be imposed by the system design even if
-both devices could be master).
+> There is nothing to be gained from this layering violation and it's
+> mind-boggling that you two still think this is a meaningful change.
+> 
+> Nacked-by: Johannes Weiner <hannes@cmpxchg.org>
 
---171LwGa4zcdgM9o6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJS1tnRAAoJELSic+t+oim9sCwP/08HzC8zw41IlGDD7nJ+pb5f
-G3hKT2XHFYeosvHl5IJPVhPN32HyrWDy/RbWAmzFL9kY/eOiUKbjVtuwzxwXYZDt
-ozplzooErY2IExK7rMkmHfprQ0R8dCubor3/IuSOsUDtU64bD56NEOc7yY3Evq5W
-CzeM7XSKbDwJj4DFZxycXsDpXuoVzqY6myWPflt6RF5EII6AzEArLZlRBodeWTs/
-lHHZUMLKMYNZbAZDDABXDEnevXkxy8OssGAdjmm+DPVhcA520MIy9tJ+KnluMiII
-qYWfbltYSHg/WvbaUQWmiYaTRjCFKplCLE3FcXVkG0xEb/EFZ4igkzcPLs+SfGay
-3KQPG/zomXua1f59bDwgacGKYegGmxG1ztJeJ3W4HMZlBcucXiIPsw0e7nmPbicI
-dqEqDAJI11NUIXuOWfWbX+458qV47VVyYtS7lYf9hHZ5HSNi5uh+Xq8GFwOO4Dhe
-0ySwQG14cHBpZ1VIao53DyCH+87eW7Z/HIrs9lGh1j6YRx3RmL4tSWRwtk+KTPjU
-qwuGkLiI6E9NzvRy5pbdqT81xl29YNafekoWaSebnnXmilPYGdufqSFDOpCuy/nG
-2fKvV7jV3rAVVk1eAUc2GC2yZz7PJ0eDq2H6/SttgGzjYoWcDaPK7LwrxU/S3Nko
-8Tdfb1SC/ypp+YXmy3BL
-=0Umh
------END PGP SIGNATURE-----
-
---171LwGa4zcdgM9o6--
+-- 
+Michal Hocko
+SUSE Labs
