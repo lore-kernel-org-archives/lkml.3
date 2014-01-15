@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaAOWAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:00:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41383 "EHLO
+	id S1754650AbaAOWHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:07:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41388 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143AbaAOWAH (ORCPT
+	with ESMTP id S1754143AbaAOWAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 17:00:07 -0500
+	Wed, 15 Jan 2014 17:00:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Bo Shen <voice.shen@atmel.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 051/166] KVM: Improve create VCPU parameter (CVE-2013-4587)
-Date: Wed, 15 Jan 2014 13:51:05 -0800
-Message-Id: <1389822780-4729-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 081/166] ASoC: wm8904: fix DSP mode B configuration
+Date: Wed, 15 Jan 2014 13:51:35 -0800
+Message-Id: <1389822780-4729-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Honig <ahonig@google.com>
+From: Bo Shen <voice.shen@atmel.com>
 
-commit 338c7dbadd2671189cec7faf64c84d01071b3f96 upstream.
+commit f0199bc5e3a3ec13f9bc938556517ec430b36437 upstream.
 
-In multiple functions the vcpu_id is used as an offset into a bitfield.  Ag
-malicious user could specify a vcpu_id greater than 255 in order to set or
-clear bits in kernel memory.  This could be used to elevate priveges in the
-kernel.  This patch verifies that the vcpu_id provided is less than 255.
-The api documentation already specifies that the vcpu_id must be less than
-max_vcpus, but this is currently not checked.
+When wm8904 work in DSP mode B, we still need to configure it to
+work in DSP mode. Or else, it will work in Right Justified mode.
 
-Reported-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Andrew Honig <ahonig@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- virt/kvm/kvm_main.c | 3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/codecs/wm8904.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 4dc41654..4884600 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1839,6 +1839,9 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 	int r;
- 	struct kvm_vcpu *vcpu, *v;
+diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
+index 3ff195c..af62f84 100644
+--- a/sound/soc/codecs/wm8904.c
++++ b/sound/soc/codecs/wm8904.c
+@@ -1449,7 +1449,7 @@ static int wm8904_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
  
-+	if (id >= KVM_MAX_VCPUS)
-+		return -EINVAL;
-+
- 	vcpu = kvm_arch_vcpu_create(kvm, id);
- 	if (IS_ERR(vcpu))
- 		return PTR_ERR(vcpu);
+ 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+ 	case SND_SOC_DAIFMT_DSP_B:
+-		aif1 |= WM8904_AIF_LRCLK_INV;
++		aif1 |= 0x3 | WM8904_AIF_LRCLK_INV;
+ 	case SND_SOC_DAIFMT_DSP_A:
+ 		aif1 |= 0x3;
+ 		break;
 -- 
 1.8.3.2
 
