@@ -1,161 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369AbaAOFDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 00:03:07 -0500
-Received: from SpacedOut.fries.net ([67.64.210.234]:44162 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaAOFDE (ORCPT
+	id S1751473AbaAOFDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 00:03:25 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50684 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaAOFDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 00:03:04 -0500
-X-Greylist: delayed 649 seconds by postgrey-1.27 at vger.kernel.org; Wed, 15 Jan 2014 00:03:04 EST
-Date: Tue, 14 Jan 2014 22:52:00 -0600
-From: David Fries <David@Fries.net>
-To: linux-kernel@vger.kernel.org
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 16/16] hold bus_mutex in netlink and search
-Message-ID: <20140115045200.GA29560@spacedout.fries.net>
-References: <1388299556-12669-1-git-send-email-David@Fries.net>
+	Wed, 15 Jan 2014 00:03:23 -0500
+X-AuditID: 9c930197-b7b7cae000000e34-3f-52d61698147b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 01/17] tools lib traceevent: Add state member to struct trace_seq
+References: <1389750340-15965-1-git-send-email-namhyung@kernel.org>
+	<1389750340-15965-2-git-send-email-namhyung@kernel.org>
+	<20140114210058.6b75c47a@gandalf.local.home>
+	<87k3e29cxz.fsf@sejong.aot.lge.com>
+	<20140114215655.666d7480@gandalf.local.home>
+Date: Wed, 15 Jan 2014 14:03:20 +0900
+In-Reply-To: <20140114215655.666d7480@gandalf.local.home> (Steven Rostedt's
+	message of "Tue, 14 Jan 2014 21:56:55 -0500")
+Message-ID: <87fvopalbb.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1388299556-12669-1-git-send-email-David@Fries.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Tue, 14 Jan 2014 22:52:02 -0600 (CST)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bus_mutex needs to be taken to serialize access to a specific bus.
-netlink wasn't updated when bus_mutex was added and was calling
-without that lock held, and not all of the masters were holding the
-bus_mutex in a search.  This was causing the ds2490 hardware to stop
-responding when both netlink and /sys slaves were executing bus
-commands at the same time.
+On Tue, 14 Jan 2014 21:56:55 -0500, Steven Rostedt wrote:
+> On Wed, 15 Jan 2014 11:49:28 +0900
+> Namhyung Kim <namhyung@kernel.org> wrote:
+>> Oh, it looks better.  But I'd like to TRACE_SEQ_CHECK() as is for some
+>> cases.  How about this?
+>
+> Looks good to me.
+>
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>
+> I'll try to look at the rest of the patches tomorrow.
 
-Signed-off-by: David Fries <David@Fries.net>
+Thanks, and I found that trace_seq_destroy() should use
+TRACE_SEQ_TRACE_RET instead.  Here's an updated patch.
+
+Thanks,
+Namhyung
+
+
+>From 539a5dd1cb3ba4cb03c283115a9a84f8e345514e Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 19 Dec 2013 18:17:44 +0900
+Subject: [PATCH] tools lib traceevent: Add state member to struct trace_seq
+
+The trace_seq->state is for tracking errors during the use of
+trace_seq APIs and getting rid of die() in it.
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
-This fixes existing bugs, tacking it to the end of the previous patch
-series.
+ tools/lib/traceevent/Makefile      |  2 +-
+ tools/lib/traceevent/event-parse.h |  7 +++++
+ tools/lib/traceevent/trace-seq.c   | 55 +++++++++++++++++++++++++++++---------
+ 3 files changed, 50 insertions(+), 14 deletions(-)
 
- drivers/w1/masters/ds1wm.c  |    4 +++-
- drivers/w1/masters/ds2490.c |    8 ++++++--
- drivers/w1/w1_netlink.c     |   13 +++++++++++--
- 3 files changed, 20 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/w1/masters/ds1wm.c b/drivers/w1/masters/ds1wm.c
-index 02df3b1..b077b8b 100644
---- a/drivers/w1/masters/ds1wm.c
-+++ b/drivers/w1/masters/ds1wm.c
-@@ -326,13 +326,14 @@ static void ds1wm_search(void *data, struct w1_master *master_dev,
- 	unsigned slaves_found = 0;
- 	unsigned int pass = 0;
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index f778d48ac609..56d52a33a3df 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -136,7 +136,7 @@ export Q VERBOSE
  
-+	mutex_lock(&master_dev->bus_mutex);
- 	dev_dbg(&ds1wm_data->pdev->dev, "search begin\n");
- 	while (true) {
- 		++pass;
- 		if (pass > 100) {
- 			dev_dbg(&ds1wm_data->pdev->dev,
- 				"too many attempts (100), search aborted\n");
--			return;
-+			break;
- 		}
+ EVENT_PARSE_VERSION = $(EP_VERSION).$(EP_PATCHLEVEL).$(EP_EXTRAVERSION)
  
- 		mutex_lock(&master_dev->bus_mutex);
-@@ -439,6 +440,7 @@ static void ds1wm_search(void *data, struct w1_master *master_dev,
- 	dev_dbg(&ds1wm_data->pdev->dev,
- 		"pass: %d total: %d search done ms d bit pos: %d\n", pass,
- 		slaves_found, ms_discrep_bit);
-+	mutex_unlock(&master_dev->bus_mutex);
- }
+-INCLUDES = -I. $(CONFIG_INCLUDES)
++INCLUDES = -I. -I $(srctree)/../../include $(CONFIG_INCLUDES)
  
- /* --------------------------------------------------------------------- */
-diff --git a/drivers/w1/masters/ds2490.c b/drivers/w1/masters/ds2490.c
-index db0bf32..7404ad30 100644
---- a/drivers/w1/masters/ds2490.c
-+++ b/drivers/w1/masters/ds2490.c
-@@ -727,9 +727,11 @@ static void ds9490r_search(void *data, struct w1_master *master,
- 	 */
- 	u64 buf[2*64/8];
+ # Set compile option CFLAGS if not set elsewhere
+ CFLAGS ?= -g -Wall
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index cf5db9013f2c..3c890cb28db7 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -58,6 +58,12 @@ struct pevent_record {
+ #endif
+ };
  
-+	mutex_lock(&master->bus_mutex);
++enum trace_seq_fail {
++	TRACE_SEQ__GOOD,
++	TRACE_SEQ__BUFFER_POISONED,
++	TRACE_SEQ__MEM_ALLOC_FAILED,
++};
 +
- 	/* address to start searching at */
- 	if (ds_send_data(dev, (u8 *)&master->search_id, 8) < 0)
--		return;
-+		goto search_out;
- 	master->search_id = 0;
+ /*
+  * Trace sequences are used to allow a function to call several other functions
+  * to create a string of data to use (up to a max of PAGE_SIZE).
+@@ -68,6 +74,7 @@ struct trace_seq {
+ 	unsigned int		buffer_size;
+ 	unsigned int		len;
+ 	unsigned int		readpos;
++	enum trace_seq_fail	state;
+ };
  
- 	value = COMM_SEARCH_ACCESS | COMM_IM | COMM_RST | COMM_SM | COMM_F |
-@@ -739,7 +741,7 @@ static void ds9490r_search(void *data, struct w1_master *master,
- 		search_limit = 0;
- 	index = search_type | (search_limit << 8);
- 	if (ds_send_control(dev, value, index) < 0)
--		return;
-+		goto search_out;
+ void trace_seq_init(struct trace_seq *s);
+diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+index d7f2e68bc5b9..f7112138e6af 100644
+--- a/tools/lib/traceevent/trace-seq.c
++++ b/tools/lib/traceevent/trace-seq.c
+@@ -22,6 +22,7 @@
+ #include <string.h>
+ #include <stdarg.h>
  
- 	do {
- 		schedule_timeout(jtime);
-@@ -791,6 +793,8 @@ static void ds9490r_search(void *data, struct w1_master *master,
- 			master->max_slave_count);
- 		set_bit(W1_WARN_MAX_COUNT, &master->flags);
- 	}
-+search_out:
-+	mutex_unlock(&master->bus_mutex);
++#include <asm/bug.h>
+ #include "event-parse.h"
+ #include "event-utils.h"
+ 
+@@ -32,10 +33,21 @@
+ #define TRACE_SEQ_POISON	((void *)0xdeadbeef)
+ #define TRACE_SEQ_CHECK(s)						\
+ do {									\
+-	if ((s)->buffer == TRACE_SEQ_POISON)			\
+-		die("Usage of trace_seq after it was destroyed");	\
++	if (WARN_ONCE((s)->buffer == TRACE_SEQ_POISON,			\
++		      "Usage of trace_seq after it was destroyed"))	\
++		(s)->state = TRACE_SEQ__BUFFER_POISONED;		\
+ } while (0)
+ 
++#define TRACE_SEQ_CHECK_RET_N(s, n)		\
++do {						\
++	TRACE_SEQ_CHECK(s);			\
++	if ((s)->state != TRACE_SEQ__GOOD)	\
++		return n; 			\
++} while (0)
++
++#define TRACE_SEQ_CHECK_RET(s)   TRACE_SEQ_CHECK_RET_N(s, )
++#define TRACE_SEQ_CHECK_RET0(s)  TRACE_SEQ_CHECK_RET_N(s, 0)
++
+ /**
+  * trace_seq_init - initialize the trace_seq structure
+  * @s: a pointer to the trace_seq structure to initialize
+@@ -46,6 +58,7 @@ void trace_seq_init(struct trace_seq *s)
+ 	s->readpos = 0;
+ 	s->buffer_size = TRACE_SEQ_BUF_SIZE;
+ 	s->buffer = malloc_or_die(s->buffer_size);
++	s->state = TRACE_SEQ__GOOD;
  }
  
- #if 0
-diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
-index a5dc219..5234964 100644
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -246,11 +246,16 @@ static int w1_process_command_master(struct w1_master *dev,
+ /**
+@@ -71,7 +84,7 @@ void trace_seq_destroy(struct trace_seq *s)
  {
- 	int err = -EINVAL;
+ 	if (!s)
+ 		return;
+-	TRACE_SEQ_CHECK(s);
++	TRACE_SEQ_CHECK_RET(s);
+ 	free(s->buffer);
+ 	s->buffer = TRACE_SEQ_POISON;
+ }
+@@ -80,8 +93,9 @@ static void expand_buffer(struct trace_seq *s)
+ {
+ 	s->buffer_size += TRACE_SEQ_BUF_SIZE;
+ 	s->buffer = realloc(s->buffer, s->buffer_size);
+-	if (!s->buffer)
+-		die("Can't allocate trace_seq buffer memory");
++	if (WARN_ONCE(!s->buffer,
++		      "Can't allocate trace_seq buffer memory"))
++		s->state = TRACE_SEQ__MEM_ALLOC_FAILED;
+ }
  
-+	/* drop bus_mutex for search (does it's own locking), and add/remove
-+	 * which doesn't use the bus
-+	 */
- 	switch (req_cmd->cmd) {
- 	case W1_CMD_SEARCH:
- 	case W1_CMD_ALARM_SEARCH:
- 	case W1_CMD_LIST_SLAVES:
-+		mutex_unlock(&dev->bus_mutex);
- 		err = w1_get_slaves(dev, req_msg, req_hdr, req_cmd);
-+		mutex_lock(&dev->bus_mutex);
- 		break;
- 	case W1_CMD_READ:
- 	case W1_CMD_WRITE:
-@@ -262,8 +267,12 @@ static int w1_process_command_master(struct w1_master *dev,
- 		break;
- 	case W1_CMD_SLAVE_ADD:
- 	case W1_CMD_SLAVE_REMOVE:
-+		mutex_unlock(&dev->bus_mutex);
-+		mutex_lock(&dev->mutex);
- 		err = w1_process_command_addremove(dev, req_msg, req_hdr,
- 			req_cmd);
-+		mutex_unlock(&dev->mutex);
-+		mutex_lock(&dev->bus_mutex);
- 		break;
- 	default:
- 		err = -EINVAL;
-@@ -400,7 +409,7 @@ static void w1_process_cb(struct w1_master *dev, struct w1_async_cmd *async_cmd)
- 	struct w1_slave *sl = node->sl;
- 	struct w1_netlink_cmd *cmd = NULL;
+ /**
+@@ -105,9 +119,9 @@ trace_seq_printf(struct trace_seq *s, const char *fmt, ...)
+ 	int len;
+ 	int ret;
  
--	mutex_lock(&dev->mutex);
-+	mutex_lock(&dev->bus_mutex);
- 	dev->portid = node->block->portid;
- 	if (sl && w1_reset_select_slave(sl))
- 		err = -ENODEV;
-@@ -437,7 +446,7 @@ static void w1_process_cb(struct w1_master *dev, struct w1_async_cmd *async_cmd)
- 	else
- 		atomic_dec(&dev->refcnt);
- 	dev->portid = 0;
--	mutex_unlock(&dev->mutex);
-+	mutex_unlock(&dev->bus_mutex);
+-	TRACE_SEQ_CHECK(s);
+-
+  try_again:
++	TRACE_SEQ_CHECK_RET0(s);
++
+ 	len = (s->buffer_size - 1) - s->len;
  
- 	mutex_lock(&dev->list_mutex);
- 	list_del(&async_cmd->async_entry);
+ 	va_start(ap, fmt);
+@@ -141,9 +155,9 @@ trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args)
+ 	int len;
+ 	int ret;
+ 
+-	TRACE_SEQ_CHECK(s);
+-
+  try_again:
++	TRACE_SEQ_CHECK_RET0(s);
++
+ 	len = (s->buffer_size - 1) - s->len;
+ 
+ 	ret = vsnprintf(s->buffer + s->len, len, fmt, args);
+@@ -172,13 +186,15 @@ int trace_seq_puts(struct trace_seq *s, const char *str)
+ {
+ 	int len;
+ 
+-	TRACE_SEQ_CHECK(s);
++	TRACE_SEQ_CHECK_RET0(s);
+ 
+ 	len = strlen(str);
+ 
+ 	while (len > ((s->buffer_size - 1) - s->len))
+ 		expand_buffer(s);
+ 
++	TRACE_SEQ_CHECK_RET0(s);
++
+ 	memcpy(s->buffer + s->len, str, len);
+ 	s->len += len;
+ 
+@@ -187,11 +203,13 @@ int trace_seq_puts(struct trace_seq *s, const char *str)
+ 
+ int trace_seq_putc(struct trace_seq *s, unsigned char c)
+ {
+-	TRACE_SEQ_CHECK(s);
++	TRACE_SEQ_CHECK_RET0(s);
+ 
+ 	while (s->len >= (s->buffer_size - 1))
+ 		expand_buffer(s);
+ 
++	TRACE_SEQ_CHECK_RET0(s);
++
+ 	s->buffer[s->len++] = c;
+ 
+ 	return 1;
+@@ -199,7 +217,7 @@ int trace_seq_putc(struct trace_seq *s, unsigned char c)
+ 
+ void trace_seq_terminate(struct trace_seq *s)
+ {
+-	TRACE_SEQ_CHECK(s);
++	TRACE_SEQ_CHECK_RET(s);
+ 
+ 	/* There's always one character left on the buffer */
+ 	s->buffer[s->len] = 0;
+@@ -208,5 +226,16 @@ void trace_seq_terminate(struct trace_seq *s)
+ int trace_seq_do_printf(struct trace_seq *s)
+ {
+ 	TRACE_SEQ_CHECK(s);
+-	return printf("%.*s", s->len, s->buffer);
++
++	switch (s->state) {
++	case TRACE_SEQ__GOOD:
++		return printf("%.*s", s->len, s->buffer);
++	case TRACE_SEQ__BUFFER_POISONED:
++		puts("Usage of trace_seq after it was destroyed");
++		break;
++	case TRACE_SEQ__MEM_ALLOC_FAILED:
++		puts("Can't allocate trace_seq buffer memory");
++		break;
++	}
++	return -1;
+ }
 -- 
-1.7.10.4
+1.7.11.7
+
