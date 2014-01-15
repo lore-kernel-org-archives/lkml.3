@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaAODCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 14 Jan 2014 22:02:40 -0500
-Received: from smtprelay0249.hostedemail.com ([216.40.44.249]:60827 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751722AbaAODCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 14 Jan 2014 22:02:36 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3868:3872:3873:4321:5007:7652:7903:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: name03_8ae2c57726004
-X-Filterd-Recvd-Size: 1463
-Message-ID: <1389754951.14001.4.camel@joe-AO722>
-Subject: Re: [PATCH] regulator: pfuze100-regulator: Fix some checkpatch
- complaints
-From: Joe Perches <joe@perches.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: broonie@kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Date: Tue, 14 Jan 2014 19:02:31 -0800
-In-Reply-To: <1389754365-31863-1-git-send-email-festevam@gmail.com>
-References: <1389754365-31863-1-git-send-email-festevam@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1751892AbaAODIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 14 Jan 2014 22:08:30 -0500
+Received: from numascale.com ([213.162.240.84]:34223 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880AbaAODI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 14 Jan 2014 22:08:27 -0500
+Message-ID: <52D5FBA0.8070500@numascale.com>
+Date: Wed, 15 Jan 2014 11:08:16 +0800
+From: Daniel J Blueman <daniel@numascale.com>
+Organization: Numascale AS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com, Richard Henderson <rth@twiddle.net>
+CC: Matt Turner <mattst88@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Waiman Long <waiman.long@hp.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v8 4/4] qrwlock: Use smp_store_release() in write_unlock()
+References: <52D353C8.4000000@numascale.com> <52D4172E.6030706@hp.com> <52D4A0C7.5070601@numascale.com> <20140114110307.GW7572@laptop.programming.kicks-ass.net> <CAEdQ38GOSr+yk2=HApW3c0GM0MMysCvW6Fkd5UNMjS1ynrcZDg@mail.gmail.com> <52D57B60.9020209@twiddle.net> <20140114234443.GY10038@linux.vnet.ibm.com>
+In-Reply-To: <20140114234443.GY10038@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-01-15 at 00:52 -0200, Fabio Estevam wrote:
-> Fix the following checkpatch error and warning:
+On 01/15/2014 07:44 AM, Paul E. McKenney wrote:
+> On Tue, Jan 14, 2014 at 10:01:04AM -0800, Richard Henderson wrote:
+>> On 01/14/2014 09:08 AM, Matt Turner wrote:
+>>> On Tue, Jan 14, 2014 at 3:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>> On Tue, Jan 14, 2014 at 10:28:23AM +0800, Daniel J Blueman wrote:
+>>>>>> Peter,
+>>>>>>
+>>>>>> I found out that the build failure was caused by the fact that the
+>>>>>> __native_word() macro (used internally by compiletime_assert_atomic())
+>>>>>> allows only a size of 4 or 8 for x86-64. The data type that I used is a
+>>>>>> byte. Is there a reason why byte and short are not considered native?
+>>>>>
+>>>>> It seems likely it was implemented like that since there was no existing
+>>>>> need; long can be relied on as the largest native type, so this should
+>>>>> suffice and works here:
+>>>>
+>>>> There's Alphas that cannot actually atomically adres a byte; I do not
+>>>> konw if Linux cares about them, but if it does, we cannot in fact rely
+>>>> on this in generic primitives like this.
+>>>
+>>> That's right, and thanks for the heads-up. Alpha can only address 4
+>>> and 8 bytes atomically. (LDL_L, LDQ_L, STL_C, STQ_C).
+>>>
+>>> The Byte-Word extension in EV56 doesn't add new atomics, so in fact no
+>>> Alphas can address < 4 bytes atomically.
+>>
+>> Emulated with aligned 4 byte atomics, and masking.  The same is true for arm,
+>> ppc, mips which, depending on cpu, also lack < 4 byte atomics.
+>
+> Which means that Alpha should be able to similarly emulate 1-byte and
+> 2-byte atomics, correct?
 
-While you're at it:
+If it's not possible to guarantee that GCC emits the 4-byte atomics by 
+using a union, then we could emit the instructions via assembly. We'd 
+introduce a macro to ensure lock word alignment, and this would be safe 
+for unsigned counting up to the packed type limit. Maybe that's just too 
+over-constrained though.
 
-> diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-[]
-> @@ -309,14 +309,17 @@ static int pfuze_identify(struct pfuze_chip *pfuze_chip)
-[]
-> +	case 0x8:
-> +		dev_info(pfuze_chip->dev, "Assuming misprogrammed ID=0x8");
-
-missing "\n" terminating newline and
-missing break (or fallthrough comment)
-
-> +	case 0x0:
-> +		break;
-> +	default:
-> +		dev_warn(pfuze_chip->dev, "Illegal ID: %x\n", value);
-
-invalid vs illegal
-
-
+Thanks,
+   Daniel
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale
