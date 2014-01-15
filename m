@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaAOWFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 17:05:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41434 "EHLO
+	id S1754213AbaAOWFx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 17:05:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41432 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243AbaAOWAb (ORCPT
+	with ESMTP id S1754240AbaAOWAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 15 Jan 2014 17:00:31 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>, Alex Thorlton <athorlton@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Andrew Honig <ahonig@google.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 088/166] mm: numa: ensure anon_vma is locked to prevent parallel THP splits
-Date: Wed, 15 Jan 2014 13:51:42 -0800
-Message-Id: <1389822780-4729-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 052/166] KVM: x86: Fix potential divide by 0 in lapic (CVE-2013-6367)
+Date: Wed, 15 Jan 2014 13:51:06 -0800
+Message-Id: <1389822780-4729-53-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1389822780-4729-1-git-send-email-kamal@canonical.com>
 References: <1389822780-4729-1-git-send-email-kamal@canonical.com>
@@ -29,43 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Andy Honig <ahonig@google.com>
 
-commit c3a489cac38d43ea6dc4ac240473b44b46deecf7 upstream.
+commit b963a22e6d1a266a67e9eecc88134713fd54775c upstream.
 
-The anon_vma lock prevents parallel THP splits and any associated
-complexity that arises when handling splits during THP migration.  This
-patch checks if the lock was successfully acquired and bails from THP
-migration if it failed for any reason.
+Under guest controllable circumstances apic_get_tmcct will execute a
+divide by zero and cause a crash.  If the guest cpuid support
+tsc deadline timers and performs the following sequence of requests
+the host will crash.
+- Set the mode to periodic
+- Set the TMICT to 0
+- Set the mode bits to 11 (neither periodic, nor one shot, nor tsc deadline)
+- Set the TMICT to non-zero.
+Then the lapic_timer.period will be 0, but the TMICT will not be.  If the
+guest then reads from the TMCCT then the host will perform a divide by 0.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Alex Thorlton <athorlton@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch ensures that if the lapic_timer.period is 0, then the division
+does not occur.
+
+Reported-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/kvm/lapic.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5d7dc7c..594b3c1 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1361,6 +1361,13 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		goto out_unlock;
- 	}
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index a2f492c..8d11f7735 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -807,7 +807,8 @@ static u32 apic_get_tmcct(struct kvm_lapic *apic)
+ 	ASSERT(apic != NULL);
  
-+	/* Bail if we fail to protect against THP splits for any reason */
-+	if (unlikely(!anon_vma)) {
-+		put_page(page);
-+		page_nid = -1;
-+		goto clear_pmdnuma;
-+	}
-+
- 	/*
- 	 * Migrate the THP to the requested node, returns with page unlocked
- 	 * and pmd_numa cleared.
+ 	/* if initial count is 0, current count should also be 0 */
+-	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0)
++	if (kvm_apic_get_reg(apic, APIC_TMICT) == 0 ||
++		apic->lapic_timer.period == 0)
+ 		return 0;
+ 
+ 	remaining = hrtimer_get_remaining(&apic->lapic_timer.timer);
 -- 
 1.8.3.2
 
