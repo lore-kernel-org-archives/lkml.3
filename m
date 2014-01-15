@@ -1,141 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaAOO0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 09:26:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49706 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651AbaAOO0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 09:26:05 -0500
-Date: Wed, 15 Jan 2014 15:26:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] memcg: Do not hang on OOM when killed by userspace OOM
- access to memory reserves
-Message-ID: <20140115142603.GM8782@dhcp22.suse.cz>
-References: <alpine.DEB.2.02.1312171240541.21640@chino.kir.corp.google.com>
- <20131218200434.GA4161@dhcp22.suse.cz>
- <alpine.DEB.2.02.1312182157510.1247@chino.kir.corp.google.com>
- <20131219144134.GH10855@dhcp22.suse.cz>
- <20140107162503.f751e880410f61a109cdcc2b@linux-foundation.org>
- <20140108103319.GF27937@dhcp22.suse.cz>
- <20140109143048.GE27538@dhcp22.suse.cz>
- <alpine.DEB.2.02.1401091335450.31538@chino.kir.corp.google.com>
- <20140110082302.GD9437@dhcp22.suse.cz>
- <alpine.DEB.2.02.1401101327430.21486@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1401101327430.21486@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752195AbaAOO0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 09:26:39 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:43541 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaAOO0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 09:26:37 -0500
+From: Bruce Liu <damuzi000@gmail.com>
+To: peppe.cavallaro@st.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bruce Liu <damuzi000@gmail.com>
+Subject: [PATCH net-next] net: stmmac: fix NULL pointer dereference in stmmac_get_tx_hwtstamp
+Date: Wed, 15 Jan 2014 22:26:07 +0800
+Message-Id: <1389795967-2452-1-git-send-email-damuzi000@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 10-01-14 13:33:01, David Rientjes wrote:
-> On Fri, 10 Jan 2014, Michal Hocko wrote:
-> 
-> > > > ---
-> > > >  mm/memcontrol.c | 3 ++-
-> > > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > > 
-> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > index b8dfed1b9d87..b86fbb04b7c6 100644
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -2685,7 +2685,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> > > >  	 * MEMDIE process.
-> > > >  	 */
-> > > >  	if (unlikely(test_thread_flag(TIF_MEMDIE)
-> > > > -		     || fatal_signal_pending(current)))
-> > > > +		     || fatal_signal_pending(current))
-> > > > +		     || current->flags & PF_EXITING)
-> > > >  		goto bypass;
-> > > >  
-> > > >  	if (unlikely(task_in_memcg_oom(current)))
-> > > 
-> > > This would become problematic if significant amount of memory is charged 
-> > > in the exit() path. 
-> > 
-> > But this would hurt also for fatal_signal_pending tasks, wouldn't it?
-> 
-> Yes, and as I've said twice now, that should be removed. 
+When timestamping is enabled, stmmac_tx_clean will call
+stmmac_get_tx_hwtstamp to get tx TS.
+But the skb can be NULL because the last of its tx_skbuff is NULL
+if this packet frame is filled in more than one descriptors.
 
-And you failed to provide any relevant data to back your suggestions. I
-have told you that we have these heuristics for ages and we need a
-strong justification to drop them. So if you really think that they are
-not appropriate then back your statements with real data.
+Signed-off-by: Bruce Liu <damuzi000@gmail.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-E.g. measure how much memory are we talking about.
-
-> These bypasses should be given to one thread and one thread only,
-> which would be the oom killed thread if it needs access to memory
-> reserves to either allocate memory or charge memory.
-
-There is no way to determine whether a task has been killed due to user
-space OOM killer or by a regular kill.
-
-> If you are suggesting we use the "user" and "oom" top-level memcg 
-> hierarchy for allowing memory to be available for userspace system oom 
-> handlers, then this has become important when in the past it may have been 
-> a minor point.
-
-I am not sure it would be _that_ important and if that really becomes to
-be the case then we should deal with it. So far I haven't see any
-evidence there is a lot of memory charged on the exit path.
-
-> > Besides that I do not see any source of allocation after exit_signals.
-> > 
-> 
-> That's fine for today but may not be in the future.  If memory allocation 
-> is done after PF_EXITING in the future, are people going to check memcg 
-> bypasses?  No.  And now we have additional memory bypass to root that will 
-> cause our userspace system oom hanlders to be oom themselves with the 
-> suggested configuration.
-> 
-> Using the "user" and "oom" top-level memcg hierarchy is a double edged 
-> sword, we must attempt to prevent all of these bypasses as much as 
-> possible.  The only relevant bypass here is for TIF_MEMDIE which would be 
-> set if necessary for the one thread that needs it.
-
-TIF_MEMDIE doesn't work for userspace OOM killers. So we cannot rely on
-this flag currently.
-
-> > > I don't know of an egregious amount of memory being 
-> > > allocated and charged after PF_EXITING is set, but if it happens in the 
-> > > future then this could potentially cause system oom conditions even in 
-> > > memcg configurations 
-> > 
-> > Even if that happens then the global OOM killer would give the exiting
-> > task access to memory reserves and wouldn't kill anything else.
-> > 
-> > So I am not sure what problem do you see exactly.
-> > 
-> 
-> Userspace system oom handlers being able to handle memcg oom conditions in 
-> the top-level "user" memcg as proposed by Tejun.  If the global oom killer 
-> becomes a part of that discussion at all, then the userspace system oom 
-> handler never got a chance to handle the "user" oom.
-> 
-> > Besides that allocating egregious amount of memory after exit_signals
-> > sounds fundamentally broken to me.
-> > 
-> 
-> Egregious could be defined as allocating a few bytes multiplied by 
-> thousands of threads in PF_EXITING.
-
-Does this happen in the real life.
-
-Look, I have no objections to make the OOM handling better but it would
-help a lot to build new heuristics based on some data in hands. I tried
-to repeat that again and again but it seems to not help. I do not want
-to end up with new sets of heuristics that break other stuff jut because
-they made sense in the context of the specific usecase.
-
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 797b56a..47f2287 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -332,7 +332,7 @@ static void stmmac_get_tx_hwtstamp(struct stmmac_priv *priv,
+ 		return;
+ 
+ 	/* exit if skb doesn't support hw tstamp */
+-	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
++	if (likely(!skb || !(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+ 		return;
+ 
+ 	if (priv->adv_ts)
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
