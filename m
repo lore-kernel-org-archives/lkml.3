@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaAOPQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 10:16:22 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:10310 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaAOPQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 10:16:19 -0500
-X-IronPort-AV: E=Sophos;i="4.95,663,1384300800"; 
-   d="scan'208";a="90996549"
-Message-ID: <52D6A640.8000805@citrix.com>
-Date: Wed, 15 Jan 2014 15:16:16 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752279AbaAOPRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 10:17:53 -0500
+Received: from fieldses.org ([174.143.236.118]:43246 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259AbaAOPRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 15 Jan 2014 10:17:50 -0500
+Date: Wed, 15 Jan 2014 10:17:49 -0500
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
+Subject: [PATCH] dcache: fix d_splice_alias handling of aliases
+Message-ID: <20140115151749.GF23999@fieldses.org>
 MIME-Version: 1.0
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-CC: Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: Re: [PATCH net-next v4 1/9] xen-netback: Introduce TX grant map definitions
-References: <1389731995-9887-1-git-send-email-zoltan.kiss@citrix.com> <1389731995-9887-2-git-send-email-zoltan.kiss@citrix.com>
-In-Reply-To: <1389731995-9887-2-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/14 20:39, Zoltan Kiss wrote:
-> @@ -1677,6 +1793,31 @@ static void xenvif_idx_release(struct xenvif *vif, u16 pending_idx,
->   	vif->mmap_pages[pending_idx] = NULL;
->   }
->
-> +void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
-> +{
-> +	int ret;
-> +	struct gnttab_unmap_grant_ref tx_unmap_op;
-> +
-> +	if (vif->grant_tx_handle[pending_idx] == NETBACK_INVALID_HANDLE) {
-> +		netdev_err(vif->dev,
-> +			   "Trying to unmap invalid handle! pending_idx: %x\n",
-> +			   pending_idx);
-> +		return;
-> +	}
-> +	gnttab_set_unmap_op(&tx_unmap_op,
-> +			    idx_to_kaddr(vif, pending_idx),
-> +			    GNTMAP_host_map,
-> +			    vif->grant_tx_handle[pending_idx]);
-> +	ret = gnttab_unmap_refs(&tx_unmap_op,
-> +				&vif->mmap_pages[pending_idx],
-> +				1);
-> +
-> +	ret = HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref,
-> +					&tx_unmap_op,
-> +					1);
-> +	BUG_ON(ret);
-> +	vif->grant_tx_handle[pending_idx] = NETBACK_INVALID_HANDLE;
-> +}
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-Awkward mistake, I forgot to delete the hypercall ... Even more 
-interesting, it caused troubles only very rarely ...
+d_splice_alias can create duplicate directory aliases (in the !new
+case), or (in the new case) d_move without holding appropriate locks.
 
-Zoli
+d_materialise_unique deals with both of these problems.  (The latter
+seems to be dealt by trylocks (see __d_unalias), which look like they
+could cause spurious lookup failures--but that's at least better than
+corrupting the dcache.)
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+---
+ fs/dcache.c |   25 +------------------------
+ 1 file changed, 1 insertion(+), 24 deletions(-)
+
+Only lightly tested....  If this is right, then we can also just ditch
+d_splice_alias completely, and clean up the various d_find_alias's.
+
+I think the only reason we have both d_splice_alias and
+d_materialise_unique is that the former was written for exportable
+filesystems and the latter for distributed filesystems.
+
+But we have at least one exportable filesystem (fuse) using
+d_materialise_unique.  And I doubt d_splice_alias was ever completely
+correct even for on-disk filesystems.
+
+Am I missing some subtlety?
+
+--b.
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 4bdb300..da82fa9 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1926,33 +1926,10 @@ EXPORT_SYMBOL(d_obtain_alias);
+  */
+ struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
+ {
+-	struct dentry *new = NULL;
+-
+ 	if (IS_ERR(inode))
+ 		return ERR_CAST(inode);
+ 
+-	if (inode && S_ISDIR(inode->i_mode)) {
+-		spin_lock(&inode->i_lock);
+-		new = __d_find_alias(inode, 1);
+-		if (new) {
+-			BUG_ON(!(new->d_flags & DCACHE_DISCONNECTED));
+-			spin_unlock(&inode->i_lock);
+-			security_d_instantiate(new, inode);
+-			d_move(new, dentry);
+-			iput(inode);
+-		} else {
+-			/* already taking inode->i_lock, so d_add() by hand */
+-			__d_instantiate(dentry, inode);
+-			spin_unlock(&inode->i_lock);
+-			security_d_instantiate(dentry, inode);
+-			d_rehash(dentry);
+-		}
+-	} else {
+-		d_instantiate(dentry, inode);
+-		if (d_unhashed(dentry))
+-			d_rehash(dentry);
+-	}
+-	return new;
++	return d_materialise_unique(dentry, inode);
+ }
+ EXPORT_SYMBOL(d_splice_alias);
+ 
+-- 
+1.7.9.5
+
