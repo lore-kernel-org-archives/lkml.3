@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaAONOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 15 Jan 2014 08:14:17 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58353 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751651AbaAONOO (ORCPT
+	id S1752027AbaAONRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 15 Jan 2014 08:17:09 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:52341 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751664AbaAONRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 15 Jan 2014 08:14:14 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhuangzhi" <zhuangzhi.li@intel.com>
-Subject: Re: [PATCH] PM: Enable asynchronous noirq resume threads to save the resuming time
-Date: Wed, 15 Jan 2014 14:28:13 +0100
-Message-ID: <5903751.zQEEgRvxSH@vostro.rjw.lan>
-User-Agent: KMail/4.11.3 (Linux/3.13.0-rc8+; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01C02047@SHSMSX101.ccr.corp.intel.com>
-References: <1389683888.3650.78.camel@cliu38-desktop-build> <1746120.u7vbF1Vtmp@vostro.rjw.lan> <27240C0AC20F114CBF8149A2696CBE4A01C02047@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 15 Jan 2014 08:17:07 -0500
+Message-ID: <1389791824.17407.9.camel@x220>
+Subject: [PATCH] kexec.h: stop exporting kexec_load() to userspace
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Eric Biederman <ebiederm@xmission.com>
+Cc: Maximilian Attems <max@stro.at>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 15 Jan 2014 14:17:04 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.3 (3.10.3-1.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Jan 2014 13:17:05.0231 (UTC) FILETIME=[15CA5DF0:01CF11F4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 15, 2014 12:35:16 AM Liu, Chuansheng wrote:
-> Hello Rafael,
-> 
-> > -----Original Message-----
-> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> > Sent: Wednesday, January 15, 2014 6:55 AM
-> > To: Liu, Chuansheng
-> > Cc: gregkh@linuxfoundation.org; Brown, Len; pavel@ucw.cz;
-> > linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Li, Zhuangzhi
-> > Subject: Re: [PATCH] PM: Enable asynchronous noirq resume threads to save
-> > the resuming time
-> > 
-> > On Tuesday, January 14, 2014 03:18:08 PM Chuansheng Liu wrote:
-> > >
-> > > Currently, the dpm_resume_noirq() is done synchronously, and for PCI devices
-> > > pci_pm_resume_noirq():
-> > >
-> > > pci_pm_resume_noirq()
-> > >  pci_pm_default_resume_early()
-> > >   pci_power_up()
-> > >    pci_raw_set_power_state()
-> > > Which set the device from D3hot to D0 mostly, for every device, there will
-> > > be one 10ms(pci_pm_d3_delay) to wait.
-> > >
-> > > Hence normally dpm_resume_noirq() will cost > 100ms, which is bigger for
-> > mobile
-> > > platform.
-> > 
-> > pci_pm_d3_delay usually is not 10 ms.  What is 10 ms is dev->d3_delay, but
-> > that also is not on every platform now.
-> Yes, it is d3_delay exactly, thanks your correction.
-> 
-> > 
-> > That said the approach here makes sense, but I have two questions:
-> > 
-> > 1. On what systems has it been tested?
-> I have been tested on Baytrail platform, and at the beginning the d3_delay is set to 0,
-> but we really meet the HANG issue if we operate the device immediately sometimes,
-> so currently most PCI devices in Baytrail has the 10ms delay.
-> And it caused the whole resume time bigger than Clovertrail platform;
+Since v3.5 kexec.h is exported to userspace. That includes its
+declaration of kexec_load():
+    extern int kexec_load(void *, size_t, struct kexec_segment *,
+                   unsigned long int);
 
-Does setting d3_delay to something smaller that 10 ms work on BayTrail?
+This declaration isn't very useful to userspace programs on itself. They
+still have to define a matching function (which basically wraps the
+kexec_load syscall). I'm not aware of programs or libraries that actually
+do that.
 
-You can try to set 5 ms and then 2.5 ms if that works and so on.  That still
-would be an improvement from the 10 ms.
+It can be removed. The programs that actually use it, if there
+are any, should then provide their own declaration to keep compiling.
+Already compiled binaries will not be affected.
 
-> > 2. What about suspend_late/resume_early?  If the _noirq things are to be
-> > executed asynchronously, those should be too.
-> I noticed it just taken little time often, and I cannot find out some reasons for changing them
-> in theory, so if you like it, I will update them into patch V2 also:)
+This gets rid of the headers_check warning that can be seen ever since
+this header was exported:
+    [...]/usr/include/linux/kexec.h:49: userspace cannot reference function or variable defined in the kernel
 
-Yes, please do that.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This declaration of kexec_load() was added to kexec.h in commit
+29a5c67e7a ("kexec: export kexec.h to user space").
 
-Thanks!
+ include/uapi/linux/kexec.h | 7 -------
+ 1 file changed, 7 deletions(-)
 
+diff --git a/include/uapi/linux/kexec.h b/include/uapi/linux/kexec.h
+index 104838f..c7897b6 100644
+--- a/include/uapi/linux/kexec.h
++++ b/include/uapi/linux/kexec.h
+@@ -42,13 +42,6 @@ struct kexec_segment {
+ 	const void *mem;
+ 	size_t memsz;
+ };
+-
+-/* Load a new kernel image as described by the kexec_segment array
+- * consisting of passed number of segments at the entry-point address.
+- * The flags allow different useage types.
+- */
+-extern int kexec_load(void *, size_t, struct kexec_segment *,
+-		unsigned long int);
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _UAPILINUX_KEXEC_H */
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.4.2
+
